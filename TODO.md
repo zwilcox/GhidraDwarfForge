@@ -65,6 +65,17 @@ The six-case CI step is present but hosted execution is unverified. Broader
 types/targets, publication combinations and the benchmark remain pending; no full
 #115 requirement is closed. See [scoped evidence](docs/MULTIFILE-SOURCE.md).
 
+**CONFIRMED #115 type/target checkpoint:** six x86-64/AArch64 cases preserve
+shared recursive and duplicate-name types across source files, with raw-DIE,
+cold-GDB and runtime value checks. Fifteen x86-64/AArch64/ARM32/MIPS-BE/MIPS-LE
+non-PIE/PIE/rebased-PIE cases additionally pass real source stepping, decoded
+semantic comparison, GNU/LLVM/pinned validators, identity/preservation and
+deterministic reruns on Java 21. The target fixture is partially stripped; it
+does not replace the fully stripped curated tests. Both matrices are wired into
+CI; hosted/Windows execution, the benchmark and remaining publication/consumer
+combinations are pending. No full #115 requirement is closed by these scoped
+checks alone. See [acceptance evidence](docs/MULTIFILE-SOURCE.md).
+
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming
 available. Recheck that dependency when reaching #120; do not silently declare

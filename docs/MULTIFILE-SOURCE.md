@@ -400,3 +400,68 @@ The workflow includes all six target/layout combinations; hosted execution is
 recursive/duplicate-name type fixtures, broader target/Windows cases, complete
 publication/consumer combinations and the large-program benchmark remain open.
 No full issue acceptance requirement is closed by this checkpoint alone.
+
+## Recursive and same-name type acceptance
+
+**CONFIRMED local checkpoint:** `same-name-types-export.py --source-lines 8`
+passes on x86-64 and AArch64 for non-PIE, PIE and Ghidra-rebased PIE. It imports
+the compiler reference, saves explicit analyst class/layout bindings and category
+renames, and exports that saved program. Runtime tests execute the stripped
+counterpart. The two recursive `Node` types, their `Record` aliases, two `State`
+enums, and two analyst-renamed `Packet`/`Handle` pairs keep separate canonical
+identities. Each method's object parameter and the matching global object refer
+to the same recursive layout; pointer recursion closes on that layout.
+
+The independent raw-DIE/cold-GDB oracle passes for partitioned output. GDB checks
+object sizes, member values, self-referential pointers, parameter values, executed
+returns, enum spellings and category-defined fields. Single/multi observations
+match after removing independently randomized PIE load biases. Both `inspect`
+methods occupy distinct source parts, with file-qualified breakpoints and actual
+stopped source paths checked. The first test incorrectly searched the manifest
+by qualified display name; manifest leaf names are both `inspect`. The corrected
+oracle binds each method to its independently recorded ELF address, preserving
+the distinction instead of relying on a name match. Both failures are retained.
+
+All six cases pass the complete decoded-DWARF comparison, thirteen decoded-input
+negative controls, GNU/LLVM/pinned validation, repeated output and saved-program/
+input preservation. The workflow includes these cases alongside the lexical
+checks; hosted execution remains **PRESENT, UNVERIFIED**. Evidence is retained in
+`issue115-multifile/types-final-*` and the target/type checkpoint archive. These
+results do not establish the remaining benchmark, Windows acceptance or all
+publication/transport combinations.
+
+## Five-target source-stepping matrix
+
+**CONFIRMED local checkpoint:** `multifile-export.py` passes all fifteen
+x86-64/AArch64/ARM32/MIPS32-BE/MIPS32-LE and non-PIE/PIE/rebased-PIE combinations
+on Java 21. Cross-target executions use QEMU user mode and GDB remote debugging.
+The redistributable `fixtures/multifile-source.c` input retains ordinary ELF
+symbol names while compiler DWARF is stripped; this is deliberately a partially
+stripped source-stepping fixture. Fully stripped curated coverage is supplied by
+the separate lexical tests, not claimed for this fixture.
+
+Each case compiles a compiler reference, imports/analyzes the stripped input,
+exports the same saved program as single-file and repeated multi-file output,
+and runs independent decoded-DWARF comparison plus GNU/LLVM/pinned structural
+checks on both layouts. ELF class, byte order, machine, ABI flags and build ID
+match the original; original/reference bytes and saved program data remain
+unchanged apart from the documented Ghidra backup files. All generated source
+dependencies are included in the deterministic inventory.
+
+The compiler, single-file and partitioned GDB runs each resolve and list both
+recovered functions, step through their real call, execute `next`, return to the
+caller, observe the global value 10, and exit normally. Partitioned runs verify
+distinct source files at both stops and resolve file-qualified breakpoints.
+Runs use the repository working directory, separate from the output directories.
+Known ARM QEMU vDSO diagnostics must match the compiler run; no additional
+debugger warning allowance was introduced. The first x86 compiler test stepped
+past the fixture into unavailable libc sources; `next` is now exercised inside
+the fixture's callee. The initial ARM tool invocation lacked its private
+binutils library path; existing toolchain wrappers supplied that path. Both
+failed runs are retained alongside passing results.
+
+CI now includes the same fifteen cases. Native Windows and hosted execution
+remain **PRESENT, UNVERIFIED**. Local evidence is under
+`issue115-multifile/target-final-*`, `target-type-checkpoint.json` and
+`target-type-checkpoint-v1.tar.gz`. This checkpoint does not close the benchmark,
+all consumer/publication combinations, or full issue acceptance.

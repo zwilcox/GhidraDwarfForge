@@ -21,13 +21,29 @@ def main():
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('target', choices=['x86_64', 'aarch64'])
     parser.add_argument('--role', choices=['exec', 'pie', 'pie-rebased'], default='exec')
+    parser.add_argument('--source-lines', type=int, help='compare single-file and partitioned exports')
+    parser.add_argument('--java', type=Path, help='explicit Java runtime with an isolated script cache')
     args = parser.parse_args()
+    if args.source_lines is not None and not 1 <= args.source_lines <= 2147483647:
+        parser.error('--source-lines must be in 1..2147483647')
     ghidra = args.ghidra.resolve(strict=True)
     root = Path(__file__).resolve().parents[3]
     harness = root / 'src/test/integration'
     results = root / 'build/test-results/same-name-types'
     results.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix=args.target + '-' + args.role + '-', dir=results))
+    headless = [ghidra / 'support/analyzeHeadless']
+    if args.java:
+        java = args.java.resolve(strict=True)
+        vmargs = subprocess.check_output([java, '-cp', ghidra / 'support/LaunchSupport.jar',
+            'LaunchSupport', ghidra, '-vmargs'], text=True).splitlines()
+        for name in ('java-home', 'java-tmp'):
+            (case / name).mkdir()
+        headless = [java, *vmargs, '-Duser.home=' + str(case / 'java-home'),
+            '-Djava.io.tmpdir=' + str(case / 'java-tmp'), '-Xmx2G', '-XX:ParallelGCThreads=2',
+            '-XX:CICompilerCount=2', '-Djava.awt.headless=true', '-cp',
+            ghidra / 'Ghidra/Framework/Utility/lib/Utility.jar', 'ghidra.Ghidra',
+            'ghidra.app.util.headless.AnalyzeHeadless']
     print('same-name-types-results=' + str(case), flush=True)
     commands = []
 
@@ -41,6 +57,7 @@ def main():
     fixture = root / 'src/test/fixtures/same-name-types.cpp'
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     protected = {str(p): digest(p) for p in [fixture, Path(__file__), harness / 'check-same-name-types.py',
+        harness / 'check-multifile-semantics.py',
         harness / 'alias_relationships.py', harness / 'same-name-types-gdb.py', harness / 'same-name-types-gdb.sh',
         harness / 'ghidra_scripts/PrepareSameNameTypes.java', harness / 'ghidra_scripts/RebaseFixtureProgram.java',
         harness / 'qemu-socket.sh', harness / 'check-dwarfdump.py', *[p for p in module.rglob('*') if p.is_file()]]}
@@ -66,7 +83,7 @@ def main():
     project = case / 'project'
     project.mkdir()
     rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role == 'pie-rebased' else []
-    run('import', [ghidra / 'support/analyzeHeadless', project, 'SameTypes', '-import', reference,
+    run('import', [*headless, project, 'SameTypes', '-import', reference,
         '-analysisTimeoutPerFile', '120', '-scriptPath', harness / 'ghidra_scripts', *rebase,
         '-postScript', 'PrepareSameNameTypes.java', 'curate', case / 'prepared.json', args.target])
     assert 'same-name-types-preparation=curate PASS' in (case / 'import.log').read_text()
@@ -81,12 +98,26 @@ def main():
         assert len(selected) == 2 and len({node['key'] for node in selected}) == 2, (name, selected)
     assert len(prepared['model']['classScopes']['bindings']) == 2
     snapshot = {str(p.relative_to(project)): digest(p) for p in project.rglob('*') if p.is_file()}
+    source_options = []
+    if args.source_lines is not None:
+        baseline = case / 'baseline' / output.name
+        baseline.parent.mkdir()
+        run('export-baseline', [*headless, project, 'SameTypes', '-process', 'reference',
+            '-readOnly', '-noanalysis', '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(baseline)])
+        assert 'GhidraDwarfForge symbol export PASS' in (case / 'export-baseline.log').read_text()
+        run('baseline-llvm', ['llvm-dwarfdump', '--verify', baseline])
+        run('baseline-strict', ['python3', harness / 'check-dwarfdump.py', baseline,
+            case / 'baseline-dwarfdump.log', '--original', reference])
+        run('baseline-gdb', ['bash', harness / 'same-name-types-gdb.sh', case, args.target, 'forge', baseline])
+        shutil.copyfile(case / 'forge-observations.json', case / 'baseline-observations.json')
+        source_options = ['--source-lines=' + str(args.source_lines)]
     pair = None
+    inventory = None
     for mode in ['first', 'repeat']:
-        run('export-' + mode, [ghidra / 'support/analyzeHeadless', project, 'SameTypes', '-process', 'reference',
+        run('export-' + mode, [*headless, project, 'SameTypes', '-process', 'reference',
             '-readOnly', '-noanalysis', '-scriptPath', harness / 'ghidra_scripts',
             '-postScript', 'PrepareSameNameTypes.java', 'observe', case / (mode + '-model.json'), args.target,
-            '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(output)])
+            '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(output), *source_options])
         log = (case / ('export-' + mode + '.log')).read_text()
         assert 'GhidraDwarfForge symbol export PASS' in log
         assert json.loads((case / (mode + '-model.json')).read_text()) == prepared
@@ -97,9 +128,16 @@ def main():
         current = [digest(output), digest(Path(str(output) + '.c'))]
         assert pair is None or pair == current
         pair = current
+        if args.source_lines is not None:
+            current_inventory = {p.name: digest(p) for p in case.glob('forge-src-*')}
+            assert current_inventory and (inventory is None or inventory == current_inventory)
+            inventory = current_inventory
         if mode == 'first':
             shutil.copyfile(output, case / 'first.dbg')
             shutil.copyfile(Path(str(output) + '.c'), case / 'first.dbg.c')
+    if args.source_lines is not None:
+        run('source-semantics', ['python3', harness / 'check-multifile-semantics.py',
+            reference, baseline, output, case / 'source-semantics'])
     after = {str(p.relative_to(project)): digest(p) for p in project.rglob('*') if p.is_file()}
     changed = {p for p in snapshot.keys() | after.keys() if snapshot.get(p) != after.get(p)}
     assert changed <= {'SameTypes.rep/idata/~index.bak', 'SameTypes.rep/idata/~journal.bak'}
@@ -119,6 +157,14 @@ def main():
     run('strict-driver', ['python3', harness / 'check-dwarfdump.py', output, case / 'strict.log', '--original', reference])
     run('forge-gdb', ['bash', harness / 'same-name-types-gdb.sh', case, args.target, 'forge', output])
     observations = [json.loads((case / (mode + '-observations.json')).read_text()) for mode in ['compiler', 'forge']]
+    if args.source_lines is not None:
+        single = json.loads((case / 'baseline-observations.json').read_text())
+        multi = json.loads((case / 'forge-observations.json').read_text())
+        # PIE has an independently randomized load bias in each debugger run.
+        for observed in (single, multi):
+            for row in observed['observations']:
+                row.pop('bias')
+        assert single == multi, 'partitioning changed observed types or values'
     for observed in observations:
         assert observed['status'] == 'PASS' and len(observed['observations']) == 2 and observed['exitCodes'] == [0]
         if args.role != 'exec':
@@ -130,6 +176,7 @@ def main():
     assert protected == {p: digest(Path(p)) for p in protected}
     assert not list(case.glob('.*.tmp'))
     (case / 'acceptance.json').write_text(json.dumps({'status': 'SAME_NAME_TYPES_PASS', 'target': args.target,
+        'sourceLines': args.source_lines, 'sourceInventory': inventory,
         'role': args.role, 'outputPair': pair, 'protected': protected, 'observations': observations,
         'projectBackupChanges': sorted(changed)}, indent=4) + '\n')
     print('same-name-types-export=PASS', flush=True)

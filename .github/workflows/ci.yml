@@ -1965,6 +1965,14 @@ jobs:
               python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --discontiguous --controls --calls
           done
 
+      - name: Multi-file source stepping and semantic preservation across ELF targets
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/multifile-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+          done
+
       - name: Multi-file source preserves lexical identities, locations and call visibility
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1973,6 +1981,8 @@ jobs:
           for role in exec pie pie-rebased; do
               python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
                   --role "$role" --discontiguous --calls --source-lines 8
+              python3 src/test/integration/same-name-types-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+                  --role "$role" --source-lines 8
           done
 
       - name: Class ownership and object parameters preserve saved identities and lookup
