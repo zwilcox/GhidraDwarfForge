@@ -8,6 +8,25 @@ case = Path(os.environ['FORGE_LEXICAL_CASE'])
 mode = os.environ['FORGE_LEXICAL_MODE']
 labels = json.loads((case / 'labels.json').read_text())
 remote = os.environ.get('FORGE_LEXICAL_REMOTE', '')
+source_files = {}
+if mode == 'forge' and os.environ.get('FORGE_LEXICAL_SYMBOLS'):
+    source = Path(os.environ['FORGE_LEXICAL_SYMBOLS'] + '.c')
+    manifests = [line.removeprefix(' * Manifest: ') for line in source.read_text().splitlines()
+        if line.startswith(' * Manifest: ')]
+    if manifests:
+        assert len(manifests) == 1
+        manifest = json.loads((source.parent / manifests[0]).read_text())
+        wanted = ['scoped'] + (['lexical_leaf'] if 'lexical_leaf' in labels else [])
+        for name in wanted:
+            function, = [f for f in manifest['functions'] if f['name'] == name]
+            part = manifest['parts'][function['file'] - 1]
+            source_files[name] = source.parent / part['name']
+            qualified = part['name'] + ':' + name
+            assert name in gdb.execute('list ' + qualified, to_string=True)
+            breakpoint = gdb.Breakpoint(qualified)
+            assert not breakpoint.pending and breakpoint.locations
+            breakpoint.delete()
+        assert len(set(source_files.values())) == len(wanted), 'fixture functions share a source part'
 exits = []
 gdb.events.exited.connect(lambda event: exits.append(event.exit_code))
 gdb.execute('ptype scoped')
@@ -19,6 +38,8 @@ gdb.Breakpoint('*scoped', temporary=True)
 gdb.execute('continue' if remote else 'run')
 bias = int(gdb.parse_and_eval('$pc')) - labels['scoped']
 entry_stack = int(gdb.parse_and_eval('$sp'))
+if source_files:
+    assert Path(gdb.selected_frame().find_sal().symtab.fullname()) == source_files['scoped']
 
 
 def stop(name):
@@ -41,6 +62,9 @@ def trace_callee(block):
         raw = bytes(gdb.selected_inferior().read_memory(pc, decoded['length'])).hex()
         caller = gdb.newest_frame().older()
         assert caller is not None and caller.name() == 'scoped'
+        if source_files:
+            assert Path(gdb.newest_frame().find_sal().symtab.fullname()) == source_files['lexical_leaf']
+            assert Path(caller.find_sal().symtab.fullname()) == source_files['scoped']
         value = caller.read_var('shadow')
         assert not value.is_optimized_out and value.type.sizeof == 4 and int(value) == expected
         if mode == 'forge':

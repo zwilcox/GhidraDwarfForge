@@ -14,7 +14,7 @@ if [[ "$target" == aarch64 ]]; then
     remote=$qemu_socket_path
     options+=(-ex 'set sysroot /usr/aarch64-linux-gnu')
 fi
-FORGE_LEXICAL_CASE="$case_dir" FORGE_LEXICAL_MODE="$mode" FORGE_LEXICAL_REMOTE="$remote" \
+FORGE_LEXICAL_CASE="$case_dir" FORGE_LEXICAL_MODE="$mode" FORGE_LEXICAL_REMOTE="$remote" FORGE_LEXICAL_SYMBOLS="$symbols" \
     timeout 90s gdb-multiarch -q -nx -batch \
     -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
     -ex 'set auto-solib-add off' -ex 'set disable-randomization off' "${options[@]}" \

@@ -53,6 +53,18 @@ repeated multi-file output and unchanged subsequent single-file export. Its real
 artifacts pass validators and GDB name/type/source/stepping checks. Windows and
 broader target acceptance remain pending; no full #115 requirement is closed.
 
+**CONFIRMED #115 lexical checkpoint:** Java 21 production exports pass locally
+for x86-64/AArch64 non-PIE, PIE and rebased PIE. The complete bundle reconstructs
+the single-file source; independent decoded DIE/line comparison preserves type
+references, scopes, ranges and locations, with unchanged non-presentation DWARF
+sections and thirteen rejected decoded-input mutations per case. Compiler-backed
+GDB shadowed-variable and caller-frame observations match single/multi-file
+exports; file-qualified lookup resolves distinct caller/callee files. GNU/LLVM/
+pinned checks, repeated bytes and original/saved-program preservation pass.
+The six-case CI step is present but hosted execution is unverified. Broader
+types/targets, publication combinations and the benchmark remain pending; no full
+#115 requirement is closed. See [scoped evidence](docs/MULTIFILE-SOURCE.md).
+
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming
 available. Recheck that dependency when reaching #120; do not silently declare

@@ -346,3 +346,57 @@ next case; the corrected test records and dismisses that dialog. Both runs are
 retained. Evidence is under `issue115-multifile/source-options-*`, including the
 assembled package, actual wrapper report, GUI screenshots/console/validator logs
 and the checkpoint archive.
+
+## Semantic comparison and lexical runtime checks
+
+**CONFIRMED local checkpoint:** the production saved-program lexical fixture
+passes single-file and repeated partitioned exports on Java 21 for x86-64 and
+AArch64, each in non-PIE, PIE and Ghidra-rebased PIE form. AArch64 executes under
+QEMU with GDB remote debugging. All six cases pass GNU/LLVM/pinned strict checks,
+byte-identical partitioned reruns, original/reference preservation and the
+existing saved-program preservation check (only Ghidra's two documented backup
+files may change). Existing inherited frame diagnostics are independently
+corroborated against the original; no new warning allowance was introduced.
+
+`check-multifile-semantics.py` independently reads LLVM's decoded DIEs and line
+rows. It verifies the complete manifest and reconstructs byte-identical logical
+source, translates declaration/line coordinates back to that source, and compares
+the ordered DIE tree and every attribute. DIE references use traversal identity,
+not names; changing a type edge cannot be hidden by equal display names. Only
+CU presentation paths, source coordinates and relocated DIE reference offsets
+are normalized. Non-presentation debug sections and inherited `.eh_frame` remain
+byte-identical, including `.debug_rnglists`, `.debug_loclists` and
+`.debug_aranges`. Thirteen mutations of decoded attributes and line rows per
+fixture are rejected before/after normalization. This is a bounded LLVM-output
+oracle, not a replacement for structural validation or a general DWARF parser.
+
+The existing GDB oracle compares compiler storage with recovered shadowed
+locals at each inspected instruction, including unavailable initialization
+intervals, an explicit lexical visibility gap, and values read from caller frames
+through two calls. Single-file and partitioned observations match exactly. The
+new checks resolve `file:function` breakpoints and listings and check that the
+caller and callee resolve to their distinct generated files. The x86-64 fixture
+has 30 scoped instruction observations and eight callee observations; AArch64
+has 34 and twelve, respectively. The lexical gap is not a claim of new
+discontiguous-function stepping acceptance.
+
+Reproduce on an installed package with a Java 21 JDK:
+
+```bash
+DWARFDUMP=/path/to/pinned/dwarfdump python3 src/test/integration/lexical-shadow-export.py \
+    "$GHIDRA_INSTALL_DIR" aarch64 --role pie-rebased --discontiguous --calls --source-lines 8
+```
+
+`--java /path/to/java` optionally launches the same production headless entry
+point with explicit runtime selection and isolated script caches. Local initial
+runs exposed Ghidra choosing Java 25 despite `JAVA_HOME`, then reusing its compiled
+script cache under Java 21. Those failures are retained; the successful runs
+isolate their Java 21 cache instead of deleting user caches or weakening the
+runtime assertion. The normal CI launch remains `analyzeHeadless`.
+
+The workflow includes all six target/layout combinations; hosted execution is
+**PRESENT, UNVERIFIED**. Evidence is retained under
+`issue115-multifile/lexical-final-*` and `lexical-checkpoint-v1.tar.gz`. Shared
+recursive/duplicate-name type fixtures, broader target/Windows cases, complete
+publication/consumer combinations and the large-program benchmark remain open.
+No full issue acceptance requirement is closed by this checkpoint alone.
