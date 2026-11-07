@@ -39,7 +39,7 @@ for build_id_launcher in ghidra-dwarf-forge-build-id ghidra-dwarf-forge-build-id
     cp "$repository_dir/support/$build_id_launcher" "$work/base/GhidraDwarfForge/support/$build_id_launcher"
     chmod 644 "$work/base/GhidraDwarfForge/support/$build_id_launcher"
 done
-for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
+for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java ExportGhidraDwarfForgeMultiFile.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
     printf '// fixture %s\n' "$entry_point" \
         > "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point"
 done
@@ -97,15 +97,16 @@ printf 'source archive\n' \
         > SOURCE-SHA256SUMS
 )
 
-cp "$work/base.zip" "$work/no-launcher.zip"
-zip -dq "$work/no-launcher.zip" 'GhidraDwarfForge/ghidra_scripts/ExportGhidraDwarfForge.java'
-if "$assembler" "$work/no-launcher.zip" "$work/linux" "$work/windows" \
-        "$work/no-launcher-release.zip" > "$work/no-launcher.log" 2>&1; then
-    echo "release assembly accepted a missing GUI export launcher" >&2
-    exit 1
-fi
-grep -Fq 'base ZIP is missing required script: ExportGhidraDwarfForge.java' \
-    "$work/no-launcher.log"
+for launcher in ExportGhidraDwarfForge.java ExportGhidraDwarfForgeMultiFile.java; do
+    cp "$work/base.zip" "$work/no-launcher.zip"
+    zip -dq "$work/no-launcher.zip" "GhidraDwarfForge/ghidra_scripts/$launcher"
+    if "$assembler" "$work/no-launcher.zip" "$work/linux" "$work/windows" \
+            "$work/no-launcher-release.zip" > "$work/no-launcher.log" 2>&1; then
+        echo "release assembly accepted a missing GUI export launcher: $launcher" >&2
+        exit 1
+    fi
+    grep -Fq "base ZIP is missing required script: $launcher" "$work/no-launcher.log"
+done
 printf 'mingw-w64-x86_64-zlib 1.3.1-1\nmingw-w64-x86_64-zstd 1.5.7-1\n' \
     > "$work/windows/compliance/windows-runtime/PACKAGE-VERSIONS.txt"
 printf 'zlib license\n' \
@@ -287,7 +288,7 @@ test -x "$module/support/ghidra-dwarf-forge-build-id"
 for build_id_launcher in ghidra-dwarf-forge-build-id ghidra-dwarf-forge-build-id.ps1; do
     cmp "$repository_dir/support/$build_id_launcher" "$module/support/$build_id_launcher"
 done
-for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
+for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java ExportGhidraDwarfForgeMultiFile.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
     cmp "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point" \
         "$module/ghidra_scripts/$entry_point"
 done

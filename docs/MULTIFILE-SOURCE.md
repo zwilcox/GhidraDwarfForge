@@ -72,8 +72,9 @@ tested with the original export directory unavailable.
 It partitions the fully composed annotated source, installs its immutable parts,
 uses the same file layout for native DIE/line output, and publishes the synthetic
 index through the existing recoverable publisher. The default remains one file.
-Wrapper forwarding, GUI selection and broader attachment/installation integration
-tests are still pending. The source-relocation
+Both wrappers and the optional Script Manager launcher expose the line target;
+their scoped local acceptance is recorded below. Broader attachment/installation
+integration tests are still pending. The source-relocation
 parser now preserves all file entries; its ELF plan exposes their order for
 comparison with the bundle manifest. Derived-artifact validation requires and
 rechecks the complete retained inventory, so copying the index alone cannot
@@ -297,3 +298,51 @@ the corrected oracle uses `gdb.set_parameter`. Both failed and passing output ar
 retained. These local tests do not establish the complete large-program benchmark,
 other target/host profiles, attachment refresh/recovery combinations, wrapper/GUI
 exposure, the hosted matrix or protected integration.
+
+## Wrapper and Script Manager controls
+
+**CONFIRMED local checkpoint:** Bash `--source-lines=N` and PowerShell
+`-SourceLines N` accept canonical decimal integers from 1 through 2147483647,
+forward the selected value and leave default exporter arguments unchanged when
+absent. Invalid values fail before opening a log or launching Ghidra. The installed
+Bash wrapper exported the saved x86-64 project with `--source-lines=8` and the
+GDB companion. GNU/LLVM and pinned strict verification pass (two original-frame
+diagnostics corroborated by the existing policy), as do the eight live loader
+transport/source-rule cases. The report remains `PARTIAL` for existing unlocated
+recovery evidence; selecting the new source layout does not promote that status.
+
+Explicit logs cannot occupy generated source-part/manifest filenames beside the
+selected sidecar, including files that do not exist yet. Existing generations are
+protected even when a later export chooses the single-file default. The wrappers
+check symlinks and hard links, including aliases outside the output directory and
+generated-name symlinks pointing to another log path. Bash also checks lexical
+and actual traversal spellings and preserves newline-ended directory names during
+source-directory resolution. These are pre-launch ordinary-filesystem checks,
+not a claim to defeat a hostile concurrent path-swap attack. Independent logs
+remain usable, including the same basename in an unrelated directory.
+
+Both wrapper suites pass locally (PowerShell 7.6.8 on Linux); sentinel files and
+the actual exported bundle survive rejected log collisions unchanged. Native
+Windows execution is still pending. Windows symlink controls retain the existing
+test's explicit skip when the runner lacks symlink permission; such a skip cannot
+establish Windows symlink acceptance.
+
+`ExportGhidraDwarfForgeMultiFile.java` is the explicit Script Manager launcher.
+Its line-target dialog starts at 1000. The real installed Linux/Java 21 GUI
+journey passes cancellation before export, invalid-zero refusal before native
+loading, target-eight export, repeated source-inventory byte equality and a
+subsequent ordinary export with the original single-file bytes. The multi-file
+manifest reconstructs the same logical source as the curated baseline, retaining
+the GUI's analyst function name, comments and equate. The GNU/LLVM/pinned checks
+and GDB function/type lookup, break/list/next/step and equate-value checks pass for
+both multi-file exports and the subsequent single-file export. Three inherited
+frame diagnostics are independently corroborated for this GUI fixture.
+
+The launcher is a required assembly input; packaging tests reject its absence.
+The shared GUI harness and both host validation scripts include the new cases;
+this does not substitute for a passing native Windows/hosted run. The first
+local GUI negative test left Ghidra's expected error dialog open and blocked the
+next case; the corrected test records and dismisses that dialog. Both runs are
+retained. Evidence is under `issue115-multifile/source-options-*`, including the
+assembled package, actual wrapper report, GUI screenshots/console/validator logs
+and the checkpoint archive.

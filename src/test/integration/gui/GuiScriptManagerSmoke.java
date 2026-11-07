@@ -43,6 +43,7 @@ public final class GuiScriptManagerSmoke {
         "ExportGhidraDwarfForge.java";
     private static final String LOADER_EXPORT = "ExportGhidraDwarfForgeWithGdbLoader.java";
     private static final String CONTEXT_EXPORT = "ExportGhidraDwarfForgeWithContext.java";
+    private static final String MULTIFILE_EXPORT = "ExportGhidraDwarfForgeMultiFile.java";
     private static final String ATTACH = "AttachGhidraDwarfForge.java";
     private static final String RECOVER = "RecoverGhidraDwarfForgeAttachment.java";
     private static final String PREPARE = "ExportAndAttachGhidraDwarfForge.java";
@@ -133,7 +134,7 @@ public final class GuiScriptManagerSmoke {
                 return result;
             });
             try {
-                for (String script : new String[] { PREFLIGHT, EXPORT, LOADER_EXPORT, CONTEXT_EXPORT, ATTACH, RECOVER, PREPARE }) {
+                for (String script : new String[] { PREFLIGHT, EXPORT, LOADER_EXPORT, CONTEXT_EXPORT, MULTIFILE_EXPORT, ATTACH, RECOVER, PREPARE }) {
                     var found = GhidraScriptUtil.findScriptByName(script);
                     GuiTestSupport.require(found != null, "installed script was not discovered: " + script);
                     GuiTestSupport.require(found.getFile(false).toPath().toRealPath().equals(
@@ -408,6 +409,7 @@ public final class GuiScriptManagerSmoke {
                             // Compare the same curated program: the native attachment journey
                             // below deliberately renames a function for its refresh generation.
                             runContextChoices(tool, input, chosen, caseDirectory);
+                            runMultiFileChoices(tool, input, chosen, caseDirectory);
                         }
                         if ("1".equals(System.getenv("GHIDRA_GUI_NATIVE_ATTACHMENT"))) {
                             runNativeAttachment(tool, program, input, caseDirectory, functionAddress);
@@ -444,6 +446,90 @@ public final class GuiScriptManagerSmoke {
             finally {
                 program.release(owner);
             }
+        }
+    }
+
+    private static void runMultiFileChoices(ProbeTool tool, Path input, Path baseline, Path caseDirectory) throws Exception {
+        Path root = Files.createDirectory(caseDirectory.resolve("source-files"));
+        ConsoleService console = tool.getService(ConsoleService.class);
+        String original = GuiTestSupport.sha256(input);
+        String baselineSidecar = GuiTestSupport.sha256(baseline.resolve("fixture.dbg"));
+        String baselineSource = GuiTestSupport.sha256(baseline.resolve("fixture.dbg.c"));
+        java.util.Map<String, String> firstInventory = null;
+        for (String mode : java.util.List.of("cancel", "invalid", "split", "repeat", "default")) {
+            Path work = Files.createDirectory(root.resolve(mode));
+            Path output = Files.createDirectory(work.resolve("output"));
+            clearConsole(console);
+            var interaction = CompletableFuture.runAsync(() -> {
+                try {
+                    if (!mode.equals("default")) {
+                        var dialog = GuiTestSupport.dialog("Multi-file synthetic source");
+                        var field = (javax.swing.JTextField) GuiTestSupport.find(dialog,
+                            component -> component instanceof javax.swing.JTextField);
+                        GuiTestSupport.require(field != null, "source line target field missing");
+                        GuiTestSupport.onSwing(() -> {
+                            if (mode.equals("cancel")) {
+                                GuiTestSupport.require("1000".equals(field.getText()), "unexpected first source line target");
+                            }
+                            else field.setText(mode.equals("invalid") ? "0" : "8");
+                            return null;
+                        });
+                        Robot robot = new Robot();
+                        GuiTestSupport.screenshot(robot, dialog, work.resolve("source-lines.png"));
+                        GuiTestSupport.clickButton(robot, dialog, mode.equals("cancel") ? "Cancel" : "OK");
+                        if (mode.equals("invalid")) {
+                            var error = GuiTestSupport.dialog(MULTIFILE_EXPORT);
+                            GuiTestSupport.screenshot(robot, error, work.resolve("invalid-choice-error.png"));
+                            GuiTestSupport.clickButton(robot, error, "OK");
+                        }
+                    }
+                    if (!mode.equals("cancel") && !mode.equals("invalid")) {
+                        GuiTestSupport.operateChooser(output, work, false);
+                    }
+                }
+                catch (Exception failure) { throw new RuntimeException(failure); }
+            });
+            launchFromTable(tool, mode.equals("default") ? EXPORT : MULTIFILE_EXPORT, work.resolve("script-manager.png"));
+            interaction.get(100, TimeUnit.SECONDS);
+            awaitConsole(console, mode.equals("cancel") ? "User cancelled script." :
+                mode.equals("invalid") ? "Error running script" : "Finished!");
+            String transcript = consoleText(console);
+            Files.writeString(work.resolve("console.txt"), transcript);
+            if (mode.equals("cancel") || mode.equals("invalid")) {
+                try (var files = Files.list(output)) { GuiTestSupport.require(files.count() == 0, "refused source choice wrote outputs"); }
+                GuiTestSupport.require(!transcript.contains("native policy:"), "refused source choice loaded native producer");
+                if (mode.equals("invalid")) GuiTestSupport.require(transcript.contains("--source-lines requires a positive integer"),
+                    "invalid source choice lacks diagnostic");
+            }
+            else {
+                GuiTestSupport.require(transcript.contains("GhidraDwarfForge symbol export PASS") &&
+                    !transcript.contains("\"status\":\"FATAL\""), "GUI source layout export failed");
+                Path source = output.resolve("fixture.dbg.c");
+                var bundle = ghidradwarfforge.output.SourceBundleFiles.open(source, () -> false).orElse(null);
+                if (mode.equals("default")) {
+                    GuiTestSupport.require(bundle == null && baselineSource.equals(GuiTestSupport.sha256(source)),
+                        "multi-file selection changed subsequent ordinary export");
+                    try (var files = Files.list(output)) { GuiTestSupport.require(files.count() == 2, "ordinary export left extra parts"); }
+                }
+                else {
+                    GuiTestSupport.require(bundle != null && bundle.manifest().targetLines() == 8 && bundle.manifest().parts().size() > 1,
+                        "source target did not partition the real export");
+                    GuiTestSupport.require(bundle.manifest().logicalSourceSha256().equals(baselineSource),
+                        "partitioning changed logical source");
+                    var inventory = new java.util.TreeMap<String, String>();
+                    for (Path file : bundle.files()) inventory.put(file.getFileName().toString(), GuiTestSupport.sha256(file));
+                    try (var files = Files.list(output)) {
+                        GuiTestSupport.require(files.count() == bundle.files().size() + 1, "incomplete or extra source artifacts");
+                    }
+                    if (firstInventory == null) firstInventory = inventory;
+                    else GuiTestSupport.require(firstInventory.equals(inventory), "repeated GUI source bundle differs");
+                }
+            }
+            GuiTestSupport.require(original.equals(GuiTestSupport.sha256(input)) &&
+                baselineSidecar.equals(GuiTestSupport.sha256(baseline.resolve("fixture.dbg"))) &&
+                baselineSource.equals(GuiTestSupport.sha256(baseline.resolve("fixture.dbg.c"))),
+                "source choice changed original or prior outputs");
+            Files.writeString(work.resolve("result.txt"), "choice=" + mode + "\nresult=PASS\n");
         }
     }
 

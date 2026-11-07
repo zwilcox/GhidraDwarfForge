@@ -8,6 +8,7 @@ param(
     [string] $Formatters,
     [string] $CompressDebugSections = 'none',
     [string] $SourceContext = 'off',
+    [string] $SourceLines,
     [ValidateSet('off', 'strict', 'conditioned')] [string] $SynthesizeUnwind = 'off',
     [string] $UnwindStackSeparation,
     [ValidateSet('off', 'fixed')] [string] $UnwindRelocatedPointers = 'off',
@@ -34,6 +35,13 @@ if ($CompressDebugSections -notin @('none', 'zlib')) {
 }
 if ($SourceContext -cnotin @('off', 'assembly', 'pcode', 'both')) {
     Exit-Usage '-SourceContext must be off, assembly, pcode or both'
+}
+if ($PSBoundParameters.ContainsKey('SourceLines')) {
+    $sourceLineValue = 0
+    if ($SourceLines -cnotmatch '^[1-9][0-9]{0,9}$' -or
+            -not [int]::TryParse($SourceLines, [ref] $sourceLineValue)) {
+        Exit-Usage '-SourceLines must be an integer from 1 to 2147483647'
+    }
 }
 
 function Get-AbsoluteFilesystemPath([string] $Path) {
@@ -110,6 +118,25 @@ function Assert-LogNotInTree([string] $ProtectedDirectory) {
             (Test-Path -LiteralPath $canonical -PathType Container)) {
         foreach ($file in Get-ChildItem -LiteralPath $canonical -File -Recurse -Force) {
             Assert-LogNotAlias $file.FullName
+        }
+    }
+}
+
+function Test-SourceBundleName([string] $Name) {
+    $pattern = '^forge-src-([0-9]{6}-[0-9a-f]{64}\.c|[0-9a-f]{64}\.json)$'
+    if ($env:OS -eq 'Windows_NT') { return $Name -match $pattern }
+    return $Name -cmatch $pattern
+}
+
+function Assert-LogNotSourceBundle([string] $Directory) {
+    $canonical = Get-CanonicalPath $Directory
+    if ([string]::Equals([IO.Path]::GetDirectoryName($script:canonicalLog), $canonical,
+            $script:pathComparison) -and (Test-SourceBundleName ([IO.Path]::GetFileName($script:canonicalLog)))) {
+        Exit-Usage "log path aliases the reserved source bundle namespace: $Log"
+    }
+    if (Test-Path -LiteralPath $canonical -PathType Container) {
+        foreach ($file in Get-ChildItem -LiteralPath $canonical -Force) {
+            if (Test-SourceBundleName $file.Name) { Assert-LogNotAlias $file.FullName }
         }
     }
 }
@@ -194,6 +221,7 @@ namespace GhidraDwarfForge {
         finally { $formatterHasher.Dispose() }
         $formatterDirectory = [IO.Path]::GetDirectoryName((Get-AbsoluteFilesystemPath $selectedOutput))
         Assert-LogNotAlias (Join-Path $formatterDirectory "forge_formatters_$formatterHash.py")
+        Assert-LogNotSourceBundle $formatterDirectory
     }
     if ($projectMode) {
         Assert-LogNotAlias (Join-Path $ProjectDirectory "$ProjectName.gpr")
@@ -295,6 +323,9 @@ try {
     }
     if ($SourceContext -cne 'off') {
         $exportOptions += @("--source-context=$SourceContext")
+    }
+    if ($PSBoundParameters.ContainsKey('SourceLines')) {
+        $exportOptions += @("--source-lines=$SourceLines")
     }
     foreach ($entry in @(
         @('AnnotationRecordLimit', 'annotation-record-limit'),

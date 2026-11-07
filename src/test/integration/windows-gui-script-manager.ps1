@@ -189,6 +189,10 @@ if ($env:GHIDRA_GUI_COMPRESSION -ne '1' -and $env:GHIDRA_GUI_GDB_LOADER -ne '1')
     }
     & python (Join-Path $repository 'src/test/integration/gui-context-evidence.py') (Join-Path $work 'select/source-context') --readelf readelf.exe
     if ($LASTEXITCODE -ne 0) { throw 'GUI context line evidence differs' }
+    foreach ($mode in @('split', 'repeat', 'default')) {
+        $sourceCase = Join-Path $work "select/source-files/$mode"
+        Test-ExportedPair $sourceCase (Join-Path $work 'select/readonly/fixture') (Join-Path $sourceCase 'output/fixture.dbg')
+    }
 }
 if ($env:GHIDRA_GUI_COMPRESSION -eq '1') {
     Invoke-Validator 'readelf.exe' @('-SW', (Join-Path $work 'select/chosen/fixture.dbg')) 'export-sections'

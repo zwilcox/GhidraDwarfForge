@@ -22,9 +22,9 @@ complete source installation before sidecar publication. See
 immutable source installation and complete-bundle reads have passing local
 component checks. The underlying script now exports multiple source files; a
 local x86-64 headless fixture passes native export, modern structural validators,
-GDB cross-file stepping, moved-source lookup and deterministic reruns. Wrapper/GUI
-exposure, complete consumer retention, broader fixtures, benchmarks and hosted
-validation remain pending. No full #115 acceptance item is closed yet.
+GDB cross-file stepping, moved-source lookup and deterministic reruns. Consumer
+retention and wrapper/GUI controls now have the scoped local evidence below;
+broader fixtures, benchmarks and hosted validation remain pending. No full #115 acceptance item is closed yet.
 
 **CONFIRMED #115 consumer checkpoint:** the actual multi-file GDB companion
 passes eight local original/moved-tree and source-rule ownership cases, including
@@ -39,9 +39,19 @@ artifacts. Actual Linux ext4 installation, GNU/LLVM/pinned validation, fresh GDB
 discovery and cross-file stepping with old exports hidden, missing retained-file
 controls, failure/cancellation retries and retained-source removal pass on Java 21.
 A 5,000-file record test verifies expanded generation budgets while keeping the
-small request/state limits. Wrapper/GUI exposure, broader semantic/host fixtures,
-attachment combinations, benchmarks and the hosted gate remain pending. No full
+small request/state limits. Broader semantic/host fixtures, attachment
+combinations, benchmarks and the hosted gate remain pending. No full
 #115 acceptance item is closed.
+
+**CONFIRMED #115 option checkpoint:** Bash and PowerShell forward the optional
+positive source-line target and protect source parts/manifests from log aliases
+before launch, including old generations and future generated names. Both wrapper
+suites pass locally; PowerShell execution was on Linux. The installed Bash wrapper
+passes real export, GNU/LLVM/pinned validation and eight GDB loader cases. The
+installed Linux/Java 21 Script Manager journey passes cancellation, invalid input,
+repeated multi-file output and unchanged subsequent single-file export. Its real
+artifacts pass validators and GDB name/type/source/stepping checks. Windows and
+broader target acceptance remain pending; no full #115 requirement is closed.
 
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming
