@@ -24,7 +24,10 @@ installation exposed a lock readback defect, and independent Linux testing
 found a lost-lock defect in the old second-handle verification. The corrected
 Linux lock passes isolated and transaction tests; native Windows isolated
 locking now passes job `128226945808` at head `7b7c6ab`. Full Windows installer
-lifecycle acceptance remains **PRESENT, UNVERIFIED**. See [locking evidence](evidence/build-id-locking.json).
+lifecycle acceptance remains **PRESENT, UNVERIFIED**: the corrected lock reaches
+validation, where the selected MinGW readelf loses the Unicode path. The MSYS2
+GNU readelf selection and direct path controls await native acceptance. See
+[the validator-path receipt](evidence/windows-build-id-validator-paths.json). See [locking evidence](evidence/build-id-locking.json).
 The downstream consumer must use actual Windows-installed
 artifacts and explicit source-path substitution after transfer. Linux simulations
 or cross-compilation do not satisfy those checks.

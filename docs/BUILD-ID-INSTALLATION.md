@@ -188,3 +188,21 @@ directory. **PRESENT, UNVERIFIED:** this downstream installer harness awaits
 actual native Windows artifacts. An independent compiler fixture confirms GDB's
 Windows-path substitution behavior with Unicode, spaces, quotes and a dollar
 sign; that control is not Windows installer acceptance.
+
+
+### Windows GNU validator path prerequisite
+
+**CONFIRMED failure; replacement tool selection PRESENT, UNVERIFIED:** the
+MinGW GNU readelf used in run `42314434393` loses Unicode characters in the
+selected debug root and cannot open the installed derivative. Installation
+refuses publication and retains its evidence. Selecting arbitrary GNU readelf
+versions does not establish Unicode or long-path compatibility.
+
+The CI candidate selects `<MSYS2>/usr/bin/readelf.exe` from the `binutils`
+package, while retaining MinGW LLVM and the pinned strict checker. A direct
+native Windows probe compares compiler ELF interpretation on ASCII, Unicode
+and long paths, checks malformed-input refusal, and records the separate
+MinGW control. Full Java supervisor and installer tests are still required;
+the direct-tool probe alone will not establish production acceptance. This
+selection neither modifies the supplied executable nor bypasses validation.
+See [the failure receipt](evidence/windows-build-id-validator-paths.json).

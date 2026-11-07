@@ -300,6 +300,7 @@ jobs:
           update: true
           install: >-
             base-devel
+            binutils
             curl
             git
             mingw-w64-x86_64-toolchain
@@ -360,6 +361,20 @@ jobs:
             --compiler $env:FORGE_VALIDATION_CLANG --clang-target x86_64-linux-gnu `
             --results build/test-results/native-windows/strict-checker-runtime
           if ($LASTEXITCODE -ne 0) { throw 'Native Windows DWARF checker controls failed' }
+
+      - name: Locate GNU readelf path controls
+        run: |
+          printf 'FORGE_VALIDATION_READELF=%s\n' "$(cygpath -w /usr/bin/readelf.exe)" >> "$GITHUB_ENV"
+          printf 'FORGE_MINGW_READELF=%s\n' "$(cygpath -w /mingw64/bin/readelf.exe)" >> "$GITHUB_ENV"
+
+      - name: Check GNU readelf on native Windows Unicode and long paths
+        shell: pwsh
+        run: |
+          python src/test/integration/windows-readelf-paths.py `
+            --readelf $env:FORGE_VALIDATION_READELF --mingw-readelf $env:FORGE_MINGW_READELF `
+            --compiler $env:FORGE_VALIDATION_CLANG `
+            --results build/test-results/native-windows/readelf-paths
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows GNU readelf path controls failed' }
 
       - uses: actions/upload-artifact@v7
         if: always() && steps.windows-checker-build.outcome == 'success'
@@ -3050,6 +3065,7 @@ jobs:
           msystem: MINGW64
           update: true
           install: >-
+            binutils
             mingw-w64-x86_64-binutils
             mingw-w64-x86_64-llvm
             mingw-w64-x86_64-gcc
@@ -3130,6 +3146,8 @@ jobs:
             & .\gradlew.bat --version
             '[readelf]'
             & readelf.exe --version
+            '[installation-readelf]'
+            & (Join-Path $env:MSYS2_LOCATION 'usr\bin\readelf.exe') --version
             '[llvm-dwarfdump]'
             & llvm-dwarfdump.exe --version
           } 2>&1 | Tee-Object -FilePath "$resultDirectory\tool-versions.txt"
@@ -3320,7 +3338,7 @@ jobs:
             --sidecar build/test-results/windows-host/work/semantic.exec.ghidra-forge.dbg `
             --report-log build/test-results/windows-host/headless.log `
             --helper native-windows/forge-validator-supervisor.exe `
-            --readelf (Join-Path $mingwBin 'readelf.exe') `
+            --readelf (Join-Path $env:MSYS2_LOCATION 'usr\bin\readelf.exe') `
             --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe') `
             --checker-bundle validation-tool-windows `
             --results build/test-results/windows-host/attachment-operation

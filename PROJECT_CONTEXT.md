@@ -1,5 +1,18 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED #109 Windows validator path failure (2026-11-06):**
+run `42314434393` passes the lock checks and reaches derived-artifact validation,
+where MinGW GNU readelf renders the Unicode installation directory as `?` and
+reports a missing file. The original/export hashes remain bound and no public
+registration is written. The CI candidate selects MSYS2's GNU readelf and adds
+independent ASCII/Unicode/long-path compiler-ELF controls plus malformed-input
+refusal before the installer runs. This tool selection is **PRESENT, UNVERIFIED**
+until native tests and the full supervisor/installer workflow pass. No validator
+is skipped and the original executable is unchanged. See
+`docs/evidence/windows-build-id-validator-paths.json`. Full #109 acceptance remains
+open; earlier isolated-lock success is not full Windows installation acceptance.
+
+
 **CONFIRMED #109 sampled perf characterization (2026-11-06):**
 required job `128221726634` in run `42312429042` records actual x86-64 exec/PIE
 samples with perf 6.8.12. Compiler ELF-symbol controls resolve the hot function;

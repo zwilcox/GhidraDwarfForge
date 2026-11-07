@@ -1,0 +1,41 @@
+{
+    "status": "CONFIRMED_NATIVE_WINDOWS_VALIDATOR_PATH_FAILURE_CANDIDATE_UNVERIFIED",
+    "date": "2026-11-06",
+    "issue": 109,
+    "head": "7b7c6ab26e7000c19efbc611d80460f711614200",
+    "run": 42314434393,
+    "job": 128227820016,
+    "artifact": 13551925336,
+    "archiveSha256": "b823ca170d1bc42b037b5fc74a0984129822a6d8a0b487354ab42e14365dcf88",
+    "observed": [
+        {
+            "path": "windows-host/build-id-installation/debug root \u03bb \u96ea 'quote' $literal/.forge-build-id/v1/3babcbaddc336a3a04c489fc649ff555afa87159/generations/9584e0e4-8fc3-4d42-a446-59e7d15c1ee6/.forge-attachment-validation-2288591707410517389/.forge-validation-13477409281965122744/tool.stderr",
+            "text": "readelf: Error: 'D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\windows-host\\build-id-installation\\debug root ? ? 'quote' $literal\\.forge-build-id\\v1\\3babcbaddc336a3a04c489fc649ff555afa87159\\generations\\9584e0e4-8fc3-4d42-a446-59e7d15c1ee6\\installed.debug': No such file\r\n",
+            "status": {
+                "schemaVersion": 1,
+                "reason": "tool_error",
+                "exitCode": 1,
+                "exitSignal": 0,
+                "cleanupComplete": true,
+                "stdoutObserved": 0,
+                "stdoutRetained": 0,
+                "stderrObserved": 283,
+                "stderrRetained": 283
+            }
+        }
+    ],
+    "retainedInputsMatchExportReport": {
+        "original": "68a3cec9be4183c88c001c77be28fc0da5061fd3399937664d7cfa94d14f07f5",
+        "sidecar": "dee36549098e3c43ea6ccab8d92b1b4e6d05f5a69660cce09c0a62e59581af66",
+        "source": "a81bf40b5e6f7dbe5f8e2291d53aef0b7269fc95b9d46279293976778b2816cc"
+    },
+    "publishedRegistration": false,
+    "candidate": "Select the MSYS2 binutils GNU readelf executable for Windows attachment/installation. Add native direct-process compiler ELF controls for ASCII, Unicode and >360-character paths, with unchanged inputs and malformed-ELF rejection. Keep the MinGW executable as an independent control. Production Java validator selection and mandatory GNU/LLVM/libdwarf gates remain unchanged.",
+    "candidateStatus": "PRESENT, UNVERIFIED: Python syntax/actionlint/diff checks pass; native direct-tool and full supervisor/installer results still required.",
+    "references": [
+        "https://www.msys2.org/docs/filesystem-paths/",
+        "https://packages.msys2.org/packages/binutils",
+        "https://learn.microsoft.com/en-us/windows/win32/sbscs/application-manifests#activecodepage"
+    ],
+    "limits": "The failure shows lost characters and a missing-file error. The full long path may impose an additional constraint; isolated controls must distinguish these cases. No production readelf binary or original executable is patched."
+}
