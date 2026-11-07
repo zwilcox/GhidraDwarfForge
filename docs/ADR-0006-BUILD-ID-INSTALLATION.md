@@ -1,8 +1,16 @@
 # ADR-0006: Explicit build-ID installation with retained source generations
 
-- Status: Selected transaction; local Linux checkpoint, full acceptance pending
-- Date: 2026-11-06
+- Status: Implemented with scoped Linux/Windows validation; combined acceptance pending
+- Date: 2026-11-07
 - Tracking: #109
+
+The production command, native Windows installer/recovery and corrected hosted
+GDB consumer now have passing evidence. Linux installation and the distinct
+LLDB/perf behavior have the scoped evidence in the
+[acceptance map](BUILD-ID-ACCEPTANCE.md). The complete five-target gate, final
+artifact review and protected integration remain required. The component
+checkpoints below preserve their original validation scope; they do not replace
+the current acceptance map or announce a release.
 
 ## Requirement and evidence
 
@@ -58,7 +66,8 @@ source lookup. The actual producer sections pass 210 refusal controls and
 5,108 cancellation boundaries. Independent checks preserve the complete line
 program, existing strings, DIE offsets and all original input hashes. The latest
 smoke checks also prove deterministic repeats and idempotent relocation.
-The full new-head hosted gate remains **PRESENT, UNVERIFIED**.
+This source-transformer checkpoint did not establish the complete hosted gate;
+current installation acceptance is tracked separately above.
 
 The initial oracle used an independent test-only ELF packager. **CONFIRMED
 locally:** the production `SyntheticSourceSidecar` now writes an unpublished
@@ -107,13 +116,14 @@ installer's native host or publication contract.
   and any later explicit pruning operation. Do not delete user-selected inputs
   or unrelated files. Interrupted preparation/recovery must never guess ownership.
 
-**CONFIRMED local checkpoint:** the internal transaction, generation verification,
+**HISTORICAL local checkpoint:** the internal transaction, generation verification,
 OS locks, publication/update/removal and recovery now pass failure-injection tests
 with the model host and a production Linux ext4 host. See
 [BUILD-ID-TRANSACTION.md](BUILD-ID-TRANSACTION.md) for the exact host contract,
 retention policy and evidence. This supersedes earlier implementation-gap notes
-above for those mechanisms only. Public launcher, Windows installer acceptance,
-remaining identity/consumer cases and protected integration are still required.
+above for those mechanisms only. It did not establish public-launcher, Windows
+installer or full consumer acceptance. The current command and native-host
+results are recorded in the acceptance map; protected integration is still pending.
 The installer must report actual host durability limits and propagate sync failures.
 
 ## Consumers and completion

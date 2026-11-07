@@ -1,10 +1,15 @@
 # Validation evidence for a source-relocated artifact
 
-**CONFIRMED locally; production host/installation acceptance pending:** a
+**CONFIRMED component contract:** a
 relocated sidecar has different bytes from the reported export. Its original
 report remains provenance for the export, not a certificate for the new bytes.
 `ArtifactValidationBinding` preserves that distinction before the existing
 GNU/LLVM/pinned-libdwarf policy executes.
+
+This document records the component checkpoint. Subsequent production Linux
+and native Windows installer results, including current hosted consumption of
+Windows-installed files, are tracked in the [acceptance map](BUILD-ID-ACCEPTANCE.md).
+The complete target gate and protected integration remain pending there.
 
 The original four selected files first pass `AttachmentExportBinding`: report
 hash agreement, ELF prefix/allocation/build identity/target agreement and host

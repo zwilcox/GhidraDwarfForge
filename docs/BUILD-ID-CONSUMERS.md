@@ -9,8 +9,9 @@ This is a compression/generation refresh test; actual analyst name/type/member
 edits have separate GDB coverage in the Linux command acceptance.
 
 The receipt is [build-id-consumers.json](evidence/build-id-consumers.json).
-Hosted acceptance, native Windows installation and protected integration remain
-outstanding. These tests do not extend LLDB's validated target profile to ARM32
+The full latest-head hosted gate and protected integration remain outstanding.
+Native Windows installation/recovery has separate passing evidence in the
+[installation acceptance map](BUILD-ID-ACCEPTANCE.md). These tests do not extend LLDB's validated target profile to ARM32
 or MIPS, or establish sectionless automatic discovery.
 
 ## LLDB
@@ -152,9 +153,10 @@ The hosted report's missing `tips.txt` footer concerns the tool's auxiliary tips
 file; report stderr is empty. Original compiler-frame diagnostics are separately
 corroborated as recorded in the receipt.
 
-The enclosing CI run is not full acceptance: its architecture jobs stopped at
-a missing fixture inventory entry. The correction and production lock fix must
-pass the complete latest-head gate, including native Windows installation.
+That initial recording run is historical: its architecture jobs stopped at
+a missing fixture inventory entry, now corrected. Native Windows installation
+with the production lock fix subsequently passed. Full acceptance still requires
+the complete latest-head target, host and downstream-consumer gate.
 
 ## Reproduce
 

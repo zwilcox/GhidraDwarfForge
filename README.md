@@ -277,8 +277,10 @@ build ID. Local integration proves discovery and rejects a sidecar carrying a
 different image's build ID. The development
 [`ghidra-dwarf-forge-build-id` command](docs/BUILD-ID-INSTALLATION.md) explicitly
 installs, updates or removes a verified export while retaining its source.
-Its Linux command is locally validated; Windows installer and full consumer/CI
-acceptance remain pending. Ordinary export does not install automatically.
+Its Linux command is locally validated; native Windows installation/recovery
+and the hosted GDB consumer of Windows-installed artifacts also pass. Full
+five-target CI acceptance and integration remain pending. Ordinary export does not
+install automatically.
 Inputs without build IDs make no identity claim and remain supported through
 explicit `symbol-file` loading.
 

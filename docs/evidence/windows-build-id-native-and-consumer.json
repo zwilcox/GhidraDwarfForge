@@ -89,10 +89,17 @@
         "powershell-unwind-gdb=PASS producer=Windows"
     ],
     "remaining": [
-        "Full generation-manifest and strict raw validation audit",
         "Latest-head hosted consumer and complete target/host gate",
         "Final documentation and normal protected integration",
         "Full original goal requirement audit"
     ],
-    "limits": "Local consumer replay uses exact artifacts from the actual successful native Windows installer; it is not a local Windows installation test. Native pass and corrected local consumers do not establish complete latest-head CI acceptance."
+    "limits": "Local consumer replay uses exact artifacts from the actual successful native Windows installer; it is not a local Windows installation test. Native pass and corrected local consumers do not establish complete latest-head CI acceptance.",
+    "rawGenerationReview": {
+        "generations": 25,
+        "manifestFiles": 1050,
+        "supervisedValidatorExecutions": 175,
+        "strictReportsReparsed": 50,
+        "sourceAndOriginalFrameBytesChecked": true,
+        "receiptSha256": "38a6203ecff8a8920cbbd818ac04e4a983e880cd38fb061c822b993c933fefba"
+    }
 }

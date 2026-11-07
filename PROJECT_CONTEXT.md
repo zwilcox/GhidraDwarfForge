@@ -1,19 +1,28 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-**CONFIRMED native #109 installation and consumer harness correction (2026-11-06):**
-Windows host job `128245436720` passes real installation/update/removal and
-interrupted recovery. Raw review binds 73 checks, 14 interruption cases, two
-metadata comparisons and 22 protected inputs. The downstream job then exposed
-a test defect: its unmapped-source oracle searched only global symbols, while
-the exported function is file-local. Exact-artifact reproduction finds the
-function at the correct address; the corrected oracle and stale-name controls
-check both symbol scopes. Local replay of both native Windows generations passes
-GNU/LLVM/strict validation, two GDB runtime sessions and four controls. The
-remaining skipped GUI/unwind consumers also pass local replay. These are scoped
-results, not a passing combined gate: latest-head hosted consumer validation,
-complete generation/validator artifact review, target gates and protected
-integration remain required. See `docs/evidence/windows-build-id-native-and-consumer.json`.
-Earlier Windows-installer-unverified notes below are historical within this scope.
+**CONFIRMED #109 integration-harness locale failure and local correction
+(2026-11-07 UTC):** run `42324179974` fails MIPS little-endian floating-register
+validation because the harness forces `LC_ALL=C`, giving Java an ASCII native
+filesystem encoding. The audited Linux directory host correctly refuses it.
+The harness now selects `C.UTF-8`; production admission is unchanged. An isolated
+exact-package reproduction confirms both the refusal and correction. With ambient
+`LC_ALL=C`, twelve fresh plain/zlib non-PIE/PIE exports pass structural and QEMU/GDB
+checks, plus four source-relocation and four derived-validation cases. See
+`docs/evidence/build-id-linux-locale.json`. A corrected full hosted gate is still
+required; the passing Windows jobs below do not make the failed run acceptable.
+
+**CONFIRMED current #109 Windows installer and hosted consumer (2026-11-07 UTC):**
+At `9d1ce2c`, run `42324179974` passes native Windows host job `128258785813`
+and corrected downstream GDB job `128265920142`. Independent review verifies
+73 native checks, 14 interruptions, 25 retained generations, 1,050 manifest files,
+175 supervised validator executions and 50 strict original/sidecar reports.
+The actual installed initial/analyst-curated artifacts pass two fresh GDB runtime
+sessions and four controls, including file-local lookup and transferred-source
+mapping. Shared consumer regression review checks 13 strict reports, 2,959 hash
+bindings and compiler/Forge unwind traces. The five-target gate, final artifact
+review and protected integration remain outstanding. See
+`docs/evidence/windows-build-id-current-acceptance.json`. Earlier pending Windows
+notes are historical within this scope; this does not complete the overall goal.
 
 **CONFIRMED #109 Windows validator path failure (2026-11-06):**
 run `42314434393` passes the lock checks and reaches derived-artifact validation,

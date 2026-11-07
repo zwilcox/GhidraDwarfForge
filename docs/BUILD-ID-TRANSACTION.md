@@ -1,11 +1,13 @@
 # Build-ID installation transaction checkpoint
 
-Tracking: #109. **CONFIRMED locally:** the transaction, packaged public command
-and Linux ext4 host pass the checks below. Windows installer acceptance, the
-remaining consumer matrix and protected integration are incomplete. This is not
-a completed installer feature or a release claim. See the
-[command guide](BUILD-ID-INSTALLATION.md) and
-[latest Linux receipt](evidence/build-id-command-linux.json).
+Tracking: #109. **CONFIRMED:** the transaction and packaged public command have
+local Linux ext4 validation and native Windows installation/recovery acceptance.
+The current hosted GDB consumer of Windows-installed files also passes. The
+complete five-target gate, final artifact review and protected integration remain
+outstanding. This is not a release claim. See the
+[command guide](BUILD-ID-INSTALLATION.md), [current acceptance map](BUILD-ID-ACCEPTANCE.md),
+[Linux receipt](evidence/build-id-command-linux.json) and
+[current Windows receipt](evidence/windows-build-id-current-acceptance.json).
 
 ## Contract
 
@@ -74,9 +76,9 @@ export's metadata separately. Hidden attributes and access/change/birth times
 are not preservation claims. This distinct contract does not weaken the stricter
 executable-modifying attachment host.
 
-The probe can also select the existing Windows host, but **PRESENT, UNVERIFIED**
-applies to installer use of that host. Its attachment tests do not prove Windows
-installation, locking, generation records or recovery.
+The existing Windows host now has separate installer acceptance, including
+locking, generation records, native metadata and interrupted recovery. Attachment
+tests alone do not establish those results; see the current Windows receipt above.
 
 ## Historical transaction-only validation
 
@@ -146,9 +148,10 @@ use only the installation and retained source with old exports absent.
 
 The [shared/sectionless checkpoint](BUILD-ID-LAYOUTS.md) now covers all five
 targets, with an independently demonstrated GDB sectionless-discovery limitation
-and separately validated explicit fallback. Installation-specific LLDB/perf,
-native Windows acceptance and protected integration remain outstanding. The
-workflow now invokes the production Linux matrix and saved-program refresh tests,
-but the updated hosted gate is not yet accepted. The Windows command is present
-and explicitly unverified. Retained component tests do not establish those
-remaining requirements.
+and separately validated explicit fallback. Installation-specific LLDB and
+offline perf have [local consumer evidence](BUILD-ID-CONSUMERS.md), while actual
+perf recordings establish a documented sample-name limitation. Native Windows
+installation and the corrected hosted consumer pass at `9d1ce2c`. The workflow
+invokes the production Linux matrix and saved-program refresh tests; its complete
+five-target gate, final artifact review and protected integration remain
+outstanding. Retained component tests do not establish those remaining results.

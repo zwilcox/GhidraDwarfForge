@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export LC_ALL=C
+# Keep stable English diagnostics while Java's native filesystem paths remain
+# UTF-8 for the audited Linux directory and derived-artifact validation hosts.
+export LC_ALL=C.UTF-8
 if [[ $# -lt 3 ]]; then
     echo "usage: $0 <ghidra-dir> <libdwarf> <libdwarfp> [target ...]" >&2
     exit 64

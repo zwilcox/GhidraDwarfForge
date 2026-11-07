@@ -1,10 +1,10 @@
 # Install a Forge export by build ID
 
 **Development status:** the Linux command has local end-to-end validation,
-and Windows native installation/recovery tests pass. Corrected downstream GDB
-checks pass local replay of the retained Windows artifacts. Full latest-head
-consumer/target validation, final artifact review and protected integration
-remain outstanding. See the [native and consumer receipt](evidence/windows-build-id-native-and-consumer.json)
+and Windows native installation/recovery plus hosted downstream GDB checks pass
+at `9d1ce2c`. The complete five-target gate, final artifact review and protected
+integration remain outstanding. See the
+[current Windows receipt](evidence/windows-build-id-current-acceptance.json)
 and [Linux command receipt](evidence/build-id-command-linux.json).
 
 Installation associates an export with the original ELF's existing build ID.
@@ -88,8 +88,9 @@ other desired search roots yourself if needed. Installation does not modify
 GDB configuration or populate perf's separate cache. Installation-specific
 LLDB and offline perf lookup now pass locally for x86-64/AArch64 exec and PIE;
 see [consumer setup, cache rules and limitations](BUILD-ID-CONSUMERS.md).
-Hosted acceptance remains pending, and perf event/report symbolization has not
-been established by those offline tests.
+Hosted acceptance remains pending. Separate native x86-64 recordings with
+compiler controls confirm that the tested perf sample reports do not recover
+Forge function names; offline source lookup does not imply sample-name support.
 
 The installed DWARF points at a retained source generation within the root.
 The original export directory can disappear without losing that source. Keep
@@ -149,15 +150,17 @@ contract. `-EnableSecurityPrivilege` explicitly enables an already assigned
 token privilege for that host and restores it afterward; it does not obtain
 an administrator token.
 
-**CONFIRMED scoped native validation:** host job `128245436720` passes actual
+**CONFIRMED scoped native validation:** host job `128258785813` passes actual
 headless and saved-analyst-refresh exports followed by the packaged installer.
 Raw review verifies 73 command checks, 14 interrupted lifecycle boundaries,
 metadata comparisons for both generations, and 22 protected-input bindings.
 Controls cover explicit null-SACL refusal, locking, cancellation, foreign
 registrations, junctions, hard links and alternate streams. Native raw metadata
 and command observations are not a local replay of Windows filesystem behavior.
-Full generation/validator evidence review and the latest combined gate remain
-required; see the [acceptance map](BUILD-ID-ACCEPTANCE.md).
+Independent review also verifies all 25 retained generations: 1,050 manifest
+files, 175 supervised validator executions and 50 strict original/sidecar
+reports, with original frame bytes and retained source checked. The latest
+combined gate remains required; see the [acceptance map](BUILD-ID-ACCEPTANCE.md).
 
 The earlier DACL-fixture and second-handle lock failures are resolved in this
 native run. Their reproductions and corrections remain recorded in the
@@ -189,8 +192,8 @@ registrations and unmapped source paths are separate negative controls.
 The first hosted consumer failed because the new unmapped-source oracle searched
 only global symbols. Exact-artifact reproduction resolves the expected file-local
 function at the correct address. The corrected test and stale-name controls use
-both global and static lookup. Local replay now passes two runtime sessions and
-four controls; the skipped compressed-GUI and unwind consumers also pass.
-This does not claim native Windows execution of the Linux ELF. Latest-head hosted
-consumer validation and protected integration remain outstanding. See the
-[native artifact and consumer receipt](evidence/windows-build-id-native-and-consumer.json).
+both global and static lookup. Local replay and current hosted consumer job
+`128265920142` pass two runtime sessions and four controls; the compressed-GUI
+and unwind consumers also pass. This does not claim native Windows execution
+of the Linux ELF. The five-target gate and protected integration remain
+outstanding. See the [current native artifact and consumer receipt](evidence/windows-build-id-current-acceptance.json).

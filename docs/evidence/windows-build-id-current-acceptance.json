@@ -1,0 +1,82 @@
+{
+    "status": "CONFIRMED_CURRENT_WINDOWS_INSTALLER_AND_HOSTED_CONSUMER_FULL_TARGET_GATE_PENDING",
+    "issue": 109,
+    "testedHead": "9d1ce2c4182ac798b21180ff891bd237fd77b05c",
+    "run": 42324179974,
+    "nativeHostJob": 128258785813,
+    "nativeHostConclusion": "success",
+    "downstreamConsumerJob": 128265920142,
+    "downstreamConsumerConclusion": "success",
+    "artifacts": {
+        "windows-host-validation": {
+            "id": 13555516908,
+            "sha256": "sha256:bf18ff2b99e95a95d2e19ac0072575ed4a56271a1146c28478f0f4cc111efbf7",
+            "bytes": 19016302
+        },
+        "windows-attachment-gdb-diagnostics": {
+            "id": 13555397245,
+            "sha256": "sha256:983f5cedddbb85bb83bd8ca6fa195f2e5b74c85d4a3b68bd7d1917e62e168433",
+            "bytes": 4742793
+        }
+    },
+    "reviews": {
+        "windows-installer-check-review.json": {
+            "status": "PASS_SCOPED_NATIVE_WINDOWS_INSTALLER_CHECK_REVIEW",
+            "sha256": "73b9bc626a5f2b9c6949dfb681ed61aa18758135bb0e9260018b38710da7908c"
+        },
+        "windows-generation-review.json": {
+            "status": "PASS_NATIVE_WINDOWS_GENERATION_VALIDATION_AUDIT",
+            "sha256": "cf8b82cce3aac3b1257d8f60ce6527d964f78d3351a320ec73eeb2266a8014c8"
+        },
+        "windows-consumer-review.json": {
+            "status": "PASS_CORRECTED_HOSTED_WINDOWS_CONSUMER_RAW_REVIEW",
+            "sha256": "0ad56c90d12d1842cee2567a3ad9f695929f6677ad6804b2f7913f8e2498acde"
+        },
+        "windows-regression-consumer-review.json": {
+            "status": "PASS_WINDOWS_DOWNSTREAM_REGRESSION_ARTIFACT_REVIEW",
+            "sha256": "52f0c3c5477c70cf5e249e57b18a70ef09d3343fca22856b50ba72eb6a77b528"
+        }
+    },
+    "nativeInstaller": {
+        "rawCommandChecks": 73,
+        "interruptionCases": 14,
+        "metadataComparisons": 2,
+        "protectedInputs": 22,
+        "retainedGenerations": 25,
+        "generationManifestFiles": 1050,
+        "supervisedValidatorExecutions": 175,
+        "strictOriginalAndSidecarReports": 50
+    },
+    "buildIdConsumer": {
+        "commands": 18,
+        "runtimeSessions": 2,
+        "controls": 4,
+        "protectedInputs": 8,
+        "observations": [
+            "Fresh GDB build-ID discovery of initial and analyst-curated generations without explicit symbol loading",
+            "Exact function addresses, signatures, structures and curated member names",
+            "Explicit source substitution after Windows-to-Linux transfer",
+            "Arguments left=19 and right=23, breakpoint hit and normal exit",
+            "Empty and removed registrations do not supply recovered symbols",
+            "Unmapped source still resolves the file-local function but cannot list its source"
+        ]
+    },
+    "sharedRegressionReview": {
+        "positiveStrictReports": 13,
+        "verifiedHashBindings": 2959,
+        "ordinaryBoundaryComparisons": 4,
+        "instructionSnapshotsPerComparison": 90,
+        "recursiveReturnComparisons": 4
+    },
+    "productionJarSha256": "668745d239d243cebf59d58b68b619c987647ad9f0164f116443f526f953fef5",
+    "remaining": [
+        "Complete current five-target gate and its artifact review",
+        "Final documentation and normal protected PR186 integration",
+        "Original44-requirement goal closure audit"
+    ],
+    "limits": [
+        "Native Windows host executes the installer and metadata/recovery checks. Linux executes the transferred Linux ELF; no native Windows Linux-ELF execution is claimed.",
+        "Windows source paths require explicit GDB substitution after transfer.",
+        "This scoped pass does not complete the enclosing run or authorize a release."
+    ]
+}

@@ -1,11 +1,15 @@
 # Relocating source references in a matched sidecar
 
-**CONFIRMED locally; full hosted acceptance pending:** `SyntheticSourceSidecar` prepares and writes
+**CONFIRMED component contract:** `SyntheticSourceSidecar` prepares and writes
 an unpublished ELF stage for build-ID installation. It consumes a stable current
 Forge sidecar and the eventual retained-source directory. It does not install a
 file, verify an original/report pair, copy permissions, synchronize a directory,
 or authorize replacement of any existing artifact. Those obligations belong to
 the installation transaction described in ADR-0006.
+
+This document preserves the source-container checkpoint's scope. See the
+[current installation acceptance map](BUILD-ID-ACCEPTANCE.md) for subsequent
+production host and consumer results and the remaining combined gate.
 
 The writer requires a non-loadable ELF with exactly one ordinary or gABI zlib
 `.debug_info`, `.debug_abbrev`, `.debug_str` and `.debug_line`. Source sections
