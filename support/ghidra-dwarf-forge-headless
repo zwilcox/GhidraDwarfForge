@@ -113,7 +113,12 @@ validate_log_path() {
         reject_log_alias "$selected_output.unwind.json"
         formatter_hash=$(printf '%s' "${selected_output##*/}" | sha256sum) || die_usage "cannot derive formatter filename"
         formatter_hash=${formatter_hash%% *}
-        formatter_directory=$(dirname -- "$selected_output")
+        # Command substitution strips trailing newlines from directory names.
+        # Preserve every byte so symlink/hard-link log aliases remain protected.
+        case "$selected_output" in
+            */*) formatter_directory=${selected_output%/*}; formatter_directory=${formatter_directory:-/} ;;
+            *) formatter_directory=. ;;
+        esac
         reject_log_alias "$formatter_directory/forge_formatters_$formatter_hash.py"
     fi
     if ((project_mode)); then

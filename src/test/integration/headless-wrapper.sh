@@ -262,4 +262,29 @@ run_status 0 SUCCESS 0 --import="$input" --log="$work/independent-hardlink.log"
 )
 sha256sum -c "$work/protected.sha256" >"$work/preservation.txt"
 
+# A newline at the end of a directory component must not disappear while
+# deriving the generated formatter path. The log can reach it through an alias
+# in an ordinary directory even when the direct unusual log path is refused.
+special_directory="$work/"$'formatter-directory\n'
+mkdir -p "$special_directory"
+special_output="$special_directory/linebreak.dbg"
+special_hash=$(printf '%s' linebreak.dbg | sha256sum)
+special_hash=${special_hash%% *}
+special_formatter="$special_directory/forge_formatters_$special_hash.py"
+printf 'formatter generation sentinel\n' > "$special_formatter"
+cp "$special_formatter" "$work/formatter-expected.txt"
+for kind in hard symbolic; do
+    special_log="$work/formatter-$kind.log"
+    if [[ "$kind" == hard ]]; then
+        ln -- "$special_formatter" "$special_log"
+    else
+        ln -s -- "$special_formatter" "$special_log"
+    fi
+    rm -f "$argument_log"
+    run_status 64 SUCCESS 0 --import="$input" --output="$special_output" --log="$special_log"
+    test ! -e "$argument_log"
+    cmp "$work/formatter-expected.txt" "$special_formatter"
+    grep -Fq 'log path aliases a protected input/output file' "$work/error.txt"
+done
+
 echo headless-wrapper=PASS

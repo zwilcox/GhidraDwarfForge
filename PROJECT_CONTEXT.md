@@ -56,6 +56,15 @@ byte-identical artifacts per target). The exact inventory guard is retained;
 see `docs/evidence/formatter-fixture-inventory.json`. The complete hosted gate
 and native Windows formatter acceptance remain pending.
 
+**CONFIRMED local formatter-log protection correction:** an owned reproduction
+showed that a log hard link could overwrite the formatter companion when its
+parent directory ended in a newline. Command substitution removed the newline
+while computing the protected companion path; the original ELF was unchanged.
+The Bash wrapper now preserves directory bytes using parameter expansion. The
+full wrapper suite passes, including hard-link and symlink rejection before
+Ghidra launches and companion-byte preservation. Final hosted validation remains
+required; see `docs/evidence/formatter-log-directory-newline.json`.
+
 **Remaining:** finish the complete current-revision architecture profiles and
 native Windows production/consumer validation; review the hosted required gate,
 update final acceptance evidence and integrate through a protected PR. The new
