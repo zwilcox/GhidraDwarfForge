@@ -55,6 +55,9 @@ def gdb_checks(reference):
         printer = gdb.default_visualizer(value)
         assert printer is not None and printer.to_string() == expected, (name, printer.to_string())
     check_label(gdb.default_visualizer(gdb.parse_and_eval('forge_text')).to_string())
+    unavailable = gdb.parse_and_eval('forge_unavailable')
+    assert unavailable.is_optimized_out or getattr(unavailable, 'is_unavailable', False)
+    assert fmt._summary(fmt._GdbView(unavailable)) == '<unavailable>'
     choice = gdb.default_visualizer(gdb.parse_and_eval('forge_choice'))
     assert choice is not None and choice.to_string() == '{selected=7}'
     assert gdb.default_visualizer(gdb.parse_and_eval('forge_other_choice')) is None
@@ -102,6 +105,9 @@ def lldb_checks(debugger, reference):
         value = target.FindFirstGlobalVariable(name)
         assert value.IsValid() and value.GetSummary() == expected, (name, value.GetSummary())
     check_label(target.FindFirstGlobalVariable('forge_text').GetSummary())
+    unavailable = target.GetProcess().GetSelectedThread().GetSelectedFrame().FindVariable('forge_unavailable')
+    assert unavailable.IsValid() and unavailable.GetError().Fail()
+    assert fmt._summary(fmt._LldbView(unavailable)) == '<unavailable>'
     assert target.FindFirstGlobalVariable('forge_choice').GetSummary() == '{selected=7}'
     assert target.FindFirstGlobalVariable('forge_other_choice').GetSummary() is None
     assert target.FindFirstGlobalVariable('forge_ambiguous').GetSummary() is None

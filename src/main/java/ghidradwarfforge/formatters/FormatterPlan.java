@@ -130,6 +130,7 @@ public record FormatterPlan(Map<String, String> aliases, List<Rule> rules) {
             _sys.modules[_name] = _runtime
             exec(compile(_base64.b64decode('%s'), '<Forge formatter runtime>', 'exec'), _runtime.__dict__)
             _runtime.MANIFEST = _manifest
+            _runtime.bind_files(__file__)
             def __lldb_init_module(debugger, internal_dict):
                 internal_dict[_name] = _runtime
                 _runtime.register_lldb(debugger)
@@ -148,6 +149,7 @@ public record FormatterPlan(Map<String, String> aliases, List<Rule> rules) {
             throws IOException {
         var result = new LinkedHashMap<String, String>();
         result.put("path", destination.toAbsolutePath().toString());
+        result.put("name", destination.getFileName().toString());
         result.put("sha256", FileDigests.read(bytes, cancelled).sha256());
         return result;
     }

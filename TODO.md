@@ -30,12 +30,17 @@ PIE/zlib and combined five-file generation checks now pass in local runs. The
 five-target workflow includes dedicated formatter tests. PowerShell wrapper
 forwarding/log-alias tests pass on Linux; this is not native Windows evidence.
 
-**Remaining:** finish the complete current-revision architecture profiles;
-Windows production export/consumer validation and portable companion loading;
-review the hosted required gate, update final acceptance evidence and integrate
-through a protected PR. The workflow changes are not yet verified on GitHub.
-No #111 PR is open at this checkpoint. Keep the issue open until all original
-requirements and required validation pass at the final revision.
+**CONFIRMED portable checkpoint:** moved Linux artifacts pass GDB CLI/MI and
+LLDB without changing companion/ELF bytes. Missing and mismatched co-located
+files are refused instead of falling back to an older export. An explicitly
+unlocated analyst variable also exercises actual debugger unavailable-value APIs.
+Native Windows exec/PIE producer and Linux consumer stages are now present in CI.
+
+**Remaining:** finish the complete current-revision architecture profiles and
+native Windows production/consumer validation; review the hosted required gate,
+update final acceptance evidence and integrate through a protected PR. The new
+Windows stages and workflow changes remain unverified on GitHub. Keep #111 open
+until all original requirements and required validation pass at the final revision.
 
 ## Historical development log
 

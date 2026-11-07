@@ -262,6 +262,8 @@ def main():
         'target': args.target, 'role': args.role, 'compression': args.compression, 'originalSha256': original_hash,
         'selectionSha256': selection_hash, 'enabledSha256': enabled, 'defaultSha256': baseline,
         'lldb': bool(args.lldb), 'allCompanions': args.companions, 'testedSources': tested_sources,
+        'portableArtifacts': {'role': args.role, 'sidecar': sidecar.name, 'companion': companion.name,
+            'sha256': {path.name: digest(path) for path in [original, reference, selection, *enabled_outputs]}},
         'gdbVersion': subprocess.check_output(['gdb-multiarch', '--version'], text=True).splitlines()[0]}, indent=4) + '\n')
     print('formatter-export=PASS', args.target, args.role)
 

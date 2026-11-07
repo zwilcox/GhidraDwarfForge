@@ -87,6 +87,16 @@ summary after a file change. Exporting again with formatters disabled preserves
 the normal output pair and does not delete an earlier Python companion; that
 earlier companion will reject a different sidecar generation.
 
+The formatter companion can move with its matching original ELF and sidecar.
+Keep their filenames and place all three together. At the original export
+location it retains the recorded input path, allowing `--output` in another
+directory. After relocation it binds only the co-located original and sidecar;
+both must still match the recorded hashes. Missing files or different bytes are
+rejected even if the old export remains available elsewhere. This also permits
+a Windows-produced companion to be consumed by Linux GDB/LLDB. Source-file
+search paths and the separate `.gdb.py` loading companion retain their own
+documented contracts; this does not rewrite DWARF or an executable.
+
 ## Local validation checkpoint
 
 **CONFIRMED:** local production fixtures exercise GDB CLI/MI on x86-64,

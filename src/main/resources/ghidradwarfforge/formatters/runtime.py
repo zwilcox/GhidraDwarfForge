@@ -45,6 +45,26 @@ def _state(path):
     return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
 
 
+def bind_files(companion_path):
+    """A moved companion binds only the co-located, byte-identical generation.
+
+    Retain the recorded original path when loading from the export location
+    (the output directory can differ from the input directory). After moving the
+    bundle, require both named ELF files next to the script. Never search the
+    working directory, a symbol path, or a different generation by type name.
+    Hash and debugger-module verification still happen before registration.
+    """
+    directory = os.path.dirname(os.path.realpath(companion_path))
+    for artifact in (MANIFEST['original'], MANIFEST['sidecar']):
+        name = artifact['name']
+        if not name or name in ('.', '..') or os.path.basename(name) != name:
+            raise ValueError('invalid Forge formatter artifact basename')
+    sidecar = os.path.join(directory, MANIFEST['sidecar']['name'])
+    if os.path.normcase(os.path.realpath(sidecar)) != os.path.normcase(os.path.realpath(MANIFEST['sidecar']['path'])):
+        MANIFEST['original']['path'] = os.path.join(directory, MANIFEST['original']['name'])
+    MANIFEST['sidecar']['path'] = sidecar
+
+
 def _verify_files():
     if MANIFEST['schema'] != 1:
         raise ValueError('unsupported Forge formatter manifest')

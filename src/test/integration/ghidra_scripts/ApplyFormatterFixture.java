@@ -37,6 +37,10 @@ public class ApplyFormatterFixture extends GhidraScript {
         flags.add("FORGE_HIGH", 0x80000000L);
         flags.add("TEXT_\"\\\nλ\u001b[31m;raise RuntimeError('analyst text executed')", 16);
         var savedFlags = manager.resolve(flags, DataTypeConflictHandler.REPLACE_HANDLER);
+        marker.addLocalVariable(new ghidra.program.model.listing.LocalVariableImpl(
+            "forge_unavailable", 0, savedFlags, ghidra.program.model.listing.VariableStorage.UNASSIGNED_STORAGE,
+            false, currentProgram, ghidra.program.model.symbol.SourceType.USER_DEFINED),
+            ghidra.program.model.symbol.SourceType.USER_DEFINED);
         var node = new StructureDataType(category, "ForgeNode", 0, manager);
         node.setPackingEnabled(true);
         node.addBitField(new UnsignedIntegerDataType(manager), 3, "a", null);
