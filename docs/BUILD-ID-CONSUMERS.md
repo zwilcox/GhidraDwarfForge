@@ -88,12 +88,13 @@ Cache-only `perf probe` queries did not find source or variables in the tested
 version, even after a successful cache add. The explicit symfs lookup is the
 validated route. Cache manipulation alone is not proof of source discovery,
 sample symbolization or `perf report` behavior. Event recording and report
-symbolization remain **UNVERIFIED** here; the local host restricts perf events.
+symbolization are characterized separately below; the local host restricts perf
+events, so recording uses the dedicated hosted job.
 
 ## Sample and report characterization
 
-**PRESENT, UNVERIFIED:** `build-id-perf-report.py` adds an independent native
-x86-64 exec/PIE experiment, required by the `perf-build-id` CI job. It builds a
+**CONFIRMED characterization (2026-11-06):** `build-id-perf-report.py` runs an
+independent native x86-64 exec/PIE experiment, required by the `perf-build-id` CI job. It builds a
 small CPU-loop fixture, exports a saved analyst name through packaged Ghidra,
 saves a second analyst name, reopens the program and exports again. The actual
 installer installs, refreshes and removes those generations under the selected
@@ -119,6 +120,41 @@ queries; they report `PREPARED_SAMPLING_UNVERIFIED`, never sample acceptance.
 The ordinary full invocation requires permission to record events; CI explicitly
 selects `--record-with-sudo`. No unsupported recording attempt is skipped into a
 passing result.
+
+### Observed recording results
+
+The [recording receipt](evidence/build-id-perf-recording.json) binds successful
+job [128221726634](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42312429042/job/128221726634)
+to tested head `f6d1547` and its retained artifact. Hosted perf 6.8.12 recorded
+136 hot-function samples for ET_EXEC and 137 for PIE. Both controls and all
+installation phases use the same recordings.
+
+| Input at the expected build-ID path | Observed sample names |
+| --- | --- |
+| Compiler ELF with its function symbol | `profile_hot`, with compiler source lines |
+| Compiler ELF with only that function symbol removed, DWARF retained | `frame_dummy`, the remaining neighboring ELF symbol; compiler source lines still resolve |
+| Initial and refreshed Forge generations | `[unknown]` in `perf script`; raw addresses in `perf report`, without recovered names or source paths |
+| Empty root and removed registration | No recovered names |
+
+GDB independently finds the compiler DWARF-only function, and offline perf
+queries plus GDB find each installed Forge name and retained source. These
+positive checks do not establish sampled-report support. **Recovered-name perf
+sample reporting is unsupported by this tested path.** No claim about other
+perf versions or target architectures follows from these x86-64 recordings.
+
+Independent review verifies 168 files in four generation manifests, reparses
+original/export/installed strict logs with exact inherited-frame corroboration,
+and checks the retained GNU/LLVM results. Replaying the actual recordings with
+local perf 7.0.14 and exact installed sidecar bytes produces the same ordered
+sample addresses and unknown names. That replay uses separate test-owned symfs
+trees; it is a consumer replay, not another production installation test.
+The hosted report's missing `tips.txt` footer concerns the tool's auxiliary tips
+file; report stderr is empty. Original compiler-frame diagnostics are separately
+corroborated as recorded in the receipt.
+
+The enclosing CI run is not full acceptance: its architecture jobs stopped at
+a missing fixture inventory entry. The correction and production lock fix must
+pass the complete latest-head gate, including native Windows installation.
 
 ## Reproduce
 

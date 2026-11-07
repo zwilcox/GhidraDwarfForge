@@ -1,5 +1,21 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED #109 sampled perf characterization (2026-11-06):**
+required job `128221726634` in run `42312429042` records actual x86-64 exec/PIE
+samples with perf 6.8.12. Compiler ELF-symbol controls resolve the hot function;
+compiler DWARF-only controls and both installed Forge generations do not recover
+its name. Offline source queries and GDB discovery pass. An independent artifact
+audit verifies four retained generations and replays the samples with perf 7.0.14,
+confirming the same limitation. This is **not** recovered-name sample-report
+support. See `docs/evidence/build-id-perf-recording.json`. The full run also
+exposed a missing fixture inventory entry for `perf-build-id.c`; that test setup
+omission is corrected without changing the export or validation requirements.
+Native Windows isolated locking also passes job `128226945808`, with raw logs
+and source/package provenance inspected. Full Windows installer lifecycle and
+the complete latest-head gate remain outstanding. Earlier sampling-unverified
+and isolated-lock-unverified notes below are historical.
+
+
 **CONFIRMED #109 lock defects and local Linux correction (2026-11-06):**
 the corrected Windows SACL fixture passes, then native installation exposes a
 production lock readback failure: Windows rejects reading the exclusively locked

@@ -123,6 +123,7 @@ expected_sources=(
     opaque-register-effects.c
     outside-body-flow.c
     overloaded-signatures.cpp
+    perf-build-id.c
     recovered-default-returns.c
     recovered-parameter-types.c
     register-copy.c

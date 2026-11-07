@@ -1,5 +1,5 @@
 {
-    "status": "CONFIRMED_DEFECTS_LOCAL_LINUX_FIX_WINDOWS_FIX_UNVERIFIED",
+    "status": "CONFIRMED_LOCAL_LINUX_FIX_AND_NATIVE_WINDOWS_ISOLATED_LOCK_FIX_LIFECYCLE_PENDING",
     "date": "2026-11-06",
     "issue": 109,
     "windowsFailure": {
@@ -185,5 +185,20 @@
         "status": "PASS_LINUX_COMMAND",
         "checks": 27,
         "gdbSessions": 10
+    },
+    "nativeWindowsIsolatedAcceptance": {
+        "run": 42314434393,
+        "head": "7b7c6ab26e7000c19efbc611d80460f711614200",
+        "job": 128226945808,
+        "artifact": 13550343096,
+        "artifactSha256": "bb6381571a18354c766b69876e0cf6e3697a8601bafbe3c4ba48642efe6c5b29",
+        "jarSha256": "668745d239d243cebf59d58b68b619c987647ad9f0164f116443f526f953fef5",
+        "stdout": [
+            "LEGACY_WINDOWS_SECOND_HANDLE_REFUSED",
+            "build-id-file-lock=PASS host=windows"
+        ],
+        "stderr": "empty",
+        "audit": "Smoke source and invocation script match tested git head after CRLF normalization; raw bytes match provenance hashes. Packaged JAR matches Linux-tested lock-fix JAR. Actual Windows contention, same-JVM refusal, repeated verification, cancellation, release, malformed magic/length controls pass.",
+        "remaining": "Full native Windows installer lifecycle and downstream consumer acceptance remain required."
     }
 }

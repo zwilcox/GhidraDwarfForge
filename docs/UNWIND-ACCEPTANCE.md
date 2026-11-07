@@ -135,7 +135,8 @@ All PR #167–#174 head commits are ancestors of the merged implementation, so t
 component histories are preserved. The ADR accepts the bounded opt-in feature;
 it does not authorize a release.
 
-Remaining administrative acceptance: integrate this final documentation update
-through normal protection, then close #112. Continue the existing goal with
-#110 LLDB validation and #109 build-ID installation. Neither task is completed
-or replaced by this unwind evidence.
+**CONFIRMED:** PR #183 integrated the final documentation through normal
+protection, and #112 is closed. Its combined acceptance also completed #110's
+separate LLDB requirements, as recorded in `DEBUGGER-CONSUMERS.md` and
+`evidence/lldb-final-acceptance.json`. #109 build-ID installation remains active;
+this unwind evidence does not establish installation acceptance.

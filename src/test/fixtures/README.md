@@ -753,3 +753,11 @@ compiler/curation fixtures does not establish production annotation export.
 with synthetic equate names and type names. The `equate-retained-names.py`
 harness checks original function breakpoints and synthetic constant lookup
 through the installed exporter.
+
+`perf-build-id.c` is a bounded CPU-loop reference for native x86-64 exec/PIE
+sampling. `build-id-perf-report.py` builds it independently of the Makefile,
+compares ELF-symbol and DWARF-only compiler controls, and exercises installed,
+refreshed and removed Forge generations against the same recorded samples.
+The fixture refuses privileged execution. See
+[the consumer contract](../../../docs/BUILD-ID-CONSUMERS.md) for the distinction
+between offline source lookup and recovered-name sample reporting.
