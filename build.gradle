@@ -340,6 +340,14 @@ tasks.register("companionArtifactPublisherSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.CompanionArtifactPublisherSmoke"
 }
 
+tasks.register("buildIdRecordsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete large source inventories and separate command record bounds"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.BuildIdRecordsSmoke"
+}
+
 tasks.register("buildIdFileLockSmoke", JavaExec) {
     group = "verification"
     description = "Exercises real host build-ID lease exclusion across metadata reads and competing processes"

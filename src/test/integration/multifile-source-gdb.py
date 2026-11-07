@@ -7,12 +7,17 @@ def quote(value):
     return json.dumps(str(value), ensure_ascii=False)
 
 sidecar=Path(os.environ['FORGE_TEST_SIDECAR'])
-index=Path(str(sidecar)+'.c').read_text()
+source_path=Path(os.environ.get('FORGE_TEST_SOURCE', str(sidecar)+'.c'))
+index=source_path.read_text()
 manifest_name=next(line.removeprefix(' * Manifest: ') for line in index.splitlines() if line.startswith(' * Manifest: '))
-manifest=json.loads((sidecar.parent/manifest_name).read_text())
+manifest=json.loads((source_path.parent/manifest_name).read_text())
 functions={item['name']:item for item in manifest['functions']}
 def expected_file(name):
     return manifest['parts'][functions[name]['file']-1]['name']
+debug_root=os.environ.get('FORGE_TEST_DEBUG_ROOT')
+if debug_root:
+    gdb.execute('set debuginfod enabled off')
+    gdb.set_parameter('debug-file-directory', debug_root)
 gdb.execute('file '+quote(os.environ['FORGE_TEST_ORIGINAL']))
 gdb.execute('set auto-solib-add off')
 companion=os.environ.get('FORGE_TEST_COMPANION')
@@ -66,7 +71,7 @@ if companion:
         assert gdb.execute('show substitute-path', to_string=True)==foreign
         gdb.execute('unset substitute-path '+quote(old_directory))
         gdb.execute('forge-load')
-else:
+elif not debug_root:
     gdb.execute('symbol-file '+quote(sidecar))
 gdb.execute('info functions recovered_')
 gdb.execute('list recovered_first')
@@ -80,8 +85,7 @@ gdb.execute('continue' if companion else 'run')
 first=gdb.selected_frame().find_sal().symtab.fullname()
 assert 'forge-src-' in first, first
 assert Path(first).name==expected_file('recovered_first')
-if companion:
-    assert Path(first).parent==sidecar.parent, first
+assert Path(first).parent==source_path.parent, first
 assert gdb.selected_frame().name()=='recovered_first'
 for count in range(12):
     gdb.execute('step')
@@ -90,8 +94,7 @@ else: raise AssertionError('step did not enter second function')
 second=gdb.selected_frame().find_sal().symtab.fullname()
 assert second != first and 'forge-src-' in second, (first,second)
 assert Path(second).name==expected_file('recovered_second')
-if companion:
-    assert Path(second).parent==sidecar.parent, second
+assert Path(second).parent==source_path.parent, second
 gdb.execute('list')
 gdb.execute('finish')
 assert int(gdb.parse_and_eval('observed'))==10

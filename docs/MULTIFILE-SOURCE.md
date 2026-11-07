@@ -54,8 +54,8 @@ will switch the mutable outputs after the immutable dependencies are installed.
 manifest and all local parts, checks the headers and line populations, and
 reconstructs the logical source hash using bounded streaming reads. It exposes
 the entire required file set and checks for changes before use. This supports
-retention/transport integrations. The GDB companion now consumes the inventory;
-automatic installation is still pending. Filesystem checks detect
+retention/transport integrations. The GDB companion and build-ID installer now
+consume the inventory, with scoped local tests below. Filesystem checks detect
 ordinary concurrent changes, not hostile change-and-restore races between
 observations; no cross-file atomic visibility or power-loss durability is claimed.
 
@@ -72,12 +72,12 @@ tested with the original export directory unavailable.
 It partitions the fully composed annotated source, installs its immutable parts,
 uses the same file layout for native DIE/line output, and publishes the synthetic
 index through the existing recoverable publisher. The default remains one file.
-Wrapper forwarding, GUI selection and complete dependency retention in the
-attachment/build-ID installers are still pending. The source-relocation
+Wrapper forwarding, GUI selection and broader attachment/installation integration
+tests are still pending. The source-relocation
 parser now preserves all file entries; its ELF plan exposes their order for
 comparison with the bundle manifest. Derived-artifact validation requires and
 rechecks the complete retained inventory, so copying the index alone cannot
-authorize installation. Automatic retention is not yet implemented.
+authorize installation. The build-ID installer now retains both complete copies.
 
 ## Original acceptance and required proof
 
@@ -257,5 +257,43 @@ missing, edited, symlinked or replaced original dependencies. Controls also
 reject complete internally consistent bundles for another input or source name,
 even with a freshly rehashed report. The existing single-file identity-only test
 retains its explicit distinction from DWARF validation. This verifies complete
-input dependencies; automatic installer copying and retained-generation inventory
-limits still require implementation and acceptance tests.
+input dependencies; the subsequent build-ID retention checkpoint follows.
+
+## Complete build-ID source retention
+
+**CONFIRMED local production checkpoint:** installation independently copies the
+manifest and every part beside `export.source` and into the retained `source/`
+directory. The report's private index basename is verified against the explicit
+DWARF index name; it does not override the manifest or copy paths from a report.
+Fresh derivative validation observes both complete inventories before publication.
+All immutable dependencies are included in the sealed generation inventory and
+subsequent managed-generation verification. Removal continues to retain sources.
+
+Generation inventory bounds now admit two complete 65,536-part inventories plus
+the previous evidence allowance, subject to the explicit 64 MiB / 1,000,000 JSON
+value limits. Command/state records retain their separate 1 MiB / 20,000-value
+limits. The 5,000-file record fixture crosses both old record budgets, round-trips
+without truncation, and tests cancellation, duplicate fields, unsupported values
+and oversized strings. It does not benchmark maximum-size installation. A test
+found that the prior generic parser catch wrapped cancellation as invalid input;
+the parser now preserves `CancellationException`.
+
+`multifile-installation.py` runs the real Linux ext4 adapter and GNU/LLVM/pinned
+libdwarf validators on independent copies of the actual x86-64 fixture. It passes
+installation/idempotence, independent-copy checks for all twelve dependencies,
+fresh GDB build-ID discovery and cross-file stepping with the export directory
+hidden, deletion of every dependency from each retained inventory, restored
+idempotence, failure/cancellation after sealing with successful retries, and
+removal with retained sources. The final implementation passes the full driver
+on Java 21. Single-file installation and fresh GDB source lookup also pass with
+the old export unavailable. The initial tmpfs selection was correctly refused by
+the production host's ext4 contract; no weaker host was substituted for the
+passing production test.
+
+Evidence is under the same `issue115-multifile/` root, including
+`retention-driver-java21.log`, the archived ext4 driver artifacts and record tests.
+The first automatic-discovery oracle incorrectly quoted GDB's filename parameter;
+the corrected oracle uses `gdb.set_parameter`. Both failed and passing output are
+retained. These local tests do not establish the complete large-program benchmark,
+other target/host profiles, attachment refresh/recovery combinations, wrapper/GUI
+exposure, the hosted matrix or protected integration.

@@ -53,6 +53,13 @@ public final class AttachmentExportBinding {
 
     public static AttachmentExportBinding observe(Path report, Path original, Path sidecar,
             Path source, AttachmentReceiptStore.Host host, BooleanSupplier cancelled) throws IOException {
+        return observe(report, original, sidecar, source, source.getFileName().toString(), host, cancelled);
+    }
+
+    /** A retained index may use a private backup name; its original DWARF basename remains explicit. */
+    static AttachmentExportBinding observe(Path report, Path original, Path sidecar,
+            Path source, String sourceIndexName, AttachmentReceiptStore.Host host,
+            BooleanSupplier cancelled) throws IOException {
         Objects.requireNonNull(host, "host");
         Objects.requireNonNull(cancelled, "cancelled");
         check(cancelled);
@@ -103,7 +110,7 @@ public final class AttachmentExportBinding {
             throw new IOException("unsupported attachment export ELF target", invalid);
         }
         var dependencies = new ArrayList<AttachmentFileStore.Snapshot>();
-        var bundle = SourceBundleFiles.open(paths.paths().get("source"), cancelled).orElse(null);
+        var bundle = SourceBundleFiles.open(paths.paths().get("source"), sourceIndexName, cancelled).orElse(null);
         if (bundle != null) {
             if (!bundle.manifest().inputSha256().equals(files.get("exportOriginal").digest().sha256())) {
                 throw new IOException("source bundle input differs from the selected original ELF");

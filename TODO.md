@@ -33,9 +33,15 @@ the published companion byte-for-byte; 29 Python controls and existing live
 single-file ET_EXEC/PIE/shared-object loader tests pass. Attachment export binding
 now verifies all manifest/part hashes and host identities, original-input identity
 and ordered DWARF source names. Missing/changed/replaced original dependencies
-are refused by exported and relocated validation. Automatic installer retention,
-wrapper/GUI exposure, broader semantic/host fixtures, benchmarks and the hosted
-gate remain pending. No full #115 acceptance item is closed.
+are refused by exported and relocated validation. The build-ID installer now
+retains independent complete source inventories for reported and relocated
+artifacts. Actual Linux ext4 installation, GNU/LLVM/pinned validation, fresh GDB
+discovery and cross-file stepping with old exports hidden, missing retained-file
+controls, failure/cancellation retries and retained-source removal pass on Java 21.
+A 5,000-file record test verifies expanded generation budgets while keeping the
+small request/state limits. Wrapper/GUI exposure, broader semantic/host fixtures,
+attachment combinations, benchmarks and the hosted gate remain pending. No full
+#115 acceptance item is closed.
 
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming
