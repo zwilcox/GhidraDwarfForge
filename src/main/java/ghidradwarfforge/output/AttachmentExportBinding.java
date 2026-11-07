@@ -4,11 +4,13 @@ import ghidradwarfforge.elf.ElfBuildId;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.elf.MatchedElfAllocations;
 import ghidradwarfforge.elf.MatchedElfPrefix;
+import ghidradwarfforge.elf.SyntheticSourceSidecar;
 import ghidradwarfforge.nativeapi.DwarfTarget;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,17 +34,22 @@ public final class AttachmentExportBinding {
     private final String hostContract;
     private final Map<String, AttachmentFileStore.Snapshot> files;
     private final ExportReportClaims claims;
+    private final List<AttachmentFileStore.Snapshot> sourceDependencies;
 
     private AttachmentExportBinding(AttachmentPaths.Plan paths, String hostContract,
-            Map<String, AttachmentFileStore.Snapshot> files, ExportReportClaims claims) {
+            Map<String, AttachmentFileStore.Snapshot> files, ExportReportClaims claims,
+            List<AttachmentFileStore.Snapshot> sourceDependencies) {
         this.paths = paths;
         this.hostContract = hostContract;
         this.files = Map.copyOf(files);
         this.claims = claims;
+        this.sourceDependencies = List.copyOf(sourceDependencies);
     }
 
     public Map<String, AttachmentFileStore.Snapshot> files() { return files; }
     public ExportReportClaims claims() { return claims; }
+    /** Manifest and all parts, in bundle order; the index remains the source artifact. */
+    public List<AttachmentFileStore.Snapshot> sourceDependencies() { return sourceDependencies; }
 
     public static AttachmentExportBinding observe(Path report, Path original, Path sidecar,
             Path source, AttachmentReceiptStore.Host host, BooleanSupplier cancelled) throws IOException {
@@ -95,7 +102,23 @@ public final class AttachmentExportBinding {
         catch (IllegalArgumentException invalid) {
             throw new IOException("unsupported attachment export ELF target", invalid);
         }
-        var result = new AttachmentExportBinding(paths, host.contract(), files, observed.claims());
+        var dependencies = new ArrayList<AttachmentFileStore.Snapshot>();
+        var bundle = SourceBundleFiles.open(paths.paths().get("source"), cancelled).orElse(null);
+        if (bundle != null) {
+            if (!bundle.manifest().inputSha256().equals(files.get("exportOriginal").digest().sha256())) {
+                throw new IOException("source bundle input differs from the selected original ELF");
+            }
+            String directory = paths.paths().get("source").getParent().toString();
+            if (java.io.File.separatorChar == '\\') directory = directory.replace('\\', '/');
+            bundle.requireSourceNames(SyntheticSourceSidecar.prepare(output, directory, cancelled).sourceFiles());
+            for (Path dependency : bundle.files().subList(1, bundle.files().size())) {
+                dependencies.add(AttachmentFileStore.observe(dependency, host, cancelled));
+            }
+            // Bind the host snapshots to the inventory just read, even if a
+            // source part changed between semantic verification and observation.
+            bundle.verify(cancelled);
+        }
+        var result = new AttachmentExportBinding(paths, host.contract(), files, observed.claims(), dependencies);
         result.recheck(host, cancelled);
         return result;
     }
@@ -105,6 +128,7 @@ public final class AttachmentExportBinding {
         if (!hostContract.equals(host.contract())) throw new IOException("attachment export host contract changed");
         paths.recheck();
         for (var file : files.values()) AttachmentFileStore.unchanged(file, host, cancelled);
+        for (var file : sourceDependencies) AttachmentFileStore.unchanged(file, host, cancelled);
         paths.recheck();
         check(cancelled);
     }

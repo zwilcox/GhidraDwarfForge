@@ -7,7 +7,7 @@ partitioning must preserve the analyzed program's canonical types, scopes,
 address ranges, variable locations and evidence-backed source correlation.
 Every emitted file remains explicitly synthetic.
 
-**PLANNED production design:** retain one DWARF compilation unit and one type
+**CONFIRMED design:** retain one DWARF compilation unit and one type
 graph, with multiple entries in its DWARF 5 line-table file table. Partitioning
 is presentation grouping, not evidence of original compiler compilation units.
 Multiple CUs would introduce cross-CU type references or type duplication and
@@ -21,13 +21,13 @@ and is identified as oversized; the target is not a promise to split a function.
 Namespace- or memory-block-based grouping is not needed to establish this
 bounded-size policy. Default output remains unchanged when no policy is selected.
 
-**PRESENT, UNVERIFIED in production:** `SourcePartitionPlan` partitions the fully
+**CONFIRMED local production checkpoint:** `SourcePartitionPlan` partitions the fully
 composed logical source after declaration and annotation processing. Its mapping
 translates logical lines to file/local-line pairs without changing addresses or
 type identity. File zero is reserved for the synthetic index; part files start at
 one. These are file-table indices, not compilation-unit indices.
 
-**PRESENT, UNVERIFIED in production:** the source bundle uses flat sibling files
+**CONFIRMED local production checkpoint:** the source bundle uses flat sibling files
 named `forge-src-<ordinal>-<full-content-sha256>.c` and a canonical JSON manifest
 named `forge-src-<full-manifest-sha256>.json`. The ordinary `<binary>.dbg.c` path
 becomes an explicitly synthetic index only when partitioning is selected. The
@@ -54,12 +54,12 @@ will switch the mutable outputs after the immutable dependencies are installed.
 manifest and all local parts, checks the headers and line populations, and
 reconstructs the logical source hash using bounded streaming reads. It exposes
 the entire required file set and checks for changes before use. This supports
-future retention/transport integrations; it does not establish that the existing
-loader or installer already consumes the inventory. Filesystem checks detect
+retention/transport integrations. The GDB companion now consumes the inventory;
+automatic installation is still pending. Filesystem checks detect
 ordinary concurrent changes, not hostile change-and-restore races between
 observations; no cross-file atomic visibility or power-loss durability is claimed.
 
-**PLANNED integration:** translate line-program rows and declaration file/line
+**CONFIRMED local integration:** translate line-program rows and declaration file/line
 attributes through the same partition plan. Keep original logical coordinates
 available for source/variable evidence assembly and expose the file translation
 in the generated manifest. Audit consumers that currently retain only one
@@ -72,8 +72,8 @@ tested with the original export directory unavailable.
 It partitions the fully composed annotated source, installs its immutable parts,
 uses the same file layout for native DIE/line output, and publishes the synthetic
 index through the existing recoverable publisher. The default remains one file.
-Wrapper forwarding, GUI selection and complete dependency retention in the GDB
-loader and attachment/build-ID installers are still pending. The source-relocation
+Wrapper forwarding, GUI selection and complete dependency retention in the
+attachment/build-ID installers are still pending. The source-relocation
 parser now preserves all file entries; its ELF plan exposes their order for
 comparison with the bundle manifest. Derived-artifact validation requires and
 rechecks the complete retained inventory, so copying the index alone cannot
@@ -100,7 +100,7 @@ authorize installation. Automatic retention is not yet implemented.
 
 ## Current checkpoint
 
-**CONFIRMED native-free foundation:** `SourcePartitionSmoke` passes using
+**HISTORICAL native-free foundation checkpoint:** `SourcePartitionSmoke` passes using
 Java 21 runtime and `javac --release 21`. It independently reconstructs all
 original source bytes across six partition targets, checks every logical-line
 lookup, whole function/failure/omission boundaries, duplicate function names,
@@ -109,7 +109,7 @@ cancellation. This does not prove emitted DWARF, debugger behavior, publication,
 performance, Windows or hosted acceptance. All seven issue requirements remain
 open until their respective production evidence is recorded.
 
-**CONFIRMED line-encoding foundation:** `Dwarf5MultiFileSmoke`, invoked by
+**HISTORICAL line-encoding foundation checkpoint:** `Dwarf5MultiFileSmoke`, invoked by
 `dwarfLineTableSmoke`, independently decodes file tables and line-machine bytes
 and resolves every row back to expected part-file text. It passes 32/64-bit and
 both byte orders, discontiguous/overlapping bodies, intra-sequence file changes,
@@ -200,3 +200,62 @@ the unchanged-byte inventory and `source-generations.tar.gz`. This checkpoint
 does not establish full #115 acceptance: the repeatable CI driver, feature
 combinations, recursive/discontiguous fixtures, remaining targets, large-program
 measurement, complete consumer retention and hosted/protected integration remain.
+
+## Portable GDB companion and export binding
+
+**CONFIRMED local production checkpoint:** `--gdb-loader` with `--source-lines=8`
+generates a schema-2 companion containing the original/sidecar/index hashes and
+the manifest and every part's hash, name and byte count. Production preparation
+binds the bundle input hash and ordered source names to the actual ELF/DWARF.
+Schema-1 single-file companions retain their existing manifest format and path
+behavior. A staged index may have a temporary basename; verification uses its
+explicit final basename and co-located dependencies.
+
+When the companion is moved, it selects its co-located sidecar, index, original
+executable and immutable source dependencies. It does not fall back to an old
+export or the working directory. At the original location, a separately located
+input executable keeps its explicitly recorded path. All required bytes are
+verified before loading symbols, including missing/changed/symlinked parts.
+
+GDB source substitution temporarily maps the recorded compilation directory to
+the selected bundle directory. This is needed even if the old source tree still
+exists; see [GDB source-path semantics](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Source-Path.html).
+The loader borrows an existing exactly matching rule, refuses conflicting rules,
+and removes only a rule it installed that still has its expected value after
+unload or inferior exit. User replacement rules are preserved. GDB substitutions
+are global: simultaneous bundles with the same recorded directory but different
+selected directories require separate debugging sessions or an explicitly
+rearranged source tree. Unknown GDB substitution output is refused without
+overwriting user settings; tests establish the local GDB version, not every
+version or locale.
+
+`multifile-loader.py` passes eight live GDB cases on the actual native x86-64
+fixture: original location, original conflicting rule, moved tree with old
+sources still present, matching/conflicting/replaced rules, quoted Unicode paths,
+and a moved tree with old sources unavailable. Cases verify cross-file stepping,
+file/function breakpoints, source fullnames, missing-part refusal, unchanged
+selected artifacts and rule cleanup. `GdbBundleCompanionSmoke` proves that the
+current generator reproduces the published companion exactly with both staged
+and final index names; it checks all twelve dependencies, rejects non-colocated
+outputs and samples three of 5,879 cancellation boundaries. Python loader tests
+pass 29 cases, and the existing live single-file ET_EXEC/PIE/shared-object loader
+regression also passes. Foreign Windows paths are covered by Python unit tests;
+this does not establish native Windows multi-file acceptance.
+
+Two integration defects were found and fixed: companion publication calls its
+preflight callback before the writer installs dependencies, and a Python-driven
+GDB `source` command can preserve an outer script's `__file__`. Publication now
+checks dependencies once installed; companion registration uses the compiled
+function's filename to identify the companion actually executing. Both failures
+and corrected runs are retained in the local evidence.
+
+**CONFIRMED attachment-binding component checkpoint:** `AttachmentExportBinding`
+now observes and rechecks every manifest/part using the host identity, metadata
+and digest contract. The original input hash and DWARF file table must agree
+with a recognized bundle. Exported and relocated validation bindings both reject
+missing, edited, symlinked or replaced original dependencies. Controls also
+reject complete internally consistent bundles for another input or source name,
+even with a freshly rehashed report. The existing single-file identity-only test
+retains its explicit distinction from DWARF validation. This verifies complete
+input dependencies; automatic installer copying and retained-generation inventory
+limits still require implementation and acceptance tests.

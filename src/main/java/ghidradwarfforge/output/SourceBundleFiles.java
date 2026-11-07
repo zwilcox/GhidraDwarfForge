@@ -52,6 +52,14 @@ public final class SourceBundleFiles {
     /** Index, manifest, then parts; all are required when retaining or transporting this export. */
     public List<Path> files() { return files.stream().map(File::path).toList(); }
 
+    public record Dependency(String name, long bytes, String sha256) { }
+
+    /** Immutable dependencies only; the selected index has its own artifact binding. */
+    public List<Dependency> dependencies() {
+        return files.subList(1, files.size()).stream().map(file -> new Dependency(
+            file.path().getFileName().toString(), file.state().size(), file.state().sha256())).toList();
+    }
+
     public void verify(BooleanSupplier cancelled) throws IOException {
         for (File file : files) {
             var expected = file.state();
@@ -63,6 +71,12 @@ public final class SourceBundleFiles {
 
     /** Ordinary single-file source returns empty; a recognized but incomplete bundle is an error. */
     public static Optional<SourceBundleFiles> open(Path index, BooleanSupplier cancelled) throws IOException {
+        return open(index, index.getFileName().toString(), cancelled);
+    }
+
+    /** A private staged index retains its final basename in the manifest; dependencies are co-located. */
+    public static Optional<SourceBundleFiles> open(Path index, String expectedIndexName,
+            BooleanSupplier cancelled) throws IOException {
         SourceBundle.check(cancelled);
         Path source = FileSystemPaths.resolveLeaf(index, "synthetic source index");
         if (!Files.isRegularFile(source, LinkOption.NOFOLLOW_LINKS)) {
@@ -85,7 +99,7 @@ public final class SourceBundleFiles {
             throw new IOException("source manifest differs from its content identity");
         }
         var manifest = SourceBundle.read(inventory.bytes(), cancelled);
-        if (!manifest.indexName().equals(source.getFileName().toString()) ||
+        if (!manifest.indexName().equals(expectedIndexName) ||
                 !Arrays.equals(selected.bytes(), SourceBundle.renderIndex(manifest, manifestSha, cancelled))) {
             throw new IOException("synthetic source index differs from its manifest");
         }

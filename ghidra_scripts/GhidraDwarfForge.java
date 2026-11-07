@@ -316,7 +316,9 @@ public class GhidraDwarfForge extends GhidraScript {
         consistency.requireUnchanged(monitor::isCancelled);
         ArtifactPairPublisher.PrePublishCheck prePublishCheck = () -> {
             consistency.requireUnchanged(monitor::isCancelled);
-            if (sourceBundle != null) sourceDependencies[0].verify(monitor::isCancelled);
+            // The companion publisher also invokes this check while observing old
+            // outputs, before any new source dependencies have been installed.
+            if (sourceDependencies[0] != null) sourceDependencies[0].verify(monitor::isCancelled);
             if (formatterSelectionPath != null && !formatterSelectionHash.equals(
                     FileDigests.read(formatterSelectionPath, monitor::isCancelled))) {
                 throw new IOException("formatter selection changed during export");

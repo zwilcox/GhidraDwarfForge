@@ -174,7 +174,7 @@ class IdentityTests(unittest.TestCase):
             loader.verify_memory(self.manifest, 0xfffff000, lambda address, size: b"")
 
     def test_unsupported_or_unbound_manifest(self):
-        mutations = [lambda m: m.update(schema=2), lambda m: m.update(extra=True),
+        mutations = [lambda m: m.update(schema=3), lambda m: m.update(extra=True),
             lambda m: m.update(checks=[]),
             lambda m: m["target"].update(path="relative"),
             lambda m: m["source"].update(path="/tmp/a\nquit"),
@@ -193,6 +193,97 @@ class IdentityTests(unittest.TestCase):
         self.assertEqual(first, loader.manifest_id(dict(reversed(list(self.manifest.items())))))
         self.manifest["target"]["sha256"] = "0" * 64
         self.assertNotEqual(first, loader.manifest_id(self.manifest))
+
+
+class SourceBundleTests(IdentityTests):
+    def setUp(self):
+        super().setUp()
+        self.manifest['schema'] = 2
+        self.manifest['source_directory'] = str(self.root)
+        for role in ('target', 'sidecar', 'source'):
+            self.manifest[role]['name'] = Path(self.manifest[role]['path']).name
+        self.manifest['source_files'] = []
+        for index, content in enumerate((b'canonical manifest', b'synthetic source one', b'synthetic source two')):
+            digest = hashlib.sha256(content).hexdigest()
+            name = ('forge-src-' + digest + '.json' if index == 0 else 'forge-src-%06d-%s.c' % (index, digest))
+            (self.root / name).write_bytes(content)
+            self.manifest['source_files'].append({'name': name, 'sha256': digest, 'bytes': len(content)})
+
+    def test_each_dependency_must_be_present_regular_and_unchanged(self):
+        for item in self.manifest['source_files']:
+            selected = self.root / item['name']
+            content = selected.read_bytes()
+            selected.unlink()
+            with self.assertRaises(loader.LoaderError):
+                loader.verify_files(self.manifest)
+            selected.write_bytes(b'x' * len(content))
+            with self.assertRaisesRegex(loader.LoaderError, 'SHA-256 mismatch'):
+                loader.verify_files(self.manifest)
+            selected.unlink()
+            hidden = selected.with_name(selected.name + '.hidden')
+            hidden.write_bytes(content)
+            selected.symlink_to(hidden)
+            with self.assertRaisesRegex(loader.LoaderError, 'regular file'):
+                loader.verify_files(self.manifest)
+            selected.unlink()
+            hidden.rename(selected)
+        loader.verify_files(self.manifest)
+
+    def test_bundle_bounds_and_generated_names(self):
+        changes = [lambda m: m.update(source_directory='relative'),
+            lambda m: m.update(source_files=[]),
+            lambda m: m['source_files'][0].update(name='../escape.json'),
+            lambda m: m['source_files'][1].update(bytes=True),
+            lambda m: m['source_files'][1].update(bytes=0),
+            lambda m: m['source_files'][1].update(bytes=2147483648),
+            lambda m: m['source_files'].reverse(),
+            lambda m: m['source'].update(name='../escape.c')]
+        for change in changes:
+            value = json.loads(json.dumps(self.manifest))
+            change(value)
+            with self.assertRaises(loader.LoaderError):
+                loader.validate_manifest(value)
+
+    def test_moved_bundle_requires_colocated_files_without_fallback(self):
+        import shutil
+        moved = self.root / 'moved'
+        moved.mkdir()
+        for role in ('sidecar', 'source', 'target'):
+            shutil.copyfile(self.manifest[role]['path'], moved / self.manifest[role]['name'])
+        for item in self.manifest['source_files']:
+            shutil.copyfile(self.root / item['name'], moved / item['name'])
+        bound = loader.bind_files(self.manifest, str(moved / 'companion.py'))
+        loader.verify_files(bound)
+        for role in ('sidecar', 'source', 'target'):
+            self.assertEqual(Path(bound[role]['path']).parent, moved)
+        dependency = moved / self.manifest['source_files'][1]['name']
+        dependency.unlink()
+        self.assertTrue((self.root / dependency.name).is_file())
+        with self.assertRaises(loader.LoaderError):
+            loader.verify_files(bound)
+        self.assertNotEqual(loader.manifest_id(bound), loader.manifest_id(self.manifest))
+
+    def test_original_input_location_kept_until_bundle_moves(self):
+        selected = self.root / 'input'
+        selected.mkdir()
+        original = Path(self.manifest['target']['path'])
+        original.rename(selected / original.name)
+        self.manifest['target']['path'] = str(selected / original.name)
+        bound = loader.bind_files(self.manifest, str(self.root / 'companion.py'))
+        self.assertEqual(bound['target']['path'], self.manifest['target']['path'])
+        loader.verify_files(bound)
+
+    def test_foreign_windows_paths_use_explicit_portable_names(self):
+        for role in ('target', 'sidecar', 'source'):
+            artifact = self.manifest[role]
+            name = role + '.artifact'
+            Path(artifact['path']).rename(self.root / name)
+            artifact.update(name=name, path='C:\\exports\\' + name)
+        self.manifest['source_directory'] = 'C:/exports'
+        bound = loader.bind_files(self.manifest, str(self.root / 'companion.py'))
+        loader.verify_files(bound)
+        self.assertEqual(bound['source_directory'], 'C:/exports')
+        self.assertEqual(bound['source']['path'], str(self.root / 'source.artifact'))
 
 
 if __name__ == "__main__":
