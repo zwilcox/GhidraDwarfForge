@@ -65,6 +65,16 @@ full wrapper suite passes, including hard-link and symlink rejection before
 Ghidra launches and companion-byte preservation. Final hosted validation remains
 required; see `docs/evidence/formatter-log-directory-newline.json`.
 
+**CONFIRMED Windows formatter fixture-path failure:** run `42388197297`
+reaches native Windows formatter setup, where Ghidra's recorded `/D:/...`
+executable path is rejected by `Path.of`. Both fixture harnesses now pass the
+already hash-bound original ELF path explicitly. A corrected local x86-64
+five-companion production run passes validators, GDB CLI/MI, LLDB, deterministic
+toggles and cancellation/retry. This is a fixture correction; the production
+exporter already handles the Windows path convention. Native Windows production
+and transported-consumer acceptance still require a passing rerun. See
+`docs/evidence/formatter-windows-fixture-path.json`.
+
 **Remaining:** finish the complete current-revision architecture profiles and
 native Windows production/consumer validation; review the hosted required gate,
 update final acceptance evidence and integrate through a protected PR. The new

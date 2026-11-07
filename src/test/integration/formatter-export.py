@@ -169,7 +169,7 @@ def main():
     env = dict(os.environ, LC_ALL='C.UTF-8')
     text = run([str(ghidra / 'support/analyzeHeadless'), str(project), 'Formatters', '-import', str(original),
         '-analysisTimeoutPerFile', '120', '-scriptPath', str(repo / 'src/test/integration/ghidra_scripts'),
-        '-postScript', 'ApplyFormatterFixture.java', str(selection), str(symbol_map)], root / 'prepare.log', env=env)
+        '-postScript', 'ApplyFormatterFixture.java', str(selection), str(symbol_map), str(original)], root / 'prepare.log', env=env)
     assert 'formatter-fixture=PASS' in text and selection.is_file(), text[-5000:]
     selection_hash = digest(selection)
     sidecar = root / 'original.λ "quoted".dbg'

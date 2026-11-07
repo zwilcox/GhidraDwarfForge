@@ -19,10 +19,10 @@ public class ApplyFormatterFixture extends GhidraScript {
 
     @Override
     protected void run() throws Exception {
-        if (getScriptArgs().length != 2) throw new IllegalArgumentException("selection output and compiler symbol map required");
+        if (getScriptArgs().length != 3) throw new IllegalArgumentException("selection output, compiler symbol map and original ELF required");
         addresses = com.google.gson.JsonParser.parseString(Files.readString(Path.of(getScriptArgs()[1]))).getAsJsonObject();
         delta = currentProgram.getImageBase().getOffset() - ghidradwarfforge.elf.ElfImage.read(
-            Path.of(currentProgram.getExecutablePath())).preferredImageBase();
+            Path.of(getScriptArgs()[2])).preferredImageBase();
         var marker = getFunctionAt(address("forge_formatter_marker"));
         if (marker == null) throw new IllegalStateException("formatter fixture marker was not analyzed");
         marker.setName("forge_formatter_marker", ghidra.program.model.symbol.SourceType.USER_DEFINED);

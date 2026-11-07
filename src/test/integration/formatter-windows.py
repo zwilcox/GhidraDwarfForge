@@ -66,8 +66,8 @@ def main():
         selection = work / 'selection.json'
         text = run([headless, project, 'Formatters', '-import', original, '-analysisTimeoutPerFile', '120',
             '-scriptPath', scripts, '-postScript', 'ApplyFormatterFixture.java', selection,
-            work / 'compiler-symbols.json'], work / 'prepare.log')
-        assert 'formatter-fixture=PASS' in text
+            work / 'compiler-symbols.json', original], work / 'prepare.log')
+        assert 'formatter-fixture=PASS' in text, text[-6000:]
         sidecar = work / 'original with spaces.dbg'
         source = Path(str(sidecar) + '.c')
         companion = work / ('forge_formatters_' + hashlib.sha256(sidecar.name.encode()).hexdigest() + '.py')
