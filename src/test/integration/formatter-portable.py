@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate byte-preserved relocated companions, including native Windows exports."""
 import argparse
+from contextlib import contextmanager
 import json
 from pathlib import Path
 import runpy
@@ -44,6 +45,26 @@ def negative_bundles(original, sidecar, companion, work, debugger):
             log.write_text(result.stdout)
             assert expected in result.stdout and 'Forge formatters loaded:' not in result.stdout, result.stdout[-5000:]
             assert 'AssertionError' not in result.stdout, result.stdout[-5000:]
+
+
+@contextmanager
+def unavailable_producer_source(source, record, work):
+    """Require transported sources; restore this owned fixture even on failure."""
+    hidden = work / 'hidden-producer-source'
+    hidden.mkdir()
+    moved = []
+    try:
+        for name in record['sha256']:
+            if name.endswith('.c') or (name.startswith('forge-src-') and name.endswith('.json')):
+                original, retained = source / name, hidden / name
+                original.rename(retained)
+                moved.append((original, retained))
+        assert moved
+        yield
+    finally:
+        for original, retained in reversed(moved):
+            assert not original.exists(), 'producer source unexpectedly recreated during consumer test'
+            retained.rename(original)
 
 
 def main():
@@ -90,24 +111,25 @@ def main():
             text = run(command, work / ('validator-%d.log' % index))
             if command[0] == 'readelf':
                 assert 'Warning:' not in text and 'Error:' not in text
-        gdb(reference, None, None, work / 'compiler-gdb.log', None, None)
-        # DWARF retains the producer's source directory. Supply the transported
-        # source explicitly, including Windows-to-Linux moves, without rewriting
-        # any artifact or ignoring missing-source warnings.
-        text = gdb(original, sidecar, companion, work / 'gdb.log', None, None, reference,
-            source_directory=transported)
-        assert 'formatter-gdb-controls=PASS' in text and '\nwarning:' not in text
-        gdb(original, sidecar, companion, work / 'gdb-mi.log', None, None, mi=True,
-            source_directory=transported)
-        text = lldb_consumer.run(original, sidecar, work / 'lldb', args.lldb, 'x86_64',
-            ['breakpoint set --name forge_formatter_marker'], [
-                'command script import ' + shlex.quote(str(companion)),
-                'frame variable forge_flags forge_node',
-                'script import sys; sys.path.insert(0, ' + repr(str(SCRIPTS)) +
-                    '); import formatter_checks; formatter_checks.lldb_checks(lldb.debugger, ' + repr(str(reference)) + ')',
-                'forge-formatters unload', 'continue'], {})
-        assert 'formatter-lldb-controls=PASS' in text and 'unknown=0x4' in text
-        negative_bundles(original, sidecar, companion, work, args.lldb)
+        with unavailable_producer_source(source, record, work):
+            gdb(reference, None, None, work / 'compiler-gdb.log', None, None)
+            # DWARF retains the producer's source directory. Supply the transported
+            # source explicitly, including Windows-to-Linux moves, without rewriting
+            # any artifact or ignoring missing-source warnings.
+            text = gdb(original, sidecar, companion, work / 'gdb.log', None, None, reference,
+                source_directory=transported)
+            assert 'formatter-gdb-controls=PASS' in text and '\nwarning:' not in text
+            gdb(original, sidecar, companion, work / 'gdb-mi.log', None, None, mi=True,
+                source_directory=transported)
+            text = lldb_consumer.run(original, sidecar, work / 'lldb', args.lldb, 'x86_64',
+                ['breakpoint set --name forge_formatter_marker'], [
+                    'command script import ' + shlex.quote(str(companion)),
+                    'frame variable forge_flags forge_node',
+                    'script import sys; sys.path.insert(0, ' + repr(str(SCRIPTS)) +
+                        '); import formatter_checks; formatter_checks.lldb_checks(lldb.debugger, ' + repr(str(reference)) + ')',
+                    'forge-formatters unload', 'continue'], {})
+            assert 'formatter-lldb-controls=PASS' in text and 'unknown=0x4' in text
+            negative_bundles(original, sidecar, companion, work, args.lldb)
         for name, expected in record['sha256'].items():
             assert digest(source / name) == digest(transported / name) == expected
         results.append({'role': record['role'], 'transportedSha256': record['sha256']})

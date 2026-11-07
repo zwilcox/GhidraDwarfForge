@@ -546,3 +546,58 @@ artifact inventory and observation. Local evidence is retained under
 `gap-store-checkpoint-v1.tar.gz`, which also retains initial failures and the
 store-hook Java 21 comparison. Remaining publication/consumer combinations and
 final hosted/Windows/protected integration are still required for #115.
+
+
+## Combined formatter, loader and unwind outputs
+
+**CONFIRMED local checkpoint:** `formatter-export.py --source-lines 8 --role pie
+--compression zlib` passes on x86-64, AArch64, ARM32, MIPS32-BE and MIPS32-LE.
+The fixture imports a fully stripped binary and saves explicit analyst type,
+symbol and formatter selections before exporting. Each source manifest binds
+the input, and all manifest/part hashes and sizes are included in generation
+checks. Formatter-disabled and enabled exports retain the same multi-file source
+index; repeated enabled output and the disable/restore sequence are deterministic.
+This comparison varies formatter selection within one source layout, not the
+single-file default policy already exercised elsewhere.
+
+Actual GDB CLI/MI consumers verify flags, bitfields, signed/unsigned values,
+canonical duplicate-name types, native children and stale/unavailable controls.
+x86-64/AArch64 additionally combine `--gdb-loader` and strict synthetic unwind
+metadata; the GDB tests source the real loader, and LLDB 18.1.3 validates the
+formatter values/children. GNU/LLVM/pinned validators and original/selection
+preservation pass. This checkpoint does not extend synthetic unwind claims to
+ARM32 or MIPS: their combined test selects formatters and multi-file source only.
+
+`CancelDuringFormatters.java` now retains every source dependency and injects
+cancellation inside formatter preparation, formatter rendering, source-bundle
+preparation and reused bundle installation. All five targets preserve the full
+existing generation and directory inventory, then reproduce it on retry. These
+are production cancellation tests for an existing generation; they do not replace
+fresh-generation or partial-installation failure acceptance.
+
+The portable consumer copies the complete recorded inventory and temporarily
+hides the producer's source index, manifest and parts while running consumers.
+It restores them in `finally` and verifies both copies against the original
+hashes. x86-64 GDB CLI/MI source listing and LLDB formatters pass with old source
+unavailable. A separate local run also moved the entire producer directory out
+of its recorded path. Missing/wrong original and wrong-sidecar controls still
+refuse formatter loading. The first LLDB attempts failed before debugger startup
+because the private toolchain's library search environment was absent; corrected
+full x86-64/AArch64 runs and portable consumers pass with the retained environment.
+No debugger warning allowance was added for that setup failure.
+
+```sh
+python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" x86_64 \
+    --work /path/to/new-results --role pie --compression zlib --source-lines 8 \
+    --companions --lldb /path/to/lldb-18 --dwarfdump "$DWARFDUMP"
+```
+
+Local runs additionally use explicit Java 21. ARM32 uses the documented private
+cross-toolchain/sysroot; the other cross targets use system toolchains and QEMU.
+[Result bindings](evidence/multifile-formatters.json) record all five runs and
+transported observations. Raw evidence, including setup failures, is retained in
+`issue115-multifile/formatter-checkpoint-v1.tar.gz` with member-by-member read-back
+verification. CI includes the five additional PIE/zlib cases and the transported
+multi-file consumer. Hosted/native Windows execution remains **PRESENT,
+UNVERIFIED**; remaining publication, shared-object, attachment and build-ID
+refresh/recovery combinations and the full final gate are still required.

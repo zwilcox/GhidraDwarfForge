@@ -109,6 +109,19 @@ No line is fabricated for excluded bytes. The two initial fixture failures
 and the compiler-corroborated QEMU diagnostic are retained. These scoped local
 checks do not close remaining consumer/publication or hosted/Windows acceptance.
 
+**CONFIRMED #115 combined-consumer checkpoint:** fully stripped PIE/zlib
+multi-file exports pass on all five targets with actual GDB CLI/MI formatter
+values, validators, deterministic formatter toggles and preserved original/source
+inventories. x86-64/AArch64 also combine the GDB loader and strict unwind
+companion and pass LLDB 18.1.3. Four production cancellation points cover
+formatter preparation/rendering and source preparation/reused installation;
+retry preserves every dependency. Transported x86-64 artifacts pass GDB/LLDB
+with producer source files hidden, then restored byte-identically. Initial LLDB
+runs lacked its private library environment and remain recorded as failures.
+The five-case CI step and stronger transported-source check are present;
+native Windows combinations, fresh-generation publication failures and remaining
+attachment/build-ID refresh/recovery coverage are still pending.
+
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming
 available. Recheck that dependency when reaching #120; do not silently declare

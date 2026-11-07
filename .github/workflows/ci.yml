@@ -1057,8 +1057,11 @@ jobs:
           python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
               --work "build/test-results/formatters/$TARGET/pie-zlib" --role pie --compression zlib \
               --dwarfdump "$DWARFDUMP" "${consumers[@]}"
+          python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "build/test-results/formatters/$TARGET/multifile-pie-zlib" --role pie --compression zlib \
+              --source-lines 8 --dwarfdump "$DWARFDUMP" "${consumers[@]}" "${companions[@]}"
           if [[ "$TARGET" == x86_64 ]]; then
-              for role in exec pie-zlib; do
+              for role in exec pie-zlib multifile-pie-zlib; do
                   python3 src/test/integration/formatter-portable.py \
                       "build/test-results/formatters/$TARGET/$role" \
                       "build/test-results/formatters/portable/$role" --producer-host Linux \
