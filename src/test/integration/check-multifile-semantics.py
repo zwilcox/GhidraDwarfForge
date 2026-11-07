@@ -85,6 +85,7 @@ def dies(text, source, manifest=None):
     require(len(offsets) == len(headers), 'duplicate DIE offsets')
     result = []
     parts = {str(source.parent / part['name']): part for part in manifest['parts']} if manifest else {}
+    baseline_lines = len(source.read_bytes().splitlines()) if manifest is None else None
     for i, header in enumerate(headers):
         body = text[header.end():headers[i + 1].start() if i + 1 < len(headers) else len(text)]
         attributes = list(re.finditer(r'^\s+(DW_AT_\w+) \[(DW_FORM_\w+)\]\s+', body, re.M))
@@ -113,7 +114,7 @@ def dies(text, source, manifest=None):
                 line = logical_line(parts[path], line)
             else:
                 require(path == str(source), 'declaration refers outside baseline source')
-                require(1 <= line <= len(source.read_bytes().splitlines()), 'baseline declaration out of bounds')
+                require(1 <= line <= baseline_lines, 'baseline declaration out of bounds')
             values['DW_AT_decl_file'] = ['coordinate', '<logical-source>']
             values['DW_AT_decl_line'] = ['coordinate', line]
         result.append({'depth': len(header[2]), 'tag': header[3], 'attributes': values})

@@ -59,6 +59,13 @@ public final class SourceBundleStoreSmoke {
             concurrentCreation(root, plan, false);
             exclusiveLinkRace(root, plan, true);
             exclusiveLinkRace(root, plan, false);
+            if (System.getProperty("os.name").equals("Linux")) {
+                Path real = Files.createDirectory(root.resolve("alias-races"));
+                Path alias = Files.createSymbolicLink(root.resolve("alias-parent"), real);
+                exclusiveLinkRace(alias, plan, true);
+                exclusiveLinkRace(alias, plan, false);
+                Files.delete(alias);
+            }
             rollback(root, plan);
             cancellation(root, plan);
             System.out.println("source-bundle-store-smoke: PASS checks=" + checks);
@@ -158,11 +165,18 @@ public final class SourceBundleStoreSmoke {
     private static void exclusiveLinkRace(Path root, SourceBundle.Plan plan, boolean identical) throws Exception {
         Path directory = Files.createDirectory(root.resolve("exclusive-race-" + identical));
         Path raced = directory.resolve(plan.fileNames().getFirst());
+        // The store resolves parents. Windows short temp paths and symlinked
+        // directories need not have the same spelling as that resolved path.
+        Path resolvedRace = directory.toRealPath().resolve(raced.getFileName());
         byte[] competing = identical ? plan.bytes(raced.getFileName().toString()) : new byte[] { 7 };
+        AtomicInteger injections = new AtomicInteger();
         var hook = new SourceBundleStore.InstallHook() {
             @Override public void afterInstall(int index, Path target) { }
             @Override public void beforeLink(Path target) throws IOException {
-                if (target.equals(raced)) Files.write(target, competing, java.nio.file.StandardOpenOption.CREATE_NEW);
+                if (target.equals(resolvedRace)) {
+                    Files.write(target, competing, java.nio.file.StandardOpenOption.CREATE_NEW);
+                    injections.incrementAndGet();
+                }
             }
         };
         Operation operation = () -> SourceBundleStore.install(directory.resolve("target.dbg.c"), plan, List.of(), () -> false, hook);
@@ -174,6 +188,7 @@ public final class SourceBundleStoreSmoke {
             reject(operation);
             require(!Files.exists(directory.resolve(plan.manifestName())), "exclusive conflict withholds manifest");
         }
+        require(injections.get() == 1, "exactly one exclusive-link race was injected");
         require(Arrays.equals(Files.readAllBytes(raced), competing), "exclusive link never replaces competing bytes");
         try (var files = Files.list(directory)) {
             require(files.noneMatch(path -> path.getFileName().toString().startsWith(".forge-")), "exclusive race stage cleanup");

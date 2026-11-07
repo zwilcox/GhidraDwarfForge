@@ -418,3 +418,78 @@ support and fixture bytes match the successful local `run.zf2690wu` protected
 source hashes. Hosted jobs validate the integration matrix; they do not claim
 hosted benchmark timings. Component code is retained by the combined integration
 branch, whose distinct full gate remains mandatory before merging.
+
+
+## Optional multi-file source comparison (#115)
+
+**CONFIRMED locally:** `multifile-benchmark.py` compares the same saved Ghidra
+program as single-file and optional multi-file exports. The source-built fixture
+has 1,000 or 10,000 generated functions; the target is Linux x86-64 non-PIE,
+Ghidra 12.0.3 and Java 21.0.12.1. Each count retains one warm-up per layout,
+then three alternating AB/BA pairs, each with a fresh JVM and GDB. The warm-ups
+include first publication and script-cache initialization; reported export
+medians measure subsequent reuse of the same generation. First-publication
+costs remain in the raw samples. Import and validation are outside export time;
+JVM startup, saved-program loading, decompilation, production and publication
+are inside it. OS caches and other host activity are not controlled.
+
+| Measurement | 1,000 single | 1,000 multi | 10,000 single | 10,000 multi |
+| --- | ---: | ---: | ---: | ---: |
+| Median whole export (seconds) | 3.33 | 3.42 | 10.96 | 11.20 |
+| Total artifact bytes, including manifest | 884,803 | 991,995 | 8,598,863 | 9,654,995 |
+| Output files | 2 | 13 | 2 | 85 |
+| Median symbol load (milliseconds) | 2.008 | 1.838 | 13.158 | 14.581 |
+| Median all-function lookup (milliseconds) | 12.094 | 15.872 | 116.286 | 153.718 |
+| Median 200 scattered listings (milliseconds) | 8.447 | 5.546 | 60.872 | 25.961 |
+| Median 200 file-qualified breakpoints (milliseconds) | 2.040 | 2.163 | 3.454 | 3.317 |
+
+All paired listing measurements decrease; all-function lookup increases in all
+pairs at both sizes. Breakpoint timing increases at 1,000 and decreases at
+10,000. Export time, symbol-load time and RSS comparisons have mixed directions.
+These are small-sample observations, not statistical significance or a general
+performance guarantee. Source partitioning costs space and does not uniformly
+improve debugger operations. The fixture is not representative firmware and
+these results say nothing about IDE navigation latency or Windows performance.
+The JSON `medians` object retains `peakResidentKiB` as the maximum observed
+process-family high-water mark across measured runs, not a memory median or
+aggregate simultaneous memory usage.
+
+The requested 1,000-line target is not a hard file-size cap. Whole units remain
+indivisible, including the listing-annotation catalog following the last
+function. The largest multi-file source parts are 557,007 and 5,451,311 bytes,
+respectively. This limitation is retained rather than changing the production
+partitioner to improve the benchmark after seeing its results.
+
+All 16 exports decompile every generated function without a decompilation
+failure. Their `PARTIAL` reports retain unsupported/unlocated information;
+no variable-location success is inferred from timing. Each fresh GDB verifies
+full DWARF symbols, names, addresses and source paths for all generated functions,
+performs the timed navigation, and separately executes first/last-function
+breakpoints, source `next`, expected global values and normal exit. Complete
+single/multi decoded-DWARF comparison, GNU/LLVM/pinned checks, unchanged input
+and saved-program data (apart from documented Ghidra backups), protected source
+hashes and byte-identical reruns pass.
+
+The first full attempt failed on its final 10,000-function export when private
+Ghidra application logs exhausted tmpfs. It is retained as a failed run. Its
+272,976,436 bytes of application logs were compressed and read-back verified
+before deleting only those task-owned originals. The corrected driver keeps
+private application logs with the evidence directory; a fresh complete run
+passes. This is not an exporter correctness fix or a passing interrupted sample.
+
+Reproduce on a host with the installed production extension and pinned checker:
+
+```sh
+DWARFDUMP=/path/to/pinned/dwarfdump \
+python3 src/test/performance/multifile-benchmark.py "$GHIDRA_INSTALL_DIR" \
+    --work /path/to/new-evidence-directory --counts 1000 10000 \
+    --pairs 3 --source-lines 1000
+```
+
+Optional `--artifacts` selects a new hard-link-capable filesystem separately
+from evidence/projects. Optional `--java` selects the runtime explicitly through
+Ghidra's production headless entry point. Local raw evidence is retained under
+`issue115-multifile/benchmark-final-02`; the failed attempt is
+`benchmark-final-01`. [Machine-readable measurements](evidence/multifile-benchmark.json)
+bind the summary, environment and installed module hashes. CI now runs the same
+fixture; hosted benchmark execution remains **PRESENT, UNVERIFIED**.

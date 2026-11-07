@@ -465,3 +465,84 @@ remain **PRESENT, UNVERIFIED**. Local evidence is under
 `issue115-multifile/target-final-*`, `target-type-checkpoint.json` and
 `target-type-checkpoint-v1.tar.gz`. This checkpoint does not close the benchmark,
 all consumer/publication combinations, or full issue acceptance.
+
+
+## Large-function benchmark and Windows race-hook correction
+
+**CONFIRMED local benchmark:** the corrected 1,000/10,000-function paired
+experiment passes all sixteen production samples, validators, full-symbol GDB
+navigation/runtime checks, deterministic reruns and input/project preservation.
+[PERFORMANCE.md](PERFORMANCE.md#optional-multi-file-source-comparison-115) records
+actual size/timing results, regressions and mixed observations. The largest
+source part remains the indivisible annotation catalog following the final
+function; a line target is not a file-size guarantee. The first full run's
+private-log filesystem exhaustion is retained as failure, not partial success.
+The corrected evidence archive `benchmark-checkpoint-v1.tar.gz` contains 475
+files with every member read-back verified against its source hash. CI contains
+the same measurement step; hosted execution remains **PRESENT, UNVERIFIED**.
+
+**CONFIRMED hosted test failure:** Windows job `128560896730` in run
+`42423790371` fails `SourceBundleStoreSmoke.exclusiveLinkRace(false)` at
+`9dc1186`. The hook's unresolved path comparison can miss the actual resolved
+destination. The correction resolves the existing parent, preserves the chosen
+leaf, and asserts exactly one competing creation for both identical and
+conflicting contents. The same race now runs under a symlinked parent on Linux.
+A Java 21 comparison with the original hook fails the new injection assertion;
+the corrected hook passes 1,481 checks and all 169 cancellation checkpoints.
+The full local store, reader and mutable publisher suites also pass.
+This corrects the test, not the production hard-link installation policy.
+Windows acceptance requires another hosted run. The failure log and both local
+comparison results are retained under the issue evidence directory.
+
+
+## Actual discontiguous-function source stepping
+
+**CONFIRMED local checkpoint:** `discontiguous-unwind.py --source-lines 8`
+compares single/multi-file production exports for two gap positions, both
+x86-64/AArch64, non-PIE/static PIE, initial/rebased saved programs and plain/zlib
+DWARF. Eight cases execute 96 exports and 120 fresh GDB sessions. Each function
+has two explicitly curated ranges around sixteen excluded bytes; its independent
+assembler CFI oracle traces four real branch crossings through recursion.
+Original/reference bytes, saved program state and deterministic complete bundles
+are preserved. GNU/LLVM/pinned validation, full decoded-DWARF/source comparison,
+strict frame descriptions and runtime unwind observations pass.
+
+With `--gap-position body`, the jump crosses directly into a mapped conditional.
+Both source `step` and `next` stop at its correct address, function, source part
+and positive line; no instruction fallback is used. With the original
+`--gap-position prologue`, the destination starts with register setup lacking
+recovered token mappings. Both source commands stop at that unmapped boundary;
+the test then uses bounded instruction stepping to the first recovered line.
+All excluded gap bytes lack line mappings. This is an honest limitation of
+source-level stepping through unmapped code, not a reason to fabricate lines.
+
+The first probe incorrectly forced a breakpoint at the unmapped boundary and
+required a line. Removing that breakpoint still produced an unmapped stop in
+GDB. Both failed attempts are retained; the final tests distinguish mapped
+body behavior from the original prologue limitation instead of discarding the
+latter fixture. No production source-mapping change was made for these tests.
+
+All 64 single/multi source transcripts pass the subsequently added diagnostic
+guard on replay. Only the exact AArch64 QEMU vDSO warning also present in the
+compiler reference is admitted; x86 permits none. Four rejected diagnostic
+controls verify the guard. The existing assembler reference also reports its
+unavailable assembly source path; that CFI-only oracle warning is not permitted
+in generated-source transcripts and does not establish compiler-source stepping.
+The production/export driver used for measurement is retained separately because
+the diagnostic guard was added after the successful matrix.
+
+```sh
+python3 src/test/integration/discontiguous-unwind.py /path/to/new-results \
+    --target all --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+    --source-lines 8 --gap-position body
+# Repeat in another new directory with --gap-position prologue.
+```
+
+Local runs additionally select Java 21 explicitly using `--java`. CI runs both
+positions on both target lanes. Hosted execution remains **PRESENT, UNVERIFIED**.
+[Raw-result bindings](evidence/multifile-discontiguous.json) record every case,
+artifact inventory and observation. Local evidence is retained under
+`issue115-multifile/gap-{body,prologue}-03` and the read-back-verified
+`gap-store-checkpoint-v1.tar.gz`, which also retains initial failures and the
+store-hook Java 21 comparison. Remaining publication/consumer combinations and
+final hosted/Windows/protected integration are still required for #115.

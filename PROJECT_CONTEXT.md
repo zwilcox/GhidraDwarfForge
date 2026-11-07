@@ -76,6 +76,39 @@ CI; hosted/Windows execution, the benchmark and remaining publication/consumer
 combinations are pending. No full #115 requirement is closed by these scoped
 checks alone. See [acceptance evidence](docs/MULTIFILE-SOURCE.md).
 
+**CONFIRMED #115 benchmark checkpoint:** the corrected paired 1,000/10,000-function
+experiment passes locally on Java 21: sixteen production exports, full-symbol
+GDB checks, source navigation/runtime checks, semantic comparison, structural
+validators, preservation and deterministic reruns. Scattered listing improves
+in every measured pair, while all-function lookup regresses; export time, RSS
+and symbol-load comparisons are inconclusive. Artifact size increases, and the
+trailing annotation catalog remains an oversized indivisible part. The first
+full attempt failed from private application logs filling tmpfs and is retained;
+the corrected complete run stores those logs with external evidence. See
+[measurements and limits](docs/PERFORMANCE.md#optional-multi-file-source-comparison-115).
+Hosted benchmark execution remains pending.
+
+**CONFIRMED #115 hosted test failure:** run `42423790371` at `9dc1186`
+fails Windows `sourceBundleStoreSmoke` before later host acceptance. Its race
+hook compared a resolved destination with an unresolved temporary path. A
+Linux symlink-parent reproduction confirms the old comparison misses injection;
+the corrected test resolves the parent and requires exactly one injection.
+Java 21 passes the corrected race/cancellation checks, and the complete local
+store/reader/publisher checks pass. Production code is unchanged. The Windows
+path-spelling diagnosis still requires a passing hosted rerun; no Windows
+acceptance or full issue closure follows from the Linux reproduction.
+
+**CONFIRMED #115 discontiguous checkpoint:** two gap positions pass across
+x86-64/AArch64 non-PIE/PIE, initial/rebased programs and plain/zlib outputs:
+96 exports and 120 GDB sessions. Single/multi semantic comparisons, full bundle
+reruns, validators, frame oracles and original/program preservation pass. Direct
+source `step`/`next` cross into a mapped conditional. Crossing into unmapped
+prologue setup instead stops without a source line and requires instruction
+stepping to the next recovered line; that limitation is explicitly tested.
+No line is fabricated for excluded bytes. The two initial fixture failures
+and the compiler-corroborated QEMU diagnostic are retained. These scoped local
+checks do not close remaining consumer/publication or hosted/Windows acceptance.
+
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming
 available. Recheck that dependency when reaching #120; do not silently declare

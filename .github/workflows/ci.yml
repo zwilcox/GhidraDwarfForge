@@ -1179,6 +1179,18 @@ jobs:
             "build/test-results/discontiguous-unwind-controls/$TARGET" \
             --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
 
+      - name: Multi-file source stepping across discontiguous bodies and compressed DWARF
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for position in prologue body; do
+              python3 src/test/integration/discontiguous-unwind.py \
+                  "build/test-results/multifile-discontiguous/$TARGET-$position" --target "$TARGET" \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" --source-lines 8 \
+                  --gap-position "$position"
+          done
+
       - name: Validate real native exports with recovered frames and source
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1984,6 +1996,13 @@ jobs:
               python3 src/test/integration/same-name-types-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
                   --role "$role" --source-lines 8
           done
+
+      - name: Measure multi-file export and debugger navigation at large function counts
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/performance/multifile-benchmark.py "$GHIDRA_INSTALL_DIR" \
+              --work "$PWD/build/test-results/multifile-benchmark" \
+              --counts 1000 10000 --pairs 3 --source-lines 1000
 
       - name: Class ownership and object parameters preserve saved identities and lookup
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
