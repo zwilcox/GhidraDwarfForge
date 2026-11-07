@@ -91,9 +91,14 @@ def main():
             if command[0] == 'readelf':
                 assert 'Warning:' not in text and 'Error:' not in text
         gdb(reference, None, None, work / 'compiler-gdb.log', None, None)
-        text = gdb(original, sidecar, companion, work / 'gdb.log', None, None, reference)
+        # DWARF retains the producer's source directory. Supply the transported
+        # source explicitly, including Windows-to-Linux moves, without rewriting
+        # any artifact or ignoring missing-source warnings.
+        text = gdb(original, sidecar, companion, work / 'gdb.log', None, None, reference,
+            source_directory=transported)
         assert 'formatter-gdb-controls=PASS' in text and '\nwarning:' not in text
-        gdb(original, sidecar, companion, work / 'gdb-mi.log', None, None, mi=True)
+        gdb(original, sidecar, companion, work / 'gdb-mi.log', None, None, mi=True,
+            source_directory=transported)
         text = lldb_consumer.run(original, sidecar, work / 'lldb', args.lldb, 'x86_64',
             ['breakpoint set --name forge_formatter_marker'], [
                 'command script import ' + shlex.quote(str(companion)),

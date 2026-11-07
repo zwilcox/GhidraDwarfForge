@@ -7,12 +7,18 @@ previous seven-issue goal is integrated through PR186 (`41887ff`); this formatte
 work is a new goal. #187 remains last, apart from the requested upstream report
 preparation. Release publication is not included.
 
-**PRESENT, UNVERIFIED as a complete feature:** explicit canonical-key selections,
+**CONFIRMED implemented and exercised:** explicit canonical-key selections,
 synthetic typedef witnesses, generation-bound Python companions, independent GDB
-and LLDB adapters, flags/aggregate summaries, and recoverable publication are
-implemented on the formatter branch. Formatters remain disabled by default
-(no formatter generated without a selection). See
-[formatter design and acceptance](docs/DEBUGGER-FORMATTERS.md).
+and LLDB adapters, flags/aggregate summaries, and recoverable publication.
+Formatters remain disabled by default (no formatter generated without a
+selection). See [formatter design and acceptance](docs/DEBUGGER-FORMATTERS.md)
+for the six original requirements and tested profiles. Protected integration
+and final-revision required checks are tracked in
+[PR188](https://github.com/zwilcox/GhidraDwarfForge/pull/188).
+
+**HISTORICAL implementation checkpoints:** the local progress and failures below
+precede the hosted Linux and Windows evidence recorded afterward. Their pending
+statements describe those individual checkpoints, not the latest scoped results.
 
 **CONFIRMED local checkpoint:** production saved-program, fully stripped ET_EXEC
 fixtures pass GNU/LLVM/strict libdwarf validation, repeated generation and disabled
@@ -75,11 +81,34 @@ exporter already handles the Windows path convention. Native Windows production
 and transported-consumer acceptance still require a passing rerun. See
 `docs/evidence/formatter-windows-fixture-path.json`.
 
-**Remaining:** finish the complete current-revision architecture profiles and
-native Windows production/consumer validation; review the hosted required gate,
-update final acceptance evidence and integrate through a protected PR. The new
-Windows stages and workflow changes remain unverified on GitHub. Keep #111 open
-until all original requirements and required validation pass at the final revision.
+**CONFIRMED hosted Linux formatter acceptance:** run `42390876041` at
+`ef876bee49e2f1165626e9766b33ea4b5bd9b668` passes ten production formatter
+cases: plain non-PIE and zlib PIE on x86-64, AArch64, ARM32, MIPS32 big-endian
+and MIPS32 little-endian. All five profiles pass actual GDB CLI/MI; x86-64 and
+AArch64 also pass LLDB summary/child checks. Two relocated x86-64 generations
+pass both debuggers with byte-identical artifacts and missing/mismatched-file
+controls. Raw review binds the reports and companions to the actual CI release
+package. The documented `coverage.typeNodes` query finds all nine selected keys
+in both default and enabled reports. See
+`docs/evidence/formatter-linux-acceptance.json` and the six-requirement map in
+`docs/DEBUGGER-FORMATTERS.md`. This proves the formatter stages, not the full gate.
+
+**CONFIRMED native Windows production and corrected local consumers:** the same
+run's Windows host job passes both non-PIE and PIE five-companion exports,
+deterministic toggles, cancellation/retry and invalid choices. Raw review binds
+its artifacts to the actual package and compiler inputs. The hosted Linux
+consumer then rejects a missing-source warning caused by the recorded Windows
+build directory; formatter assertions themselves pass. Supplying the transported
+source directory fixes source listing in GDB CLI/MI without changing artifact
+bytes or weakening warning checks. Both Windows artifacts pass the corrected
+local GDB/LLDB and strict-validator consumers. See
+`docs/evidence/formatter-windows-acceptance.json`.
+
+**Integration checkpoint:** the corrected hosted consumer and complete
+final-revision `required-validation` gate remain required before protected merge
+and closure of #111. PR188's checks and merge state are the integration record;
+the scoped evidence above is not a whole-run success claim. No release
+publication or #187 work is included.
 
 ## Historical development log
 

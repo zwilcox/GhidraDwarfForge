@@ -39,11 +39,14 @@ def run(command, log, timeout=300, env=None, input_text=None, expected_status=0)
     return text
 
 
-def gdb(original, sidecar, companion, root, emulator, sysroot, reference=None, mi=False):
+def gdb(original, sidecar, companion, root, emulator, sysroot, reference=None, mi=False,
+        source_directory=None):
     commands = ['set pagination off', 'set confirm off', 'set debuginfod enabled off',
         'set auto-solib-add off', 'set disable-randomization off', 'file ' + json.dumps(str(original), ensure_ascii=False)]
     if sidecar is not None:
         commands.append('symbol-file ' + json.dumps(str(sidecar), ensure_ascii=False))
+    if source_directory is not None:
+        commands.append('directory ' + json.dumps(str(source_directory), ensure_ascii=False))
     commands.append('break forge_formatter_marker')
     qemu = None
     qlog = None
@@ -59,6 +62,8 @@ def gdb(original, sidecar, companion, root, emulator, sysroot, reference=None, m
             commands.extend(['set sysroot ' + sysroot, 'target remote 127.0.0.1:' + str(port), 'continue'])
         else:
             commands.append('run')
+        if source_directory is not None:
+            commands.append('list forge_formatter_marker')
         if companion is not None:
             # GDB's source command consumes the entire filename literally,
             # unlike file/symbol-file which parse quotes and backslash escapes.
@@ -100,6 +105,8 @@ def gdb(original, sidecar, companion, root, emulator, sysroot, reference=None, m
             text = run(argv, root)
         if qemu is not None:
             assert qemu.wait(timeout=5) == 0
+        if source_directory is not None:
+            assert 'return forge_node.value;' in text, 'relocated synthetic source was not listed'
         if companion is not None:
             for expected in ['unknown=0x4', 'a=5', 'b=17', 'value=42', 'unreadable=0x1', 'Forge formatters unloaded',
                     'raw: -127 / 0x81', 'raw: 32773 / 0x8005', 'raw: 13835058055282163717 / 0xc000000000000005',
