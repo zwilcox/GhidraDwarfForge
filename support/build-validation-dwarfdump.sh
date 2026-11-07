@@ -155,7 +155,7 @@ else
                     "$private_consumer")
                         test -f "$stage/libexec/$dependency"
                         ;;
-                    zlib1.dll|libzstd.dll)
+                    zlib1.dll|libz-1.dll|libzstd.dll)
                         test -f "/mingw64/bin/$dependency"
                         if [[ ! -f "$stage/libexec/$dependency" ]]; then
                             cp "/mingw64/bin/$dependency" "$stage/libexec/"

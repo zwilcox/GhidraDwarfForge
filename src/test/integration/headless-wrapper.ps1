@@ -97,13 +97,17 @@ exit /b %FAKE_HEADLESS_EXIT%
     $inputElf = Join-Path $work 'fixture input.elf'
     $override = Join-Path $work 'override.elf'
     $output = Join-Path $work 'explicit.dbg'
+    $selection = Join-Path $work 'formatter selection λ.json'
+    $formatterHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData(
+        [Text.Encoding]::UTF8.GetBytes([IO.Path]::GetFileName($output)))).ToLowerInvariant()
+    $formatterOutput = Join-Path $work "forge_formatters_$formatterHash.py"
     $project = Join-Path $work 'projects'
     $databaseDirectory = Join-Path $project 'Existing.rep'
     $database = Join-Path $databaseDirectory 'db.1'
     $packagedDirectory = Join-Path $fakeGhidra 'Ghidra\Extensions\GhidraDwarfForge\os\win_x86_64'
     $packagedLibrary = Join-Path $packagedDirectory 'libdwarf.dll'
     New-Item -ItemType Directory -Path $databaseDirectory, $packagedDirectory -Force | Out-Null
-    foreach ($path in @($consumer, $producer, $inputElf, $override, $output, "$output.c", "$output.gdb.py", "$output.unwind.json",
+    foreach ($path in @($consumer, $producer, $inputElf, $override, $output, $selection, $formatterOutput, "$output.c", "$output.gdb.py", "$output.unwind.json",
             "$inputElf.dbg", "$inputElf.dbg.c", "$inputElf.dbg.gdb.py", "$inputElf.dbg.unwind.json",
             "$override.dbg", "$override.dbg.c", "$override.dbg.gdb.py", "$override.dbg.unwind.json",
             (Join-Path $project 'Existing.gpr'), (Join-Path $project 'Existing.lock'),
@@ -121,6 +125,9 @@ exit /b %FAKE_HEADLESS_EXIT%
     Assert-Condition ($launchedArguments -match '(?:^|\s)"?-loader"?\s+"?ElfLoader"?(?:\s|$)') `
         'import wrapper did not select the ELF loader'
     $null = Invoke-Wrapper 0 $importOptions
+    $null = Invoke-Wrapper 0 ($importOptions + @('-Formatters', $selection))
+    $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
+    Assert-Condition ($launchedArguments.Contains("--formatters=$selection")) 'formatter selection was not forwarded'
     $null = Invoke-Wrapper 0 ($importOptions + @('-AnnotationRecordLimit', '123',
         '-AnnotationTextLimit', '456', '-AnnotationSourceLimit', '789'))
     $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
@@ -142,6 +149,11 @@ exit /b %FAKE_HEADLESS_EXIT%
     $null = Invoke-Wrapper 0 $unknownProjectOptions
 
     Assert-RejectedLog $inputElf $importOptions
+    Assert-RejectedLog $selection ($importOptions + @('-Formatters', $selection))
+    Assert-RejectedLog $formatterOutput ($importOptions + @('-Output', $output, '-Formatters', $selection))
+    $selectionHardlink = Join-Path $work 'selection-hardlink.log'
+    New-Item -ItemType HardLink -Path $selectionHardlink -Target $selection | Out-Null
+    Assert-RejectedLog $selectionHardlink ($importOptions + @('-Formatters', $selection))
     Assert-RejectedLog (Join-Path $work './fixture input.elf') $importOptions
     $relativeInput = [IO.Path]::GetFileName($inputElf)
     Assert-RejectedLog $relativeInput $importOptions $work

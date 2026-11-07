@@ -297,13 +297,24 @@ public final class MinimalDwarfSidecarExporter {
     }
 
     private final ghidradwarfforge.elf.DebugSectionCompression compression;
+    private final Map<String, String> formatterAliases;
 
     public MinimalDwarfSidecarExporter() {
         this(ghidradwarfforge.elf.DebugSectionCompression.NONE);
     }
 
     public MinimalDwarfSidecarExporter(ghidradwarfforge.elf.DebugSectionCompression compression) {
+        this(compression, Map.of());
+    }
+
+    public MinimalDwarfSidecarExporter(ghidradwarfforge.elf.DebugSectionCompression compression,
+            Map<String, String> formatterAliases) {
         this.compression = Objects.requireNonNull(compression, "compression");
+        this.formatterAliases = java.util.Collections.unmodifiableMap(new java.util.TreeMap<>(formatterAliases));
+        if (formatterAliases.values().stream().anyMatch(name -> !name.matches("__forge_formatter_[0-9a-f]{64}")) ||
+                new java.util.HashSet<>(formatterAliases.values()).size() != formatterAliases.size()) {
+            throw new IllegalArgumentException("invalid formatter type witness names");
+        }
     }
 
     public ExportResult export(Path input, Path output, Path consumerLibrary,
@@ -527,6 +538,15 @@ public final class MinimalDwarfSidecarExporter {
                 globalReservedNames.add(alias.name());
             }
         }
+        for (var witness : formatterAliases.entrySet()) {
+            checkCancelled(cancelled);
+            if (typeModel == null || !typeModel.types().byKey().containsKey(witness.getKey()) ||
+                    constantNames.contains(witness.getValue()) || globalReservedNames.contains(witness.getValue()) ||
+                    typeModel.types().nodes().stream().anyMatch(node -> node.name().equals(witness.getValue())) ||
+                    typeModel.globals().stream().anyMatch(value -> value.name().equals(witness.getValue()))) {
+                throw new IllegalArgumentException("missing or conflicting formatter canonical type witness");
+            }
+        }
         var globalNames = typeModel == null ? new GlobalScopeNames.Plan(Set.of(), Set.of(), List.of()) :
             GlobalScopeNames.build(typeModel.globals(), typeModel.types(), globalReservedNames);
         for (String message : globalNames.diagnostics()) diagnostic.accept(message);
@@ -577,7 +597,7 @@ public final class MinimalDwarfSidecarExporter {
         try (var phase = ExportPhase.start("native-production")) {
             production = produce(producer, consumer, target, ordered,
                 unitName, directoryName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
-                elf.byteOrder(), relatedAliases, globalNames, linePlan, constants, constantTypeNames, cancelled);
+                elf.byteOrder(), relatedAliases, globalNames, linePlan, constants, constantTypeNames, formatterAliases, cancelled);
             phase.completed = true;
         }
         Map<String, byte[]> sections = production.sections();
@@ -603,7 +623,7 @@ public final class MinimalDwarfSidecarExporter {
             Dwarf5LocationLists.Result locationLists,
             ByteOrder byteOrder, List<ElfFunctionAlias> aliases, GlobalScopeNames.Plan globalNames,
             Dwarf5LineTable.Result linePlan, List<SyntheticConstant> constants,
-            Map<Integer, String> constantTypeNames, BooleanSupplier cancelled) {
+            Map<Integer, String> constantTypeNames, Map<String, String> formatterAliases, BooleanSupplier cancelled) {
         Map<Long, SectionRecord> sections = new LinkedHashMap<>();
         long[] nextSection = { 1 };
         long[] nextSymbol = { 1 };
@@ -643,6 +663,16 @@ public final class MinimalDwarfSidecarExporter {
                 debug, unit, typeModel, classes.types(), errorOut);
             var typeReferences = populateTypes(producer, consumer, debug, typeModel, allocatedTypes, byteOrder,
                 errorOut, cancelled);
+            for (var witness : formatterAliases.entrySet()) {
+                checkCancelled(cancelled);
+                var canonical = allocatedTypes.get(witness.getKey());
+                if (canonical == null) {
+                    throw new IllegalArgumentException("missing or conflicting formatter canonical type witness");
+                }
+                Die alias = newDie(producer, consumer, debug, DW_TAG_TYPEDEF, unit, errorOut);
+                addName(producer, consumer, alias, witness.getValue(), errorOut);
+                addReference(producer, consumer, debug, alias, DW_AT_TYPE, canonical.primary(), errorOut);
+            }
             Map<FunctionKey, FunctionLines> sourceFunctions = sourceFunctions(syntheticSource);
             Map<FunctionKey, ProgramTypeModel.FunctionSignature> signatures =
                 emittedFunctionSignatures(functions, typeModel, syntheticSource);

@@ -475,12 +475,14 @@ jobs:
           }
           copy_package_notices mingw-w64-x86_64-zlib zlib
           copy_package_notices mingw-w64-x86_64-zstd zstd
-          test -f ../native-windows-out/zlib1.dll
+          # MSYS2 zlib 1.4 links libz.dll.a to libz-1.dll; older packages
+          # use zlib1.dll. Copy the actual recursively audited imports.
+          test -f ../native-windows-out/zlib1.dll || test -f ../native-windows-out/libz-1.dll
           test -f ../native-windows-out/libzstd.dll
           for bundled_dll in ../native-windows-out/*.dll; do
             bundled_name=$(basename "$bundled_dll" | tr '[:upper:]' '[:lower:]')
             case "$bundled_name" in
-              libdwarf-*.dll|libdwarfp-*.dll|libzstd.dll|zlib1.dll) ;;
+              libdwarf-*.dll|libdwarfp-*.dll|libzstd.dll|zlib1.dll|libz-1.dll) ;;
               *)
                 echo "bundled DLL has no reviewed notice policy: $bundled_name" >&2
                 exit 1
@@ -631,7 +633,7 @@ jobs:
                 -PsupervisorPath="$PWD/build/forge-validator-supervisor" \
                 -PsupervisorPython="$(command -v python3)" \
                 -PsupervisorResults="$PWD/build/test-results/extension-build/supervisor"
-            ./gradlew exportPhaseSmoke addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
+            ./gradlew formatterPlanSmoke exportPhaseSmoke addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke attachmentExportBindingSmoke attachmentOperationSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke debuglinkBasenameSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
@@ -1036,6 +1038,32 @@ jobs:
         run: |
           python3 src/test/integration/export-consistency.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
             "build/test-results/export-consistency/$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Validate optional formatters in GDB CLI/MI and LLDB
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          consumers=()
+          companions=()
+          if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+              consumers+=(--lldb lldb-18)
+              companions+=(--companions)
+          fi
+          python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "build/test-results/formatters/$TARGET/exec" --role exec \
+              --dwarfdump "$DWARFDUMP" "${consumers[@]}" "${companions[@]}"
+          python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "build/test-results/formatters/$TARGET/pie-zlib" --role pie --compression zlib \
+              --dwarfdump "$DWARFDUMP" "${consumers[@]}"
+          if [[ "$TARGET" == x86_64 ]]; then
+              for role in exec pie-zlib; do
+                  python3 src/test/integration/formatter-portable.py \
+                      "build/test-results/formatters/$TARGET/$role" \
+                      "build/test-results/formatters/portable/$role" --producer-host Linux \
+                      --lldb lldb-18 --dwarfdump "$DWARFDUMP"
+              done
+          fi
 
       - name: Validate recovered CFI in executables, PIE and loaded shared libraries
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
@@ -2943,6 +2971,15 @@ jobs:
           python3 src/test/integration/synthetic-cfi-reference.py x86_64 \
             build/test-results/windows-unwind-reference --dwarfdump "$PWD/validation-tool/bin/dwarfdump"
 
+      - name: Build independent ELF formatter inputs for native Windows
+        run: python3 src/test/integration/formatter-reference.py build/test-results/windows-formatter-reference
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-x86-formatter-reference
+          path: build/test-results/windows-formatter-reference/
+          if-no-files-found: error
+
       - uses: actions/upload-artifact@v7
         with:
           name: linux-x86-unwind-reference
@@ -3123,6 +3160,11 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
+          name: linux-x86-formatter-reference
+          path: linux-formatter-reference
+
+      - uses: actions/download-artifact@v8
+        with:
           name: dwarfdump-windows-validation
           path: validation-tool-windows
 
@@ -3179,7 +3221,7 @@ jobs:
           if ($null -eq $extension) { throw 'extension ZIP is missing' }
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
-          & .\gradlew.bat exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
+          & .\gradlew.bat formatterPlanSmoke exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
             syntheticSourceSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
@@ -3414,6 +3456,20 @@ jobs:
             --readelf (Join-Path $mingwBin 'readelf.exe') --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe')
           if ($LASTEXITCODE -ne 0) { throw 'Native PowerShell unwind generation failed' }
 
+      - name: Native Windows formatter generations, controls and cancellation
+        shell: pwsh
+        timeout-minutes: 15
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          python src/test/integration/formatter-windows.py `
+            linux-formatter-reference build/test-results/windows-host/formatters `
+            --ghidra $env:GHIDRA_INSTALL_DIR --powershell (Get-Command pwsh).Source `
+            --readelf (Join-Path $mingwBin 'readelf.exe') --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe')
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows formatter export failed' }
+
       - name: Native Windows unwind chooser cancellation and exports
         shell: pwsh
         timeout-minutes: 15
@@ -3499,7 +3555,7 @@ jobs:
       - name: Install Linux target debugger and validators
         run: |
           sudo apt-get update
-          sudo apt-get install -y gdb llvm binutils
+          sudo apt-get install -y gdb gdb-multiarch llvm binutils lldb-18=1:18.1.3-1ubuntu1 python3-lldb-18=1:18.1.3-1ubuntu1
       - name: Validate Windows attachment, build-ID and GUI exports in GDB
         run: |
           (cd validation-tool && sha256sum -c SHA256SUMS)
@@ -3522,6 +3578,10 @@ jobs:
               "$PWD/windows-artifacts/windows-host/powershell-unwind" \
               "$PWD/build/test-results/windows-attachment-gdb/powershell-unwind" \
               --producer-host Windows --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/formatter-portable.py \
+              "$PWD/windows-artifacts/windows-host/formatters" \
+              "$PWD/build/test-results/windows-attachment-gdb/formatters" \
+              --producer-host Windows --lldb lldb-18 --dwarfdump "$DWARFDUMP"
       - uses: actions/upload-artifact@v7
         if: always()
         with:

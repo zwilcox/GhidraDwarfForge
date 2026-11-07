@@ -5,6 +5,7 @@ param(
     [Alias('Input')] [string] $OriginalElf,
     [string] $Output,
     [switch] $GdbLoader,
+    [string] $Formatters,
     [string] $CompressDebugSections = 'none',
     [string] $SourceContext = 'off',
     [ValidateSet('off', 'strict', 'conditioned')] [string] $SynthesizeUnwind = 'off',
@@ -178,13 +179,21 @@ namespace GhidraDwarfForge {
         $selectedOutput = "$selectedInput.dbg"
     }
     foreach ($protected in @($Import, $OriginalElf, $selectedOutput,
-            $Libdwarf, $Libdwarfp, $headless, $PSCommandPath)) {
+            $Libdwarf, $Libdwarfp, $Formatters, $headless, $PSCommandPath)) {
         Assert-LogNotAlias $protected
     }
     if (-not [string]::IsNullOrWhiteSpace($selectedOutput)) {
         Assert-LogNotAlias "$selectedOutput.c"
         Assert-LogNotAlias "$selectedOutput.gdb.py"
         Assert-LogNotAlias "$selectedOutput.unwind.json"
+        $formatterHasher = [Security.Cryptography.SHA256]::Create()
+        try {
+            $formatterHash = [BitConverter]::ToString($formatterHasher.ComputeHash(
+                [Text.Encoding]::UTF8.GetBytes([IO.Path]::GetFileName($selectedOutput)))).Replace('-', '').ToLowerInvariant()
+        }
+        finally { $formatterHasher.Dispose() }
+        $formatterDirectory = [IO.Path]::GetDirectoryName((Get-AbsoluteFilesystemPath $selectedOutput))
+        Assert-LogNotAlias (Join-Path $formatterDirectory "forge_formatters_$formatterHash.py")
     }
     if ($projectMode) {
         Assert-LogNotAlias (Join-Path $ProjectDirectory "$ProjectName.gpr")
@@ -265,6 +274,9 @@ try {
     }
     if (-not [string]::IsNullOrWhiteSpace($Output)) {
         $exportOptions += @('--output', $Output)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Formatters)) {
+        $exportOptions += @("--formatters=$Formatters")
     }
     if ($GdbLoader) {
         $exportOptions += @('--gdb-loader')
