@@ -112,15 +112,18 @@ def main():
         options += ['file ' + json.dumps(str(binary))]
         if not present or curated:
             # A retained prior generation must not supply stale function DIEs.
-            options += ["python assert gdb.lookup_global_symbol('recovered_add') is None"]
+            options += ["python assert (gdb.lookup_global_symbol('recovered_add') or "
+                "gdb.lookup_static_symbol('recovered_add')) is None"]
         if not present:
-            options += ["python assert gdb.lookup_global_symbol('curated_refresh_add') is None"]
+            options += ["python assert (gdb.lookup_global_symbol('curated_refresh_add') or "
+                "gdb.lookup_static_symbol('curated_refresh_add')) is None"]
         for option in options:
             command += ['-ex', option]
         if present and not substitute:
             oracle = work / (name + '.py')
             oracle.write_text('import gdb\n'
-                'symbol = gdb.lookup_global_symbol(' + repr(function) + ')\n'
+                'symbol = (gdb.lookup_global_symbol(' + repr(function) + ') or\n'
+                '    gdb.lookup_static_symbol(' + repr(function) + '))\n'
                 'assert symbol is not None and symbol.symtab is not None\n'
                 'assert int(symbol.value().address) == ' + str(address) + '\n'
                 'try:\n'

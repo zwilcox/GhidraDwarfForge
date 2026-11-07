@@ -1,10 +1,11 @@
 # Install a Forge export by build ID
 
-**Development status:** the Linux command has local end-to-end validation.
-Windows command code is **PRESENT, UNVERIFIED** for this installer. Full #109
-consumer acceptance and protected integration remain outstanding. See the
-[transaction checkpoint](BUILD-ID-TRANSACTION.md) and
-[Linux command receipt](evidence/build-id-command-linux.json) for the tested scope.
+**Development status:** the Linux command has local end-to-end validation,
+and Windows native installation/recovery tests pass. Corrected downstream GDB
+checks pass local replay of the retained Windows artifacts. Full latest-head
+consumer/target validation, final artifact review and protected integration
+remain outstanding. See the [native and consumer receipt](evidence/windows-build-id-native-and-consumer.json)
+and [Linux command receipt](evidence/build-id-command-linux.json).
 
 Installation associates an export with the original ELF's existing build ID.
 It leaves the executable unchanged, retains the source and export report, and
@@ -137,7 +138,7 @@ transaction finishes synchronization and readback before returning. Exit 130
 means cancellation was observed; exit 1 means failure. State records remain
 authoritative if a process exits or result output is lost.
 
-## Windows launcher status
+## Windows launcher and validation
 
 `support/ghidra-dwarf-forge-build-id.ps1` accepts `-RequestFile`,
 `-RequestSha256`, `-GhidraDirectory`, optional `-ExtensionDirectory`,
@@ -146,63 +147,50 @@ paths as UTF-8 base64 and never invokes a shell or requests elevation.
 The Windows host requires the existing local NTFS/raw-security metadata
 contract. `-EnableSecurityPrivilege` explicitly enables an already assigned
 token privilege for that host and restores it afterward; it does not obtain
-an administrator token. Installer-specific Windows acceptance is still required.
+an administrator token.
 
-The native Windows CI harness now consumes the existing Windows headless export
-and separately saved analyst-refresh export. It exercises the packaged PowerShell
-launcher, protected DACL preservation, explicit null-SACL refusal, 14 interrupted lifecycle boundaries,
-recovery, locking, cancellation, foreign registrations, junctions, hard links and
-alternate-stream refusals. It retains raw commands, results, native metadata
-snapshots and independent copies of both installed generations. **PRESENT,
-UNVERIFIED:** the native run must pass before these checks establish Windows
-installer acceptance. This harness does not claim Windows GDB runtime/discovery;
-consumer acceptance is separate.
+**CONFIRMED scoped native validation:** host job `128245436720` passes actual
+headless and saved-analyst-refresh exports followed by the packaged installer.
+Raw review verifies 73 command checks, 14 interrupted lifecycle boundaries,
+metadata comparisons for both generations, and 22 protected-input bindings.
+Controls cover explicit null-SACL refusal, locking, cancellation, foreign
+registrations, junctions, hard links and alternate streams. Native raw metadata
+and command observations are not a local replay of Windows filesystem behavior.
+Full generation/validator evidence review and the latest combined gate remain
+required; see the [acceptance map](BUILD-ID-ACCEPTANCE.md).
 
-The first native installer run refused unsupported SACL metadata after the test's
-high-level `Get-Acl`/`Set-Acl` DACL setup. The corrected fixture reuses the existing
-native DACL-only helper and checks unchanged absent-SACL state; it does not relax
-production metadata admission. The corrected fixture now passes its native
-DACL/SACL controls; the following installation exposed a separate lock readback
-defect. Native acceptance of the lock correction remains pending. See
-[the retained failure and correction](evidence/windows-build-id-sacl-fixture.json).
+The earlier DACL-fixture and second-handle lock failures are resolved in this
+native run. Their reproductions and corrections remain recorded in the
+[SACL fixture receipt](evidence/windows-build-id-sacl-fixture.json) and
+[lock audit](evidence/build-id-locking.json). Production admission still rejects
+unsupported security metadata and retains whole-file exclusion.
 
-The old whole-file lock implementation had two independently observed defects:
-Windows rejected its second-handle byte read, and Linux silently released its
-process-scoped lock when that second handle closed. The corrected implementation
-uses the actual locking channel for Windows reads and an audited Linux Intel
-LP64 open-file-description lock for Linux. Metadata inspection and content
-checks retain the original contract. Isolated Linux tests prove that independent
-metadata/data reads and same-JVM contenders do not release exclusion; production
-transaction and command regressions pass. An early native Windows smoke and the
-full native lifecycle/downstream tests are still required. See the
-[lock reproduction, ABI audit and validation receipt](evidence/build-id-locking.json).
+### GNU validator path requirement
 
-The downstream Linux job now runs `windows-build-id-gdb.py` on those exact
-retained initial and curated installed generations. It verifies their recorded
-hashes and Windows host contract, reruns GNU/LLVM/pinned-strict validation, and
-requires GDB build-ID discovery, exact function addresses, analyst names/types,
-arguments and normal exit. Empty/removed registrations and unmapped Windows
-source paths are separate negative controls. Source substitution is explicit:
-the transferred DWARF is unchanged and still records its Windows installation
-directory. **PRESENT, UNVERIFIED:** this downstream installer harness awaits
-actual native Windows artifacts. An independent compiler fixture confirms GDB's
-Windows-path substitution behavior with Unicode, spaces, quotes and a dollar
-sign; that control is not Windows installer acceptance.
+The tested Windows setup uses `<MSYS2>/usr/bin/readelf.exe` from the `binutils`
+package, alongside MinGW LLVM and the pinned strict checker. The MinGW build of
+GNU readelf loses Unicode characters in the selected debug root. Independent
+controls compare the same compiler ELF on ASCII, Unicode and 388-character paths,
+under both an unset locale and the production supervisor C locale. MSYS2 reports
+match exactly and malformed input is rejected; the MinGW Unicode control fails.
+The actual supervised installation/recovery workflow also passes with MSYS2.
+Arbitrary GNU readelf builds do not establish Unicode/long-path compatibility.
+See the [retained path failure and test contract](evidence/windows-build-id-validator-paths.json).
 
+### Transferred artifacts and source lookup
 
-### Windows GNU validator path prerequisite
+The downstream consumer uses the exact native Windows-installed initial and
+curated generations, verifies recorded hashes, reruns GNU/LLVM/pinned-strict
+validation, and tests fresh GDB build-ID discovery, addresses, names, types,
+arguments and normal exit. Transferred DWARF still records its Windows source
+directory, so Linux GDB requires explicit source substitution. Empty/removed
+registrations and unmapped source paths are separate negative controls.
 
-**CONFIRMED failure; replacement tool selection PRESENT, UNVERIFIED:** the
-MinGW GNU readelf used in run `42314434393` loses Unicode characters in the
-selected debug root and cannot open the installed derivative. Installation
-refuses publication and retains its evidence. Selecting arbitrary GNU readelf
-versions does not establish Unicode or long-path compatibility.
-
-The CI candidate selects `<MSYS2>/usr/bin/readelf.exe` from the `binutils`
-package, while retaining MinGW LLVM and the pinned strict checker. A direct
-native Windows probe compares compiler ELF interpretation on ASCII, Unicode
-and long paths, checks malformed-input refusal, and records the separate
-MinGW control. Full Java supervisor and installer tests are still required;
-the direct-tool probe alone will not establish production acceptance. This
-selection neither modifies the supplied executable nor bypasses validation.
-See [the failure receipt](evidence/windows-build-id-validator-paths.json).
+The first hosted consumer failed because the new unmapped-source oracle searched
+only global symbols. Exact-artifact reproduction resolves the expected file-local
+function at the correct address. The corrected test and stale-name controls use
+both global and static lookup. Local replay now passes two runtime sessions and
+four controls; the skipped compressed-GUI and unwind consumers also pass.
+This does not claim native Windows execution of the Linux ELF. Latest-head hosted
+consumer validation and protected integration remain outstanding. See the
+[native artifact and consumer receipt](evidence/windows-build-id-native-and-consumer.json).

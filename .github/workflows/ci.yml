@@ -3493,7 +3493,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gdb llvm binutils
-      - name: Execute both Windows attachment generations and reject wrong CRC
+      - name: Validate Windows attachment, build-ID and GUI exports in GDB
         run: |
           (cd validation-tool && sha256sum -c SHA256SUMS)
           chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
@@ -3522,6 +3522,7 @@ jobs:
           path: build/test-results/windows-attachment-gdb/
           if-no-files-found: warn
           retention-days: 14
+          include-hidden-files: true
 
   required-validation:
     if: always()

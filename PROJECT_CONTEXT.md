@@ -1,5 +1,20 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED native #109 installation and consumer harness correction (2026-11-06):**
+Windows host job `128245436720` passes real installation/update/removal and
+interrupted recovery. Raw review binds 73 checks, 14 interruption cases, two
+metadata comparisons and 22 protected inputs. The downstream job then exposed
+a test defect: its unmapped-source oracle searched only global symbols, while
+the exported function is file-local. Exact-artifact reproduction finds the
+function at the correct address; the corrected oracle and stale-name controls
+check both symbol scopes. Local replay of both native Windows generations passes
+GNU/LLVM/strict validation, two GDB runtime sessions and four controls. The
+remaining skipped GUI/unwind consumers also pass local replay. These are scoped
+results, not a passing combined gate: latest-head hosted consumer validation,
+complete generation/validator artifact review, target gates and protected
+integration remain required. See `docs/evidence/windows-build-id-native-and-consumer.json`.
+Earlier Windows-installer-unverified notes below are historical within this scope.
+
 **CONFIRMED #109 Windows validator path failure (2026-11-06):**
 run `42314434393` passes the lock checks and reaches derived-artifact validation,
 where MinGW GNU readelf renders the Unicode installation directory as `?` and
