@@ -89,6 +89,30 @@ tasks.register("sourcePartitionSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.source.SourcePartitionSmoke"
 }
 
+tasks.register("sourceBundleSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks source generation identity, strict manifests and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.SourceBundleSmoke"
+}
+
+tasks.register("sourceBundleStoreSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks immutable source installation, conflicts, cancellation and pair rollback"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.SourceBundleStoreSmoke"
+}
+
+tasks.register("sourceBundleFilesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete source bundle reads, moved trees, conflicts and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.SourceBundleFilesSmoke"
+}
+
 tasks.register("debugCompressionSmoke", JavaExec) {
     group = "verification"
     description = "Checks ELF32/64 endian compression headers, fallback, determinism and cancellation"

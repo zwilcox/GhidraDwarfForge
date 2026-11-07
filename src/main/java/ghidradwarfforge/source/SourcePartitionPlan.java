@@ -61,6 +61,8 @@ public final class SourcePartitionPlan {
     public int logicalLineCount() { return logicalLineCount; }
     public String sourceSha256() { return sourceSha256; }
 
+    public static byte[] syntheticHeader() { return HEADER.clone(); }
+
     public void requireSource(SyntheticSourceFile source) {
         if (source == null || !sourceSha256.equals(digest(source.utf8()))) {
             throw new IllegalArgumentException("partition plan does not describe the supplied source");

@@ -27,15 +27,37 @@ translates logical lines to file/local-line pairs without changing addresses or
 type identity. File zero is reserved for the synthetic index; part files start at
 one. These are file-table indices, not compilation-unit indices.
 
-**PLANNED publication:** build and verify a complete immutable source generation
-before switching the sidecar. Use deterministic relative filenames and a
-manifest of source hashes, partition bounds and function associations. Stage a
-generation beside its final location, then install the complete generation
-before publishing a sidecar that refers to it. Reuse an existing generation only
-after exact verification; reject conflicting content. Retain old generations
-so old sidecars and concurrent readers do not lose their sources. Do not delete
-unrelated files or infer ownership merely from a filename prefix. Failure,
-cancellation and rollback must preserve a usable previous generation.
+**PRESENT, UNVERIFIED in production:** the source bundle uses flat sibling files
+named `forge-src-<ordinal>-<full-content-sha256>.c` and a canonical JSON manifest
+named `forge-src-<full-manifest-sha256>.json`. The ordinary `<binary>.dbg.c` path
+becomes an explicitly synthetic index only when partitioning is selected. The
+manifest binds the input hash, logical source hash, index name, grouping target,
+part hashes/byte counts/line bounds and function identities/dispositions. Names
+never interpolate analyst labels. File ordinal distinguishes identical contents
+at different file-table indices; changing the input or policy changes manifest
+identity without forcing unchanged parts to be rewritten.
+
+`SourceBundleStore` stages complete files beside the output and uses exclusive
+hard links to install them without overwriting concurrent creations. It verifies
+every referenced part before installing the manifest, then supplies another
+verification step before mutable sidecar/index publication. This optional mode
+requires filesystem hard-link support; it has no overwrite fallback. Existing
+content must be identical, regular and not a symlink or protected-path alias.
+An identical complete concurrent creation can be reused; a conflict is refused.
+Old parts and manifests, including complete unreferenced files left by a failed
+attempt, are retained: another export may already reference them. Only owned
+temporary stages are removed. No pruning policy or ownership inferred from a
+filename prefix is introduced. The existing recoverable pair/companion publisher
+will switch the mutable outputs after the immutable dependencies are installed.
+
+`SourceBundleFiles` identifies the synthetic index, strictly verifies its
+manifest and all local parts, checks the headers and line populations, and
+reconstructs the logical source hash using bounded streaming reads. It exposes
+the entire required file set and checks for changes before use. This supports
+future retention/transport integrations; it does not establish that the existing
+loader or installer already consumes the inventory. Filesystem checks detect
+ordinary concurrent changes, not hostile change-and-restore races between
+observations; no cross-file atomic visibility or power-loss durability is claimed.
 
 **PLANNED integration:** translate line-program rows and declaration file/line
 attributes through the same partition plan. Keep original logical coordinates
@@ -96,3 +118,29 @@ GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC bash ./gradlew --no-daemon \
 The native pin remains libdwarf 2.3.2 at
 `af7b278c6aa2ae9daad94fb7f8bffdc0e9980993`; no JNA signature or new native
 producer call is introduced by this foundation.
+
+**CONFIRMED source-bundle component checkpoint:** local manifest, store and
+reader smoke tests pass alongside partition/line-table and both existing
+publication regressions. They cover canonical/strict JSON, input/policy binding,
+hostile labels, duplicate function names, original-byte reconstruction, immutable
+reuse, ordinary and link-time creation races, symlink/hard-link conflicts,
+retained old files, rollback of mutable outputs, moved trees with the original
+directory unavailable, missing/changed parts, wrong headers/bounds and a source
+part larger than the streaming buffer. Cancellation is injected at every
+observed preparation (1,879), installation (169), and read (1,913) checkpoint.
+The store tests use representative sidecar bytes; they do not substitute for a
+real Ghidra export or GDB behavior test. The new tasks are listed in both host
+CI jobs, but hosted execution is pending.
+
+All three new suites also pass on the Java 21 runtime after their test classes
+are compiled explicitly with `javac --release 21` against the production classes
+and Ghidra's Gson JAR. The local Gradle smoke runner uses the installed JDK 25;
+its default test bytecode cannot be launched directly on Java 21. This standalone
+check verifies the selected Java 21 baseline without changing the native ABI.
+
+```sh
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC bash ./gradlew --no-daemon \
+    sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke \
+    sourcePartitionSmoke dwarfLineTableSmoke companionArtifactPublisherSmoke \
+    artifactPairPublisherSmoke
+```

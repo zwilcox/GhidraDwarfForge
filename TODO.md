@@ -18,9 +18,10 @@ retains the tested tree. The formatter checkpoint notes below are historical.
 **PLANNED #115:** one CU and canonical type graph with multiple source-file
 entries, optional bounded-size grouping, deterministic generation manifest and
 complete source installation before sidecar publication. See
-[design and acceptance](docs/MULTIFILE-SOURCE.md). Native-free partitioning and
-line lookup are implemented and locally checked; emitted DWARF, production
-publication, consumer integration, benchmarks and hosted validation remain
+[design and acceptance](docs/MULTIFILE-SOURCE.md). Partitioning, line lookup, strict source manifests,
+immutable source installation and complete-bundle reads have passing local
+component checks. Production option/publication wiring, emitted DWARF/GDB
+validation, consumer integration, benchmarks and hosted validation remain
 unverified. No #115 acceptance item is closed at this foundation checkpoint.
 
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
