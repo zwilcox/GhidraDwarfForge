@@ -35,6 +35,10 @@ for report_launcher in ghidra-dwarf-forge-report ghidra-dwarf-forge-report.ps1; 
     cp "$repository_dir/support/$report_launcher" "$work/base/GhidraDwarfForge/support/$report_launcher"
     chmod 644 "$work/base/GhidraDwarfForge/support/$report_launcher"
 done
+for build_id_launcher in ghidra-dwarf-forge-build-id ghidra-dwarf-forge-build-id.ps1; do
+    cp "$repository_dir/support/$build_id_launcher" "$work/base/GhidraDwarfForge/support/$build_id_launcher"
+    chmod 644 "$work/base/GhidraDwarfForge/support/$build_id_launcher"
+done
 for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
     printf '// fixture %s\n' "$entry_point" \
         > "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point"
@@ -279,6 +283,10 @@ for report_launcher in ghidra-dwarf-forge-report ghidra-dwarf-forge-report.ps1; 
 done
 test -x "$module/support/ghidra-dwarf-forge-attach"
 cmp "$repository_dir/support/ghidra-dwarf-forge-attach" "$module/support/ghidra-dwarf-forge-attach"
+test -x "$module/support/ghidra-dwarf-forge-build-id"
+for build_id_launcher in ghidra-dwarf-forge-build-id ghidra-dwarf-forge-build-id.ps1; do
+    cmp "$repository_dir/support/$build_id_launcher" "$module/support/$build_id_launcher"
+done
 for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
     cmp "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point" \
         "$module/ghidra_scripts/$entry_point"

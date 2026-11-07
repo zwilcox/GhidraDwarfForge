@@ -1,0 +1,79 @@
+{
+    "status": "CONFIRMED_LOCAL_NEGATIVE_SOURCE_LOOKUP_PRESENTATION_FIX",
+    "failedRun": 42291375845,
+    "failedJob": 128150619722,
+    "failedArtifact": 13544925954,
+    "artifactSha256": "99c3b0787ae4a77d1c99c7ee5d0ee27f764730b52e95a3c64e2d8f12eb437304",
+    "cause": "The intentionally absent DWARF source directory resolves correctly, but GDB default filename presentation prints a basename once DW_AT_comp_dir is recorded. The exact absolute-path warning assertion requires set filename-display absolute.",
+    "change": "Configure absolute filename presentation in the negative source-lookup subprocess; retain exact source, sidecar identity, warning and missing-file assertions.",
+    "productionCodeChanged": false,
+    "replay": {
+        "status": "PASS_REPRODUCED_AND_FIXED",
+        "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr185-mips32be-13544925954.zip",
+        "inputs": [
+            {
+                "archiveEntry": "build-id-discovery/run.tbWS3tOp/mips32be/exec/reported-preparation/controls/unresolved-dwarf-source.workspace/forge-debuglink-10035336135138803771/candidate.elf",
+                "sha256": "7dfdbae60c36125f311e5e8bb67b5d3e9c8bd2a107879504be0cbc864d21b792"
+            },
+            {
+                "archiveEntry": "build-id-discovery/run.tbWS3tOp/mips32be/exec/reported-preparation/controls/unresolved-dwarf-source.workspace/forge-debuglink-10035336135138803771/forge.debug",
+                "sha256": "bccb8639c631ee95aae7212850218d32ae0a248495f98df8b54256ec815dbbb9"
+            },
+            {
+                "archiveEntry": "build-id-discovery/run.tbWS3tOp/mips32be/exec/reported-preparation/controls/unresolved-source-gdb.py",
+                "sha256": "43c2f0e9d1f2cabc692ed151e596eb77560be86ff096f0af97ca6f8a1b910784"
+            }
+        ],
+        "runs": [
+            {
+                "fixed": false,
+                "command": [
+                    "gdb-multiarch",
+                    "-q",
+                    "-nx",
+                    "-batch",
+                    "-ex",
+                    "set debuginfod enabled off",
+                    "-ex",
+                    "set auto-solib-add off",
+                    "-ex",
+                    "set debug-file-directory /dev/shm/forge-lldb-worktree/build/build-id-installer/association-replay/empty-debug-root",
+                    "-ex",
+                    "file /dev/shm/forge-lldb-worktree/build/build-id-installer/association-replay/unresolved-dwarf-source.workspace/forge-debuglink-10035336135138803771/candidate.elf",
+                    "-x",
+                    "/dev/shm/forge-lldb-worktree/build/build-id-installer/association-replay/unresolved-source-gdb.py"
+                ],
+                "exit": 1
+            },
+            {
+                "fixed": true,
+                "command": [
+                    "gdb-multiarch",
+                    "-q",
+                    "-nx",
+                    "-batch",
+                    "-ex",
+                    "set debuginfod enabled off",
+                    "-ex",
+                    "set auto-solib-add off",
+                    "-ex",
+                    "set debug-file-directory /dev/shm/forge-lldb-worktree/build/build-id-installer/association-replay/empty-debug-root",
+                    "-ex",
+                    "file /dev/shm/forge-lldb-worktree/build/build-id-installer/association-replay/unresolved-dwarf-source.workspace/forge-debuglink-10035336135138803771/candidate.elf",
+                    "-ex",
+                    "set filename-display absolute",
+                    "-x",
+                    "/dev/shm/forge-lldb-worktree/build/build-id-installer/association-replay/unresolved-source-gdb.py"
+                ],
+                "exit": 0
+            }
+        ]
+    },
+    "outputs": {
+        "old.stdout": "",
+        "old.stderr": "Python Exception <class 'AssertionError'>: 'warning: 61\\tsemantic.exec.ghidra-forge.dbg.c: No such file or directory\\n'\nError occurred in Python: 'warning: 61\\tsemantic.exec.ghidra-forge.dbg.c: No such file or directory\\n'\n",
+        "fixed.stdout": "unresolved-source=PASS\n",
+        "fixed.stderr": ""
+    },
+    "scope": "Exact failed hosted MIPS32 big-endian artifact replay. This is a static negative lookup check, not a new export, runtime or full architecture-matrix acceptance. Full updated hosted gate remains required."
+}

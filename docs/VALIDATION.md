@@ -1,5 +1,21 @@
 # Validation record
 
+## Target diagnostic archive format
+
+Target CI artifacts named `target-preflight-<target>` now contain one
+`target-preflight.tar.gz`. Extract the outer GitHub ZIP, then inspect or extract
+the inner PAX archive on Linux. Member paths are relative to `build/test-results`.
+The archive retains hidden generation directories, exact fixture names, file
+contents and links. Some intentional Linux test names cannot be extracted on
+Windows filesystems. Do not rename those fixtures to make upload succeed.
+
+This packaging avoids GitHub's rejection of quotes and other characters in
+individual uploaded filenames. The archive itself is not proof of original
+filesystem ACLs, extended attributes or native identity; those checks remain
+bound to retained runtime observations. Existing pre-change artifacts contain
+the diagnostic files directly. See the
+[upload-failure and local regression record](evidence/build-id-target-artifact-retention.json).
+
 **CONFIRMED development acceptance:** P1.7 function signatures,
 calling conventions, declarations, thunks and aliases passed the combined
 [PR95 run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41195618723)

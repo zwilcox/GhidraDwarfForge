@@ -175,21 +175,30 @@ public final class LinuxFileMetadata {
                 checked(libc.fchown(output.fd, (int) wanted.uid(), (int) wanted.gid()), "fchown");
             }
             check(cancelled);
-            checked(libc.fchmod(output.fd, wanted.mode() & 0777), "fchmod");
+            // Only the independently owned stage is made temporarily writable.
+            // User xattrs require write permission, even when the final mode is
+            // read-only. The source is never chmod'ed.
+            checked(libc.fchmod(output.fd, (wanted.mode() & 0777) | 0200), "fchmod temporary stage mode");
             for (String name : prior.visibleAttributes().keySet()) {
                 if (!before.visibleAttributes().containsKey(name)) {
                     check(cancelled);
                     checked(libc.fremovexattr(output.fd, nameBytes(name)), "fremovexattr");
                 }
             }
-            for (var attribute : new TreeMap<>(before.visibleAttributes()).entrySet()) {
+            String acl = HEX.formatHex("system.posix_acl_access".getBytes(StandardCharsets.US_ASCII));
+            var names = new java.util.ArrayList<>(before.visibleAttributes().keySet());
+            // An access ACL can remove owner-write too, so apply it last.
+            names.sort(java.util.Comparator.comparing((String name) -> name.equals(acl)).thenComparing(name -> name));
+            for (String name : names) {
                 check(cancelled);
-                byte[] value = HEX.parseHex(attribute.getValue());
+                byte[] value = HEX.parseHex(before.visibleAttributes().get(name));
                 try (var memory = new Memory(Math.max(1, value.length))) {
                     memory.write(0, value, 0, value.length);
-                    checked(libc.fsetxattr(output.fd, nameBytes(attribute.getKey()), memory, value.length, 0), "fsetxattr");
+                    checked(libc.fsetxattr(output.fd, nameBytes(name), memory, value.length, 0), "fsetxattr");
                 }
             }
+            check(cancelled);
+            checked(libc.fchmod(output.fd, wanted.mode() & 0777), "fchmod final stage mode");
             try (var times = new Memory(32)) {
                 times.clear();
                 times.setLong(8, 0x3ffffffeL); // UTIME_OMIT: do not rewind ordinary read access times.

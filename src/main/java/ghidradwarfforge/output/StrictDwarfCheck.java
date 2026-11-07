@@ -39,6 +39,12 @@ public final class StrictDwarfCheck {
     public static Evidence run(AttachmentExportBinding binding, AttachmentReceiptStore.Host host,
             ValidatorSupervisor supervisor, Path tool, Path configuration, Path evidenceParent,
             BooleanSupplier cancelled) throws IOException {
+        return run(ArtifactValidationBinding.exported(binding), host, supervisor, tool, configuration, evidenceParent, cancelled);
+    }
+
+    public static Evidence run(ArtifactValidationBinding binding, AttachmentReceiptStore.Host host,
+            ValidatorSupervisor supervisor, Path tool, Path configuration, Path evidenceParent,
+            BooleanSupplier cancelled) throws IOException {
         binding.recheck(host, cancelled);
         var selections = new ArrayList<AttachmentPaths.Selection>();
         for (var entry : binding.files().entrySet()) {

@@ -576,7 +576,7 @@ public final class MinimalDwarfSidecarExporter {
         ProductionResult production;
         try (var phase = ExportPhase.start("native-production")) {
             production = produce(producer, consumer, target, ordered,
-                unitName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
+                unitName, directoryName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
                 elf.byteOrder(), relatedAliases, globalNames, linePlan, constants, constantTypeNames, cancelled);
             phase.completed = true;
         }
@@ -598,7 +598,7 @@ public final class MinimalDwarfSidecarExporter {
 
     private static ProductionResult produce(LibDwarfProducer producer,
             LibDwarfConsumer consumer, DwarfTarget target, List<FunctionSymbol> functions,
-            String unitName, SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String unitName, String directoryName, SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
             byte[] lineTable, Dwarf5RangeLists.Result rangeLists,
             Dwarf5LocationLists.Result locationLists,
             ByteOrder byteOrder, List<ElfFunctionAlias> aliases, GlobalScopeNames.Plan globalNames,
@@ -628,6 +628,9 @@ public final class MinimalDwarfSidecarExporter {
                 "dwarf_pro_set_default_string_form", errorOut, consumer);
             Die unit = newDie(producer, consumer, debug, DW_TAG_COMPILE_UNIT, null, errorOut);
             addName(producer, consumer, unit, unitName, errorOut);
+            // This is the generated source's directory, not an inferred original
+            // compiler working directory. Keep CU and line-table lookup aligned.
+            addCompilationDirectory(producer, consumer, unit, directoryName, errorOut);
             addProducer(producer, consumer, unit, errorOut);
             addUnsigned(producer, consumer, debug, unit, DW_AT_LANGUAGE, DW_LANG_C11,
                 errorOut);
@@ -1748,6 +1751,15 @@ public final class MinimalDwarfSidecarExporter {
         check(producer.dwarf_add_AT_name_a(die, name, result, errorOut),
             "dwarf_add_AT_name_a", errorOut, consumer);
         pointer(result, "name attribute");
+    }
+
+    private static void addCompilationDirectory(LibDwarfProducer producer,
+            LibDwarfConsumer consumer, Die die, String directoryName,
+            PointerByReference errorOut) {
+        PointerByReference result = new PointerByReference();
+        check(producer.dwarf_add_AT_comp_dir_a(die, directoryName, result, errorOut),
+            "dwarf_add_AT_comp_dir_a", errorOut, consumer);
+        pointer(result, "compilation-directory attribute");
     }
 
     private static void addProducer(LibDwarfProducer producer, LibDwarfConsumer consumer,

@@ -62,6 +62,7 @@ def main():
         commands = f"""set pagination off
 set confirm off
 set debuginfod enabled off
+set filename-display absolute
 set auto-solib-add off
 file {quoted(original)}
 attach {child.pid}

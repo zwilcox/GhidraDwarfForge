@@ -48,7 +48,7 @@ Linux and Windows native builds.
 |---|---|
 | Initialization and policy | `dwarf_producer_init`, `dwarf_pro_set_default_string_form` |
 | DIE construction | `dwarf_new_die_a`, `dwarf_add_die_to_debug_a`, `dwarf_die_link_a` |
-| Attributes | `dwarf_add_AT_name_a`, `dwarf_add_AT_producer_a`, `dwarf_add_AT_unsigned_const_a`, `dwarf_add_AT_reference_c`, `dwarf_add_AT_any_value_sleb_a`, `dwarf_add_AT_any_value_uleb_a`, `dwarf_add_AT_dataref_a`, `dwarf_add_AT_targ_address_c`, `dwarf_add_AT_flag_a`, `dwarf_add_AT_location_expr_a` |
+| Attributes | `dwarf_add_AT_name_a`, `dwarf_add_AT_comp_dir_a`, `dwarf_add_AT_producer_a`, `dwarf_add_AT_unsigned_const_a`, `dwarf_add_AT_reference_c`, `dwarf_add_AT_any_value_sleb_a`, `dwarf_add_AT_any_value_uleb_a`, `dwarf_add_AT_dataref_a`, `dwarf_add_AT_targ_address_c`, `dwarf_add_AT_flag_a`, `dwarf_add_AT_location_expr_a` |
 | Expressions | `dwarf_new_expr_a`, `dwarf_add_expr_gen_a`, `dwarf_add_expr_addr_c` |
 | Serialization and relocation | `dwarf_transform_to_disk_form_a`, `dwarf_get_section_bytes_a`, `dwarf_get_relocation_info_count`, `dwarf_get_relocation_info` |
 | Cleanup | `dwarf_producer_finish_a` |
@@ -82,3 +82,13 @@ bits, callback delivery, section creation, string-table relocations, producer
 buffers, symbolic relocations, and cleanup in Linux and Windows JVMs. Adding a
 new native declaration requires extending both this inventory and the C/Java
 smoke coverage.
+
+## Synthetic compilation directory (2026-11-06)
+
+The exact pinned `libdwarfp.h` lines 429–432 declare
+`dwarf_add_AT_comp_dir_a(Dwarf_P_Die, char *, Dwarf_P_Attribute *, Dwarf_Error *)`.
+The mapping uses the existing opaque DIE, input String and pointer-output types;
+there are no platform-width integers. The C signature probe covers it on both
+hosts, and the isolated producer smoke exercises it before production invocation.
+The exported CU directory is the synthetic source output directory, matching
+`.debug_line`; it is not a claim about the original compiler's working directory.

@@ -1,0 +1,69 @@
+{
+    "status": "CONFIRMED_NATIVE_GNU_PATH_AND_INSTALLER_CONTROLS_FULL_GATE_PENDING",
+    "date": "2026-11-06",
+    "issue": 109,
+    "head": "7b7c6ab26e7000c19efbc611d80460f711614200",
+    "run": 42314434393,
+    "job": 128227820016,
+    "artifact": 13551925336,
+    "archiveSha256": "b823ca170d1bc42b037b5fc74a0984129822a6d8a0b487354ab42e14365dcf88",
+    "observed": [
+        {
+            "path": "windows-host/build-id-installation/debug root \u03bb \u96ea 'quote' $literal/.forge-build-id/v1/3babcbaddc336a3a04c489fc649ff555afa87159/generations/9584e0e4-8fc3-4d42-a446-59e7d15c1ee6/.forge-attachment-validation-2288591707410517389/.forge-validation-13477409281965122744/tool.stderr",
+            "text": "readelf: Error: 'D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\windows-host\\build-id-installation\\debug root ? ? 'quote' $literal\\.forge-build-id\\v1\\3babcbaddc336a3a04c489fc649ff555afa87159\\generations\\9584e0e4-8fc3-4d42-a446-59e7d15c1ee6\\installed.debug': No such file\r\n",
+            "status": {
+                "schemaVersion": 1,
+                "reason": "tool_error",
+                "exitCode": 1,
+                "exitSignal": 0,
+                "cleanupComplete": true,
+                "stdoutObserved": 0,
+                "stdoutRetained": 0,
+                "stderrObserved": 283,
+                "stderrRetained": 283
+            }
+        }
+    ],
+    "retainedInputsMatchExportReport": {
+        "original": "68a3cec9be4183c88c001c77be28fc0da5061fd3399937664d7cfa94d14f07f5",
+        "sidecar": "dee36549098e3c43ea6ccab8d92b1b4e6d05f5a69660cce09c0a62e59581af66",
+        "source": "a81bf40b5e6f7dbe5f8e2291d53aef0b7269fc95b9d46279293976778b2816cc"
+    },
+    "publishedRegistration": false,
+    "candidate": "Select the MSYS2 binutils GNU readelf executable for Windows attachment/installation. Add native direct-process compiler ELF controls for ASCII, Unicode and >360-character paths, with unchanged inputs and malformed-ELF rejection. Keep the MinGW executable as an independent control. Production Java validator selection and mandatory GNU/LLVM/libdwarf gates remain unchanged. The direct controls exercise both an unset locale and the production supervisor LC_ALL/LANG/LANGUAGE=C environment; each must retain identical GNU output and malformed-input refusal.",
+    "candidateStatus": "CONFIRMED native path controls and supervised installation/recovery pass at 54f8eda2bce560b60dfbdaa31b85339a093345a7. Full latest-head combined gate and corrected downstream consumer validation remain required.",
+    "references": [
+        "https://www.msys2.org/docs/filesystem-paths/",
+        "https://packages.msys2.org/packages/binutils",
+        "https://learn.microsoft.com/en-us/windows/win32/sbscs/application-manifests#activecodepage"
+    ],
+    "limits": "The failure shows lost characters and a missing-file error. The full long path may impose an additional constraint; isolated controls must distinguish these cases. No production readelf binary or original executable is patched.",
+    "nativePathReview": {
+        "head": "54f8eda2bce560b60dfbdaa31b85339a093345a7",
+        "run": 42318332519,
+        "artifact": 13552526057,
+        "archiveSha256": "sha256:b60374eadc1b184b09d2791ebe87573b04d1fa017a23deffe8b0462660f8dd3b",
+        "versions": {
+            "selected": "GNU readelf (GNU Binutils) 2.47.20260726",
+            "mingw": "GNU readelf (GNU Binutils) 2.47.20260726"
+        },
+        "checks": [
+            "selected-ascii",
+            "selected-unicode",
+            "selected-long-unicode",
+            "selected-malformed",
+            "supervisor-locale-ascii",
+            "supervisor-locale-unicode",
+            "supervisor-locale-long-unicode",
+            "supervisor-locale-malformed"
+        ],
+        "pathLengths": {
+            "ascii": 96,
+            "unicode": 129,
+            "long-unicode": 388
+        },
+        "mingwUnicodeSucceeded": false,
+        "reviewSha256": "cf230523c52f2c3847e69dd4e5e574643666106102150376573122cd4286a49a"
+    },
+    "nativeInstallerReview": "windows-build-id-native-and-consumer.json"
+}

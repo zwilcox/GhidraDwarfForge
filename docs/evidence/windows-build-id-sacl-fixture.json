@@ -1,0 +1,20 @@
+{
+    "status": "CONFIRMED_NATIVE_WINDOWS_INSTALLER_REFUSAL_FIXTURE_CORRECTION_PENDING",
+    "run": 42303689282,
+    "job": 128200325292,
+    "artifact": 13547258494,
+    "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-windows-installer-failure-13547258494.zip",
+    "archiveSha256": "01219a7ef7aad8d0de087b62d2d962314a7ea5a5d0d9a29e1c4aa86998c20a60",
+    "testedHead": "3fd8210a84dddaee031c03874242538ef2664c89",
+    "observation": "Preview succeeds; first actual install refuses Windows attachment metadata does not support populated, null or empty SACLs. No installed-generation files were created.",
+    "fixture": "The prior harness used Get-Acl/Set-Acl to protect the copied sidecar DACL. Existing Windows metadata acceptance already uses a native DACL-only operation and verifies SACL preservation.",
+    "correction": "Reuse unchanged windows-security-visibility.c protect-dacl operation, verify before/after absent SACL and identical SACL control state, and retain an explicit native null-sacl installation-refusal control. Production host admission is unchanged.",
+    "verification": [
+        "Python compilation passed",
+        "actionlint/ShellCheck passed",
+        "git diff --check passed",
+        "Unchanged native helper cross-compiles with x86_64-w64-mingw32-gcc -std=c11 -Wall -Wextra -Werror -municode -ladvapi32"
+    ],
+    "nativeCorrectionAcceptance": "UNVERIFIED until corrected hosted run",
+    "nativeSourceSha256": "95eeee562005af093794654198fc1733c01853757032ea882678b55ceb998cee"
+}

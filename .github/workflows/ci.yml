@@ -105,6 +105,8 @@ jobs:
           nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
             grep -Eq '[[:space:]]T[[:space:]]+dwarf_producer_init$'
           nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
+            grep -Eq '[[:space:]]T[[:space:]]+dwarf_add_AT_comp_dir_a$'
+          nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
             grep -Eq '[[:space:]]T[[:space:]]+dwarf_pro_set_default_string_form$'
           nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
             grep -Eq '[[:space:]]T[[:space:]]+dwarf_transform_to_disk_form_a$'
@@ -298,6 +300,7 @@ jobs:
           update: true
           install: >-
             base-devel
+            binutils
             curl
             git
             mingw-w64-x86_64-toolchain
@@ -359,6 +362,20 @@ jobs:
             --results build/test-results/native-windows/strict-checker-runtime
           if ($LASTEXITCODE -ne 0) { throw 'Native Windows DWARF checker controls failed' }
 
+      - name: Locate GNU readelf path controls
+        run: |
+          printf 'FORGE_VALIDATION_READELF=%s\n' "$(cygpath -w /usr/bin/readelf.exe)" >> "$GITHUB_ENV"
+          printf 'FORGE_MINGW_READELF=%s\n' "$(cygpath -w /mingw64/bin/readelf.exe)" >> "$GITHUB_ENV"
+
+      - name: Check GNU readelf on native Windows Unicode and long paths
+        shell: pwsh
+        run: |
+          python src/test/integration/windows-readelf-paths.py `
+            --readelf $env:FORGE_VALIDATION_READELF --mingw-readelf $env:FORGE_MINGW_READELF `
+            --compiler $env:FORGE_VALIDATION_CLANG `
+            --results build/test-results/native-windows/readelf-paths
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows GNU readelf path controls failed' }
+
       - uses: actions/upload-artifact@v7
         if: always() && steps.windows-checker-build.outcome == 'success'
         with:
@@ -392,6 +409,7 @@ jobs:
           test -n "$producer"
           test -n "$consumer"
           nm -g "$producer" | grep -Eq '[[:space:]]T[[:space:]]+dwarf_producer_init$'
+          nm -g "$producer" | grep -Eq '[[:space:]]T[[:space:]]+dwarf_add_AT_comp_dir_a$'
           nm -g "$producer" |
             grep -Eq '[[:space:]]T[[:space:]]+dwarf_pro_set_default_string_form$'
           nm -g "$producer" | grep -Eq '[[:space:]]T[[:space:]]+dwarf_transform_to_disk_form_a$'
@@ -605,6 +623,9 @@ jobs:
             python3 -B -m unittest discover -s src/test/python -p test_headless_observations.py -v
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
             build/linux-rename-contract
+            cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-build-id-lock-contract.c -o build/linux-build-id-lock-contract
+            build/linux-build-id-lock-contract
+            ./gradlew buildIdFileLockSmoke -PbuildIdLockFile="$PWD/build/test-results/extension-build/owned-build-id-lock"
             cc -std=c11 -O2 -Wall -Wextra -Werror native/supervisor/forge-supervisor-linux.c -o build/forge-validator-supervisor
             ./gradlew validatorSupervisorSmoke \
                 -PsupervisorPath="$PWD/build/forge-validator-supervisor" \
@@ -784,7 +805,7 @@ jobs:
           packages=(gdb-multiarch llvm dwarfdump)
           case "$TARGET" in
             x86_64)
-              packages+=(gcc g++ gcc-multilib libc6-dev-i386 binutils gdb libc6-i386 qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
+              packages+=(gcc g++ gcc-multilib libc6-dev-i386 binutils gdb libc6-i386 qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1 acl)
               ;;
             aarch64)
               packages+=(gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
@@ -806,7 +827,7 @@ jobs:
               ;;
           esac
           if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
-              packages+=(lldb-18=1:18.1.3-1ubuntu1 python3-lldb-18=1:18.1.3-1ubuntu1)
+              packages+=(lldb-18=1:18.1.3-1ubuntu1 python3-lldb-18=1:18.1.3-1ubuntu1 linux-tools-generic)
           fi
           if [[ "$TARGET" == mips32be || "$TARGET" == mips32le || "$TARGET" == arm32 ]]; then
               packages+=(build-essential python3-dev libgmp-dev libmpfr-dev
@@ -2531,13 +2552,78 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
+          set -euo pipefail
+          mkdir -p build/test-results/build-id
           if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
               export FORGE_LLDB=lldb-18
+              # Offline DWARF lookup does not require the running kernel's perf
+              # build. Use the installed generic tools binary, not its wrapper.
+              FORGE_PERF=$(python3 -c 'from pathlib import Path; paths = sorted(p.resolve() for p in Path("/usr/lib/linux-tools").glob("*/perf") if p.is_file()); assert paths; print(paths[-1])')
+              export FORGE_PERF
           fi
-          src/test/integration/floating-registers-export.sh \
-            "$GHIDRA_INSTALL_DIR" \
-            "$PWD/native-integration/libdwarf.so.2.3.2" \
-            "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+          export FORGE_SOURCE_RELOCATION_JAR="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar"
+          export FORGE_DERIVED_TEST_CLASSES="$PWD/build/classes/java/test"
+          for compression in none zlib; do
+              GHIDRA_DEBUG_COMPRESSION="$compression" src/test/integration/floating-registers-export.sh \
+                "$GHIDRA_INSTALL_DIR" \
+                "$PWD/native-integration/libdwarf.so.2.3.2" \
+                "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET" \
+                | tee "build/test-results/build-id/floating-$compression.log"
+          done
+          none_run=$(sed -n 's/^floating-register-results=//p' build/test-results/build-id/floating-none.log)
+          zlib_run=$(sed -n 's/^floating-register-results=//p' build/test-results/build-id/floating-zlib.log)
+          python3 src/test/integration/build-id-matrix.py "$none_run" "$zlib_run" \
+              "$PWD/build/test-results/build-id/installation" --target "$TARGET" \
+              --ghidra "$GHIDRA_INSTALL_DIR" --jar "$FORGE_SOURCE_RELOCATION_JAR" \
+              --test-classes "$FORGE_DERIVED_TEST_CLASSES"
+          if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+              for role in exec pie; do
+                  other='pie'
+                  if [[ "$role" == pie ]]; then
+                      other='exec'
+                  fi
+                  python3 src/test/integration/build-id-consumers.py \
+                      --configuration "$PWD/build/test-results/build-id/installation/none-$role.json" \
+                      --updated-configuration "$PWD/build/test-results/build-id/installation/zlib-$role.json" \
+                      --mismatch-sidecar "$none_run/$TARGET/$other/artifacts/floating.dbg" \
+                      --mismatch-reference "$none_run/$TARGET/$other/floating.reference" \
+                      --labels "$none_run/$TARGET/$role/labels.txt" \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --java "$(command -v java)" \
+                      --lldb "$FORGE_LLDB" --perf "$FORGE_PERF" --target "$TARGET" \
+                      --output "$PWD/build/test-results/build-id/consumers-$role"
+              done
+          fi
+          layout_root="$PWD/build/test-results/build-id/layouts"
+          mkdir -p "$layout_root/fixtures/$TARGET"
+          for name in semantic.exec.stripped semantic.exec.no-sections.stripped semantic.exec.reference \
+              libsemantic.so.stripped libsemantic.so.reference \
+              semantic.shared-driver.stripped semantic.shared-driver.reference; do
+              cp -- "build/fixtures/$TARGET/$name" "$layout_root/fixtures/$TARGET/$name"
+          done
+          for role in shared exec.no-sections; do
+              FORGE_SYMBOL_FIXTURES="$layout_root/fixtures" FORGE_SYMBOL_RESULTS="$layout_root/exports" \
+                  FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
+                  "$GHIDRA_INSTALL_DIR" "$PWD/native-integration/libdwarf.so.2.3.2" \
+                  "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+              layout_options=()
+              if [[ "$role" == exec.no-sections ]]; then
+                  layout_options+=(--sectionless-discovery-limit)
+              fi
+              python3 src/test/integration/build-id-layouts.py --fixtures "$layout_root/fixtures" \
+                  --exports "$layout_root/exports" --target "$TARGET" --role "$role" \
+                  --configuration "$PWD/build/test-results/build-id/installation/none-exec.json" \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --java "$(command -v java)" \
+                  --output "$layout_root/$role" "${layout_options[@]}"
+          done
+          if [[ "$TARGET" == x86_64 ]]; then
+              for role in exec pie; do
+                  python3 src/test/integration/build-id-curated-refresh.py \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" --role "$role" \
+                      --tools-configuration "$PWD/build/test-results/build-id/installation/none-exec.json" \
+                      --output "$PWD/build/test-results/build-id/curated-$role" \
+                      --scratch "$RUNNER_TEMP/build-id-curated-$role" --java "$(command -v java)"
+              done
+          fi
 
       - name: ARM register pair prefix at an ordinary terminal return
         if: matrix.target == 'arm32'
@@ -2765,12 +2851,19 @@ jobs:
               cp "${files[@]}" "build/test-results/$profile-gdb/"
           fi
 
+      - name: Archive target diagnostics with exact fixture filenames
+        if: always()
+        run: |
+          python3 src/test/integration/archive-target-diagnostics-test.py
+          python3 support/archive-target-diagnostics.py \
+            build/test-results build/target-preflight.tar.gz
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: target-preflight-${{ matrix.target }}
-          path: build/test-results/
-          include-hidden-files: true
+          path: build/target-preflight.tar.gz
+          compression-level: 0
           if-no-files-found: warn
           retention-days: 14
 
@@ -2876,6 +2969,86 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  perf-build-id:
+    needs: [ release-package, native-linux ]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install native perf fixture and validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc binutils llvm gdb linux-tools-generic util-linux
+
+      - name: Cache Ghidra 12.0.3 archive
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/ghidra-download/${{ env.GHIDRA_ARCHIVE }}
+          key: ghidra-${{ env.GHIDRA_ARCHIVE_SHA256 }}
+
+      - name: Install pinned Ghidra
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ghidra-download" "$RUNNER_TEMP/ghidra"
+          archive="$RUNNER_TEMP/ghidra-download/$GHIDRA_ARCHIVE"
+          if [[ ! -f "$archive" ]]; then
+              curl -fL --retry 3 "$GHIDRA_DOWNLOAD_URL" -o "$archive"
+          fi
+          echo "$GHIDRA_ARCHIVE_SHA256  $archive" | sha256sum -c -
+          unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
+          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ghidra-dwarf-forge-extension
+          path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-linux-validation
+          path: validation-tool
+
+      - name: Record native exec and PIE samples and characterize installed symbolization
+        run: |
+          set -euo pipefail
+          (cd validation-tool && sha256sum -c SHA256SUMS)
+          chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
+          unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
+          mkdir -p build/test-results/perf-build-id
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          import shutil
+          root = Path.cwd()
+          tools = {'readelf': shutil.which('readelf'), 'llvm': shutil.which('llvm-dwarfdump'),
+              'strict': str(root / 'validation-tool/libexec/dwarfdump'),
+              'configuration': str(root / 'validation-tool/share/dwarfdump/dwarfdump.conf')}
+          assert all(tools.values())
+          (root / 'build/test-results/perf-build-id/tools.json').write_text(json.dumps({'tools': tools}) + '\n')
+          PY
+          FORGE_PERF=$(python3 -c 'from pathlib import Path; paths = sorted(p.resolve() for p in Path("/usr/lib/linux-tools").glob("*/perf") if p.is_file()); assert paths; print(paths[-1])')
+          for role in exec pie; do
+              python3 src/test/integration/build-id-perf-report.py \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --java "$(command -v java)" \
+                  --tools-configuration "$PWD/build/test-results/perf-build-id/tools.json" \
+                  --perf "$FORGE_PERF" --role "$role" --record-with-sudo \
+                  --output "$PWD/build/test-results/perf-build-id/$role" \
+                  --scratch "$RUNNER_TEMP/perf-build-id-$role"
+          done
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: perf-build-id-validation
+          include-hidden-files: true
+          path: build/test-results/perf-build-id/
+          if-no-files-found: error
+          retention-days: 14
+
   windows-host:
     needs: [ release-package, native-windows, linux-x86-export-reference ]
     # The reference files are uploaded before the Linux GUI journey. Still
@@ -2899,6 +3072,7 @@ jobs:
           msystem: MINGW64
           update: true
           install: >-
+            binutils
             mingw-w64-x86_64-binutils
             mingw-w64-x86_64-llvm
             mingw-w64-x86_64-gcc
@@ -2979,6 +3153,8 @@ jobs:
             & .\gradlew.bat --version
             '[readelf]'
             & readelf.exe --version
+            '[installation-readelf]'
+            & (Join-Path $env:MSYS2_LOCATION 'usr\bin\readelf.exe') --version
             '[llvm-dwarfdump]'
             & llvm-dwarfdump.exe --version
           } 2>&1 | Tee-Object -FilePath "$resultDirectory\tool-versions.txt"
@@ -3169,11 +3345,29 @@ jobs:
             --sidecar build/test-results/windows-host/work/semantic.exec.ghidra-forge.dbg `
             --report-log build/test-results/windows-host/headless.log `
             --helper native-windows/forge-validator-supervisor.exe `
-            --readelf (Join-Path $mingwBin 'readelf.exe') `
+            --readelf (Join-Path $env:MSYS2_LOCATION 'usr\bin\readelf.exe') `
             --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe') `
             --checker-bundle validation-tool-windows `
             --results build/test-results/windows-host/attachment-operation
           if ($LASTEXITCODE -ne 0) { throw 'Native Windows real-ELF attachment failed' }
+
+      - name: Native Windows build-ID installation and interrupted recovery
+        shell: pwsh
+        timeout-minutes: 20
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          python src/test/integration/windows-build-id-installation.py `
+            --ghidra $env:GHIDRA_INSTALL_DIR `
+            --attachment-results build/test-results/windows-host/attachment-operation `
+            --original build/test-results/windows-host/work/semantic.exec.stripped `
+            --sidecar build/test-results/windows-host/work/semantic.exec.ghidra-forge.dbg `
+            --test-classes build/classes/java/test `
+            --compiler (Join-Path $mingwBin 'gcc.exe') `
+            --results build/test-results/windows-host/build-id-installation
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows build-ID installation failed' }
 
       - name: Native Windows Script Manager export, console, and chooser cancellation
         shell: pwsh
@@ -3306,7 +3500,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gdb llvm binutils
-      - name: Execute both Windows attachment generations and reject wrong CRC
+      - name: Validate Windows attachment, build-ID and GUI exports in GDB
         run: |
           (cd validation-tool && sha256sum -c SHA256SUMS)
           chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
@@ -3314,6 +3508,9 @@ jobs:
           python3 src/test/integration/windows-attachment-gdb.py \
               --windows-results "$PWD/windows-artifacts/windows-host" \
               --results "$PWD/build/test-results/windows-attachment-gdb"
+          python3 src/test/integration/windows-build-id-gdb.py \
+              --windows-results "$PWD/windows-artifacts/windows-host" \
+              --results "$PWD/build/test-results/windows-attachment-gdb/build-id-installation"
           python3 src/test/integration/compressed-gui-gdb.py \
               --incoming "$PWD/windows-artifacts/windows-host/gui-script-manager" \
               --results "$PWD/build/test-results/windows-attachment-gdb/compression"
@@ -3332,6 +3529,7 @@ jobs:
           path: build/test-results/windows-attachment-gdb/
           if-no-files-found: warn
           retention-days: 14
+          include-hidden-files: true
 
   required-validation:
     if: always()
@@ -3343,6 +3541,7 @@ jobs:
       - release-package
       - target-preflight
       - linux-x86-export-reference
+      - perf-build-id
       - windows-host
       - attachment-windows
       - windows-attachment-gdb
@@ -3357,6 +3556,7 @@ jobs:
           RELEASE_PACKAGE_RESULT: ${{ needs.release-package.result }}
           TARGET_PREFLIGHT_RESULT: ${{ needs.target-preflight.result }}
           LINUX_REFERENCE_RESULT: ${{ needs.linux-x86-export-reference.result }}
+          PERF_BUILD_ID_RESULT: ${{ needs.perf-build-id.result }}
           WINDOWS_HOST_RESULT: ${{ needs.windows-host.result }}
           ATTACHMENT_WINDOWS_RESULT: ${{ needs.attachment-windows.result }}
           WINDOWS_ATTACHMENT_GDB_RESULT: ${{ needs.windows-attachment-gdb.result }}
@@ -3367,7 +3567,7 @@ jobs:
               "$NATIVE_WINDOWS_RESULT" "$EXTENSION_BUILD_RESULT" \
               "$RELEASE_PACKAGE_RESULT" "$TARGET_PREFLIGHT_RESULT" \
               "$LINUX_REFERENCE_RESULT" "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT" \
-              "$WINDOWS_ATTACHMENT_GDB_RESULT"; do
+              "$WINDOWS_ATTACHMENT_GDB_RESULT" "$PERF_BUILD_ID_RESULT"; do
             if [[ "$result" != success ]]; then
               failed=1
             fi

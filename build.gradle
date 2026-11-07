@@ -300,6 +300,19 @@ tasks.register("companionArtifactPublisherSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.CompanionArtifactPublisherSmoke"
 }
 
+tasks.register("buildIdFileLockSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises real host build-ID lease exclusion across metadata reads and competing processes"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.BuildIdFileLockSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        if (!project.hasProperty("buildIdLockFile")) throw new GradleException("Missing -PbuildIdLockFile")
+        args "exercise", project.property("buildIdLockFile")
+    }
+}
+
 tasks.register("attachmentProtocolSmoke", JavaExec) {
     group = "verification"
     description = "Checks attachment receipt parsing/transitions and all-role path preflight"
@@ -1720,7 +1733,8 @@ tasks.register("packagedNativeLibrariesSmoke", JavaExec) {
 buildExtension {
     eachFile { details ->
         if (details.path in ["GhidraDwarfForge/support/ghidra-dwarf-forge-headless",
-                "GhidraDwarfForge/support/ghidra-dwarf-forge-attach"]) {
+                "GhidraDwarfForge/support/ghidra-dwarf-forge-attach",
+                "GhidraDwarfForge/support/ghidra-dwarf-forge-build-id"]) {
             details.permissions { permissions ->
                 permissions.unix("rwxr-xr-x")
             }

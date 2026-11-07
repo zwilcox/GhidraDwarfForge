@@ -18,6 +18,7 @@ typedef int (*AddDie)(Dwarf_P_Debug, Dwarf_P_Die, Dwarf_Error *);
 typedef int (*LinkDie)(Dwarf_P_Die, Dwarf_P_Die, Dwarf_P_Die, Dwarf_P_Die,
     Dwarf_P_Die, Dwarf_Error *);
 typedef int (*AddName)(Dwarf_P_Die, char *, Dwarf_P_Attribute *, Dwarf_Error *);
+typedef int (*AddCompDir)(Dwarf_P_Die, char *, Dwarf_P_Attribute *, Dwarf_Error *);
 typedef int (*AddProducer)(Dwarf_P_Die, char *, Dwarf_P_Attribute *, Dwarf_Error *);
 typedef int (*AddUnsigned)(Dwarf_P_Debug, Dwarf_P_Die, Dwarf_Half,
     Dwarf_Unsigned, Dwarf_P_Attribute *, Dwarf_Error *);
@@ -58,6 +59,7 @@ ASSERT_FUNCTION(dwarf_new_die_a, NewDie);
 ASSERT_FUNCTION(dwarf_add_die_to_debug_a, AddDie);
 ASSERT_FUNCTION(dwarf_die_link_a, LinkDie);
 ASSERT_FUNCTION(dwarf_add_AT_name_a, AddName);
+ASSERT_FUNCTION(dwarf_add_AT_comp_dir_a, AddCompDir);
 ASSERT_FUNCTION(dwarf_add_AT_producer_a, AddProducer);
 ASSERT_FUNCTION(dwarf_add_AT_unsigned_const_a, AddUnsigned);
 ASSERT_FUNCTION(dwarf_add_AT_reference_c, AddReference);

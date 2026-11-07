@@ -69,6 +69,8 @@ validate_transcript() {
     grep -q "Breakpoint 1," "$transcript"
     grep -q "Breakpoint 2 at" "$transcript"
     grep -q "$function" "$transcript"
+    # Keep the exact source-path check independent of DW_AT_comp_dir and
+    # GDB's default compilation-directory-relative filename presentation.
     grep -F "at $source_file:" "$transcript" | grep -Eq ':[0-9]+'
     if grep -F "No line number information" "$transcript" |
             grep -Fvq "address 0x4010ae"; then
@@ -167,6 +169,7 @@ run_native() {
     fi
     timeout 30s gdb-multiarch -q -nx -batch \
         -ex "set debuginfod enabled off" \
+        -ex "set filename-display absolute" \
         -ex "set auto-solib-add off" \
         -ex "file $fixture_dir/$target/semantic.$fixture_role.$fixture_input_suffix" \
         -ex "symbol-file $fixture_dir/$target/semantic.$fixture_role.$artifact_suffix" \
@@ -266,6 +269,7 @@ run_emulated() {
         "$fixture_dir/$target/semantic.$fixture_role.$fixture_input_suffix"
     timeout 30s gdb-multiarch -q -nx -batch \
         -ex "set debuginfod enabled off" \
+        -ex "set filename-display absolute" \
         -ex "set auto-solib-add off" \
         -ex "set sysroot $sysroot" \
         -ex "file $fixture_dir/$target/semantic.$fixture_role.$fixture_input_suffix" \

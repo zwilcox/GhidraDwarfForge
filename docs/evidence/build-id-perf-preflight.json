@@ -1,0 +1,38 @@
+{
+    "status": "CONFIRMED_LOCAL_PREFLIGHT_SAMPLING_UNVERIFIED",
+    "date": "2026-11-06",
+    "cases": [
+        {
+            "role": "exec",
+            "result": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-perf-report/exec-preflight-v2/result.json",
+            "sha256": "91774c8e60033812151f09b358ef035a843161d496ede2699ff09068d4155d22",
+            "status": "PREPARED_SAMPLING_UNVERIFIED",
+            "versions": {
+                "perf": "perf version 7.0.14",
+                "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+                "gdb": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1",
+                "readelf": "GNU readelf (GNU Binutils for Ubuntu) 2.42"
+            },
+            "buildId": "2f298aa3a2fa5426ed48ebe35079ade85e962d90",
+            "originalSha256": "fad93a4458d4e454fd7927fac51cc2f8b9ed5e34ecbef1d4cfdb06d67dbddcf6"
+        },
+        {
+            "role": "pie",
+            "result": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-perf-report/pie-preflight-v2/result.json",
+            "sha256": "529b584cbc86773e2a45e51c6635e5f15484431a15a86d0fba300d680fe54d90",
+            "status": "PREPARED_SAMPLING_UNVERIFIED",
+            "versions": {
+                "perf": "perf version 7.0.14",
+                "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+                "gdb": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1",
+                "readelf": "GNU readelf (GNU Binutils for Ubuntu) 2.42"
+            },
+            "buildId": "d1e4fd5c69903f13dbbc7c11cfc74e6ded56559c",
+            "originalSha256": "0a49e72f852503f3a7c8e48a7bec67644740ad332dd39f96af40f0f9862fb9de"
+        }
+    ],
+    "scope": "Four real packaged Ghidra exports, two saved analyst-name changes, two production Linux install/update/remove sequences, four GDB source-discovery checks, four offline perf source queries. Strict and LLVM export validation pass. Original inputs unchanged.",
+    "remaining": "Actual perf record/report/script observations on the required hosted native x86-64 exec and PIE job; full latest-head gate and protected integration.",
+    "preflightCorrection": "The first exec run used global-only GDB lookup. Independent info-address/static-symbol lookup confirms the recovered function is present as a static symbol. The harness now accepts global or static DIEs and requires the exact retained source. No exporter change.",
+    "productionJarSha256": "5f2592c74a0cc55e1fb97f53ef8e0bcfe7bd6c24a09da5499984e125ae754362"
+}

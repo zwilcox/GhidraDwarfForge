@@ -91,13 +91,26 @@ public final class AttachmentFileStore {
 
     static Snapshot backup(Snapshot source, Path selected, AttachmentReceiptStore.Host host,
             BooleanSupplier cancelled, Hook hook) throws IOException {
+        return copy(source, source, selected, host, cancelled, hook);
+    }
+
+    /** Copy new bytes while preserving a separately verified file's access metadata. */
+    public static Snapshot copyWithMetadata(Snapshot source, Snapshot metadata, Path selected,
+            AttachmentReceiptStore.Host host, BooleanSupplier cancelled) throws IOException {
+        return copy(source, metadata, selected, host, cancelled, NO_HOOK);
+    }
+
+    private static Snapshot copy(Snapshot source, Snapshot metadata, Path selected, AttachmentReceiptStore.Host host,
+            BooleanSupplier cancelled, Hook hook) throws IOException {
         Objects.requireNonNull(source, "source");
+        Objects.requireNonNull(metadata, "metadata source");
         Objects.requireNonNull(host, "host");
         Objects.requireNonNull(hook, "hook");
         check(cancelled);
         Path destination = FileSystemPaths.resolveLeaf(selected, "attachment backup");
         absent(destination);
         unchanged(source, host, cancelled);
+        if (!metadata.equals(source)) unchanged(metadata, host, cancelled);
         Path directory = Files.createTempDirectory(destination.getParent(), ".forge-backup-");
         Path stage = directory.resolve("image");
         String directoryIdentity = null;
@@ -118,17 +131,18 @@ public final class AttachmentFileStore {
             }
             hook.at(Boundary.COPIED, stage, destination);
             unchanged(source, host, cancelled);
+            if (!metadata.equals(source)) unchanged(metadata, host, cancelled);
             // Refuse a changed stage before asking the adapter to apply metadata.
             var copied = observe(stage, host, cancelled);
             if (!stageIdentity.equals(copied.fingerprint().identity()) || !source.digest().equals(copied.digest())) {
                 throw new IOException("backup copied bytes or identity differ from the expected source");
             }
             try (FileChannel output = FileChannel.open(stage, StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS)) {
-                host.preserveMetadata(source.path(), source.fingerprint(), stage);
+                host.preserveMetadata(metadata.path(), metadata.fingerprint(), stage);
                 output.force(true);
             }
             var staged = observe(stage, host, cancelled);
-            requireCopy(source, staged);
+            requireCopy(source, metadata, staged);
             if (!stageIdentity.equals(staged.fingerprint().identity())) {
                 throw new IOException("backup stage identity changed while preserving metadata");
             }
@@ -137,6 +151,7 @@ public final class AttachmentFileStore {
             check(cancelled);
             absent(destination);
             unchanged(source, host, cancelled);
+            if (!metadata.equals(source)) unchanged(metadata, host, cancelled);
             unchanged(staged, host, cancelled);
             attempted = true;
             host.publishNew(stage, destination);
@@ -144,7 +159,7 @@ public final class AttachmentFileStore {
             // Finish flush/readback after publication, even if cancellation arrives.
             host.syncDirectory(destination.getParent());
             var installed = observe(destination, host, () -> false);
-            requireCopy(source, installed);
+            requireCopy(source, metadata, installed);
             if (!stageIdentity.equals(installed.fingerprint().identity())) {
                 throw new IOException("published backup identity differs from its owned stage");
             }
@@ -206,10 +221,11 @@ public final class AttachmentFileStore {
         check(cancelled);
     }
 
-    private static void requireCopy(Snapshot source, Snapshot copy) throws IOException {
+    private static void requireCopy(Snapshot source, Snapshot metadata, Snapshot copy) throws IOException {
         if (!source.digest().equals(copy.digest()) ||
-                !source.fingerprint().metadataSha256().equals(copy.fingerprint().metadataSha256()) ||
+                !metadata.fingerprint().metadataSha256().equals(copy.fingerprint().metadataSha256()) ||
                 source.fingerprint().identity().equals(copy.fingerprint().identity()) ||
+                metadata.fingerprint().identity().equals(copy.fingerprint().identity()) ||
                 copy.fingerprint().links() != 1) {
             throw new IOException("backup is not an independent byte/metadata copy of the expected source");
         }

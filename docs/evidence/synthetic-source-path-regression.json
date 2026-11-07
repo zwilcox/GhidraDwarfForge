@@ -1,0 +1,134 @@
+{
+    "status": "CONFIRMED_LOCAL_ABSOLUTE_SOURCE_PRESENTATION",
+    "parent": "75860c617d9a976e1545c790bfe7310eef3d9fdd",
+    "failedHostedRun": 42277301514,
+    "failedTargets": [
+        "arm32",
+        "mips32be",
+        "mips32le"
+    ],
+    "cause": "DW_AT_comp_dir makes default GDB filename display relative; unchanged exact absolute frame path assertion fails after successful execution. Request absolute presentation without changing source lookup or assertions.",
+    "before": {
+        "expectedFailure": 1,
+        "runtimeExitedNormally": true,
+        "correctStackValues": true,
+        "relativeFilenamePresentation": true
+    },
+    "targets": [
+        "x86_64",
+        "aarch64",
+        "arm32",
+        "mips32be",
+        "mips32le"
+    ],
+    "layouts": [
+        "exec",
+        "pie"
+    ],
+    "exports": 15,
+    "strictReports": 15,
+    "gdbRuns": 15,
+    "deterministicRepeats": 5,
+    "originalPreservation": "all five harness hash manifests pass",
+    "package": {
+        "installation": "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+        "packageSha256": "875e344a9ee46d785aac8c4a3e7ad4834e9d956e5e3828afa16078b7b1c35b9e",
+        "jarSha256": "55e2088e522d34b44703010868a630c27dfc66cd9f0fd3c7e5e87b3cf7b83a16"
+    },
+    "commands": [
+        [
+            "make",
+            "-C",
+            "src/test/fixtures",
+            "../../../build/fixtures/mips32be/semantic.exec.reference",
+            "../../../build/fixtures/mips32be/semantic.exec.stripped",
+            "../../../build/fixtures/mips32be/semantic.pie.reference",
+            "../../../build/fixtures/mips32be/semantic.pie.stripped",
+            "../../../build/fixtures/mips32le/semantic.exec.reference",
+            "../../../build/fixtures/mips32le/semantic.exec.stripped",
+            "../../../build/fixtures/mips32le/semantic.pie.reference",
+            "../../../build/fixtures/mips32le/semantic.pie.stripped",
+            "../../../build/fixtures/arm32/semantic.exec.reference",
+            "../../../build/fixtures/arm32/semantic.exec.stripped",
+            "../../../build/fixtures/arm32/semantic.pie.reference",
+            "../../../build/fixtures/arm32/semantic.pie.stripped",
+            "../../../build/fixtures/x86_64/semantic.exec.reference",
+            "../../../build/fixtures/x86_64/semantic.exec.stripped",
+            "../../../build/fixtures/x86_64/semantic.pie.reference",
+            "../../../build/fixtures/x86_64/semantic.pie.stripped",
+            "../../../build/fixtures/aarch64/semantic.exec.reference",
+            "../../../build/fixtures/aarch64/semantic.exec.stripped",
+            "../../../build/fixtures/aarch64/semantic.pie.reference",
+            "../../../build/fixtures/aarch64/semantic.pie.stripped"
+        ],
+        [
+            "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/workloads/tools/root/usr/lib/jvm/java-21-openjdk-amd64/bin/javac",
+            "-cp",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar",
+            "-d",
+            "/dev/shm/forge-source-directory-fix/build/source-path-regression/classes",
+            "src/test/java/ghidradwarfforge/elf/ExtendedSectionNumberingSmoke.java"
+        ],
+        [
+            "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/workloads/tools/root/usr/lib/jvm/java-21-openjdk-amd64/bin/java",
+            "-Djava.io.tmpdir=/dev/shm",
+            "-cp",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar:/dev/shm/forge-source-directory-fix/build/source-path-regression/classes",
+            "ghidradwarfforge.elf.ExtendedSectionNumberingSmoke",
+            "/dev/shm/forge-source-directory-fix/build/fixtures",
+            "mips32be",
+            "mips32le",
+            "arm32",
+            "x86_64",
+            "aarch64"
+        ],
+        [
+            "bash",
+            "src/test/integration/extended-sections-export.sh",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+            "mips32be"
+        ],
+        [
+            "bash",
+            "src/test/integration/extended-sections-export.sh",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+            "mips32le"
+        ],
+        [
+            "bash",
+            "src/test/integration/extended-sections-export.sh",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+            "arm32"
+        ],
+        [
+            "bash",
+            "src/test/integration/extended-sections-export.sh",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+            "x86_64"
+        ],
+        [
+            "bash",
+            "src/test/integration/extended-sections-export.sh",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarf.so.2.3.2",
+            "/dev/shm/forge-lldb-worktree/build/comp-dir-abi/ghidra/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/libdwarfp.so.2.3.2",
+            "aarch64"
+        ]
+    ],
+    "gdbVersion": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1",
+    "scriptSha256": "3039cfd3f06f743f2236a242d10761862e27637f6df54672f9a783db09e241ce",
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/synthetic-source-path-regression.tar.gz",
+        "sha256": "f3ad2d84f71dbdb7d323df75e95224494efa6b21ede3c628abea9f00cd3f4446",
+        "verifiedRegularMembers": 655
+    },
+    "limits": "Harness-only change; full new-head hosted gate remains required. Original strict-validator inherited-frame evidence policy is unchanged."
+}

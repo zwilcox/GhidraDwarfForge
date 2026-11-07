@@ -47,10 +47,20 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
     @Override
     public void validate(AttachmentExportBinding binding, Path selectedEvidence, AttachmentOperation.Host host,
             BooleanSupplier cancelled) throws IOException {
+        validate(ArtifactValidationBinding.exported(binding), selectedEvidence, host, cancelled);
+    }
+
+    /** Validate a proved derivative without attributing its bytes to the original export report. */
+    public void validate(ArtifactValidationBinding binding, Path selectedEvidence, AttachmentOperation.Host host,
+            BooleanSupplier cancelled) throws IOException {
         check(cancelled);
         var selections = new ArrayList<AttachmentPaths.Selection>();
         for (var entry : binding.files().entrySet()) {
             selections.add(new AttachmentPaths.Selection(entry.getKey(), entry.getValue().path(), AttachmentPaths.Kind.INPUT));
+        }
+        if (binding.derived()) {
+            selections.add(new AttachmentPaths.Selection("reportedSidecar", binding.exportFiles().get("sidecar").path(), AttachmentPaths.Kind.INPUT));
+            selections.add(new AttachmentPaths.Selection("reportedSource", binding.exportFiles().get("source").path(), AttachmentPaths.Kind.INPUT));
         }
         for (var entry : tools.entrySet()) selections.add(new AttachmentPaths.Selection(entry.getKey(), entry.getValue(), AttachmentPaths.Kind.INPUT));
         selections.add(new AttachmentPaths.Selection("validationEvidence", selectedEvidence, AttachmentPaths.Kind.NEW_FILE));
@@ -111,7 +121,7 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
                 workspaceIdentity.equals(host.directoryIdentity(workspace)), "validation directory identity changed");
 
             var record = new JsonObject();
-            record.addProperty("schemaVersion", 2);
+            record.addProperty("schemaVersion", binding.derived() ? 3 : 2);
             record.addProperty("policy", "gnu-llvm-libdwarf-2.3.2-v1");
             record.addProperty("status", "PASS");
             record.addProperty("hostContract", host.contract());
@@ -120,6 +130,10 @@ public final class AttachmentValidator implements AttachmentOperation.Validator 
             record.addProperty("deadlineMillisPerProcess", DEADLINE.toMillis());
             record.addProperty("streamByteLimit", OUTPUT_LIMIT);
             record.add("inputs", artifacts(binding.files()));
+            if (binding.derived()) {
+                record.addProperty("artifactRelationship", "exact-synthetic-source-relocation-v1");
+                record.add("reportedExportInputs", artifacts(binding.exportFiles()));
+            }
             record.add("tools", toolArtifacts(toolFiles));
             var checkedRuns = new JsonObject();
             var rawFiles = new ArrayList<AttachmentFileStore.Snapshot>();

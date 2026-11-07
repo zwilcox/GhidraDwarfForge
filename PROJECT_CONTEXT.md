@@ -1,5 +1,227 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+## Current goal implementation status — 2026-11-07 UTC
+
+**CONFIRMED:** #74, #108, #116/#114 and #112/#110 are integrated within their
+recorded acceptance profiles. Build-ID installation #109 passes all seven
+implementation requirements at `d55842f`: run `42344072547` completes all 16 jobs,
+and raw review covers all five targets, native Windows, downstream GDB, installed
+LLDB/offline perf and actual sampled-perf characterization. The original scope
+is preserved; see [build-ID acceptance](docs/BUILD-ID-ACCEPTANCE.md) for evidence
+and consumer limitations. [PR186](https://github.com/zwilcox/GhidraDwarfForge/pull/186)
+records final documentation validation and normal protected integration. The
+full goal closure audit must also confirm that integration and all 44 original
+requirements. No release is included.
+
+## Historical development log
+
+The dated checkpoints below preserve earlier findings and failures. Their
+running-job, pending-validation and open-issue statements describe those
+checkpoints, not the current status above. Later acceptance evidence supersedes
+those statements only within its explicitly verified scope.
+
+**CONFIRMED #109 target artifact upload failure (2026-11-07 UTC):** all
+x86-64 test stages in run `42329832669` pass, but artifact upload rejects the
+intentional command-path fixture `request λ "literal".json`. The other four
+target jobs pass with raw artifact review; x86-64 raw review and the required
+gate are not accepted. The workflow now retains the entire diagnostics tree
+inside one PAX tar.gz, preserving the original names, hidden files and bytes.
+Local quoted/Unicode/control-character/hidden-file/link retention checks and
+workflow lint pass. Hosted upload and full acceptance remain required. See
+`docs/evidence/build-id-target-artifact-retention.json`. This supersedes the
+running-x86 notes below; no runtime assertion or filename test was weakened.
+
+
+**CONFIRMED current #109 ARM/MIPS target jobs and artifact reviews
+(2026-11-07 UTC):** at `0f74abd`, run `42329832669` passes AArch64, ARM32,
+MIPS32 big-endian and MIPS32 little-endian. Independent review binds their
+archives, executed reviewers and raw results: 56 installer checks, 32 GDB
+lifecycle sessions, 36 retained generations and 230 supervised validator
+executions. The AArch64 installed LLDB/offline-perf checks also pass within
+their documented scope. Sectionless ET_EXEC still uses the explicit fallback;
+35 unretained AArch64 regression input paths remain runtime-oracle evidence,
+not independently rehashed copies. See
+`docs/evidence/build-id-targets-current-acceptance.json`. The x86-64 job,
+combined required gate, final acceptance and protected integration remain.
+
+
+**CONFIRMED #109 integration-harness locale failure and local correction
+(2026-11-07 UTC):** run `42324179974` fails MIPS little-endian floating-register
+validation because the harness forces `LC_ALL=C`, giving Java an ASCII native
+filesystem encoding. The audited Linux directory host correctly refuses it.
+The harness now selects `C.UTF-8`; production admission is unchanged. An isolated
+exact-package reproduction confirms both the refusal and correction. With ambient
+`LC_ALL=C`, twelve fresh plain/zlib non-PIE/PIE exports pass structural and QEMU/GDB
+checks, plus four source-relocation and four derived-validation cases. See
+`docs/evidence/build-id-linux-locale.json`. A corrected full hosted gate is still
+required. Run `42329832669` is testing corrected head `0f74abd`; the passing
+Windows jobs below do not complete its five-target gate.
+
+**CONFIRMED current #109 Windows installer and hosted consumer (2026-11-07 UTC):**
+At corrected head `0f74abd`, run `42329832669` passes native Windows host job
+`128276867134` and downstream GDB job `128283282420`. Independent review verifies
+73 native checks, 14 interruptions, 25 retained generations, 1,050 manifest files,
+175 supervised validator executions and 50 strict original/sidecar reports.
+The actual installed initial/analyst-curated artifacts pass two fresh GDB runtime
+sessions and four controls, including file-local lookup and transferred-source
+mapping. Shared consumer regression review checks 13 strict reports, 2,959 hash
+bindings and compiler/Forge unwind traces. The five-target gate, final artifact
+review and protected integration remain outstanding. See
+`docs/evidence/windows-build-id-current-acceptance.json`. Earlier pending Windows
+notes are historical within this scope; this does not complete the overall goal.
+
+**CONFIRMED #109 Windows validator path failure (2026-11-06):**
+run `42314434393` passes the lock checks and reaches derived-artifact validation,
+where MinGW GNU readelf renders the Unicode installation directory as `?` and
+reports a missing file. The original/export hashes remain bound and no public
+registration is written. The CI candidate selects MSYS2's GNU readelf and adds
+independent ASCII/Unicode/long-path compiler-ELF controls plus malformed-input
+refusal before the installer runs. The controls cover both an unset locale and
+the actual supervisor C locale; direct-process success alone does not prove
+supervised installation. This tool selection is **PRESENT, UNVERIFIED**
+until native tests and the full supervisor/installer workflow pass. No validator
+is skipped and the original executable is unchanged. See
+`docs/evidence/windows-build-id-validator-paths.json`. Full #109 acceptance remains
+open; earlier isolated-lock success is not full Windows installation acceptance.
+
+
+**CONFIRMED #109 sampled perf characterization (2026-11-06):**
+required job `128221726634` in run `42312429042` records actual x86-64 exec/PIE
+samples with perf 6.8.12. Compiler ELF-symbol controls resolve the hot function;
+compiler DWARF-only controls and both installed Forge generations do not recover
+its name. Offline source queries and GDB discovery pass. An independent artifact
+audit verifies four retained generations and replays the samples with perf 7.0.14,
+confirming the same limitation. This is **not** recovered-name sample-report
+support. See `docs/evidence/build-id-perf-recording.json`. The full run also
+exposed a missing fixture inventory entry for `perf-build-id.c`; that test setup
+omission is corrected without changing the export or validation requirements.
+Native Windows isolated locking also passes job `128226945808`, with raw logs
+and source/package provenance inspected. Full Windows installer lifecycle and
+the complete latest-head gate remain outstanding. Earlier sampling-unverified
+and isolated-lock-unverified notes below are historical.
+
+
+**CONFIRMED #109 lock defects and local Linux correction (2026-11-06):**
+the corrected Windows SACL fixture passes, then native installation exposes a
+production lock readback failure: Windows rejects reading the exclusively locked
+file through a second handle. Independent Linux reproduction also proves that
+closing such a second handle silently releases the old process-scoped lock while
+Java still reports it valid. Windows now verifies bytes through the locking
+channel; Linux uses an audited open-file-description lock that survives metadata
+handle closes. Isolated Linux contention/cancellation tests, 123 transaction
+checks and 27 packaged command checks with ten GDB sessions pass. Native Windows
+lock/lifecycle acceptance remains **PRESENT, UNVERIFIED**. The unchanged format
+still supports whole-file exclusion and full identity/metadata/content checks.
+See `docs/evidence/build-id-locking.json`. Final perf/hosted acceptance and
+protected integration remain outstanding.
+
+**CONFIRMED local #109 perf fixture preflight (2026-11-06):**
+new native x86-64 exec/PIE fixtures pass four packaged headless exports, saved
+analyst-name edits, production install/update/remove, strict/LLVM validation,
+GDB retained-source discovery and offline perf source queries. Actual sampling
+is **PRESENT, UNVERIFIED**: a separate required `perf-build-id` job records bounded
+software CPU-clock samples and compares installed/updated/removed generations
+with independent compiler ELF-symbol and DWARF-only controls. A successful
+characterization will distinguish actual recovered-name symbolization from a
+corroborated consumer limitation. No event/report support is claimed from the
+local preflight. See `docs/evidence/build-id-perf-preflight.json` and
+`docs/BUILD-ID-CONSUMERS.md`. Windows acceptance and final integration remain
+outstanding.
+
+**CONFIRMED #110 and final #112 protected integration (2026-11-06):**
+PR #183 merged normally as `9c3029f97a418eb3c63742213d68392608ff15a2`
+after required run `42291314960` passed every job. The tested and merged trees
+are identical. Artifact review reparses 2,844 positive strict records, separates
+139 intentional rejection records and corrupted evidence controls, inspects 47
+LLDB result records, and verifies retained input hashes plus package/native/source
+manifests. All 210 packaged source files match tested head `0ee9a3d`. Issues #110
+and #112 are closed; component PRs #177–#182 are verified ancestors and reconciled.
+See `docs/evidence/lldb-final-acceptance.json` and `docs/DEBUGGER-CONSUMERS.md`.
+This supersedes pending-integration notes in the historical checkpoints below.
+Build-ID installation #109 remains active; its native Windows fixture correction
+and final combined hosted acceptance are still required. No release was published.
+
+**CONFIRMED #109 Windows installer refusal; fixture correction awaiting validation
+(2026-11-06):** run `42303689282` passes export/attachment but refuses the first
+installer operation for unsupported SACL metadata. The test used high-level
+`Get-Acl`/`Set-Acl` for DACL protection, unlike the already audited native
+DACL-only fixture. The harness now reuses that native helper, checks absent-SACL
+preservation, and separately requires explicit null-SACL installation refusal.
+Production admission is unchanged. Python/workflow checks and cross-compilation
+pass; the correction and downstream consumer remain **PRESENT, UNVERIFIED**
+until a native rerun passes. See `docs/evidence/windows-build-id-sacl-fixture.json`.
+
+**PRESENT, UNVERIFIED #109 Windows downstream consumer (2026-11-06):**
+`windows-build-id-gdb.py` and the downstream Linux CI step now verify hashes,
+native host provenance, validators, exact build-ID discovery and runtime
+behavior for the retained Windows installer initial/curated generations.
+Transferred Windows source paths require an explicit GDB substitution; an
+independent compiler control confirms the path behavior, including Unicode and
+shell punctuation. Actual native installer artifacts are still required before
+claiming this consumer path passes. See the Windows section of
+`docs/BUILD-ID-INSTALLATION.md` and `docs/evidence/windows-build-id-consumer-preflight.json`.
+
+**CONFIRMED local #109 installed-consumer checkpoint (2026-11-06):**
+production Linux install/update/remove passes LLDB 18.1.3 and offline perf 7.0.14
+on x86-64/AArch64 exec and PIE. Eight LLDB runtime sessions pass 80 observations;
+sixteen absence/mismatch sessions and 64 perf queries complete the controls.
+LLDB rejects mismatched Forge/compiler files. perf accepts their misplaced
+build-ID paths, independently confirming a consumer limitation rather than a
+Forge pairing guarantee. The separate perf cache is explicitly tested through
+independent snapshots: it hard-links inputs, stays stale until explicit update,
+and does not supply this version's cache-only probe lookup. See
+`docs/BUILD-ID-CONSUMERS.md` and its receipt. Hosted acceptance, Windows installer
+acceptance and protected integration remain outstanding; perf event/report
+symbolization remains unverified. This supersedes the pending local LLDB/perf
+statements in the earlier checkpoint history below.
+
+**CONFIRMED local #109 shared/sectionless checkpoint (2026-11-06):**
+ten fresh headless exports and production Linux installations pass across all
+five targets. Shared libraries pass fresh automatic GDB discovery, runtime
+arguments/types/source stepping and removal controls. For sectionless ET_EXEC,
+matching compiler controls independently prove that GDB 15.1 cannot discover the
+sidecar by build ID; explicit loading of the installed Forge sidecar passes
+source lookup, exact addresses, breakpoints, stepping and normal exit. This is
+not sectionless automatic-discovery acceptance. The install/update command now
+reports that limitation and explicit-loading alternatives. The final package
+passes 35 layout runtime sessions, ten compiler controls and the 27-check/ten-
+GDB-session command regression. See `docs/BUILD-ID-LAYOUTS.md` and its receipt.
+The workflow includes these cases; hosted acceptance remains pending. Native
+Windows installation, installation-specific LLDB/perf and protected integration
+remain incomplete, including #110's prerequisite integration.
+
+**CONFIRMED local #109 command and Linux acceptance checkpoint (2026-11-06):**
+the packaged command now provides explicit install/update/remove/recover, bounded
+SHA-bound requests, preview, cancellation and GDB setup. The production Linux
+host passes 226 checks and 50 fresh GDB sessions across all five targets' exec/PIE
+layouts. This includes crash/recovery controls, identity refusals and read-only
+mode/ACL/user-attribute preservation. Four fresh saved-program exports additionally
+prove analyst name/type/member refresh in exec and PIE with the old exports absent.
+Two independently reproduced read-only installation/refresh defects are corrected;
+the final tested package, native metadata oracle and shared attachment regressions
+pass. See `docs/BUILD-ID-INSTALLATION.md` and `docs/evidence/build-id-command-linux.json`.
+Windows launcher code and its new native CI installer/recovery harness are
+**PRESENT, UNVERIFIED**. The harness consumes actual Windows original and saved-
+curation exports and tests the PowerShell command, metadata, crash recovery,
+locks, cancellation and Windows namespace controls. Local probe compilation and
+a seven-check/four-GDB-session Linux regression pass; those are not Windows
+acceptance. Shared/sectionless installation,
+installation-specific LLDB/perf acceptance, Windows acceptance and the full hosted
+gate/protected integration remain outstanding. #110 integration still precedes
+goal completion. Earlier transaction/component-only scope notes below are historical.
+
+**CONFIRMED local #109 transaction checkpoint:** installation/update/removal and
+recovery now pass 123 controls with both the test metadata host and the production
+Linux ext4 host. Ten exec/PIE target layouts pass fresh GDB discovery, source,
+value and stepping checks; the nine additional layouts use the test metadata
+host. Linux checks additionally preserve non-default permissions, an access ACL
+and user attribute. Root and transaction-directory identity safeguards pass.
+Thirteen production-host identity controls additionally reject absent, malformed
+and conflicting IDs, a same-ID/different-original collision and input aliases.
+See `docs/BUILD-ID-TRANSACTION.md` for exact evidence and limits. The launcher,
+Windows installation, curated refresh and full consumer/identity matrix remain
+PLANNED; #110 hosted acceptance and protected integration remain required.
+
 **CONFIRMED local ARM aggregate oracle correction:** PR183's ARM32 lane found
 one stale exact-entry comparison after the memory byte-piece compatibility
 change. The independent decoder already required byte pieces; its final r3/SP
@@ -10,6 +232,73 @@ pass 2,692 compiler/Forge/physical-carrier observations each, 60 strict reports,
 80 failure exports and ten cancellation controls. See
 `docs/evidence/arm-memory-piece-regression.json`. Production code is unchanged;
 latest-head hosted acceptance and #110 protected integration remain required.
+
+**CONFIRMED local companion source-path regression fix:** the next PR184 run
+reached companion-loader checks and exposed the same relative filename display
+assumption in their native, remote and attach/exec oracles. All three now request
+absolute GDB filename display without weakening assertions. Fifteen fresh exports
+pass strict validation across all five targets and exec/PIE/sectionless layouts;
+nineteen companion sessions, three native ASLR runs and one attach/exec run pass.
+The old native oracle fails on the same artifact, and direct `info line` output
+confirms that only presentation changes. See
+`docs/evidence/companion-source-path-regression.json`. Hosted acceptance is still
+required; build-ID installation remains incomplete.
+
+**CONFIRMED local #109 derived-artifact validation:** a read-only byte proof now
+binds the relocated sidecar and retained source to the original export without
+rewriting its report. Forty fresh GNU/LLVM/pinned-strict policy runs pass on
+twenty retained plain/zlib cases across all five targets; 220 refusal and 140
+sampled cancellation controls pass. Ordinary evidence remains schema 2; schema 3
+distinguishes derived inputs from reported export inputs. See
+`docs/DERIVED-ARTIFACT-VALIDATION.md`. The metadata adapter in these probes is
+explicitly test-only. Native host acceptance, required build-ID selection,
+retained-generation ownership, publication/update/removal and recovery remain
+PLANNED; #110 hosted acceptance/protected integration still precedes completion.
+
+**CONFIRMED local #109 ELF source-relocation stage:** production code now copies
+the matched sidecar, appends relocated plain/zlib payloads, and changes only
+three section offset/size fields. Sixty fresh exports and twenty relocated
+exec/PIE cases across all five targets pass structural/GDB checks; eight
+x86-64/AArch64 cases also pass LLDB and offline perf. Original bytes, compression,
+line programs, deterministic repeats and cancellation/refusal controls pass.
+See `docs/SOURCE-SIDECAR-RELOCATION.md` and its receipt. Full hosted acceptance
+remains pending. The installer's pair binding, retained generations, permissions,
+atomic install/update/removal and recovery remain PLANNED; this is only an
+unpublished staging writer. #110 protected integration remains required.
+
+**CONFIRMED local #109 source-relocation component:** a pure Java transformer
+changes only the synthetic CU/line directory, retaining DIE offsets, existing
+strings and executable line-program bytes. Ten exec/PIE cases across all five
+targets pass validators and GDB with the former source absent; x86-64/AArch64
+also pass LLDB and offline perf source lookup. Refusal/cancellation, deterministic
+repeat and input-preservation controls pass. See
+`docs/ADR-0006-BUILD-ID-INSTALLATION.md` and its evidence receipt. This is not an
+installer: production ELF/compression packaging, identity-bound generations,
+atomic install/update/removal and recovery remain PLANNED. Hosted acceptance
+and #110 protected integration remain required before goal completion.
+
+**CONFIRMED local source-path regression fix:** hosted PR184 exposed a GDB
+presentation mismatch on ARM32 and both MIPS byte orders: the new compilation
+directory makes GDB print relative filenames, while the oracle requires the
+exact absolute source path. The oracle now explicitly requests absolute filename
+display and retains every assertion. Fifteen fresh extended-section exports and
+GDB runs pass across all five targets, including exec/PIE and five deterministic
+repeats; original hashes and strict validation pass. The old oracle's failure is
+reproduced after otherwise successful runtime. See
+`docs/evidence/synthetic-source-path-regression.json`. The full updated hosted
+gate remains required; #109 installation is still incomplete.
+
+**CONFIRMED local #109 prerequisite:** the exporter now records the actual
+synthetic-source directory in `DW_AT_comp_dir`, matching its line table. This
+avoids a reproduced perf 7.0.14 source-listing crash with an absent optional
+attribute. The pinned native binding passes C audits and sixteen isolated
+producer lifecycles before Ghidra use. Twelve real x86-64/AArch64 exec/PIE exports
+pass validators, GDB, LLDB and offline perf source/variable lookup, including
+rebasing, deterministic repeats and empty-root controls. See
+`docs/SYNTHETIC-SOURCE-DIRECTORY.md`. Combined hosted/Windows acceptance is
+pending; #109 installation, source retention, provenance and atomic update/removal
+remain unimplemented. PR #183 carries combined #110 validation and the final
+#112 documentation; both still need its protected integration.
 
 **CONFIRMED #112 implementation acceptance:** PR #176 merged normally as
 `6b582b4007311f334b954d361458b0775c35904e`; its tree exactly matches tested head

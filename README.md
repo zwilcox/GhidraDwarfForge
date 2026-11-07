@@ -274,9 +274,14 @@ changing the destination changes the recorded source directory.
 For automatic GDB association without modifying the executable, a sidecar may
 be installed under the standard `.build-id/xx/rest.debug` tree for its copied
 build ID. Local integration proves discovery and rejects a sidecar carrying a
-different image's build ID. The exporter does not yet install this layout
-automatically. Inputs without build IDs make no identity claim and remain
-supported through explicit `symbol-file` loading.
+different image's build ID. The development
+[`ghidra-dwarf-forge-build-id` command](docs/BUILD-ID-INSTALLATION.md) explicitly
+installs, updates or removes a verified export while retaining its source.
+See the [build-ID acceptance map](docs/BUILD-ID-ACCEPTANCE.md) for validated
+host/consumer profiles, evidence and integration status. Ordinary export does
+not install automatically.
+Inputs without build IDs make no identity claim and remain supported through
+explicit `symbol-file` loading.
 
 ## Required integration matrix
 
