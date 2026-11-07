@@ -112,6 +112,7 @@ public final class Dwarf5LineTableSmoke {
                 // Reject invalid strings before serializing a truncated DWARF string.
             }
         }
+        Dwarf5MultiFileSmoke.run();
         System.out.println("dwarf-line-table-smoke=PASS");
     }
 

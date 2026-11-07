@@ -298,6 +298,7 @@ public final class MinimalDwarfSidecarExporter {
 
     private final ghidradwarfforge.elf.DebugSectionCompression compression;
     private final Map<String, String> formatterAliases;
+    private final Dwarf5LineTable.FileLayout sourceFiles;
 
     public MinimalDwarfSidecarExporter() {
         this(ghidradwarfforge.elf.DebugSectionCompression.NONE);
@@ -309,7 +310,14 @@ public final class MinimalDwarfSidecarExporter {
 
     public MinimalDwarfSidecarExporter(ghidradwarfforge.elf.DebugSectionCompression compression,
             Map<String, String> formatterAliases) {
+        this(compression, formatterAliases, null);
+    }
+
+    /** Optional file presentation; all type and address evidence retains its original identity. */
+    public MinimalDwarfSidecarExporter(ghidradwarfforge.elf.DebugSectionCompression compression,
+            Map<String, String> formatterAliases, Dwarf5LineTable.FileLayout sourceFiles) {
         this.compression = Objects.requireNonNull(compression, "compression");
+        this.sourceFiles = sourceFiles;
         this.formatterAliases = java.util.Collections.unmodifiableMap(new java.util.TreeMap<>(formatterAliases));
         if (formatterAliases.values().stream().anyMatch(name -> !name.matches("__forge_formatter_[0-9a-f]{64}")) ||
                 new java.util.HashSet<>(formatterAliases.values()).size() != formatterAliases.size()) {
@@ -575,8 +583,13 @@ public final class MinimalDwarfSidecarExporter {
         if (sourceDirectory.getFileSystem().getSeparator().equals("\\")) {
             directoryName = directoryName.replace('\\', '/');
         }
+        var fileLayout = sourceFiles == null ? Dwarf5LineTable.FileLayout.single(unitName) : sourceFiles;
+        if (!fileLayout.names().getFirst().equals(unitName)) {
+            throw new IllegalArgumentException("source index filename differs from compilation unit");
+        }
+        fileLayout.requireSource(syntheticSource);
         Dwarf5LineTable.Result linePlan = Dwarf5LineTable.buildWithPlan(
-            unitName, directoryName, target.addressBytes(), elf.byteOrder(), ordered,
+            fileLayout, directoryName, target.addressBytes(), elf.byteOrder(), ordered,
             syntheticSource == null ? List.of() : syntheticSource.mappedLines(), syntheticSource != null);
         byte[] lineTable = linePlan.section();
         // Failed source functions remain symbol-only. Do not serialize orphan
@@ -688,7 +701,6 @@ public final class MinimalDwarfSidecarExporter {
             Set<Long> lexicalAddresses = new java.util.HashSet<>();
             var functionStatics = FunctionStaticPolicy.select(typeModel, syntheticSource)
                 .exported();
-            long fileIndex = 0;
             if (lineTable.length != 0) {
                 addSectionOffset(producer, consumer, debug, unit, DW_AT_STMT_LIST, 0,
                     errorOut);
@@ -733,10 +745,11 @@ public final class MinimalDwarfSidecarExporter {
                 FunctionLines sourceFunction = sourceFunctions.get(FunctionKey.of(function));
                 boolean sourceFailed = sourceFunction != null && sourceFunction.failureDiagnostic() != null;
                 if (sourceFunction != null && sourceFunction.decompiled()) {
-                    addUnsigned(producer, consumer, debug, die, DW_AT_DECL_FILE, fileIndex,
+                    var declarationPosition = linePlan.files().locate(declarationLine(sourceFunction, syntheticSource));
+                    addUnsigned(producer, consumer, debug, die, DW_AT_DECL_FILE, declarationPosition.file(),
                         errorOut);
                     addUnsigned(producer, consumer, debug, die, DW_AT_DECL_LINE,
-                        declarationLine(sourceFunction, syntheticSource), errorOut);
+                        declarationPosition.line(), errorOut);
                 }
                 ProgramTypeModel.FunctionSignature signature = sourceFailed ? null :
                     signatures.get(FunctionKey.of(function));

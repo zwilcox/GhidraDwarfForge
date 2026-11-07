@@ -81,6 +81,14 @@ tasks.register("formatterPlanSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.formatters.FormatterPlanSmoke"
 }
 
+tasks.register("sourcePartitionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks lossless source partitioning, logical line lookup and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.source.SourcePartitionSmoke"
+}
+
 tasks.register("debugCompressionSmoke", JavaExec) {
     group = "verification"
     description = "Checks ELF32/64 endian compression headers, fallback, determinism and cancellation"

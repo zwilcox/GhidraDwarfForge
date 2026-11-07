@@ -1,6 +1,34 @@
 # TODO.md — GhidraDwarfForge
 
-## Active goal: optional GDB/LLDB formatters (#111) — 2026-11-07 UTC
+## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
+
+**CONFIRMED:** the user selected this order: complete optional multi-file
+synthetic source (#115), then call-site/tail-call metadata (#117), then the
+Cortex-M debugging profile (#120). Preserve every original acceptance item;
+complete required validation and protected integration before advancing to the
+next issue. #187 remains last outside this goal. No release publication is
+requested.
+
+**CONFIRMED previous goal complete:** #111 merged through
+[PR188](https://github.com/zwilcox/GhidraDwarfForge/pull/188) as `1b165f5` after
+all 16 jobs in run `42394809285` passed. Final raw artifact review covers all
+five targets and native Windows production/transported consumers; the merge
+retains the tested tree. The formatter checkpoint notes below are historical.
+
+**PLANNED #115:** one CU and canonical type graph with multiple source-file
+entries, optional bounded-size grouping, deterministic generation manifest and
+complete source installation before sidecar publication. See
+[design and acceptance](docs/MULTIFILE-SOURCE.md). Native-free partitioning and
+line lookup are implemented and locally checked; emitted DWARF, production
+publication, consumer integration, benchmarks and hosted validation remain
+unverified. No #115 acceptance item is closed at this foundation checkpoint.
+
+**PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
+its raw counterpart is explicitly conditional on raw-input support becoming
+available. Recheck that dependency when reaching #120; do not silently declare
+raw-input behavior implemented or close unsupported acceptance items.
+
+## Historical goal: optional GDB/LLDB formatters (#111) — 2026-11-07 UTC
 
 **CONFIRMED:** the user selected all six acceptance requirements of #111. The
 previous seven-issue goal is integrated through PR186 (`41887ff`); this formatter
