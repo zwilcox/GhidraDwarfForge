@@ -35,6 +35,20 @@ public final class SourceBundleFiles {
 
     public SourceBundle.Manifest manifest() { return manifest; }
 
+    /** File-table order, excluding the non-source JSON manifest itself. */
+    public List<String> sourceNames() {
+        var names = new ArrayList<String>();
+        names.add(manifest.indexName());
+        for (var part : manifest.parts()) names.add(part.fileName());
+        return List.copyOf(names);
+    }
+
+    public void requireSourceNames(List<String> dwarfFiles) throws IOException {
+        if (!sourceNames().equals(dwarfFiles)) {
+            throw new IOException("DWARF source files differ from the selected source bundle");
+        }
+    }
+
     /** Index, manifest, then parts; all are required when retaining or transporting this export. */
     public List<Path> files() { return files.stream().map(File::path).toList(); }
 

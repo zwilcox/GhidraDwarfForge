@@ -20,9 +20,11 @@ entries, optional bounded-size grouping, deterministic generation manifest and
 complete source installation before sidecar publication. See
 [design and acceptance](docs/MULTIFILE-SOURCE.md). Partitioning, line lookup, strict source manifests,
 immutable source installation and complete-bundle reads have passing local
-component checks. Production option/publication wiring, emitted DWARF/GDB
-validation, consumer integration, benchmarks and hosted validation remain
-unverified. No #115 acceptance item is closed at this foundation checkpoint.
+component checks. The underlying script now exports multiple source files; a
+local x86-64 headless fixture passes native export, modern structural validators,
+GDB cross-file stepping, moved-source lookup and deterministic reruns. Wrapper/GUI
+exposure, complete consumer retention, broader fixtures, benchmarks and hosted
+validation remain pending. No full #115 acceptance item is closed yet.
 
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming

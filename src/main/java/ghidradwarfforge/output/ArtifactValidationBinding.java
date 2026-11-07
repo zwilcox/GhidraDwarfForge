@@ -21,20 +21,22 @@ public final class ArtifactValidationBinding {
     private final AttachmentPaths.Plan paths;
     private final SyntheticSourceSidecar.Plan relocation;
     private final String hostContract;
+    private final SourceBundleFiles sourceBundle;
 
     private ArtifactValidationBinding(AttachmentExportBinding export,
             Map<String, AttachmentFileStore.Snapshot> files, AttachmentPaths.Plan paths,
-            SyntheticSourceSidecar.Plan relocation, String hostContract) {
+            SyntheticSourceSidecar.Plan relocation, String hostContract, SourceBundleFiles sourceBundle) {
         this.export = export;
         this.files = Map.copyOf(files);
         this.paths = paths;
         this.relocation = relocation;
         this.hostContract = hostContract;
+        this.sourceBundle = sourceBundle;
     }
 
     public static ArtifactValidationBinding exported(AttachmentExportBinding export) {
         Objects.requireNonNull(export, "export binding");
-        return new ArtifactValidationBinding(export, export.files(), null, null, null);
+        return new ArtifactValidationBinding(export, export.files(), null, null, null, null);
     }
 
     public static ArtifactValidationBinding relocated(AttachmentExportBinding export, Path sidecar, Path source,
@@ -60,11 +62,16 @@ public final class ArtifactValidationBinding {
         if (!retained.path().getFileName().toString().equals(plan.fileName())) {
             throw new IOException("retained source basename differs from DWARF source name");
         }
+        var sourceBundle = SourceBundleFiles.open(retained.path(), cancelled).orElse(null);
+        if (sourceBundle != null) sourceBundle.requireSourceNames(plan.sourceFiles());
+        else if (plan.sourceFiles().size() != 1) {
+            throw new IOException("multi-file DWARF requires its complete source bundle");
+        }
         plan.requireMatches(candidate.path(), cancelled);
         var selected = new LinkedHashMap<>(export.files());
         selected.put("sidecar", candidate);
         selected.put("source", retained);
-        var result = new ArtifactValidationBinding(export, selected, paths, plan, host.contract());
+        var result = new ArtifactValidationBinding(export, selected, paths, plan, host.contract(), sourceBundle);
         result.recheck(host, cancelled);
         return result;
     }
@@ -81,6 +88,7 @@ public final class ArtifactValidationBinding {
         paths.recheck();
         AttachmentFileStore.unchanged(files.get("sidecar"), host, cancelled);
         AttachmentFileStore.unchanged(files.get("source"), host, cancelled);
+        if (sourceBundle != null) sourceBundle.verify(cancelled);
         paths.recheck();
     }
 }

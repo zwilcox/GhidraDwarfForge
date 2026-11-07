@@ -46,18 +46,21 @@ public final class SyntheticSourceSidecar {
         private final long size;
         private final String previousDirectory;
         private final String fileName;
+        private final List<String> sourceFiles;
 
         private Plan(ElfImage image, List<Change> changes, long size,
-                String previousDirectory, String fileName) {
+                String previousDirectory, String fileName, List<String> sourceFiles) {
             this.image = image;
             this.changes = List.copyOf(changes);
             this.size = size;
             this.previousDirectory = previousDirectory;
             this.fileName = fileName;
+            this.sourceFiles = List.copyOf(sourceFiles);
         }
 
         public String previousDirectory() { return previousDirectory; }
         public String fileName() { return fileName; }
+        public List<String> sourceFiles() { return sourceFiles; }
         public long outputSize() { return size; }
 
         /**
@@ -191,7 +194,7 @@ public final class SyntheticSourceSidecar {
             require(image.is64Bit() || cursor <= 0xffff_ffffL, "relocated ELF32 exceeds 32-bit file offsets");
         }
         check(cancelled);
-        return new Plan(image, changes, cursor, relocated.previousDirectory(), relocated.fileName());
+        return new Plan(image, changes, cursor, relocated.previousDirectory(), relocated.fileName(), relocated.sourceFiles());
     }
 
     private static Decoded decode(ElfImage.Section section, byte[] stored, boolean wide,

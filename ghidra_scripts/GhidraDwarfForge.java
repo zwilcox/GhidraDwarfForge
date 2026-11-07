@@ -76,6 +76,17 @@ public class GhidraDwarfForge extends GhidraScript {
         }
 
         Map<String, String> options = parseOptions(arguments);
+        int sourceLineTarget = 0;
+        if (options.containsKey("source-lines")) {
+            String selected = options.get("source-lines");
+            if (!selected.matches("[1-9][0-9]{0,9}")) {
+                throw new IllegalArgumentException("--source-lines requires a positive integer");
+            }
+            try { sourceLineTarget = Integer.parseInt(selected); }
+            catch (NumberFormatException invalid) {
+                throw new IllegalArgumentException("--source-lines exceeds the supported integer range", invalid);
+            }
+        }
         var unwindOptions = ghidradwarfforge.unwind.UnwindOptions.parse(options);
         boolean synthesizeUnwind = unwindOptions.mode() != ghidradwarfforge.unwind.UnwindOptions.Mode.OFF;
         var annotationLimits = ghidradwarfforge.source.AnnotationLimits.fromOptions(options);
@@ -291,6 +302,12 @@ public class GhidraDwarfForge extends GhidraScript {
             }
         });
         var source = annotated.source();
+        var sourceBundle = sourceLineTarget == 0 ? null : ghidradwarfforge.output.SourceBundle.prepare(
+            inputHash, sourceOutput.getFileName().toString(), source, sourceLineTarget, monitor::isCancelled);
+        var sourceDependencies = new ghidradwarfforge.output.SourceBundleStore.Installed[1];
+        var sourceProtectedPaths = new ArrayList<Path>(generation);
+        sourceProtectedPaths.addAll(List.of(input, consumer, producer));
+        if (formatterSelectionPath != null) sourceProtectedPaths.add(formatterSelectionPath);
         var formatterPlan = formatterSelection == null ? null :
             ghidradwarfforge.formatters.FormatterPlan.prepare(typeModel, formatterSelection, monitor::isCancelled);
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
@@ -299,14 +316,20 @@ public class GhidraDwarfForge extends GhidraScript {
         consistency.requireUnchanged(monitor::isCancelled);
         ArtifactPairPublisher.PrePublishCheck prePublishCheck = () -> {
             consistency.requireUnchanged(monitor::isCancelled);
+            if (sourceBundle != null) sourceDependencies[0].verify(monitor::isCancelled);
             if (formatterSelectionPath != null && !formatterSelectionHash.equals(
                     FileDigests.read(formatterSelectionPath, monitor::isCancelled))) {
                 throw new IOException("formatter selection changed during export");
             }
         };
         ArtifactPairPublisher.StagedWriter sidecarWriter = stagedOutput -> {
+            if (sourceBundle != null) {
+                sourceDependencies[0] = ghidradwarfforge.output.SourceBundleStore.install(
+                    sourceOutput, sourceBundle, sourceProtectedPaths, monitor::isCancelled);
+            }
             var exporter = new MinimalDwarfSidecarExporter(compression,
-                formatterPlan == null ? Map.of() : formatterPlan.aliases());
+                formatterPlan == null ? Map.of() : formatterPlan.aliases(),
+                sourceBundle == null ? null : sourceBundle.fileLayout());
             if (recovered != null && recovered.plan().isPresent()) {
                 resultHolder[0] = exporter.exportWithFrames(input, stagedOutput,
                     consumer, producer, functions, source, typeModel,
@@ -321,9 +344,11 @@ public class GhidraDwarfForge extends GhidraScript {
                     modeCues, aliases, aliasModeCues, sectionModes, annotated.constants(), diagnostic);
             }
             stagedSidecarHolder[0] = stagedOutput;
+            if (sourceBundle != null) sourceDependencies[0].synchronizeSidecarTime(stagedOutput, monitor::isCancelled);
         };
         ArtifactPairPublisher.StagedWriter sourceWriter = stagedSource -> {
-            source.writeAtomically(stagedSource);
+            if (sourceBundle == null) source.writeAtomically(stagedSource);
+            else Files.write(stagedSource, sourceBundle.indexBytes(monitor::isCancelled));
             // Validate the complete report while both files are still staged. Report
             // paths describe the final generation; digests describe its staged bytes.
             var result = resultHolder[0];
@@ -380,6 +405,10 @@ public class GhidraDwarfForge extends GhidraScript {
         MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
         PreparedReport prepared = reportHolder[0];
         println("GhidraDwarfForge symbol export PASS");
+        if (sourceBundle != null) {
+            println("  synthetic source parts: " + sourceBundle.manifest().parts().size());
+            println("  source manifest: " + sourceOutput.resolveSibling(sourceBundle.manifestName()));
+        }
         println("  output: " + output);
         println("  output SHA-256: " + prepared.outputHash());
         if (formatterPlan != null) println("  optional GDB/LLDB formatters: " + formatterOutput);
@@ -475,7 +504,7 @@ public class GhidraDwarfForge extends GhidraScript {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
                     !name.equals("input") && !name.equals("output") && !name.equals("formatters") &&
                     !name.equals("packaged-natives") && !name.equals("gdb-loader") && !name.equals("attachment-preparation") &&
-                    !name.equals("compress-debug-sections") && !name.equals("source-context") &&
+                    !name.equals("compress-debug-sections") && !name.equals("source-context") && !name.equals("source-lines") &&
                     !name.equals("synthesize-unwind") && !name.equals("unwind-stack-separation") &&
                     !name.equals("unwind-relocated-pointers") &&
                     !name.equals("annotation-record-limit") && !name.equals("annotation-text-limit") &&

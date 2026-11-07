@@ -29,7 +29,9 @@ public final class SyntheticSourceRelocation {
     private static final int SEC_OFFSET = 0x17;
 
     public record Result(byte[] info, byte[] strings, byte[] line,
-            String previousDirectory, String fileName) { }
+            String previousDirectory, String fileName, List<String> sourceFiles) {
+        public Result { sourceFiles = List.copyOf(sourceFiles); }
+    }
 
     private record Attribute(int name, int form) { }
     private record Text(String value, int start, int end) { }
@@ -103,16 +105,27 @@ public final class SyntheticSourceRelocation {
             "expected one inline line-table source directory");
         Text lineDirectory = table.text();
         require(table.uint(1) == 2 && table.uleb() == 1 && table.uleb() == 8 &&
-            table.uleb() == 2 && table.uleb() == 15 && table.uleb() == 1,
-            "expected one inline source file with directory index");
-        Text lineFile = table.text();
-        require(table.uleb() == 0 && table.position == headerEnd,
-            "unexpected line source index or header tail");
-        require(lineDirectory.value().equals(oldDirectory.value()) && lineFile.value().equals(name.value()),
+            table.uleb() == 2 && table.uleb() == 15,
+            "expected inline source files with directory indices");
+        long fileCount = table.uleb();
+        require(fileCount > 0 && fileCount <= 65537, "invalid or excessive source file count");
+        var sourceFiles = new ArrayList<String>();
+        var uniqueFiles = new HashSet<String>();
+        for (int index = 0; index < fileCount; index++) {
+            Text file = table.text();
+            require(!file.value().isEmpty() && !file.value().equals(".") && !file.value().equals("..") &&
+                !file.value().contains("/") && !file.value().contains("\\"), "expected source file basenames");
+            require(uniqueFiles.add(file.value()), "duplicate line-table source file");
+            require(table.uleb() == 0 && table.position <= headerEnd,
+                "unexpected line source directory index or truncated header");
+            sourceFiles.add(file.value());
+        }
+        require(table.position == headerEnd, "unexpected line source header tail");
+        require(lineDirectory.value().equals(oldDirectory.value()) && sourceFiles.getFirst().equals(name.value()),
             "compilation-unit and line-table source paths disagree");
         cu.check();
         if (directory.equals(oldDirectory.value())) {
-            return new Result(info.clone(), strings.clone(), line.clone(), directory, name.value());
+            return new Result(info.clone(), strings.clone(), line.clone(), directory, name.value(), sourceFiles);
         }
         int newStringSize = Math.addExact(strings.length, Math.addExact(replacement.length, 1));
         require(newStringSize <= MAX_SECTION, "relocated string section exceeds 64 MiB");
@@ -131,7 +144,7 @@ public final class SyntheticSourceRelocation {
         ByteBuffer.wrap(newLine).order(order).putInt(0, newLine.length - 4)
             .putInt(8, Math.toIntExact(headerLength + delta));
         cu.check();
-        return new Result(newInfo, newStrings, newLine, oldDirectory.value(), name.value());
+        return new Result(newInfo, newStrings, newLine, oldDirectory.value(), name.value(), sourceFiles);
     }
 
     private static List<Attribute> rootAttributes(byte[] bytes, ByteOrder order, long rootCode,

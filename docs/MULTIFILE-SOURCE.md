@@ -67,6 +67,18 @@ source file, including loader, relocation, attachment and build-ID installation;
 none may silently omit referenced parts. Portable output-tree lookup must be
 tested with the original export directory unavailable.
 
+**PRESENT, partial production integration:** the underlying
+`GhidraDwarfForge.java` script accepts `--source-lines=<positive integer>`.
+It partitions the fully composed annotated source, installs its immutable parts,
+uses the same file layout for native DIE/line output, and publishes the synthetic
+index through the existing recoverable publisher. The default remains one file.
+Wrapper forwarding, GUI selection and complete dependency retention in the GDB
+loader and attachment/build-ID installers are still pending. The source-relocation
+parser now preserves all file entries; its ELF plan exposes their order for
+comparison with the bundle manifest. Derived-artifact validation requires and
+rechecks the complete retained inventory, so copying the index alone cannot
+authorize installation. Automatic retention is not yet implemented.
+
 ## Original acceptance and required proof
 
 1. Deterministic filenames, collision handling, grouping and manifest: identical
@@ -144,3 +156,47 @@ GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC bash ./gradlew --no-daemon \
     sourcePartitionSmoke dwarfLineTableSmoke companionArtifactPublisherSmoke \
     artifactPairPublisherSmoke
 ```
+
+## First actual headless multi-file export
+
+**CONFIRMED local x86-64 ET_EXEC checkpoint:** Ghidra 12.0.3 imported and
+decompiled the source-built `fixtures/multifile-source.c` fixture after
+`strip --strip-debug`. Script option `--source-lines=8` produced an index and
+eleven source parts for ten recovered functions and 27 canonical types. GDB
+from another working directory resolved both names and `file:function`
+breakpoints, listed both function bodies, inspected the function type, stepped
+from `recovered_first` into `recovered_second` in a different file, finished the
+call, observed global `observed == 10`, and executed `next`. Unknown recovered
+parameter locations remain unavailable; this fixture does not claim parameter
+lifetime recovery.
+
+`SourceBundleRelocationSmoke` compared real producer line-program, abbreviation,
+range/location and aranges bytes, preserved file indices, tested invalid path/
+duplicate-file controls and all 1,368 relocation cancellation checkpoints. GDB
+also passed from the relocated source tree with the original source directory
+temporarily unavailable. `ArtifactValidationBindingSmoke` passes for both the
+single-file and multi-file actual exports; removing each manifest/part causes
+binding and recheck refusal (35 multi-file and 11 single-file refusal controls).
+
+GNU ELF/DWARF dumps and LLVM verification pass. The pinned libdwarf 2.3.2 checker
+passes the existing strict harness with two frame diagnostics independently
+corroborated against the original executable. The older system `dwarfdump`
+reports 15 line-range diagnostics on both single-file and multi-file exports;
+the identical diagnostics are retained and are not suppressed or called a pass.
+The fixture's existing recovery omissions keep its report status `PARTIAL`.
+Counts, coverage, failed/skipped functions and omission/unsupported evidence
+match the single-file baseline. Repeated multi-file exports have identical
+sidecar/index/manifest/part bytes and leave the original unchanged.
+
+The initial attempt on the external evidence drive refused hard-link installation
+without leaving a final sidecar; the passing output used local tmpfs. Ghidra's
+process exit status was zero even for that script failure, so these checks require
+the exporter success marker as well as validating actual artifacts.
+
+Evidence is retained under
+`/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/headless-01/`,
+including `checkpoint.json`, both reports, command/log files, validator output,
+the unchanged-byte inventory and `source-generations.tar.gz`. This checkpoint
+does not establish full #115 acceptance: the repeatable CI driver, feature
+combinations, recursive/discontiguous fixtures, remaining targets, large-program
+measurement, complete consumer retention and hosted/protected integration remain.

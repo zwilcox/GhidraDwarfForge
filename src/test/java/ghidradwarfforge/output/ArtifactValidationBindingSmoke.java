@@ -29,11 +29,32 @@ public final class ArtifactValidationBindingSmoke {
         Path sidecar = Files.copy(Path.of(args[2]), exported.resolve("artifact.dbg"));
         Path source = Files.copy(Path.of(args[3]), exported.resolve(Path.of(args[3]).getFileName()));
         Path retainedSource = Files.copy(source, retained.resolve(source.getFileName()));
+        var sourceBundle = SourceBundleFiles.open(Path.of(args[3]), () -> false).orElse(null);
+        if (sourceBundle != null) {
+            for (Path dependency : sourceBundle.files().subList(1, sourceBundle.files().size())) {
+                Files.copy(dependency, exported.resolve(dependency.getFileName()));
+                Files.copy(dependency, retained.resolve(dependency.getFileName()));
+            }
+        }
         Path candidate = root.resolve("candidate.dbg");
         var plan = SyntheticSourceSidecar.prepare(sidecar, retained.toString(), () -> false);
         write(plan, candidate);
         var export = AttachmentExportBinding.observe(report, original, sidecar, source, HOST, () -> false);
         var derived = ArtifactValidationBinding.relocated(export, candidate, retainedSource, HOST, () -> false);
+        if (sourceBundle != null) {
+            // Copying an index alone must never authorize a relocated sidecar.
+            for (Path dependency : sourceBundle.files().subList(1, sourceBundle.files().size())) {
+                Path selected = retained.resolve(dependency.getFileName());
+                Path hidden = selected.resolveSibling(selected.getFileName() + ".hidden");
+                Files.move(selected, hidden);
+                try {
+                    reject(() -> ArtifactValidationBinding.relocated(export, candidate, retainedSource, HOST, () -> false));
+                    reject(() -> derived.recheck(HOST, () -> false));
+                }
+                finally { Files.move(hidden, selected); }
+            }
+            derived.recheck(HOST, () -> false);
+        }
         require(derived.derived() && !ArtifactValidationBinding.exported(export).derived(), "incorrect relationship");
         require(derived.claims().equals(export.claims()), "export claims were changed");
         require(derived.exportFiles().equals(export.files()), "reported export evidence was replaced");
