@@ -30,7 +30,7 @@
         "source": "a81bf40b5e6f7dbe5f8e2291d53aef0b7269fc95b9d46279293976778b2816cc"
     },
     "publishedRegistration": false,
-    "candidate": "Select the MSYS2 binutils GNU readelf executable for Windows attachment/installation. Add native direct-process compiler ELF controls for ASCII, Unicode and >360-character paths, with unchanged inputs and malformed-ELF rejection. Keep the MinGW executable as an independent control. Production Java validator selection and mandatory GNU/LLVM/libdwarf gates remain unchanged.",
+    "candidate": "Select the MSYS2 binutils GNU readelf executable for Windows attachment/installation. Add native direct-process compiler ELF controls for ASCII, Unicode and >360-character paths, with unchanged inputs and malformed-ELF rejection. Keep the MinGW executable as an independent control. Production Java validator selection and mandatory GNU/LLVM/libdwarf gates remain unchanged. The direct controls exercise both an unset locale and the production supervisor LC_ALL/LANG/LANGUAGE=C environment; each must retain identical GNU output and malformed-input refusal.",
     "candidateStatus": "PRESENT, UNVERIFIED: Python syntax/actionlint/diff checks pass; native direct-tool and full supervisor/installer results still required.",
     "references": [
         "https://www.msys2.org/docs/filesystem-paths/",

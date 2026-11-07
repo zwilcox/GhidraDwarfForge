@@ -6,7 +6,9 @@ where MinGW GNU readelf renders the Unicode installation directory as `?` and
 reports a missing file. The original/export hashes remain bound and no public
 registration is written. The CI candidate selects MSYS2's GNU readelf and adds
 independent ASCII/Unicode/long-path compiler-ELF controls plus malformed-input
-refusal before the installer runs. This tool selection is **PRESENT, UNVERIFIED**
+refusal before the installer runs. The controls cover both an unset locale and
+the actual supervisor C locale; direct-process success alone does not prove
+supervised installation. This tool selection is **PRESENT, UNVERIFIED**
 until native tests and the full supervisor/installer workflow pass. No validator
 is skipped and the original executable is unchanged. See
 `docs/evidence/windows-build-id-validator-paths.json`. Full #109 acceptance remains

@@ -32,12 +32,14 @@ def main():
     for key in ['LC_ALL', 'LC_CTYPE', 'LANG', 'LANGUAGE']:
         environment.pop(key, None)
 
-    def run(name, command):
+    def run(name, command, selected_environment=None):
         command = list(map(str, command))
-        result = subprocess.run(command, env=environment, capture_output=True, timeout=90)
+        child_environment = environment if selected_environment is None else selected_environment
+        result = subprocess.run(command, env=child_environment, capture_output=True, timeout=90)
         (root / (name + '.stdout')).write_bytes(result.stdout)
         (root / (name + '.stderr')).write_bytes(result.stderr)
-        commands.append({'name': name, 'command': command, 'exit': result.returncode})
+        commands.append({'name': name, 'command': command, 'exit': result.returncode,
+            'locale': {key: child_environment.get(key) for key in ['LC_ALL', 'LC_CTYPE', 'LANG', 'LANGUAGE']}})
         (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n', encoding='utf-8')
         return result
 
@@ -77,6 +79,13 @@ def main():
             assert marker in text, (name, marker)
         outputs[name] = result.stdout
     assert outputs['ascii'] == outputs['unicode'] == outputs['long-unicode'], 'path changed GNU interpretation'
+    # ValidatorSupervisor deliberately sets the C locale for stable diagnostic
+    # grammar. A default-locale subprocess alone does not prove this contract.
+    supervisor_environment = dict(environment, LC_ALL='C', LANG='C', LANGUAGE='C')
+    for name, path in paths.items():
+        result = run('supervisor-locale-' + name, [selected, *options, path], supervisor_environment)
+        assert result.returncode == 0 and not result.stderr, (name, result.returncode, result.stderr)
+        assert result.stdout == outputs[name], ('supervisor locale changed GNU interpretation', name)
     reference = run('mingw-ascii', [mingw, *options, original])
     assert reference.returncode == 0 and not reference.stderr
     # Different binutils versions can format reports differently. Require each
@@ -92,9 +101,12 @@ def main():
     protected[str(malformed)] = digest(malformed)
     rejected = run('selected-malformed', [selected, *options, malformed])
     assert rejected.returncode != 0 and rejected.stderr and b'ELF Header:' not in rejected.stdout
+    rejected = run('supervisor-locale-malformed', [selected, *options, malformed], supervisor_environment)
+    assert rejected.returncode != 0 and rejected.stderr and b'ELF Header:' not in rejected.stdout
     assert protected == {path: digest(Path(path)) for path in protected}
     result = {'status': 'PASS_NATIVE_WINDOWS_GNU_READELF_PATHS', 'versions': versions,
         'mingwUnicodeSucceeded': old.returncode == 0, 'selectedReadelf': str(selected),
+        'localeProfiles': ['unset', 'supervisor-C'],
         'pathLengths': {name: len(str(path)) for name, path in paths.items()},
         'protectedInputs': protected,
         'scope': 'Direct Windows invocation, compiler ELF/DWARF, ASCII/Unicode/long-path equivalence, '
