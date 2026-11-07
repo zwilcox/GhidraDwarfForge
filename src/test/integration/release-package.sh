@@ -308,4 +308,37 @@ else
     exit 1
 fi
 
+# MSYS2 zlib 1.4 changed the DLL selected by libz.dll.a. Preserve the
+# imported basename, package notices and hashes for either reviewed runtime.
+cp -R "$work/windows" "$work/windows-zlib14"
+mv "$work/windows-zlib14/zlib1.dll" "$work/windows-zlib14/libz-1.dll"
+sed -i 's/zlib 1.3.1-1/zlib 1.4-2/' \
+    "$work/windows-zlib14/compliance/windows-runtime/PACKAGE-VERSIONS.txt"
+(
+    cd "$work/windows-zlib14/compliance/windows-runtime"
+    find . -type f ! -name RUNTIME-SHA256SUMS -print0 |
+        LC_ALL=C sort -z | xargs -0 sha256sum > RUNTIME-SHA256SUMS
+)
+"$assembler" "$work/base.zip" "$work/linux" "$work/windows-zlib14" "$work/zlib14.zip"
+unzip -q "$work/zlib14.zip" -d "$work/zlib14-unpacked"
+module="$work/zlib14-unpacked/GhidraDwarfForge"
+test ! -e "$module/os/win_x86_64/zlib1.dll"
+cmp "$work/windows-zlib14/libz-1.dll" "$module/os/win_x86_64/libz-1.dll"
+grep -Fxq 'mingw-w64-x86_64-zlib 1.4-2' \
+    "$module/third_party/windows-runtime/PACKAGE-VERSIONS.txt"
+(
+    cd "$module"
+    sha256sum -c RELEASE-SHA256SUMS
+    cd os/win_x86_64
+    sha256sum -c SHA256SUMS
+)
+# A similar future filename still needs its own review.
+mv "$work/windows-zlib14/libz-1.dll" "$work/windows-zlib14/libz-2.dll"
+if "$assembler" "$work/base.zip" "$work/linux" "$work/windows-zlib14" \
+        "$work/unreviewed-zlib.zip" > "$work/unreviewed-zlib.log" 2>&1; then
+    echo "release assembly accepted an unreviewed zlib runtime name" >&2
+    exit 1
+fi
+grep -Fq 'bundled DLL has no reviewed notice policy: libz-2.dll' "$work/unreviewed-zlib.log"
+
 echo release-package=PASS

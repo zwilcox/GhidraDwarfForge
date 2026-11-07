@@ -36,6 +36,16 @@ files are refused instead of falling back to an older export. An explicitly
 unlocated analyst variable also exercises actual debugger unavailable-value APIs.
 Native Windows exec/PIE producer and Linux consumer stages are now present in CI.
 
+**CONFIRMED hosted prerequisite failure:** run `42387275399` at `caa381f`
+passes Linux native, extension build and workflow lint. Native Windows stops
+before formatter production because MSYS2 zlib `1.4-2` links the checker to
+`libz-1.dll`, absent from the previous dependency allowlist. The official package
+and its PE imports are audited; the exact filename is now admitted alongside
+legacy `zlib1.dll`, retaining recursive dependency, notice and hash checks.
+Local release assembly accepts both names and rejects `libz-2.dll`; hosted
+Windows and the complete gate still need a passing rerun. See
+`docs/evidence/formatter-msys2-zlib-runtime.json`.
+
 **Remaining:** finish the complete current-revision architecture profiles and
 native Windows production/consumer validation; review the hosted required gate,
 update final acceptance evidence and integrate through a protected PR. The new

@@ -1,0 +1,40 @@
+{
+    "status": "CONFIRMED package audit and local assembly tests; native Windows rerun pending",
+    "failure": {
+        "run": 42387275399,
+        "head": "caa381f6a81ee368ee2f9ece8e6a5cc144209ed8",
+        "job": 128447214039,
+        "diagnostic": "unreviewed validation dependency: libz-1.dll",
+        "impact": "Windows strict checker build stopped before formatter production tests"
+    },
+    "package": {
+        "name": "mingw-w64-x86_64-zlib",
+        "version": "1.4-2",
+        "url": "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-zlib-1.4-2-any.pkg.tar.zst",
+        "recipeCommit": "331577457bbbeb4891dc069f3104f6ce613f8565",
+        "recipeUrl": "https://github.com/msys2/MINGW-packages/blob/331577457bbbeb4891dc069f3104f6ce613f8565/mingw-w64-zlib/PKGBUILD",
+        "license": "Zlib",
+        "auditedImports": [
+            "KERNEL32.dll",
+            "msvcrt.dll"
+        ]
+    },
+    "change": "Accept exact libz-1.dll in checker and production packaging alongside legacy zlib1.dll; retain recursive dependency audit, package notices/version and hashes; no wildcard zlib admission.",
+    "localChecks": [
+        "release-package.sh: legacy and new runtime assembly with byte/manifests checks; libz-2.dll and other unknown dependencies refused",
+        "bash -n: checker builder, release assembler, release fixture",
+        "actionlint",
+        "git diff --check"
+    ],
+    "artifactRoot": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue111-formatters/portable-checkpoint-caa381f",
+    "sha256": {
+        "zlib-1.4-2.pkg.tar.zst": "2a065fb3311d6c08bd2c7431a092b912ade08a83954474e06ea4eb0479d908cd",
+        "native-windows.log": "13e4e7612b2d290b332cf0cf64eea9ad3787cffae6d723469511fd38fb160bd8",
+        "native-windows-diagnostics.zip": "59d3786d5fb290fd8ba27bf980fd965d8fef4fccd10aa02d2b92998a71305471",
+        "msys2-zlib-PKGBUILD": "0b3e1662608719a4a2f32134de74d361e39a2609d610a3cf0ed89b04104f61d4",
+        "zlib-audit/mingw64/bin/libz-1.dll": "b82cab3e02b60e664c19eb3459f6e6ca7f6165a727bbb18f48dee0474b42a920",
+        "zlib-audit/mingw64/share/licenses/zlib/LICENSE": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2",
+        "zlib-audit/libz-1-pe.txt": "8d3963758da2f6ad036cbae108d8ef6f4f8f527a8715efb3725bede78e99c1c6",
+        "release-package-zlib14.log": "574d374bb0868a9e92731794ebdc26528bdcc3587acaa1c347890b910a09b1e2"
+    }
+}

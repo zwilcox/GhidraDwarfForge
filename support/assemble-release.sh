@@ -171,7 +171,7 @@ chmod 755 "$module/os/linux_x86_64/forge-validator-supervisor"
 for bundled_dll in "$module/os/win_x86_64"/*.dll; do
     bundled_name=$(basename "$bundled_dll" | tr '[:upper:]' '[:lower:]')
     case "$bundled_name" in
-        libdwarf-*.dll|libdwarfp-*.dll|libzstd.dll|zlib1.dll) ;;
+        libdwarf-*.dll|libdwarfp-*.dll|libzstd.dll|zlib1.dll|libz-1.dll) ;;
         *)
             echo "bundled DLL has no reviewed notice policy: $bundled_name" >&2
             exit 1

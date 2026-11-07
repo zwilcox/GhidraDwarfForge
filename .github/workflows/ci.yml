@@ -475,12 +475,14 @@ jobs:
           }
           copy_package_notices mingw-w64-x86_64-zlib zlib
           copy_package_notices mingw-w64-x86_64-zstd zstd
-          test -f ../native-windows-out/zlib1.dll
+          # MSYS2 zlib 1.4 links libz.dll.a to libz-1.dll; older packages
+          # use zlib1.dll. Copy the actual recursively audited imports.
+          test -f ../native-windows-out/zlib1.dll || test -f ../native-windows-out/libz-1.dll
           test -f ../native-windows-out/libzstd.dll
           for bundled_dll in ../native-windows-out/*.dll; do
             bundled_name=$(basename "$bundled_dll" | tr '[:upper:]' '[:lower:]')
             case "$bundled_name" in
-              libdwarf-*.dll|libdwarfp-*.dll|libzstd.dll|zlib1.dll) ;;
+              libdwarf-*.dll|libdwarfp-*.dll|libzstd.dll|zlib1.dll|libz-1.dll) ;;
               *)
                 echo "bundled DLL has no reviewed notice policy: $bundled_name" >&2
                 exit 1
