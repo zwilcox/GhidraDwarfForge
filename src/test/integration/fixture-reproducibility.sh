@@ -124,6 +124,7 @@ expected_sources=(
     outside-body-flow.c
     overloaded-signatures.cpp
     perf-build-id.c
+    formatter-values.c
     recovered-default-returns.c
     recovered-parameter-types.c
     register-copy.c

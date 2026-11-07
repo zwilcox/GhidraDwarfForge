@@ -631,7 +631,7 @@ jobs:
                 -PsupervisorPath="$PWD/build/forge-validator-supervisor" \
                 -PsupervisorPython="$(command -v python3)" \
                 -PsupervisorResults="$PWD/build/test-results/extension-build/supervisor"
-            ./gradlew exportPhaseSmoke addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
+            ./gradlew formatterPlanSmoke exportPhaseSmoke addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
               ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke attachmentExportBindingSmoke attachmentOperationSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke debuglinkBasenameSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
@@ -1036,6 +1036,24 @@ jobs:
         run: |
           python3 src/test/integration/export-consistency.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
             "build/test-results/export-consistency/$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Validate optional formatters in GDB CLI/MI and LLDB
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          consumers=()
+          companions=()
+          if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+              consumers+=(--lldb lldb-18)
+              companions+=(--companions)
+          fi
+          python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "build/test-results/formatters/$TARGET/exec" --role exec \
+              --dwarfdump "$DWARFDUMP" "${consumers[@]}" "${companions[@]}"
+          python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "build/test-results/formatters/$TARGET/pie-zlib" --role pie --compression zlib \
+              --dwarfdump "$DWARFDUMP" "${consumers[@]}"
 
       - name: Validate recovered CFI in executables, PIE and loaded shared libraries
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
@@ -3179,7 +3197,7 @@ jobs:
           if ($null -eq $extension) { throw 'extension ZIP is missing' }
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
-          & .\gradlew.bat exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
+          & .\gradlew.bat formatterPlanSmoke exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
             syntheticSourceSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `

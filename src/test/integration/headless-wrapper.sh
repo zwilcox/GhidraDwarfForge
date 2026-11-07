@@ -54,6 +54,11 @@ grep -Fxq -- "--input=$input" "$argument_log"
 grep -Fxq -- "--output=$output" "$argument_log"
 run_status 0 SUCCESS 0 --import="$input" --output="$output" --gdb-loader
 grep -Fxq -- '--gdb-loader' "$argument_log"
+selection="$work/formatter selection λ.json"
+printf 'selection sentinel\n' >"$selection"
+run_status 0 SUCCESS 0 --import="$input" --output="$output" --formatters="$selection"
+grep -Fxq -- "--formatters=$selection" "$argument_log"
+run_status 64 SUCCESS 0 --import="$input" --formatters=
 run_status 0 SUCCESS 0 --import="$input" --output="$output" --compress-debug-sections=zlib
 grep -Fxq -- '--compress-debug-sections=zlib' "$argument_log"
 run_status 0 SUCCESS 0 --import="$input" --output="$output" --compress-debug-sections=none
@@ -127,12 +132,14 @@ mkdir -p "$(dirname "$project_database")" "$(dirname "$packaged_library")"
 mkdir -p "$work/lexical" "$work/physical/child"
 ln -s "$work/physical/child" "$work/lexical/alias"
 ambiguous_input="$work/lexical/alias/../original.elf"
-protected=("$input" "$consumer" "$producer" "$fake_ghidra/support/analyzeHeadless")
+formatter_hash=$(printf '%s' "$(basename "$explicit_output")" | sha256sum | cut -d ' ' -f 1)
+formatter_output="$work/forge_formatters_$formatter_hash.py"
+protected=("$input" "$consumer" "$producer" "$selection" "$fake_ghidra/support/analyzeHeadless")
 for protected_file in "$override" "$output" "$output.c" "$output.gdb.py" "$output.unwind.json" \
         "$override.dbg" "$override.dbg.c" "$override.dbg.gdb.py" "$override.dbg.unwind.json" \
         "$explicit_output" "$explicit_output.c" "$explicit_output.gdb.py" "$explicit_output.unwind.json" \
         "$project_dir/Existing.gpr" "$project_dir/Existing.lock" \
-        "$project_database" "$packaged_library" \
+        "$project_database" "$packaged_library" "$formatter_output" \
         "$work/lexical/original.elf" "$work/physical/original.elf" \
         "$work/lexical/original.elf.dbg" "$work/lexical/original.elf.dbg.c"; do
     printf 'preserve this file: %s\n' "$protected_file" >"$protected_file"
@@ -165,6 +172,12 @@ reject_log() {
 }
 
 reject_log "$input" --import="$input"
+reject_log "$selection" --import="$input" --formatters="$selection"
+reject_log "$formatter_output" --import="$input" --output="$explicit_output" --formatters="$selection"
+ln "$selection" "$work/selection-hardlink.log"
+reject_log "$work/selection-hardlink.log" --import="$input" --formatters="$selection"
+ln -s "$formatter_output" "$work/formatter-symlink.log"
+reject_log "$work/formatter-symlink.log" --import="$input" --output="$explicit_output" --formatters="$selection"
 reject_log "$work/./fixture.elf" --import="$input"
 ln -s "$input" "$work/input-symlink.log"
 reject_log "$work/input-symlink.log" --import="$input"

@@ -73,6 +73,14 @@ tasks.register("exportPhaseSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.performance.ExportPhaseSmoke"
 }
 
+tasks.register("formatterPlanSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit formatter selections, canonical witnesses, encoding and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.formatters.FormatterPlanSmoke"
+}
+
 tasks.register("debugCompressionSmoke", JavaExec) {
     group = "verification"
     description = "Checks ELF32/64 endian compression headers, fallback, determinism and cancellation"

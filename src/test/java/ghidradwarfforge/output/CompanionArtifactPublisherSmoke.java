@@ -16,7 +16,8 @@ public final class CompanionArtifactPublisherSmoke {
                     exercise(root, existing, failAfter);
                 }
             }
-            fourFiles(root);
+            multipleFiles(root, 4);
+            multipleFiles(root, 5);
             rejectAliases(root);
             if (System.getProperty("os.name").equals("Linux")) {
                 Path actual = Files.createDirectory(root.resolve("physical-parent"));
@@ -110,25 +111,25 @@ public final class CompanionArtifactPublisherSmoke {
         }
     }
 
-    private static void fourFiles(Path root) throws Exception {
+    private static void multipleFiles(Path root, int count) throws Exception {
         for (boolean existing : List.of(false, true)) {
-            for (int stop = -2; stop < 4; stop++) {
+            for (int stop = -2; stop < count; stop++) {
                 final int failureAt = stop;
-                Path directory = Files.createDirectory(root.resolve("four-" + existing + "-" + stop));
+                Path directory = Files.createDirectory(root.resolve("multi-" + count + "-" + existing + "-" + stop));
                 Path input = Files.writeString(directory.resolve("input"), "original");
                 List<Path> outputs = List.of(directory.resolve("sidecar"), directory.resolve("source"),
-                    directory.resolve("loader"), directory.resolve("evidence"));
+                    directory.resolve("loader"), directory.resolve("evidence"), directory.resolve("formatters")).subList(0, count);
                 if (existing) for (Path path : outputs) Files.writeString(path, "old:" + path.getFileName());
                 try {
                     CompanionArtifactPublisher.stageAndPublish(input, outputs, stages -> {
                         for (int index = 0; index < stages.size(); index++) {
                             Files.writeString(stages.get(index), "new:" + outputs.get(index).getFileName());
                         }
-                        if (failureAt == -2) throw new IOException("four-file serialization failure");
+                        if (failureAt == -2) throw new IOException("multi-file serialization failure");
                     }, () -> { }, index -> {
-                        if (index == failureAt) throw new CancellationException("four-file install cancellation");
+                        if (index == failureAt) throw new CancellationException("multi-file install cancellation");
                     });
-                    if (stop != -1) throw new AssertionError("expected four-file failure");
+                    if (stop != -1) throw new AssertionError("expected multi-file failure");
                 }
                 catch (IOException | CancellationException expected) {
                     if (stop == -1 || expected.getSuppressed().length != 0) throw expected;
@@ -136,28 +137,28 @@ public final class CompanionArtifactPublisherSmoke {
                 for (Path path : outputs) {
                     if (stop == -1 || existing) {
                         String expected = (stop == -1 ? "new:" : "old:") + path.getFileName();
-                        if (!Files.readString(path).equals(expected)) throw new AssertionError("four-file rollback lost generation");
+                        if (!Files.readString(path).equals(expected)) throw new AssertionError("multi-file rollback lost generation");
                     }
-                    else if (Files.exists(path)) throw new AssertionError("partial four-file generation");
+                    else if (Files.exists(path)) throw new AssertionError("partial multi-file generation");
                 }
                 if (!Files.readString(input).equals("original")) throw new AssertionError("original changed");
                 try (var files = Files.list(directory)) {
                     if (files.anyMatch(path -> path.getFileName().toString().startsWith(".forge-"))) {
-                        throw new AssertionError("four-file staging leak");
+                        throw new AssertionError("multi-file staging leak");
                     }
                 }
                 Path alias = Files.createLink(directory.resolve("input-alias"), input);
                 try {
                     CompanionArtifactPublisher.validate(input,
-                        List.of(outputs.get(0), outputs.get(1), outputs.get(2), alias));
-                    throw new AssertionError("fourth output input alias accepted");
+                        java.util.stream.Stream.concat(outputs.subList(0, count - 1).stream(), java.util.stream.Stream.of(alias)).toList());
+                    throw new AssertionError("final output input alias accepted");
                 }
                 catch (IOException expected) {
                     if (!expected.getMessage().contains("alias")) throw expected;
                 }
                 try {
-                    CompanionArtifactPublisher.validate(input, outputs, outputs.get(3));
-                    throw new AssertionError("fourth output protected input accepted");
+                    CompanionArtifactPublisher.validate(input, outputs, outputs.get(count - 1));
+                    throw new AssertionError("final output protected input accepted");
                 }
                 catch (IOException expected) {
                     if (!expected.getMessage().contains("protected input")) throw expected;

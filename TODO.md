@@ -1,17 +1,41 @@
 # TODO.md — GhidraDwarfForge
 
-## Current goal implementation status — 2026-11-07 UTC
+## Active goal: optional GDB/LLDB formatters (#111) — 2026-11-07 UTC
 
-**CONFIRMED:** #74, #108, #116/#114 and #112/#110 are integrated within their
-recorded acceptance profiles. Build-ID installation #109 passes all seven
-implementation requirements at `d55842f`: run `42344072547` completes all 16 jobs,
-and raw review covers all five targets, native Windows, downstream GDB, installed
-LLDB/offline perf and actual sampled-perf characterization. The original scope
-is preserved; see [build-ID acceptance](docs/BUILD-ID-ACCEPTANCE.md) for evidence
-and consumer limitations. [PR186](https://github.com/zwilcox/GhidraDwarfForge/pull/186)
-records final documentation validation and normal protected integration. The
-full goal closure audit must also confirm that integration and all 44 original
-requirements. No release is included.
+**CONFIRMED:** the user selected all six acceptance requirements of #111. The
+previous seven-issue goal is integrated through PR186 (`41887ff`); this formatter
+work is a new goal. #187 remains last, apart from the requested upstream report
+preparation. Release publication is not included.
+
+**PRESENT, UNVERIFIED as a complete feature:** explicit canonical-key selections,
+synthetic typedef witnesses, generation-bound Python companions, independent GDB
+and LLDB adapters, flags/aggregate summaries, and recoverable publication are
+implemented on the formatter branch. Formatters remain disabled by default
+(no formatter generated without a selection). See
+[formatter design and acceptance](docs/DEBUGGER-FORMATTERS.md).
+
+**CONFIRMED local checkpoint:** production saved-program, fully stripped ET_EXEC
+fixtures pass GNU/LLVM/strict libdwarf validation, repeated generation and disabled
+export comparisons, GDB CLI/MI on x86-64, AArch64 and big-endian MIPS32, and LLDB
+18.1.3 on x86-64/AArch64. Controls exercise 8/16/32/64-bit signed/unsigned flags,
+unknown bits, aliases/zero, recursive pointers, bounded nested summaries, native
+children, unreadable memory, stale artifacts and foreign modules. These are local
+fixtures, not the full acceptance or hosted gate. A stale LLDB summary cache defect
+was reproduced and corrected using uncached summaries. Four/five-file publisher
+rollback/cancellation and Bash wrapper alias checks also pass.
+
+**CONFIRMED expanded checkpoint:** same-named canonical types, hostile label
+escaping, production preparation/render cancellation, invalid selection failure,
+PIE/zlib and combined five-file generation checks now pass in local runs. The
+five-target workflow includes dedicated formatter tests. PowerShell wrapper
+forwarding/log-alias tests pass on Linux; this is not native Windows evidence.
+
+**Remaining:** finish the complete current-revision architecture profiles;
+Windows production export/consumer validation and portable companion loading;
+review the hosted required gate, update final acceptance evidence and integrate
+through a protected PR. The workflow changes are not yet verified on GitHub.
+No #111 PR is open at this checkpoint. Keep the issue open until all original
+requirements and required validation pass at the final revision.
 
 ## Historical development log
 

@@ -201,6 +201,12 @@ with `--gdb-loader` (PowerShell `-GdbLoader`). It produces `<sidecar>.gdb.py`
 alongside the sidecar/source pair. See [GDB companion usage and current
 validation limits](docs/GDB-LOADER.md).
 
+Formatter development adds `--formatters=<selection.json>` (PowerShell
+`-Formatters`) for explicitly selected flag enums and aggregate summaries in GDB
+and LLDB. It is disabled by default. The companion preserves raw values and
+native fields, rejects stale sidecars, and never interprets analyst labels as
+Python. See [formatter choices, loading and acceptance status](docs/DEBUGGER-FORMATTERS.md).
+
 Exit `0` means the export completed as either `SUCCESS` or `PARTIAL`; inspect
 the schema-versioned JSON report for semantic omissions. Exit `10` means
 `FATAL`, `11` means `CANCELLED`, `12` means Ghidra failed or omitted a valid
