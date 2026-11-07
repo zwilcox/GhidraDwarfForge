@@ -2851,12 +2851,19 @@ jobs:
               cp "${files[@]}" "build/test-results/$profile-gdb/"
           fi
 
+      - name: Archive target diagnostics with exact fixture filenames
+        if: always()
+        run: |
+          python3 src/test/integration/archive-target-diagnostics-test.py
+          python3 support/archive-target-diagnostics.py \
+            build/test-results build/target-preflight.tar.gz
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: target-preflight-${{ matrix.target }}
-          path: build/test-results/
-          include-hidden-files: true
+          path: build/target-preflight.tar.gz
+          compression-level: 0
           if-no-files-found: warn
           retention-days: 14
 

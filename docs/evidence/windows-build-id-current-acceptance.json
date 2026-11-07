@@ -1,40 +1,40 @@
 {
     "status": "CONFIRMED_CURRENT_WINDOWS_INSTALLER_AND_HOSTED_CONSUMER_FULL_TARGET_GATE_PENDING",
     "issue": 109,
-    "testedHead": "9d1ce2c4182ac798b21180ff891bd237fd77b05c",
-    "run": 42324179974,
-    "nativeHostJob": 128258785813,
+    "testedHead": "0f74abd1f17c1881ba006b41e95b17c073fa973f",
+    "run": 42329832669,
+    "nativeHostJob": 128276867134,
     "nativeHostConclusion": "success",
-    "downstreamConsumerJob": 128265920142,
+    "downstreamConsumerJob": 128283282420,
     "downstreamConsumerConclusion": "success",
     "artifacts": {
         "windows-host-validation": {
-            "id": 13555516908,
-            "sha256": "sha256:bf18ff2b99e95a95d2e19ac0072575ed4a56271a1146c28478f0f4cc111efbf7",
-            "bytes": 19016302
+            "id": 13557968556,
+            "sha256": "sha256:d27e9b336134a7b45636870bea8094caddbde2ea8384e1c798cdd61a70d48789",
+            "bytes": 19017407
         },
         "windows-attachment-gdb-diagnostics": {
-            "id": 13555397245,
-            "sha256": "sha256:983f5cedddbb85bb83bd8ca6fa195f2e5b74c85d4a3b68bd7d1917e62e168433",
-            "bytes": 4742793
+            "id": 13557623018,
+            "sha256": "sha256:bd8f203074a91a15a8441f3ab13baf8c0750d2da0f18f6eb12dd90aa60cf36d5",
+            "bytes": 4743787
         }
     },
     "reviews": {
         "windows-installer-check-review.json": {
             "status": "PASS_SCOPED_NATIVE_WINDOWS_INSTALLER_CHECK_REVIEW",
-            "sha256": "73b9bc626a5f2b9c6949dfb681ed61aa18758135bb0e9260018b38710da7908c"
+            "sha256": "197cc697d310dce64eb39874760520faf52ded4120018a5d6685a31902319fcb"
         },
         "windows-generation-review.json": {
             "status": "PASS_NATIVE_WINDOWS_GENERATION_VALIDATION_AUDIT",
-            "sha256": "cf8b82cce3aac3b1257d8f60ce6527d964f78d3351a320ec73eeb2266a8014c8"
+            "sha256": "d9f249c60d29cf5b0cf5a9a845e874cbcf07517bf82a0f39118f9fa124ee003c"
         },
         "windows-consumer-review.json": {
             "status": "PASS_CORRECTED_HOSTED_WINDOWS_CONSUMER_RAW_REVIEW",
-            "sha256": "0ad56c90d12d1842cee2567a3ad9f695929f6677ad6804b2f7913f8e2498acde"
+            "sha256": "3247ff0a8a46a69f92bfdc070054aaf9318d2bdef7f161a18a6722401636fe8b"
         },
         "windows-regression-consumer-review.json": {
             "status": "PASS_WINDOWS_DOWNSTREAM_REGRESSION_ARTIFACT_REVIEW",
-            "sha256": "52f0c3c5477c70cf5e249e57b18a70ef09d3343fca22856b50ba72eb6a77b528"
+            "sha256": "7306d03f5e6b66914ee2e30cf9b9b4ae49e44c37dcc6eecbce16fa2ef45b58bd"
         }
     },
     "nativeInstaller": {

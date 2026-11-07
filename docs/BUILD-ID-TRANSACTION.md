@@ -151,7 +151,7 @@ targets, with an independently demonstrated GDB sectionless-discovery limitation
 and separately validated explicit fallback. Installation-specific LLDB and
 offline perf have [local consumer evidence](BUILD-ID-CONSUMERS.md), while actual
 perf recordings establish a documented sample-name limitation. Native Windows
-installation and the corrected hosted consumer pass at `9d1ce2c`. The workflow
+installation and the corrected hosted consumer pass at `0f74abd`. The workflow
 invokes the production Linux matrix and saved-program refresh tests; its complete
 five-target gate, final artifact review and protected integration remain
 outstanding. Retained component tests do not establish those remaining results.

@@ -2,7 +2,7 @@
 
 **Development status:** the Linux command has local end-to-end validation,
 and Windows native installation/recovery plus hosted downstream GDB checks pass
-at `9d1ce2c`. The complete five-target gate, final artifact review and protected
+at `0f74abd`. The complete five-target gate, final artifact review and protected
 integration remain outstanding. See the
 [current Windows receipt](evidence/windows-build-id-current-acceptance.json)
 and [Linux command receipt](evidence/build-id-command-linux.json).
@@ -150,7 +150,7 @@ contract. `-EnableSecurityPrivilege` explicitly enables an already assigned
 token privilege for that host and restores it afterward; it does not obtain
 an administrator token.
 
-**CONFIRMED scoped native validation:** host job `128258785813` passes actual
+**CONFIRMED scoped native validation:** host job `128276867134` passes actual
 headless and saved-analyst-refresh exports followed by the packaged installer.
 Raw review verifies 73 command checks, 14 interrupted lifecycle boundaries,
 metadata comparisons for both generations, and 22 protected-input bindings.
@@ -193,7 +193,7 @@ The first hosted consumer failed because the new unmapped-source oracle searched
 only global symbols. Exact-artifact reproduction resolves the expected file-local
 function at the correct address. The corrected test and stale-name controls use
 both global and static lookup. Local replay and current hosted consumer job
-`128265920142` pass two runtime sessions and four controls; the compressed-GUI
+`128283282420` pass two runtime sessions and four controls; the compressed-GUI
 and unwind consumers also pass. This does not claim native Windows execution
 of the Linux ELF. The five-target gate and protected integration remain
 outstanding. See the [current native artifact and consumer receipt](evidence/windows-build-id-current-acceptance.json).

@@ -1,5 +1,30 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+**CONFIRMED #109 target artifact upload failure (2026-11-07 UTC):** all
+x86-64 test stages in run `42329832669` pass, but artifact upload rejects the
+intentional command-path fixture `request λ "literal".json`. The other four
+target jobs pass with raw artifact review; x86-64 raw review and the required
+gate are not accepted. The workflow now retains the entire diagnostics tree
+inside one PAX tar.gz, preserving the original names, hidden files and bytes.
+Local quoted/Unicode/control-character/hidden-file/link retention checks and
+workflow lint pass. Hosted upload and full acceptance remain required. See
+`docs/evidence/build-id-target-artifact-retention.json`. This supersedes the
+running-x86 notes below; no runtime assertion or filename test was weakened.
+
+
+**CONFIRMED current #109 ARM/MIPS target jobs and artifact reviews
+(2026-11-07 UTC):** at `0f74abd`, run `42329832669` passes AArch64, ARM32,
+MIPS32 big-endian and MIPS32 little-endian. Independent review binds their
+archives, executed reviewers and raw results: 56 installer checks, 32 GDB
+lifecycle sessions, 36 retained generations and 230 supervised validator
+executions. The AArch64 installed LLDB/offline-perf checks also pass within
+their documented scope. Sectionless ET_EXEC still uses the explicit fallback;
+35 unretained AArch64 regression input paths remain runtime-oracle evidence,
+not independently rehashed copies. See
+`docs/evidence/build-id-targets-current-acceptance.json`. The x86-64 job,
+combined required gate, final acceptance and protected integration remain.
+
+
 **CONFIRMED #109 integration-harness locale failure and local correction
 (2026-11-07 UTC):** run `42324179974` fails MIPS little-endian floating-register
 validation because the harness forces `LC_ALL=C`, giving Java an ASCII native
@@ -9,11 +34,12 @@ exact-package reproduction confirms both the refusal and correction. With ambien
 `LC_ALL=C`, twelve fresh plain/zlib non-PIE/PIE exports pass structural and QEMU/GDB
 checks, plus four source-relocation and four derived-validation cases. See
 `docs/evidence/build-id-linux-locale.json`. A corrected full hosted gate is still
-required; the passing Windows jobs below do not make the failed run acceptable.
+required. Run `42329832669` is testing corrected head `0f74abd`; the passing
+Windows jobs below do not complete its five-target gate.
 
 **CONFIRMED current #109 Windows installer and hosted consumer (2026-11-07 UTC):**
-At `9d1ce2c`, run `42324179974` passes native Windows host job `128258785813`
-and corrected downstream GDB job `128265920142`. Independent review verifies
+At corrected head `0f74abd`, run `42329832669` passes native Windows host job
+`128276867134` and downstream GDB job `128283282420`. Independent review verifies
 73 native checks, 14 interruptions, 25 retained generations, 1,050 manifest files,
 175 supervised validator executions and 50 strict original/sidecar reports.
 The actual installed initial/analyst-curated artifacts pass two fresh GDB runtime

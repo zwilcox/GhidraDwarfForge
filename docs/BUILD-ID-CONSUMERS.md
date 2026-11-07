@@ -124,7 +124,19 @@ passing result.
 
 ### Observed recording results
 
-The [recording receipt](evidence/build-id-perf-recording.json) binds successful
+**CONFIRMED at current implementation head (2026-11-07 UTC):** run
+`42329832669`, job `128276258698`, repeats this characterization at `0f74abd`.
+Hosted perf 6.8.12 records 165 hot-function samples for ET_EXEC and 331 for PIE.
+Independent retained-artifact review and perf 7.0.14 replay confirm the same
+compiler-symbol, compiler-DWARF-only and installed-generation outcomes below.
+Four retained generations and 168 manifest files bind the actual installed
+sidecars and sources. See the
+[current recording receipt](evidence/build-id-perf-current-acceptance.json).
+This proves the recorded compatibility limit, not recovered-name sample-report
+support or completion of the pending full target gate.
+
+
+The earlier [recording receipt](evidence/build-id-perf-recording.json) binds successful
 job [128221726634](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42312429042/job/128221726634)
 to tested head `f6d1547` and its retained artifact. Hosted perf 6.8.12 recorded
 136 hot-function samples for ET_EXEC and 137 for PIE. Both controls and all

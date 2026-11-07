@@ -9,11 +9,12 @@ exact-package reproduction confirms both the refusal and correction. With ambien
 `LC_ALL=C`, twelve fresh plain/zlib non-PIE/PIE exports pass structural and QEMU/GDB
 checks, plus four source-relocation and four derived-validation cases. See
 `docs/evidence/build-id-linux-locale.json`. A corrected full hosted gate is still
-required; the passing Windows jobs below do not make the failed run acceptable.
+required. Run `42329832669` is testing corrected head `0f74abd`; the passing
+Windows jobs below do not complete its five-target gate.
 
 **CONFIRMED current #109 Windows installer and hosted consumer (2026-11-07 UTC):**
-At `9d1ce2c`, run `42324179974` passes native Windows host job `128258785813`
-and corrected downstream GDB job `128265920142`. Independent review verifies
+At corrected head `0f74abd`, run `42329832669` passes native Windows host job
+`128276867134` and downstream GDB job `128283282420`. Independent review verifies
 73 native checks, 14 interruptions, 25 retained generations, 1,050 manifest files,
 175 supervised validator executions and 50 strict original/sidecar reports.
 The actual installed initial/analyst-curated artifacts pass two fresh GDB runtime
@@ -3848,8 +3849,11 @@ See [final LLDB/unwind acceptance](docs/evidence/lldb-final-acceptance.json).
 installation, source retention, GDB, LLDB and offline perf checks pass. Native
 Windows installation/recovery and the hosted downstream GDB consumer pass. Actual perf
 recording characterizes a sample-name limitation with independent compiler
-controls. The full latest-head target/host/consumer gate, final acceptance
-review and protected integration remain.
+controls. AArch64, ARM32 and both MIPS32 lanes pass current hosted jobs and
+scoped artifact reviews. All x86-64 test stages pass, but GitHub rejects a quoted
+fixture filename during artifact upload. The archive-packaging correction passes
+local retention tests and lint; hosted upload, x86-64 raw review, the combined
+required gate, final acceptance and protected integration remain.
 See [installation acceptance](docs/BUILD-ID-ACCEPTANCE.md).
 Low-priority test-coverage/CI badges remain #162/#163.
 
