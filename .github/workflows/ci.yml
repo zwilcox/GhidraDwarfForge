@@ -1040,6 +1040,7 @@ jobs:
             "build/test-results/export-consistency/$TARGET" --dwarfdump "$DWARFDUMP"
 
       - name: Validate optional formatters in GDB CLI/MI and LLDB
+        id: formatter-tests
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1064,6 +1065,25 @@ jobs:
                       --lldb lldb-18 --dwarfdump "$DWARFDUMP"
               done
           fi
+
+      - name: Archive formatter evidence before the remaining regressions
+        if: always() && steps.formatter-tests.outcome != 'skipped'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          mkdir -p build/artifact-archives
+          if [[ -d build/test-results/formatters ]]; then
+              tar --format=pax -czf "build/artifact-archives/formatters-$TARGET.tar.gz" \
+                  -C build/test-results/formatters .
+          fi
+
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.formatter-tests.outcome != 'skipped'
+        with:
+          name: formatter-evidence-${{ matrix.target }}
+          path: build/artifact-archives/formatters-${{ matrix.target }}.tar.gz
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Validate recovered CFI in executables, PIE and loaded shared libraries
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
