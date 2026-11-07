@@ -2000,6 +2000,23 @@ jobs:
                   --role "$role" --source-lines 8
           done
 
+      - name: Multi-file shared objects retain relocated source lookup and stepping
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in shared shared-rebased; do
+              python3 src/test/integration/multifile-shared-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+                  --role "$role" --dwarfdump "$DWARFDUMP"
+          done
+
+      - name: Multi-file publication cancellation, rollback and retry
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64' || matrix.target == 'mips32be'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/multifile-publication.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "$PWD/build/test-results/multifile-publication/$TARGET" --dwarfdump "$DWARFDUMP"
+
       - name: Measure multi-file export and debugger navigation at large function counts
         if: matrix.target == 'x86_64'
         run: |
@@ -3531,6 +3548,12 @@ jobs:
             --ghidra $env:GHIDRA_INSTALL_DIR --powershell (Get-Command pwsh).Source `
             --readelf (Join-Path $mingwBin 'readelf.exe') --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe')
           if ($LASTEXITCODE -ne 0) { throw 'Native Windows formatter export failed' }
+          python src/test/integration/formatter-windows.py `
+            linux-formatter-reference build/test-results/windows-host/formatters-multifile `
+            --ghidra $env:GHIDRA_INSTALL_DIR --powershell (Get-Command pwsh).Source `
+            --readelf (Join-Path $mingwBin 'readelf.exe') --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe') `
+            --source-lines 8
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows multi-file formatter export failed' }
 
       - name: Native Windows unwind chooser cancellation and exports
         shell: pwsh
@@ -3643,6 +3666,10 @@ jobs:
           python3 src/test/integration/formatter-portable.py \
               "$PWD/windows-artifacts/windows-host/formatters" \
               "$PWD/build/test-results/windows-attachment-gdb/formatters" \
+              --producer-host Windows --lldb lldb-18 --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/formatter-portable.py \
+              "$PWD/windows-artifacts/windows-host/formatters-multifile" \
+              "$PWD/build/test-results/windows-attachment-gdb/formatters-multifile" \
               --producer-host Windows --lldb lldb-18 --dwarfdump "$DWARFDUMP"
       - uses: actions/upload-artifact@v7
         if: always()

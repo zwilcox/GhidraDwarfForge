@@ -601,3 +601,110 @@ verification. CI includes the five additional PIE/zlib cases and the transported
 multi-file consumer. Hosted/native Windows execution remains **PRESENT,
 UNVERIFIED**; remaining publication, shared-object, attachment and build-ID
 refresh/recovery combinations and the full final gate are still required.
+
+
+## Production publication interruptions and retry
+
+**CONFIRMED locally:** `CheckMultiFilePublication.java` invokes the actual
+installed `GhidraDwarfForge.java` entry point for fresh and replacement source
+bundles. A wrapping task monitor interrupts seven checkpoints: source planning,
+partial stage writing, the first newly installed part, the complete manifest,
+and after publication of the sidecar, index and GDB loader. Each checkpoint
+runs with cancellation and an injected I/O exception, giving 28 cases per target.
+The Java 21 x86-64/AArch64/MIPS32-BE matrix passes all 84 cases. Exact failure
+classes and one/two/three published-file counts are recorded, not inferred from
+an unsuccessful command alone.
+
+Fresh failures leave none of the three mutable final files. Replacement
+failures restore their exact old bytes. Every old immutable dependency and the
+analyst-owned `forge-src-analyst.c` remain unchanged. Any newly retained file
+must match a complete dependency from an independent successful reference
+export; no partial final part or leaked stage is accepted. Complete dependencies
+left after interruption are deliberately retained for reuse. Every case retries
+successfully and repeats byte-identically. The original ELF and saved program
+remain unchanged apart from documented Ghidra backup files.
+
+`multifile-publication.py` validates all 84 retry artifacts with GNU/LLVM/pinned
+checks and actual GDB file-qualified lookup, cross-file source stepping, `next`,
+return to the caller, observed global value and normal exit. Including initial
+references, old generations, interrupted attempts and two retries per case,
+these are 297 production invocations. The fixture is partially stripped, retaining
+ELF symbols; fully stripped coverage is provided by the separate formatter and
+curated semantic cases. Expected partial reports retain unavailable recovered
+information; successful publication does not imply every variable has a location.
+
+The initial MIPS build had only the `.eh_frame` terminator; its compiler CFI was
+in `.debug_frame`, removed by stripping. Publication/preservation checks passed,
+but GDB `finish` left the intended caller and the runtime gate failed. The driver
+now matches the existing source oracle's `-fno-omit-frame-pointer` and
+`-fasynchronous-unwind-tables` flags. Fresh complete runs on all three targets
+pass. The failed MIPS run and earlier x86/AArch64 runs are retained, without
+claiming unproved unwind support for inputs lacking that evidence.
+
+```sh
+python3 src/test/integration/multifile-publication.py "$GHIDRA_INSTALL_DIR" x86_64 \
+    --work /path/to/new-evidence --artifacts /path/to/new-hardlink-filesystem \
+    --dwarfdump "$DWARFDUMP"
+```
+
+Local runs additionally use explicit Java 21. `--artifacts` is optional; logs and
+projects may live separately from the hard-link-capable output filesystem.
+[Evidence bindings](evidence/multifile-publication.json) identify the final three
+runs. `publication-checkpoint-v1.tar.gz` retains 7,614 files, including initial
+failures, with member-by-member hash verification on read-back. The three target
+CI lanes include this test; hosted execution remains **PRESENT, UNVERIFIED**.
+
+## Native Windows combined output coverage
+
+**PRESENT, UNVERIFIED:** `formatter-windows.py --source-lines 8` now exercises
+PowerShell's production `-SourceLines` option for both exec/plain and PIE/zlib.
+It verifies the manifest/input binding, every part's size/hash, full generation
+determinism and four cancellation points. Its transport record includes every
+required source file alongside formatter, loader and unwind companions. A
+separate Linux consumer invocation validates both complete Windows generations
+and runs GDB/LLDB with producer sources hidden. The ordinary single-file Windows
+cases remain in the workflow. Python syntax and actionlint pass locally; actual
+native Windows production and transported results still require hosted evidence.
+
+
+## Shared objects and runtime relocation
+
+**CONFIRMED local checkpoint:** `multifile-shared-export.py` passes ten Java 21
+cases: x86-64, AArch64, ARM32, MIPS32 big-endian and little-endian, each with normal
+and rebased Ghidra analysis. The source-built DSO retains ordinary ELF symbols
+while compiler DWARF is stripped. A separate executable loads it with `dlopen`
+and records the actual `link_map.l_addr` through `dlinfo`. The debugger uses that
+independent runtime bias to load the selected compiler/Forge symbols; it does not
+derive the expected bias from Forge DWARF or assume a fixed address for `ET_DYN`.
+
+Each compiler, single-file and multi-file run checks exact relocated function
+addresses, source lookup, `ptype`, named/file-qualified breakpoints, stepping into
+the second function, `next`, return to the caller, global value 10 and normal exit.
+Multi-file stops resolve to two different source parts. The original ELF class,
+endianness, machine, ABI flags and build ID are preserved. Complete decoded-DWARF
+comparison, GNU/LLVM/pinned validators, repeated source/dependency bytes and
+original/reference/driver/saved-program preservation all pass. These are default
+explicit `add-symbol-file` consumers with a measured load bias; no new automatic
+shared-library loader behavior is claimed.
+
+The first x86 rehearsal selected the system checker instead of the pinned
+validator and failed the strict gate. The harness now exposes an explicit
+`--dwarfdump` option, used by all final local runs and CI. Initial cross-target
+runs reached the source assertions but reported missing shared-library symbols:
+the target sysroot did not contain the test DSO. An explicit `solib-search-path`
+points to its fixture directory. The final matrix passes the unchanged diagnostic
+checks; only the already compiler-corroborated ARM QEMU vDSO message is admitted.
+Both setup failures remain in the raw evidence.
+
+```sh
+python3 src/test/integration/multifile-shared-export.py "$GHIDRA_INSTALL_DIR" x86_64 \
+    --role shared --dwarfdump "$DWARFDUMP"
+# Repeat with --role shared-rebased and each selected cross target.
+```
+
+Local runs select Java 21 through `--java`; ARM32 additionally uses the documented
+private toolchain/sysroot. CI runs both roles in all five lanes. Hosted execution
+remains **PRESENT, UNVERIFIED**. [Result bindings](evidence/multifile-shared.json)
+record all ten cases and runtime observations. The read-back-verified
+`issue115-multifile/shared-checkpoint-v1.tar.gz` retains the final and failed runs.
+This closes the scoped local DSO gap, not the full #115 issue or release gate.

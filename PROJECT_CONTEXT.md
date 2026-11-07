@@ -15,7 +15,7 @@ all 16 jobs in run `42394809285` passed. Final raw artifact review covers all
 five targets and native Windows production/transported consumers; the merge
 retains the tested tree. The formatter checkpoint notes below are historical.
 
-**PLANNED #115:** one CU and canonical type graph with multiple source-file
+**CONFIRMED local #115 implementation, full acceptance pending:** one CU and canonical type graph with multiple source-file
 entries, optional bounded-size grouping, deterministic generation manifest and
 complete source installation before sidecar publication. See
 [design and acceptance](docs/MULTIFILE-SOURCE.md). Partitioning, line lookup, strict source manifests,
@@ -121,6 +121,34 @@ runs lacked its private library environment and remain recorded as failures.
 The five-case CI step and stronger transported-source check are present;
 native Windows combinations, fresh-generation publication failures and remaining
 attachment/build-ID refresh/recovery coverage are still pending.
+
+**CONFIRMED #115 publication checkpoint:** the production script passes 84
+interruption cases across x86-64/AArch64/MIPS32-BE: fresh/replacement outputs,
+cancellation/injected I/O failures, and seven preparation/install/publication
+checkpoints. Interruptions after one, two and all three mutable replacements
+restore the old generation or remove fresh finals. Complete unreferenced source
+parts are retained, analyst content and originals remain unchanged, and every
+retry passes deterministic reruns, validators and actual GDB source stepping.
+The first MIPS fixture lacked usable runtime unwind FDEs; its GDB failure is
+retained. The corrected fixture uses the existing source-oracle build flags.
+The CI lanes are wired; hosted publication acceptance remains pending.
+
+**PRESENT, UNVERIFIED Windows combination:** native PowerShell formatter tests
+now include `-SourceLines 8` for exec/plain and PIE/zlib, with complete dependency
+hashes and four production cancellation points. The Linux consumer receives
+both complete Windows generations and hides producer source during GDB/LLDB
+checks. The new Windows combinations require hosted execution; local Python
+and workflow checks are not native Windows evidence.
+
+**CONFIRMED #115 shared-object checkpoint:** ten Java 21 cases pass across
+all five targets, each with normal and rebased Ghidra analysis. The runtime
+loader supplies an independent DSO load bias; compiler/single/multi GDB runs
+verify relocated names, file-qualified breakpoints, cross-file stepping and
+values. Full semantic comparison, validators, repeated output and original/
+project preservation pass. Cross-target missing-library warnings were resolved
+by an explicit fixture library search path; those failed attempts are retained.
+Hosted shared-object execution remains pending. Failed/empty-source edge cases,
+attachment/build-ID lifecycle combinations and final hosted acceptance remain.
 
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming
