@@ -83,7 +83,14 @@ public class GhidraDwarfForge extends GhidraScript {
             options.getOrDefault("source-context", "off"));
         var compression = ghidradwarfforge.elf.DebugSectionCompression.parse(
             options.getOrDefault("compress-debug-sections", "none"));
+        Path formatterSelectionPath = options.containsKey("formatters") ? hostPath(options.get("formatters")) : null;
+        var formatterSelectionHash = formatterSelectionPath == null ? null : FileDigests.read(formatterSelectionPath, monitor::isCancelled);
+        var formatterSelection = formatterSelectionPath == null ? null :
+            ghidradwarfforge.output.FormatterSelection.read(formatterSelectionPath, monitor::isCancelled);
         boolean attachmentPreparation = options.containsKey("attachment-preparation");
+        if (attachmentPreparation && formatterSelection != null) {
+            throw new IllegalArgumentException("formatters require standalone export; attachment preparation has a separate generation contract");
+        }
         if (attachmentPreparation && synthesizeUnwind) {
             throw new IllegalArgumentException("unwind synthesis requires standalone export; attachment preparation has a separate generation contract");
         }
@@ -157,16 +164,17 @@ public class GhidraDwarfForge extends GhidraScript {
         Path sourceOutput = paths.source();
         boolean gdbLoader = options.containsKey("gdb-loader");
         Path companionOutput = output.resolveSibling(output.getFileName() + ".gdb.py");
-        if (gdbLoader) {
-            ghidradwarfforge.output.CompanionArtifactPublisher.validate(
-                input, output, sourceOutput, companionOutput, consumer, producer);
-        }
         Path unwindOutput = output.resolveSibling(output.getFileName() + ".unwind.json");
-        List<Path> unwindGeneration = new ArrayList<>(List.of(output, sourceOutput, unwindOutput));
-        if (gdbLoader) unwindGeneration.add(companionOutput);
-        if (synthesizeUnwind) {
+        Path formatterOutput = ghidradwarfforge.formatters.FormatterPlan.outputPath(output);
+        List<Path> generation = new ArrayList<>(List.of(output, sourceOutput));
+        if (synthesizeUnwind) generation.add(unwindOutput);
+        if (gdbLoader) generation.add(companionOutput);
+        if (formatterSelection != null) generation.add(formatterOutput);
+        if (generation.size() > 2) {
+            var protectedInputs = new ArrayList<>(List.of(consumer, producer));
+            if (formatterSelectionPath != null) protectedInputs.add(formatterSelectionPath);
             ghidradwarfforge.output.CompanionArtifactPublisher.validate(
-                input, unwindGeneration, consumer, producer);
+                input, generation, protectedInputs.toArray(Path[]::new));
         }
         var consistency = ghidradwarfforge.GhidraExportConsistency.capture(
             currentProgram, input, monitor::isCancelled);
@@ -283,14 +291,22 @@ public class GhidraDwarfForge extends GhidraScript {
             }
         });
         var source = annotated.source();
+        var formatterPlan = formatterSelection == null ? null :
+            ghidradwarfforge.formatters.FormatterPlan.prepare(typeModel, formatterSelection, monitor::isCancelled);
         var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
         var stagedSidecarHolder = new Path[1];
         var reportHolder = new PreparedReport[1];
         consistency.requireUnchanged(monitor::isCancelled);
-        ArtifactPairPublisher.PrePublishCheck prePublishCheck = () ->
+        ArtifactPairPublisher.PrePublishCheck prePublishCheck = () -> {
             consistency.requireUnchanged(monitor::isCancelled);
+            if (formatterSelectionPath != null && !formatterSelectionHash.equals(
+                    FileDigests.read(formatterSelectionPath, monitor::isCancelled))) {
+                throw new IOException("formatter selection changed during export");
+            }
+        };
         ArtifactPairPublisher.StagedWriter sidecarWriter = stagedOutput -> {
-            var exporter = new MinimalDwarfSidecarExporter(compression);
+            var exporter = new MinimalDwarfSidecarExporter(compression,
+                formatterPlan == null ? Map.of() : formatterPlan.aliases());
             if (recovered != null && recovered.plan().isPresent()) {
                 resultHolder[0] = exporter.exportWithFrames(input, stagedOutput,
                     consumer, producer, functions, source, typeModel,
@@ -332,29 +348,26 @@ public class GhidraDwarfForge extends GhidraScript {
                     monitor::isCancelled));
             reportHolder[0] = new PreparedReport(json, outputHash, sourceHash, claims, report.status().name());
         };
-        if (synthesizeUnwind) {
-            ghidradwarfforge.output.CompanionArtifactPublisher.stageAndPublish(input, unwindGeneration, stages -> {
+        if (generation.size() > 2) {
+            ghidradwarfforge.output.CompanionArtifactPublisher.stageAndPublish(input, generation, stages -> {
                 sidecarWriter.write(stages.get(0));
                 sourceWriter.write(stages.get(1));
-                String evidence = ghidradwarfforge.output.UnwindEvidenceJson.describe(originalElf, recovered,
-                    rebaseDelta, inputHash, reportHolder[0].outputHash(), reportHolder[0].sourceHash(), monitor::isCancelled);
-                Files.writeString(stages.get(2), evidence + "\n", java.nio.charset.StandardCharsets.UTF_8);
+                int index = 2;
+                if (synthesizeUnwind) {
+                    String evidence = ghidradwarfforge.output.UnwindEvidenceJson.describe(originalElf, recovered,
+                        rebaseDelta, inputHash, reportHolder[0].outputHash(), reportHolder[0].sourceHash(), monitor::isCancelled);
+                    Files.writeString(stages.get(index++), evidence + "\n", java.nio.charset.StandardCharsets.UTF_8);
+                }
                 if (gdbLoader) {
                     String companion = ghidradwarfforge.elf.GdbCompanion.render(input,
                         stages.get(0), stages.get(1), output, sourceOutput, monitor::isCancelled);
-                    Files.writeString(stages.get(3), companion, java.nio.charset.StandardCharsets.UTF_8);
+                    Files.writeString(stages.get(index++), companion, java.nio.charset.StandardCharsets.UTF_8);
+                }
+                if (formatterPlan != null) {
+                    Files.writeString(stages.get(index), formatterPlan.render(input, stages.get(0), output,
+                        monitor::isCancelled), java.nio.charset.StandardCharsets.UTF_8);
                 }
             }, prePublishCheck);
-        }
-        else if (gdbLoader) {
-            ghidradwarfforge.output.CompanionArtifactPublisher.stageAndPublish(
-                input, output, sourceOutput, companionOutput, (stagedSidecar, stagedSource, stagedCompanion) -> {
-                    sidecarWriter.write(stagedSidecar);
-                    sourceWriter.write(stagedSource);
-                    String companion = ghidradwarfforge.elf.GdbCompanion.render(input,
-                        stagedSidecar, stagedSource, output, sourceOutput, monitor::isCancelled);
-                    Files.writeString(stagedCompanion, companion, java.nio.charset.StandardCharsets.UTF_8);
-                }, prePublishCheck::check);
         }
         else if (attachmentPreparation) {
             ArtifactPairPublisher.stageAndPublishNew(output, sourceOutput,
@@ -369,6 +382,7 @@ public class GhidraDwarfForge extends GhidraScript {
         println("GhidraDwarfForge symbol export PASS");
         println("  output: " + output);
         println("  output SHA-256: " + prepared.outputHash());
+        if (formatterPlan != null) println("  optional GDB/LLDB formatters: " + formatterOutput);
         println("  input SHA-256: " + inputHash);
         println("  target: " + result.target().name());
         println("  functions: " + result.functionCount());
@@ -459,7 +473,7 @@ public class GhidraDwarfForge extends GhidraScript {
         }
         for (String name : result.keySet()) {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
-                    !name.equals("input") && !name.equals("output") &&
+                    !name.equals("input") && !name.equals("output") && !name.equals("formatters") &&
                     !name.equals("packaged-natives") && !name.equals("gdb-loader") && !name.equals("attachment-preparation") &&
                     !name.equals("compress-debug-sections") && !name.equals("source-context") &&
                     !name.equals("synthesize-unwind") && !name.equals("unwind-stack-separation") &&

@@ -1,0 +1,181 @@
+{
+    "status": "CONFIRMED_TEN_LINUX_PRODUCTION_AND_TWO_PORTABLE_REVIEWS",
+    "run": 42390876041,
+    "head": "ef876bee49e2f1165626e9766b33ea4b5bd9b668",
+    "scope": "Formatter stages only. Whole-run required-validation, native Windows production and transported consumers remain pending.",
+    "records": [
+        {
+            "file": "x86_64-exec-raw-review.json",
+            "sha256": "258b7e7e128c5d5ecdcbed0d3246ab048959129cc962bb685d33d1f988a2bf57",
+            "target": "x86_64",
+            "role": "exec",
+            "compression": "none",
+            "lldb": true,
+            "allCompanions": true,
+            "inheritedFrameDiagnostics": 2
+        },
+        {
+            "file": "x86_64-pie-zlib-raw-review.json",
+            "sha256": "0224b4adb891927d379e1fd289a3531e6f6050b97983784f534614783515e549",
+            "target": "x86_64",
+            "role": "pie",
+            "compression": "zlib",
+            "lldb": true,
+            "allCompanions": false,
+            "inheritedFrameDiagnostics": 0
+        },
+        {
+            "file": "aarch64-exec-raw-review.json",
+            "sha256": "19f37d283aea5868b0c35ef3ccc5164e2de1c536e3a6540917e4b0f0593ea29e",
+            "target": "aarch64",
+            "role": "exec",
+            "compression": "none",
+            "lldb": true,
+            "allCompanions": true,
+            "inheritedFrameDiagnostics": 5
+        },
+        {
+            "file": "aarch64-pie-zlib-raw-review.json",
+            "sha256": "299857cdfd482f0342ef52744e8d83a57db0e2e1248a08aae10d89df6776c553",
+            "target": "aarch64",
+            "role": "pie",
+            "compression": "zlib",
+            "lldb": true,
+            "allCompanions": false,
+            "inheritedFrameDiagnostics": 5
+        },
+        {
+            "file": "arm32-exec-raw-review.json",
+            "sha256": "1488b0749eb39f41d6e3fb2527af8c0c7f92b00cd53e362b5103d994071073a9",
+            "target": "arm32",
+            "role": "exec",
+            "compression": "none",
+            "lldb": false,
+            "allCompanions": false,
+            "inheritedFrameDiagnostics": 0
+        },
+        {
+            "file": "arm32-pie-zlib-raw-review.json",
+            "sha256": "cac4cfe936c6593efd90dcf0654bef695086691850113145af445fcdf96f1951",
+            "target": "arm32",
+            "role": "pie",
+            "compression": "zlib",
+            "lldb": false,
+            "allCompanions": false,
+            "inheritedFrameDiagnostics": 0
+        },
+        {
+            "file": "mips32be-exec-raw-review.json",
+            "sha256": "2a4ed4315e39e95e8dc1991f07f68239d0e190e40aa9e86c16dbb2d6db45c60e",
+            "target": "mips32be",
+            "role": "exec",
+            "compression": "none",
+            "lldb": false,
+            "allCompanions": false,
+            "inheritedFrameDiagnostics": 0
+        },
+        {
+            "file": "mips32be-pie-zlib-raw-review.json",
+            "sha256": "9bb553fa2d1dd752dd8d1812fa0a6bbc756cbbc361fe7a87cf122d092f7c28f3",
+            "target": "mips32be",
+            "role": "pie",
+            "compression": "zlib",
+            "lldb": false,
+            "allCompanions": false,
+            "inheritedFrameDiagnostics": 0
+        },
+        {
+            "file": "mips32le-exec-raw-review.json",
+            "sha256": "91c1f6636708485bf4963d13df7c3748bb2ff118350225ab382585a2232c3a41",
+            "target": "mips32le",
+            "role": "exec",
+            "compression": "none",
+            "lldb": false,
+            "allCompanions": false,
+            "inheritedFrameDiagnostics": 0
+        },
+        {
+            "file": "mips32le-pie-zlib-raw-review.json",
+            "sha256": "3931e5dd20541b62a4fd39a529dba63624ba46b9e795e51f53d149cbc258a24e",
+            "target": "mips32le",
+            "role": "pie",
+            "compression": "zlib",
+            "lldb": false,
+            "allCompanions": false,
+            "inheritedFrameDiagnostics": 0
+        }
+    ],
+    "portable": [
+        {
+            "file": "portable-exec-raw-review.json",
+            "sha256": "32917da0fd3b149b3997399dd09ec5359614c5eca32eea87a4114874a8649df9",
+            "role": "exec",
+            "producerAndConsumerHashesMatch": true
+        },
+        {
+            "file": "portable-pie-zlib-raw-review.json",
+            "sha256": "54cbeca0d7126e789b34fab68cc879e2cacff3353629e5bd385e709e51f2afeb",
+            "role": "pie",
+            "producerAndConsumerHashesMatch": true
+        }
+    ],
+    "packageBindings": {
+        "lib/GhidraDwarfForge.jar": "e8163d2fdaa187d48075147c157b5320cef30e361876858f6c21c54db5e5872f",
+        "ghidra_scripts/GhidraDwarfForge.java": "a864ee00c32de421433ecd794219924ce931b5c8ac2a4adb5de7fd1f8dcb764a",
+        "support/ghidra-dwarf-forge-headless": "1a92d32234eee3c27caed95379d118005aafaefb9ef7bba995e3ad72b24a46ed"
+    },
+    "archives": {
+        "aarch64-formatters.tar.gz": "7ff3274f5aa418cf304879304a9ca6d17971a16ddb406671f9e757c4dc13e8b1",
+        "arm32-formatters.tar.gz": "894a812586c621b37e79f55bbb58263d4ef860d2028538140d895f4a76a5d2d3",
+        "mips32be-formatters.tar.gz": "53c3cfcb95a86d9a284e632aa24321d59d43b63161bcdc962a4f1e82c68cf683",
+        "mips32le-formatters.tar.gz": "590f1469d4b80f7df570168f8aa2de8b31e5d556bf96217e04a02b08f2ed0cc9",
+        "x86_64-formatters.tar.gz": "41f255c6738d4736ee941b2df5e132e6aa816c95c3820280b0aea763ca5076c5"
+    },
+    "reviewers": {
+        "review-formatter-linux.py": "3f56e5eddff6e8967571defef429c67463680faf74079aadc08f4738ed6e861a",
+        "review-formatter-portable.py": "aa7cf49de15f0de03478480bc06e82566a9a54e223a7fbd8085e194e05e24460"
+    },
+    "artifactRoot": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue111-formatters/ci-42390876041",
+    "artifactNames": {
+        "x86_64": "formatter-evidence-x86_64",
+        "aarch64": "formatter-evidence-aarch64",
+        "arm32": "formatter-evidence-arm32",
+        "mips32be": "formatter-evidence-mips32be",
+        "mips32le": "formatter-evidence-mips32le"
+    },
+    "reviewScope": [
+        "Raw original/sidecar ELF identity, including class, byte order, machine, flags and ET_EXEC/ET_DYN role",
+        "Decoded companion JSON and packaged runtime bytes, typedef witnesses in actual DWARF strings, exact release package hashes",
+        "Disabled and enabled production reports, deterministic hashes, cancellation/retry and invalid-choice markers",
+        "GNU, LLVM and pinned strict-validator output; any inherited frame diagnostic must match the original bytes and report",
+        "Actual GDB CLI/MI fields, flag values, endian-sensitive bitfields, warnings compared with compiler reference, and LLDB controls on its two profiles",
+        "Relocated producer and consumer artifact hashes match exactly; missing/wrong original and wrong sidecar refused in both debuggers"
+    ],
+    "documentedSelectionQuery": {
+        "file": "selection-query-review.json",
+        "sha256": "13db1e45f7d203087fe4d6ab539938103da684306a7a5d01aa832a4475f1175b",
+        "result": {
+            "status": "PASS_DOCUMENTED_SELECTION_QUERY",
+            "command": [
+                "jq",
+                ".coverage.typeNodes[] | select(.emitted == \"YES\" and\n    (.definitionKind == \"EnumType\" or .definitionKind == \"AggregateType\")) |\n    {key, name, definitionKind, byteSize}"
+            ],
+            "records": [
+                {
+                    "phase": "default-before",
+                    "eligibleNodes": 16,
+                    "selectedNodes": 9,
+                    "allSelectedKeysFound": true,
+                    "reportLogSha256": "70888476d947525bfb7ef9eb4c10cee713f5fd45674359a476f89d6955008e0b"
+                },
+                {
+                    "phase": "enabled",
+                    "eligibleNodes": 16,
+                    "selectedNodes": 9,
+                    "allSelectedKeysFound": true,
+                    "reportLogSha256": "6817f604a515cfb44313a94d0e347d9c50f54f6863e4d794f797dd59ea89345c"
+                }
+            ]
+        }
+    }
+}

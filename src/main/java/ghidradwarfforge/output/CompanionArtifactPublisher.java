@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** Recoverable publication of a sidecar/source generation with one or two companions. */
+/** Recoverable publication of a sidecar/source generation with up to three companions. */
 public final class CompanionArtifactPublisher {
     @FunctionalInterface
     public interface StagedWriter {
@@ -205,8 +205,8 @@ public final class CompanionArtifactPublisher {
             throw new IOException("original ELF is not a readable regular file: " + original);
         }
         outputs = List.copyOf(outputs);
-        if (outputs.size() < 3 || outputs.size() > 4) {
-            throw new IllegalArgumentException("generation needs sidecar/source and one or two companions");
+        if (outputs.size() < 3 || outputs.size() > 5) {
+            throw new IllegalArgumentException("generation needs sidecar/source and one to three companions");
         }
         List<Path> targets = new ArrayList<>();
         for (int index = 0; index < outputs.size(); index++) {

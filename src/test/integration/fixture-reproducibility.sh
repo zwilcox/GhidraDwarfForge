@@ -84,6 +84,7 @@ expected_sources=(
     equate-retained-names.cpp
     external-function-declarations.c
     formal-function-return.c
+    formatter-values.c
     fp_register_aliases.c
     function-pointer-conventions.c
     function-static-scopes.c

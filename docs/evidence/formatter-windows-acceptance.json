@@ -1,0 +1,52 @@
+{
+    "status": "CONFIRMED_NATIVE_WINDOWS_PRODUCER_AND_CORRECTED_LOCAL_CONSUMERS",
+    "run": 42390876041,
+    "producerHead": "ef876bee49e2f1165626e9766b33ea4b5bd9b668",
+    "producerJob": 128461217363,
+    "initialConsumerJob": 128468349012,
+    "artifactRoot": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue111-formatters/ci-42390876041",
+    "scope": "Native Windows production and raw review passed. Initial hosted Linux consumer failed source lookup. The corrected local consumer passes using unchanged Windows artifacts. Corrected hosted consumer and final-revision whole-run gate remain mandatory.",
+    "failure": "GDB formatter assertions passed, but the stop at forge_formatter_marker warned that the synthetic source retained its Windows build path. The harness correctly rejected the warning.",
+    "correction": "Pass the transported source directory to GDB CLI and MI, require list forge_formatter_marker to show the source body, preserve the missing-source warning assertion and every artifact hash. No producer or runtime code changes.",
+    "profiles": [
+        "Windows x86-64 non-PIE, plain DWARF, five companions",
+        "Windows x86-64 PIE, zlib DWARF, five companions"
+    ],
+    "validation": [
+        "Native packaged PowerShell/headless production, saved curated program, original and selection hashes, deterministic default/enabled generations",
+        "Cancellation in formatter prepare/render, retry, invalid selection and five-file output preservation",
+        "GNU and LLVM validation on Windows; GNU, LLVM and strict libdwarf on Linux",
+        "Actual Linux GDB CLI/MI and LLDB summaries/native children, identities, stale-file refusal and load/unload controls",
+        "Missing original, wrong original and wrong sidecar refused in both debuggers",
+        "Source listing in GDB CLI/MI and exact producer/consumer artifact hashes"
+    ],
+    "packageBindings": {
+        "support/ghidra-dwarf-forge-headless.ps1": "b74094e46636db1cdcbda0a566f9751ddcbf2c9b25665b5fa353b091be82b882",
+        "lib/GhidraDwarfForge.jar": "e8163d2fdaa187d48075147c157b5320cef30e361876858f6c21c54db5e5872f",
+        "ghidra_scripts/GhidraDwarfForge.java": "a864ee00c32de421433ecd794219924ce931b5c8ac2a4adb5de7fd1f8dcb764a"
+    },
+    "sha256": {
+        "windows-host-validation.zip": "03e20a96a4f680be9abaca2022047b6423e801fa4ac83137a886ee062860f219",
+        "windows-compiler-reference.zip": "40828ea290ef5a991d7e9cf2e46eb425b4768f8dd697951560f2f8836ea6b80c",
+        "windows-producer-raw-review.json": "83a350e4bfbac08fa6bcc85a5008485acc8f43af33b2882a3f458063789774b0",
+        "windows-consumer-diagnostics.zip": "75f47128c23f8c8a44b47140debaf2132748529b83a3d6833d749594d6b9da7e",
+        "windows-consumer-job.log": "594f53634e62879407856f4ea5d6a0e537299baf122c2659ca9c713e85c31042",
+        "source-before.log": "d0522c697444c85fde3c8ee704bb7449b28e8b21defa1defa8e8033d946011a3",
+        "source-before.command.json": "cf66e607d680dc8bc6aef78461a62ca29e534662393071e21f699dcd9fed6343",
+        "source-directory.log": "18e72c4426197edc0fd9ecdb716411dbc278e0a89f48f69287643316ddbc0bb3",
+        "source-directory.command.json": "4f3603930d29276040d0e06852bb49c465cb86d8db1dab53d69ac0b643bca1a7",
+        "windows-consumer-local-raw-review.json": "70b243e871e5ddb2d18e4dc99855cf95571580b2f34c5954e5db6dc2fefb2244",
+        "windows-consumer-local-corrected.tar.gz": "50a00c666c0d0f11742c826d9f3464f041b2136f1415f3d3cd79a765a190e55a"
+    },
+    "correctedHarnessSources": {
+        "src/test/integration/formatter-export.py": "86e036e094580807a2987eb3a09db5ba10ebc4b74045a91b92780b858a6964f5",
+        "src/test/integration/formatter-portable.py": "ff7b4b68a483815fc4a2d9487f5c5137da340aaad2552cdddea45ec103c7d2ba",
+        "src/test/integration/formatter_checks.py": "5ff08afe3cfa19c3baf65290c4fe4a3385626710e26715e7af6b3860689d8e65"
+    },
+    "linuxConsumerRegression": {
+        "linux-consumer-corrected-exec-raw-review.json": "ad602759d59c983c27eb03a7ffd0013017df196f106815c5c96f5040e66a9ad1",
+        "linux-consumer-corrected-exec.tar.gz": "fe06f903b338f9c4cac0e855d3936100a6c7a3864ba252749be171108a101daf",
+        "linux-consumer-corrected-pie-zlib-raw-review.json": "c78fe43f2d8ce3f3dfb3dee5734134de6438cc1e9d303ce476b6af8f2c74e4f0",
+        "linux-consumer-corrected-pie-zlib.tar.gz": "95b0b92daf60000b6192ad1f0310b08991b025e6711e22144d5f94e5160b0493"
+    }
+}

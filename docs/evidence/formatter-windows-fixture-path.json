@@ -1,0 +1,17 @@
+{
+    "status": "CONFIRMED native Windows fixture-path failure and local corrected export; native Windows rerun pending",
+    "run": 42388197297,
+    "job": 128452539916,
+    "head": "1e914f99fb25a96846b477e881b247b7418cbcee",
+    "failure": "ApplyFormatterFixture.java used Path.of(currentProgram.getExecutablePath()); Ghidra recorded /D:/... on Windows, causing InvalidPathException before fixture curation. No formatter export was reached.",
+    "correction": "Both Linux and Windows harnesses now pass their already hash-bound original ELF path explicitly to fixture setup. The production exporter already handles the Ghidra path convention and is unchanged.",
+    "localValidation": "A real Linux x86-64 saved-program run passes setup, five-companion exports, default/enabled repeat determinism, preparation/render cancellation and retry, invalid choices, GNU/LLVM/strict DWARF checks, and GDB CLI/MI plus LLDB controls. This does not prove native Windows acceptance.",
+    "artifactRoot": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue111-formatters",
+    "sha256": {
+        "ci-42388197297/windows-host-validation.zip": "07f4b63bb3d4ac1dac42b25208050678666cf9223608c4fb9e282ffdc8e570fb",
+        "ci-42388197297/formatter-prepare.log": "c66e9277703c807bbac8a001bcea1f0c7f00af811ca9fe9c2460d931c8b86934",
+        "ci-42388197297/formatter-prepare.command.json": "c8579c1f9110be402940214f514002255ce035531964afdfc388f15246becb84",
+        "explicit-fixture-input-local.log": "ddde2228e3094f90ecf0a61c36b023fd47d7d114e56a8755d8fbb8ffb69aa149",
+        "explicit-fixture-input-01.tar.gz": "7716c283214bbf419dd872679534db54598e5cb975e08e481e8cf57bde21a8cf"
+    }
+}

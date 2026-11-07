@@ -14,6 +14,7 @@ Common options:
   --libdwarfp=<path>      Override packaged libdwarfp (requires --libdwarf)
   --input=<elf>           Original ELF override (defaults to --import value)
   --output=<path>         Sidecar path (default: <input>.dbg)
+  --formatters=<json>    Explicit canonical-type selections for GDB/LLDB formatters
   --gdb-loader            Also generate <sidecar>.gdb.py for explicit GDB loading
   --compress-debug-sections=none|zlib
                           Optional ELF debug-section compression (default: none)
@@ -88,7 +89,7 @@ reject_log_in_tree() {
 }
 
 validate_log_path() {
-    local selected_input selected_output script_directory protected
+    local selected_input selected_output script_directory protected formatter_hash formatter_directory
     if ((project_mode)) && [[ -z "$input" ]]; then
         die_usage "--log in existing-project mode requires --input so the original and default outputs can be protected; otherwise omit --log to use a private temporary log"
     fi
@@ -103,13 +104,22 @@ validate_log_path() {
         selected_output="$selected_input.dbg"
     fi
     for protected in "$import_path" "$input" "$selected_output" \
-            "$consumer" "$producer" "$headless" "$0"; do
+            "$consumer" "$producer" "$formatter_selection" "$headless" "$0"; do
         reject_log_alias "$protected"
     done
     if [[ -n "$selected_output" ]]; then
         reject_log_alias "$selected_output.c"
         reject_log_alias "$selected_output.gdb.py"
         reject_log_alias "$selected_output.unwind.json"
+        formatter_hash=$(printf '%s' "${selected_output##*/}" | sha256sum) || die_usage "cannot derive formatter filename"
+        formatter_hash=${formatter_hash%% *}
+        # Command substitution strips trailing newlines from directory names.
+        # Preserve every byte so symlink/hard-link log aliases remain protected.
+        case "$selected_output" in
+            */*) formatter_directory=${selected_output%/*}; formatter_directory=${formatter_directory:-/} ;;
+            *) formatter_directory=. ;;
+        esac
+        reject_log_alias "$formatter_directory/forge_formatters_$formatter_hash.py"
     fi
     if ((project_mode)); then
         reject_log_alias "$project_dir/$project_name.gpr"
@@ -129,6 +139,7 @@ producer=
 input=
 output=
 gdb_loader=0
+formatter_selection=
 debug_compression=none
 source_context=off
 import_path=
@@ -148,6 +159,7 @@ for argument in "$@"; do
         --input=*) input=${argument#*=} ;;
         --output=*) output=${argument#*=} ;;
         --gdb-loader) gdb_loader=1 ;;
+        --formatters=*) formatter_selection=${argument#*=}; [[ -n "$formatter_selection" ]] || die_usage "--formatters requires a selection file" ;;
         --compress-debug-sections=*) debug_compression=${argument#*=} ;;
         --source-context=*) source_context=${argument#*=} ;;
         --synthesize-unwind=*|--unwind-stack-separation=*|--unwind-relocated-pointers=*)
@@ -241,6 +253,7 @@ fi
 [[ -n "$input" ]] && export_options+=("--input=$input")
 [[ -n "$output" ]] && export_options+=("--output=$output")
 ((gdb_loader)) && export_options+=("--gdb-loader")
+[[ -n "$formatter_selection" ]] && export_options+=("--formatters=$formatter_selection")
 [[ "$debug_compression" == zlib ]] && export_options+=("--compress-debug-sections=zlib")
 [[ "$source_context" != off ]] && export_options+=("--source-context=$source_context")
 export_options+=("${annotation_options[@]}" "${unwind_options[@]}")

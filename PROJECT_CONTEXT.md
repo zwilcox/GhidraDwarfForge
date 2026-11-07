@@ -1,17 +1,114 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
-## Current goal implementation status — 2026-11-07 UTC
+## Active goal: optional GDB/LLDB formatters (#111) — 2026-11-07 UTC
 
-**CONFIRMED:** #74, #108, #116/#114 and #112/#110 are integrated within their
-recorded acceptance profiles. Build-ID installation #109 passes all seven
-implementation requirements at `d55842f`: run `42344072547` completes all 16 jobs,
-and raw review covers all five targets, native Windows, downstream GDB, installed
-LLDB/offline perf and actual sampled-perf characterization. The original scope
-is preserved; see [build-ID acceptance](docs/BUILD-ID-ACCEPTANCE.md) for evidence
-and consumer limitations. [PR186](https://github.com/zwilcox/GhidraDwarfForge/pull/186)
-records final documentation validation and normal protected integration. The
-full goal closure audit must also confirm that integration and all 44 original
-requirements. No release is included.
+**CONFIRMED:** the user selected all six acceptance requirements of #111. The
+previous seven-issue goal is integrated through PR186 (`41887ff`); this formatter
+work is a new goal. #187 remains last, apart from the requested upstream report
+preparation. Release publication is not included.
+
+**CONFIRMED implemented and exercised:** explicit canonical-key selections,
+synthetic typedef witnesses, generation-bound Python companions, independent GDB
+and LLDB adapters, flags/aggregate summaries, and recoverable publication.
+Formatters remain disabled by default (no formatter generated without a
+selection). See [formatter design and acceptance](docs/DEBUGGER-FORMATTERS.md)
+for the six original requirements and tested profiles. Protected integration
+and final-revision required checks are tracked in
+[PR188](https://github.com/zwilcox/GhidraDwarfForge/pull/188).
+
+**HISTORICAL implementation checkpoints:** the local progress and failures below
+precede the hosted Linux and Windows evidence recorded afterward. Their pending
+statements describe those individual checkpoints, not the latest scoped results.
+
+**CONFIRMED local checkpoint:** production saved-program, fully stripped ET_EXEC
+fixtures pass GNU/LLVM/strict libdwarf validation, repeated generation and disabled
+export comparisons, GDB CLI/MI on x86-64, AArch64 and big-endian MIPS32, and LLDB
+18.1.3 on x86-64/AArch64. Controls exercise 8/16/32/64-bit signed/unsigned flags,
+unknown bits, aliases/zero, recursive pointers, bounded nested summaries, native
+children, unreadable memory, stale artifacts and foreign modules. These are local
+fixtures, not the full acceptance or hosted gate. A stale LLDB summary cache defect
+was reproduced and corrected using uncached summaries. Four/five-file publisher
+rollback/cancellation and Bash wrapper alias checks also pass.
+
+**CONFIRMED expanded checkpoint:** same-named canonical types, hostile label
+escaping, production preparation/render cancellation, invalid selection failure,
+PIE/zlib and combined five-file generation checks now pass in local runs. The
+five-target workflow includes dedicated formatter tests. PowerShell wrapper
+forwarding/log-alias tests pass on Linux; this is not native Windows evidence.
+
+**CONFIRMED portable checkpoint:** moved Linux artifacts pass GDB CLI/MI and
+LLDB without changing companion/ELF bytes. Missing and mismatched co-located
+files are refused instead of falling back to an older export. An explicitly
+unlocated analyst variable also exercises actual debugger unavailable-value APIs.
+Native Windows exec/PIE producer and Linux consumer stages are now present in CI.
+
+**CONFIRMED hosted prerequisite failure:** run `42387275399` at `caa381f`
+passes Linux native, extension build and workflow lint. Native Windows stops
+before formatter production because MSYS2 zlib `1.4-2` links the checker to
+`libz-1.dll`, absent from the previous dependency allowlist. The official package
+and its PE imports are audited; the exact filename is now admitted alongside
+legacy `zlib1.dll`, retaining recursive dependency, notice and hash checks.
+Local release assembly accepts both names and rejects `libz-2.dll`; hosted
+Windows and the complete gate still need a passing rerun. See
+`docs/evidence/formatter-msys2-zlib-runtime.json`.
+
+**CONFIRMED prerequisite progress and inventory correction:** run `42388197297`
+at `1e914f9` passes both native builds, extension build and release assembly.
+The Windows zlib correction is validated in the actual checker and production
+packages. x86-64 and AArch64 then stop before formatter tests because the new
+fixture appears in the wrong position in the sorted source inventory. Moving
+its existing entry restores both local fixture-reproducibility checks (15
+byte-identical artifacts per target). The exact inventory guard is retained;
+see `docs/evidence/formatter-fixture-inventory.json`. The complete hosted gate
+and native Windows formatter acceptance remain pending.
+
+**CONFIRMED local formatter-log protection correction:** an owned reproduction
+showed that a log hard link could overwrite the formatter companion when its
+parent directory ended in a newline. Command substitution removed the newline
+while computing the protected companion path; the original ELF was unchanged.
+The Bash wrapper now preserves directory bytes using parameter expansion. The
+full wrapper suite passes, including hard-link and symlink rejection before
+Ghidra launches and companion-byte preservation. Final hosted validation remains
+required; see `docs/evidence/formatter-log-directory-newline.json`.
+
+**CONFIRMED Windows formatter fixture-path failure:** run `42388197297`
+reaches native Windows formatter setup, where Ghidra's recorded `/D:/...`
+executable path is rejected by `Path.of`. Both fixture harnesses now pass the
+already hash-bound original ELF path explicitly. A corrected local x86-64
+five-companion production run passes validators, GDB CLI/MI, LLDB, deterministic
+toggles and cancellation/retry. This is a fixture correction; the production
+exporter already handles the Windows path convention. Native Windows production
+and transported-consumer acceptance still require a passing rerun. See
+`docs/evidence/formatter-windows-fixture-path.json`.
+
+**CONFIRMED hosted Linux formatter acceptance:** run `42390876041` at
+`ef876bee49e2f1165626e9766b33ea4b5bd9b668` passes ten production formatter
+cases: plain non-PIE and zlib PIE on x86-64, AArch64, ARM32, MIPS32 big-endian
+and MIPS32 little-endian. All five profiles pass actual GDB CLI/MI; x86-64 and
+AArch64 also pass LLDB summary/child checks. Two relocated x86-64 generations
+pass both debuggers with byte-identical artifacts and missing/mismatched-file
+controls. Raw review binds the reports and companions to the actual CI release
+package. The documented `coverage.typeNodes` query finds all nine selected keys
+in both default and enabled reports. See
+`docs/evidence/formatter-linux-acceptance.json` and the six-requirement map in
+`docs/DEBUGGER-FORMATTERS.md`. This proves the formatter stages, not the full gate.
+
+**CONFIRMED native Windows production and corrected local consumers:** the same
+run's Windows host job passes both non-PIE and PIE five-companion exports,
+deterministic toggles, cancellation/retry and invalid choices. Raw review binds
+its artifacts to the actual package and compiler inputs. The hosted Linux
+consumer then rejects a missing-source warning caused by the recorded Windows
+build directory; formatter assertions themselves pass. Supplying the transported
+source directory fixes source listing in GDB CLI/MI without changing artifact
+bytes or weakening warning checks. Both Windows artifacts pass the corrected
+local GDB/LLDB and strict-validator consumers. See
+`docs/evidence/formatter-windows-acceptance.json`.
+
+**Integration checkpoint:** the corrected hosted consumer and complete
+final-revision `required-validation` gate remain required before protected merge
+and closure of #111. PR188's checks and merge state are the integration record;
+the scoped evidence above is not a whole-run success claim. No release
+publication or #187 work is included.
 
 ## Historical development log
 

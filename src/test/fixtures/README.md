@@ -761,3 +761,15 @@ refreshed and removed Forge generations against the same recorded samples.
 The fixture refuses privileged execution. See
 [the consumer contract](../../../docs/BUILD-ID-CONSUMERS.md) for the distinction
 between offline source lookup and recovered-name sample reporting.
+
+`formatter-values.c` contains explicitly designated signed/unsigned 8/16/32/64-bit
+flags, aliases, zero/unknown/high bits, nested ordinary-memory structures and
+bitfields with recursive/null/unreadable pointer values. Distinct and ambiguous
+same-named types and escaped analyst labels are applied by `ApplyFormatterFixture`.
+`formatter-runtime.py` uses compiler DWARF to test debugger APIs;
+`formatter-export.py` strips all symbols/DWARF, applies explicit analyst types in
+Ghidra, and tests the real saved-program exporter and generated companion in GDB
+CLI/MI and LLDB independently. `CancelDuringFormatters` interrupts preparation and
+rendering and proves restoration/retry of the previous generation. The publisher
+also tests rollback after each installation step with all three companions enabled.
+Pointer summaries display addresses without traversing the pointed-to memory.
