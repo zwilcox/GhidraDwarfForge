@@ -1,182 +1,213 @@
 {
-  "status": "CONFIRMED_CURRENT_SAMPLED_PERF_CHARACTERIZATION_NOT_RECOVERED_NAME_SUPPORT",
-  "utc": "2026-11-07T05:09:40.498013+00:00",
-  "testedHead": "0f74abd1f17c1881ba006b41e95b17c073fa973f",
-  "run": 42329832669,
-  "job": 128276258698,
-  "jobConclusion": "success",
-  "artifact": {
-    "id": 13557541762,
-    "node_id": "MDg6QXJ0aWZhY3QxMzU1NzU0MTc2Mg==",
-    "name": "perf-build-id-validation",
-    "size_in_bytes": 550295,
-    "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13557541762",
-    "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13557541762/zip",
-    "expired": false,
-    "digest": "sha256:7d42433990d623b793d797ef7546c84f74a156471b29bd051b348c470d747eda",
-    "created_at": "2026-11-07T02:45:46Z",
-    "updated_at": "2026-11-07T02:45:46Z",
-    "expires_at": "2026-11-21T02:45:45Z",
-    "workflow_run": {
-      "id": 42329832669,
-      "repository_id": 969721342,
-      "head_repository_id": 969721342,
-      "head_branch": "work/build-id-installer",
-      "head_sha": "0f74abd1f17c1881ba006b41e95b17c073fa973f"
-    }
-  },
-  "records": [
-    {
-      "role": "exec",
-      "resultSha256": "cb3db95402ace7c514e99b0bdeae7307762612982204d169a5ccbb6c2a1df8df",
-      "versions": {
-        "perf": "perf version 6.8.12",
-        "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
-        "gdb": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1",
-        "readelf": "GNU readelf (GNU Binutils for Ubuntu) 2.42"
-      },
-      "originalSha256": "fef96a6e787b2a79904f6e3a2777a76f081ea71f9210e609378eeeeb1b62e023",
-      "buildId": "e9d74994851fe08be6e2dcafc6bccb392c7cef7b",
-      "installedRecoveredSymbolization": false,
-      "compilerDwarfOnlySymbolization": false,
-      "generationAudit": [
-        {
-          "role": "exec",
-          "generation": "forge_profile_initial",
-          "manifestFilesVerified": 42,
-          "installedSha256": "946021d6c167658d17cb6a6c6a7c165d9808d465f8e83f908920107c497b8bc1",
-          "validationSha256": "0483cc6a5b382dfdeb6812380d9ddc76eb7950baa44f3803e9fa6058f2a597e7",
-          "sourceSha256": "173dfec40baa08d416652d0629f8bf1a623bac0a284c3fbd0f79bb8255314d8b",
-          "samples": 165,
-          "symbols": [
-            "[unknown]"
-          ],
-          "inheritedFrameDiagnostics": 4
-        },
-        {
-          "role": "exec",
-          "generation": "forge_profile_curated",
-          "manifestFilesVerified": 42,
-          "installedSha256": "e7d08095c6e0387b561b01f529d9dd9f4b4e6e8abf1b443c88d036a6046278d0",
-          "validationSha256": "d339ceef17f4d2b57e60a712bcb2fbbc4ac51c793dc12e782161ca8ecbb17463",
-          "sourceSha256": "ea7ecba54a37691ceed76be19478ee0bc70b043cf541c34e1714767f4aa6eacf",
-          "samples": 165,
-          "symbols": [
-            "[unknown]"
-          ],
-          "inheritedFrameDiagnostics": 4
+    "status": "CONFIRMED_CURRENT_SAMPLED_PERF_CHARACTERIZATION_NOT_RECOVERED_NAME_SUPPORT",
+    "utc": "2026-11-07T07:27:15.587891+00:00",
+    "testedHead": "d55842f4c6b02000515db0dfe152799771cd876a",
+    "run": 42344072547,
+    "job": 128319632924,
+    "jobConclusion": "success",
+    "artifact": {
+        "id": 13563590506,
+        "node_id": "MDg6QXJ0aWZhY3QxMzU2MzU5MDUwNg==",
+        "name": "perf-build-id-validation",
+        "size_in_bytes": 548521,
+        "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13563590506",
+        "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13563590506/zip",
+        "expired": false,
+        "digest": "sha256:32677531e85a76611f6b231e95e20258cd58563d515fc251f6801d7da614af47",
+        "created_at": "2026-11-07T05:55:20Z",
+        "updated_at": "2026-11-07T05:55:20Z",
+        "expires_at": "2026-11-21T05:55:18Z",
+        "workflow_run": {
+            "id": 42344072547,
+            "repository_id": 969721342,
+            "head_repository_id": 969721342,
+            "head_branch": "work/build-id-installer",
+            "head_sha": "d55842f4c6b02000515db0dfe152799771cd876a"
         }
-      ],
-      "replayedControls": [
-        {
-          "role": "exec",
-          "phase": "compiler",
-          "samples": 165,
-          "symbols": [
-            "profile_hot"
-          ]
-        },
-        {
-          "role": "exec",
-          "phase": "compiler-dwarf-only",
-          "samples": 165,
-          "symbols": [
-            "frame_dummy"
-          ]
-        },
-        {
-          "role": "exec",
-          "phase": "removed",
-          "samples": 165,
-          "symbols": [
-            "[unknown]"
-          ]
-        }
-      ]
     },
-    {
-      "role": "pie",
-      "resultSha256": "d16905e2dc0d92eaa9e0823ea3c79f93bc936f928f8a257136b4927680b31bea",
-      "versions": {
-        "perf": "perf version 6.8.12",
-        "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
-        "gdb": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1",
-        "readelf": "GNU readelf (GNU Binutils for Ubuntu) 2.42"
-      },
-      "originalSha256": "c1512dfe1feefe93697b8e278ee63d1d1bccaa8b1851406fcbd8f45319812e90",
-      "buildId": "7d1467aba5f6c8a28cb443c838b49998f7d50425",
-      "installedRecoveredSymbolization": false,
-      "compilerDwarfOnlySymbolization": false,
-      "generationAudit": [
+    "records": [
         {
-          "role": "pie",
-          "generation": "forge_profile_initial",
-          "manifestFilesVerified": 42,
-          "installedSha256": "97ef751d22d7fbb2a6f20e6c81c53b79706f38ed4722bcff701e8f4c24a5fa9e",
-          "validationSha256": "24f6d96612a5e6151fc0aa5b0f15e9cb7a709d712785d66ce7cd117442f5d011",
-          "sourceSha256": "6fa44249eb4d0936e20594680731dd54d2076bf96a4158a8f8e8fa6d60563891",
-          "samples": 331,
-          "symbols": [
-            "[unknown]"
-          ],
-          "inheritedFrameDiagnostics": 2
+            "role": "exec",
+            "versions": {
+                "perf": "perf version 6.8.12",
+                "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+                "gdb": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1",
+                "readelf": "GNU readelf (GNU Binutils for Ubuntu) 2.42"
+            },
+            "originalSha256": "fef96a6e787b2a79904f6e3a2777a76f081ea71f9210e609378eeeeb1b62e023",
+            "buildId": "e9d74994851fe08be6e2dcafc6bccb392c7cef7b",
+            "installedRecoveredSymbolization": false,
+            "compilerDwarfOnlySymbolization": false,
+            "resultSha256": "d7dde457481e9dca23adcfd7754ed3a3aa60d7b409bff9b1d48e15a331a530b4",
+            "generationAudit": [
+                {
+                    "role": "exec",
+                    "generation": "forge_profile_initial",
+                    "manifestFilesVerified": 42,
+                    "installedSha256": "2f426b7d4a9c8b69fe4a38bff3ea90fa610596d5b2b70ecdcd101abd3a737f58",
+                    "validationSha256": "b10cfe9f0351aaaa5a165176f7731bac519412305d9582d8d4608b294e4e3544",
+                    "sourceSha256": "173dfec40baa08d416652d0629f8bf1a623bac0a284c3fbd0f79bb8255314d8b",
+                    "samples": 146,
+                    "symbols": [
+                        "[unknown]"
+                    ],
+                    "inheritedFrameDiagnostics": 4
+                },
+                {
+                    "role": "exec",
+                    "generation": "forge_profile_curated",
+                    "manifestFilesVerified": 42,
+                    "installedSha256": "7eec1f45acd4f2f58f9cb81dcbeec2555d1d4a76290b3aa3de4d63b7348abce3",
+                    "validationSha256": "90652136e41d32cd19313e4b322b11b3fef55f45634adef190b7b4a6880a8ab4",
+                    "sourceSha256": "ea7ecba54a37691ceed76be19478ee0bc70b043cf541c34e1714767f4aa6eacf",
+                    "samples": 146,
+                    "symbols": [
+                        "[unknown]"
+                    ],
+                    "inheritedFrameDiagnostics": 4
+                }
+            ],
+            "replayedControls": [
+                {
+                    "role": "exec",
+                    "phase": "compiler",
+                    "samples": 146,
+                    "symbols": [
+                        "profile_hot"
+                    ]
+                },
+                {
+                    "role": "exec",
+                    "phase": "compiler-dwarf-only",
+                    "samples": 146,
+                    "symbols": [
+                        "frame_dummy"
+                    ]
+                },
+                {
+                    "role": "exec",
+                    "phase": "removed",
+                    "samples": 146,
+                    "symbols": [
+                        "[unknown]"
+                    ]
+                }
+            ]
         },
         {
-          "role": "pie",
-          "generation": "forge_profile_curated",
-          "manifestFilesVerified": 42,
-          "installedSha256": "8ca07cd1188192f3dd8fdf5bcb5a05e7504e51f93705022eb70aac280bdb6ce3",
-          "validationSha256": "e5abc2e56b34b5e7dc8307c4eb1a3761af9744bfc2ce6edbaa75bdce5c589ed6",
-          "sourceSha256": "28998280f7937f1f78ffd28aec104ce0c01fcb0dbdb451c63b103dc3bfd6c849",
-          "samples": 331,
-          "symbols": [
-            "[unknown]"
-          ],
-          "inheritedFrameDiagnostics": 2
+            "role": "pie",
+            "versions": {
+                "perf": "perf version 6.8.12",
+                "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+                "gdb": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1",
+                "readelf": "GNU readelf (GNU Binutils for Ubuntu) 2.42"
+            },
+            "originalSha256": "c1512dfe1feefe93697b8e278ee63d1d1bccaa8b1851406fcbd8f45319812e90",
+            "buildId": "7d1467aba5f6c8a28cb443c838b49998f7d50425",
+            "installedRecoveredSymbolization": false,
+            "compilerDwarfOnlySymbolization": false,
+            "resultSha256": "2d3df8494ebe6002ed723918286af5e34e3ba25616a06a824e183f00a6847f10",
+            "generationAudit": [
+                {
+                    "role": "pie",
+                    "generation": "forge_profile_initial",
+                    "manifestFilesVerified": 42,
+                    "installedSha256": "058c743a9b98ff613681bd598d0cd17b1f931ce957b32ae59eebaac28215004e",
+                    "validationSha256": "d523fdefc16dd5a368639964ee52034c38a5230226a55bff183d830c89df533f",
+                    "sourceSha256": "6fa44249eb4d0936e20594680731dd54d2076bf96a4158a8f8e8fa6d60563891",
+                    "samples": 149,
+                    "symbols": [
+                        "[unknown]"
+                    ],
+                    "inheritedFrameDiagnostics": 2
+                },
+                {
+                    "role": "pie",
+                    "generation": "forge_profile_curated",
+                    "manifestFilesVerified": 42,
+                    "installedSha256": "d00e62aa56abb2f20d984ccf6f7d91e9ad02bac841c077f828373f866e157b84",
+                    "validationSha256": "093f049dd063bdaee2b18f30fdeaf31ab838f882667ccdbc3a5a6a6266b8f647",
+                    "sourceSha256": "28998280f7937f1f78ffd28aec104ce0c01fcb0dbdb451c63b103dc3bfd6c849",
+                    "samples": 149,
+                    "symbols": [
+                        "[unknown]"
+                    ],
+                    "inheritedFrameDiagnostics": 2
+                }
+            ],
+            "replayedControls": [
+                {
+                    "role": "pie",
+                    "phase": "compiler",
+                    "samples": 149,
+                    "symbols": [
+                        "profile_hot"
+                    ]
+                },
+                {
+                    "role": "pie",
+                    "phase": "compiler-dwarf-only",
+                    "samples": 149,
+                    "symbols": [
+                        "frame_dummy"
+                    ]
+                },
+                {
+                    "role": "pie",
+                    "phase": "removed",
+                    "samples": 149,
+                    "symbols": [
+                        "[unknown]"
+                    ]
+                }
+            ]
         }
-      ],
-      "replayedControls": [
+    ],
+    "executedReviews": [
         {
-          "role": "pie",
-          "phase": "compiler",
-          "samples": 331,
-          "symbols": [
-            "profile_hot"
-          ]
+            "label": "perf-extract",
+            "script": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-extract-d55842f.py",
+            "scriptSha256": "5dd4e48868a1c463feb36082113961bb29e5035707d4d64f3c1125281e7326c3",
+            "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/perf-extract-review-execution.log",
+            "logSha256": "001ace53faddb427b280e5a66ea44d66d4e1e779e6ddecbbb2c21f28d7a25900",
+            "exitCode": 0,
+            "successfulJobIds": [
+                128319632924
+            ]
         },
         {
-          "role": "pie",
-          "phase": "compiler-dwarf-only",
-          "samples": 331,
-          "symbols": [
-            "frame_dummy"
-          ]
+            "label": "perf-installed",
+            "script": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-audit-current-perf-d55842f.py",
+            "scriptSha256": "f872416cf535c74265f0e208a50ef0ade37c02d1095e6aa9efe0305b864e9c3f",
+            "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/perf-installed-review-execution.log",
+            "logSha256": "039ef5a3a7b6ff464202d63511668be36d358ff55bb2260a9fab4591f2341fe7",
+            "exitCode": 0,
+            "successfulJobIds": [
+                128319632924
+            ]
         },
         {
-          "role": "pie",
-          "phase": "removed",
-          "samples": 331,
-          "symbols": [
-            "[unknown]"
-          ]
+            "label": "perf-controls",
+            "script": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-replay-perf-controls-d55842f.py",
+            "scriptSha256": "6df7595676f6c6ff73a09c5e130bf608bc9590dfef9fea3654fb9449414e0c6c",
+            "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/perf-controls-review-execution.log",
+            "logSha256": "1020a76f53e6d73371a1a22b11a977fab45fa83f801a49336d2f12be8b108b1b",
+            "exitCode": 0,
+            "successfulJobIds": [
+                128319632924
+            ]
         }
-      ]
-    }
-  ],
-  "reviews": {
-    "perf-installed-replay/audit.json": "6dc9a890d442aca458495a937d2d5fe728aeadd873d58192e32dbb5a92423a08",
-    "perf-control-review.json": "eb78a11aff314ba711d89b898c730ac5721772d590440031a77fabbe02f73697"
-  },
-  "reviewerSources": {
-    "pr186-audit-current-perf-0f74abd.py": "bc95b1bf048fd404c4e7ceab6c06bd808e35c81a24c4a8bf6cd9b10ee637e6fa",
-    "pr186-replay-perf-controls-0f74abd.py": "74c1393da8d64e9493baa72891ed60c9e5903b44563e5e9f170c21813c28ad31"
-  },
-  "replayVersion": "perf version 7.0.14",
-  "scope": [
-    "Actual hosted x86-64 exec/PIE recordings; the same recording is shared by original compiler, DWARF-only, installed, refreshed and absent controls.",
-    "Independent local replay uses retained bytes and samples; it is not a new recording or installation.",
-    "Four retained generations, 168 manifest files, strict GNU/LLVM evidence and exact source/package bindings were reviewed.",
-    "Sampled recovered-name reporting remains unsupported by this tested path; offline source lookup and GDB discovery have separate positive evidence.",
-    "The whole target matrix, final-head gate and protected integration remain pending."
-  ]
+    ],
+    "reviews": {
+        "perf-installed-replay/audit.json": "6066627c7d973e3c9099bb88f3bd6bd3ad1ec3521881332ef87bfd457e76446a",
+        "perf-control-review.json": "afd3298e5f4b972296205c73cb896dd227a0f88f07204fbdf70a4d1b0e5c8fa0"
+    },
+    "replayVersion": "perf version 7.0.14",
+    "scope": [
+        "Actual hosted x86-64 exec/PIE recordings; the same recording is shared by original compiler, DWARF-only, installed, refreshed and absent controls.",
+        "Independent local replay uses retained bytes and samples; it is not a new recording or installation.",
+        "Four retained generations, 168 manifest files, strict GNU/LLVM evidence and exact source/package bindings were reviewed.",
+        "Sampled recovered-name reporting remains unsupported by this tested path; offline source lookup and GDB discovery have separate positive evidence.",
+        "The remaining target matrix, final-head gate and protected integration remain pending."
+    ]
 }

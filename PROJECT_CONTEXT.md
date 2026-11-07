@@ -1,5 +1,25 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+## Current goal implementation status — 2026-11-07 UTC
+
+**CONFIRMED:** #74, #108, #116/#114 and #112/#110 are integrated within their
+recorded acceptance profiles. Build-ID installation #109 passes all seven
+implementation requirements at `d55842f`: run `42344072547` completes all 16 jobs,
+and raw review covers all five targets, native Windows, downstream GDB, installed
+LLDB/offline perf and actual sampled-perf characterization. The original scope
+is preserved; see [build-ID acceptance](docs/BUILD-ID-ACCEPTANCE.md) for evidence
+and consumer limitations. [PR186](https://github.com/zwilcox/GhidraDwarfForge/pull/186)
+records final documentation validation and normal protected integration. The
+full goal closure audit must also confirm that integration and all 44 original
+requirements. No release is included.
+
+## Historical development log
+
+The dated checkpoints below preserve earlier findings and failures. Their
+running-job, pending-validation and open-issue statements describe those
+checkpoints, not the current status above. Later acceptance evidence supersedes
+those statements only within its explicitly verified scope.
+
 **CONFIRMED #109 target artifact upload failure (2026-11-07 UTC):** all
 x86-64 test stages in run `42329832669` pass, but artifact upload rejects the
 intentional command-path fixture `request λ "literal".json`. The other four

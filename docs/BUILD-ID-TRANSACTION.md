@@ -1,13 +1,9 @@
-# Build-ID installation transaction checkpoint
+# Build-ID installation transaction
 
-Tracking: #109. **CONFIRMED:** the transaction and packaged public command have
-local Linux ext4 validation and native Windows installation/recovery acceptance.
-The current hosted GDB consumer of Windows-installed files also passes. The
-complete five-target gate, final artifact review and protected integration remain
-outstanding. This is not a release claim. See the
-[command guide](BUILD-ID-INSTALLATION.md), [current acceptance map](BUILD-ID-ACCEPTANCE.md),
-[Linux receipt](evidence/build-id-command-linux.json) and
-[current Windows receipt](evidence/windows-build-id-current-acceptance.json).
+Tracking: #109. This document describes the transaction used by the packaged
+public command. See the [command guide](BUILD-ID-INSTALLATION.md) for usage and
+the [acceptance map](BUILD-ID-ACCEPTANCE.md) for validated host/consumer profiles,
+tested commits, evidence and integration status. Release publication is separate.
 
 ## Contract
 
@@ -119,8 +115,9 @@ temporary directory. Neither interrupted run is counted as a pass.
 
 ## Command and production Linux acceptance
 
-The final tested package passes 226 checks and 50 fresh GDB sessions on all five
-targets' exec/PIE layouts, using the production Linux ext4 host throughout. Twenty
+The [local checkpoint](evidence/build-id-command-linux.json) passes 226 checks
+and 50 fresh GDB sessions on all five targets' exec/PIE layouts, using the
+production Linux ext4 host throughout. Twenty
 sessions are empty/removed-root negative controls; the remaining thirty prove
 installed source/value/stepping behavior. The command subset contributes 27
 checks and ten GDB sessions, including spaces, Unicode, literal quotes/dollar
@@ -144,14 +141,16 @@ exports from saved Ghidra programs additionally prove actual analyst name/type/
 member edits survive explicit refresh in exec and PIE; four fresh GDB sessions
 use only the installation and retained source with old exports absent.
 
-## Remaining acceptance
+## Validation scope
 
-The [shared/sectionless checkpoint](BUILD-ID-LAYOUTS.md) now covers all five
-targets, with an independently demonstrated GDB sectionless-discovery limitation
-and separately validated explicit fallback. Installation-specific LLDB and
-offline perf have [local consumer evidence](BUILD-ID-CONSUMERS.md), while actual
-perf recordings establish a documented sample-name limitation. Native Windows
-installation and the corrected hosted consumer pass at `0f74abd`. The workflow
-invokes the production Linux matrix and saved-program refresh tests; its complete
-five-target gate, final artifact review and protected integration remain
-outstanding. Retained component tests do not establish those remaining results.
+The [shared/sectionless tests](BUILD-ID-LAYOUTS.md) cover all five target families,
+with an independently demonstrated GDB sectionless-discovery limitation and
+separately validated explicit fallback. Installation-specific LLDB and perf have
+[consumer evidence](BUILD-ID-CONSUMERS.md), including recorded-sample controls
+that establish the documented sample-name limitation. The workflow also exercises
+the production Linux matrix, saved-program refresh, native Windows installation
+and consumption of Windows-installed artifacts on Linux.
+
+The [seven-requirement acceptance map](BUILD-ID-ACCEPTANCE.md) tracks the combined
+gate, raw artifact review and integration status. Retained component tests alone
+do not establish those results.

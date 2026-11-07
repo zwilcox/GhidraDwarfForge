@@ -1,80 +1,127 @@
 # Build-ID installation acceptance
 
-**CONFIRMED artifact retention failure:** run `42329832669` completes every
-x86-64 test stage successfully, then fails upload because a deliberate command
-fixture contains double quotes in its filename. The complete x86-64 artifact
-was not uploaded; the required gate is red. The candidate wraps diagnostics in
-a PAX tar.gz without renaming or removing any test evidence. Local retention
-regressions and workflow lint pass; corrected hosted acceptance remains
-required. See the [retention receipt](evidence/build-id-target-artifact-retention.json).
-Running-job statements below describe the earlier checkpoint.
+**CONFIRMED implementation acceptance at `d55842f` (2026-11-07 UTC):**
+[run 42344072547](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42344072547)
+passes all 16 jobs, including the strict combined `required-validation` gate.
+Independent review accepts all five target lanes, native Windows installation,
+its downstream Linux GDB consumer, native/package provenance and sampled perf
+characterization. The [implementation receipt](evidence/build-id-implementation-acceptance.json)
+binds 35 review receipts and 30 artifacts to this tested commit and the seven
+original [#109 requirements](https://github.com/zwilcox/GhidraDwarfForge/issues/109).
+Final documentation validation and normal protected integration follow the
+contract below; implementation acceptance alone is not a release claim.
 
+The [target receipt](evidence/build-id-targets-current-acceptance.json) covers
+x86-64, AArch64, ARM32 and both MIPS32 byte orders: 226 installer checks, 50 GDB
+lifecycle sessions, 109 retained generations, 4,480 manifest-file checks and
+743 supervised validators. Complete target archives contain 2,904 positive
+strict records and 139 intentional negatives. Shared-object automatic discovery
+and the explicit sectionless ET_EXEC fallback pass on all five targets. Two
+x86-64 saved-program refresh cases prove actual analyst function/type/member
+edits survive export, installation update and fresh debugger lookup.
 
-Issue [#109](https://github.com/zwilcox/GhidraDwarfForge/issues/109) remains open.
-Native Windows installation/recovery and corrected hosted downstream GDB
-checks pass at corrected head `0f74abd` in run `42329832669`. The previous hosted
-consumer failed because its test searched only global symbols; the corrected
-oracle also checks file-local symbols, including absence controls. See the
-[current Windows receipt](evidence/windows-build-id-current-acceptance.json).
-Independent review now verifies all 25 retained native generations, their
-1,050 manifest files and 175 supervised validator executions. Fifty strict
-original/sidecar reports are reparsed, with original frame bytes and retained
-source independently checked. The latest combined gate remains outstanding.
+The x86-64/AArch64 installed-consumer reviews cover four exec/PIE roles, eight
+runtime sessions, 64 offline perf queries and 16 absence-control sessions.
+Their broader LLDB regression review covers 63 records. The target receipt lists
+25 unretained x86-64 and 35 unretained AArch64 regression input paths: those remain
+runtime-oracle evidence, not independently rehashed archive copies. Three
+compiler-reference diagnostics are separately recorded and assessed.
 
-**HISTORICAL harness failure; corrected hosted gate pending:** run `42324179974`'s
-MIPS little-endian floating-register step fails because `LC_ALL=C` selects an
-ASCII native filesystem encoding in Java. The Linux directory host correctly
-refuses that encoding. The harness now uses `C.UTF-8`, preserving the production
-guard. Twelve local plain/zlib exec/PIE export, validator and QEMU/GDB cases pass,
-with four source-relocation and four derived-validation cases. The
-[locale receipt](evidence/build-id-linux-locale.json) retains the failed hosted
-artifact and isolated reproduction. Corrected head `0f74abd` is running the full
-gate `42329832669`. Its successful Windows jobs retain only their own scope;
-the five target jobs and their artifact review remain required before integration.
+The [Windows receipt](evidence/windows-build-id-current-acceptance.json) binds
+73 native checks, 14 interruptions, 25 retained generations, 1,050 manifest
+files, 175 supervised validator executions and 50 strict original/sidecar
+reports. Actual Windows-installed initial and analyst-curated artifacts pass
+two fresh Linux GDB runtime sessions and four controls. Shared regression review
+checks 13 strict reports, 2,959 hash bindings and compiler/Forge unwind traces.
+Windows runs installation and metadata/recovery checks; Linux executes the
+transferred Linux ELF with explicit source-path substitution.
 
-**CONFIRMED current ARM/MIPS jobs and scoped review:** corrected head
-`0f74abd` passes AArch64, ARM32 and both MIPS32 target jobs. Their artifact
-review verifies 56 installer checks, 32 GDB lifecycle sessions, 36 generations,
-1,403 manifest files and 230 supervised validator executions. AArch64's
-installed LLDB/offline-perf review also passes. The
-[current target receipt](evidence/build-id-targets-current-acceptance.json)
-records archive/reviewer hashes and evidence limits, including 35 unretained
-AArch64 regression input paths. The x86-64 job and the combined required gate
-remain pending; these four target results do not complete #109.
+The [perf receipt](evidence/build-id-perf-current-acceptance.json) binds actual
+x86-64 exec/PIE recordings, four retained generations, 168 manifest files and
+independent replay. It confirms the sampled-report limitation with compiler
+controls; it does not claim recovered-name sample reporting. Dated component
+receipts preserve outstanding-work notes from their capture time; the
+implementation receipt resolves acceptance of the complete implementation run.
 
-The table below maps its seven acceptance requirements to the implemented
-checks and evidence. Local results, native Windows results and downstream
-consumer replay each establish only their recorded scope. PR186 must pass the
-complete latest-head gate and artifact review before normal protected integration.
+## Requirement map
 
-| Requirement | Evidence and coverage | Remaining acceptance |
+All seven original requirements are accepted within the explicitly tested profiles
+below. Local checkpoints supplement the hosted evidence; they do not replace it.
+
+| Requirement | Implementation and evidence | Acceptance scope |
 | --- | --- | --- |
-| Existing identity and exact pair | `build-id-identity.py` and the production Linux matrix refuse missing, malformed, conflicting and mismatched IDs, a different original with the same ID, and input aliases. Export-report hashes bind the original, sidecar and source. [Linux receipt](evidence/build-id-command-linux.json). | Latest-head hosted results and artifact review. |
-| Explicit destination and consumer setup | The packaged Bash/PowerShell command accepts a selected root and prints the GDB search command. Tests use fresh debugger sessions, empty-root controls and actual registered files. Native Windows command checks pass. Arbitrary-tree installation is not itself automatic discovery. [Command contract](BUILD-ID-INSTALLATION.md). | Latest-head gate and final artifact review. |
-| Collisions, refresh and removal | Explicit update preserves managed provenance and source generations. Implicit replacement, foreign registrations and changed-original collisions are refused. Actual saved analyst function/type/member edits are exported again and discovered in fresh GDB sessions. Native Windows lifecycle and hosted GDB consumption of its transferred artifacts pass. [Linux receipt](evidence/build-id-command-linux.json), [Windows receipt](evidence/windows-build-id-current-acceptance.json). | Complete five-target gate and final artifact review. |
-| Source, permissions, deterministic export, atomicity and unchanged input | Derived-artifact validation permits only the source-directory relocation, preserving original export files and plain/zlib encoding. Production Linux tests cover read-only modes, ACLs and user attributes, interrupted lifecycle boundaries, recovery, cancellation and aliases. Native Windows metadata/lifecycle checks and all retained generation evidence pass review. [Derived validation](evidence/build-id-derived-validation.json), [transaction](BUILD-ID-TRANSACTION.md), [Linux receipt](evidence/build-id-command-linux.json), [Windows receipt](evidence/windows-build-id-current-acceptance.json). | Current Windows/consumer gate and raw review pass; five-target gate and final integration remain. Installation generations have distinct retained paths; this does not change the original deterministic export. |
-| No-build-ID inputs | Refusal retains the original bytes and reports the explicit debuglink/loader alternatives. The installer never injects or recomputes an original build ID. [Identity checks](evidence/build-id-identity.json). | Latest-head hosted results. |
-| GDB exec/PIE/shared and applicable sectionless discovery | All five target lanes pass local exec/PIE/shared discovery and runtime checks. Matching compiler controls prove GDB 15.1 cannot discover the tested sectionless ET_EXEC sidecars automatically; the installer diagnoses this and explicit installed-sidecar loading is separately validated. [Layout evidence and limits](BUILD-ID-LAYOUTS.md). | Complete five-target matrix and final artifact review; current Windows-installed artifact validation passes. Sectionless PIE/shared automatic discovery is not claimed. |
-| Independent LLDB and perf behavior | Production-installed x86-64/AArch64 exec/PIE pass local LLDB and offline perf checks, including cache operations and mismatch controls. [Consumer evidence](BUILD-ID-CONSUMERS.md). A required native x86-64 exec/PIE job tests actual recorded samples with independent compiler ELF-symbol and DWARF-only controls. | Sample/report characterization is confirmed: [recording receipt](evidence/build-id-perf-recording.json) proves a consumer limitation with independent controls; recovered-name sample reporting is unsupported. Latest-head hosted installed-consumer results remain required. |
+| Existing identity and exact original/sidecar pair | `build-id-identity.py` and the production matrix reject missing, malformed, conflicting and mismatched IDs, a different original with the same ID, and input aliases. Export-report hashes bind the original, sidecar and source. [Target receipt](evidence/build-id-targets-current-acceptance.json), [Windows receipt](evidence/windows-build-id-current-acceptance.json). | Confirmed by raw command outcomes and exact retained input/package hashes. No original ID is invented or changed. |
+| Explicit destination and consumer setup | Packaged Bash/PowerShell commands accept a selected root and print consumer setup. Fresh debugger sessions, empty-root controls and actual registered files distinguish installation from discovery. [Command contract](BUILD-ID-INSTALLATION.md), [target receipt](evidence/build-id-targets-current-acceptance.json). | Confirmed on the documented Linux/Windows hosts. An arbitrary installation root still requires consumer search configuration. |
+| Collisions, refresh and removal | Explicit update preserves managed provenance and retained source generations. Implicit replacement, foreign registrations and changed-original collisions are refused. Saved analyst function/type/member edits are re-exported and checked in fresh GDB sessions. [Target receipt](evidence/build-id-targets-current-acceptance.json), [Windows receipt](evidence/windows-build-id-current-acceptance.json). | Confirmed lifecycle and negative controls on all five targets; actual saved-program refresh on x86-64 and native Windows, followed by Linux GDB consumption. |
+| Source, permissions, deterministic export, atomicity and unchanged input | Derived validation permits only source-directory relocation, retaining original export files and plain/zlib encoding. Linux tests cover read-only modes, ACLs, user attributes, interrupted lifecycle boundaries, recovery, cancellation and aliases. Native Windows metadata/lifecycle checks and all retained generations pass review. [Derived validation](evidence/build-id-derived-validation.json), [transaction contract](BUILD-ID-TRANSACTION.md), [implementation receipt](evidence/build-id-implementation-acceptance.json). | Confirmed by native runtime observations, source/original hashes and retained validator logs. Archive mode bits alone do not prove ACL or extended-attribute preservation. Distinct installation-generation paths do not change the deterministic original export. |
+| No-build-ID inputs | Refusal preserves original bytes and reports the explicit debuglink/loader alternatives. The installer never injects or recomputes the original build ID. [Identity checks](evidence/build-id-identity.json), [current target receipt](evidence/build-id-targets-current-acceptance.json). | Confirmed by current x86-64 raw identity/command outcomes and input bindings. Any future original-copy ID injection requires its own identity/layout transaction. |
+| GDB exec/PIE/shared and applicable sectionless discovery | All five hosted target lanes prove fresh-session exec/PIE/shared discovery, mismatch and lifecycle controls. Matching compiler controls establish the tested sectionless ET_EXEC automatic-discovery limitation; explicit installed-sidecar loading is separately validated. [Layout evidence](BUILD-ID-LAYOUTS.md), [target receipt](evidence/build-id-targets-current-acceptance.json). | Confirmed automatic discovery for tested exec/PIE/shared layouts, with a diagnosed explicit fallback for sectionless ET_EXEC. Sectionless PIE/shared automatic discovery is not claimed. |
+| Independent LLDB and perf behavior | Production-installed x86-64/AArch64 exec/PIE pass LLDB and offline perf checks, including cache and mismatch controls. A required native job records real x86-64 samples with independent compiler ELF-symbol and DWARF-only controls. [Consumer behavior](BUILD-ID-CONSUMERS.md), [perf receipt](evidence/build-id-perf-current-acceptance.json), [implementation receipt](evidence/build-id-implementation-acceptance.json). | Confirmed within the recorded versions/profiles. Sampled reports do not recover Forge names; offline source lookup does not imply sampled-name support. |
 
-The earlier Windows failures are **HISTORICAL**. The DACL-only fixture now
-preserves absent SACL metadata and separately proves explicit null-SACL refusal.
-Windows lock verification uses the locking handle; Linux uses an audited
-open-file-description lock that survives other handle closes. The selected MSYS2
-GNU readelf passes Unicode/long-path controls and actual supervised installation.
-These corrections preserve the production metadata and validator requirements.
-See the [SACL fixture receipt](evidence/windows-build-id-sacl-fixture.json),
+## Compatibility boundaries
+
+GDB 15.1 cannot automatically discover the tested sectionless ET_EXEC sidecars
+for either Forge or matching compiler controls. The installer diagnoses this;
+the supported tested fallback explicitly loads the installed sidecar.
+
+In sampled perf reports, the compiler ELF symbol resolves `profile_hot`, while
+the compiler DWARF-only control and installed Forge generations fail to recover
+the requested name. Offline perf source lookup and GDB discovery have separate
+positive evidence. A passing characterization establishes this consumer limit.
+Perf also accepts a wrong-ID file placed at the matched path; the installer
+rejects that mismatch. Perf's cache hard-links its inputs, while managed
+installation files must remain single-link: cache use requires an independent
+copy and explicit cache update/removal as described in the consumer guide.
+
+The audited installation hosts are Linux Intel LP64 with ext4 and native Windows
+with local NTFS. Windows source paths require GDB substitution after transfer to
+Linux. Cross-compilation, Linux simulations and archived mode bits do not prove
+native Windows filesystem behavior.
+
+## Historical failures and corrections
+
+Run `42329832669` passed all x86-64 test stages but failed artifact upload on
+the intentional filename `request λ "literal".json`. No complete x86-64 archive
+was available for review, and its required gate failed. Diagnostics now travel
+inside one PAX tar.gz, preserving filenames, hidden files, contents and links.
+All five corrected archives uploaded and passed raw review. The x86-64 review
+binds the quoted filename and request bytes to both executed preview commands;
+4,438 hidden generation members are retained. The
+[historical retention receipt](evidence/build-id-target-artifact-retention.json)
+preserves the failure; the [implementation receipt](evidence/build-id-implementation-acceptance.json)
+records the successful hosted correction.
+
+The earlier MIPS little-endian harness selected Java's ASCII filesystem encoding
+with `LC_ALL=C`; it now selects `C.UTF-8` while retaining the production guard.
+The [locale receipt](evidence/build-id-linux-locale.json) preserves the failed
+run and isolated reproduction. Current MIPS jobs pass with that correction.
+
+Earlier Windows corrections preserve the production metadata and validation
+requirements: the DACL-only fixture distinguishes absent and explicit null SACLs;
+lock readback uses the locking handle; Linux uses an audited open-file-description
+lock; and MSYS2 GNU readelf passes Unicode/long-path and supervised-installation
+checks. The downstream GDB oracle checks file-local as well as global symbols,
+including absence controls. See the [SACL fixture receipt](evidence/windows-build-id-sacl-fixture.json),
 [locking evidence](evidence/build-id-locking.json) and
 [validator-path receipt](evidence/windows-build-id-validator-paths.json).
 
-The corrected downstream consumer uses actual Windows-installed artifacts and
-explicit source-path substitution after transfer. Both local replay and the
-current hosted job pass. Linux simulations or cross-compilation do not establish
-native Windows installation behavior. The complete five-target gate and its
-artifact review remain required.
+Two independent review-tool corrections are retained with their controls. The
+archive reader recognizes only the exact retained absolute-link sentinel fixture
+without following host paths; unrelated absolute or escaping links remain refused.
+The command reviewer accepts only the exact test-configured `JAVA_TOOL_OPTIONS`
+startup notice and expected JVM launch count, rejecting extra stderr. A local
+Java 21 reproduction and 12 positive/negative controls corroborate that notice.
+All five affected installer reviews were rerun; the failed attempt and superseded
+reviews remain recorded. See [archive controls](evidence/build-id-review-archive-alias.json)
+and [Java startup controls](evidence/build-id-review-java-startup.json). These
+changes affect independent review tools, not production code or CI assertions.
 
-The final review must bind the accepted results to the exact tested commit and
-packaged sources, inspect diagnostics and negative controls, verify original and
-retained artifact hashes, and confirm the protected merge preserves the tested
-tree. Existing local receipts identify their tested packages; they are not a
-substitute for that final audit. No release publication is included in #109.
+## Integration contract
+
+The implementation receipt binds the successful run, packaged sources, raw
+reviews, artifact hashes and seven requirements. A documentation-only final head
+must preserve that production implementation and pass its own strict
+`required-validation` check before normal protected integration. The final head,
+checks and integration are recorded in
+[PR #186](https://github.com/zwilcox/GhidraDwarfForge/pull/186). No administrator
+bypass or release publication is part of this acceptance.

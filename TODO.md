@@ -1,5 +1,25 @@
 # TODO.md — GhidraDwarfForge
 
+## Current goal implementation status — 2026-11-07 UTC
+
+**CONFIRMED:** #74, #108, #116/#114 and #112/#110 are integrated within their
+recorded acceptance profiles. Build-ID installation #109 passes all seven
+implementation requirements at `d55842f`: run `42344072547` completes all 16 jobs,
+and raw review covers all five targets, native Windows, downstream GDB, installed
+LLDB/offline perf and actual sampled-perf characterization. The original scope
+is preserved; see [build-ID acceptance](docs/BUILD-ID-ACCEPTANCE.md) for evidence
+and consumer limitations. [PR186](https://github.com/zwilcox/GhidraDwarfForge/pull/186)
+records final documentation validation and normal protected integration. The
+full goal closure audit must also confirm that integration and all 44 original
+requirements. No release is included.
+
+## Historical development log
+
+The dated checkpoints below preserve earlier findings and failures. Their
+running-job, pending-validation and open-issue statements describe those
+checkpoints, not the current status above. Later acceptance evidence supersedes
+those statements only within its explicitly verified scope.
+
 **CONFIRMED #109 integration-harness locale failure and local correction
 (2026-11-07 UTC):** run `42324179974` fails MIPS little-endian floating-register
 validation because the harness forces `LC_ALL=C`, giving Java an ASCII native
@@ -3845,16 +3865,16 @@ meet their documented acceptance profiles; PR183 merged with the complete gate
 passing and an independently reviewed artifact set. Both issues are closed.
 See [final LLDB/unwind acceptance](docs/evidence/lldb-final-acceptance.json).
 
-**ACTIVE — #109:** build-ID installation is implemented in PR186. Local Linux
-installation, source retention, GDB, LLDB and offline perf checks pass. Native
-Windows installation/recovery and the hosted downstream GDB consumer pass. Actual perf
-recording characterizes a sample-name limitation with independent compiler
-controls. AArch64, ARM32 and both MIPS32 lanes pass current hosted jobs and
-scoped artifact reviews. All x86-64 test stages pass, but GitHub rejects a quoted
-fixture filename during artifact upload. The archive-packaging correction passes
-local retention tests and lint; hosted upload, x86-64 raw review, the combined
-required gate, final acceptance and protected integration remain.
-See [installation acceptance](docs/BUILD-ID-ACCEPTANCE.md).
+**CONFIRMED implementation acceptance — #109:** build-ID installation passes
+all seven original requirements at `d55842f`, including the complete five-target
+and native Windows gate and independent raw artifact review. The quoted-path
+fixture survives the corrected diagnostics archive. Saved analyst refresh,
+retained-source lookup, transactional lifecycle checks and installed LLDB/offline
+perf pass within the documented profiles; sampled perf reports retain their
+explicit recovered-name limitation. See [installation acceptance](docs/BUILD-ID-ACCEPTANCE.md).
+Final documentation validation and normal protected integration are recorded in
+[PR186](https://github.com/zwilcox/GhidraDwarfForge/pull/186); the full goal audit
+also checks all 44 original requirements against the integrated result.
 Low-priority test-coverage/CI badges remain #162/#163.
 
 The baseline exporter, source/type/location machinery, five target lanes,

@@ -8,11 +8,11 @@ path and retained source, with the selected export files absent during lookup.
 This is a compression/generation refresh test; actual analyst name/type/member
 edits have separate GDB coverage in the Linux command acceptance.
 
-The receipt is [build-id-consumers.json](evidence/build-id-consumers.json).
-The full latest-head hosted gate and protected integration remain outstanding.
-Native Windows installation/recovery has separate passing evidence in the
-[installation acceptance map](BUILD-ID-ACCEPTANCE.md). These tests do not extend LLDB's validated target profile to ARM32
-or MIPS, or establish sectionless automatic discovery.
+The local receipt is [build-id-consumers.json](evidence/build-id-consumers.json).
+The [installation acceptance map](BUILD-ID-ACCEPTANCE.md) records current hosted
+results, native Windows evidence and integration status. These tests do not
+extend LLDB's validated target profile to ARM32 or MIPS, or establish sectionless
+automatic discovery.
 
 ## LLDB
 
@@ -125,15 +125,16 @@ passing result.
 ### Observed recording results
 
 **CONFIRMED at current implementation head (2026-11-07 UTC):** run
-`42329832669`, job `128276258698`, repeats this characterization at `0f74abd`.
-Hosted perf 6.8.12 records 165 hot-function samples for ET_EXEC and 331 for PIE.
+`42344072547`, job `128319632924`, repeats this characterization at `d55842f`.
+Hosted perf 6.8.12 records 146 hot-function samples for ET_EXEC and 149 for PIE.
 Independent retained-artifact review and perf 7.0.14 replay confirm the same
 compiler-symbol, compiler-DWARF-only and installed-generation outcomes below.
 Four retained generations and 168 manifest files bind the actual installed
 sidecars and sources. See the
 [current recording receipt](evidence/build-id-perf-current-acceptance.json).
 This proves the recorded compatibility limit, not recovered-name sample-report
-support or completion of the pending full target gate.
+support. The complete implementation gate and integration contract are recorded
+in the [acceptance map](BUILD-ID-ACCEPTANCE.md).
 
 
 The earlier [recording receipt](evidence/build-id-perf-recording.json) binds successful
@@ -167,8 +168,8 @@ corroborated as recorded in the receipt.
 
 That initial recording run is historical: its architecture jobs stopped at
 a missing fixture inventory entry, now corrected. Native Windows installation
-with the production lock fix subsequently passed. Full acceptance still requires
-the complete latest-head target, host and downstream-consumer gate.
+with the production lock fix subsequently passed. The [acceptance map](BUILD-ID-ACCEPTANCE.md)
+records the current target, host and downstream-consumer gate and integration status.
 
 ## Reproduce
 

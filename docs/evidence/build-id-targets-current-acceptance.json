@@ -1,79 +1,79 @@
 {
   "status": "CONFIRMED_COMPLETED_TARGET_JOBS_AND_SCOPED_RAW_REVIEWS",
-  "utc": "2026-11-07T05:02:04.368062+00:00",
-  "head": "0f74abd1f17c1881ba006b41e95b17c073fa973f",
-  "run": 42329832669,
+  "utc": "2026-11-07T08:23:50.040604+00:00",
+  "head": "d55842f4c6b02000515db0dfe152799771cd876a",
+  "run": 42344072547,
   "targets": [
     {
       "target": "mips32be",
-      "job": 128276258733,
+      "job": 128319633031,
       "jobConclusion": "success",
-      "jobCompletedAt": "2026-11-07T04:04:59Z",
+      "jobCompletedAt": "2026-11-07T06:49:25Z",
       "artifact": {
-        "id": 13559950590,
-        "node_id": "MDg6QXJ0aWZhY3QxMzU1OTk1MDU5MA==",
+        "id": 13564233457,
+        "node_id": "MDg6QXJ0aWZhY3QxMzU2NDIzMzQ1Nw==",
         "name": "target-preflight-mips32be",
-        "size_in_bytes": 94280932,
-        "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13559950590",
-        "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13559950590/zip",
+        "size_in_bytes": 88347508,
+        "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13564233457",
+        "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13564233457/zip",
         "expired": false,
-        "digest": "sha256:2c5bb0cdc702306e2dc401ed118396c01630c77deff379c0f748d2e7a5f28b24",
-        "created_at": "2026-11-07T04:04:55Z",
-        "updated_at": "2026-11-07T04:04:55Z",
-        "expires_at": "2026-11-21T04:03:44Z",
+        "digest": "sha256:97b6dcaa57e2912e23800234d21b435c4182597f13277286dab624ad6132fc10",
+        "created_at": "2026-11-07T06:49:21Z",
+        "updated_at": "2026-11-07T06:49:21Z",
+        "expires_at": "2026-11-21T06:49:20Z",
         "workflow_run": {
-          "id": 42329832669,
+          "id": 42344072547,
           "repository_id": 969721342,
           "head_repository_id": 969721342,
           "head_branch": "work/build-id-installer",
-          "head_sha": "0f74abd1f17c1881ba006b41e95b17c073fa973f"
+          "head_sha": "d55842f4c6b02000515db0dfe152799771cd876a"
         }
       },
       "reviewFiles": {
         "mips32be-audit.json": {
-          "sha256": "7399325eaf0579edd58b83da35adcf5daa7b3fa8aadd1bd9d68aaaeef98b3f0f",
+          "sha256": "3d43763e6f65133b52baaa6a62c486572e4cb350ec50401ef10e98c52ebd27e2",
           "scope": "Reparsed complete positive strict logs and inherited original logs; recorded intentional negatives separately. Inspected LLDB statuses, versions, transcript diagnostics and retained protected-input hashes. Original fixture paths not uploaded in this artifact remain runtime-oracle claims, not independently rehashed inputs here."
         },
         "mips32be-build-id-core-review.json": {
-          "sha256": "a2edd2c3546629da739c476f43e009d159fd12f03aeeb8557fb2153171085083",
+          "sha256": "bda59823fa530a138aa93fbc7736e19b6c8f5b30080be3d443cc5ea5edc0cda8",
           "scope": "Raw transaction/identity/public-command outcomes matched to the reviewed acceptance inventory; fresh GDB discovery/value logs and no explicit symbol loading; exact retained input/package hashes. Filesystem metadata observations are runtime evidence, not reconstructed from ZIP permissions. Generation validators, layouts, curated refresh and independent consumers require separate audits."
         },
         "mips32be-build-id-generation-review.json": {
-          "sha256": "eb4390f0565f17f69ad3e4195a4f0c8e5ee45ea3624e1579d2b0acbaaf8873b9",
+          "sha256": "4f5d3cf3546b182d5a23180c89174046af246ba396bd3275f98a76ece1bb62dd",
           "scope": "Every retained build-id generation manifest and validator log/hash; completed process cleanup, raw GNU/LLVM and strict reports, original-byte binding and source equality. Inherited frame diagnostics require matching original section bytes. Filesystem transaction/metadata and consumer behavior are separate audits; no new installation or local host replay."
         },
         "mips32be-layout-refresh-review.json": {
-          "sha256": "e3bf599deb3be638796b65ad3b2b2490d004dc92bd4c46a3cf0949dcf263f565",
+          "sha256": "8b0f530472f3d48d3272cc743283935241261db4915a96e6e400dede81c21f7a",
           "scope": "Raw installer and debugger outcomes, explicit sectionless fallback versus automatic shared discovery, matching compiler controls and qualified QEMU diagnostics; saved/reopened analyst edits and retained source/original bytes. Listed unretained compiler files remain runtime hash/symbol-table evidence, not independently rehashed artifact copies. Validators/generation metadata have separate review."
         }
       },
       "executedReviews": [
         {
           "review": "target-strict-lldb",
-          "scriptSha256": "ff931dd4d96c65cf81b549f58d6c127c4bb9d533617256fadd49c03958414e58",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/mips32be-target-strict-lldb-audit-execution.log",
+          "scriptSha256": "95b1ecc600719b25db3d302cfb76b97fd6fbd61390e58fccfc5d7e47d9f0866a",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/mips32be-target-strict-lldb-audit-execution.log",
           "logSha256": "b11c6b5d426cfd99754e5ff1d564a4b5f30ec67fe10fba32af3cb1ce10c9c065",
           "exitCode": 0
         },
         {
-          "review": "linux-installation",
-          "scriptSha256": "7374cf114ed11fa7874be67f2414ed5b6920a52b756738652e51f2599f4164bf",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/mips32be-linux-installation-audit-execution.log",
-          "logSha256": "4458d679644956e1a27fbb7add3aac8b00636d0ec51608f2996c85384b22273d",
-          "exitCode": 0
-        },
-        {
           "review": "linux-generations",
-          "scriptSha256": "e36585970fbfeb8e1faed290647512b65e35a343687ebae00f8fd329ba19e576",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/mips32be-linux-generations-audit-execution-retry1.log",
+          "scriptSha256": "47ce332e92573a5716b2b5b724d3ffb49c50b5753617ce7b657cc628b57ab2e5",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/mips32be-linux-generations-audit-execution.log",
           "logSha256": "b0ccc246b96993919c06ee0b9dc9e8f2824ed13158f1827190b79e9d73e9023e",
           "exitCode": 0
         },
         {
           "review": "layout-refresh",
-          "scriptSha256": "9236fad62742cbbcfc24b0dd7523975bc581cddf3566f9de03e03c7ab3552625",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/mips32be-layout-refresh-audit-execution.log",
+          "scriptSha256": "c0878f746f067178d6b1ff96ca155cfdee8f1be335f1ecf5a3389c4dbe5a7fef",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/mips32be-layout-refresh-audit-execution.log",
           "logSha256": "76147d0f06d4ac38926f479f90fda246b5f7f98a833a6e74b5e368669a39d077",
+          "exitCode": 0
+        },
+        {
+          "review": "linux-installation",
+          "scriptSha256": "626c17db2255a69e6a79eec3c86659fd1ba9b46dffb870675aaec7bdb6620cba",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/mips32be-linux-installation-audit-execution-retry1.log",
+          "logSha256": "4458d679644956e1a27fbb7add3aac8b00636d0ec51608f2996c85384b22273d",
           "exitCode": 0
         }
       ],
@@ -95,74 +95,74 @@
     },
     {
       "target": "mips32le",
-      "job": 128276258842,
+      "job": 128319632936,
       "jobConclusion": "success",
-      "jobCompletedAt": "2026-11-07T04:05:12Z",
+      "jobCompletedAt": "2026-11-07T07:02:53Z",
       "artifact": {
-        "id": 13560370579,
-        "node_id": "MDg6QXJ0aWZhY3QxMzU2MDM3MDU3OQ==",
+        "id": 13565072321,
+        "node_id": "MDg6QXJ0aWZhY3QxMzU2NTA3MjMyMQ==",
         "name": "target-preflight-mips32le",
-        "size_in_bytes": 94300860,
-        "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13560370579",
-        "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13560370579/zip",
+        "size_in_bytes": 88391409,
+        "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13565072321",
+        "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13565072321/zip",
         "expired": false,
-        "digest": "sha256:b0b36aeb491215c22a82f942313af964398c64c10a631a19bde0ee2cd71fe261",
-        "created_at": "2026-11-07T04:05:08Z",
-        "updated_at": "2026-11-07T04:05:08Z",
-        "expires_at": "2026-11-21T04:03:57Z",
+        "digest": "sha256:721ef5df6ba165b1a6b93e154bc22915cc4e1855137a01d055f881d68b6a9bec",
+        "created_at": "2026-11-07T07:02:47Z",
+        "updated_at": "2026-11-07T07:02:47Z",
+        "expires_at": "2026-11-21T07:02:45Z",
         "workflow_run": {
-          "id": 42329832669,
+          "id": 42344072547,
           "repository_id": 969721342,
           "head_repository_id": 969721342,
           "head_branch": "work/build-id-installer",
-          "head_sha": "0f74abd1f17c1881ba006b41e95b17c073fa973f"
+          "head_sha": "d55842f4c6b02000515db0dfe152799771cd876a"
         }
       },
       "reviewFiles": {
         "mips32le-audit.json": {
-          "sha256": "febff28b68de3c06ce915cc0b121d354d547afa0c06f2da2f6c19b8304526cdd",
+          "sha256": "93c44511d8fce317f313bd66ef79ba0e3f0bcc12b8bb95bfd230a5759e0dffd0",
           "scope": "Reparsed complete positive strict logs and inherited original logs; recorded intentional negatives separately. Inspected LLDB statuses, versions, transcript diagnostics and retained protected-input hashes. Original fixture paths not uploaded in this artifact remain runtime-oracle claims, not independently rehashed inputs here."
         },
         "mips32le-build-id-core-review.json": {
-          "sha256": "b6bd2725e88f5a3f102d6d65412378bf2773d754394abd054bb7d31ec244e78a",
+          "sha256": "fb4c54357f387976a4b98c60ecf2d20cdf7091d039a423f4ba34ef12a86ecc0c",
           "scope": "Raw transaction/identity/public-command outcomes matched to the reviewed acceptance inventory; fresh GDB discovery/value logs and no explicit symbol loading; exact retained input/package hashes. Filesystem metadata observations are runtime evidence, not reconstructed from ZIP permissions. Generation validators, layouts, curated refresh and independent consumers require separate audits."
         },
         "mips32le-build-id-generation-review.json": {
-          "sha256": "7ba3b7b2facb91a9c6361e18f68fbbeba2f8f190b58c340b17d514946f13c300",
+          "sha256": "3eaabd45990ac1196bd5376b25b7b7c9c7e7a2e328c377b4a07a3722e4f1d5a6",
           "scope": "Every retained build-id generation manifest and validator log/hash; completed process cleanup, raw GNU/LLVM and strict reports, original-byte binding and source equality. Inherited frame diagnostics require matching original section bytes. Filesystem transaction/metadata and consumer behavior are separate audits; no new installation or local host replay."
         },
         "mips32le-layout-refresh-review.json": {
-          "sha256": "b427dc5d0b8a38125d185ea63b7f438bfe2c8e1bc0d591bd92cbb461e769d277",
+          "sha256": "973ee18b90e555a006b4d72a3cfc11eb285b50605c9618b700834b1dd4227360",
           "scope": "Raw installer and debugger outcomes, explicit sectionless fallback versus automatic shared discovery, matching compiler controls and qualified QEMU diagnostics; saved/reopened analyst edits and retained source/original bytes. Listed unretained compiler files remain runtime hash/symbol-table evidence, not independently rehashed artifact copies. Validators/generation metadata have separate review."
         }
       },
       "executedReviews": [
         {
           "review": "target-strict-lldb",
-          "scriptSha256": "ff931dd4d96c65cf81b549f58d6c127c4bb9d533617256fadd49c03958414e58",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/mips32le-target-strict-lldb-audit-execution.log",
+          "scriptSha256": "95b1ecc600719b25db3d302cfb76b97fd6fbd61390e58fccfc5d7e47d9f0866a",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/mips32le-target-strict-lldb-audit-execution.log",
           "logSha256": "7d4a33ce29d40afcd0ff95eb53387bdc8b10b6555109ca958833ee23d2fdfaff",
           "exitCode": 0
         },
         {
-          "review": "linux-installation",
-          "scriptSha256": "7374cf114ed11fa7874be67f2414ed5b6920a52b756738652e51f2599f4164bf",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/mips32le-linux-installation-audit-execution.log",
-          "logSha256": "8f22ef2c7a3cdf9a59a7d3ed3e87b05a3cb5ecfb3445000330e8ce3875c459ef",
-          "exitCode": 0
-        },
-        {
           "review": "linux-generations",
-          "scriptSha256": "e36585970fbfeb8e1faed290647512b65e35a343687ebae00f8fd329ba19e576",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/mips32le-linux-generations-audit-execution.log",
+          "scriptSha256": "47ce332e92573a5716b2b5b724d3ffb49c50b5753617ce7b657cc628b57ab2e5",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/mips32le-linux-generations-audit-execution.log",
           "logSha256": "07add058087293290a53ecbbf99d6c5abdb6aa15363474fe6e633a30722cf9e9",
           "exitCode": 0
         },
         {
           "review": "layout-refresh",
-          "scriptSha256": "9236fad62742cbbcfc24b0dd7523975bc581cddf3566f9de03e03c7ab3552625",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/mips32le-layout-refresh-audit-execution.log",
+          "scriptSha256": "c0878f746f067178d6b1ff96ca155cfdee8f1be335f1ecf5a3389c4dbe5a7fef",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/mips32le-layout-refresh-audit-execution.log",
           "logSha256": "661e53afb7fd413593313407dfa7831aa34a89ded2ddbe32310ec63787eccb5b",
+          "exitCode": 0
+        },
+        {
+          "review": "linux-installation",
+          "scriptSha256": "626c17db2255a69e6a79eec3c86659fd1ba9b46dffb870675aaec7bdb6620cba",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/mips32le-linux-installation-audit-execution-retry1.log",
+          "logSha256": "8f22ef2c7a3cdf9a59a7d3ed3e87b05a3cb5ecfb3445000330e8ce3875c459ef",
           "exitCode": 0
         }
       ],
@@ -183,86 +183,175 @@
       "unretainedRegressionInputPaths": []
     },
     {
-      "target": "aarch64",
-      "job": 128276258867,
+      "target": "arm32",
+      "job": 128319632917,
       "jobConclusion": "success",
-      "jobCompletedAt": "2026-11-07T04:49:43Z",
+      "jobCompletedAt": "2026-11-07T07:31:57Z",
       "artifact": {
-        "id": 13561536429,
-        "node_id": "MDg6QXJ0aWZhY3QxMzU2MTUzNjQyOQ==",
-        "name": "target-preflight-aarch64",
-        "size_in_bytes": 125805763,
-        "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13561536429",
-        "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13561536429/zip",
+        "id": 13565907808,
+        "node_id": "MDg6QXJ0aWZhY3QxMzU2NTkwNzgwOA==",
+        "name": "target-preflight-arm32",
+        "size_in_bytes": 132944849,
+        "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13565907808",
+        "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13565907808/zip",
         "expired": false,
-        "digest": "sha256:f92510318339406d0eadd3d1be7bff8bf4a2bd9a8e4498313a1509c5738f2777",
-        "created_at": "2026-11-07T04:49:41Z",
-        "updated_at": "2026-11-07T04:49:41Z",
-        "expires_at": "2026-11-21T04:48:36Z",
+        "digest": "sha256:95ab9f8736668e509eacd157825e380e558d05fb6573c95a10034e1d140abffe",
+        "created_at": "2026-11-07T07:31:55Z",
+        "updated_at": "2026-11-07T07:31:55Z",
+        "expires_at": "2026-11-21T07:31:53Z",
         "workflow_run": {
-          "id": 42329832669,
+          "id": 42344072547,
           "repository_id": 969721342,
           "head_repository_id": 969721342,
           "head_branch": "work/build-id-installer",
-          "head_sha": "0f74abd1f17c1881ba006b41e95b17c073fa973f"
+          "head_sha": "d55842f4c6b02000515db0dfe152799771cd876a"
+        }
+      },
+      "reviewFiles": {
+        "arm32-audit.json": {
+          "sha256": "580a796004eabfb73385432601415244efe2acd1b22fdc360f8d306c6d736f9a",
+          "scope": "Reparsed complete positive strict logs and inherited original logs; recorded intentional negatives separately. Inspected LLDB statuses, versions, transcript diagnostics and retained protected-input hashes. Original fixture paths not uploaded in this artifact remain runtime-oracle claims, not independently rehashed inputs here."
+        },
+        "arm32-build-id-core-review.json": {
+          "sha256": "46f9948fd80a7823c78ec383b95c3623168db17a6bae9a5ed412fce087cf414a",
+          "scope": "Raw transaction/identity/public-command outcomes matched to the reviewed acceptance inventory; fresh GDB discovery/value logs and no explicit symbol loading; exact retained input/package hashes. Filesystem metadata observations are runtime evidence, not reconstructed from ZIP permissions. Generation validators, layouts, curated refresh and independent consumers require separate audits."
+        },
+        "arm32-build-id-generation-review.json": {
+          "sha256": "2c5809e7e7fd56a4c61bd2258be3fdb84c8941635d1e3669a5753df6fcc03dd3",
+          "scope": "Every retained build-id generation manifest and validator log/hash; completed process cleanup, raw GNU/LLVM and strict reports, original-byte binding and source equality. Inherited frame diagnostics require matching original section bytes. Filesystem transaction/metadata and consumer behavior are separate audits; no new installation or local host replay."
+        },
+        "arm32-layout-refresh-review.json": {
+          "sha256": "9b09c0cf1fb2cc31fae5d0d02823f1f0dcb4dcac6e95bc22e429f8bb4e059e94",
+          "scope": "Raw installer and debugger outcomes, explicit sectionless fallback versus automatic shared discovery, matching compiler controls and qualified QEMU diagnostics; saved/reopened analyst edits and retained source/original bytes. Listed unretained compiler files remain runtime hash/symbol-table evidence, not independently rehashed artifact copies. Validators/generation metadata have separate review."
+        }
+      },
+      "executedReviews": [
+        {
+          "review": "target-strict-lldb",
+          "scriptSha256": "95b1ecc600719b25db3d302cfb76b97fd6fbd61390e58fccfc5d7e47d9f0866a",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/arm32-target-strict-lldb-audit-execution.log",
+          "logSha256": "ed43e65bd1301f8e2d154399cc009f9cf2529053d75fdf388d5090d0df5ec548",
+          "exitCode": 0
+        },
+        {
+          "review": "linux-generations",
+          "scriptSha256": "47ce332e92573a5716b2b5b724d3ffb49c50b5753617ce7b657cc628b57ab2e5",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/arm32-linux-generations-audit-execution.log",
+          "logSha256": "97084de6fdec108b8d0b730930a88e200092c4700143d6d8f8faa5066a86b185",
+          "exitCode": 0
+        },
+        {
+          "review": "layout-refresh",
+          "scriptSha256": "c0878f746f067178d6b1ff96ca155cfdee8f1be335f1ecf5a3389c4dbe5a7fef",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/arm32-layout-refresh-audit-execution.log",
+          "logSha256": "6927d5fbc41a74c26dbc7021cc80381e4cb4a542224215fe27b1998305ec5e13",
+          "exitCode": 0
+        },
+        {
+          "review": "linux-installation",
+          "scriptSha256": "626c17db2255a69e6a79eec3c86659fd1ba9b46dffb870675aaec7bdb6620cba",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/arm32-linux-installation-audit-execution-retry1.log",
+          "logSha256": "8b6cf4e3262baeb6c47c604296b823282f2c9c2933738ad2a78e2a7bf15126e3",
+          "exitCode": 0
+        }
+      ],
+      "totals": {
+        "positiveStrictRecords": 607,
+        "expectedNegativeStrictRecords": 1,
+        "installerChecks": 14,
+        "gdbLifecycleSessions": 8,
+        "retainedGenerations": 8,
+        "manifestFiles": 296,
+        "supervisedValidators": 48,
+        "layoutCases": 2,
+        "curatedRefreshCases": 0,
+        "lldbRegressionRecords": 0,
+        "unretainedRegressionInputPaths": 0
+      },
+      "compilerReferenceDiagnostics": [],
+      "unretainedRegressionInputPaths": []
+    },
+    {
+      "target": "aarch64",
+      "job": 128319632928,
+      "jobConclusion": "success",
+      "jobCompletedAt": "2026-11-07T07:47:09Z",
+      "artifact": {
+        "id": 13566475834,
+        "node_id": "MDg6QXJ0aWZhY3QxMzU2NjQ3NTgzNA==",
+        "name": "target-preflight-aarch64",
+        "size_in_bytes": 113639105,
+        "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13566475834",
+        "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13566475834/zip",
+        "expired": false,
+        "digest": "sha256:712789a2b77fc224d95a5f015f1765d53b94edb7142e586bf5a5b48fce86cb18",
+        "created_at": "2026-11-07T07:47:07Z",
+        "updated_at": "2026-11-07T07:47:07Z",
+        "expires_at": "2026-11-21T07:47:06Z",
+        "workflow_run": {
+          "id": 42344072547,
+          "repository_id": 969721342,
+          "head_repository_id": 969721342,
+          "head_branch": "work/build-id-installer",
+          "head_sha": "d55842f4c6b02000515db0dfe152799771cd876a"
         }
       },
       "reviewFiles": {
         "aarch64-audit.json": {
-          "sha256": "5dffc6e9492d4002b4669d938aa709188aa951cb4b284d14a2155017c263de50",
+          "sha256": "972b779f59a6b741901990b00af558e633f0b1f033bf68eee426b4edf8c6079b",
           "scope": "Reparsed complete positive strict logs and inherited original logs; recorded intentional negatives separately. Inspected LLDB statuses, versions, transcript diagnostics and retained protected-input hashes. Original fixture paths not uploaded in this artifact remain runtime-oracle claims, not independently rehashed inputs here."
         },
         "aarch64-build-id-core-review.json": {
-          "sha256": "165a588033aca3e9df20d5fa0143fe34a770e4e71c120fb3214490dc9d9599ba",
+          "sha256": "c76680c66a173038638f13c37098eab2deb61984c867c0a743774bf1647e351f",
           "scope": "Raw transaction/identity/public-command outcomes matched to the reviewed acceptance inventory; fresh GDB discovery/value logs and no explicit symbol loading; exact retained input/package hashes. Filesystem metadata observations are runtime evidence, not reconstructed from ZIP permissions. Generation validators, layouts, curated refresh and independent consumers require separate audits."
         },
         "aarch64-build-id-generation-review.json": {
-          "sha256": "0f32a07a413fcb7fe3e0c0cffe373bb3e5d55ff69d5c75f8b774b945a9072397",
+          "sha256": "f6a8ff1337940d0c697cbcbcfc8d21117647c90551af300b5e33e3834d5ea9b5",
           "scope": "Every retained build-id generation manifest and validator log/hash; completed process cleanup, raw GNU/LLVM and strict reports, original-byte binding and source equality. Inherited frame diagnostics require matching original section bytes. Filesystem transaction/metadata and consumer behavior are separate audits; no new installation or local host replay."
         },
         "aarch64-layout-refresh-review.json": {
-          "sha256": "d0e29883d621c31612c75f21e23f7fffb4e2c717143d8b441acf51504329a922",
+          "sha256": "6275d9ec94312d96eeb02a066ce8a6b0bb65d7b09d3549892a488ef8febaebcf",
           "scope": "Raw installer and debugger outcomes, explicit sectionless fallback versus automatic shared discovery, matching compiler controls and qualified QEMU diagnostics; saved/reopened analyst edits and retained source/original bytes. Listed unretained compiler files remain runtime hash/symbol-table evidence, not independently rehashed artifact copies. Validators/generation metadata have separate review."
         },
         "aarch64-installed-consumer-review.json": {
-          "sha256": "885244227b3539953f9fed9079ceb9f3cb8973b6b4956fe7c7810bef4d34c791",
+          "sha256": "b27454f120bfe674d24aebaddf5b125f29745f3d13dea2bd88da8cd03c0b0d47",
           "scope": "Actual production-installed exec/PIE initial/updated generations; raw LLDB scalar values and clobbered-tail unavailability, absence/mismatch controls, offline perf source/variable outcomes and explicit cache commands. Generation/validator and host metadata audits remain separate. Offline lookup is not sampled-report symbolization support."
         }
       },
       "executedReviews": [
         {
           "review": "target-strict-lldb",
-          "scriptSha256": "ff931dd4d96c65cf81b549f58d6c127c4bb9d533617256fadd49c03958414e58",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/aarch64-target-strict-lldb-audit-execution.log",
+          "scriptSha256": "95b1ecc600719b25db3d302cfb76b97fd6fbd61390e58fccfc5d7e47d9f0866a",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/aarch64-target-strict-lldb-audit-execution.log",
           "logSha256": "c06bbf007458cb90584b9589e614aef84bbc58ea22e9404fc310f8969ca584eb",
           "exitCode": 0
         },
         {
-          "review": "linux-installation",
-          "scriptSha256": "7374cf114ed11fa7874be67f2414ed5b6920a52b756738652e51f2599f4164bf",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/aarch64-linux-installation-audit-execution.log",
-          "logSha256": "d0bd20c16181dac691e6f0ab14f35f2ed6aafbca988c010524f98af66b007903",
-          "exitCode": 0
-        },
-        {
           "review": "linux-generations",
-          "scriptSha256": "e36585970fbfeb8e1faed290647512b65e35a343687ebae00f8fd329ba19e576",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/aarch64-linux-generations-audit-execution.log",
+          "scriptSha256": "47ce332e92573a5716b2b5b724d3ffb49c50b5753617ce7b657cc628b57ab2e5",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/aarch64-linux-generations-audit-execution.log",
           "logSha256": "9be85fac5eea643618825f5f37679562942ea96cd974f4cae34378006b60b345",
           "exitCode": 0
         },
         {
           "review": "layout-refresh",
-          "scriptSha256": "9236fad62742cbbcfc24b0dd7523975bc581cddf3566f9de03e03c7ab3552625",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/aarch64-layout-refresh-audit-execution.log",
+          "scriptSha256": "c0878f746f067178d6b1ff96ca155cfdee8f1be335f1ecf5a3389c4dbe5a7fef",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/aarch64-layout-refresh-audit-execution.log",
           "logSha256": "dba639567e50921123ea2bf311eae8e6c075a9cc678a34133caaadb1a55ca9de",
           "exitCode": 0
         },
         {
           "review": "installed-consumers",
-          "scriptSha256": "81ff0616cd162df8194a8ae75612d672703b1f1facf573cfa4a9f19d3b394a13",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/aarch64-installed-consumers-audit-execution.log",
+          "scriptSha256": "b8584697222112d36d4ba9c7b4c3dc9695f50d2f5f1f22a90f1ee8a9d470a737",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/aarch64-installed-consumers-audit-execution.log",
           "logSha256": "e3f740d4a168f4e0d11db2ff747e701a89b68aa7808e75406f829cf938b2cf7e",
+          "exitCode": 0
+        },
+        {
+          "review": "linux-installation",
+          "scriptSha256": "626c17db2255a69e6a79eec3c86659fd1ba9b46dffb870675aaec7bdb6620cba",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/aarch64-linux-installation-audit-execution-retry1.log",
+          "logSha256": "d0bd20c16181dac691e6f0ab14f35f2ed6aafbca988c010524f98af66b007903",
           "exitCode": 0
         }
       ],
@@ -330,98 +419,139 @@
       ]
     },
     {
-      "target": "arm32",
-      "job": 128276258758,
+      "target": "x86_64",
+      "job": 128319632931,
       "jobConclusion": "success",
-      "jobCompletedAt": "2026-11-07T04:50:56Z",
+      "jobCompletedAt": "2026-11-07T08:16:28Z",
       "artifact": {
-        "id": 13561302212,
-        "node_id": "MDg6QXJ0aWZhY3QxMzU2MTMwMjIxMg==",
-        "name": "target-preflight-arm32",
-        "size_in_bytes": 146771168,
-        "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13561302212",
-        "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13561302212/zip",
+        "id": 13566744186,
+        "node_id": "MDg6QXJ0aWZhY3QxMzU2Njc0NDE4Ng==",
+        "name": "target-preflight-x86_64",
+        "size_in_bytes": 364824970,
+        "url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13566744186",
+        "archive_download_url": "https://api.github.com/repos/zwilcox/GhidraDwarfForge/actions/artifacts/13566744186/zip",
         "expired": false,
-        "digest": "sha256:aa5c29cfcc9b206a81a6d8f04f7f72e86ce5fded70b5aafd5dacfedaaca32ef6",
-        "created_at": "2026-11-07T04:50:53Z",
-        "updated_at": "2026-11-07T04:50:53Z",
-        "expires_at": "2026-11-21T04:48:51Z",
+        "digest": "sha256:5f4301409649116406eb751c19a156ba7f1834e04a3dc35f0f94488f1e26eb57",
+        "created_at": "2026-11-07T08:16:26Z",
+        "updated_at": "2026-11-07T08:16:26Z",
+        "expires_at": "2026-11-21T08:16:23Z",
         "workflow_run": {
-          "id": 42329832669,
+          "id": 42344072547,
           "repository_id": 969721342,
           "head_repository_id": 969721342,
           "head_branch": "work/build-id-installer",
-          "head_sha": "0f74abd1f17c1881ba006b41e95b17c073fa973f"
+          "head_sha": "d55842f4c6b02000515db0dfe152799771cd876a"
         }
       },
       "reviewFiles": {
-        "arm32-audit.json": {
-          "sha256": "6ff08e96b6a361302332d4f325c597f348ea4802985954dc03daf82854b604fd",
+        "x86_64-audit.json": {
+          "sha256": "d3188c98ea74d289e17e49d10a81a51230d192f132f0977caf2296c629f77382",
           "scope": "Reparsed complete positive strict logs and inherited original logs; recorded intentional negatives separately. Inspected LLDB statuses, versions, transcript diagnostics and retained protected-input hashes. Original fixture paths not uploaded in this artifact remain runtime-oracle claims, not independently rehashed inputs here."
         },
-        "arm32-build-id-core-review.json": {
-          "sha256": "ffc65a9e2e8798f8a8ae21572e9573e51e2aaa7857c456f4b49b1202ed12369a",
+        "x86_64-build-id-core-review.json": {
+          "sha256": "a28a90cbe0131d55d6f488bbb3681d83684131f58dc7e169b6f3fa1c65d7f6b3",
           "scope": "Raw transaction/identity/public-command outcomes matched to the reviewed acceptance inventory; fresh GDB discovery/value logs and no explicit symbol loading; exact retained input/package hashes. Filesystem metadata observations are runtime evidence, not reconstructed from ZIP permissions. Generation validators, layouts, curated refresh and independent consumers require separate audits."
         },
-        "arm32-build-id-generation-review.json": {
-          "sha256": "380bf3d39a05d96be0e7e37a293f274df023feba91dd315a9a8551d70043f031",
+        "x86_64-build-id-generation-review.json": {
+          "sha256": "45164039a7af747d4ecebbbe69b6ed3da298bc4a85b128c22d56197d0efca91b",
           "scope": "Every retained build-id generation manifest and validator log/hash; completed process cleanup, raw GNU/LLVM and strict reports, original-byte binding and source equality. Inherited frame diagnostics require matching original section bytes. Filesystem transaction/metadata and consumer behavior are separate audits; no new installation or local host replay."
         },
-        "arm32-layout-refresh-review.json": {
-          "sha256": "cc7c70ce15c85c5417f4170654ebb5ecf5e5866057729e95daa62d62edd05d3b",
+        "x86_64-layout-refresh-review.json": {
+          "sha256": "c49c5ac10de971ee9d4a2a0c0ceb4a663fbf23891e8d8057da15cbde35d683b0",
           "scope": "Raw installer and debugger outcomes, explicit sectionless fallback versus automatic shared discovery, matching compiler controls and qualified QEMU diagnostics; saved/reopened analyst edits and retained source/original bytes. Listed unretained compiler files remain runtime hash/symbol-table evidence, not independently rehashed artifact copies. Validators/generation metadata have separate review."
+        },
+        "x86_64-installed-consumer-review.json": {
+          "sha256": "54baa3efc6c3bcd79de04b9b10d206963d14f352abfa906214df430b27737e0d",
+          "scope": "Actual production-installed exec/PIE initial/updated generations; raw LLDB scalar values and clobbered-tail unavailability, absence/mismatch controls, offline perf source/variable outcomes and explicit cache commands. Generation/validator and host metadata audits remain separate. Offline lookup is not sampled-report symbolization support."
         }
       },
       "executedReviews": [
         {
           "review": "target-strict-lldb",
-          "scriptSha256": "ff931dd4d96c65cf81b549f58d6c127c4bb9d533617256fadd49c03958414e58",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/arm32-target-strict-lldb-audit-execution.log",
-          "logSha256": "ed43e65bd1301f8e2d154399cc009f9cf2529053d75fdf388d5090d0df5ec548",
+          "scriptSha256": "95b1ecc600719b25db3d302cfb76b97fd6fbd61390e58fccfc5d7e47d9f0866a",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/x86_64-target-strict-lldb-audit-execution.log",
+          "logSha256": "055995e8fc56c5b4a223f63e7fabec782180be741e0aad813d078108802e70ce",
           "exitCode": 0
         },
         {
           "review": "linux-installation",
-          "scriptSha256": "7374cf114ed11fa7874be67f2414ed5b6920a52b756738652e51f2599f4164bf",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/arm32-linux-installation-audit-execution.log",
-          "logSha256": "8b6cf4e3262baeb6c47c604296b823282f2c9c2933738ad2a78e2a7bf15126e3",
+          "scriptSha256": "626c17db2255a69e6a79eec3c86659fd1ba9b46dffb870675aaec7bdb6620cba",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/x86_64-linux-installation-audit-execution-retry1.log",
+          "logSha256": "4a19feb1296bac3b3a8c508369847f8114dfbe15dc56cbba3f1bfa1117b23a2c",
           "exitCode": 0
         },
         {
           "review": "linux-generations",
-          "scriptSha256": "e36585970fbfeb8e1faed290647512b65e35a343687ebae00f8fd329ba19e576",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/arm32-linux-generations-audit-execution.log",
-          "logSha256": "97084de6fdec108b8d0b730930a88e200092c4700143d6d8f8faa5066a86b185",
+          "scriptSha256": "47ce332e92573a5716b2b5b724d3ffb49c50b5753617ce7b657cc628b57ab2e5",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/x86_64-linux-generations-audit-execution.log",
+          "logSha256": "6f0b3738e7ee9e9c082ce09689a4552419826dacbf41e982d246c1daa68850b7",
           "exitCode": 0
         },
         {
           "review": "layout-refresh",
-          "scriptSha256": "9236fad62742cbbcfc24b0dd7523975bc581cddf3566f9de03e03c7ab3552625",
-          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-0f74abd/arm32-layout-refresh-audit-execution.log",
-          "logSha256": "6927d5fbc41a74c26dbc7021cc80381e4cb4a542224215fe27b1998305ec5e13",
+          "scriptSha256": "c0878f746f067178d6b1ff96ca155cfdee8f1be335f1ecf5a3389c4dbe5a7fef",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/x86_64-layout-refresh-audit-execution.log",
+          "logSha256": "82c2133adc99d3e56900ebfeb4a2317aa5df826f477c7b00132ae268f41ad54b",
+          "exitCode": 0
+        },
+        {
+          "review": "installed-consumers",
+          "scriptSha256": "b8584697222112d36d4ba9c7b4c3dc9695f50d2f5f1f22a90f1ee8a9d470a737",
+          "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/x86_64-installed-consumers-audit-execution.log",
+          "logSha256": "840d195d876730f8c0a4e85cb9570993a3445b3d74d4c15cbbb5563f5e490657",
           "exitCode": 0
         }
       ],
       "totals": {
-        "positiveStrictRecords": 607,
-        "expectedNegativeStrictRecords": 1,
-        "installerChecks": 14,
-        "gdbLifecycleSessions": 8,
-        "retainedGenerations": 8,
-        "manifestFiles": 296,
-        "supervisedValidators": 48,
+        "positiveStrictRecords": 905,
+        "expectedNegativeStrictRecords": 127,
+        "installerChecks": 170,
+        "gdbLifecycleSessions": 18,
+        "retainedGenerations": 73,
+        "manifestFiles": 3077,
+        "supervisedValidators": 513,
         "layoutCases": 2,
-        "curatedRefreshCases": 0,
-        "lldbRegressionRecords": 0,
-        "unretainedRegressionInputPaths": 0
+        "curatedRefreshCases": 2,
+        "lldbRegressionRecords": 33,
+        "unretainedRegressionInputPaths": 25
       },
-      "compilerReferenceDiagnostics": [],
-      "unretainedRegressionInputPaths": []
+      "compilerReferenceDiagnostics": [
+        {
+          "path": "lldb-semantic-x86_64/x86_64-compiler/lldb.log",
+          "text": "error: semantic.exec.stripped 0x000000f0: DW_TAG_member 'bytes' refers to type 0x00000000000000fc which extends beyond the bounds of 0x000000d8",
+          "producer": "compiler reference"
+        }
+      ],
+      "unretainedRegressionInputPaths": [
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/libsemantic.so.gdb-rebased.dbg",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/libsemantic.so.gdb-rebased.dbg.c",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/libsemantic.so.ghidra-forge.dbg",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/libsemantic.so.ghidra-forge.dbg.c",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/libsemantic.so.reference",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/libsemantic.so.stripped",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg.c",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.no-sections.ghidra-forge.dbg",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.no-sections.ghidra-forge.dbg.c",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.no-sections.stripped",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.reference",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.stripped",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.shared-driver.reference",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.shared-driver.stripped",
+        "compiler-gdb.json",
+        "compiler-storage.json",
+        "forge-gdb.json",
+        "labels.json",
+        "local.dbg",
+        "local.dbg.c",
+        "local.input",
+        "local.reference",
+        "locations.json",
+        "result.json"
+      ]
     }
   ],
-  "remainingTargets": [
-    "x86_64"
-  ],
+  "remainingTargets": [],
   "limitations": [
     "This receipt alone is not the whole run or protected integration acceptance.",
     "Unretained regression input paths remain runtime-oracle evidence, not independently rehashed files.",

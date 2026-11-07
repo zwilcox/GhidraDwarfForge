@@ -1,16 +1,12 @@
 # Install a Forge export by build ID
 
-**Development status:** the Linux command has local end-to-end validation,
-and Windows native installation/recovery plus hosted downstream GDB checks pass
-at `0f74abd`. The complete five-target gate, final artifact review and protected
-integration remain outstanding. See the
-[current Windows receipt](evidence/windows-build-id-current-acceptance.json)
-and [Linux command receipt](evidence/build-id-command-linux.json).
-
 Installation associates an export with the original ELF's existing build ID.
 It leaves the executable unchanged, retains the source and export report, and
 publishes a validated sidecar under an explicitly selected debug root. GDB must
 be configured to search that root. Ordinary export never installs automatically.
+
+See the [acceptance map](BUILD-ID-ACCEPTANCE.md) for validated host/consumer
+profiles, evidence and current integration status.
 
 ## Linux invocation
 
@@ -85,12 +81,12 @@ list recovered_function
 
 `set debug-file-directory` replaces GDB's current search-path setting. Include
 other desired search roots yourself if needed. Installation does not modify
-GDB configuration or populate perf's separate cache. Installation-specific
-LLDB and offline perf lookup now pass locally for x86-64/AArch64 exec and PIE;
-see [consumer setup, cache rules and limitations](BUILD-ID-CONSUMERS.md).
-Hosted acceptance remains pending. Separate native x86-64 recordings with
-compiler controls confirm that the tested perf sample reports do not recover
-Forge function names; offline source lookup does not imply sample-name support.
+GDB configuration or populate perf's separate cache. LLDB and perf have separate
+[consumer setup, cache rules and limitations](BUILD-ID-CONSUMERS.md), with
+validated lookup profiles for x86-64/AArch64 exec and PIE. Native x86-64
+recordings with compiler controls confirm that the tested perf sample reports
+do not recover Forge function names; offline source lookup does not imply
+sample-name support.
 
 The installed DWARF points at a retained source generation within the root.
 The original export directory can disappear without losing that source. Keep
@@ -150,20 +146,16 @@ contract. `-EnableSecurityPrivilege` explicitly enables an already assigned
 token privilege for that host and restores it afterward; it does not obtain
 an administrator token.
 
-**CONFIRMED scoped native validation:** host job `128276867134` passes actual
-headless and saved-analyst-refresh exports followed by the packaged installer.
-Raw review verifies 73 command checks, 14 interrupted lifecycle boundaries,
-metadata comparisons for both generations, and 22 protected-input bindings.
-Controls cover explicit null-SACL refusal, locking, cancellation, foreign
-registrations, junctions, hard links and alternate streams. Native raw metadata
-and command observations are not a local replay of Windows filesystem behavior.
-Independent review also verifies all 25 retained generations: 1,050 manifest
-files, 175 supervised validator executions and 50 strict original/sidecar
-reports, with original frame bytes and retained source checked. The latest
-combined gate remains required; see the [acceptance map](BUILD-ID-ACCEPTANCE.md).
+Native Windows integration exercises headless and saved-analyst-refresh exports
+followed by the packaged installer. It checks interrupted lifecycle boundaries,
+retained generation validators, supported metadata, original bytes and source
+lookup. Controls cover explicit null-SACL refusal, locking, cancellation, foreign
+registrations, junctions, hard links and alternate streams. The
+[acceptance map](BUILD-ID-ACCEPTANCE.md) records the tested commits, native
+observations and downstream consumer results.
 
-The earlier DACL-fixture and second-handle lock failures are resolved in this
-native run. Their reproductions and corrections remain recorded in the
+The earlier DACL-fixture and second-handle lock failures and their corrections
+remain recorded in the
 [SACL fixture receipt](evidence/windows-build-id-sacl-fixture.json) and
 [lock audit](evidence/build-id-locking.json). Production admission still rejects
 unsupported security metadata and retains whole-file exclusion.
@@ -189,11 +181,8 @@ arguments and normal exit. Transferred DWARF still records its Windows source
 directory, so Linux GDB requires explicit source substitution. Empty/removed
 registrations and unmapped source paths are separate negative controls.
 
-The first hosted consumer failed because the new unmapped-source oracle searched
-only global symbols. Exact-artifact reproduction resolves the expected file-local
-function at the correct address. The corrected test and stale-name controls use
-both global and static lookup. Local replay and current hosted consumer job
-`128283282420` pass two runtime sessions and four controls; the compressed-GUI
-and unwind consumers also pass. This does not claim native Windows execution
-of the Linux ELF. The five-target gate and protected integration remain
-outstanding. See the [current native artifact and consumer receipt](evidence/windows-build-id-current-acceptance.json).
+The consumer checks both global and file-local symbols, including absence of
+stale names after refresh. Linux executes the transferred Linux ELF; native
+Windows installation does not imply native Windows execution of that ELF.
+See the [native artifact and consumer receipt](evidence/windows-build-id-current-acceptance.json)
+and the [acceptance map](BUILD-ID-ACCEPTANCE.md) for recorded outcomes and scope.

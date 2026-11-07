@@ -3,8 +3,9 @@
 Tracking: #109. **CONFIRMED locally:** production Linux installation is validated
 for shared objects and sectionless ET_EXEC on x86-64, AArch64, ARM32, MIPS32
 big-endian and MIPS32 little-endian. The receipt is
-[build-id-layouts.json](evidence/build-id-layouts.json). This does not complete
-Windows, LLDB/perf or hosted/protected acceptance.
+[build-id-layouts.json](evidence/build-id-layouts.json). The
+[acceptance map](BUILD-ID-ACCEPTANCE.md) separately records hosted target,
+Windows and LLDB/perf results and integration status.
 
 ## Shared-library automatic discovery
 
@@ -57,8 +58,9 @@ relocated images rather than assuming fixed addresses.
 
 ## Validation and diagnostics
 
-Ten fresh producer exports and all ten final installed artifacts pass their
-structural validators. The final package passes 35 layout runtime sessions,
+The [local checkpoint](evidence/build-id-layouts.json) includes ten fresh
+producer exports and ten installed artifacts with passing structural validation.
+Its tested package passes 35 layout runtime sessions,
 ten static compiler-discovery controls, and the existing command suite's 27
 checks/ten additional GDB sessions. Original and selected export bytes remain
 unchanged. Package/source hashes and a verified raw archive bind the evidence.
@@ -70,6 +72,7 @@ with an empty debug root and no Forge symbols. The oracle retains that independe
 baseline and requires the same exact warning in positive/removed sessions; it
 rejects other diagnostics. This is not a Forge DWARF validator warning.
 
-The workflow now builds independent fixture copies, performs fresh headless
-exports and invokes these tests on every target lane. Its hosted result remains
-**PRESENT, UNVERIFIED** until the updated required gate passes.
+The workflow builds independent fixture copies, performs fresh headless exports
+and invokes these tests on every target lane. The [acceptance map](BUILD-ID-ACCEPTANCE.md)
+records the current hosted results and any outstanding acceptance; local package
+checks alone do not establish the combined hosted gate.
