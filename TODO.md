@@ -46,6 +46,16 @@ Local release assembly accepts both names and rejects `libz-2.dll`; hosted
 Windows and the complete gate still need a passing rerun. See
 `docs/evidence/formatter-msys2-zlib-runtime.json`.
 
+**CONFIRMED prerequisite progress and inventory correction:** run `42388197297`
+at `1e914f9` passes both native builds, extension build and release assembly.
+The Windows zlib correction is validated in the actual checker and production
+packages. x86-64 and AArch64 then stop before formatter tests because the new
+fixture appears in the wrong position in the sorted source inventory. Moving
+its existing entry restores both local fixture-reproducibility checks (15
+byte-identical artifacts per target). The exact inventory guard is retained;
+see `docs/evidence/formatter-fixture-inventory.json`. The complete hosted gate
+and native Windows formatter acceptance remain pending.
+
 **Remaining:** finish the complete current-revision architecture profiles and
 native Windows production/consumer validation; review the hosted required gate,
 update final acceptance evidence and integrate through a protected PR. The new
