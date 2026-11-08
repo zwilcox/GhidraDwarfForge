@@ -2,6 +2,12 @@
 
 ## Storage maintenance — 2026-11-08
 
+- **CONFIRMED Windows follow-up:** run `42530193205` passed Windows headless,
+  cancellation, attachment and build-ID checks, then timed out navigating the
+  multi-file Script Manager output chooser. Record the requested/observed path,
+  filename, visibility and screenshot on failure; retain the existing timeout
+  and selection assertions. Root cause and later skipped checks remain open.
+
 - **CONFIRMED #117 diagnostic gap:** `42531765255` passed both primary lanes'
   comparison step and reached the packaged export marker, but the transcript
   assertion still failed. Coverage JSON hid the earlier error from the printed

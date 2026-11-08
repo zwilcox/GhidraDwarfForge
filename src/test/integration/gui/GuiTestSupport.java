@@ -137,11 +137,35 @@ final class GuiTestSupport {
                 return null;
             });
             clickButton(robot, dialog, "Select");
-            await("chosen directory", () -> {
-                JTextField path = (JTextField) find(dialog, component ->
-                    component instanceof JTextField && "Path".equals(component.getName()));
-                return path != null && selected.equals(Path.of(path.getText())) ? path : null;
-            });
+            try {
+                await("chosen directory", () -> {
+                    JTextField path = (JTextField) find(dialog, component ->
+                        component instanceof JTextField && "Path".equals(component.getName()));
+                    return path != null && selected.equals(Path.of(path.getText())) ? path : null;
+                });
+            }
+            catch (Exception | Error failure) {
+                // Preserve the real failure and report the observed controls.
+                // Do not retry selection or turn a timeout into acceptance.
+                try {
+                    String observed = onSwing(() -> {
+                        JTextField path = (JTextField) find(dialog, component ->
+                            component instanceof JTextField && "Path".equals(component.getName()));
+                        JTextField filename = (JTextField) find(dialog, component ->
+                            component instanceof JTextField && "filenameTextField".equals(component.getName()));
+                        return "requested=" + selected + "\ndialogShowing=" + dialog.isShowing() +
+                            "\npath=" + (path == null ? "<missing>" : path.getText()) +
+                            "\nfilename=" + (filename == null ? "<missing>" : filename.getText()) + "\n";
+                    });
+                    System.err.println("output-chooser-navigation-failure:\n" + observed);
+                    Files.writeString(results.resolve("chooser-navigation-failure.txt"), observed);
+                    if (onSwing(dialog::isShowing)) {
+                        screenshot(robot, dialog, results.resolve("chooser-navigation-failure.png"));
+                    }
+                }
+                catch (Exception | Error diagnosticFailure) { failure.addSuppressed(diagnosticFailure); }
+                throw failure;
+            }
             awaitFileChooser(dialog);
         }
         screenshot(robot, dialog, results.resolve("chooser.png"));

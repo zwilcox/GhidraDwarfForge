@@ -2,6 +2,17 @@
 
 ## Current call-site checkpoint — 2026-11-08
 
+**CONFIRMED Windows GUI failure:** job `128886120827` in run `42530193205`
+passed focused checks, file-lock rollback, JVM cancellation, producer ABI,
+headless export, attachment recovery and build-ID recovery. It then failed
+`GuiTestSupport.operateChooser` while waiting for the chosen directory during
+the multi-file Script Manager journey. The preceding invalid `--source-lines`
+exception is an expected negative control. Later Windows steps were skipped.
+Ghidra 12.0.3 source confirms that a typed absolute directory first navigates,
+then a second Select accepts; the timed-out chooser's actual fields are unknown.
+Add failure-only field/screenshot diagnostics without retries or altered timeout.
+Whitespace review passes; compilation and runtime of this diagnostic are pending.
+
 **CONFIRMED diagnostic follow-up:** run `42531765255` at `200ad8d` passed
 native builds, extension regressions and reproducible release assembly. Both
 primary lanes again passed their compiler/Forge comparisons. Packaged runs
