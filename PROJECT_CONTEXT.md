@@ -15,16 +15,17 @@ all 16 jobs in run `42394809285` passed. Final raw artifact review covers all
 five targets and native Windows production/transported consumers; the merge
 retains the tested tree. The formatter checkpoint notes below are historical.
 
-**CONFIRMED local #115 implementation, full acceptance pending:** one CU and canonical type graph with multiple source-file
-entries, optional bounded-size grouping, deterministic generation manifest and
-complete source installation before sidecar publication. See
-[design and acceptance](docs/MULTIFILE-SOURCE.md). Partitioning, line lookup, strict source manifests,
-immutable source installation and complete-bundle reads have passing local
-component checks. The underlying script now exports multiple source files; a
-local x86-64 headless fixture passes native export, modern structural validators,
-GDB cross-file stepping, moved-source lookup and deterministic reruns. Consumer
-retention and wrapper/GUI controls now have the scoped local evidence below;
-broader fixtures, benchmarks and hosted validation remain pending. No full #115 acceptance item is closed yet.
+**CONFIRMED local #115 implementation and audited evidence; hosted acceptance
+pending:** optional deterministic source partitioning preserves one CU/canonical
+type graph and the single-file default. The current
+[seven-item acceptance audit](docs/MULTIFILE-ACCEPTANCE.md) identifies the actual
+code, local proof and remaining hosted gates. Fourteen archives, 27 semantic/target
+case records, 31 retained result records and the latest runtime's three-class
+attachment delta have been checked. Earlier checkpoint notes below retain their
+historical scope and then-pending lists; they are not the current remaining-work
+list. Final-head Linux/Windows/architecture jobs, privileged attachment evidence,
+corrected Windows performance controls, raw artifact review and protected
+integration remain required. #115 is not complete; #117/#120 have not started.
 
 **CONFIRMED #115 consumer checkpoint:** the actual multi-file GDB companion
 passes eight local original/moved-tree and source-rule ownership cases, including

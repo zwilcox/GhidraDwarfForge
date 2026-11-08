@@ -1,5 +1,9 @@
 # Optional multi-file synthetic source — issue #115
 
+The current requirement-by-requirement status is in the
+[acceptance audit](MULTIFILE-ACCEPTANCE.md). Checkpoint sections below retain the
+status at the time each test was completed; their then-pending lists are historical.
+
 ## Scope and decisions
 
 **CONFIRMED requirement:** preserve the ordinary single-file default. Optional
@@ -67,14 +71,15 @@ source file, including loader, relocation, attachment and build-ID installation;
 none may silently omit referenced parts. Portable output-tree lookup must be
 tested with the original export directory unavailable.
 
-**PRESENT, partial production integration:** the underlying
+**CONFIRMED local production integration; hosted acceptance pending:** the underlying
 `GhidraDwarfForge.java` script accepts `--source-lines=<positive integer>`.
 It partitions the fully composed annotated source, installs its immutable parts,
 uses the same file layout for native DIE/line output, and publishes the synthetic
 index through the existing recoverable publisher. The default remains one file.
 Both wrappers and the optional Script Manager launcher expose the line target;
-their scoped local acceptance is recorded below. Broader attachment/installation
-integration tests are still pending. The source-relocation
+their scoped local acceptance is recorded below. Complete attachment/build-ID
+local integration evidence is recorded below; the production-host/Windows and
+final integration gates are tracked in the [acceptance audit](MULTIFILE-ACCEPTANCE.md). The source-relocation
 parser now preserves all file entries; its ELF plan exposes their order for
 comparison with the bundle manifest. Derived-artifact validation requires and
 rechecks the complete retained inventory, so copying the index alone cannot
@@ -422,10 +427,13 @@ by qualified display name; manifest leaf names are both `inspect`. The corrected
 oracle binds each method to its independently recorded ELF address, preserving
 the distinction instead of relying on a name match. Both failures are retained.
 
-All six cases pass the complete decoded-DWARF comparison, thirteen decoded-input
-negative controls, GNU/LLVM/pinned validation, repeated output and saved-program/
-input preservation. The workflow includes these cases alongside the lexical
-checks; hosted execution remains **PRESENT, UNVERIFIED**. Evidence is retained in
+All six cases pass the complete decoded-DWARF comparison, GNU/LLVM/pinned
+validation, repeated output and saved-program/input preservation. The three x86-64
+cases reject thirteen decoded-input mutations each; the three AArch64 cases reject
+twelve each because these contiguous fixtures have no `DW_AT_ranges` attribute
+to mutate. Range mutations are covered by the separate lexical/discontiguous
+fixtures, not silently counted in the AArch64 type fixture. The workflow includes
+these cases alongside the lexical checks; hosted execution remains **PRESENT, UNVERIFIED**. Evidence is retained in
 `issue115-multifile/types-final-*` and the target/type checkpoint archive. These
 results do not establish the remaining benchmark, Windows acceptance or all
 publication/transport combinations.
