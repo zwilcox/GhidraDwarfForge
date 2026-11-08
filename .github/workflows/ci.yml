@@ -111,6 +111,8 @@ jobs:
           nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
             grep -Eq '[[:space:]]T[[:space:]]+dwarf_add_AT_comp_dir_a$'
           nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
+            grep -Eq '[[:space:]]T[[:space:]]+dwarf_add_AT_block_a$'
+          nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
             grep -Eq '[[:space:]]T[[:space:]]+dwarf_pro_set_default_string_form$'
           nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
             grep -Eq '[[:space:]]T[[:space:]]+dwarf_transform_to_disk_form_a$'
@@ -426,6 +428,7 @@ jobs:
           test -n "$consumer"
           nm -g "$producer" | grep -Eq '[[:space:]]T[[:space:]]+dwarf_producer_init$'
           nm -g "$producer" | grep -Eq '[[:space:]]T[[:space:]]+dwarf_add_AT_comp_dir_a$'
+          nm -g "$producer" | grep -Eq '[[:space:]]T[[:space:]]+dwarf_add_AT_block_a$'
           nm -g "$producer" |
             grep -Eq '[[:space:]]T[[:space:]]+dwarf_pro_set_default_string_form$'
           nm -g "$producer" | grep -Eq '[[:space:]]T[[:space:]]+dwarf_transform_to_disk_form_a$'
@@ -1005,6 +1008,20 @@ jobs:
                     -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
                     -PtargetProfile=arm32be8 -PnativeIterations=32
           fi
+
+      - name: Isolated call-site JNA and serialized-form checks
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          results="$PWD/build/test-results/call-site-jna/$TARGET"
+          src/test/integration/run-isolated-native-smoke.sh "$results" \
+            ./gradlew --no-daemon callSiteProducerSmoke \
+              -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+              -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+              -PtargetProfile="$TARGET" -PcallSiteOutput="$results/sections"
+          python3 src/test/native/validate-call-site-jna.py --profile "$TARGET" \
+            --sections "$results/sections" --output "$results/validation"
 
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
@@ -3438,6 +3455,17 @@ jobs:
           }
           'isolated-native-producer=PASS' |
             Add-Content -Path "$resultDirectory\native-producer-status.txt" -Encoding utf8
+
+          $callSiteResults = Join-Path $PWD 'build/test-results/windows-host/call-site-jna'
+          & .\gradlew.bat --no-daemon callSiteProducerSmoke `
+            "-PlibdwarfPath=$($consumer.FullName)" `
+            "-PlibdwarfpPath=$($producer.FullName)" `
+            -PtargetProfile=x86_64 "-PcallSiteOutput=$callSiteResults/sections" 2>&1 |
+            Tee-Object -FilePath "$resultDirectory\call-site-jna.log"
+          if ($LASTEXITCODE -ne 0) { throw 'Isolated Windows call-site JNA probe failed' }
+          python src/test/native/validate-call-site-jna.py --profile x86_64 `
+            --sections "$callSiteResults/sections" --output "$callSiteResults/validation"
+          if ($LASTEXITCODE -ne 0) { throw 'Windows call-site serialized-form validation failed' }
 
           foreach ($wideProfile in @('mips64be', 'mips64le', 'arm32be8')) {
               & .\gradlew.bat nativeProducerSmoke `

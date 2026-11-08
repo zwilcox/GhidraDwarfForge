@@ -186,3 +186,33 @@ The old timestamp assertion incorrectly matched zipinfo's archive-path header
 when that path contained the repository name; it now inspects actual ZIP entry
 timestamps. No timestamp requirement was relaxed. JNA, hosted integration and
 all Ghidra/GDB acceptance work remain incomplete.
+
+## Standalone JNA checkpoint — 2026-11-08
+
+**CONFIRMED local:** the fixed-width block API is mapped in `LibDwarfProducer`
+and exercised by `CallSiteProducerSmoke` outside Ghidra. On Linux, five target
+profiles (x86-64, AArch64, ARM32, MIPS32 big/little endian) each pass eight native
+error/cleanup lifetimes and eight successful lifetimes with byte-identical
+sections. The input block is changed after the native call; independent LLVM
+decoding still finds the original nested entry-value expression. GNU readelf
+checks forms, address width and PCs; LLVM verifies the ELF envelope and actual
+origin/formal-parameter reference targets. See the
+[receipt](evidence/call-site-jna.json) for source/native hashes and runtime bounds.
+
+The real `callSiteProducerSmoke` Gradle task and extension build pass locally.
+The compiled binding is Java 21 bytecode, tested here on OpenJDK 25.0.4.1 with
+Ghidra's JNA 5.14.0. The new CI steps run the isolated task and validators in all
+five Linux target lanes and on Windows x86-64; **PRESENT, UNVERIFIED** until those
+hosted jobs run. Production extraction/emission still does not use the new API.
+
+The extension ZIP check exposed inclusion of the newly added local workspace.
+`buildExtension` now excludes `.forge-work/**`; the affected local ZIP was replaced
+and the rebuilt ZIP contains no workspace entries. The Gradle smoke's temporary
+Java/JNA paths honor the storage launcher. Scratch is approximately 43 MiB and
+shared cache approximately 197 MiB after the Gradle download/build. The deferred
+legacy archives were not modified or removed.
+
+Next: compiler reference fixtures and Ghidra control-flow/argument evidence,
+followed by the exporter pass and debugger acceptance. These isolated ABI and
+form checks do not establish runtime tail-call reconstruction or recovered
+entry values; none of the original six acceptance items is closed by them alone.

@@ -65,6 +65,27 @@ tasks.register("nativeProducerSmoke", JavaExec) {
     }
 }
 
+tasks.register("callSiteProducerSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises call-site producer bindings and block ownership in an isolated JVM"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.CallSiteProducerSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    if (System.env.TMPDIR) {
+        systemProperty "java.io.tmpdir", System.env.TMPDIR
+        systemProperty "jna.tmpdir", System.env.TMPDIR
+    }
+    doFirst {
+        if (!project.hasProperty("libdwarfPath") || !project.hasProperty("libdwarfpPath") ||
+                !project.hasProperty("callSiteOutput")) {
+            throw new GradleException("Set libdwarfPath, libdwarfpPath and an empty callSiteOutput")
+        }
+        args project.property("libdwarfPath"), project.property("libdwarfpPath"),
+            project.findProperty("targetProfile") ?: "x86_64", project.property("callSiteOutput")
+    }
+}
+
 tasks.register("exportPhaseSmoke", JavaExec) {
     group = "verification"
     description = "Checks real JFR phase observations and failure/cancellation propagation"
@@ -1789,6 +1810,7 @@ buildExtension {
         }
     }
     exclude ".github/**"
+    exclude ".forge-work/**"
     exclude ".ghidra-test/**"
     exclude ".gitignore"
     exclude "AGENTS.md"

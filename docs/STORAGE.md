@@ -159,3 +159,10 @@ files and duplicate/unauthorized exception records. The real guard is READY at
 6.69 GiB physical evidence and 4.39 GiB charged evidence. The standalone stock
 producer admission probe now compiles/runs through this guard; no additional
 legacy artifacts were deleted.
+
+The extension build explicitly excludes `.forge-work/**`. An initial local build
+after adding the workspace exposed that Ghidra's default extension task includes
+unrecognized root directories. The local ZIP was replaced after adding this
+exclusion, and the rebuilt archive was inspected to confirm zero workspace
+entries. Cache, retained evidence and local configuration must never ship in an
+extension archive.

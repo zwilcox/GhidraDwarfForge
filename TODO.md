@@ -5,7 +5,7 @@
 - **CONFIRMED:** the user reactivated feature goal #115 → #117 → #120 after
   storage maintenance. #115 is merged as `71352a3` with its final full/performance
   gates passing. #117 has a [complete acceptance plan](docs/CALL-SITE-PLAN.md),
-  but no implementation or runtime claim yet; #120 follows it.
+  but no production call-site emission or runtime claim yet; #120 follows it.
 - **CONFIRMED:** local storage policy and monitored launcher are implemented;
   see [STORAGE.md](docs/STORAGE.md) and AGENTS.md section 6.2. Tiny isolated tests
   cover launch refusal, live growth, process-group stopping, cleanup and accounting.
@@ -28,9 +28,11 @@
   all five call-site attribute modes fail with `DW_DLE_INPUT_ATTR_BAD (143)`.
   **CONFIRMED local candidate:** patch 0002 passes the Linux ABI probe and 15
   admission/form cases with readelf/LLVM checks. Production build/packaging pins
-  are wired; local packaging controls and workflow lint pass. Next validate the
-  standalone JNA path and hosted native jobs before exporter use. Windows runtime,
-  debugger behavior and full call-site acceptance remain incomplete.
+  are wired; local packaging controls and workflow lint pass. Standalone JNA and
+  independent serialized-form checks pass for five profiles, plus the Gradle smoke
+  and extension build. Next implement compiler references and Ghidra evidence
+  capture. Hosted native/JNA jobs, Windows runtime, Ghidra emission and debugger
+  behavior remain incomplete.
 
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC

@@ -35,7 +35,7 @@ do not reinterpret the older historical feature notes below.
 **CONFIRMED #117 dependency audit:** source files checked byte-for-byte against
 the pinned v2.3.2 archive show that the producer rejects call-PC, return-PC,
 origin, parameter-reference and call-value attributes through the existing APIs.
-The current downstream patch does not address those checks. A standalone public
+The original downstream patch 0001 does not address those checks. A standalone public
 API admission probe now compiles with warnings treated as errors and runs in
 six isolated processes: the existing-attribute control serializes successfully;
 all five call-site modes fail with `DW_DLE_INPUT_ATTR_BAD (143)`. This is
@@ -43,8 +43,12 @@ all five call-site modes fail with `DW_DLE_INPUT_ATTR_BAD (143)`. This is
 candidate patch 0002 now passes the Linux ABI probe and 15 API/form cases with
 readelf and LLVM verification, including nested entry-value blocks. Production
 workflow/package wiring now includes both patch pins; local release-package
-controls and workflow lint pass. Hosted Windows/JNA and emitted-artifact/debugger
-validation remain incomplete. See the call-site plan and committed native-form evidence. The working
+controls and workflow lint pass. Standalone JNA now passes eight successful and
+eight error/cleanup lifetimes for each of five target profiles, with independent
+form, reference, address-width and copied-buffer validation. The Gradle smoke and
+extension build pass; Java 21 bytecode is confirmed on the local Java 25 runtime.
+The rebuilt extension excludes `.forge-work`. Hosted Windows/Java 21 and
+Ghidra-emitted artifact/debugger validation remain incomplete. See the call-site plan and committed native-form evidence. The working
 branch incorporates `71352a3` through
 normal merge `6c0e949`; no new worktree was created. See the call-site plan for
 file hashes, expression limitations and the next native acceptance checkpoint.
