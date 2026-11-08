@@ -1080,6 +1080,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           set -euo pipefail
+          python3 -B src/test/integration/call-site-packaged-transcript-test.py
           extension_archives=(dist/*.zip)
           [[ ${#extension_archives[@]} == 1 && -f "${extension_archives[0]}" ]]
           probe_report=forge-plan

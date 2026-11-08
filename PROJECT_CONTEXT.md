@@ -2,6 +2,17 @@
 
 ## Current call-site checkpoint — 2026-11-08
 
+**CONFIRMED packaged transcript diagnosis:** AArch64 job `128894411072` in
+run `42533192785` exposed ordinary skipped-thunk/import diagnostics as the
+rejected `ERROR` lines. Production's diagnostic consumer records each message
+and calls `printerr`, which Ghidra labels ERROR even for a completed partial
+export. The harness now requires exactly two schema-2 SUCCESS/PARTIAL reports,
+no terminal failure, no failed `cs_` decompilation, and each allowed printerr
+message in its own export's diagnostic list. Other errors/tracebacks still fail;
+report artifact paths/hashes must match the controller's actual outputs. Six
+pure parser tests (with multiple negative cases), actionlint and whitespace
+checks pass. Corrected packaged structural/runtime execution remains pending.
+
 **CONFIRMED Windows GUI failure:** job `128886120827` in run `42530193205`
 passed focused checks, file-lock rollback, JVM cancellation, producer ABI,
 headless export, attachment recovery and build-ID recovery. It then failed

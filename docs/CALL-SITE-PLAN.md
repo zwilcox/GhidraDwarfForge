@@ -968,3 +968,16 @@ checks did not run. Diagnostics now retain bounded context around the first
 four error matches per stream plus bounded tails. Isolated in-memory controls
 cover early errors followed by large output, stderr tracebacks, repeated-match
 size bounds and ordinary output. The error assertion remains unchanged.
+
+**CONFIRMED root cause:** AArch64 job `128894411072` in run `42533192785`
+shows the first rejected lines are normal skipped-thunk/import diagnostics.
+The production diagnostic consumer retains each message and uses `printerr`;
+Ghidra labels that output ERROR even for a successful partial export. The
+new blanket ERROR assertion was therefore not the production success contract.
+The corrected harness requires two schema-2 SUCCESS/PARTIAL reports with no
+terminal failure or failed fixture decompilation, and corroborates every
+permitted omission against its own report's diagnostic list. Unexpected errors,
+tracebacks, missing/malformed reports and unaccounted messages remain failures.
+Report artifact paths/hashes must also match actual controller outputs. Six
+pure parser tests include negative controls for each rejection; these and
+actionlint/whitespace checks pass. Packaged validators/runtime remain pending.

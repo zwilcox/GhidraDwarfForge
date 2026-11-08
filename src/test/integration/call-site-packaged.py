@@ -35,6 +35,34 @@ def failure_diagnostic(label, returncode, stdout, stderr):
     return "\n".join(sections)
 
 
+def headless_reports(transcript):
+    """Account for printerr omissions through each completed structured report."""
+    reports, pending = [], []
+    prefix = "INFO  GhidraDwarfForge.java> GhidraDwarfForge report: "
+    for line in transcript.splitlines():
+        assert "Traceback" not in line, "unexpected traceback"
+        if "ERROR " in line and not line.startswith(prefix):
+            diagnostic = re.fullmatch(
+                r"ERROR GhidraDwarfForge\.java> GhidraDwarfForge: (.*?) \(GhidraScript\)\s*", line)
+            assert diagnostic is not None, "unexpected headless error: " + line[:2000]
+            pending.append(diagnostic.group(1))
+        if line.startswith(prefix):
+            report, end = json.JSONDecoder().raw_decode(line[len(prefix):])
+            assert line[len(prefix) + end:].strip() == "(GhidraScript)", "unexpected report suffix"
+            assert report["schemaVersion"] == 2 and report["status"] in ("SUCCESS", "PARTIAL")
+            assert report["failure"] is None, "export reported a terminal failure"
+            assert isinstance(report["diagnostics"], list) and all(
+                isinstance(message, str) for message in report["diagnostics"])
+            assert not any(f["name"].startswith("cs_") for f in report["failedFunctions"]), \
+                "call-site fixture decompilation failed"
+            assert all(message in report["diagnostics"] for message in pending), \
+                "printerr diagnostic missing from its completed export report"
+            pending.clear()
+            reports.append(report)
+    assert len(reports) == 2 and not pending, "expected two completed exports and no unaccounted diagnostics"
+    return reports
+
+
 def installed_package(archive_path, module):
     """Require the installed files to match the supplied release ZIP byte-for-byte."""
     expected = {}
@@ -104,8 +132,14 @@ def main():
         # fatal and expose a bounded transcript in CI instead of only a label.
         diagnostic = failure_diagnostic(label, result.returncode, stdout, stderr)
         assert result.returncode == 0, diagnostic
-        assert "Traceback" not in stdout + stderr and "ERROR " not in stdout + stderr, diagnostic
-        if not headless:
+        if headless:
+            try:
+                export_reports = headless_reports(stdout + stderr)
+            except (AssertionError, KeyError, TypeError, ValueError) as error:
+                raise AssertionError(str(error) + "\n" + diagnostic) from error
+            (work / (label + "-reports.json")).write_text(json.dumps(export_reports, indent=4) + "\n")
+        else:
+            assert "Traceback" not in stdout + stderr and "ERROR " not in stdout + stderr, diagnostic
             assert not stderr, diagnostic
         return stdout + stderr
 
@@ -128,6 +162,15 @@ def main():
             assert digest(binary) == protected, "packaged exporter changed original input"
             capture["require_program_preserved"](project, saved, work / (variant + "-program-preservation.json"))
         result = json.loads((output / "export.json").read_text())
+        export_reports = json.loads((work / (variant + "-headless-reports.json")).read_text())
+        for export_report in export_reports:
+            artifacts = export_report["artifacts"]
+            assert artifacts["inputSha256"] == protected
+            assert artifacts["outputSha256"] == result["sidecarSha256"]
+            assert artifacts["sourceSha256"] == result["sourceSha256"]
+            assert Path(artifacts["inputPath"]).resolve() == binary
+            assert Path(artifacts["outputPath"]).resolve() == (output / "input.dbg").resolve()
+            assert Path(artifacts["sourcePath"]).resolve() == (output / "input.dbg.c").resolve()
         assert result["status"] == "PASS_PACKAGED_CALL_SITE_EXPORT"
         assert result["readOnlyProject"] is True
         assert Path(result["classOrigin"]).resolve() == (module / "lib/GhidraDwarfForge.jar").resolve()

@@ -2,6 +2,13 @@
 
 ## Storage maintenance — 2026-11-08
 
+- **CONFIRMED #117 packaged diagnosis:** AArch64 job `128894411072` rejected
+  normal omission messages because Ghidra logs `printerr` as ERROR. Require
+  two completed structured reports and account for each omission against its
+  own report; reject other errors, failed fixture decompilations and terminal
+  reports, and bind report paths/hashes to actual outputs. Six pure parser
+  tests and workflow lint pass. Re-run packaged validators and GDB acceptance.
+
 - **CONFIRMED Windows follow-up:** run `42530193205` passed Windows headless,
   cancellation, attachment and build-ID checks, then timed out navigating the
   multi-file Script Manager output chooser. Record the requested/observed path,
