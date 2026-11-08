@@ -33,6 +33,7 @@ import ghidradwarfforge.GhidraCallParameters;
 import ghidradwarfforge.GhidraParameterAllocation;
 import ghidradwarfforge.GhidraTypeGraph;
 import ghidradwarfforge.locations.TargetRegisterMap;
+import ghidradwarfforge.locations.VariableStorageModel.*;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import ghidradwarfforge.unwind.UnwindFlow.Bank;
 import ghidradwarfforge.unwind.UnwindFlow.Cell;
@@ -125,6 +126,7 @@ public final class GhidraCallArgumentFlowSmoke {
                     registers, delta, TaskMonitor.DUMMY, ignored -> { }, java.util.Map.of(), java.util.Map.of(),
                     java.util.Map.of(), GhidraParameterAllocation.UNCHANGED, entries::add);
                 require(entries.size() == 1, "missing parameter entry snapshot");
+                if (shape.equals("add-wrap")) entryLocations(program, function, image, delta, registers);
                 var binding = GhidraCallParameters.bind(program, callee, types.functions().getFirst(), types.types(),
                     entries, state, registers, image, delta, TaskMonitor.DUMMY);
                 require(binding.arguments().size() == (known ? 1 : 0), "incorrect parameter binding: " + shape + " " + binding);
@@ -185,6 +187,70 @@ public final class GhidraCallArgumentFlowSmoke {
             finally { program.endTransaction(transaction, false); }
         }
         finally { program.release(owner); }
+    }
+
+    private static void entryLocations(ghidra.program.model.listing.Program program, Function function,
+            ElfImage image, long delta, TargetRegisterMap registers) throws Exception {
+        function.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_FORMAL_PARAMS, true,
+            SourceType.USER_DEFINED, new ParameterImpl("incoming", IntegerDataType.dataType, program));
+        var symbol = new FunctionSymbol(function.getName(), 0x1000, function.getBody().getNumAddresses());
+        var entries = new ArrayList<GhidraCallParameters.Entry>();
+        var types = GhidraTypeGraph.extract(program, List.of(symbol), registers, delta, TaskMonitor.DUMMY, ignored -> { },
+            java.util.Map.of(), java.util.Map.of(), java.util.Map.of(), GhidraParameterAllocation.UNCHANGED, entries::add);
+        var variable = types.variableStorage().variables().stream().filter(v -> v.kind() == VariableKind.PARAMETER).findFirst().orElseThrow();
+        require(variable.locations().stream().noneMatch(r -> r.storage().available()), "entry fixture already had a body lifetime");
+        var captures = GhidraCallSiteEvidence.capture(program, List.of(function), image, delta, TaskMonitor.DUMMY);
+        var refined = GhidraCallParameters.withEntryLocations(program, types, entries, captures, registers, image, delta, TaskMonitor.DUMMY);
+        var ranges = refined.variableStorage().variables().stream().filter(v -> v.kind() == VariableKind.PARAMETER).findFirst().orElseThrow().locations();
+        require(ranges.getFirst().start() == 0x1000 && ranges.getFirst().end() == 0x1001 &&
+            ranges.getFirst().storage() instanceof RegisterStorage r && r.bitSize() == 32, "entry location missing or too wide");
+        require(ranges.size() == 2 && !ranges.getLast().storage().available() &&
+            ranges.getLast().end() == variable.locations().getLast().end(), "invented a post-entry lifetime");
+        require(refined.functions().equals(types.functions()) && refined.types().equals(types.types()), "entry location changed signatures/types");
+        require(refined.equals(GhidraCallParameters.withEntryLocations(program, refined, entries, captures, registers, image, delta,
+            TaskMonitor.DUMMY)), "entry refinement overwrote an available location or was not idempotent");
+        for (var absent : List.of(List.<GhidraCallParameters.Entry>of(), List.of(entries.getFirst(), entries.getFirst()))) {
+            require(types.equals(GhidraCallParameters.withEntryLocations(program, types, absent, captures, registers, image, delta,
+                TaskMonitor.DUMMY)), "invented missing/ambiguous entry storage");
+        }
+        require(types.equals(GhidraCallParameters.withEntryLocations(program, types, entries, List.of(), registers, image, delta,
+            TaskMonitor.DUMMY)), "invented entry instruction evidence");
+        var first = program.getListing().getInstructionAt(function.getEntryPoint());
+        var patchAddress = first.getMaxAddress();
+        byte originalByte = program.getMemory().getByte(patchAddress);
+        try {
+            program.getListing().clearCodeUnits(function.getEntryPoint(), patchAddress, false);
+            program.getMemory().setByte(patchAddress, (byte) (originalByte ^ 1));
+            require(new DisassembleCommand(function.getEntryPoint(), function.getBody(), true)
+                .applyTo(program, TaskMonitor.DUMMY), "patched entry decode");
+            var patched = GhidraCallSiteEvidence.capture(program, List.of(function), image, delta, TaskMonitor.DUMMY);
+            require(types.equals(GhidraCallParameters.withEntryLocations(program, types, entries, patched, registers, image, delta,
+                TaskMonitor.DUMMY)), "patched entry instruction acquired an original location");
+        }
+        finally {
+            program.getListing().clearCodeUnits(function.getEntryPoint(), patchAddress, false);
+            program.getMemory().setByte(patchAddress, originalByte);
+            require(new DisassembleCommand(function.getEntryPoint(), function.getBody(), true)
+                .applyTo(program, TaskMonitor.DUMMY), "restored entry decode");
+        }
+        var old = entries.getFirst();
+        var indirect = new GhidraCallParameters.Entry(old.functionId(), old.function(), old.ordinal(), old.formal(), old.pieces(), true, true);
+        require(types.equals(GhidraCallParameters.withEntryLocations(program, types, List.of(indirect), captures, registers, image, delta,
+            TaskMonitor.DUMMY)), "used indirect carrier as direct formal entry location");
+        int[] polls = {0};
+        GhidraCallParameters.withEntryLocations(program, types, entries, captures, registers, image, delta,
+            new TaskMonitorAdapter(true) { @Override public void checkCancelled() { polls[0]++; } });
+        for (int index = 1; index <= polls[0]; index++) {
+            final int stop = index; int[] count = {0};
+            try {
+                GhidraCallParameters.withEntryLocations(program, types, entries, captures, registers, image, delta,
+                    new TaskMonitorAdapter(true) { @Override public void checkCancelled() throws CancelledException {
+                        if (++count[0] == stop) throw new CancelledException();
+                    } });
+                throw new AssertionError("missed entry-location cancellation");
+            }
+            catch (CancelledException expected) { checks++; }
+        }
     }
 
     private static void bindingControls(ghidra.program.model.listing.Program program, Function callee,

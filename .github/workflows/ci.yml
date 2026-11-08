@@ -1050,6 +1050,9 @@ jobs:
                   --reuse-project --report-name forge-plan --bind-parameters \
                   --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
                   --producer "$PWD/native-integration/libdwarfp.so.2.3.2" --dwarfdump "$DWARFDUMP"
+              python3 -B src/test/integration/call-site-recovered.py \
+                  "build/test-results/call-site-reference/$TARGET-$role" \
+                  "build/test-results/call-site-capture/$TARGET-$role"
           done
 
       - name: Install extension

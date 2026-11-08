@@ -159,8 +159,13 @@ public final class CallSiteEvidenceProbe {
                     var registers = TargetRegisterMap.forElf(image.machine() == 62 ? "x86_64" : "aarch64", image, () -> false);
                     var allocation = ghidradwarfforge.targets.TargetParameterAllocation.forProgram(program, image, TaskMonitor.DUMMY, ignored -> { });
                     var entries = new ArrayList<GhidraCallParameters.Entry>();
-                    var types = GhidraTypeGraph.extract(program, symbols, registers, delta, TaskMonitor.DUMMY, ignored -> { },
+                    var typeDiagnostics = new ArrayList<String>();
+                    var types = GhidraTypeGraph.extract(program, symbols, registers, delta, TaskMonitor.DUMMY, typeDiagnostics::add,
                         java.util.Map.of(), java.util.Map.of(), java.util.Map.of(), allocation, entries::add);
+                    result.put("typeDiagnostics", typeDiagnostics);
+                    result.put("parameterLocations", types.variableStorage().variables().stream()
+                        .filter(v -> v.kind() == ghidradwarfforge.locations.VariableStorageModel.VariableKind.PARAMETER)
+                        .map(Object::toString).toList());
                     var bindings = new ArrayList<Object>();
                     for (var function : captured) for (var instruction : function.instructions()) {
                         var destination = instruction.transfer().callee();
@@ -197,18 +202,21 @@ public final class CallSiteEvidenceProbe {
                             return site;
                         }).toList())).toList());
                     result.put("planDiagnostics", composed.diagnostics());
+                    result.put("refinedParameterLocations", composed.types().variableStorage().variables().stream()
+                        .filter(v -> v.kind() == ghidradwarfforge.locations.VariableStorageModel.VariableKind.PARAMETER)
+                        .map(Object::toString).toList());
                     if (args.length == 8) {
                         var source = ghidradwarfforge.GhidraSyntheticSource.decompile(program, symbols, delta, TaskMonitor.DUMMY);
                         Path sidecar = Path.of(args[3] + ".dbg");
                         Files.createDirectories(sidecar.getParent());
                         var exporter = new ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter(
                             ghidradwarfforge.elf.DebugSectionCompression.NONE, java.util.Map.of(), null, composed.plan());
-                        exporter.export(Path.of(args[2]), sidecar, Path.of(args[6]), Path.of(args[7]), symbols, source, types,
+                        exporter.export(Path.of(args[2]), sidecar, Path.of(args[6]), Path.of(args[7]), symbols, source, composed.types(),
                             sidecar.getFileName() + ".c", () -> false);
                         Files.write(Path.of(sidecar + ".c"), source.utf8());
                         byte[] first = Files.readAllBytes(sidecar);
                         var repeatedSource = ghidradwarfforge.GhidraSyntheticSource.decompile(program, symbols, delta, TaskMonitor.DUMMY);
-                        exporter.export(Path.of(args[2]), sidecar, Path.of(args[6]), Path.of(args[7]), symbols, repeatedSource, types,
+                        exporter.export(Path.of(args[2]), sidecar, Path.of(args[6]), Path.of(args[7]), symbols, repeatedSource, composed.types(),
                             sidecar.getFileName() + ".c", () -> false);
                         if (!java.util.Arrays.equals(first, Files.readAllBytes(sidecar)) ||
                                 !java.util.Arrays.equals(source.utf8(), repeatedSource.utf8())) {

@@ -263,7 +263,7 @@ public class GhidraDwarfForge extends GhidraScript {
         var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(
             target.name(), originalElf, monitor::isCancelled);
         var callEntries = new ArrayList<ghidradwarfforge.GhidraCallParameters.Entry>();
-        var typeModel = ExportPhase.measure("types-and-storage", () -> {
+        var extractedTypeModel = ExportPhase.measure("types-and-storage", () -> {
             var extractedTypes = GhidraTypeGraph.extract(currentProgram, functions, registers,
                 rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
                 decompilation.recoveredParameters(), decompilation.recoveredStatics(),
@@ -273,8 +273,9 @@ public class GhidraDwarfForge extends GhidraScript {
         });
         monitor.checkCancelled();
         var callSites = ExportPhase.measure("call-site-recovery", () ->
-            ghidradwarfforge.calls.GhidraCallSitePlan.recover(currentProgram, functions, typeModel,
+            ghidradwarfforge.calls.GhidraCallSitePlan.recover(currentProgram, functions, extractedTypeModel,
                 callEntries, registers, originalElf, rebaseDelta, monitor));
+        var typeModel = callSites.types();
         callSites.diagnostics().forEach((address, reasons) -> reasons.forEach(reason ->
             diagnostic.accept("Call-site metadata at ELF address 0x" + Long.toHexString(address) + ": " + reason)));
         var annotated = ExportPhase.measure("source-annotations", () -> {

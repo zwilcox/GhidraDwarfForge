@@ -9,13 +9,18 @@ consumer failure found a conditional-expression join past the final operation;
 an explicit `DW_OP_nop` join fixes it without weakening validation. Original
 executables and saved databases are preserved.
 
-**CONFIRMED incomplete runtime acceptance:** 64 debugger observations show 60
-matching frame structures and four x86 recursion mismatches (one missing virtual
-frame across both layouts/views). Positive entry values are also unavailable:
-formal parameter DIEs lack entry locations. These gaps, x86 caller coverage,
-packaged normal-script execution and hosted gates remain required. The normal
-script connection compiles but is **PRESENT, UNVERIFIED** end to end. #120 has
-not started. See [current plan and evidence](docs/CALL-SITE-PLAN.md).
+**CONFIRMED entry-location checkpoint:** verified formal register storage is now
+retained at the first instruction PC only, preserving existing later lifetime
+omissions. All 32 AArch64 GDB scenarios pass across ET_EXEC/PIE and original/rebased
+views, including positive entry values and unavailable ambiguous/indirect values.
+The same strict harness fails 20 of 32 x86 scenarios: driver argument coverage
+and discontiguous recursion lookup remain open. These are required acceptance
+failures, not permitted omissions. Eight sidecars still pass structural checks
+and deterministic reruns; 576 argument checks, 963 entry-contract checks and 240
+independent VM vectors pass. The extension builds and normal script compiles.
+Packaged normal-script invocation and hosted gates remain **PRESENT, UNVERIFIED**.
+#120 has not started. See [entry-location evidence](docs/evidence/call-site-entry-locations.json)
+and the [full plan](docs/CALL-SITE-PLAN.md).
 
 ## Storage recovery and bounded local workflow — 2026-11-08
 

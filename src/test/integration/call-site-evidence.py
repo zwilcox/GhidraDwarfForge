@@ -217,7 +217,7 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--ghidra", required=True, type=Path)
     parser.add_argument("--reuse-project", action="store_true", help="read an existing capture project; write fresh tail-state reports")
-    parser.add_argument("--report-name", default="tail-state", choices=("tail-state", "argument-state", "parameter-binding", "entry-contract", "composed-plan", "forge-plan"),
+    parser.add_argument("--report-name", default="tail-state", choices=("tail-state", "argument-state", "parameter-binding", "entry-contract", "composed-plan", "forge-plan", "entry-locations"),
                         help="fresh report directory when reusing a saved project")
     parser.add_argument("--bind-parameters", action="store_true", help="temporarily curate fixture integer signatures and validate actual entry binding")
     parser.add_argument("--consumer", type=Path, help="emit and validate native sidecars from recovered plans")

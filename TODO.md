@@ -93,6 +93,17 @@
   normal script connection compiles but packaged execution is **PRESENT,
   UNVERIFIED**. See [evidence](docs/evidence/call-site-composition.json).
 
+- **CONFIRMED #117 entry-location checkpoint:** actual formal register storage
+  now survives at the first instruction PC without inventing a later lifetime.
+  All 32 AArch64 runtime scenarios pass; x86 still has 20 failures in 32 cases
+  from driver argument coverage and recursive discontiguous origin lookup.
+  The runtime harness is wired as a strict gate for both targets, without
+  expected-failure exemptions. Eight artifacts pass structural/determinism
+  checks; 576 argument checks, 963 entry-contract checks, 240 VM vectors,
+  extension build, normal-script compilation and workflow lint pass. Fix the
+  x86 gaps, then complete packaged export and hosted acceptance before #120.
+  See [evidence](docs/evidence/call-site-entry-locations.json).
+
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 
 **CONFIRMED:** the user selected this order: complete optional multi-file

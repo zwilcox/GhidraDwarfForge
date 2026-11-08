@@ -23,7 +23,7 @@ import ghidradwarfforge.types.ProgramTypeModel;
 
 /** Composes original-instruction proofs into normalized writer input. */
 public final class GhidraCallSitePlan {
-    public record Result(CallSitePlan plan, Map<Long, List<String>> diagnostics) {
+    public record Result(CallSitePlan plan, ProgramTypeModel types, Map<Long, List<String>> diagnostics) {
         public Result {
             var copy = new LinkedHashMap<Long, List<String>>();
             diagnostics.forEach((address, reasons) -> copy.put(address, List.copyOf(reasons)));
@@ -75,7 +75,7 @@ public final class GhidraCallSitePlan {
             }
             else exclusive.add(function);
         }
-        if (exclusive.isEmpty()) return new Result(CallSitePlan.EMPTY, diagnostics);
+        if (exclusive.isEmpty()) return new Result(CallSitePlan.EMPTY, types, diagnostics);
         final GhidraTailStateProof.Result proof;
         try { proof = GhidraTailStateProof.verify(program, exclusive, image, delta, monitor); }
         catch (IllegalArgumentException unavailable) {
@@ -86,7 +86,7 @@ public final class GhidraCallSitePlan {
                 monitor.checkCancelled();
                 note(diagnostics, normalize(function.getEntryPoint(), delta), "call-site capture unavailable: " + unavailable.getMessage());
             }
-            return new Result(CallSitePlan.EMPTY, diagnostics);
+            return new Result(CallSitePlan.EMPTY, types, diagnostics);
         }
         var values = GhidraCallArgumentFlow.analyze(program, proof, image, delta, monitor);
         var tails = new LinkedHashMap<Address, GhidraTailStateProof.Tail>();
@@ -157,7 +157,9 @@ public final class GhidraCallSitePlan {
         var plan = new CallSitePlan(functions);
         plan.validate(symbols, types, image.is64Bit() ? 8 : 4);
         monitor.checkCancelled();
-        return new Result(plan, diagnostics);
+        var entryTypes = GhidraCallParameters.withEntryLocations(program, types, entries, proof.captures(),
+            registers, image, delta, monitor);
+        return new Result(plan, entryTypes, diagnostics);
     }
 
     private static long normalize(Address address, long delta) {

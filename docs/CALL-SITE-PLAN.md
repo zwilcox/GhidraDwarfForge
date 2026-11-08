@@ -663,3 +663,51 @@ Next resolve the x86 recursion lookup and evidence-backed formal entry locations
 then x86 driver coverage, complete debugger comparisons and the full protected
 acceptance matrix. No original acceptance item is closed by this checkpoint.
 See [composition evidence](evidence/call-site-composition.json).
+
+## Formal entry locations and strict runtime gate — 2026-11-08
+
+**CONFIRMED locally:** the composer now retains captured integer formal register
+storage at `[entry, entry + 1)` when the original entry instruction, canonical
+formal identity, physical register mapping and selected ABI agree. Existing
+available locations win; unavailable later locations stay unavailable. Missing,
+duplicate, patched-instruction and indirect-carrier evidence is rejected. This
+describes storage at the first PC, not a new call frame, actual argument value
+or post-instruction lifetime. Actual values still need separate call-site proofs.
+
+The entry-location tests pass within 576 argument/binding checks (25 decoder
+cases), 963 entry-contract checks (16 cases), and 240 independent VM evaluations.
+The patched-byte negative test clears and decodes the temporary instruction
+before capture, restoring it afterward; the first attempt failed in test setup
+because Ghidra refuses writes over existing instruction code units. The corrected
+suite, extension build, normal-script Java 21 compilation and workflow lint pass.
+
+Eight saved/rebased production-writer artifacts pass GNU, LLVM and pinned strict
+validation, repeat byte comparison and input/database preservation checks. All
+32 AArch64 runtime cases pass, including direct chains, recursion, forwarding,
+entry values, and unavailable ambiguous/indirect history. In the non-tail
+recursive case Forge can prove leaf input 43 from the recovered register chain;
+the compiler reference's unmatched-parameter error is not an uncertainty about
+that value. The strict Forge oracle requires 43 as corroborated by source and
+the runtime sink rather than copying that compiler-consumer limitation.
+
+**CONFIRMED remaining failures:** the same strict runtime oracle reports 20
+failures in 32 x86 cases. Scenarios 0, 1, 4, 5 and 7 fail in both layouts/views;
+ambiguous/indirect negative scenarios 2, 3 and 6 pass. Driver call/argument
+coverage remains incomplete, and scenario 4 also lacks a recursive virtual frame.
+`call-site-recovered.py` now runs after recovered export in CI for both targets;
+it exits unsuccessfully on these failures. Hosted execution has not started.
+
+A tested explicit `DW_AT_call_target` address-expression experiment did not fix
+x86 recursion and was reverted. GDB 15.1's
+[origin reader](https://raw.githubusercontent.com/RTEMS/sourceware-mirror-binutils-gdb/gdb-15.1-release/gdb/dwarf2/read.c)
+uses all discontiguous range starts as possible origin addresses, while its
+[target-expression evaluator](https://raw.githubusercontent.com/RTEMS/sourceware-mirror-binutils-gdb/gdb-15.1-release/gdb/dwarf2/loc.c)
+requires a caller frame even for a constant target expression; tail-chain search
+can supply no frame. The isolated serializer's positive tail-chain test rejected
+that workaround. Discontiguous ranges remain intact; no padding or guessed
+continuous body is introduced to satisfy the consumer.
+
+Continue x86 coverage and consumer lookup work, then packaged normal-script
+invocation, broader export regressions and hosted Linux/Windows gates. No issue
+completion or broader architecture claim follows from this checkpoint. See
+[entry-location evidence](evidence/call-site-entry-locations.json).
