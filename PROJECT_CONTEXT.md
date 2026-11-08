@@ -165,6 +165,19 @@ same-revision byte determinism, and rejects unrelated mutations. Production
 export code is unchanged. A corrected hosted Windows run is still required;
 this diagnosis does not complete #115. See [performance control evidence](docs/PERFORMANCE.md#historical-performance-baseline-directory-compatibility).
 
+**CONFIRMED #115 source-edge checkpoint:** real native instruction-limit failures
+pass for all-failed and mixed source, plus empty function-source bodies with
+known symbols retained, in single/multi layouts on x86-64, AArch64 PIE and both
+MIPS32 byte orders. Forty-eight successful exports, 24 GDB cases, deterministic
+complete inventories, raw file-only tables and semantic comparisons pass.
+Thirty-two empty-selection refusals preserve existing/fresh destinations; zero
+function selection remains unsupported rather than fabricating symbols. The
+unchanged default two-mode invocation additionally passes four exports/two GDB
+cases. Initial empty-selection/comparator/old-fixture failures are retained.
+The existing four-target annotation pipeline now runs these cases. Hosted
+execution remains pending; attachment/build-ID lifecycle combinations and the
+final exact-head gate remain. See [source-edge evidence](docs/evidence/multifile-source-edges.json).
+
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming
 available. Recheck that dependency when reaching #120; do not silently declare

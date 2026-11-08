@@ -29,7 +29,7 @@ def command(*args):
     return result.stdout
 
 
-def bundle(source, original, baseline):
+def bundle(source, original, baseline, *, allow_single_part=False):
     names = re.findall(r'^ \* Manifest: (forge-src-[0-9a-f]{64}\.json)$',
         source.read_text(), re.M)
     require(len(names) == 1, 'missing/ambiguous source manifest')
@@ -54,7 +54,8 @@ def bundle(source, original, baseline):
         require(len(lines) == part['last'] - part['first'] + 3, 'part line count changed')
         logical.extend(b''.join(lines[2:]))
         cursor = part['last'] + 1
-    require(len(manifest['parts']) > 1, 'fixture did not exercise multiple source files')
+    require(len(manifest['parts']) > 1 or (allow_single_part and len(manifest['parts']) == 1),
+        'fixture did not exercise multiple source files')
     require(digest(logical) == manifest['logicalSourceSha256'], 'logical source hash mismatch')
     require(logical == baseline.read_bytes(), 'partitioning changed the logical source')
     return manifest
@@ -121,7 +122,7 @@ def dies(text, source, manifest=None):
     return result
 
 
-def line_rows(text, source, manifest=None):
+def line_rows(text, source, manifest=None, *, allow_empty=False):
     files = re.findall(r'file_names\[\s*(\d+)\]:\s*\n\s*name: (".*")\s*\n\s*dir_index: (\d+)', text)
     expected = [source.name] + ([part['name'] for part in manifest['parts']] if manifest else [])
     require([(int(i), json.loads(name), int(directory)) for i, name, directory in files] ==
@@ -142,7 +143,7 @@ def line_rows(text, source, manifest=None):
         else:
             require(file == 0, 'baseline row refers outside source')
         rows.append([address, local, column, isa, discriminator, op, fields[7:]])
-    require(rows, 'missing line rows')
+    require(rows or allow_empty, 'missing line rows')
     return rows
 
 

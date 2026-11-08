@@ -725,3 +725,48 @@ all other DIE, abbreviation, string, section, identity and repeatability checks.
 SQLite and U-Boot diagnostic exports pass validators and actual GDB behavior.
 See [the comparison contract](PERFORMANCE.md#historical-performance-baseline-directory-compatibility)
 and [bound evidence](evidence/multifile-performance-control.json).
+
+## Native source failures and empty source bodies
+
+**CONFIRMED locally; hosted execution pending:** the extended
+`failed-source-context.py` harness passes x86-64 ET_EXEC, AArch64 PIE, and
+MIPS32 big-/little-endian ET_EXEC using Java 21 and installed production
+components. It invokes the actual native decompiler with a one-instruction
+limit to fail every selected function or only the first one. Later functions
+recover in the mixed case. A third case supplies no function source bodies
+while preserving independently known symbols and curated types.
+
+Each profile exports single/multi layouts twice: 48 successful exports and 24
+GDB sessions in total. Complete source inventories are byte-identical on repeat;
+the original targets, saved analyst programs and tested inputs are preserved.
+Decoded DIEs and line rows match after source-coordinate translation, while
+range/location and other semantic sections remain identical. GNU/LLVM/pinned
+validators pass; target identity, ABI flags and build IDs match each original.
+
+Failed functions retain names and addresses but acquire neither executable
+source rows nor invented signatures/locals. All-failed and empty-source tables
+contain file entries with only `DW_LNS_set_file 0`, no executable matrix rows,
+and zero line-visible instruction coverage. GDB loads actual comment/source
+files from a different working directory, sees the expected names/types/global
+values, and executes each original to exit zero. Mixed cases additionally use
+source `next`/`step` in successfully decompiled functions. Empty source needs one
+indivisible part plus the index; this case explicitly admits that degenerate
+layout without relaxing the comparator's defaults for ordinary fixtures.
+
+An empty **function selection** is distinct from an empty source body. The
+existing native exporter refuses it before production with “at least one
+function is required.” Thirty-two fresh/replacement rejection attempts preserve
+all final bytes and leave no staged output. This work does not add zero-symbol
+native exports. The default, no-partition invocation still passes its original
+two cohorts (four exports, two GDB sessions).
+
+Initial attempts are retained: the zero-selection policy was first encountered
+as an unexpected exception; the generic comparator initially rejected the
+single-part empty layout; older cached cross-target programs lacked the current
+curated names. Fresh compiler-reference fixtures, saved curation and the final
+full runs pass. The four-target annotation pipeline now invokes the multi-file
+cohorts and verifies all six case results. The
+[receipt](evidence/multifile-source-edges.json) binds the successful results,
+failures, tested source hashes and a read-back-verified archive of 1,388 files.
+These source-edge checks do not replace remaining attachment/build-ID lifecycle
+or hosted Windows acceptance.
