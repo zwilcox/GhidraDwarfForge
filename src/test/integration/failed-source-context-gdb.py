@@ -23,23 +23,34 @@ gdb.execute('continue' if remote else 'run')
 bias = int(gdb.parse_and_eval('&annotation_probe')) - labels['annotation_probe']['address']
 gdb.execute('symbol-file -o ' + hex(bias) + ' ' + quote(root / (mode + '.dbg')))
 assert not any(Path(obj.filename) == reference / 'reference' for obj in gdb.objfiles())
-for name in metadata['nativeFailures']:
+for name in (metadata['nativeFailures'] if mode != 'empty' else [function['name'] for function in metadata['functions']]):
     address = int(gdb.parse_and_eval('&' + name))
     assert address == bias + labels[name]['address']
     assert gdb.find_pc_line(address).line == 0, 'failed function acquired a source row'
     assert name in gdb.execute('info functions ' + name, to_string=True)
-source_rows = source.read_text().splitlines()
-context_line = next(i for i, text in enumerate(source_rows, 1) if 'DECOMPILATION_FAILURE_ENTRY_SAMPLE' in text)
+sources = [root / name for name in metadata['sourceFiles']]
+source_rows_by_file = {path: path.read_text().splitlines() for path in sources}
 gdb.execute('set listsize 4')
-assert 'DECOMPILATION_FAILURE_ENTRY_SAMPLE' in gdb.execute('list ' + str(source) + ':' + str(context_line), to_string=True)
-assert 'Decompilation unavailable' in gdb.execute('list ' + str(source) + ':8', to_string=True)
+context_line = None
+context_file = None
+if mode != 'empty':
+    context_file, context_line = next((path, i) for path, rows in source_rows_by_file.items()
+        for i, text in enumerate(rows, 1) if 'DECOMPILATION_FAILURE_ENTRY_SAMPLE' in text)
+    assert 'DECOMPILATION_FAILURE_ENTRY_SAMPLE' in gdb.execute('list ' + str(context_file) + ':' + str(context_line), to_string=True)
+    failure_file, failure_line = next((path, i) for path, rows in source_rows_by_file.items()
+        for i, text in enumerate(rows, 1) if 'Decompilation unavailable' in text)
+    assert 'Decompilation unavailable' in gdb.execute('list ' + str(failure_file) + ':' + str(failure_line), to_string=True)
+else:
+    assert len(metadata['functions']) == 3 and metadata['sourceFunctions'] == []
+    first_source = sources[1] if len(sources) > 1 else sources[0]
+    assert source_rows_by_file[first_source][0] in gdb.execute('list ' + str(first_source) + ':1', to_string=True)
 assert int(gdb.parse_and_eval('ANNOTATION_COLLISION')) == 101
 assert 'member' in gdb.execute('ptype struct ANNOTATION_TYPE', to_string=True)
 steps = []
 exits = []
 gdb.events.exited.connect(lambda event: exits.append(getattr(event, 'exit_code', None)))
-gdb.Breakpoint('*annotation_failure', temporary=True)
-if mode == 'all':
+gdb.Breakpoint('*' + hex(bias + labels['annotation_failure']['address']), temporary=True)
+if mode != 'mixed':
     # A deliberately signature-free function can be exposed through GDB's
     # minimal symbols. The retained global gives us the CU's actual symtab.
     symbol = gdb.lookup_global_symbol('ANNOTATION_COLLISION') or gdb.lookup_static_symbol('ANNOTATION_COLLISION')
@@ -55,8 +66,8 @@ else:
         gdb.execute(command)
         row = gdb.find_pc_line(int(gdb.parse_and_eval('$pc')))
         if row.line:
-            assert Path(row.symtab.fullname()) == source
-            assert not source_rows[row.line - 1].startswith('/* Ghidra instruction context')
+            assert Path(row.symtab.fullname()) in source_rows_by_file
+            assert not source_rows_by_file[Path(row.symtab.fullname())][row.line - 1].startswith('/* Ghidra instruction context')
         steps.append({'command': command, 'line': row.line})
 if int(gdb.parse_and_eval('$pc')) != bias + labels['annotation_failure']['address']:
     gdb.execute('continue')
@@ -64,5 +75,6 @@ assert int(gdb.parse_and_eval('$pc')) == bias + labels['annotation_failure']['ad
 gdb.execute('continue')
 assert exits == [0], exits
 (root / (mode + '-gdb.json')).write_text(json.dumps({'status': 'PASS', 'mode': mode, 'bias': bias,
-    'contextLine': context_line, 'failedFunctions': metadata['nativeFailures'], 'steps': steps, 'exit': 0}, indent=4) + '\n')
+    'contextLine': context_line, 'contextFile': str(context_file) if context_file else None,
+    'sourceFiles': [str(path) for path in sources], 'failedFunctions': metadata['nativeFailures'], 'steps': steps, 'exit': 0}, indent=4) + '\n')
 print('failed-source-context-gdb=PASS')

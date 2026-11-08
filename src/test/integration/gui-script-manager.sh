@@ -199,6 +199,10 @@ if [[ ${GHIDRA_GUI_COMPRESSION:-0} != 1 && ${GHIDRA_GUI_GDB_LOADER:-0} != 1 ]]; 
         validate_pair "$context_case" "$work/select/readonly/fixture" "$context_case/output/fixture.dbg" context
     done
     python3 "$repository/src/test/integration/gui-context-evidence.py" "$work/select/source-context"
+    for mode in split repeat default; do
+        source_case="$work/select/source-files/$mode"
+        validate_pair "$source_case" "$work/select/readonly/fixture" "$source_case/output/fixture.dbg" source-files
+    done
 fi
 readelf -SW "$work/select/chosen/fixture.dbg" > "$work/export-sections.txt"
 if [[ ${GHIDRA_GUI_COMPRESSION:-0} == 1 ]]; then

@@ -33,7 +33,10 @@ def main():
     parser.add_argument('--powershell', default='pwsh')
     parser.add_argument('--readelf', default='readelf')
     parser.add_argument('--llvm', default='llvm-dwarfdump')
+    parser.add_argument('--source-lines', type=int, help='combine native Windows companions with multi-file source')
     args = parser.parse_args()
+    if args.source_lines is not None and not 1 <= args.source_lines <= 2147483647:
+        parser.error('--source-lines must be in 1..2147483647')
     assert platform.system() == 'Windows', 'this harness proves native Windows production'
     root = args.output.resolve()
     root.mkdir(parents=True, exist_ok=False)
@@ -46,7 +49,7 @@ def main():
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     wrapper = module / 'support/ghidra-dwarf-forge-headless.ps1'
     headless = ghidra / 'support/analyzeHeadless.bat'
-    protected = {str(path): digest(path) for path in [wrapper, module / 'lib/GhidraDwarfForge.jar',
+    protected = {str(path): digest(path) for path in [Path(__file__), wrapper, module / 'lib/GhidraDwarfForge.jar',
         module / 'ghidra_scripts/GhidraDwarfForge.java', scripts / 'ApplyFormatterFixture.java',
         scripts / 'CancelDuringFormatters.java']}
     outputs = []
@@ -75,15 +78,31 @@ def main():
         common = [args.powershell, '-NoLogo', '-NoProfile', '-File', wrapper, '-GhidraDirectory', ghidra,
             '-ProjectDirectory', project, '-ProjectName', 'Formatters', '-Program', 'original',
             '-OriginalElf', original, '-Output', sidecar, '-CompressDebugSections', compression]
+        if args.source_lines is not None:
+            common += ['-SourceLines', str(args.source_lines)]
         selection_hash = digest(selection)
         pair = [sidecar, source]
         artifacts = [*pair, companion, Path(str(sidecar) + '.gdb.py'), Path(str(sidecar) + '.unwind.json')]
+        dependencies = []
 
         def export(label, enabled):
             command = common + (['-Formatters', selection, '-GdbLoader', '-SynthesizeUnwind', 'strict'] if enabled else [])
             text = run(command, work / (label + '.log'))
             assert 'GhidraDwarfForge symbol export PASS' in text and 'verified packaged libraries' in text
             assert digest(selection) == selection_hash and digest(original) == record['sha256']['original']
+            if args.source_lines is not None:
+                name, = [line.removeprefix(' * Manifest: ') for line in source.read_text(encoding='utf-8').splitlines()
+                    if line.startswith(' * Manifest: ')]
+                manifest_path = source.parent / name
+                manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+                assert digest(manifest_path) == name.removeprefix('forge-src-').removesuffix('.json')
+                assert manifest['inputSha256'] == record['sha256']['original'] and len(manifest['parts']) > 1
+                current = [manifest_path, *[source.parent / part['name'] for part in manifest['parts']]]
+                for path, part in zip(current[1:], manifest['parts']):
+                    assert digest(path) == part['sha256'] and path.stat().st_size == part['bytes']
+                if not dependencies:
+                    dependencies.extend(current); pair.extend(current); artifacts.extend(current)
+                assert current == dependencies
             return [digest(path) for path in (artifacts if enabled else pair)]
 
         baseline = export('default-before', False)
@@ -94,7 +113,7 @@ def main():
         assert export('restored', True) == enabled and enabled[1] == baseline[1]
         text = run([headless, project, 'Formatters', '-process', 'original', '-readOnly', '-noanalysis',
             '-scriptPath', scripts, '-postScript', 'CancelDuringFormatters.java', original, sidecar,
-            selection, compression, 'all'], work / 'cancel.log')
+            selection, compression, 'all', *([] if args.source_lines is None else [str(args.source_lines)])], work / 'cancel.log')
         assert 'formatter-cancellation-recovery=PASS' in text
         invalid = work / 'invalid-selection.json'
         invalid.write_text('{"schema":1,"types":[{"key":"missing","mode":"flags"}]}', encoding='utf-8')
@@ -108,6 +127,7 @@ def main():
         assert digest(original) == record['sha256']['original'] and digest(reference) == record['sha256']['compiler-reference']
         assert not list(work.glob('.forge-*')) and not list(work.glob('.*.staged'))
         outputs.append({'role': role, 'compression': compression, 'sidecar': sidecar.name, 'companion': companion.name,
+            'sourceLines': args.source_lines,
             'sha256': {path.name: digest(path) for path in [original, reference, selection, *artifacts]},
             'defaultSha256': baseline})
     assert protected == {path: digest(Path(path)) for path in protected}

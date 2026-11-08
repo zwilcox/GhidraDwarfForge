@@ -25,12 +25,26 @@ public final class AttachmentCuratedRefreshProbe {
             path(tools, "strict"), path(tools, "configuration"));
         try (var nativeHost = productionHost ? LinuxAttachmentHost.open(request, () -> false) : null) {
             AttachmentOperation.Host host = nativeHost == null ? new AttachmentElfTransactionProbe.Host() : nativeHost;
-            var result = AttachmentOperation.execute(request, host, validator, () -> false);
-            if (result.transaction().outcome() != AttachmentReceipt.Phase.COMMITTED) {
-                throw new AssertionError(result.transaction());
+            Path missing = selected.has("missingDependency") ? path(selected, "missingDependency") : null;
+            Path hidden = missing == null ? null : missing.resolveSibling(missing.getFileName() + ".test-hidden");
+            if (missing != null && (!SourceBundleFiles.open(request.source(), () -> false).orElseThrow().files().contains(missing) ||
+                    missing.equals(request.source()) || Files.exists(hidden))) {
+                throw new IllegalArgumentException("fault must select one existing bundle dependency and a fresh hidden name");
             }
-            System.out.println("attachment-curated-refresh=COMMITTED mode=" + (refresh == null ? "initial" : "refresh") +
-                " host=" + (productionHost ? "production-linux" : "test-only"));
+            try {
+                var result = AttachmentOperation.execute(request, host, validator, () -> false, boundary -> {
+                    if (missing != null && boundary.name().equals(selected.get("faultBoundary").getAsString())) {
+                        Files.move(missing, hidden);
+                    }
+                });
+                var expected = missing == null ? AttachmentReceipt.Phase.COMMITTED : AttachmentReceipt.Phase.ROLLED_BACK;
+                if (result.transaction().outcome() != expected) throw new AssertionError(result.transaction());
+                System.out.println("attachment-curated-refresh=" + expected + " mode=" + (refresh == null ? "initial" : "refresh") +
+                    " host=" + (productionHost ? "production-linux" : "test-only"));
+            }
+            finally {
+                if (hidden != null && Files.exists(hidden)) Files.move(hidden, missing);
+            }
         }
     }
 

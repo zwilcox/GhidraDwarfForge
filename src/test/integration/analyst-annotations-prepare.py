@@ -23,6 +23,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('case', type=Path, help='successful compiler-reference case directory')
+    parser.add_argument('--java', type=Path, help='explicit runtime with private home/cache')
     args = parser.parse_args()
     ghidra, case = args.ghidra.resolve(strict=True), args.case.resolve(strict=True)
     reference = json.loads((case / 'result.json').read_text())
@@ -38,10 +39,22 @@ def main():
     shutil.copy2(source, scripts / source.name)
     protected = {str(path): digest(path) for path in (source, Path(__file__), case / 'reference',
         case / 'stripped', case / 'labels.json', case / 'compiler-storage.json')}
+    headless = [ghidra / 'support/analyzeHeadless']
+    if args.java:
+        java = args.java.resolve(strict=True)
+        vmargs = subprocess.check_output([java, '-cp', ghidra / 'support/LaunchSupport.jar',
+            'LaunchSupport', ghidra, '-vmargs'], text=True).splitlines()
+        for name in ('java-home', 'java-tmp'):
+            (root / name).mkdir()
+        headless = [java, *vmargs, '-Duser.home=' + str(root / 'java-home'),
+            '-Djava.io.tmpdir=' + str(root / 'java-tmp'), '-Xmx2G', '-XX:ParallelGCThreads=2',
+            '-XX:CICompilerCount=2', '-Djava.awt.headless=true', '-cp',
+            ghidra / 'Ghidra/Framework/Utility/lib/Utility.jar', 'ghidra.Ghidra',
+            'ghidra.app.util.headless.AnalyzeHeadless']
     commands = []
 
     def run(label, extra):
-        command = [str(ghidra / 'support/analyzeHeadless'), str(project), 'Annotations',
+        command = [*map(str, headless), str(project), 'Annotations',
             *map(str, extra), '-scriptPath', str(scripts), '-postScript', source.name,
             'setup' if label == 'import' else 'read', str(case / 'labels.json'), str(root / (label + '.json'))]
         commands.append({'label': label, 'argv': command})

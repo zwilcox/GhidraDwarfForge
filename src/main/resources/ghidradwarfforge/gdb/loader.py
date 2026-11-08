@@ -181,18 +181,43 @@ def _digest(value):
 
 def validate_manifest(manifest):
     """Validate and detach the generated schema before registering commands."""
-    if not isinstance(manifest, dict) or set(manifest) != {
-            "schema", "target", "sidecar", "source", "address_bits", "segments", "checks"}:
+    if not isinstance(manifest, dict):
+        raise LoaderError("unsupported loader manifest")
+    version = manifest.get("schema")
+    fields = {"schema", "target", "sidecar", "source", "address_bits", "segments", "checks"}
+    if version == 2:
+        fields |= {"source_directory", "source_files"}
+    if set(manifest) != fields:
         raise LoaderError("unsupported loader manifest fields")
-    if type(manifest["schema"]) is not int or manifest["schema"] != 1:
+    if type(version) is not int or version not in (1, 2):
         raise LoaderError("unsupported loader manifest version")
     for role in ("target", "sidecar", "source"):
         artifact = manifest[role]
-        if not isinstance(artifact, dict) or set(artifact) != {"path", "sha256"}:
+        if not isinstance(artifact, dict) or set(artifact) != ({"path", "sha256", "name"} if version == 2 else {"path", "sha256"}):
             raise LoaderError("invalid loader artifact binding")
-        if not os.path.isabs(_path(artifact["path"])):
+        if not os.path.isabs(_path(artifact["path"])) and not (version == 2 and re.match(r"^[A-Za-z]:[\\/]", artifact["path"])):
             raise LoaderError("loader artifact paths must be absolute")
         _digest(artifact["sha256"])
+        if version == 2:
+            _leaf(artifact["name"])
+    if version == 2:
+        directory = _path(manifest["source_directory"])
+        if not os.path.isabs(directory) and not re.match(r"^[A-Za-z]:[\\/]", directory):
+            raise LoaderError("source directory must be absolute")
+        dependencies = manifest["source_files"]
+        if not isinstance(dependencies, list) or not 2 <= len(dependencies) <= 65537:
+            raise LoaderError("missing or excessive source bundle dependencies")
+        names = set()
+        for index, dependency in enumerate(dependencies):
+            if not isinstance(dependency, dict) or set(dependency) != {"name", "sha256", "bytes"}:
+                raise LoaderError("invalid source dependency")
+            _digest(dependency["sha256"])
+            expected = ("forge-src-" + dependency["sha256"] + ".json" if index == 0 else
+                "forge-src-%06d-%s.c" % (index, dependency["sha256"]))
+            if (dependency["name"] != expected or dependency["name"] in names or
+                    type(dependency["bytes"]) is not int or not 0 < dependency["bytes"] <= 2147483647):
+                raise LoaderError("invalid source dependency identity or bounds")
+            names.add(dependency["name"])
     rows = manifest["segments"]
     if not isinstance(rows, list) or any(not isinstance(row, list) or len(row) != 4 for row in rows):
         raise LoaderError("invalid loader segment table")
@@ -218,6 +243,27 @@ def validate_manifest(manifest):
     return json.loads(json.dumps(manifest, sort_keys=True))
 
 
+def _leaf(value):
+    _path(value)
+    if value in (".", "..") or os.path.basename(value) != value or "/" in value:
+        raise LoaderError("invalid portable artifact basename")
+    return value
+
+
+def bind_files(manifest, companion_path):
+    """Bind a moved bundle only to its co-located files, without old-path fallback."""
+    bound = validate_manifest(manifest)
+    if bound["schema"] == 1 or companion_path is None:
+        return bound
+    directory = os.path.dirname(os.path.realpath(companion_path))
+    sidecar = os.path.join(directory, bound["sidecar"]["name"])
+    moved = os.path.normcase(os.path.realpath(sidecar)) != os.path.normcase(os.path.realpath(bound["sidecar"]["path"]))
+    for role in ("sidecar", "source", "target"):
+        if role != "target" or moved:
+            bound[role]["path"] = os.path.join(directory, bound[role]["name"])
+    return bound
+
+
 def manifest_id(manifest):
     return hashlib.sha256(json.dumps(manifest, sort_keys=True,
         separators=(",", ":"), ensure_ascii=True).encode("ascii")).hexdigest()[:16]
@@ -230,30 +276,41 @@ def _identity(attributes):
 
 def verify_files(manifest):
     """Stream every explicitly selected artifact; never read paths from reports."""
-    identities = []
-    for role in ("target", "sidecar", "source"):
-        artifact = manifest[role]
+    identities = set()
+    artifacts = [(role, manifest[role], False) for role in ("target", "sidecar", "source")]
+    for dependency in manifest.get("source_files", []):
+        artifacts.append(("source dependency " + dependency["name"], dict(dependency,
+            path=os.path.join(os.path.dirname(manifest["source"]["path"]), dependency["name"])), True))
+    for role, artifact, dependency in artifacts:
         path = artifact["path"]
         try:
-            if not stat.S_ISREG(os.stat(path).st_mode):
+            if not stat.S_ISREG((os.lstat(path) if dependency else os.stat(path)).st_mode):
                 raise LoaderError(role + " is not a regular file")
-            descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+            descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) |
+                (getattr(os, "O_NOFOLLOW", 0) if dependency else 0))
             with os.fdopen(descriptor, "rb") as stream:
                 before = os.fstat(stream.fileno())
                 if not stat.S_ISREG(before.st_mode):
                     raise LoaderError(role + " is not a regular file")
+                if dependency and before.st_size != artifact["bytes"]:
+                    raise LoaderError(role + " size mismatch")
                 digest = hashlib.sha256()
+                observed_bytes = 0
                 for chunk in iter(lambda: stream.read(65536), b""):
+                    observed_bytes += len(chunk)
+                    if dependency and observed_bytes > artifact["bytes"]:
+                        raise LoaderError(role + " grew during identity verification")
                     digest.update(chunk)
                 if (_identity(before) != _identity(os.fstat(stream.fileno())) or
-                        _identity(before) != _identity(os.stat(path))):
+                        _identity(before) != _identity(os.lstat(path) if dependency else os.stat(path))):
                     raise LoaderError(role + " changed during identity verification")
             if digest.hexdigest() != artifact["sha256"]:
                 raise LoaderError(role + " SHA-256 mismatch; regenerate the companion for the selected artifacts")
             identity = (before.st_dev, before.st_ino)
             if identity in identities:
                 raise LoaderError("loader artifacts alias one another")
-            identities.append(identity)
+            if not dependency:
+                identities.add(identity)
         except OSError as error:
             raise LoaderError("cannot verify " + role + ": " + str(error)) from error
 
@@ -292,11 +349,11 @@ def _quote(path):
     return '"' + _path(path).replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-def register(manifest):
+def register(manifest, companion_path=None):
     """Explicitly register a companion; never load symbols merely by sourcing it."""
     import gdb
 
-    manifest = validate_manifest(manifest)
+    manifest = bind_files(manifest, companion_path)
     registry = getattr(gdb, "_forge_loader_registry_v1", None)
     if registry is None:
         registry = _Registry(gdb)
@@ -309,6 +366,7 @@ class _Registry:
         self.gdb = gdb
         self.manifests = {}
         self.loaded = {}
+        self.source_rules = {}
         self.busy = False
         event_names = ("exited", "executable_changed", "new_inferior",
             "clear_objfiles", "free_objfile", "stop")
@@ -426,6 +484,7 @@ class _Registry:
         before = list(gdb.objfiles())
         self.busy = True
         try:
+            self.acquire_source_rule(identifier, manifest)
             with gdb.with_parameter("confirm", False):
                 gdb.execute("add-symbol-file " + _quote(sidecar) + " -o " + hex(bias), to_string=True)
             added = [obj for obj in gdb.objfiles() if obj not in before and obj.filename and
@@ -442,10 +501,51 @@ class _Registry:
                 with gdb.with_parameter("confirm", False):
                     gdb.execute("remove-symbol-file " + _quote(sidecar), to_string=True)
             self.loaded.pop(identifier, None)
+            self.release_source_rule(identifier)
             raise
         finally:
             self.busy = False
         gdb.write("Forge companion loaded at bias " + hex(bias) + "\n")
+
+    def source_rule(self, directory):
+        text = self.gdb.execute("show substitute-path " + _quote(directory), to_string=True)
+        header = "Source path substitution rule matching `" + directory + "':\n"
+        if not text.startswith(header):
+            raise LoaderError("GDB source substitution output is unsupported; existing settings were preserved")
+        return text[len(header):]
+
+    def acquire_source_rule(self, identifier, manifest):
+        if manifest["schema"] != 2:
+            return
+        original = manifest["source_directory"]
+        selected = os.path.dirname(os.path.realpath(manifest["source"]["path"]))
+        if os.name == "nt":
+            selected = selected.replace("\\", "/")
+        expected = "  `" + original + "' -> `" + selected + "'.\n"
+        current = self.source_rule(original)
+        if original == selected and not current:
+            return
+        state = self.source_rules.get(original)
+        if current and current != expected or state is not None and state["expected"] != expected:
+            raise LoaderError("existing GDB source substitution conflicts with this source bundle; settings preserved")
+        if state is None:
+            state = {"expected": expected, "owned": not current, "users": set()}
+            self.source_rules[original] = state
+        state["users"].add(identifier)
+        if not current:
+            self.gdb.execute("set substitute-path " + _quote(original) + " " + _quote(selected), to_string=True)
+        if self.source_rule(original) != expected:
+            raise LoaderError("GDB did not retain the selected source substitution")
+
+    def release_source_rule(self, identifier):
+        for original, state in list(self.source_rules.items()):
+            state["users"].discard(identifier)
+            if state["users"]:
+                continue
+            # Never remove a user's replacement rule or a pre-existing matching rule.
+            if state["owned"] and self.source_rule(original) == state["expected"]:
+                self.gdb.execute("unset substitute-path " + _quote(original), to_string=True)
+            del self.source_rules[original]
 
     def remove(self, identifier):
         state = self.loaded.get(identifier)
@@ -462,6 +562,7 @@ class _Registry:
             finally:
                 self.busy = False
         self.loaded.pop(identifier, None)
+        self.release_source_rule(identifier)
 
     def invalidate(self, event):
         if self.busy:
@@ -474,6 +575,7 @@ class _Registry:
             for identifier, state in list(self.loaded.items()):
                 if not state["object"].is_valid():
                     self.loaded.pop(identifier)
+                    self.release_source_rule(identifier)
 
     def freed(self, event):
         if self.busy:
@@ -481,6 +583,7 @@ class _Registry:
         for identifier, state in list(self.loaded.items()):
             if event.objfile == state["object"]:
                 self.loaded.pop(identifier)
+                self.release_source_rule(identifier)
             elif event.objfile.filename == state["module"]:
                 self.remove(identifier)
 

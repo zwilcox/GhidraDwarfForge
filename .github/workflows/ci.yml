@@ -639,7 +639,7 @@ jobs:
               fileDigestsSmoke elfBuildIdSmoke \
               debugCompressionSmoke matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
-              syntheticSourceSmoke annotationTextSmoke annotatedSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
+              syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke annotationTextSmoke annotatedSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               ghidraVariableIdentitySmoke ghidraInstructionEvidenceSmoke sourceCoverageSmoke sourceCoverageInventorySmoke coverageComparisonPresentationSmoke coverageVariableComparisonSmoke coverageTypeEvidenceSmoke typeGraphEvidenceSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke exportCoverageSmoke coverageComparisonSmoke coveragePresentationSmoke coverageReportJsonSmoke reportValueReaderSmoke coverageReportClaimsSmoke exportReportCoverageSmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
@@ -1057,8 +1057,11 @@ jobs:
           python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
               --work "build/test-results/formatters/$TARGET/pie-zlib" --role pie --compression zlib \
               --dwarfdump "$DWARFDUMP" "${consumers[@]}"
+          python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "build/test-results/formatters/$TARGET/multifile-pie-zlib" --role pie --compression zlib \
+              --source-lines 8 --dwarfdump "$DWARFDUMP" "${consumers[@]}" "${companions[@]}"
           if [[ "$TARGET" == x86_64 ]]; then
-              for role in exec pie-zlib; do
+              for role in exec pie-zlib multifile-pie-zlib; do
                   python3 src/test/integration/formatter-portable.py \
                       "build/test-results/formatters/$TARGET/$role" \
                       "build/test-results/formatters/portable/$role" --producer-host Linux \
@@ -1178,6 +1181,18 @@ jobs:
             "build/test-results/discontiguous-unwind/$TARGET" \
             "build/test-results/discontiguous-unwind-controls/$TARGET" \
             --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+
+      - name: Multi-file source stepping across discontiguous bodies and compressed DWARF
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for position in prologue body; do
+              python3 src/test/integration/discontiguous-unwind.py \
+                  "build/test-results/multifile-discontiguous/$TARGET-$position" --target "$TARGET" \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" --source-lines 8 \
+                  --gap-position "$position"
+          done
 
       - name: Validate real native exports with recovered frames and source
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
@@ -1665,8 +1680,10 @@ jobs:
         if: matrix.target == 'x86_64'
         run: |
             set -euo pipefail
-            for role in exec pie; do
-                attachment_results="$RUNNER_TEMP/forge-attachment-refresh/$role"
+            for selection in exec:0 pie:0 exec:8 pie:8; do
+                role=${selection%:*}
+                source_lines=${selection#*:}
+                attachment_results="$RUNNER_TEMP/forge-attachment-refresh/$role-$source_lines"
                 attachment_status=0
                 sudo -n env JAVA_HOME="$JAVA_HOME" JAVA="$JAVA_HOME/bin/java" JAVAC="$JAVA_HOME/bin/javac" \
                     python3 src/test/integration/attachment-curated-refresh.py --production-linux-host \
@@ -1675,11 +1692,11 @@ jobs:
                     --fixture-dir "$PWD/build/fixtures" --role "$role" \
                     --strict-validator "$DWARFDUMP" \
                     --supervised-validator-helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor" \
-                    --result-dir "$attachment_results" || attachment_status=$?
+                    --result-dir "$attachment_results" --source-lines "$source_lines" || attachment_status=$?
                 mkdir -p "$PWD/build/test-results/attachment-curated-refresh"
                 if sudo -n test -d "$attachment_results"; then
                     sudo -n tar -czf - -C "$attachment_results" . |
-                        tee "$PWD/build/test-results/attachment-curated-refresh/$role.tar.gz" > /dev/null
+                        tee "$PWD/build/test-results/attachment-curated-refresh/$role-$source_lines.tar.gz" > /dev/null
                 fi
                 if [[ "$attachment_status" -ne 0 ]]; then exit "$attachment_status"; fi
             done
@@ -1964,6 +1981,50 @@ jobs:
               python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --discontiguous --controls
               python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --discontiguous --controls --calls
           done
+
+      - name: Multi-file source stepping and semantic preservation across ELF targets
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/multifile-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+          done
+
+      - name: Multi-file source preserves lexical identities, locations and call visibility
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+                  --role "$role" --discontiguous --calls --source-lines 8
+              python3 src/test/integration/same-name-types-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+                  --role "$role" --source-lines 8
+          done
+
+      - name: Multi-file shared objects retain relocated source lookup and stepping
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in shared shared-rebased; do
+              python3 src/test/integration/multifile-shared-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+                  --role "$role" --dwarfdump "$DWARFDUMP"
+          done
+
+      - name: Multi-file publication cancellation, rollback and retry
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64' || matrix.target == 'mips32be'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/multifile-publication.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "$PWD/build/test-results/multifile-publication/$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Measure multi-file export and debugger navigation at large function counts
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/performance/multifile-benchmark.py "$GHIDRA_INSTALL_DIR" \
+              --work "$PWD/build/test-results/multifile-benchmark" \
+              --counts 1000 10000 --pairs 3 --source-lines 1000
 
       - name: Class ownership and object parameters preserve saved identities and lookup
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
@@ -2670,6 +2731,12 @@ jobs:
                       --tools-configuration "$PWD/build/test-results/build-id/installation/none-exec.json" \
                       --output "$PWD/build/test-results/build-id/curated-$role" \
                       --scratch "$RUNNER_TEMP/build-id-curated-$role" --java "$(command -v java)"
+                  python3 src/test/integration/build-id-curated-refresh.py \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" --role "$role" \
+                      --tools-configuration "$PWD/build/test-results/build-id/installation/none-exec.json" \
+                      --output "$PWD/build/test-results/build-id/curated-multifile-$role" \
+                      --scratch "$RUNNER_TEMP/build-id-curated-multifile-$role" --java "$(command -v java)" \
+                      --source-lines 8 --recovery
               done
           fi
 
@@ -3242,7 +3309,7 @@ jobs:
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat formatterPlanSmoke exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
-            syntheticSourceSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
+            syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
@@ -3489,6 +3556,12 @@ jobs:
             --ghidra $env:GHIDRA_INSTALL_DIR --powershell (Get-Command pwsh).Source `
             --readelf (Join-Path $mingwBin 'readelf.exe') --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe')
           if ($LASTEXITCODE -ne 0) { throw 'Native Windows formatter export failed' }
+          python src/test/integration/formatter-windows.py `
+            linux-formatter-reference build/test-results/windows-host/formatters-multifile `
+            --ghidra $env:GHIDRA_INSTALL_DIR --powershell (Get-Command pwsh).Source `
+            --readelf (Join-Path $mingwBin 'readelf.exe') --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe') `
+            --source-lines 8
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows multi-file formatter export failed' }
 
       - name: Native Windows unwind chooser cancellation and exports
         shell: pwsh
@@ -3601,6 +3674,10 @@ jobs:
           python3 src/test/integration/formatter-portable.py \
               "$PWD/windows-artifacts/windows-host/formatters" \
               "$PWD/build/test-results/windows-attachment-gdb/formatters" \
+              --producer-host Windows --lldb lldb-18 --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/formatter-portable.py \
+              "$PWD/windows-artifacts/windows-host/formatters-multifile" \
+              "$PWD/build/test-results/windows-attachment-gdb/formatters-multifile" \
               --producer-host Windows --lldb lldb-18 --dwarfdump "$DWARFDUMP"
       - uses: actions/upload-artifact@v7
         if: always()

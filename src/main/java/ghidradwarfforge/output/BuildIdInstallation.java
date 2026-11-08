@@ -61,6 +61,10 @@ public final class BuildIdInstallation {
     private static final Hook NO_HOOK = boundary -> { };
     private static final String SCHEMA = "forge-build-id-state-v1";
     private static final String GENERATION = "forge-build-id-generation-v1";
+    // Two independent source inventories: reported export and relocated consumer.
+    // Allow the complete 65,536-part source policy plus existing validator evidence.
+    private static final int MAX_GENERATION_FILES = 512 + 2 * (65536 + 1);
+    private static final int MAX_GENERATION_ENTRIES = MAX_GENERATION_FILES + 256;
 
     private BuildIdInstallation() { }
 
@@ -110,6 +114,11 @@ public final class BuildIdInstallation {
             var reportedSidecar = AttachmentFileStore.backup(export.files().get("sidecar"), generation.resolve("export.dbg"), host, cancelled);
             var reportedSource = AttachmentFileStore.backup(export.files().get("source"), generation.resolve("export.source"), host, cancelled);
             var report = AttachmentFileStore.backup(export.files().get("exportReport"), generation.resolve("export.json"), host, cancelled);
+            for (var dependency : export.sourceDependencies()) {
+                String name = dependency.path().getFileName().toString();
+                var saved = AttachmentFileStore.backup(dependency, generation.resolve(name), host, cancelled);
+                AttachmentFileStore.backup(saved, retained.resolve(name), host, cancelled);
+            }
             String directory = retained.toString();
             if (java.io.File.separatorChar == '\\') directory = directory.replace('\\', '/');
             var relocation = SyntheticSourceSidecar.prepare(reportedSidecar.path(), directory, cancelled);
@@ -124,7 +133,7 @@ public final class BuildIdInstallation {
             }
             host.syncDirectory(generation);
             var retainedExport = AttachmentExportBinding.observe(report.path(), export.files().get("exportOriginal").path(),
-                reportedSidecar.path(), reportedSource.path(), host, cancelled);
+                reportedSidecar.path(), reportedSource.path(), relocation.fileName(), host, cancelled);
             var binding = ArtifactValidationBinding.relocated(retainedExport, derived, source, host, cancelled);
             validator.validate(binding, generation.resolve("validation.json"), host, cancelled);
             binding.recheck(host, cancelled);
@@ -325,7 +334,9 @@ public final class BuildIdInstallation {
         }
 
         void rejectInputAliases(AttachmentExportBinding export) throws IOException {
-            for (var file : export.files().values()) {
+            var inputs = new ArrayList<>(export.files().values());
+            inputs.addAll(export.sourceDependencies());
+            for (var file : inputs) {
                 for (Path managed : List.of(registration, statePath, namespace.resolve("lock"))) {
                     require(!file.path().equals(managed) && (!Files.exists(managed, LinkOption.NOFOLLOW_LINKS) ||
                         !Files.isSameFile(file.path(), managed)), "selected input aliases an installation control/output file");
@@ -452,7 +463,7 @@ public final class BuildIdInstallation {
             try (var paths = Files.walk(generation)) {
                 for (Path path : paths.filter(p -> Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS)).sorted(java.util.Comparator.reverseOrder()).toList()) host.syncDirectory(path);
             }
-            writeRecord(generation.resolve("generation.json"), manifest, null, host);
+            writeRecord(generation.resolve("generation.json"), manifest, null, host, BuildIdRecords.GENERATION_MAX_BYTES);
             return manifest;
         }
 
@@ -461,7 +472,7 @@ public final class BuildIdInstallation {
             Path path = generations.resolve(text(installation, "generation")).resolve("generation.json");
             var observed = snapshot(object(installation, "manifest"), path);
             AttachmentFileStore.unchanged(observed, host, verificationCancellation());
-            JsonObject manifest = BuildIdRecords.read(path, verificationCancellation());
+            JsonObject manifest = BuildIdRecords.readGeneration(path, verificationCancellation());
             verifyGeneration(installation, manifest);
             AttachmentFileStore.unchanged(observed, host, verificationCancellation());
             return manifest;
@@ -477,7 +488,7 @@ public final class BuildIdInstallation {
             Path source = relative(base.resolve("source"), text(manifest, "sourceName"));
             require(source.getParent().equals(base.resolve("source")), "retained source must be a leaf");
             JsonObject files = object(manifest, "files");
-            require(files.size() <= 512 && files.has("export.json") && files.has("export.dbg") && files.has("export.source") &&
+            require(files.size() <= MAX_GENERATION_FILES && files.has("export.json") && files.has("export.dbg") && files.has("export.source") &&
                 files.has("installed.debug") && files.has("validation.json") && files.has(base.relativize(source).toString()), "generation inventory is incomplete");
             var actual = new java.util.HashSet<String>();
             for (Path file : generationFiles(base)) if (!file.equals(base.resolve("generation.json"))) actual.add(base.relativize(file).toString());
@@ -498,7 +509,7 @@ public final class BuildIdInstallation {
                 while (iterator.hasNext()) {
                     check(verificationCancellation());
                     Path path = iterator.next();
-                    require(++entries <= 768, "generation exceeds entry limit");
+                    require(++entries <= MAX_GENERATION_ENTRIES, "generation exceeds entry limit");
                     require(!Files.isSymbolicLink(path), "generation contains a symbolic link");
                     if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) continue;
                     require(Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS), "generation contains a non-regular file");
@@ -516,7 +527,7 @@ public final class BuildIdInstallation {
                 while (iterator.hasNext()) {
                     check(verificationCancellation());
                     Path path = iterator.next();
-                    require(++entries <= 768 && !Files.isSymbolicLink(path), "invalid generation directory tree");
+                    require(++entries <= MAX_GENERATION_ENTRIES && !Files.isSymbolicLink(path), "invalid generation directory tree");
                     if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) sorted.put(path.equals(generation) ? "." : generation.relativize(path).toString(), directory(path));
                 }
             }
@@ -539,8 +550,13 @@ public final class BuildIdInstallation {
 
     private static AttachmentFileStore.Snapshot writeRecord(Path destination, JsonObject record,
             AttachmentFileStore.Snapshot previous, AttachmentOperation.Host host) throws IOException {
+        return writeRecord(destination, record, previous, host, 1024 * 1024);
+    }
+
+    private static AttachmentFileStore.Snapshot writeRecord(Path destination, JsonObject record,
+            AttachmentFileStore.Snapshot previous, AttachmentOperation.Host host, int maximumBytes) throws IOException {
         byte[] bytes = (record + "\n").getBytes(StandardCharsets.UTF_8);
-        require(bytes.length <= 1024 * 1024, "installation record exceeds 1 MiB");
+        require(bytes.length <= maximumBytes, "installation record exceeds byte limit: " + maximumBytes);
         Path stage = Files.createTempFile(destination.getParent(), ".record-", ".stage");
         try (FileChannel out = FileChannel.open(stage, StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS)) {
             write(out, bytes);

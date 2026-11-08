@@ -29,11 +29,94 @@ public final class ArtifactValidationBindingSmoke {
         Path sidecar = Files.copy(Path.of(args[2]), exported.resolve("artifact.dbg"));
         Path source = Files.copy(Path.of(args[3]), exported.resolve(Path.of(args[3]).getFileName()));
         Path retainedSource = Files.copy(source, retained.resolve(source.getFileName()));
+        var sourceBundle = SourceBundleFiles.open(Path.of(args[3]), () -> false).orElse(null);
+        if (sourceBundle != null) {
+            for (Path dependency : sourceBundle.files().subList(1, sourceBundle.files().size())) {
+                Files.copy(dependency, exported.resolve(dependency.getFileName()));
+                Files.copy(dependency, retained.resolve(dependency.getFileName()));
+            }
+        }
         Path candidate = root.resolve("candidate.dbg");
         var plan = SyntheticSourceSidecar.prepare(sidecar, retained.toString(), () -> false);
         write(plan, candidate);
         var export = AttachmentExportBinding.observe(report, original, sidecar, source, HOST, () -> false);
         var derived = ArtifactValidationBinding.relocated(export, candidate, retainedSource, HOST, () -> false);
+        if (sourceBundle != null) {
+            require(export.sourceDependencies().size() == sourceBundle.dependencies().size(),
+                "export binding omitted source dependencies");
+            // The original export must remain complete too: an unchanged index
+            // or valid relocated copy cannot excuse a damaged exported bundle.
+            for (Path dependency : sourceBundle.files().subList(1, sourceBundle.files().size())) {
+                Path selected = exported.resolve(dependency.getFileName());
+                Path hidden = selected.resolveSibling(selected.getFileName() + ".hidden");
+                Files.move(selected, hidden);
+                try {
+                    reject(() -> AttachmentExportBinding.observe(report, original, sidecar, source, HOST, () -> false));
+                    reject(() -> export.recheck(HOST, () -> false));
+                    reject(() -> ArtifactValidationBinding.exported(export).recheck(HOST, () -> false));
+                    reject(() -> derived.recheck(HOST, () -> false));
+                    Files.createSymbolicLink(selected, hidden);
+                    try { reject(() -> export.recheck(HOST, () -> false)); }
+                    finally { Files.delete(selected); }
+                    Files.copy(hidden, selected, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
+                    try { reject(() -> export.recheck(HOST, () -> false)); }
+                    finally { Files.delete(selected); }
+                }
+                finally { Files.move(hidden, selected); }
+                byte[] bytes = Files.readAllBytes(selected);
+                FileTime modified = Files.getLastModifiedTime(selected);
+                byte[] changed = bytes.clone(); changed[changed.length - 1] ^= 1;
+                try {
+                    Files.write(selected, changed);
+                    Files.setLastModifiedTime(selected, modified);
+                    reject(() -> AttachmentExportBinding.observe(report, original, sidecar, source, HOST, () -> false));
+                    reject(() -> export.recheck(HOST, () -> false));
+                }
+                finally { Files.write(selected, bytes); Files.setLastModifiedTime(selected, modified); }
+            }
+            export.recheck(HOST, () -> false);
+            // Copying an index alone must never authorize a relocated sidecar.
+            for (Path dependency : sourceBundle.files().subList(1, sourceBundle.files().size())) {
+                Path selected = retained.resolve(dependency.getFileName());
+                Path hidden = selected.resolveSibling(selected.getFileName() + ".hidden");
+                Files.move(selected, hidden);
+                try {
+                    reject(() -> ArtifactValidationBinding.relocated(export, candidate, retainedSource, HOST, () -> false));
+                    reject(() -> derived.recheck(HOST, () -> false));
+                }
+                finally { Files.move(hidden, selected); }
+            }
+            derived.recheck(HOST, () -> false);
+            var manifest = sourceBundle.manifest();
+            for (boolean wrongInput : new boolean[] {true, false}) {
+                Path alternative = Files.createDirectory(root.resolve(wrongInput ? "wrong-input-bundle" : "wrong-name-bundle"));
+                var changed = new SourceBundle.Manifest(wrongInput ? manifest.indexName() : "other-index.c",
+                    wrongInput ? "0".repeat(64) : manifest.inputSha256(), manifest.logicalSourceSha256(),
+                    manifest.targetLines(), manifest.parts(), manifest.functions());
+                byte[] manifestBytes = SourceBundle.render(changed, () -> false);
+                String digest = SourceBundle.sha256(manifestBytes);
+                Files.write(alternative.resolve(SourceBundle.manifestNameFor(digest)), manifestBytes);
+                for (var part : changed.parts()) {
+                    Files.copy(exported.resolve(part.fileName()), alternative.resolve(part.fileName()));
+                }
+                Path index = Files.write(alternative.resolve(changed.indexName()), SourceBundle.renderIndex(changed, digest, () -> false));
+                // A complete, internally consistent bundle and freshly rehashed
+                // report are still insufficient when input or DWARF names differ.
+                SourceBundleFiles.open(index, () -> false).orElseThrow();
+                var claims = com.google.gson.JsonParser.parseString(Files.readString(report)).getAsJsonObject();
+                claims.getAsJsonObject("artifacts").addProperty("sourceSha256", FileDigests.read(index).sha256());
+                Path changedReport = Files.writeString(alternative.resolve("report.json"), claims.toString());
+                try {
+                    AttachmentExportBinding.observe(changedReport, original, sidecar, index, HOST, () -> false);
+                    throw new AssertionError("accepted a bundle for another input or file table");
+                }
+                catch (IOException expected) {
+                    require(expected.getMessage().contains(wrongInput ? "input differs" : "DWARF source files differ"),
+                        "unexpected bundle refusal: " + expected);
+                    checks++;
+                }
+            }
+        }
         require(derived.derived() && !ArtifactValidationBinding.exported(export).derived(), "incorrect relationship");
         require(derived.claims().equals(export.claims()), "export claims were changed");
         require(derived.exportFiles().equals(export.files()), "reported export evidence was replaced");

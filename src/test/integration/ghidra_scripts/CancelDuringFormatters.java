@@ -10,11 +10,11 @@ import java.util.List;
 import java.util.concurrent.CancellationException;
 
 public class CancelDuringFormatters extends GhidraScript {
-    private record Stage(String method, int stop) { }
+    private record Stage(String owner, String method, int stop) { }
 
     @Override protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 5) throw new IllegalArgumentException("input sidecar selection compression companions required");
+        if (args.length != 5 && args.length != 6) throw new IllegalArgumentException("input sidecar selection compression companions [source-lines] required");
         Path input = Path.of(args[0]);
         Path output = Path.of(args[1]);
         Path selection = Path.of(args[2]);
@@ -23,6 +23,10 @@ public class CancelDuringFormatters extends GhidraScript {
         if (args[4].equals("all")) {
             files.add(Path.of(args[1] + ".gdb.py"));
             files.add(Path.of(args[1] + ".unwind.json"));
+        }
+        if (args.length == 6) {
+            var bundle = ghidradwarfforge.output.SourceBundleFiles.open(Path.of(args[1] + ".c"), () -> false).orElseThrow();
+            files.addAll(bundle.files().subList(1, bundle.files().size()));
         }
         var hashes = new java.util.ArrayList<String>();
         for (Path path : files) hashes.add(ghidradwarfforge.output.FileDigests.read(path, () -> false).sha256());
@@ -33,9 +37,17 @@ public class CancelDuringFormatters extends GhidraScript {
             choices.add("--gdb-loader");
             choices.add("--synthesize-unwind=strict");
         }
+        if (args.length == 6) choices.add("--source-lines=" + args[5]);
         String[] options = choices.toArray(String[]::new);
         TaskMonitor original = monitor;
-        for (var stage : List.of(new Stage("prepare", 5), new Stage("render", 2))) {
+        var stages = new java.util.ArrayList<>(List.of(
+            new Stage("ghidradwarfforge.formatters.FormatterPlan", "prepare", 5),
+            new Stage("ghidradwarfforge.formatters.FormatterPlan", "render", 2)));
+        if (args.length == 6) {
+            stages.add(new Stage("ghidradwarfforge.output.SourceBundle", "prepare", 5));
+            stages.add(new Stage("ghidradwarfforge.output.SourceBundleStore", "install", 5));
+        }
+        for (var stage : stages) {
             Probe probe = new Probe(original, stage);
             boolean cancelled = false;
             try {
@@ -51,7 +63,7 @@ public class CancelDuringFormatters extends GhidraScript {
                 }
             }
             if (!beforeNames.equals(names(output.getParent()))) throw new AssertionError("formatter cancellation leaked staging files");
-            println("formatter-cancellation=PASS " + stage.method());
+            println("formatter-cancellation=PASS " + stage.owner() + "." + stage.method());
         }
         runScript("GhidraDwarfForge.java", options);
         for (int index = 0; index < files.size(); index++) {
@@ -76,7 +88,7 @@ public class CancelDuringFormatters extends GhidraScript {
         @Override public synchronized boolean isCancelled() {
             if (polls >= stage.stop() || super.isCancelled()) return true;
             boolean inside = StackWalker.getInstance().walk(frames -> frames.anyMatch(frame ->
-                frame.getClassName().equals("ghidradwarfforge.formatters.FormatterPlan") &&
+                frame.getClassName().equals(stage.owner()) &&
                 frame.getMethodName().equals(stage.method())));
             return inside && ++polls == stage.stop();
         }

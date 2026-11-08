@@ -181,6 +181,17 @@ The PowerShell equivalent is `support/ghidra-dwarf-forge-headless.ps1` with
 `-Input`, `-Output`, and `-Log` parameters. `-Libdwarf` and `-Libdwarfp` are
 optional paired overrides for development builds.
 
+Development builds offer optional multi-file synthetic source with
+`--source-lines=1000` (PowerShell `-SourceLines 1000`). The value is a positive
+line target; whole functions and the declaration preamble stay together, so a
+large function can exceed it. Without this option, export still writes one
+synthetic source file. In multi-file mode, `<sidecar>.c` becomes an index beside
+the `forge-src-*.c` parts and a `forge-src-*.json` manifest. Keep the index,
+manifest and all referenced parts together when moving an export. Explicit logs
+cannot use those generated filenames in the output directory or alias existing
+parts, including parts from an earlier export. See
+[multi-file source design and validation status](docs/MULTIFILE-SOURCE.md).
+
 Development builds offer opt-in ELF debug-section compression with
 `--compress-debug-sections=zlib` (PowerShell `-CompressDebugSections zlib`).
 The default is `none`. The source file and recovered DWARF content are unchanged;
@@ -243,6 +254,12 @@ validated export and report workflow.
 Manager. Its current Linux and Windows GUI journeys pass. It uses the same
 output chooser and artifact-pair publication.
 
+**ExportGhidraDwarfForgeMultiFile.java** asks for a source-line target (initially
+1000) and exports the same current program into deterministic source parts.
+Cancel stops before export. The ordinary **ExportGhidraDwarfForge.java** launcher
+keeps its single-file behavior. This feature's broader host/target acceptance is
+still in progress; see the multi-file validation record linked above.
+
 The underlying `GhidraDwarfForge.java` script remains available from Script
 Manager for native-free metadata preflight, or directly through
 `analyzeHeadless` for argument-driven export. Script Manager's ordinary Run
@@ -257,6 +274,7 @@ for GUI export. The underlying script's opt-in export accepts:
 --output=/optional/path/to/binary.dbg
 --compress-debug-sections=none|zlib
 --source-context=off|assembly|pcode|both
+--source-lines=<positive-integer>
 ```
 
 Choose either `--packaged-natives` or the two explicit native paths. The

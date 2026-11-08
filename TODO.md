@@ -1,6 +1,227 @@
 # TODO.md — GhidraDwarfForge
 
-## Active goal: optional GDB/LLDB formatters (#111) — 2026-11-07 UTC
+## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
+
+**CONFIRMED:** the user selected this order: complete optional multi-file
+synthetic source (#115), then call-site/tail-call metadata (#117), then the
+Cortex-M debugging profile (#120). Preserve every original acceptance item;
+complete required validation and protected integration before advancing to the
+next issue. #187 remains last outside this goal. No release publication is
+requested.
+
+**CONFIRMED previous goal complete:** #111 merged through
+[PR188](https://github.com/zwilcox/GhidraDwarfForge/pull/188) as `1b165f5` after
+all 16 jobs in run `42394809285` passed. Final raw artifact review covers all
+five targets and native Windows production/transported consumers; the merge
+retains the tested tree. The formatter checkpoint notes below are historical.
+
+**CONFIRMED #115 implementation and hosted acceptance:** optional deterministic
+source partitioning preserves one CU/canonical type graph and the single-file
+default. The [seven-item acceptance audit](docs/MULTIFILE-ACCEPTANCE.md) records
+local and final hosted proof for production revision `52358db` in head `d701e2b`.
+All sixteen jobs in [run 42432375106](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42432375106),
+including `required-validation`, pass; the separate performance run
+`42432375119` also passes. Raw review covers five target source/DSO matrices,
+lexical/types, discontiguous stepping, publication failures, source failures,
+Windows GUI/transported consumers, privileged attachment and build-ID recovery.
+The [hosted benchmark](docs/evidence/multifile-hosted-benchmark.json) retains
+regressions: at 1,000 functions all measured paired directions worsen; at
+10,000 functions scattered listing improves but all-function lookup regresses,
+with other timing/memory results mixed. Artifact size grows at both sizes.
+
+This is the pre-integration acceptance checkpoint, not a release announcement.
+Final documentation must retain the enforced validation gate, followed by the
+ordinary protected merge of [PR189](https://github.com/zwilcox/GhidraDwarfForge/pull/189).
+Then proceed to #117 and #120, in that order. Their implementation has not started.
+Earlier checkpoint notes below are historical and their pending lists are
+superseded by the acceptance audit.
+
+**CONFIRMED #115 consumer checkpoint:** the actual multi-file GDB companion
+passes eight local original/moved-tree and source-rule ownership cases, including
+quoted Unicode paths and missing dependencies. Current generation reproduces
+the published companion byte-for-byte; 29 Python controls and existing live
+single-file ET_EXEC/PIE/shared-object loader tests pass. Attachment export binding
+now verifies all manifest/part hashes and host identities, original-input identity
+and ordered DWARF source names. Missing/changed/replaced original dependencies
+are refused by exported and relocated validation. The build-ID installer now
+retains independent complete source inventories for reported and relocated
+artifacts. Actual Linux ext4 installation, GNU/LLVM/pinned validation, fresh GDB
+discovery and cross-file stepping with old exports hidden, missing retained-file
+controls, failure/cancellation retries and retained-source removal pass on Java 21.
+A 5,000-file record test verifies expanded generation budgets while keeping the
+small request/state limits. Broader semantic/host fixtures, attachment
+combinations, benchmarks and the hosted gate remain pending. No full
+#115 acceptance item is closed.
+
+**CONFIRMED #115 option checkpoint:** Bash and PowerShell forward the optional
+positive source-line target and protect source parts/manifests from log aliases
+before launch, including old generations and future generated names. Both wrapper
+suites pass locally; PowerShell execution was on Linux. The installed Bash wrapper
+passes real export, GNU/LLVM/pinned validation and eight GDB loader cases. The
+installed Linux/Java 21 Script Manager journey passes cancellation, invalid input,
+repeated multi-file output and unchanged subsequent single-file export. Its real
+artifacts pass validators and GDB name/type/source/stepping checks. Windows and
+broader target acceptance remain pending; no full #115 requirement is closed.
+
+**CONFIRMED #115 lexical checkpoint:** Java 21 production exports pass locally
+for x86-64/AArch64 non-PIE, PIE and rebased PIE. The complete bundle reconstructs
+the single-file source; independent decoded DIE/line comparison preserves type
+references, scopes, ranges and locations, with unchanged non-presentation DWARF
+sections and thirteen rejected decoded-input mutations per case. Compiler-backed
+GDB shadowed-variable and caller-frame observations match single/multi-file
+exports; file-qualified lookup resolves distinct caller/callee files. GNU/LLVM/
+pinned checks, repeated bytes and original/saved-program preservation pass.
+The six-case CI step is present but hosted execution is unverified. Broader
+types/targets, publication combinations and the benchmark remain pending; no full
+#115 requirement is closed. See [scoped evidence](docs/MULTIFILE-SOURCE.md).
+
+**CONFIRMED #115 type/target checkpoint:** six x86-64/AArch64 cases preserve
+shared recursive and duplicate-name types across source files, with raw-DIE,
+cold-GDB and runtime value checks. Fifteen x86-64/AArch64/ARM32/MIPS-BE/MIPS-LE
+non-PIE/PIE/rebased-PIE cases additionally pass real source stepping, decoded
+semantic comparison, GNU/LLVM/pinned validators, identity/preservation and
+deterministic reruns on Java 21. The target fixture is partially stripped; it
+does not replace the fully stripped curated tests. Both matrices are wired into
+CI; hosted/Windows execution, the benchmark and remaining publication/consumer
+combinations are pending. No full #115 requirement is closed by these scoped
+checks alone. See [acceptance evidence](docs/MULTIFILE-SOURCE.md).
+
+**CONFIRMED #115 benchmark checkpoint:** the corrected paired 1,000/10,000-function
+experiment passes locally on Java 21: sixteen production exports, full-symbol
+GDB checks, source navigation/runtime checks, semantic comparison, structural
+validators, preservation and deterministic reruns. Scattered listing improves
+in every measured pair, while all-function lookup regresses; export time, RSS
+and symbol-load comparisons are inconclusive. Artifact size increases, and the
+trailing annotation catalog remains an oversized indivisible part. The first
+full attempt failed from private application logs filling tmpfs and is retained;
+the corrected complete run stores those logs with external evidence. See
+[measurements and limits](docs/PERFORMANCE.md#optional-multi-file-source-comparison-115).
+Hosted benchmark execution remains pending.
+
+**CONFIRMED #115 hosted test failure:** run `42423790371` at `9dc1186`
+fails Windows `sourceBundleStoreSmoke` before later host acceptance. Its race
+hook compared a resolved destination with an unresolved temporary path. A
+Linux symlink-parent reproduction confirms the old comparison misses injection;
+the corrected test resolves the parent and requires exactly one injection.
+Java 21 passes the corrected race/cancellation checks, and the complete local
+store/reader/publisher checks pass. Production code is unchanged. The subsequent native Windows host job `128565957060` in run `42425532357`
+passes at `59d5930`, including 1,454 store checks and 169 cancellation points.
+This confirms the corrected hook on Windows; newer multi-file formatter
+combinations and full issue acceptance still require their own hosted results.
+
+**CONFIRMED #115 discontiguous checkpoint:** two gap positions pass across
+x86-64/AArch64 non-PIE/PIE, initial/rebased programs and plain/zlib outputs:
+96 exports and 120 GDB sessions. Single/multi semantic comparisons, full bundle
+reruns, validators, frame oracles and original/program preservation pass. Direct
+source `step`/`next` cross into a mapped conditional. Crossing into unmapped
+prologue setup instead stops without a source line and requires instruction
+stepping to the next recovered line; that limitation is explicitly tested.
+No line is fabricated for excluded bytes. The two initial fixture failures
+and the compiler-corroborated QEMU diagnostic are retained. These scoped local
+checks do not close remaining consumer/publication or hosted/Windows acceptance.
+
+**CONFIRMED #115 combined-consumer checkpoint:** fully stripped PIE/zlib
+multi-file exports pass on all five targets with actual GDB CLI/MI formatter
+values, validators, deterministic formatter toggles and preserved original/source
+inventories. x86-64/AArch64 also combine the GDB loader and strict unwind
+companion and pass LLDB 18.1.3. Four production cancellation points cover
+formatter preparation/rendering and source preparation/reused installation;
+retry preserves every dependency. Transported x86-64 artifacts pass GDB/LLDB
+with producer source files hidden, then restored byte-identically. Initial LLDB
+runs lacked its private library environment and remain recorded as failures.
+The five-case CI step and stronger transported-source check are present;
+native Windows combinations, fresh-generation publication failures and remaining
+attachment/build-ID refresh/recovery coverage are still pending.
+
+**CONFIRMED #115 publication checkpoint:** the production script passes 84
+interruption cases across x86-64/AArch64/MIPS32-BE: fresh/replacement outputs,
+cancellation/injected I/O failures, and seven preparation/install/publication
+checkpoints. Interruptions after one, two and all three mutable replacements
+restore the old generation or remove fresh finals. Complete unreferenced source
+parts are retained, analyst content and originals remain unchanged, and every
+retry passes deterministic reruns, validators and actual GDB source stepping.
+The first MIPS fixture lacked usable runtime unwind FDEs; its GDB failure is
+retained. The corrected fixture uses the existing source-oracle build flags.
+The CI lanes are wired; hosted publication acceptance remains pending.
+
+**PRESENT, UNVERIFIED Windows combination:** native PowerShell formatter tests
+now include `-SourceLines 8` for exec/plain and PIE/zlib, with complete dependency
+hashes and four production cancellation points. The Linux consumer receives
+both complete Windows generations and hides producer source during GDB/LLDB
+checks. The new Windows combinations require hosted execution; local Python
+and workflow checks are not native Windows evidence.
+
+**CONFIRMED #115 shared-object checkpoint:** ten Java 21 cases pass across
+all five targets, each with normal and rebased Ghidra analysis. The runtime
+loader supplies an independent DSO load bias; compiler/single/multi GDB runs
+verify relocated names, file-qualified breakpoints, cross-file stepping and
+values. Full semantic comparison, validators, repeated output and original/
+project preservation pass. Cross-target missing-library warnings were resolved
+by an explicit fixture library search path; those failed attempts are retained.
+Hosted shared-object execution remains pending. Failed/empty-source edge cases,
+attachment/build-ID lifecycle combinations and final hosted acceptance remain.
+
+**CONFIRMED #115 performance-control diagnosis:** hosted Windows run
+`42426100636` fails the old cross-revision byte-equality assertion. The pinned
+`1bb4c14` measurement baseline predates the accepted `75860c6` CU compilation-
+directory addition. A Java 21 Linux replay of its retained Windows SQLite
+analysis project confirms that exact semantic difference: 12,338 DIE records
+otherwise match, with identical line/range/location and other ELF sections.
+A fresh U-Boot pair also matches 43,408 DIE records across 6,375 functions.
+GNU/LLVM/pinned validation and compiler/baseline/candidate GDB checks pass for
+both workloads. The revised control retains both first artifacts, validates their exact
+abbreviation/string additions, compares all DIE forms/references, preserves
+same-revision byte determinism, and rejects unrelated mutations. Production
+export code is unchanged. A corrected hosted Windows run is still required;
+this diagnosis does not complete #115. See [performance control evidence](docs/PERFORMANCE.md#historical-performance-baseline-directory-compatibility).
+
+**CONFIRMED #115 source-edge checkpoint:** real native instruction-limit failures
+pass for all-failed and mixed source, plus empty function-source bodies with
+known symbols retained, in single/multi layouts on x86-64, AArch64 PIE and both
+MIPS32 byte orders. Forty-eight successful exports, 24 GDB cases, deterministic
+complete inventories, raw file-only tables and semantic comparisons pass.
+Thirty-two empty-selection refusals preserve existing/fresh destinations; zero
+function selection remains unsupported rather than fabricating symbols. The
+unchanged default two-mode invocation additionally passes four exports/two GDB
+cases. Initial empty-selection/comparator/old-fixture failures are retained.
+The existing four-target annotation pipeline now runs these cases. Hosted
+execution remains pending; attachment/build-ID lifecycle combinations and the
+final exact-head gate remain. See [source-edge evidence](docs/evidence/multifile-source-edges.json).
+
+**CONFIRMED #115 build-ID refresh/recovery checkpoint:** actual saved analyst
+function/type/member edits pass with complete multi-file inventories for x86-64
+non-PIE and PIE on Linux ext4/Java 21. The launcher retains independent reported
+and relocated copies; fresh GDB finds source, types and live arguments with every
+original export dependency hidden. Sixteen update interruption/cancellation/sync
+failure cases retain both generations and recover the correct registration;
+32 missing-manifest/part controls refuse recovery without changing state or
+registration. Twenty multi-file GDB sessions plus two default single-file sessions
+pass. GNU/LLVM/pinned checks and original/source inventory preservation pass;
+[raw evidence](docs/evidence/multifile-build-id-refresh.json) is archived and
+read-back verified. Attachment lifecycle combinations and final hosted Windows,
+performance and exact-head acceptance remain; this does not complete #115.
+
+**CONFIRMED #115 attachment source guard fix:** the regression reproduced a
+prepared transaction committing after a source dependency disappeared. Complete
+index-authenticated dependencies now receive host identity/metadata checks through
+commit; refresh/rollback require the previous source bundle. Explicit recovery
+still permits damaged new-generation dependencies when restoring an intact prior
+association. Java 21 controller tests pass 592 checks; the extension builds and
+operation/binding/recovery/helper regressions pass. Real non-PIE/PIE Ghidra exports,
+live GNU/LLVM/pinned validators and twelve native GDB sessions pass through saved
+analyst refresh, eight missing-dependency preparation refusals and eight rollbacks.
+The default adds two GDB sessions. These local integration runs use the limited
+Linux test host; CI now runs both layouts under the privileged production host.
+[Archived evidence](docs/evidence/multifile-attachment-source.json) is read-back
+verified. Hosted production-host/Windows/performance and final exact-head acceptance
+remain unverified; #115 is not yet complete.
+
+**PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
+its raw counterpart is explicitly conditional on raw-input support becoming
+available. Recheck that dependency when reaching #120; do not silently declare
+raw-input behavior implemented or close unsupported acceptance items.
+
+## Historical goal: optional GDB/LLDB formatters (#111) — 2026-11-07 UTC
 
 **CONFIRMED:** the user selected all six acceptance requirements of #111. The
 previous seven-issue goal is integrated through PR186 (`41887ff`); this formatter

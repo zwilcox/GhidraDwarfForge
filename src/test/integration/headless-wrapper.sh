@@ -77,6 +77,21 @@ if grep -Fq -- '--source-context=' "$argument_log"; then
     exit 1
 fi
 run_status 64 SUCCESS 0 --import="$input" --source-context=invalid
+for target in 1 8 1000 2147483647; do
+    run_status 0 SUCCESS 0 --import="$input" --output="$output" --source-lines="$target"
+    grep -Fxq -- "--source-lines=$target" "$argument_log"
+done
+run_status 0 SUCCESS 0 --import="$input"
+if grep -Fq -- '--source-lines=' "$argument_log"; then
+    echo 'default unexpectedly selected multiple source files' >&2
+    exit 1
+fi
+for target in '' 0 -1 +1 01 ' 8' 1.5 2147483648 999999999999999999999999; do
+    rm -f -- "$argument_log"
+    run_status 64 SUCCESS 0 --import="$input" --source-lines="$target" --log="$input"
+    test ! -e "$argument_log"
+    grep -Fq -- '--source-lines must be' "$work/error.txt"
+done
 run_status 0 SUCCESS 0 --import="$input" --output="$output" \
     --annotation-record-limit=123 --annotation-text-limit=456 --annotation-source-limit=789
 for option in --annotation-record-limit=123 --annotation-text-limit=456 --annotation-source-limit=789; do
@@ -170,6 +185,42 @@ reject_log() {
     grep -Eq 'log path (aliases|is inside)' "$work/error.txt"
     sha256sum -c "$work/protected.sha256" >"$work/preservation.txt"
 }
+
+# Protect previous generations even when this export keeps the single-file default.
+source_hash=$(printf '%064d' 0)
+source_part="forge-src-000001-$source_hash.c"
+source_manifest="forge-src-$source_hash.json"
+for name in "$source_part" "$source_manifest"; do
+    printf 'source bundle sentinel\n' > "$work/$name"
+    sha256sum "$work/$name" >> "$work/protected.sha256"
+    reject_log "$work/$name" --import="$input"
+    ln "$work/$name" "$work/$name-hard.log"
+    ln -s "$work/$name" "$work/$name-symbolic.log"
+    reject_log "$work/$name-hard.log" --import="$input" --source-lines=8
+    reject_log "$work/$name-symbolic.log" --import="$input"
+    for kind in lexical physical; do
+        cp "$work/$name" "$work/$kind/$name"
+        sha256sum "$work/$kind/$name" >> "$work/protected.sha256"
+        reject_log "$work/$kind/$name" --import="$input" --output="$ambiguous_input.dbg"
+    done
+done
+future_manifest="$work/forge-src-$(printf '%064d' 1).json"
+reject_log "$future_manifest" --import="$input" --source-lines=8
+test ! -e "$future_manifest"
+ln -s "$future_manifest" "$work/dangling-part.log"
+reject_log "$work/dangling-part.log" --import="$input"
+test ! -e "$future_manifest"
+mkdir "$work/independent-sources"
+run_status 0 SUCCESS 0 --import="$input" --log="$work/independent-sources/$source_part"
+reverse_log="$work/independent-sources/preserved.log"
+printf 'reverse source alias sentinel\n' > "$reverse_log"
+sha256sum "$reverse_log" >> "$work/protected.sha256"
+ln -s "$reverse_log" "$work/forge-src-000002-$source_hash.c"
+reject_log "$reverse_log" --import="$input"
+reverse_future="$work/independent-sources/not-created.log"
+ln -s "$reverse_future" "$work/forge-src-000003-$source_hash.c"
+reject_log "$reverse_future" --import="$input"
+test ! -e "$reverse_future"
 
 reject_log "$input" --import="$input"
 reject_log "$selection" --import="$input" --formatters="$selection"
@@ -285,6 +336,19 @@ for kind in hard symbolic; do
     test ! -e "$argument_log"
     cmp "$work/formatter-expected.txt" "$special_formatter"
     grep -Fq 'log path aliases a protected input/output file' "$work/error.txt"
+done
+
+for name in "$source_part" "$source_manifest"; do
+    cp "$work/$name" "$special_directory/$name"
+    for kind in hard symbolic; do
+        special_log="$work/newline-$name-$kind.log"
+        if [[ "$kind" == hard ]]; then ln -- "$special_directory/$name" "$special_log"
+        else ln -s -- "$special_directory/$name" "$special_log"; fi
+        rm -f "$argument_log"
+        run_status 64 SUCCESS 0 --import="$input" --output="$special_output" --log="$special_log"
+        test ! -e "$argument_log"
+        cmp "$work/$name" "$special_directory/$name"
+    done
 done
 
 echo headless-wrapper=PASS

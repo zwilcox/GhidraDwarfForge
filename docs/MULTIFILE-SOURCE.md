@@ -1,0 +1,888 @@
+# Optional multi-file synthetic source — issue #115
+
+The current requirement-by-requirement status is in the
+[acceptance audit](MULTIFILE-ACCEPTANCE.md). Checkpoint sections below retain the
+status at the time each test was completed; their then-pending lists are historical.
+
+## Scope and decisions
+
+**CONFIRMED requirement:** preserve the ordinary single-file default. Optional
+partitioning must preserve the analyzed program's canonical types, scopes,
+address ranges, variable locations and evidence-backed source correlation.
+Every emitted file remains explicitly synthetic.
+
+**CONFIRMED design:** retain one DWARF compilation unit and one type
+graph, with multiple entries in its DWARF 5 line-table file table. Partitioning
+is presentation grouping, not evidence of original compiler compilation units.
+Multiple CUs would introduce cross-CU type references or type duplication and
+additional scope/ownership changes without corresponding recovered evidence.
+They are therefore not selected for this feature.
+
+The first grouping policy uses a requested source-body line target and stable
+function order. Whole functions, failure/omission comments and the global
+preamble are indivisible. A unit larger than the target occupies its own part
+and is identified as oversized; the target is not a promise to split a function.
+Namespace- or memory-block-based grouping is not needed to establish this
+bounded-size policy. Default output remains unchanged when no policy is selected.
+
+**CONFIRMED local production checkpoint:** `SourcePartitionPlan` partitions the fully
+composed logical source after declaration and annotation processing. Its mapping
+translates logical lines to file/local-line pairs without changing addresses or
+type identity. File zero is reserved for the synthetic index; part files start at
+one. These are file-table indices, not compilation-unit indices.
+
+**CONFIRMED local production checkpoint:** the source bundle uses flat sibling files
+named `forge-src-<ordinal>-<full-content-sha256>.c` and a canonical JSON manifest
+named `forge-src-<full-manifest-sha256>.json`. The ordinary `<binary>.dbg.c` path
+becomes an explicitly synthetic index only when partitioning is selected. The
+manifest binds the input hash, logical source hash, index name, grouping target,
+part hashes/byte counts/line bounds and function identities/dispositions. Names
+never interpolate analyst labels. File ordinal distinguishes identical contents
+at different file-table indices; changing the input or policy changes manifest
+identity without forcing unchanged parts to be rewritten.
+
+`SourceBundleStore` stages complete files beside the output and uses exclusive
+hard links to install them without overwriting concurrent creations. It verifies
+every referenced part before installing the manifest, then supplies another
+verification step before mutable sidecar/index publication. This optional mode
+requires filesystem hard-link support; it has no overwrite fallback. Existing
+content must be identical, regular and not a symlink or protected-path alias.
+An identical complete concurrent creation can be reused; a conflict is refused.
+Old parts and manifests, including complete unreferenced files left by a failed
+attempt, are retained: another export may already reference them. Only owned
+temporary stages are removed. No pruning policy or ownership inferred from a
+filename prefix is introduced. The existing recoverable pair/companion publisher
+will switch the mutable outputs after the immutable dependencies are installed.
+
+`SourceBundleFiles` identifies the synthetic index, strictly verifies its
+manifest and all local parts, checks the headers and line populations, and
+reconstructs the logical source hash using bounded streaming reads. It exposes
+the entire required file set and checks for changes before use. This supports
+retention/transport integrations. The GDB companion and build-ID installer now
+consume the inventory, with scoped local tests below. Filesystem checks detect
+ordinary concurrent changes, not hostile change-and-restore races between
+observations; no cross-file atomic visibility or power-loss durability is claimed.
+
+**CONFIRMED local integration:** translate line-program rows and declaration file/line
+attributes through the same partition plan. Keep original logical coordinates
+available for source/variable evidence assembly and expose the file translation
+in the generated manifest. Audit consumers that currently retain only one
+source file, including loader, relocation, attachment and build-ID installation;
+none may silently omit referenced parts. Portable output-tree lookup must be
+tested with the original export directory unavailable.
+
+**CONFIRMED local production integration; hosted acceptance pending:** the underlying
+`GhidraDwarfForge.java` script accepts `--source-lines=<positive integer>`.
+It partitions the fully composed annotated source, installs its immutable parts,
+uses the same file layout for native DIE/line output, and publishes the synthetic
+index through the existing recoverable publisher. The default remains one file.
+Both wrappers and the optional Script Manager launcher expose the line target;
+their scoped local acceptance is recorded below. Complete attachment/build-ID
+local integration evidence is recorded below; the production-host/Windows and
+final integration gates are tracked in the [acceptance audit](MULTIFILE-ACCEPTANCE.md). The source-relocation
+parser now preserves all file entries; its ELF plan exposes their order for
+comparison with the bundle manifest. Derived-artifact validation requires and
+rechecks the complete retained inventory, so copying the index alone cannot
+authorize installation. The build-ID installer now retains both complete copies.
+
+## Original acceptance and required proof
+
+1. Deterministic filenames, collision handling, grouping and manifest: identical
+   reruns, hostile names, changed grouping, empty/function-failure cases and
+   conflicting destination contents.
+2. CU/type identity decision: one CU with multiple files, raw file-table and
+   declaration-reference checks, and shared recursive types across files.
+3. Semantic preservation: compare ranges, scopes, types and variable locations
+   with the single-file export, including duplicate names and discontiguous bodies.
+4. Debugger behavior: actual GDB file/function lookup, breakpoints, cross-file
+   stepping and variable values from a different CWD and a moved tree.
+5. Publication: cancellation and injected failures before/during installation,
+   rollback, reused/conflicting generations and retained stale files/user content.
+6. Measurement: a redistributable source-built large-function-count fixture,
+   recording export time/size and debugger navigation. Retain regressions and
+   inconclusive measurements; do not assume multiple files improve latency.
+7. Validation: GNU/LLVM/strict DWARF checks, deterministic reruns, original-file
+   preservation, existing source regressions and final protected CI integration.
+
+## Current checkpoint
+
+**HISTORICAL native-free foundation checkpoint:** `SourcePartitionSmoke` passes using
+Java 21 runtime and `javac --release 21`. It independently reconstructs all
+original source bytes across six partition targets, checks every logical-line
+lookup, whole function/failure/omission boundaries, duplicate function names,
+Unicode, unmapped preambles, oversized units, invalid metadata and mid-operation
+cancellation. This does not prove emitted DWARF, debugger behavior, publication,
+performance, Windows or hosted acceptance. All seven issue requirements remain
+open until their respective production evidence is recorded.
+
+**HISTORICAL line-encoding foundation checkpoint:** `Dwarf5MultiFileSmoke`, invoked by
+`dwarfLineTableSmoke`, independently decodes file tables and line-machine bytes
+and resolves every row back to expected part-file text. It passes 32/64-bit and
+both byte orders, discontiguous/overlapping bodies, intra-sequence file changes,
+multi-byte file counts/indices and unchanged logical source evidence counts.
+The optional exporter layout uses the same translation for `DW_AT_decl_file`
+and `DW_AT_decl_line` and rejects a plan for different source bytes. Production
+option wiring and native/debugger validation are still pending.
+
+The following command passes locally with Ghidra 12.0.3 (Java 21-compatible
+classes); the standalone partition check additionally runs on a Java 21 JVM:
+
+```sh
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC bash ./gradlew --no-daemon \
+    sourcePartitionSmoke syntheticSourceSmoke dwarfLineTableSmoke \
+    sourceCoverageSmoke sourceCoverageInventorySmoke annotatedSourceSmoke
+```
+
+The native pin remains libdwarf 2.3.2 at
+`af7b278c6aa2ae9daad94fb7f8bffdc0e9980993`; no JNA signature or new native
+producer call is introduced by this foundation.
+
+**CONFIRMED source-bundle component checkpoint:** local manifest, store and
+reader smoke tests pass alongside partition/line-table and both existing
+publication regressions. They cover canonical/strict JSON, input/policy binding,
+hostile labels, duplicate function names, original-byte reconstruction, immutable
+reuse, ordinary and link-time creation races, symlink/hard-link conflicts,
+retained old files, rollback of mutable outputs, moved trees with the original
+directory unavailable, missing/changed parts, wrong headers/bounds and a source
+part larger than the streaming buffer. Cancellation is injected at every
+observed preparation (1,879), installation (169), and read (1,913) checkpoint.
+The store tests use representative sidecar bytes; they do not substitute for a
+real Ghidra export or GDB behavior test. The new tasks are listed in both host
+CI jobs, but hosted execution is pending.
+
+All three new suites also pass on the Java 21 runtime after their test classes
+are compiled explicitly with `javac --release 21` against the production classes
+and Ghidra's Gson JAR. The local Gradle smoke runner uses the installed JDK 25;
+its default test bytecode cannot be launched directly on Java 21. This standalone
+check verifies the selected Java 21 baseline without changing the native ABI.
+
+```sh
+GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC bash ./gradlew --no-daemon \
+    sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke \
+    sourcePartitionSmoke dwarfLineTableSmoke companionArtifactPublisherSmoke \
+    artifactPairPublisherSmoke
+```
+
+## First actual headless multi-file export
+
+**CONFIRMED local x86-64 ET_EXEC checkpoint:** Ghidra 12.0.3 imported and
+decompiled the source-built `fixtures/multifile-source.c` fixture after
+`strip --strip-debug`. Script option `--source-lines=8` produced an index and
+eleven source parts for ten recovered functions and 27 canonical types. GDB
+from another working directory resolved both names and `file:function`
+breakpoints, listed both function bodies, inspected the function type, stepped
+from `recovered_first` into `recovered_second` in a different file, finished the
+call, observed global `observed == 10`, and executed `next`. Unknown recovered
+parameter locations remain unavailable; this fixture does not claim parameter
+lifetime recovery.
+
+`SourceBundleRelocationSmoke` compared real producer line-program, abbreviation,
+range/location and aranges bytes, preserved file indices, tested invalid path/
+duplicate-file controls and all 1,368 relocation cancellation checkpoints. GDB
+also passed from the relocated source tree with the original source directory
+temporarily unavailable. `ArtifactValidationBindingSmoke` passes for both the
+single-file and multi-file actual exports; removing each manifest/part causes
+binding and recheck refusal (35 multi-file and 11 single-file refusal controls).
+
+GNU ELF/DWARF dumps and LLVM verification pass. The pinned libdwarf 2.3.2 checker
+passes the existing strict harness with two frame diagnostics independently
+corroborated against the original executable. The older system `dwarfdump`
+reports 15 line-range diagnostics on both single-file and multi-file exports;
+the identical diagnostics are retained and are not suppressed or called a pass.
+The fixture's existing recovery omissions keep its report status `PARTIAL`.
+Counts, coverage, failed/skipped functions and omission/unsupported evidence
+match the single-file baseline. Repeated multi-file exports have identical
+sidecar/index/manifest/part bytes and leave the original unchanged.
+
+The initial attempt on the external evidence drive refused hard-link installation
+without leaving a final sidecar; the passing output used local tmpfs. Ghidra's
+process exit status was zero even for that script failure, so these checks require
+the exporter success marker as well as validating actual artifacts.
+
+Evidence is retained under
+`/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/headless-01/`,
+including `checkpoint.json`, both reports, command/log files, validator output,
+the unchanged-byte inventory and `source-generations.tar.gz`. This checkpoint
+does not establish full #115 acceptance: the repeatable CI driver, feature
+combinations, recursive/discontiguous fixtures, remaining targets, large-program
+measurement, complete consumer retention and hosted/protected integration remain.
+
+## Portable GDB companion and export binding
+
+**CONFIRMED local production checkpoint:** `--gdb-loader` with `--source-lines=8`
+generates a schema-2 companion containing the original/sidecar/index hashes and
+the manifest and every part's hash, name and byte count. Production preparation
+binds the bundle input hash and ordered source names to the actual ELF/DWARF.
+Schema-1 single-file companions retain their existing manifest format and path
+behavior. A staged index may have a temporary basename; verification uses its
+explicit final basename and co-located dependencies.
+
+When the companion is moved, it selects its co-located sidecar, index, original
+executable and immutable source dependencies. It does not fall back to an old
+export or the working directory. At the original location, a separately located
+input executable keeps its explicitly recorded path. All required bytes are
+verified before loading symbols, including missing/changed/symlinked parts.
+
+GDB source substitution temporarily maps the recorded compilation directory to
+the selected bundle directory. This is needed even if the old source tree still
+exists; see [GDB source-path semantics](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Source-Path.html).
+The loader borrows an existing exactly matching rule, refuses conflicting rules,
+and removes only a rule it installed that still has its expected value after
+unload or inferior exit. User replacement rules are preserved. GDB substitutions
+are global: simultaneous bundles with the same recorded directory but different
+selected directories require separate debugging sessions or an explicitly
+rearranged source tree. Unknown GDB substitution output is refused without
+overwriting user settings; tests establish the local GDB version, not every
+version or locale.
+
+`multifile-loader.py` passes eight live GDB cases on the actual native x86-64
+fixture: original location, original conflicting rule, moved tree with old
+sources still present, matching/conflicting/replaced rules, quoted Unicode paths,
+and a moved tree with old sources unavailable. Cases verify cross-file stepping,
+file/function breakpoints, source fullnames, missing-part refusal, unchanged
+selected artifacts and rule cleanup. `GdbBundleCompanionSmoke` proves that the
+current generator reproduces the published companion exactly with both staged
+and final index names; it checks all twelve dependencies, rejects non-colocated
+outputs and samples three of 5,879 cancellation boundaries. Python loader tests
+pass 29 cases, and the existing live single-file ET_EXEC/PIE/shared-object loader
+regression also passes. Foreign Windows paths are covered by Python unit tests;
+this does not establish native Windows multi-file acceptance.
+
+Two integration defects were found and fixed: companion publication calls its
+preflight callback before the writer installs dependencies, and a Python-driven
+GDB `source` command can preserve an outer script's `__file__`. Publication now
+checks dependencies once installed; companion registration uses the compiled
+function's filename to identify the companion actually executing. Both failures
+and corrected runs are retained in the local evidence.
+
+**CONFIRMED attachment-binding component checkpoint:** `AttachmentExportBinding`
+now observes and rechecks every manifest/part using the host identity, metadata
+and digest contract. The original input hash and DWARF file table must agree
+with a recognized bundle. Exported and relocated validation bindings both reject
+missing, edited, symlinked or replaced original dependencies. Controls also
+reject complete internally consistent bundles for another input or source name,
+even with a freshly rehashed report. The existing single-file identity-only test
+retains its explicit distinction from DWARF validation. This verifies complete
+input dependencies; the subsequent build-ID retention checkpoint follows.
+
+## Complete build-ID source retention
+
+**CONFIRMED local production checkpoint:** installation independently copies the
+manifest and every part beside `export.source` and into the retained `source/`
+directory. The report's private index basename is verified against the explicit
+DWARF index name; it does not override the manifest or copy paths from a report.
+Fresh derivative validation observes both complete inventories before publication.
+All immutable dependencies are included in the sealed generation inventory and
+subsequent managed-generation verification. Removal continues to retain sources.
+
+Generation inventory bounds now admit two complete 65,536-part inventories plus
+the previous evidence allowance, subject to the explicit 64 MiB / 1,000,000 JSON
+value limits. Command/state records retain their separate 1 MiB / 20,000-value
+limits. The 5,000-file record fixture crosses both old record budgets, round-trips
+without truncation, and tests cancellation, duplicate fields, unsupported values
+and oversized strings. It does not benchmark maximum-size installation. A test
+found that the prior generic parser catch wrapped cancellation as invalid input;
+the parser now preserves `CancellationException`.
+
+`multifile-installation.py` runs the real Linux ext4 adapter and GNU/LLVM/pinned
+libdwarf validators on independent copies of the actual x86-64 fixture. It passes
+installation/idempotence, independent-copy checks for all twelve dependencies,
+fresh GDB build-ID discovery and cross-file stepping with the export directory
+hidden, deletion of every dependency from each retained inventory, restored
+idempotence, failure/cancellation after sealing with successful retries, and
+removal with retained sources. The final implementation passes the full driver
+on Java 21. Single-file installation and fresh GDB source lookup also pass with
+the old export unavailable. The initial tmpfs selection was correctly refused by
+the production host's ext4 contract; no weaker host was substituted for the
+passing production test.
+
+Evidence is under the same `issue115-multifile/` root, including
+`retention-driver-java21.log`, the archived ext4 driver artifacts and record tests.
+The first automatic-discovery oracle incorrectly quoted GDB's filename parameter;
+the corrected oracle uses `gdb.set_parameter`. Both failed and passing output are
+retained. These local tests do not establish the complete large-program benchmark,
+other target/host profiles, attachment refresh/recovery combinations, wrapper/GUI
+exposure, the hosted matrix or protected integration.
+
+## Wrapper and Script Manager controls
+
+**CONFIRMED local checkpoint:** Bash `--source-lines=N` and PowerShell
+`-SourceLines N` accept canonical decimal integers from 1 through 2147483647,
+forward the selected value and leave default exporter arguments unchanged when
+absent. Invalid values fail before opening a log or launching Ghidra. The installed
+Bash wrapper exported the saved x86-64 project with `--source-lines=8` and the
+GDB companion. GNU/LLVM and pinned strict verification pass (two original-frame
+diagnostics corroborated by the existing policy), as do the eight live loader
+transport/source-rule cases. The report remains `PARTIAL` for existing unlocated
+recovery evidence; selecting the new source layout does not promote that status.
+
+Explicit logs cannot occupy generated source-part/manifest filenames beside the
+selected sidecar, including files that do not exist yet. Existing generations are
+protected even when a later export chooses the single-file default. The wrappers
+check symlinks and hard links, including aliases outside the output directory and
+generated-name symlinks pointing to another log path. Bash also checks lexical
+and actual traversal spellings and preserves newline-ended directory names during
+source-directory resolution. These are pre-launch ordinary-filesystem checks,
+not a claim to defeat a hostile concurrent path-swap attack. Independent logs
+remain usable, including the same basename in an unrelated directory.
+
+Both wrapper suites pass locally (PowerShell 7.6.8 on Linux); sentinel files and
+the actual exported bundle survive rejected log collisions unchanged. Native
+Windows execution is still pending. Windows symlink controls retain the existing
+test's explicit skip when the runner lacks symlink permission; such a skip cannot
+establish Windows symlink acceptance.
+
+`ExportGhidraDwarfForgeMultiFile.java` is the explicit Script Manager launcher.
+Its line-target dialog starts at 1000. The real installed Linux/Java 21 GUI
+journey passes cancellation before export, invalid-zero refusal before native
+loading, target-eight export, repeated source-inventory byte equality and a
+subsequent ordinary export with the original single-file bytes. The multi-file
+manifest reconstructs the same logical source as the curated baseline, retaining
+the GUI's analyst function name, comments and equate. The GNU/LLVM/pinned checks
+and GDB function/type lookup, break/list/next/step and equate-value checks pass for
+both multi-file exports and the subsequent single-file export. Three inherited
+frame diagnostics are independently corroborated for this GUI fixture.
+
+The launcher is a required assembly input; packaging tests reject its absence.
+The shared GUI harness and both host validation scripts include the new cases;
+this does not substitute for a passing native Windows/hosted run. The first
+local GUI negative test left Ghidra's expected error dialog open and blocked the
+next case; the corrected test records and dismisses that dialog. Both runs are
+retained. Evidence is under `issue115-multifile/source-options-*`, including the
+assembled package, actual wrapper report, GUI screenshots/console/validator logs
+and the checkpoint archive.
+
+## Semantic comparison and lexical runtime checks
+
+**CONFIRMED local checkpoint:** the production saved-program lexical fixture
+passes single-file and repeated partitioned exports on Java 21 for x86-64 and
+AArch64, each in non-PIE, PIE and Ghidra-rebased PIE form. AArch64 executes under
+QEMU with GDB remote debugging. All six cases pass GNU/LLVM/pinned strict checks,
+byte-identical partitioned reruns, original/reference preservation and the
+existing saved-program preservation check (only Ghidra's two documented backup
+files may change). Existing inherited frame diagnostics are independently
+corroborated against the original; no new warning allowance was introduced.
+
+`check-multifile-semantics.py` independently reads LLVM's decoded DIEs and line
+rows. It verifies the complete manifest and reconstructs byte-identical logical
+source, translates declaration/line coordinates back to that source, and compares
+the ordered DIE tree and every attribute. DIE references use traversal identity,
+not names; changing a type edge cannot be hidden by equal display names. Only
+CU presentation paths, source coordinates and relocated DIE reference offsets
+are normalized. Non-presentation debug sections and inherited `.eh_frame` remain
+byte-identical, including `.debug_rnglists`, `.debug_loclists` and
+`.debug_aranges`. Thirteen mutations of decoded attributes and line rows per
+fixture are rejected before/after normalization. This is a bounded LLVM-output
+oracle, not a replacement for structural validation or a general DWARF parser.
+
+The existing GDB oracle compares compiler storage with recovered shadowed
+locals at each inspected instruction, including unavailable initialization
+intervals, an explicit lexical visibility gap, and values read from caller frames
+through two calls. Single-file and partitioned observations match exactly. The
+new checks resolve `file:function` breakpoints and listings and check that the
+caller and callee resolve to their distinct generated files. The x86-64 fixture
+has 30 scoped instruction observations and eight callee observations; AArch64
+has 34 and twelve, respectively. The lexical gap is not a claim of new
+discontiguous-function stepping acceptance.
+
+Reproduce on an installed package with a Java 21 JDK:
+
+```bash
+DWARFDUMP=/path/to/pinned/dwarfdump python3 src/test/integration/lexical-shadow-export.py \
+    "$GHIDRA_INSTALL_DIR" aarch64 --role pie-rebased --discontiguous --calls --source-lines 8
+```
+
+`--java /path/to/java` optionally launches the same production headless entry
+point with explicit runtime selection and isolated script caches. Local initial
+runs exposed Ghidra choosing Java 25 despite `JAVA_HOME`, then reusing its compiled
+script cache under Java 21. Those failures are retained; the successful runs
+isolate their Java 21 cache instead of deleting user caches or weakening the
+runtime assertion. The normal CI launch remains `analyzeHeadless`.
+
+The workflow includes all six target/layout combinations; hosted execution is
+**PRESENT, UNVERIFIED**. Evidence is retained under
+`issue115-multifile/lexical-final-*` and `lexical-checkpoint-v1.tar.gz`. Shared
+recursive/duplicate-name type fixtures, broader target/Windows cases, complete
+publication/consumer combinations and the large-program benchmark remain open.
+No full issue acceptance requirement is closed by this checkpoint alone.
+
+## Recursive and same-name type acceptance
+
+**CONFIRMED local checkpoint:** `same-name-types-export.py --source-lines 8`
+passes on x86-64 and AArch64 for non-PIE, PIE and Ghidra-rebased PIE. It imports
+the compiler reference, saves explicit analyst class/layout bindings and category
+renames, and exports that saved program. Runtime tests execute the stripped
+counterpart. The two recursive `Node` types, their `Record` aliases, two `State`
+enums, and two analyst-renamed `Packet`/`Handle` pairs keep separate canonical
+identities. Each method's object parameter and the matching global object refer
+to the same recursive layout; pointer recursion closes on that layout.
+
+The independent raw-DIE/cold-GDB oracle passes for partitioned output. GDB checks
+object sizes, member values, self-referential pointers, parameter values, executed
+returns, enum spellings and category-defined fields. Single/multi observations
+match after removing independently randomized PIE load biases. Both `inspect`
+methods occupy distinct source parts, with file-qualified breakpoints and actual
+stopped source paths checked. The first test incorrectly searched the manifest
+by qualified display name; manifest leaf names are both `inspect`. The corrected
+oracle binds each method to its independently recorded ELF address, preserving
+the distinction instead of relying on a name match. Both failures are retained.
+
+All six cases pass the complete decoded-DWARF comparison, GNU/LLVM/pinned
+validation, repeated output and saved-program/input preservation. The three x86-64
+cases reject thirteen decoded-input mutations each; the three AArch64 cases reject
+twelve each because these contiguous fixtures have no `DW_AT_ranges` attribute
+to mutate. Range mutations are covered by the separate lexical/discontiguous
+fixtures, not silently counted in the AArch64 type fixture. The workflow includes
+these cases alongside the lexical checks; hosted execution remains **PRESENT, UNVERIFIED**. Evidence is retained in
+`issue115-multifile/types-final-*` and the target/type checkpoint archive. These
+results do not establish the remaining benchmark, Windows acceptance or all
+publication/transport combinations.
+
+## Five-target source-stepping matrix
+
+**CONFIRMED local checkpoint:** `multifile-export.py` passes all fifteen
+x86-64/AArch64/ARM32/MIPS32-BE/MIPS32-LE and non-PIE/PIE/rebased-PIE combinations
+on Java 21. Cross-target executions use QEMU user mode and GDB remote debugging.
+The redistributable `fixtures/multifile-source.c` input retains ordinary ELF
+symbol names while compiler DWARF is stripped; this is deliberately a partially
+stripped source-stepping fixture. Fully stripped curated coverage is supplied by
+the separate lexical tests, not claimed for this fixture.
+
+Each case compiles a compiler reference, imports/analyzes the stripped input,
+exports the same saved program as single-file and repeated multi-file output,
+and runs independent decoded-DWARF comparison plus GNU/LLVM/pinned structural
+checks on both layouts. ELF class, byte order, machine, ABI flags and build ID
+match the original; original/reference bytes and saved program data remain
+unchanged apart from the documented Ghidra backup files. All generated source
+dependencies are included in the deterministic inventory.
+
+The compiler, single-file and partitioned GDB runs each resolve and list both
+recovered functions, step through their real call, execute `next`, return to the
+caller, observe the global value 10, and exit normally. Partitioned runs verify
+distinct source files at both stops and resolve file-qualified breakpoints.
+Runs use the repository working directory, separate from the output directories.
+Known ARM QEMU vDSO diagnostics must match the compiler run; no additional
+debugger warning allowance was introduced. The first x86 compiler test stepped
+past the fixture into unavailable libc sources; `next` is now exercised inside
+the fixture's callee. The initial ARM tool invocation lacked its private
+binutils library path; existing toolchain wrappers supplied that path. Both
+failed runs are retained alongside passing results.
+
+CI now includes the same fifteen cases. Native Windows and hosted execution
+remain **PRESENT, UNVERIFIED**. Local evidence is under
+`issue115-multifile/target-final-*`, `target-type-checkpoint.json` and
+`target-type-checkpoint-v1.tar.gz`. This checkpoint does not close the benchmark,
+all consumer/publication combinations, or full issue acceptance.
+
+
+## Large-function benchmark and Windows race-hook correction
+
+**CONFIRMED local benchmark:** the corrected 1,000/10,000-function paired
+experiment passes all sixteen production samples, validators, full-symbol GDB
+navigation/runtime checks, deterministic reruns and input/project preservation.
+[PERFORMANCE.md](PERFORMANCE.md#optional-multi-file-source-comparison-115) records
+actual size/timing results, regressions and mixed observations. The largest
+source part remains the indivisible annotation catalog following the final
+function; a line target is not a file-size guarantee. The first full run's
+private-log filesystem exhaustion is retained as failure, not partial success.
+The corrected evidence archive `benchmark-checkpoint-v1.tar.gz` contains 475
+files with every member read-back verified against its source hash. CI contains
+the same measurement step; hosted execution remains **PRESENT, UNVERIFIED**.
+
+**CONFIRMED hosted test failure:** Windows job `128560896730` in run
+`42423790371` fails `SourceBundleStoreSmoke.exclusiveLinkRace(false)` at
+`9dc1186`. The hook's unresolved path comparison can miss the actual resolved
+destination. The correction resolves the existing parent, preserves the chosen
+leaf, and asserts exactly one competing creation for both identical and
+conflicting contents. The same race now runs under a symlinked parent on Linux.
+A Java 21 comparison with the original hook fails the new injection assertion;
+the corrected hook passes 1,481 checks and all 169 cancellation checkpoints.
+The full local store, reader and mutable publisher suites also pass.
+This corrects the test, not the production hard-link installation policy.
+Windows acceptance requires another hosted run. The failure log and both local
+comparison results are retained under the issue evidence directory.
+
+
+## Actual discontiguous-function source stepping
+
+**CONFIRMED local checkpoint:** `discontiguous-unwind.py --source-lines 8`
+compares single/multi-file production exports for two gap positions, both
+x86-64/AArch64, non-PIE/static PIE, initial/rebased saved programs and plain/zlib
+DWARF. Eight cases execute 96 exports and 120 fresh GDB sessions. Each function
+has two explicitly curated ranges around sixteen excluded bytes; its independent
+assembler CFI oracle traces four real branch crossings through recursion.
+Original/reference bytes, saved program state and deterministic complete bundles
+are preserved. GNU/LLVM/pinned validation, full decoded-DWARF/source comparison,
+strict frame descriptions and runtime unwind observations pass.
+
+With `--gap-position body`, the jump crosses directly into a mapped conditional.
+Both source `step` and `next` stop at its correct address, function, source part
+and positive line; no instruction fallback is used. With the original
+`--gap-position prologue`, the destination starts with register setup lacking
+recovered token mappings. Both source commands stop at that unmapped boundary;
+the test then uses bounded instruction stepping to the first recovered line.
+All excluded gap bytes lack line mappings. This is an honest limitation of
+source-level stepping through unmapped code, not a reason to fabricate lines.
+
+The first probe incorrectly forced a breakpoint at the unmapped boundary and
+required a line. Removing that breakpoint still produced an unmapped stop in
+GDB. Both failed attempts are retained; the final tests distinguish mapped
+body behavior from the original prologue limitation instead of discarding the
+latter fixture. No production source-mapping change was made for these tests.
+
+All 64 single/multi source transcripts pass the subsequently added diagnostic
+guard on replay. Only the exact AArch64 QEMU vDSO warning also present in the
+compiler reference is admitted; x86 permits none. Four rejected diagnostic
+controls verify the guard. The existing assembler reference also reports its
+unavailable assembly source path; that CFI-only oracle warning is not permitted
+in generated-source transcripts and does not establish compiler-source stepping.
+The production/export driver used for measurement is retained separately because
+the diagnostic guard was added after the successful matrix.
+
+```sh
+python3 src/test/integration/discontiguous-unwind.py /path/to/new-results \
+    --target all --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+    --source-lines 8 --gap-position body
+# Repeat in another new directory with --gap-position prologue.
+```
+
+Local runs additionally select Java 21 explicitly using `--java`. CI runs both
+positions on both target lanes. Hosted execution remains **PRESENT, UNVERIFIED**.
+[Raw-result bindings](evidence/multifile-discontiguous.json) record every case,
+artifact inventory and observation. Local evidence is retained under
+`issue115-multifile/gap-{body,prologue}-03` and the read-back-verified
+`gap-store-checkpoint-v1.tar.gz`, which also retains initial failures and the
+store-hook Java 21 comparison. Remaining publication/consumer combinations and
+final hosted/Windows/protected integration are still required for #115.
+
+
+## Combined formatter, loader and unwind outputs
+
+**CONFIRMED local checkpoint:** `formatter-export.py --source-lines 8 --role pie
+--compression zlib` passes on x86-64, AArch64, ARM32, MIPS32-BE and MIPS32-LE.
+The fixture imports a fully stripped binary and saves explicit analyst type,
+symbol and formatter selections before exporting. Each source manifest binds
+the input, and all manifest/part hashes and sizes are included in generation
+checks. Formatter-disabled and enabled exports retain the same multi-file source
+index; repeated enabled output and the disable/restore sequence are deterministic.
+This comparison varies formatter selection within one source layout, not the
+single-file default policy already exercised elsewhere.
+
+Actual GDB CLI/MI consumers verify flags, bitfields, signed/unsigned values,
+canonical duplicate-name types, native children and stale/unavailable controls.
+x86-64/AArch64 additionally combine `--gdb-loader` and strict synthetic unwind
+metadata; the GDB tests source the real loader, and LLDB 18.1.3 validates the
+formatter values/children. GNU/LLVM/pinned validators and original/selection
+preservation pass. This checkpoint does not extend synthetic unwind claims to
+ARM32 or MIPS: their combined test selects formatters and multi-file source only.
+
+`CancelDuringFormatters.java` now retains every source dependency and injects
+cancellation inside formatter preparation, formatter rendering, source-bundle
+preparation and reused bundle installation. All five targets preserve the full
+existing generation and directory inventory, then reproduce it on retry. These
+are production cancellation tests for an existing generation; they do not replace
+fresh-generation or partial-installation failure acceptance.
+
+The portable consumer copies the complete recorded inventory and temporarily
+hides the producer's source index, manifest and parts while running consumers.
+It restores them in `finally` and verifies both copies against the original
+hashes. x86-64 GDB CLI/MI source listing and LLDB formatters pass with old source
+unavailable. A separate local run also moved the entire producer directory out
+of its recorded path. Missing/wrong original and wrong-sidecar controls still
+refuse formatter loading. The first LLDB attempts failed before debugger startup
+because the private toolchain's library search environment was absent; corrected
+full x86-64/AArch64 runs and portable consumers pass with the retained environment.
+No debugger warning allowance was added for that setup failure.
+
+```sh
+python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" x86_64 \
+    --work /path/to/new-results --role pie --compression zlib --source-lines 8 \
+    --companions --lldb /path/to/lldb-18 --dwarfdump "$DWARFDUMP"
+```
+
+Local runs additionally use explicit Java 21. ARM32 uses the documented private
+cross-toolchain/sysroot; the other cross targets use system toolchains and QEMU.
+[Result bindings](evidence/multifile-formatters.json) record all five runs and
+transported observations. Raw evidence, including setup failures, is retained in
+`issue115-multifile/formatter-checkpoint-v1.tar.gz` with member-by-member read-back
+verification. CI includes the five additional PIE/zlib cases and the transported
+multi-file consumer. Hosted/native Windows execution remains **PRESENT,
+UNVERIFIED**; remaining publication, shared-object, attachment and build-ID
+refresh/recovery combinations and the full final gate are still required.
+
+
+## Production publication interruptions and retry
+
+**CONFIRMED locally:** `CheckMultiFilePublication.java` invokes the actual
+installed `GhidraDwarfForge.java` entry point for fresh and replacement source
+bundles. A wrapping task monitor interrupts seven checkpoints: source planning,
+partial stage writing, the first newly installed part, the complete manifest,
+and after publication of the sidecar, index and GDB loader. Each checkpoint
+runs with cancellation and an injected I/O exception, giving 28 cases per target.
+The Java 21 x86-64/AArch64/MIPS32-BE matrix passes all 84 cases. Exact failure
+classes and one/two/three published-file counts are recorded, not inferred from
+an unsuccessful command alone.
+
+Fresh failures leave none of the three mutable final files. Replacement
+failures restore their exact old bytes. Every old immutable dependency and the
+analyst-owned `forge-src-analyst.c` remain unchanged. Any newly retained file
+must match a complete dependency from an independent successful reference
+export; no partial final part or leaked stage is accepted. Complete dependencies
+left after interruption are deliberately retained for reuse. Every case retries
+successfully and repeats byte-identically. The original ELF and saved program
+remain unchanged apart from documented Ghidra backup files.
+
+`multifile-publication.py` validates all 84 retry artifacts with GNU/LLVM/pinned
+checks and actual GDB file-qualified lookup, cross-file source stepping, `next`,
+return to the caller, observed global value and normal exit. Including initial
+references, old generations, interrupted attempts and two retries per case,
+these are 297 production invocations. The fixture is partially stripped, retaining
+ELF symbols; fully stripped coverage is provided by the separate formatter and
+curated semantic cases. Expected partial reports retain unavailable recovered
+information; successful publication does not imply every variable has a location.
+
+The initial MIPS build had only the `.eh_frame` terminator; its compiler CFI was
+in `.debug_frame`, removed by stripping. Publication/preservation checks passed,
+but GDB `finish` left the intended caller and the runtime gate failed. The driver
+now matches the existing source oracle's `-fno-omit-frame-pointer` and
+`-fasynchronous-unwind-tables` flags. Fresh complete runs on all three targets
+pass. The failed MIPS run and earlier x86/AArch64 runs are retained, without
+claiming unproved unwind support for inputs lacking that evidence.
+
+```sh
+python3 src/test/integration/multifile-publication.py "$GHIDRA_INSTALL_DIR" x86_64 \
+    --work /path/to/new-evidence --artifacts /path/to/new-hardlink-filesystem \
+    --dwarfdump "$DWARFDUMP"
+```
+
+Local runs additionally use explicit Java 21. `--artifacts` is optional; logs and
+projects may live separately from the hard-link-capable output filesystem.
+[Evidence bindings](evidence/multifile-publication.json) identify the final three
+runs. `publication-checkpoint-v1.tar.gz` retains 7,614 files, including initial
+failures, with member-by-member hash verification on read-back. The three target
+CI lanes include this test; hosted execution remains **PRESENT, UNVERIFIED**.
+
+## Native Windows combined output coverage
+
+**PRESENT, UNVERIFIED:** `formatter-windows.py --source-lines 8` now exercises
+PowerShell's production `-SourceLines` option for both exec/plain and PIE/zlib.
+It verifies the manifest/input binding, every part's size/hash, full generation
+determinism and four cancellation points. Its transport record includes every
+required source file alongside formatter, loader and unwind companions. A
+separate Linux consumer invocation validates both complete Windows generations
+and runs GDB/LLDB with producer sources hidden. The ordinary single-file Windows
+cases remain in the workflow. Python syntax and actionlint pass locally; actual
+native Windows production and transported results still require hosted evidence.
+
+
+## Shared objects and runtime relocation
+
+**CONFIRMED local checkpoint:** `multifile-shared-export.py` passes ten Java 21
+cases: x86-64, AArch64, ARM32, MIPS32 big-endian and little-endian, each with normal
+and rebased Ghidra analysis. The source-built DSO retains ordinary ELF symbols
+while compiler DWARF is stripped. A separate executable loads it with `dlopen`
+and records the actual `link_map.l_addr` through `dlinfo`. The debugger uses that
+independent runtime bias to load the selected compiler/Forge symbols; it does not
+derive the expected bias from Forge DWARF or assume a fixed address for `ET_DYN`.
+
+Each compiler, single-file and multi-file run checks exact relocated function
+addresses, source lookup, `ptype`, named/file-qualified breakpoints, stepping into
+the second function, `next`, return to the caller, global value 10 and normal exit.
+Multi-file stops resolve to two different source parts. The original ELF class,
+endianness, machine, ABI flags and build ID are preserved. Complete decoded-DWARF
+comparison, GNU/LLVM/pinned validators, repeated source/dependency bytes and
+original/reference/driver/saved-program preservation all pass. These are default
+explicit `add-symbol-file` consumers with a measured load bias; no new automatic
+shared-library loader behavior is claimed.
+
+The first x86 rehearsal selected the system checker instead of the pinned
+validator and failed the strict gate. The harness now exposes an explicit
+`--dwarfdump` option, used by all final local runs and CI. Initial cross-target
+runs reached the source assertions but reported missing shared-library symbols:
+the target sysroot did not contain the test DSO. An explicit `solib-search-path`
+points to its fixture directory. The final matrix passes the unchanged diagnostic
+checks; only the already compiler-corroborated ARM QEMU vDSO message is admitted.
+Both setup failures remain in the raw evidence.
+
+```sh
+python3 src/test/integration/multifile-shared-export.py "$GHIDRA_INSTALL_DIR" x86_64 \
+    --role shared --dwarfdump "$DWARFDUMP"
+# Repeat with --role shared-rebased and each selected cross target.
+```
+
+Local runs select Java 21 through `--java`; ARM32 additionally uses the documented
+private toolchain/sysroot. CI runs both roles in all five lanes. Hosted execution
+remains **PRESENT, UNVERIFIED**. [Result bindings](evidence/multifile-shared.json)
+record all ten cases and runtime observations. The read-back-verified
+`issue115-multifile/shared-checkpoint-v1.tar.gz` retains the final and failed runs.
+This closes the scoped local DSO gap, not the full #115 issue or release gate.
+
+## Hosted store correction and historical performance baseline
+
+**CONFIRMED scoped Windows rerun:** job `128565957060` in run `42425532357`
+at `59d5930` completed successfully. Its raw log records 1,454 source-store
+checks and 169 cancellation points, alongside passing partition/bundle/reader
+checks. This confirms the corrected resolved-path race hook on native Windows.
+The later combined multi-file formatter step was not present at that head;
+this result does not establish that newer combination or complete #115.
+
+**CONFIRMED local performance-control correction; hosted execution pending:**
+the historical Windows benchmark baseline predates the accepted CU directory
+attribute. The new comparator permits precisely that addition while retaining
+all other DIE, abbreviation, string, section, identity and repeatability checks.
+SQLite and U-Boot diagnostic exports pass validators and actual GDB behavior.
+See [the comparison contract](PERFORMANCE.md#historical-performance-baseline-directory-compatibility)
+and [bound evidence](evidence/multifile-performance-control.json).
+
+## Native source failures and empty source bodies
+
+**CONFIRMED locally; hosted execution pending:** the extended
+`failed-source-context.py` harness passes x86-64 ET_EXEC, AArch64 PIE, and
+MIPS32 big-/little-endian ET_EXEC using Java 21 and installed production
+components. It invokes the actual native decompiler with a one-instruction
+limit to fail every selected function or only the first one. Later functions
+recover in the mixed case. A third case supplies no function source bodies
+while preserving independently known symbols and curated types.
+
+Each profile exports single/multi layouts twice: 48 successful exports and 24
+GDB sessions in total. Complete source inventories are byte-identical on repeat;
+the original targets, saved analyst programs and tested inputs are preserved.
+Decoded DIEs and line rows match after source-coordinate translation, while
+range/location and other semantic sections remain identical. GNU/LLVM/pinned
+validators pass; target identity, ABI flags and build IDs match each original.
+
+Failed functions retain names and addresses but acquire neither executable
+source rows nor invented signatures/locals. All-failed and empty-source tables
+contain file entries with only `DW_LNS_set_file 0`, no executable matrix rows,
+and zero line-visible instruction coverage. GDB loads actual comment/source
+files from a different working directory, sees the expected names/types/global
+values, and executes each original to exit zero. Mixed cases additionally use
+source `next`/`step` in successfully decompiled functions. Empty source needs one
+indivisible part plus the index; this case explicitly admits that degenerate
+layout without relaxing the comparator's defaults for ordinary fixtures.
+
+An empty **function selection** is distinct from an empty source body. The
+existing native exporter refuses it before production with “at least one
+function is required.” Thirty-two fresh/replacement rejection attempts preserve
+all final bytes and leave no staged output. This work does not add zero-symbol
+native exports. The default, no-partition invocation still passes its original
+two cohorts (four exports, two GDB sessions).
+
+Initial attempts are retained: the zero-selection policy was first encountered
+as an unexpected exception; the generic comparator initially rejected the
+single-part empty layout; older cached cross-target programs lacked the current
+curated names. Fresh compiler-reference fixtures, saved curation and the final
+full runs pass. The four-target annotation pipeline now invokes the multi-file
+cohorts and verifies all six case results. The
+[receipt](evidence/multifile-source-edges.json) binds the successful results,
+failures, tested source hashes and a read-back-verified archive of 1,388 files.
+These source-edge checks do not replace remaining attachment/build-ID lifecycle
+or hosted Windows acceptance.
+
+## Build-ID saved edits and interrupted refresh
+
+**CONFIRMED locally:** the production Linux launcher installs initial and saved
+analyst-edited exports for x86-64 ET_EXEC and PIE. Both exported generations and
+both retained inventories (reported export and relocated consumer) have identical
+index/manifest/part bytes, valid logical hashes and independent file identities.
+The test hides the original sidecars, reports, indexes, manifests and all parts
+before fresh GDB processes check the actual installed source part, function/type/
+member edits, named breakpoints, live argument values and normal exit. Previous
+source generations remain complete after update.
+
+The standalone test probe uses the production Linux build-ID host and live
+validators. Update interruption is injected at `GENERATION_SEALED`, `PREPARED`,
+`BEFORE_PUBLICATION`, `PUBLISHED` and `COMMITTED`; cancellation at `PREPARED` and
+`PUBLISHED`, plus an injected publication-directory sync failure, cover the
+unapplied/applied recovery boundary. Both sealed generations are inventoried
+after each interruption. Recovery selects the old or new generation as
+appropriate, repeated recovery is unchanged, and GDB runs against the recovered
+registration with the original exports hidden.
+
+For prepared and already-published interrupted updates, temporarily removing a
+manifest or part from either copy of either generation refuses recovery and
+preserves the state record and registration. All 32 such controls pass across the
+two ELF roles. This is process interruption testing, not a claim of power-loss or
+hostile concurrency safety. Attachment recovery and native Windows combinations
+remain separate acceptance work.
+
+Reproduction uses existing source-built semantic fixtures and the same packaged
+production extension as other integration lanes:
+
+```sh
+python3 src/test/integration/build-id-curated-refresh.py \
+    --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$FIXTURES" --role exec \
+    --tools-configuration "$TOOLS_CONFIGURATION" --output "$FRESH_EXT4_OUTPUT" \
+    --scratch "$FRESH_SCRATCH" --java "$JAVA21" --source-lines 8 --recovery
+# Repeat with --role pie and fresh output/scratch paths.
+# Omit --source-lines/--recovery to exercise the existing single-file default.
+```
+
+The final paired runs pass four headless exports, sixteen interrupted updates,
+32 refusal controls and twenty GDB sessions. The default regression adds two
+exports and two GDB sessions. GNU/LLVM/pinned production validation, original
+ELF hashes and complete old/new source inventories pass. The first local trials
+exposed test setup errors: downloaded fixture mode lacked owner execution, and
+the PIE manifest's link-time address was compared to the Ghidra import address.
+The harness now sets execution on its private fixture copy and compares against
+the independent compiler symbol address. Those failed trials are retained.
+
+[Evidence receipt](evidence/multifile-build-id-refresh.json) identifies the
+5,274-file archive, tested source hashes and successful results. Every archived
+member was read back and hashed. The existing single-file CI invocation remains;
+non-PIE and PIE multi-file recovery invocations are added alongside it. Hosted
+execution and the final protected integration gate remain unverified.
+
+## Attachment source dependencies through commit and rollback
+
+**CONFIRMED defect and local fix:** the export binding verified a complete bundle
+during preparation, but the prepared attachment transaction only protected its
+index. A regression against the unchanged production JAR demonstrates that a
+missing dependency could still be committed. The transaction now reads complete
+bundles from authenticated source indexes, snapshots each dependency with the
+selected host, and rechecks them before target replacement and commit. Refresh
+also refuses an incomplete previous bundle before validation evidence/backups are
+created. No receipt schema change or arbitrary receipt-supplied dependency path
+is introduced; names and hashes come from the strictly verified source manifest.
+
+Rollback requires the complete previous bundle. Missing new-generation files do
+not prevent restoration of an intact previous association. Missing previous
+files refuse explicit recovery or result in `RECOVERY_REQUIRED` during automatic
+rollback, preserving the target for reconciliation. The filesystem controller
+regression covers manifest/part loss before admission, after preparation and after
+replacement, plus explicit recovery with damaged new/previous dependencies. The
+592-check suite passes on Java 21, including its eight existing abrupt-process
+exits. These model fixtures are not ELF or production-host proof.
+
+Actual saved-curation tests now select `--source-lines 8` for both x86-64 non-PIE
+and PIE. The packaged exporter and real attachment coordinator/live validators
+produce and retain complete initial/refreshed bundles. Before refresh, missing
+current/previous manifests or parts refuse preparation without output or target
+changes. Removing a new manifest or changed function part at `PREPARED` or
+`TARGET_REPLACED` causes rollback; a fresh GDB process then resolves the previous
+function, source part, type and arguments and runs the original program to exit.
+The final successful refresh exposes the saved analyst function/type/member edits.
+All source files and prior generations are preserved; original backups and
+executable program-header/section mappings remain unchanged.
+
+Local evidence: eight preparation refusals, eight rollback cases and twelve GDB
+sessions across the two multi-file ELF roles; the unchanged single-file flow adds
+two GDB sessions. GNU/LLVM/pinned checks pass, as do extension build and operation,
+export-binding, recovery-invocation and helper regressions. The local integration
+host is the existing limited Linux test adapter; the production Linux host needs
+privileges unavailable in this local session. The existing privileged CI step now
+runs both default and multi-file layouts for both ELF roles and retains each raw
+result archive. Hosted production-host and native Windows acceptance are pending.
+
+Reproduce with `attachment-curated-refresh.py`'s existing explicit fixture, JAR,
+Ghidra, validator and result-directory arguments, adding `--source-lines 8`.
+`JAVA` must select Java 21. Optional `--scratch` moves Ghidra's private home,
+temporary directory and project out of the artifact filesystem; the result
+directory must still support hard links. `--production-linux-host` retains its
+existing explicit privileged-invocation requirement.
+
+[Evidence receipt](evidence/multifile-attachment-source.json) records tested hashes,
+results and the 1,582-file archive. All archive members were read back and hashed.
+The initial Java-version setup failure and pre-fix regression failure are retained.
+This checkpoint does not claim power-loss or hostile concurrency safety and does
+not substitute for final exact-head hosted acceptance.

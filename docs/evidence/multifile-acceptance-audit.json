@@ -1,0 +1,540 @@
+{
+    "status": "LOCAL_ACCEPTANCE_EVIDENCE_AUDITED_HOSTED_PENDING",
+    "codeRevision": "52358dbefab331beb3b96e610c50741cdc9427e4",
+    "archives": [
+        {
+            "name": "consumer",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/consumer-checkpoint.json",
+            "receiptSha256": "24d2df21f4c2fd563a9c6ae4c88807c934aa2792427966193c82eacbde96060d",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/consumer-checkpoint-v1.tar.gz",
+            "sha256": "854d4f5c511f4b15c11f0be7792f5c967cc4465d61ed7117cfe042a2b884812d",
+            "verification": "recorded archive SHA-256"
+        },
+        {
+            "name": "retention",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/retention-checkpoint.json",
+            "receiptSha256": "df5faebcb1c3770dbff908294340ad90abc81f614bdb4bd807f08a8652248701",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/retention-checkpoint-v1.tar.gz",
+            "sha256": "7d88c0187820a8e61089c4c3c8358f359f56f72c1d306dd16911c8d88d9f63cb",
+            "verification": "recorded archive SHA-256"
+        },
+        {
+            "name": "source-options",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/source-options-checkpoint.json",
+            "receiptSha256": "c31a2ec8e9074f34c351aecb2a60cad85e62a5d92fb4a847ea5b6a8782b8f0ad",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/source-options-checkpoint-v1.tar.gz",
+            "sha256": "ca0232fb33be6989a7118970731bd7bbad5f6c18ecad3552dfa22ecf6b6985ec",
+            "verification": "recorded archive SHA-256"
+        },
+        {
+            "name": "lexical",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/lexical-checkpoint.json",
+            "receiptSha256": "b2d66c1a7494acb1009980c7953298c549befd85ad6b9f27f3ae6e678ffb6185",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/lexical-checkpoint-v1.tar.gz",
+            "sha256": "b34530a1c6a45b3c1afed3b8ce68634282ddd201d791c0ac7dddb005ab58d0ba",
+            "verification": "recorded archive SHA-256"
+        },
+        {
+            "name": "target-type",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/target-type-checkpoint.json",
+            "receiptSha256": "e6ed997a80e634bcb2893fc7856cd9fb9c0b6fe58a24982efcf323cebbd2f444",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/target-type-checkpoint-v1.tar.gz",
+            "sha256": "91cea2c37c9e85c95f59d602f080a285ad9a84436a4efa8dbb3585da40d8970d",
+            "verification": "recorded archive SHA-256"
+        },
+        {
+            "name": "benchmark",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/benchmark-checkpoint.json",
+            "receiptSha256": "e799cc34bc8999581a3d8ff38b52afc51cd94bf360a968d1520d02b2cb2fff7b",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/benchmark-checkpoint-v1.tar.gz",
+            "sha256": "3600918333d1c18413c323b0dda4dc3c9897386f24daeb8e79f1e54b7dc6f44a",
+            "verification": "recorded archive SHA-256"
+        },
+        {
+            "name": "gap-store",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/gap-store-checkpoint.json",
+            "receiptSha256": "c337c17a3cf2fdff144ee0bacbbc06367c455080fd7bd0f497a38844e41878b7",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/gap-store-checkpoint-v1.tar.gz",
+            "sha256": "d4f17baf5cbfaf39e0785d0cc2df7980191d65bce4308369f33ab30807c988b7",
+            "verification": "every recorded member SHA-256"
+        },
+        {
+            "name": "formatter",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/formatter-checkpoint.json",
+            "receiptSha256": "ea2466640cc1e528460c4609cdbd26fcf756cf9dd16a54807437de9bacb8c06f",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/formatter-checkpoint-v1.tar.gz",
+            "sha256": "2ba879eacd3682ac81a43d744513ea4d1c290aaca45eb472021e59d13b6aa9c6",
+            "verification": "every recorded member SHA-256"
+        },
+        {
+            "name": "publication",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/publication-checkpoint.json",
+            "receiptSha256": "44805501c71bd69f70eb635421e10e9fa364f4ae308332c577924b23521d45fa",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/publication-checkpoint-v1.tar.gz",
+            "sha256": "68b6877e0ab8f4cc1b9343a2b3b764943aa2e2ac6b454957c3385d38909c52f1",
+            "verification": "every recorded member SHA-256"
+        },
+        {
+            "name": "shared",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/shared-checkpoint.json",
+            "receiptSha256": "57ed7cae941e07d0e07ed7325a12610d2b8f3fc77e0b5927a640aee1d624e00d",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/shared-checkpoint-v1.tar.gz",
+            "sha256": "c7a5a6ab20d590a312245ab16f529a1f19d0e93a932b2917cfe8c2a6a00d7948",
+            "verification": "every recorded member SHA-256"
+        },
+        {
+            "name": "performance-control",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/performance-control-checkpoint.json",
+            "receiptSha256": "b11e3335fa6c0e9f28466bf4817ad2239353ab38e35ca450bb943cadbcd8f160",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/performance-control-checkpoint-v1.tar.gz",
+            "sha256": "45a9265be8f7ce9986d9111a41a6ca6a95eae0889e6f74236e2cb816adc107ce",
+            "verification": "recorded archive SHA-256"
+        },
+        {
+            "name": "source-edge",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/source-edge-checkpoint.json",
+            "receiptSha256": "3420f2900a76f8fbbddad9d56433903372f935d79b78106026fac7559edf0788",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/source-edge-checkpoint-v1.tar.gz",
+            "sha256": "bda1b8d8e938e3fa4ff6886c4ba4a9e5d2e0468d10dd573f00c307552a1e3776",
+            "verification": "recorded archive SHA-256"
+        },
+        {
+            "name": "build-id-refresh",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/build-id-refresh-checkpoint.json",
+            "receiptSha256": "70688c8c6ec55dd6b7ed4d771b363fa8cd1102bf9fa66e50a95d2cce3484607c",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/build-id-refresh-checkpoint-v1.tar.gz",
+            "sha256": "90e1051c0fe797aaf0c46e605501b6fad1b1cd3a0089ced934a33758fc8c8021",
+            "verification": "recorded archive SHA-256"
+        },
+        {
+            "name": "attachment-source",
+            "receipt": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/attachment-source-checkpoint.json",
+            "receiptSha256": "4d6da6c6f45f2aeedd616e554a3210a16015afb4fae15b1e3eb23d349288f09b",
+            "archive": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/attachment-source-checkpoint-v1.tar.gz",
+            "sha256": "3791dfdc7ccab51f2e7f1be69523e8e265021d0e816261f5c6dac6f700e900bb",
+            "verification": "recorded archive SHA-256"
+        }
+    ],
+    "semanticAndTargetCases": [
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/aarch64-exec-wm6panpw/acceptance.json",
+            "sha256": "b5264756d8be68eff0376ffd8a704ce8418211ae7ec9044bde5b8d0260daf622",
+            "status": "LEXICAL_SHADOW_PASS",
+            "target": "aarch64",
+            "role": "exec",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/aarch64-exec-wm6panpw/source-semantics/result.json",
+            "negativeControls": 13
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/aarch64-pie-rebased-756pknud/acceptance.json",
+            "sha256": "1fe6adaee30743f64f4a4bc894a2d67386696d2d4a0f0dfde85a7db904bb6462",
+            "status": "LEXICAL_SHADOW_PASS",
+            "target": "aarch64",
+            "role": "pie-rebased",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/aarch64-pie-rebased-756pknud/source-semantics/result.json",
+            "negativeControls": 13
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/aarch64-pie-1x_hz45p/acceptance.json",
+            "sha256": "e3942e773600951ee761359c33f15690b182f64f644f50ef211f0b652f7b163a",
+            "status": "LEXICAL_SHADOW_PASS",
+            "target": "aarch64",
+            "role": "pie",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/aarch64-pie-1x_hz45p/source-semantics/result.json",
+            "negativeControls": 13
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/x86_64-exec-go_e5js0/acceptance.json",
+            "sha256": "7fcaa8637a698c238d08ebbb54b60b6edc0f8b6f3703f65b6069a8f0d0859ac4",
+            "status": "LEXICAL_SHADOW_PASS",
+            "target": "x86_64",
+            "role": "exec",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/x86_64-exec-go_e5js0/source-semantics/result.json",
+            "negativeControls": 13
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/x86_64-pie-rebased-g78ij095/acceptance.json",
+            "sha256": "edbb8cbc083ea31ddce353cecc9f0d4f1cc127ac3bde4c45c877cc6ba8751efd",
+            "status": "LEXICAL_SHADOW_PASS",
+            "target": "x86_64",
+            "role": "pie-rebased",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/x86_64-pie-rebased-g78ij095/source-semantics/result.json",
+            "negativeControls": 13
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/x86_64-pie-ngeatp2e/acceptance.json",
+            "sha256": "8016b171f028dc2a50a45bf84f08dd518786ec1eae0f90f00eb0fb9f72f4fac6",
+            "status": "LEXICAL_SHADOW_PASS",
+            "target": "x86_64",
+            "role": "pie",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/lexical-shadow/x86_64-pie-ngeatp2e/source-semantics/result.json",
+            "negativeControls": 13
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/aarch64-exec-ojihnfec/acceptance.json",
+            "sha256": "d93dff2617c8e0f71082c5b12a93613115a9d587fe0171a7e4681d423b5014db",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "aarch64",
+            "role": "exec",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/aarch64-pie-rebased-ypw6fhei/acceptance.json",
+            "sha256": "b04d862866e845d004a457e3257788bac66fca7f3e52314804afcbc3c13a1a5b",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "aarch64",
+            "role": "pie-rebased",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/aarch64-pie-z5x8me3f/acceptance.json",
+            "sha256": "f4251ddf72da1d3cbddc66ebf8a396db5e19a7fe2bb131c3a87ab5d823e7db21",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "aarch64",
+            "role": "pie",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/arm32-exec-vse8llw9/acceptance.json",
+            "sha256": "99cd75ca1b25308139689b7664b159d67c8d8ca181ff94c9bc50cd79d1fecdeb",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "arm32",
+            "role": "exec",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/arm32-pie-rebased-zhwpuprc/acceptance.json",
+            "sha256": "ce54ceb278f39230d5e0e58a527aeecde773481624eca623615cb3fa7702507d",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "arm32",
+            "role": "pie-rebased",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/arm32-pie-2okr3ef1/acceptance.json",
+            "sha256": "4ba00756701959fad8f290446bb22feac01c08681fabde63e1cf87206a8106eb",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "arm32",
+            "role": "pie",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/mips32be-exec-phtt79hp/acceptance.json",
+            "sha256": "58d3a87b44063dc7e3d43af28f5d82800e2e289c3647691fb58eb17c5003f639",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "mips32be",
+            "role": "exec",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/mips32be-pie-rebased-u5cwo7m7/acceptance.json",
+            "sha256": "9d67b62fef640816dcfd250861f7e527a575306c2337f0c0ab3038a75a3d32f2",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "mips32be",
+            "role": "pie-rebased",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/mips32be-pie-8dg4tgfo/acceptance.json",
+            "sha256": "a5801330c46d131a3e438a18a582f41c71094457e7741c3f2f0b9afa106877d9",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "mips32be",
+            "role": "pie",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/mips32le-exec-_dsak7f1/acceptance.json",
+            "sha256": "d939d0ead02ce4533ebda22d94e1d08483a99235859b30525823c7a25403a7d8",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "mips32le",
+            "role": "exec",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/mips32le-pie-rebased-frufm_8z/acceptance.json",
+            "sha256": "ba3f5c4fef18f88060c20d8e3d2a23e070ab4af0ef8417ccb6a21d83aaca07f6",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "mips32le",
+            "role": "pie-rebased",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/mips32le-pie-y8i1vufl/acceptance.json",
+            "sha256": "43c6876fa42f4e708f368c06ced6dcf47f8ad1b55f464c736211a80a19ff0579",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "mips32le",
+            "role": "pie",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/x86_64-exec-vap02791/acceptance.json",
+            "sha256": "9aaffb40cbbe021264d4ceb5c48da444b0cb4aa171c4c1e9069e406b7f1f7edb",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "x86_64",
+            "role": "exec",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/x86_64-pie-rebased-di6szhrk/acceptance.json",
+            "sha256": "bc95848d57d468d83ae31ffe8d26a483de6c645e11133317386b7e7d9b601923",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "x86_64",
+            "role": "pie-rebased",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile/x86_64-pie-f7ncduob/acceptance.json",
+            "sha256": "b041f36ed859c4dd4656076e4d819e2d225b2699f1806db7bdb872e34c3100bb",
+            "status": "MULTIFILE_TARGET_PASS",
+            "target": "x86_64",
+            "role": "pie",
+            "semanticResult": null,
+            "negativeControls": null
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/aarch64-exec-ogcxmrm0/acceptance.json",
+            "sha256": "23947494fce21eeb043b7eb5da1530d2fcf590986e82075599f7017a09d975a6",
+            "status": "SAME_NAME_TYPES_PASS",
+            "target": "aarch64",
+            "role": "exec",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/aarch64-exec-ogcxmrm0/source-semantics/result.json",
+            "negativeControls": 12
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/aarch64-pie-rebased-4slf_0f6/acceptance.json",
+            "sha256": "5e8923cec4493e807539fd75ad1fc08d0bef48c71492094347d68718c7e36b94",
+            "status": "SAME_NAME_TYPES_PASS",
+            "target": "aarch64",
+            "role": "pie-rebased",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/aarch64-pie-rebased-4slf_0f6/source-semantics/result.json",
+            "negativeControls": 12
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/aarch64-pie-gdzsj9vn/acceptance.json",
+            "sha256": "d0bfebb3382808032e21a9117d61cce2b6c46a18a7b5dedd41d78cb532c2ee86",
+            "status": "SAME_NAME_TYPES_PASS",
+            "target": "aarch64",
+            "role": "pie",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/aarch64-pie-gdzsj9vn/source-semantics/result.json",
+            "negativeControls": 12
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/x86_64-exec-0xfeha1c/acceptance.json",
+            "sha256": "adf0f27750c86b3f7b7700bf74289683ec13899ec807fb20d0743aead73288b4",
+            "status": "SAME_NAME_TYPES_PASS",
+            "target": "x86_64",
+            "role": "exec",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/x86_64-exec-0xfeha1c/source-semantics/result.json",
+            "negativeControls": 13
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/x86_64-pie-rebased-vzmtba8r/acceptance.json",
+            "sha256": "1f538c9799867fec449e1acf8879b463b2240c5c90888da6a304a9c5be62180c",
+            "status": "SAME_NAME_TYPES_PASS",
+            "target": "x86_64",
+            "role": "pie-rebased",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/x86_64-pie-rebased-vzmtba8r/source-semantics/result.json",
+            "negativeControls": 13
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/x86_64-pie-sprfau15/acceptance.json",
+            "sha256": "b22455dfb7d9bb55575947d24341d0473e26299f0f3e96bc3c2fb1bc58db1358",
+            "status": "SAME_NAME_TYPES_PASS",
+            "target": "x86_64",
+            "role": "pie",
+            "semanticResult": "/dev/shm/forge-multifile-worktree/build/test-results/same-name-types/x86_64-pie-sprfau15/source-semantics/result.json",
+            "negativeControls": 13
+        }
+    ],
+    "rawReceiptChecks": [
+        {
+            "path": "/dev/shm/forge-multifile-gap-body-03/result.json",
+            "sha256": "7ca5f7e792b115e8bf32f9f21584464dda1a97e2bd6db13aa152012f33f5a947",
+            "status": "PASS_DISCONTIGUOUS_UNWIND"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-gap-prologue-03/result.json",
+            "sha256": "04137e4f4c2c63b7279d75787fe0a3a3b726e08a9ffce32e5aeeab84f80e7fce",
+            "status": "PASS_DISCONTIGUOUS_UNWIND"
+        },
+        {
+            "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/publication-x86_64-02/acceptance.json",
+            "sha256": "e6da86a1d4125d0c8214ea416ccb0d57f9d38bfe8511bb16d15cf4c6a2891246",
+            "status": "PASS_MULTIFILE_PUBLICATION_RUNTIME"
+        },
+        {
+            "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/publication-aarch64-02/acceptance.json",
+            "sha256": "1b9beea5072d6e09489cc823bdbb41fcf526c7809c49ea1d8cba0a7aab6b0113",
+            "status": "PASS_MULTIFILE_PUBLICATION_RUNTIME"
+        },
+        {
+            "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/publication-mips32be-02/acceptance.json",
+            "sha256": "abef38b0cf491a1e10300270ca7b38e456ac3a9787093004db78d7ae50dff1f0",
+            "status": "PASS_MULTIFILE_PUBLICATION_RUNTIME"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile-shared/x86_64-shared-ktpw85xc/acceptance.json",
+            "sha256": "976f4b7a982440947df3787d4e652ac1c923571295dd02039e5bfed947042172",
+            "status": "MULTIFILE_SHARED_PASS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile-shared/x86_64-shared-rebased-e9d9z6lj/acceptance.json",
+            "sha256": "ef49ff582d158ccc448b7f50272c278780fc59362d949363f232aea7f821f574",
+            "status": "MULTIFILE_SHARED_PASS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile-shared/aarch64-shared-af29aqbg/acceptance.json",
+            "sha256": "9703dc59c45ce74a249f5ef1f3fbdf4c810f37552a61f7858778fa766bed5f42",
+            "status": "MULTIFILE_SHARED_PASS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile-shared/aarch64-shared-rebased-a_b9hgic/acceptance.json",
+            "sha256": "605ac176a9410ce7b104e304837ccb78b8bfc8265a8db2f28751cd41585404c0",
+            "status": "MULTIFILE_SHARED_PASS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile-shared/arm32-shared-ipxaa3b4/acceptance.json",
+            "sha256": "c32ef251197ae6d9670806fda9b6c42d8db23e334487d81eda1aa78e6159cea5",
+            "status": "MULTIFILE_SHARED_PASS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile-shared/arm32-shared-rebased-n0kh7617/acceptance.json",
+            "sha256": "1fe7d825ddbabf9d9f5bf7788516bbaf979325f28a59404aaea49c8b5f326106",
+            "status": "MULTIFILE_SHARED_PASS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile-shared/mips32be-shared-mwpusw_k/acceptance.json",
+            "sha256": "2c80fc44101078524db9401ab22013a44977956f23e955d8567a51c807b246a3",
+            "status": "MULTIFILE_SHARED_PASS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile-shared/mips32be-shared-rebased-h5at9q0v/acceptance.json",
+            "sha256": "2be7724b57798d337589934551ea5a2025e043433ffe50891e9a211f83d1e9c3",
+            "status": "MULTIFILE_SHARED_PASS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile-shared/mips32le-shared-wvmss1rb/acceptance.json",
+            "sha256": "bc2981d91e1ddee7190e9471296280125656749ce570f1e98b389f16e1e01e93",
+            "status": "MULTIFILE_SHARED_PASS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-worktree/build/test-results/multifile-shared/mips32le-shared-rebased-det_451p/acceptance.json",
+            "sha256": "35b3298ad1361c0e68de71e4ae129c9d70c97f3e55750329bd36a5158b1de514",
+            "status": "MULTIFILE_SHARED_PASS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-formatters-x86_64-03/result.json",
+            "sha256": "95f3dece57f9c363e691a97319482c12369068dfac509c3152dbfa60494c9fda",
+            "status": "PASS_BASIC_PRODUCTION_FORMATTERS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-formatters-aarch64-03/result.json",
+            "sha256": "13d58b01aff5b8453aa89afb912587f0cab3d06a46eecd49487c1ece80f5e18e",
+            "status": "PASS_BASIC_PRODUCTION_FORMATTERS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-formatters-arm32-03/result.json",
+            "sha256": "efcfd60a98752314ce8999ccbccb2400fec9989738fa7653b308bd46e85467ae",
+            "status": "PASS_BASIC_PRODUCTION_FORMATTERS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-formatters-mips32be-03/result.json",
+            "sha256": "173b0c86720f782debc61b4777c61cf488e823766ae0e2df8cba58560f971acf",
+            "status": "PASS_BASIC_PRODUCTION_FORMATTERS"
+        },
+        {
+            "path": "/dev/shm/forge-multifile-formatters-mips32le-03/result.json",
+            "sha256": "844e6ad056148d34cbffddea7edbc97733ebd82676cbe188c6ac0f9f70caab1c",
+            "status": "PASS_BASIC_PRODUCTION_FORMATTERS"
+        },
+        {
+            "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/source-edges-x86-03/failed-source-hwid_zzd/result.json",
+            "sha256": "e5ace0bc4c617fc948cc92c9c303cd4805b673227eac7c3dc1e8b8e4f34d7045",
+            "status": "PASS_NATIVE_FAILED_SOURCE_EXPORT"
+        },
+        {
+            "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/source-edges-fresh-mips32le-01/edges/failed-source-iudejkca/result.json",
+            "sha256": "14049cc8bb8c1978e6ae8a1eb9aad3dff8945ee4b36c0863ff82f1a66baaf930",
+            "status": "PASS_NATIVE_FAILED_SOURCE_EXPORT"
+        },
+        {
+            "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/source-edges-fresh-mips32be-01/edges/failed-source-dwzkoppr/result.json",
+            "sha256": "61af5097d20f4159723b2e18f0f9d017c2ebb8d9e8b706837b4efba2babbc6ce",
+            "status": "PASS_NATIVE_FAILED_SOURCE_EXPORT"
+        },
+        {
+            "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/source-edges-fresh-aarch64-01/edges/failed-source-dxd5ob5c/result.json",
+            "sha256": "db1df50504535c5ed808b635af1f22ba42ad0e7ae7f82215cc6fa11c6e82cb99",
+            "status": "PASS_NATIVE_FAILED_SOURCE_EXPORT"
+        },
+        {
+            "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/source-edges-default-x86-02/failed-source-9z_le_lh/result.json",
+            "sha256": "b84698c9901ddd74bcf75dedcefcf478bee955d5172ecc122abf6ab173631d45",
+            "status": "PASS_NATIVE_FAILED_SOURCE_EXPORT"
+        },
+        {
+            "path": "/home/ziggy/.cache/forge-issue115-buildid-refresh-exec-03/result.json",
+            "sha256": "af37a152af1608adf52fd4f9aa069884b0ab6429d76215d913317cca5a44b177",
+            "status": "PASS_SAVED_ANALYST_BUILD_ID_REFRESH"
+        },
+        {
+            "path": "/home/ziggy/.cache/forge-issue115-buildid-refresh-pie-03/result.json",
+            "sha256": "806161c471b5892682c0d1ee9f40a7397dba8894c79c85f386a4b0ed90484603",
+            "status": "PASS_SAVED_ANALYST_BUILD_ID_REFRESH"
+        },
+        {
+            "path": "/home/ziggy/.cache/forge-issue115-buildid-refresh-default-01/result.json",
+            "sha256": "6b413b4282124b697a145dd0baf138a87f03e5d97213d2f26eb69810411f33d3",
+            "status": "PASS_SAVED_ANALYST_BUILD_ID_REFRESH"
+        },
+        {
+            "path": "/home/ziggy/.cache/forge-issue115-attachment-exec-01/result.json",
+            "sha256": "34dc0fc467d42e8f0b4cc2bfbac7020b7b03e7d93a7d3424d868816b15f9a099",
+            "status": "PASS"
+        },
+        {
+            "path": "/home/ziggy/.cache/forge-issue115-attachment-pie-01/result.json",
+            "sha256": "3e4a3f318b5a43e26b64f6b072275116f53de5043fb0ba0206106a0203a95cf6",
+            "status": "PASS"
+        },
+        {
+            "path": "/home/ziggy/.cache/forge-issue115-attachment-default-01/result.json",
+            "sha256": "51605410609ed057409acdbdcab0cd413330f3eb342ccadff6b5ce0129a6f78c",
+            "status": "PASS"
+        }
+    ],
+    "runtimeLineage": {
+        "beforeSha256": "ba75839a05c05672c3a476f4e46de3e1368f999135e5fa866194b67b1bdca646",
+        "afterSha256": "ce4fe19d14a0d377d80b2301b0f1621d0c021269635cd2262e8ddc87cdc3b7ea",
+        "changedEntries": [
+            "ghidradwarfforge/output/AttachmentOperation.class",
+            "ghidradwarfforge/output/AttachmentTransaction$Plan.class",
+            "ghidradwarfforge/output/AttachmentTransaction.class"
+        ],
+        "meaning": "Prior local ELF/DWARF/consumer evidence uses unchanged exporter entries; the three changed attachment classes have the separate latest regression/integration evidence."
+    },
+    "limits": [
+        "This is an audit of retained local evidence, not a new end-to-end test run.",
+        "Final-head hosted Linux/Windows/architecture gates, privileged attachment integration and corrected Windows performance workload remain pending."
+    ],
+    "auditScriptSha256": "92cda8adb2b847ac75bc1b2e6f065c0c4dcdfb5d06d03a77d09602b4355e26a3",
+    "documentationCorrection": "AArch64 same-name type fixtures reject 12 mutations, not 13: they have no DW_AT_ranges to mutate. x86-64 types and all lexical cases reject 13. Separate discontiguous fixtures supply range coverage.",
+    "auditSetupCorrections": [
+        "The first archive inventory reader omitted tar hard-link members; resolving their earlier content entries proves all 7,614 publication members match.",
+        "The initial audit assumed 13 mutations in every semantic case; raw LLVM output and stored results establish the fixture-specific 12/13 counts above. No test criterion was weakened."
+    ]
+}

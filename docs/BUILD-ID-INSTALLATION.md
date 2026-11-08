@@ -94,6 +94,19 @@ the root at its installed path. Moving it leaves stale DWARF references and
 causes update/recovery to refuse; use the retained exported sidecar, source and
 report to install into a fresh root instead. Generations are not pruned.
 
+**CONFIRMED local development checkpoint for #115:** an optional multi-file
+export retains its index, manifest and every source part. The retained reported
+export and relocated consumer source each have independent copies; incomplete
+bundles are refused. Linux ext4 installation, fresh GDB discovery/cross-file
+stepping with the old export unavailable, interrupted installation retries and
+removal retaining all source parts pass on the local x86-64 fixture and Java 21.
+Native Windows and the full multi-file target matrix remain unverified. See
+[multi-file acceptance](MULTIFILE-SOURCE.md) for the remaining work.
+
+Only generation inventories use expanded bounds (64 MiB and 1,000,000 JSON
+values); public requests and state records retain their 1 MiB limits. The
+expanded inventory is still bounded and errors instead of dropping source files.
+
 For section-header-free ELF inputs, installation and source retention do not imply
 automatic GDB discovery. Matching compiler controls and Forge tests on GDB 15.1
 show this limitation on all five target lanes. The command reports it on install/

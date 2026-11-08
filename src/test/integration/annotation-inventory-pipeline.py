@@ -51,6 +51,7 @@ def main():
     retained_names = None
     context_export = None
     failed_source = None
+    multifile_failed_source = None
     if args.consumer:
         classes = root / 'classes'
         classes.mkdir()
@@ -90,6 +91,14 @@ def main():
             args.consumer.resolve(strict=True), args.producer.resolve(strict=True)])
         failed_source, = curation.glob('failed-source-*')
         assert json.loads((failed_source / 'result.json').read_text())['status'] == 'PASS_NATIVE_FAILED_SOURCE_EXPORT'
+        run('multifile-failed-source', ['python3', harness / 'failed-source-context.py', args.ghidra, curation,
+            args.consumer.resolve(strict=True), args.producer.resolve(strict=True), '--source-lines', '8',
+            '--results', root / 'multifile-failed-source'])
+        multifile_failed_source, = (root / 'multifile-failed-source').glob('failed-source-*')
+        multifile_result = json.loads((multifile_failed_source / 'result.json').read_text())
+        assert multifile_result['status'] == 'PASS_NATIVE_FAILED_SOURCE_EXPORT'
+        assert multifile_result['sourceLines'] == 8 and len(multifile_result['cases']) == 6
+        assert {case['mode'] for case in multifile_result['semanticComparisons']} == {'all', 'mixed', 'empty'}
         if args.target == 'x86_64':
             run('retained-names', ['python3', harness / 'equate-retained-names.py', args.ghidra,
                 args.consumer.resolve(strict=True), args.producer.resolve(strict=True), root])
@@ -103,6 +112,7 @@ def main():
         'placement': str(placement) if placement else None,
         'contextExport': str(context_export) if context_export else None,
         'failedSource': str(failed_source) if failed_source else None,
+        'multifileFailedSource': str(multifile_failed_source) if multifile_failed_source else None,
         'defaultExport': str(default_export) if default_export else None}, indent=4) + '\n')
     print('annotation-inventory-pipeline=PASS ' + args.target + ' ' + role)
 

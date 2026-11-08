@@ -260,6 +260,14 @@ public final class AttachmentOperation {
                 throw new IOException("refresh retained artifact differs: " + entry.getKey());
             }
         }
+        var previousBundle = SourceBundleFiles.open(paths.get("previousSource"), cancelled).orElse(null);
+        if (previousBundle != null) {
+            if (!previousBundle.manifest().inputSha256().equals(snapshots.get("originalBackup").digest().sha256())) {
+                throw new IOException("previous source bundle differs from the original backup");
+            }
+            previousBundle.verify(cancelled);
+            AttachmentFileStore.unchanged(snapshots.get("previousSource"), host, cancelled);
+        }
         if (paths.get("sidecar").getFileName().equals(paths.get("previousSidecar").getFileName()) ||
                 paths.get("source").getFileName().equals(paths.get("previousSource").getFileName())) {
             throw new IOException("refresh requires a fresh source and sidecar basename");

@@ -21,6 +21,9 @@ import java.util.function.BooleanSupplier;
 final class BuildIdRecords {
     private static final ReportJsonReader.Limits LIMITS =
         new ReportJsonReader.Limits(1024 * 1024, 16384, 8, 20000, 1);
+    static final int GENERATION_MAX_BYTES = 64 * 1024 * 1024;
+    private static final ReportJsonReader.Limits GENERATION_LIMITS =
+        new ReportJsonReader.Limits(GENERATION_MAX_BYTES, 16384, 8, 1_000_000, 1);
 
     private BuildIdRecords() { }
 
@@ -32,21 +35,31 @@ final class BuildIdRecords {
         return read(new ByteArrayInputStream(bytes), cancelled);
     }
 
+    /** Only retained generation inventories receive the expanded source-part budget. */
+    static JsonObject readGeneration(Path path, BooleanSupplier cancelled) throws IOException {
+        return read(Files.newInputStream(path, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS), cancelled, GENERATION_LIMITS);
+    }
+
     private static JsonObject read(InputStream input, BooleanSupplier cancelled) throws IOException {
+        return read(input, cancelled, LIMITS);
+    }
+
+    private static JsonObject read(InputStream input, BooleanSupplier cancelled, ReportJsonReader.Limits limits) throws IOException {
         try (var stream = input;
-                var json = new JsonReader(new ReportJsonReader(stream, cancelled, LIMITS))) {
+                var json = new JsonReader(new ReportJsonReader(stream, cancelled, limits))) {
             json.setLenient(false);
-            JsonElement value = readValue(json, new int[] { 0 });
+            JsonElement value = readValue(json, new int[] { 0 }, limits.values());
             require(value.isJsonObject() && json.peek() == JsonToken.END_DOCUMENT, "invalid build-ID record document");
             return value.getAsJsonObject();
         }
+        catch (java.util.concurrent.CancellationException stopped) { throw stopped; }
         catch (IllegalArgumentException | IllegalStateException invalid) {
             throw new IOException("invalid build-ID record", invalid);
         }
     }
 
-    private static JsonElement readValue(JsonReader reader, int[] count) throws IOException {
-        require(++count[0] <= 20000, "build-ID record exceeds value limit");
+    private static JsonElement readValue(JsonReader reader, int[] count, int maximumValues) throws IOException {
+        require(++count[0] <= maximumValues, "build-ID record exceeds value limit");
         return switch (reader.peek()) {
             case BEGIN_OBJECT -> {
                 var value = new JsonObject();
@@ -54,7 +67,7 @@ final class BuildIdRecords {
                 while (reader.hasNext()) {
                     String name = reader.nextName();
                     require(!value.has(name), "duplicate build-ID record member: " + name);
-                    value.add(name, readValue(reader, count));
+                    value.add(name, readValue(reader, count, maximumValues));
                 }
                 reader.endObject();
                 yield value;

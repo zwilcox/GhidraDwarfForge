@@ -125,6 +125,18 @@ exit /b %FAKE_HEADLESS_EXIT%
     Assert-Condition ($launchedArguments -match '(?:^|\s)"?-loader"?\s+"?ElfLoader"?(?:\s|$)') `
         'import wrapper did not select the ELF loader'
     $null = Invoke-Wrapper 0 $importOptions
+    Assert-Condition (-not (Get-Content -LiteralPath $argumentLog -Raw).Contains('--source-lines=')) 'default selected multiple sources'
+    foreach ($target in @('1', '8', '1000', '2147483647')) {
+        $null = Invoke-Wrapper 0 ($importOptions + @('-SourceLines', $target))
+        Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains("--source-lines=$target")) 'source line target not forwarded'
+    }
+    foreach ($target in @('', '0', '-1', '+1', '01', ' 8', '1.5', '2147483648', '999999999999999999999999')) {
+        Remove-Item -LiteralPath $argumentLog -Force -ErrorAction SilentlyContinue
+        $transcript = Invoke-Wrapper 64 ($importOptions + @('-SourceLines', $target, '-Log', $inputElf))
+        Assert-Condition (-not (Test-Path -LiteralPath $argumentLog)) 'invalid source target launched Ghidra'
+        Assert-Condition (($transcript -join ' ') -match 'SourceLines must be') 'missing source target diagnostic'
+        Assert-Preserved
+    }
     $null = Invoke-Wrapper 0 ($importOptions + @('-Formatters', $selection))
     $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
     Assert-Condition ($launchedArguments.Contains("--formatters=$selection")) 'formatter selection was not forwarded'
@@ -149,6 +161,21 @@ exit /b %FAKE_HEADLESS_EXIT%
     $null = Invoke-Wrapper 0 $unknownProjectOptions
 
     Assert-RejectedLog $inputElf $importOptions
+    $sourceNames = @("forge-src-000001-$('0' * 64).c", "forge-src-$('0' * 64).json")
+    foreach ($name in $sourceNames) {
+        $part = Join-Path $work $name
+        Preserve-File $part
+        Assert-RejectedLog $part $importOptions
+        $hard = Join-Path $work "$name-hard.log"
+        New-Item -ItemType HardLink -Path $hard -Target $part | Out-Null
+        Assert-RejectedLog $hard ($importOptions + @('-SourceLines', '8'))
+    }
+    $futureManifest = Join-Path $work "forge-src-$('1' * 64).json"
+    Assert-RejectedLog $futureManifest ($importOptions + @('-SourceLines', '8'))
+    Assert-Condition (-not (Test-Path -LiteralPath $futureManifest)) 'reserved future manifest became a log'
+    $independentSources = Join-Path $work 'independent-sources'
+    New-Item -ItemType Directory -Path $independentSources | Out-Null
+    $null = Invoke-Wrapper 0 ($importOptions + @('-Log', (Join-Path $independentSources $sourceNames[0])))
     Assert-RejectedLog $selection ($importOptions + @('-Formatters', $selection))
     Assert-RejectedLog $formatterOutput ($importOptions + @('-Output', $output, '-Formatters', $selection))
     $selectionHardlink = Join-Path $work 'selection-hardlink.log'
@@ -249,6 +276,23 @@ exit /b %FAKE_HEADLESS_EXIT%
     }
     if ($canSymlink) {
         Assert-RejectedLog $symlink $importOptions
+        foreach ($name in $sourceNames) {
+            $alias = Join-Path $work "$name-symbolic.log"
+            New-Item -ItemType SymbolicLink -Path $alias -Target (Join-Path $work $name) | Out-Null
+            Assert-RejectedLog $alias $importOptions
+        }
+        $futureAlias = Join-Path $work 'future-source.log'
+        New-Item -ItemType SymbolicLink -Path $futureAlias -Target $futureManifest | Out-Null
+        Assert-RejectedLog $futureAlias $importOptions
+        Assert-Condition (-not (Test-Path -LiteralPath $futureManifest)) 'dangling source log created manifest'
+        $reverseLog = Join-Path $independentSources 'preserved.log'
+        Preserve-File $reverseLog
+        New-Item -ItemType SymbolicLink -Path (Join-Path $work "forge-src-000002-$('0' * 64).c") -Target $reverseLog | Out-Null
+        Assert-RejectedLog $reverseLog $importOptions
+        $reverseFuture = Join-Path $independentSources 'not-created.log'
+        New-Item -ItemType SymbolicLink -Path (Join-Path $work "forge-src-000003-$('0' * 64).c") -Target $reverseFuture | Out-Null
+        Assert-RejectedLog $reverseFuture $importOptions
+        Assert-Condition (-not (Test-Path -LiteralPath $reverseFuture)) 'dangling source alias created log'
         $dangling = Join-Path $work 'dangling-output.log'
         New-Item -ItemType SymbolicLink -Path $dangling -Target $newOutput | Out-Null
         Assert-RejectedLog $dangling ($importOptions + @('-Output', $newOutput))
@@ -273,6 +317,19 @@ exit /b %FAKE_HEADLESS_EXIT%
         Assert-RejectedLog "$lexicalInput.dbg.c" ($importOptions + @('-OriginalElf', $ambiguousInput))
         # Tee-Object and the Java exporter both normalize '..' lexically.
         Assert-RejectedLog $ambiguousInput @('-Import', $lexicalInput)
+    }
+    if ($env:OS -ne 'Windows_NT') {
+        $specialDirectory = Join-Path $work "source-directory`n"
+        New-Item -ItemType Directory -Path $specialDirectory | Out-Null
+        foreach ($name in $sourceNames) {
+            $part = Join-Path $specialDirectory $name
+            Preserve-File $part
+            foreach ($kind in @('HardLink', 'SymbolicLink')) {
+                $alias = Join-Path $work "$name-newline-$kind.log"
+                New-Item -ItemType $kind -Path $alias -Target $part | Out-Null
+                Assert-RejectedLog $alias ($importOptions + @('-Output', (Join-Path $specialDirectory 'fixture.dbg')))
+            }
+        }
     }
     $independent = Join-Path $work 'independent.log'
     [IO.File]::WriteAllText($independent, 'independent log')

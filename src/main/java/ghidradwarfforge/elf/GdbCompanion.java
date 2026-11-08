@@ -47,6 +47,21 @@ public final class GdbCompanion {
         var originalHash = FileDigests.read(target, cancelled);
         var sidecarHash = FileDigests.read(stagedSidecar, cancelled);
         var sourceHash = FileDigests.read(stagedSource, cancelled);
+        var sourceBundle = ghidradwarfforge.output.SourceBundleFiles.open(stagedSource,
+            source.getFileName().toString(), cancelled).orElse(null);
+        String sourceDirectory = null;
+        if (sourceBundle != null) {
+            if (!source.getParent().equals(sidecar.getParent())) {
+                throw new IOException("multi-file GDB companion requires co-located sidecar and source bundle");
+            }
+            String directory = source.getParent().toString().replace(java.io.File.separatorChar, '/');
+            var layout = SyntheticSourceSidecar.prepare(stagedSidecar, directory, cancelled);
+            sourceBundle.requireSourceNames(layout.sourceFiles());
+            sourceDirectory = layout.previousDirectory();
+            if (!sourceBundle.manifest().inputSha256().equals(originalHash.sha256())) {
+                throw new IOException("source bundle describes a different original input");
+            }
+        }
         if (MatchedElfPrefix.compare(target, stagedSidecar, cancelled).status() !=
                 MatchedElfPrefix.Status.MATCHING_COPIED_PREFIX ||
                 MatchedElfAllocations.compare(target, stagedSidecar, cancelled).status() !=
@@ -87,10 +102,25 @@ public final class GdbCompanion {
             throw new IOException("GDB companion requires bounded immutable executable identity evidence");
         }
         StringBuilder manifest = new StringBuilder();
-        manifest.append("{\"schema\":1,\"address_bits\":").append(image.is64Bit() ? 64 : 32);
-        artifact(manifest, "target", target, originalHash.sha256());
-        artifact(manifest, "sidecar", sidecar, sidecarHash.sha256());
-        artifact(manifest, "source", source, sourceHash.sha256());
+        manifest.append("{\"schema\":").append(sourceBundle == null ? 1 : 2)
+            .append(",\"address_bits\":").append(image.is64Bit() ? 64 : 32);
+        artifact(manifest, "target", target, originalHash.sha256(), sourceBundle != null);
+        artifact(manifest, "sidecar", sidecar, sidecarHash.sha256(), sourceBundle != null);
+        artifact(manifest, "source", source, sourceHash.sha256(), sourceBundle != null);
+        if (sourceBundle != null) {
+            manifest.append(",\"source_directory\":").append(quote(sourceDirectory));
+            manifest.append(",\"source_files\":[");
+            boolean first = true;
+            for (var dependency : sourceBundle.dependencies()) {
+                checkCancelled(cancelled);
+                if (!first) manifest.append(',');
+                first = false;
+                manifest.append("{\"name\":").append(quote(dependency.name()))
+                    .append(",\"bytes\":").append(dependency.bytes())
+                    .append(",\"sha256\":").append(quote(dependency.sha256())).append('}');
+            }
+            manifest.append(']');
+        }
         manifest.append(",\"segments\":[");
         for (int index = 0; index < loads.size(); index++) {
             var segment = loads.get(index);
@@ -118,6 +148,7 @@ public final class GdbCompanion {
                 !sourceHash.equals(FileDigests.read(stagedSource, cancelled))) {
             throw new IOException("selected artifacts changed during GDB companion generation");
         }
+        if (sourceBundle != null) sourceBundle.verify(cancelled);
         byte[] runtime;
         try (var stream = GdbCompanion.class.getResourceAsStream("/ghidradwarfforge/gdb/loader.py")) {
             if (stream == null) {
@@ -148,7 +179,10 @@ public final class GdbCompanion {
                     module = types.ModuleType('_forge_loader_runtime')
                     exec(compile(runtime, '<Forge loader runtime>', 'exec'), module.__dict__)
                 manifest = json.loads(base64.b64decode('%s'))
-                module.register(manifest)
+                # GDB can retain an outer Python script's __file__ when source
+                # is invoked from Python. The function's compiled filename is
+                # the companion actually being executed.
+                module.register(manifest, _forge_register_companion.__code__.co_filename)
                 gdb._forge_loader_runtime_sha256 = digest
                 gdb._forge_loader_runtime_module = module
             _forge_register_companion()
@@ -203,9 +237,11 @@ public final class GdbCompanion {
         return HexFormat.of().formatHex(digest.digest());
     }
 
-    private static void artifact(StringBuilder out, String role, Path path, String sha256) {
+    private static void artifact(StringBuilder out, String role, Path path, String sha256, boolean portable) {
         out.append(',').append(quote(role)).append(":{\"path\":").append(quote(path.toString()))
-            .append(",\"sha256\":").append(quote(sha256)).append('}');
+            .append(",\"sha256\":").append(quote(sha256));
+        if (portable) out.append(",\"name\":").append(quote(path.getFileName().toString()));
+        out.append('}');
     }
 
     private static void requirePath(Path path) throws IOException {

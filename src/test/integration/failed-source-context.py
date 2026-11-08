@@ -26,12 +26,29 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('ghidra', 'curation', 'consumer', 'producer'):
         parser.add_argument(name, type=Path)
+    parser.add_argument('--source-lines', type=int, default=0)
+    parser.add_argument('--java', type=Path)
+    parser.add_argument('--results', type=Path, help='logs, copied project and private Java home')
+    parser.add_argument('--artifacts', type=Path, help='new hard-link-capable output directory')
     args = parser.parse_args()
+    if args.source_lines < 0:
+        parser.error('negative source line target')
+    for name in ('ghidra', 'curation', 'consumer', 'producer'):
+        setattr(args, name, getattr(args, name).resolve(strict=True))
     harness = Path(__file__).resolve().parent
     reference = args.curation.parent
     prepared = json.loads((args.curation / 'result.json').read_text())
     assert prepared['status'] == 'PASS_SAVED_ANNOTATIONS'
-    root = Path(tempfile.mkdtemp(prefix='failed-source-', dir=args.curation)).resolve()
+    parent = args.results or args.curation
+    parent.mkdir(parents=True, exist_ok=True)
+    root = Path(tempfile.mkdtemp(prefix='failed-source-', dir=parent)).resolve()
+    artifact_root = args.artifacts.resolve() if args.artifacts else root
+    if args.artifacts:
+        artifact_root.mkdir(parents=True, exist_ok=False)
+    layouts = [('single', artifact_root / 'single', 0), ('multi', artifact_root / 'multi', args.source_lines)] if args.source_lines else [('single', artifact_root, 0)]
+    modes = ('all', 'mixed', 'empty') if args.source_lines else ('all', 'mixed')
+    for _, directory, _ in layouts:
+        directory.mkdir(exist_ok=True)
     print('failed-source-results=' + str(root), flush=True)
     project = root / 'project'
     shutil.copytree(args.curation / 'project', project)
@@ -42,8 +59,20 @@ def main():
     shutil.copy2(helper, scripts)
     jar = args.ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
     protected = {str(p.resolve()): digest(p) for p in [helper, Path(__file__), jar,
-        harness / 'failed-source-context-gdb.py', harness / 'failed-source-context-gdb.sh',
+        harness / 'check-multifile-semantics.py', harness / 'failed-source-context-gdb.py', harness / 'failed-source-context-gdb.sh',
         reference / 'stripped', reference / 'reference', reference / 'labels.json', args.consumer, args.producer]}
+    headless = [args.ghidra / 'support/analyzeHeadless']
+    if args.java:
+        java = args.java.resolve(strict=True)
+        vmargs = subprocess.check_output([java, '-cp', args.ghidra / 'support/LaunchSupport.jar',
+            'LaunchSupport', args.ghidra, '-vmargs'], text=True).splitlines()
+        for name in ('java-home', 'java-tmp'):
+            (root / name).mkdir()
+        headless = [java, *vmargs, '-Duser.home=' + str(root / 'java-home'),
+            '-Djava.io.tmpdir=' + str(root / 'java-tmp'), '-Xmx2G', '-XX:ParallelGCThreads=2',
+            '-XX:CICompilerCount=2', '-Djava.awt.headless=true', '-cp',
+            args.ghidra / 'Ghidra/Framework/Utility/lib/Utility.jar', 'ghidra.Ghidra',
+            'ghidra.app.util.headless.AnalyzeHeadless']
     commands = []
 
     def run(label, command):
@@ -55,71 +84,105 @@ def main():
         assert result.returncode == 0, (label, result.returncode)
         return (root / (label + '.log')).read_text()
 
-    states, generations = [snapshot(project)], []
-    for phase in ('first', 'second'):
-        log = run(phase, [args.ghidra / 'support/analyzeHeadless', project, 'Annotations',
-            '-process', 'stripped', '-readOnly', '-noanalysis', '-scriptPath', scripts,
-            '-postScript', helper.name, reference / 'labels.json', reference / 'stripped', root, args.consumer, args.producer])
-        assert 'failed-source-context=PASS' in log and 'ERROR REPORT SCRIPT ERROR' not in log
-        generations.append({p.name: digest(p) for p in root.iterdir() if p.suffix in ('.dbg', '.c') or p.name in ('all.json', 'mixed.json')})
-        states.append(snapshot(project))
-    assert generations[0] == generations[1]
+    states, generations = [snapshot(project)], {}
+    def generation(directory):
+        return {p.name: digest(p) for p in directory.iterdir() if p.is_file() and
+            (p.suffix in ('.dbg', '.c') or p.name.startswith('forge-src-') or p.name in {m + '.json' for m in modes})}
+    for layout, directory, target in layouts:
+        generations[layout] = []
+        for phase in ('first', 'second'):
+            options = [str(target)] if args.source_lines else []
+            log = run(layout + '-' + phase, [*headless, project, 'Annotations',
+                '-process', 'stripped', '-readOnly', '-noanalysis', '-scriptPath', scripts,
+                '-postScript', helper.name, reference / 'labels.json', reference / 'stripped', directory,
+                args.consumer, args.producer, *options])
+            assert 'failed-source-context=PASS' in log and 'ERROR REPORT SCRIPT ERROR' not in log
+            generations[layout].append(generation(directory))
+            states.append(snapshot(project))
+        assert generations[layout][0] == generations[layout][1]
     changed = {p for p in states[0].keys() | states[1].keys() if states[0].get(p) != states[1].get(p)}
     assert changed <= {'Annotations.rep/idata/~index.bak', 'Annotations.rep/idata/~journal.bak'}
-    assert states[1] == states[2]
+    assert all(state == states[1] for state in states[2:])
     spec = importlib.util.spec_from_file_location('emission', harness / 'emission-evidence.py')
     emission = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(emission)
     cases = []
-    for mode in ('all', 'mixed'):
-        artifact = root / (mode + '.dbg')
-        metadata = json.loads((root / (mode + '.json')).read_text())
-        assert Path(unquote(urlsplit(metadata['origin']).path)).resolve() == jar.resolve()
-        assert metadata['recoveredSignatures'] == 3, 'fixture must retain curated signatures before failure filtering'
-        for view in ('info', 'abbrev', 'aranges', 'decodedline', 'rawline'):
-            text = run(mode + '-' + view, ['readelf', '--debug-dump=' + view, artifact])
-            assert not re.search(r'(?im)(warning:|error:)', text), view
-        run(mode + '-identity', ['readelf', '-hSWn', reference / 'stripped', artifact])
-        assert 'No errors.' in run(mode + '-llvm', ['llvm-dwarfdump', '--verify', artifact])
-        run(mode + '-strict', ['python3', harness / 'check-dwarfdump.py', artifact, root / (mode + '-dwarfdump.log'),
-            '--original', reference / 'stripped'])
-        dies = emission.dies((root / (mode + '-info.log')).read_text())
-        for name in metadata['nativeFailures']:
-            die, = [d for d in dies.values() if d['tag'] == 'DW_TAG_subprogram' and d['name'] == name]
-            assert not {'decl_file', 'decl_line', 'type'} & die['attributes'].keys()
-            assert not die['children'], 'failed function acquired a signature or local'
-        rows = [(int(m[2], 16), int(m[1])) for m in re.finditer(r'(?m)^\S+\s+(\d+)\s+(0x[0-9a-fA-F]+)\b',
-            (root / (mode + '-decodedline.log')).read_text())]
-        if mode == 'all':
-            assert not rows and not metadata['mappedLines'] and not metadata['emittedLines']['sequences']
-            hex_dump = run('all-line-bytes', ['readelf', '-x', '.debug_line', artifact])
-            values = []
-            for line in hex_dump.splitlines():
-                parts = line.split()
-                if not parts or not parts[0].startswith('0x'):
-                    continue
-                values.extend(part for part in parts[1:5] if re.fullmatch(r'(?:[0-9a-fA-F]{2}){1,4}', part))
-            data = bytes.fromhex(''.join(values))
-            order = '<' if (reference / 'stripped').read_bytes()[5] == 1 else '>'
-            header_length = struct.unpack_from(order + 'I', data, 8)[0]
-            assert data[12 + header_length:] == b'\x04\x00', 'file-only program emitted extra operations'
-        else:
-            assert rows and len(metadata['nativeFailures']) == 1
-            failed_ranges = next(f['ranges'] for f in metadata['functions'] if f['name'] == 'annotation_probe')
-            assert not any(r['address'] <= address < r['address'] + r['size'] for address, _ in rows for r in failed_ranges)
-        gdb = run(mode + '-gdb', ['bash', harness / 'failed-source-context-gdb.sh',
-            root, reference, prepared['target'], mode])
-        assert 'failed-source-context-gdb=PASS' in gdb
-        warnings = re.findall(r'(?m)^warning:.*$', gdb)
-        compiler_warnings = re.findall(r'(?m)^warning:.*$', (reference / 'gdb.stdout').read_text() +
-            (reference / 'gdb.stderr').read_text())
-        assert warnings == compiler_warnings, (mode, warnings, compiler_warnings)
-        cases.append({'mode': mode, 'nativeFailures': metadata['nativeFailures'], 'rawRows': len(rows),
-            'gdb': json.loads((root / (mode + '-gdb.json')).read_text()), 'corroboratedWarnings': warnings})
+    for layout, directory, target in layouts:
+        for mode in modes:
+            artifact = directory / (mode + '.dbg')
+            label = layout + '-' + mode
+            metadata = json.loads((directory / (mode + '.json')).read_text())
+            assert Path(unquote(urlsplit(metadata['origin']).path)).resolve() == jar.resolve()
+            assert metadata['recoveredSignatures'] == 3, 'fixture must retain curated signatures before failure filtering'
+            if mode == 'empty':
+                assert not metadata['sourceFunctions'] and metadata['emptySelectionRefusals'] == 2
+                assert not (directory / 'no-selection.dbg').exists() and not (directory / 'no-selection.dbg.c').exists()
+            for view in ('info', 'abbrev', 'aranges', 'decodedline', 'rawline'):
+                text = run(label + '-' + view, ['readelf', '--debug-dump=' + view, artifact])
+                assert not re.search(r'(?im)(warning:|error:)', text), view
+            run(label + '-identity', ['readelf', '-hSWn', reference / 'stripped', artifact])
+            assert 'No errors.' in run(label + '-llvm', ['llvm-dwarfdump', '--verify', artifact])
+            run(label + '-strict', ['python3', harness / 'check-dwarfdump.py', artifact, root / (label + '-dwarfdump.log'),
+                '--original', reference / 'stripped'])
+            dies = emission.dies((root / (label + '-info.log')).read_text())
+            for name in metadata['nativeFailures']:
+                die, = [d for d in dies.values() if d['tag'] == 'DW_TAG_subprogram' and d['name'] == name]
+                assert not {'decl_file', 'decl_line', 'type'} & die['attributes'].keys()
+                assert not die['children'], 'failed function acquired a signature or local'
+            rows = [(int(m[2], 16), int(m[1])) for m in re.finditer(r'(?m)^\S+\s+(\d+)\s+(0x[0-9a-fA-F]+)\b',
+                (root / (label + '-decodedline.log')).read_text())]
+            if mode != 'mixed':
+                assert not rows and not metadata['mappedLines'] and not metadata['emittedLines']['sequences']
+                hex_dump = run(label + '-line-bytes', ['readelf', '-x', '.debug_line', artifact])
+                values = []
+                for line in hex_dump.splitlines():
+                    parts = line.split()
+                    if not parts or not parts[0].startswith('0x'):
+                        continue
+                    values.extend(part for part in parts[1:5] if re.fullmatch(r'(?:[0-9a-fA-F]{2}){1,4}', part))
+                data = bytes.fromhex(''.join(values))
+                order = '<' if (reference / 'stripped').read_bytes()[5] == 1 else '>'
+                header_length = struct.unpack_from(order + 'I', data, 8)[0]
+                assert data[12 + header_length:] == b'\x04\x00', 'file-only program emitted extra operations'
+            else:
+                assert rows and len(metadata['nativeFailures']) == 1
+                failed_ranges = next(f['ranges'] for f in metadata['functions'] if f['name'] == 'annotation_probe')
+                assert not any(r['address'] <= address < r['address'] + r['size'] for address, _ in rows for r in failed_ranges)
+            gdb = run(label + '-gdb', ['bash', harness / 'failed-source-context-gdb.sh',
+                directory, reference, prepared['target'], mode])
+            assert 'failed-source-context-gdb=PASS' in gdb
+            warnings = re.findall(r'(?m)^warning:.*$', gdb)
+            compiler_warnings = re.findall(r'(?m)^warning:.*$', (reference / 'gdb.stdout').read_text() +
+                (reference / 'gdb.stderr').read_text())
+            assert warnings == compiler_warnings, (mode, warnings, compiler_warnings)
+            cases.append({'layout': layout, 'mode': mode, 'nativeFailures': metadata['nativeFailures'], 'rawRows': len(rows),
+                'gdb': json.loads((directory / (mode + '-gdb.json')).read_text()), 'corroboratedWarnings': warnings})
+    comparisons = []
+    if args.source_lines:
+        spec = importlib.util.spec_from_file_location('semantics', harness / 'check-multifile-semantics.py')
+        semantics = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(semantics)
+        for mode in modes:
+            single, multi = [directory / (mode + '.dbg') for _, directory, _ in layouts]
+            old_source, new_source = [Path(str(path) + '.c') for path in (single, multi)]
+            manifest = semantics.bundle(new_source, reference / 'stripped', old_source, allow_single_part=mode == 'empty')
+            if mode == 'empty':
+                assert manifest['functions'] == []
+            snapshots = []
+            for label, artifact, source, bundle in [('single', single, old_source, None), ('multi', multi, new_source, manifest)]:
+                info = run(mode + '-' + label + '-llvm-info', ['llvm-dwarfdump', '--debug-info', '--show-form', artifact])
+                lines = run(mode + '-' + label + '-llvm-lines', ['llvm-dwarfdump', '--debug-line', artifact])
+                snapshots.append({'dies': semantics.dies(info, source, bundle),
+                    'rows': semantics.line_rows(lines, source, bundle, allow_empty=mode != 'mixed'),
+                    'sections': semantics.stable_sections(artifact)})
+            semantics.compare(*snapshots)
+            comparisons.append({'mode': mode, 'diesIncludingNull': len(snapshots[0]['dies']),
+                'rows': len(snapshots[0]['rows']), 'sourceFiles': 1 + len(manifest['parts'])})
     assert snapshot(args.curation / 'project') == saved and snapshot(project) == states[-1]
     assert protected == {p: digest(Path(p)) for p in protected}
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_NATIVE_FAILED_SOURCE_EXPORT',
-        'target': prepared['target'], 'cases': cases, 'generations': generations,
+        'target': prepared['target'], 'sourceLines': args.source_lines, 'cases': cases, 'generations': generations,
+        'semanticComparisons': comparisons, 'artifactDirectory': str(artifact_root),
         'protectedSha256': protected, 'firstReopenBackups': sorted(changed)}, indent=4) + '\n')
     print('failed-source-context-harness=PASS ' + prepared['target'])
 

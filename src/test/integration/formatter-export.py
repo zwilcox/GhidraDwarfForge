@@ -40,13 +40,15 @@ def run(command, log, timeout=300, env=None, input_text=None, expected_status=0)
 
 
 def gdb(original, sidecar, companion, root, emulator, sysroot, reference=None, mi=False,
-        source_directory=None):
+        source_directory=None, loader=False):
     commands = ['set pagination off', 'set confirm off', 'set debuginfod enabled off',
         'set auto-solib-add off', 'set disable-randomization off', 'file ' + json.dumps(str(original), ensure_ascii=False)]
     if sidecar is not None:
         commands.append('symbol-file ' + json.dumps(str(sidecar), ensure_ascii=False))
     if source_directory is not None:
         commands.append('directory ' + json.dumps(str(source_directory), ensure_ascii=False))
+    if loader:
+        commands.append('source ' + str(sidecar) + '.gdb.py')
     commands.append('break forge_formatter_marker')
     qemu = None
     qlog = None
@@ -133,7 +135,11 @@ def main():
     parser.add_argument('--lldb')
     parser.add_argument('--dwarfdump', default=os.environ.get('DWARFDUMP', 'dwarfdump'))
     parser.add_argument('--sysroot', type=Path, help='Explicit cross-toolchain/QEMU sysroot when not installed system-wide')
+    parser.add_argument('--source-lines', type=int, help='exercise formatters with a complete multi-file source bundle')
+    parser.add_argument('--java', type=Path, help='explicit runtime through the production headless entry point')
     args = parser.parse_args()
+    if args.source_lines is not None and not 1 <= args.source_lines <= 2147483647:
+        parser.error('--source-lines must be in 1..2147483647')
     repo = Path(__file__).resolve().parents[3]
     root = args.work.resolve()
     root.mkdir(parents=True, exist_ok=False)
@@ -141,6 +147,18 @@ def main():
     project.mkdir()
     ghidra = args.ghidra.resolve()
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+    headless = [str(ghidra / 'support/analyzeHeadless')]
+    if args.java:
+        java = args.java.resolve(strict=True)
+        vmargs = subprocess.check_output([java, '-cp', ghidra / 'support/LaunchSupport.jar',
+            'LaunchSupport', ghidra, '-vmargs'], text=True).splitlines()
+        for name in ('java-home', 'java-tmp'):
+            (root / name).mkdir()
+        headless = list(map(str, [java, *vmargs, '-Duser.home=' + str(root / 'java-home'),
+            '-Djava.io.tmpdir=' + str(root / 'java-tmp'), '-Xmx2G', '-XX:ParallelGCThreads=2',
+            '-XX:CICompilerCount=2', '-Djava.awt.headless=true', '-showversion', '-cp',
+            ghidra / 'Ghidra/Framework/Utility/lib/Utility.jar', 'ghidra.Ghidra',
+            'ghidra.app.util.headless.AnalyzeHeadless']))
     proof_paths = [Path(__file__).resolve(), Path(__file__).resolve().with_name('formatter_checks.py'),
         repo / 'src/test/fixtures/formatter-values.c',
         repo / 'src/test/integration/ghidra_scripts/ApplyFormatterFixture.java',
@@ -174,7 +192,7 @@ def main():
     symbol_map.write_text(json.dumps(symbols, indent=4) + '\n')
     selection = root / 'selection.json'
     env = dict(os.environ, LC_ALL='C.UTF-8')
-    text = run([str(ghidra / 'support/analyzeHeadless'), str(project), 'Formatters', '-import', str(original),
+    text = run([*headless, str(project), 'Formatters', '-import', str(original),
         '-analysisTimeoutPerFile', '120', '-scriptPath', str(repo / 'src/test/integration/ghidra_scripts'),
         '-postScript', 'ApplyFormatterFixture.java', str(selection), str(symbol_map), str(original)], root / 'prepare.log', env=env)
     assert 'formatter-fixture=PASS' in text and selection.is_file(), text[-5000:]
@@ -186,11 +204,33 @@ def main():
     if args.companions:
         enabled_outputs.extend([Path(str(sidecar) + '.gdb.py'), Path(str(sidecar) + '.unwind.json')])
     wrapper = module / 'support/ghidra-dwarf-forge-headless'
+    dependencies = []
+
+    def source_dependencies():
+        if args.source_lines is None:
+            return []
+        manifest_name, = [line.removeprefix(' * Manifest: ') for line in source.read_text().splitlines()
+            if line.startswith(' * Manifest: ')]
+        manifest_path = source.parent / manifest_name
+        manifest = json.loads(manifest_path.read_text())
+        assert manifest['inputSha256'] == original_hash
+        assert digest(manifest_path) == manifest_name.removeprefix('forge-src-').removesuffix('.json')
+        parts = [source.parent / item['name'] for item in manifest['parts']]
+        assert len(parts) > 1
+        for path, item in zip(parts, manifest['parts']):
+            assert digest(path) == item['sha256'] and path.stat().st_size == item['bytes']
+        return [manifest_path, *parts]
 
     def export(label, enabled):
         command = ['bash', str(wrapper), '--ghidra-dir=' + str(ghidra), '--project-dir=' + str(project),
             '--project-name=Formatters', '--program=original', '--input=' + str(original), '--output=' + str(sidecar),
             '--compress-debug-sections=' + args.compression]
+        if args.java:
+            command = [*headless, str(project), 'Formatters', '-process', 'original', '-readOnly', '-noanalysis',
+                '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--input=' + str(original),
+                '--output=' + str(sidecar), '--compress-debug-sections=' + args.compression]
+        if args.source_lines is not None:
+            command.append('--source-lines=' + str(args.source_lines))
         if enabled:
             command.append('--formatters=' + str(selection))
             if args.companions:
@@ -198,7 +238,12 @@ def main():
         text = run(command, root / (label + '.log'), env=env)
         assert 'GhidraDwarfForge symbol export PASS' in text, text[-5000:]
         assert digest(original) == original_hash and digest(selection) == selection_hash
-        return [digest(p) for p in (enabled_outputs if enabled else [sidecar, source])]
+        current = source_dependencies()
+        if not dependencies:
+            dependencies.extend(current)
+            enabled_outputs.extend(current)
+        assert current == dependencies
+        return [digest(p) for p in (enabled_outputs if enabled else [sidecar, source, *dependencies])]
 
     baseline = export('default-before', False)
     assert not companion.exists()
@@ -207,10 +252,10 @@ def main():
     assert enabled[1] == baseline[1], 'formatters changed synthetic source'
     assert export('default-after', False) == baseline, 'disabled export changed after formatter use'
     assert export('restored-enabled', True) == enabled
-    text = run([str(ghidra / 'support/analyzeHeadless'), str(project), 'Formatters', '-process', 'original',
+    text = run([*headless, str(project), 'Formatters', '-process', 'original',
         '-readOnly', '-noanalysis', '-scriptPath', str(repo / 'src/test/integration/ghidra_scripts'),
         '-postScript', 'CancelDuringFormatters.java', str(original), str(sidecar), str(selection), args.compression,
-        'all' if args.companions else 'formatters'],
+        'all' if args.companions else 'formatters', *([] if args.source_lines is None else [str(args.source_lines)])],
         root / 'cancellation.log', env=env)
     assert 'formatter-cancellation-recovery=PASS' in text, text[-5000:]
     if args.companions:
@@ -235,8 +280,10 @@ def main():
         if command[0] == 'readelf':
             assert 'Warning:' not in text and 'Error:' not in text, text[-5000:]
     compiler_text = gdb(reference, None, None, root / 'compiler-gdb.log', emulator, sysroot)
-    forge_text = gdb(original, sidecar, companion, root / 'forge-gdb.log', emulator, sysroot, reference)
-    gdb(original, sidecar, companion, root / 'forge-gdb-mi.log', emulator, sysroot, mi=True)
+    forge_text = gdb(original, sidecar, companion, root / 'forge-gdb.log', emulator, sysroot, reference,
+        source_directory=root if args.source_lines else None, loader=args.companions)
+    gdb(original, sidecar, companion, root / 'forge-gdb-mi.log', emulator, sysroot, mi=True,
+        source_directory=root if args.source_lines else None, loader=args.companions)
     # Keep known QEMU DSO diagnostics separate and require compiler corroboration.
     import re
     def warnings(text):
@@ -269,6 +316,7 @@ def main():
         'target': args.target, 'role': args.role, 'compression': args.compression, 'originalSha256': original_hash,
         'selectionSha256': selection_hash, 'enabledSha256': enabled, 'defaultSha256': baseline,
         'lldb': bool(args.lldb), 'allCompanions': args.companions, 'testedSources': tested_sources,
+        'sourceLines': args.source_lines,
         'portableArtifacts': {'role': args.role, 'sidecar': sidecar.name, 'companion': companion.name,
             'sha256': {path.name: digest(path) for path in [original, reference, selection, *enabled_outputs]}},
         'gdbVersion': subprocess.check_output(['gdb-multiarch', '--version'], text=True).splitlines()[0]}, indent=4) + '\n')
