@@ -86,6 +86,21 @@ tasks.register("callSiteProducerSmoke", JavaExec) {
     }
 }
 
+tasks.register("prepareCallSiteSerializationHarness") {
+    group = "verification"
+    dependsOn testClasses
+    doLast {
+        layout.buildDirectory.file("call-site-serialization-classpath.txt").get().asFile.text = sourceSets.test.runtimeClasspath.asPath
+    }
+}
+
+tasks.register("callSitePlanSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.CallSitePlanSmoke"
+}
+
 tasks.register("exportPhaseSmoke", JavaExec) {
     group = "verification"
     description = "Checks real JFR phase observations and failure/cancellation propagation"

@@ -1,8 +1,9 @@
 # Call-site and tail-call metadata — issue #117
 
-**CONFIRMED prerequisites; production emission PLANNED:** this plan preserves all six acceptance items in
-[issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117). No emitted
-call-site records or debugger behavior are claimed yet. #120 follows completion
+**CONFIRMED prerequisites and isolated serialization; Ghidra integration PLANNED:** this plan preserves all six acceptance items in
+[issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117). The normal
+headless/UI export path does not emit call-site records yet. The isolated
+production-serializer controls below do not establish Ghidra recovery. #120 follows completion
 of #117. Storage controls remain mandatory throughout implementation.
 
 ## Verified starting point
@@ -74,7 +75,7 @@ The plan therefore requires positive and negative debugger observations.
 cleanup for this goal after the approved 21-directory cleanup. Six fixed legacy
 archives are reported as a scoped exception; all new work retains the original
 budgets. The guard admits work and all 16 storage controls pass. See STORAGE.md.
-No artifact download or exporter/runtime matrix has started for #117 yet.
+At that starting checkpoint, no artifact download or exporter/runtime matrix had started for #117.
 
 ## Producer compatibility audit — 2026-11-08
 
@@ -447,3 +448,65 @@ No call-site DIEs are emitted by the production exporter yet. Next complete
 parameter identity/storage matching and caller coverage, choose tested completeness
 and consumer-PC handling, and run the full compiler/Forge GDB comparison. All
 original issue requirements remain required; this checkpoint does not close #117.
+
+## Production serializer and consumer controls — 2026-11-08
+
+**CONFIRMED locally, explicit provider only:** `CallSitePlan` carries sorted,
+immutable function inventories with partial/all-tail/all-call completeness,
+normalized transfer PCs and callee/formal identities. It rejects duplicate keys,
+self-tail recursion records, missing owners/origins, out-of-body call PCs and
+stale parameter names/types/ordinals before native production. The exporter
+accepts this plan through an explicit constructor; existing callers receive an
+empty plan. The ordinary Ghidra script is not connected to it yet.
+
+The serializer emits call-site/parameter DIEs after function declarations exist,
+checks its address relocations alongside existing function/object relocations,
+and omits call-site children for a failed decompilation. Callee source failure
+also suppresses argument children whose formal DIE was not emitted. Actual
+argument expressions use the audited block API; no native declaration changed.
+
+The new runtime control caught an interoperability failure that LLVM verification
+did not detect: emitting both `DW_AT_location` and `DW_AT_call_parameter` made
+GDB report that no matching parameter existed. The
+[GDB 15.1 reader](https://github.com/RTEMS/sourceware-mirror-binutils-gdb/blob/gdb-15.1-release/gdb/dwarf2/read.c#L9673)
+rejects their simultaneous presence. Register arguments now emit only location
+and call-value attributes; formal identity is checked in the model and against
+the actually emitted declarations. Formal-reference-only transport is not claimed.
+
+**CONFIRMED consumer behavior in these controls:** partial inventories emit a
+false `DW_AT_call_all_calls` flag, preserving DWARF's absent-flag semantics while
+satisfying LLVM's presence check. GDB resolves ordinary-call entry values from
+them but does not fabricate intermediate tail frames. Complete inventories use
+true all-calls or all-tail-calls flags and recover the two expected tail frames.
+Tail `call_return_pc` is the compiler/GDB post-transfer lookup key, explicitly
+not a saved return destination; `call_pc` identifies the transfer instruction.
+This validates the chosen encoding, not a Ghidra completeness inference.
+
+`call-site-serialization.py` exercises native x86-64 and QEMU AArch64 ET_EXEC/PIE
+with compiler-derived call PCs, source-controlled expressions and parameter ABI
+locations. Seven variants cover complete, partial, all-tail, failed-source,
+empty, missing-value and cancelled exports. There are 56 debugger sessions.
+Positive chain entry values are 23/21/20, and normal-call values are 11/10.
+Unknown current values remain unavailable: the control supplies entry-only
+locations plus explicit unavailable body ranges. Partial/failed/empty cases do
+not invent tail history; missing actual values do not prevent justified frames.
+PIE sessions require a nonzero runtime load bias.
+
+Each artifact passes readelf and LLVM verification, plus the pinned strict
+checker. The latter reports inherited `.eh_frame` alignment diagnostics; the
+existing strict harness requires exact corroboration against the unchanged
+original and matching frame bytes. No blanket warning suppression was added.
+Repeated sidecars and companion sources are byte-identical; original ELF and
+compiler-reference hashes are preserved. Cancellation is injected at every
+observed poll, preserves a sentinel output, leaves no temporary files and permits
+a subsequent successful producer lifecycle. Plan admission controls, extension
+build and workflow lint pass. The new tests are wired into both hosted target
+lanes; **hosted execution remains unverified**.
+
+See [serialization evidence](evidence/call-site-serialization.json) for exact
+hashes, commands and per-profile cancellation counts. The compiler-derived
+provider is intentionally a test control, not a fallback for missing Ghidra
+evidence. Next bind the recovered integer expressions to actual callee entry
+storage, prove completeness/caller coverage, and connect the normal export path.
+The full ambiguity/recursion/indirect/thunk, saved/rebased Ghidra, host and target
+acceptance matrix remains required. No #117 acceptance item is closed here.

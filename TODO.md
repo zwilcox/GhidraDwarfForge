@@ -5,7 +5,8 @@
 - **CONFIRMED:** the user reactivated feature goal #115 → #117 → #120 after
   storage maintenance. #115 is merged as `71352a3` with its final full/performance
   gates passing. #117 has a [complete acceptance plan](docs/CALL-SITE-PLAN.md),
-  but no production call-site emission or runtime claim yet; #120 follows it.
+  and isolated production-serializer controls pass, but the normal Ghidra export
+  path is not connected to call-site emission yet; #120 follows it.
 - **CONFIRMED:** local storage policy and monitored launcher are implemented;
   see [STORAGE.md](docs/STORAGE.md) and AGENTS.md section 6.2. Tiny isolated tests
   cover launch refusal, live growth, process-group stopping, cleanup and accounting.
@@ -46,6 +47,18 @@
   Hosted native/JNA/reference/capture/tail jobs, Windows
   runtime and Forge debugger behavior remain incomplete; these prerequisites
   do not complete #117.
+
+- **CONFIRMED #117 serializer checkpoint:** an explicit immutable plan now emits
+  call-site records through the production writer. Compiler-derived controls pass
+  56 native x86-64/QEMU AArch64 ET_EXEC/PIE debugger sessions, including true/false
+  completeness, tail frames, entry values, failed-source and missing-value cases.
+  GDB rejected simultaneous argument location/formal-reference attributes despite
+  LLVM passing; register arguments now emit location alone. Structural checks,
+  deterministic reruns, original preservation, cancellation, plan admission,
+  extension build and workflow lint pass locally. The normal script still supplies
+  no plan. Next bind real callee entry storage, address incomplete caller coverage,
+  establish completeness and run the full Ghidra/hosted acceptance matrix.
+  See [scoped evidence](docs/evidence/call-site-serialization.json).
 
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC

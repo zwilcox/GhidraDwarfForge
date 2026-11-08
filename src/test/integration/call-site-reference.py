@@ -166,14 +166,17 @@ def check_runtime(data, scenario, mode, role, link_driver):
             "warnings": data["warnings"]}
 
 
-def debugger(target, binary, scenario, output):
+def debugger(target, binary, scenario, output, sidecar=None):
     env = {"FORGE_CALL_SITE_RESULT": str(output.with_suffix(".json")),
            "FORGE_CALL_SITE_SCENARIO": str(scenario), "FORGE_CALL_SITE_REMOTE": ""}
     command = ["gdb" if target == "x86_64" else "gdb-multiarch", "-q", "-nx", "-batch",
                "-ex", "set pagination off", "-ex", "set confirm off",
                "-ex", "set debuginfod enabled off", "-ex", "set auto-solib-add off",
-               "-ex", "set disable-randomization off", "-ex", "set print entry-values both",
-               "-x", SCRIPTS / "call-site-reference-gdb.py", binary]
+               "-ex", "set disable-randomization off", "-ex", "set print entry-values both"]
+    if sidecar is not None:
+        command += ["-ex", 'file "' + str(binary) + '"',
+                    "-ex", 'symbol-file "' + str(sidecar) + '"']
+    command += ["-x", SCRIPTS / "call-site-reference-gdb.py", binary]
     if target == "x86_64":
         run(command, output, env)
     else:

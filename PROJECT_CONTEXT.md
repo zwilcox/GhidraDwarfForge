@@ -105,6 +105,21 @@ call completeness or Forge GDB acceptance. The driver with incomplete analysis
 still has no argument-flow proof. The exporter remains unchanged; continue the
 full #117 emission and debugger acceptance work before #120.
 
+**CONFIRMED #117 isolated serialization checkpoint:** the production writer now
+accepts an explicit immutable call-site plan; normal Ghidra callers retain the
+empty plan. Compiler-derived provider controls pass 56 GDB sessions on native
+x86-64 and QEMU AArch64 ET_EXEC/PIE. Complete records recover the expected virtual
+tail frames and entry values; partial records support ordinary entry values but
+do not claim tail history. GDB rejects simultaneous parameter location and formal
+reference even though LLVM accepts them, so the writer emits register location
+alone while checking formal identity before serialization. Repeated artifacts,
+original hashes, cancellation preservation, structural checks and the extension
+build pass. Existing strict-checker exceptions remain limited to independently
+corroborated inherited frame alignment diagnostics. This does not establish real
+Ghidra parameter binding, caller completeness or hosted acceptance. See
+[serialization checkpoint](docs/CALL-SITE-PLAN.md#production-serializer-and-consumer-controls--2026-11-08)
+and its receipt; continue those requirements before #120.
+
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 
