@@ -10,10 +10,13 @@
   see [STORAGE.md](docs/STORAGE.md) and AGENTS.md section 6.2. Tiny isolated tests
   cover launch refusal, live growth, process-group stopping, cleanup and accounting.
   No exporter build, hosted CI run, download or feature work is part of this change.
-- **CONFIRMED outstanding cleanup:** the external agent-artifact directory is
-  approximately 116 GiB, above the 5 GiB evidence budget. It is registered in
-  `.forge-work/config.json`; do not bypass the resulting guard refusal. Review
-  and retire the backlog with the user before resuming heavy commands.
+- **CONFIRMED cleanup:** 21 approved old artifact directories were removed,
+  reclaiming 109.16 GiB after verifying a 13.09 MiB archive of 1,019 retained
+  records. The libdwarf directory and external-root files remain intact.
+- **CONFIRMED outstanding cleanup:** evidence totals 6.69 GiB, above the 5 GiB
+  budget. Six previously excluded root archives account for 2.30 GiB; a separate
+  deletion plan awaits authorization. Keep the external directory registered in
+  `.forge-work/config.json` and do not bypass the guard refusal.
 - **PLANNED, not configured:** a filesystem quota for a hard ceiling. The
   implemented monitoring can overshoot and does not contain arbitrary writes.
 - **CONFIRMED #117 prerequisite:** the pinned producer's attribute whitelists

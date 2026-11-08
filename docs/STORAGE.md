@@ -110,3 +110,26 @@ external evidence against the 5 GiB limit. This is an intentional refusal, not a
 passing-capacity claim. These checks do not prove a hard quota, containment of
 escaped processes/writes, Windows support, or exporter behavior. No production
 build, native test matrix, artifact download or hosted workflow was started.
+
+## Approved legacy cleanup result — 2026-11-08
+
+**CONFIRMED:** the user's explicit cleanup instruction authorized removal of the
+21 directories in the prepared local plan. The operation reclaimed 109.16 GiB.
+Before deleting any directory, all 1,019 selected records (131,949,234 source
+bytes) were copied into one 13.09 MiB gzip tar archive; every archived file was
+read back and SHA-256 checked, and the originals were rechecked before deletion.
+The archive SHA-256 is
+`6c60a091151baf7342e8fb36a5b9beb3b7abeb14083ea1a8b4de288075021980`.
+
+The receipt and per-file hash manifest are in `.forge-work/evidence` beside
+`legacy-retained-reports.tar.gz`. The entire libdwarf reproducer directory and
+external-root files were preserved; metadata inventories were compared after
+cleanup. The source checkout was not a deletion target.
+
+**CONFIRMED remaining refusal:** evidence is 6.69 GiB; scratch is approximately
+22 MiB and the shared cache is empty. The original estimate understated the
+root-level archives that were explicitly preserved. A separate local plan,
+`root-archive-cleanup-plan.json`, identifies six PR166/PR167 archives totaling
+2.30 GiB. That additional deletion is awaiting authorization and would reduce
+evidence to approximately 4.39 GiB. The 5 GiB limit and legacy registration remain
+unchanged. No build or integration run has bypassed the refusal.

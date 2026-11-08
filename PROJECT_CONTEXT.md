@@ -14,11 +14,16 @@ monitoring, a single-command lock, shared cache/temp paths and process-group
 stopping. This is a soft guard, not an installed filesystem quota or sandbox.
 See [storage policy](docs/STORAGE.md) and AGENTS.md section 6.2.
 
-**CONFIRMED remaining backlog:** the external
-`/mnt/external_drive/GhidraDwarfForge-agent-artifacts` directory measured 116 GiB
-and is registered locally against the same evidence budget. It was not deleted
-or moved. Heavy commands must refuse while this legacy backlog exceeds the
-budget. The user subsequently reactivated the main feature goal. #115 is confirmed
+**CONFIRMED cleanup:** following explicit user approval, 21 old artifact
+subdirectories under `/mnt/external_drive/GhidraDwarfForge-agent-artifacts` were
+removed, reclaiming 109.16 GiB. Before deletion, 1,019 selected reports/logs/scripts
+were preserved and hash-verified in a 13.09 MiB archive under `.forge-work/evidence`.
+The entire libdwarf reproducer directory and all external-root files remain
+unchanged. Retained evidence now totals 6.69 GiB, still above the 5 GiB budget.
+A separate plan identifies six previously excluded PR166/PR167 root archives
+(2.30 GiB); their deletion awaits additional authorization. Heavy commands remain
+refused, with all remaining external evidence still registered. The user
+subsequently reactivated the main feature goal. #115 is confirmed
 merged through PR189 (`71352a3`), with all sixteen final main-workflow jobs and
 all five performance jobs passing. The merge tree equals the retained tested
 `work/multifile-source` tree. #117 is now in source preparation; see
