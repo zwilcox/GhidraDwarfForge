@@ -2,6 +2,13 @@
 
 ## Storage maintenance — 2026-11-08
 
+- **PRESENT, UNVERIFIED Windows chooser candidate:** focus the filename input
+  before replacing remembered directory text, retain readiness/navigation checks
+  and require exact accepted-directory identity. Add two real remembered-directory
+  controls and retain the complete Script Manager sequence. This is not a proven
+  root-cause fix; compile/run on hosted Windows and inspect the diagnostics if
+  it fails. Local heavy work remains refused.
+
 - **CONFIRMED #117 packaged checkpoint:** both primary packaged steps pass at
   `9f2d52c` in run `42534617028`, covering 64 runtime scenarios plus validators,
   determinism, provenance and preservation. Complete the remaining target and

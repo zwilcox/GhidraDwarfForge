@@ -126,19 +126,25 @@ final class GuiTestSupport {
             .findFirst().orElse(null));
         Robot robot = new Robot();
         robot.setAutoDelay(80);
+        Object chooser = null;
         if (!cancel) {
-            awaitFileChooser(dialog);
+            chooser = awaitFileChooser(dialog);
+            JTextField filename = onSwing(() -> (JTextField) find(dialog, component ->
+                component instanceof JTextField && "filenameTextField".equals(component.getName())));
+            require(filename != null, "missing chooser filename field");
+            // Match file selection: activate the actual dialog/input before
+            // replacing the remembered choice, then let initialization settle.
+            focus(filename);
+            awaitFileChooserReady(chooser);
             onSwing(() -> {
-                JTextField filename = (JTextField) find(dialog, component ->
-                    component instanceof JTextField &&
-                    "filenameTextField".equals(component.getName()));
-                require(filename != null, "missing chooser filename field");
+                require(filename.isFocusOwner(), "directory filename field lost focus before entry");
                 filename.setText(selected.toString());
                 return null;
             });
             clickButton(robot, dialog, "Select");
             try {
                 await("chosen directory", () -> {
+                    require(dialog.isShowing(), "directory chooser accepted before requested navigation");
                     JTextField path = (JTextField) find(dialog, component ->
                         component instanceof JTextField && "Path".equals(component.getName()));
                     return path != null && selected.equals(Path.of(path.getText())) ? path : null;
@@ -151,11 +157,11 @@ final class GuiTestSupport {
                     String observed = onSwing(() -> {
                         JTextField path = (JTextField) find(dialog, component ->
                             component instanceof JTextField && "Path".equals(component.getName()));
-                        JTextField filename = (JTextField) find(dialog, component ->
+                        JTextField observedFilename = (JTextField) find(dialog, component ->
                             component instanceof JTextField && "filenameTextField".equals(component.getName()));
                         return "requested=" + selected + "\ndialogShowing=" + dialog.isShowing() +
                             "\npath=" + (path == null ? "<missing>" : path.getText()) +
-                            "\nfilename=" + (filename == null ? "<missing>" : filename.getText()) + "\n";
+                            "\nfilename=" + (observedFilename == null ? "<missing>" : observedFilename.getText()) + "\n";
                     });
                     System.err.println("output-chooser-navigation-failure:\n" + observed);
                     Files.writeString(results.resolve("chooser-navigation-failure.txt"), observed);
@@ -170,6 +176,13 @@ final class GuiTestSupport {
         }
         screenshot(robot, dialog, results.resolve("chooser.png"));
         clickButton(robot, dialog, cancel ? "Cancel" : "Select");
+        await("directory chooser closed", () -> !dialog.isShowing() ? Boolean.TRUE : null);
+        if (!cancel) {
+            java.io.File actual = (java.io.File) chooser.getClass()
+                .getMethod("getSelectedFile", boolean.class).invoke(chooser, false);
+            require(actual != null && Files.isSameFile(actual.toPath(), selected),
+                "directory chooser accepted " + actual + " instead of " + selected);
+        }
     }
 
     static Dialog dialog(String title) throws Exception {

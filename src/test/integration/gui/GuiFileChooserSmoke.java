@@ -14,6 +14,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import docking.widgets.filechooser.GhidraFileChooser;
+import docking.widgets.filechooser.GhidraFileChooserMode;
 import ghidra.util.filechooser.GhidraFileChooserModel;
 
 /** Reproduces the remembered-file refresh racing with automated filename entry. */
@@ -23,11 +24,48 @@ public final class GuiFileChooserSmoke {
         Path intended = Files.writeString(results.resolve("intended request λ.json"), "intended");
         exercise(results, remembered, intended, false);
         exercise(results, remembered, intended, true);
+        exerciseDirectories(results);
         Files.writeString(results.resolve("result.txt"),
             "delayed-refresh-overwrites-early-entry=PASS\n" +
             "old-interaction-selects-previous-file=PASS\n" +
-            "selection-waits-for-refresh=PASS\nintended-file-accepted=PASS\n");
+            "selection-waits-for-refresh=PASS\nintended-file-accepted=PASS\n" +
+            "remembered-directory-replaced=PASS\n");
         System.out.println("real-file-chooser-delayed-refresh=PASS");
+    }
+
+    private static void exerciseDirectories(Path results) throws Exception {
+        Path previous = Files.createDirectory(results.resolve("remembered directory"));
+        for (String name : java.util.List.of("next directory λ", "final directory")) {
+            Path intended = Files.createDirectory(results.resolve(name));
+            Path evidence = Files.createDirectory(intended.resolve("evidence"));
+            Path remembered = previous;
+            String title = "Remembered output directory control";
+            GhidraFileChooser chooser = GuiTestSupport.onSwing(() -> {
+                var created = new GhidraFileChooser(null);
+                created.setTitle(title);
+                created.setApproveButtonText("Select");
+                created.setSelectedFile(remembered.toFile());
+                created.setFileSelectionMode(GhidraFileChooserMode.DIRECTORIES_ONLY);
+                return created;
+            });
+            var chosen = new CompletableFuture<File>();
+            try {
+                SwingUtilities.invokeLater(() -> {
+                    try { chosen.complete(chooser.getSelectedFile()); }
+                    catch (Throwable failure) { chosen.completeExceptionally(failure); }
+                });
+                GuiTestSupport.operateChooser(intended, evidence, false, title);
+                File actual = chosen.get(30, TimeUnit.SECONDS);
+                GuiTestSupport.require(actual != null && Files.isSameFile(actual.toPath(), intended),
+                    "remembered-directory control selected " + actual + " instead of " + intended);
+                Files.writeString(evidence.resolve("accepted.txt"),
+                    "remembered=" + remembered + "\nrequested=" + intended + "\naccepted=" + actual + "\n");
+            }
+            finally {
+                GuiTestSupport.onSwing(() -> { chooser.close(); chooser.dispose(); return null; });
+            }
+            previous = intended;
+        }
     }
 
     private static void exercise(Path results, Path remembered, Path intended, boolean guarded)

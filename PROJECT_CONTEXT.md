@@ -2,6 +2,17 @@
 
 ## Current call-site checkpoint — 2026-11-08
 
+**PRESENT, UNVERIFIED chooser candidate:** the directory interaction now follows
+the existing file-selection helper's focus contract before replacing remembered
+text, observes chooser readiness again, and verifies the final accepted file
+identity. Premature closure fails immediately with the retained diagnostics.
+Two real `DIRECTORIES_ONLY` chooser controls replace successive remembered
+directories, including a Unicode path; the full Script Manager sequence remains
+unchanged. This addresses the observed wrong-directory acceptance, but focus
+as its cause remains **UNCERTAIN** until hosted validation. No production
+exporter change. Pinned API/source and whitespace review pass; local compilation
+and GUI execution remain refused by the storage guard.
+
 **CONFIRMED packaged checkpoint:** run `42534617028` at `9f2d52c` passed
 `Packaged call-site and tail-call runtime checks` on x86-64 job `128898929091`
 and AArch64 job `128898929089`. Both roles and both analysis views ran through
