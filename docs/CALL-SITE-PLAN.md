@@ -711,3 +711,36 @@ Continue x86 coverage and consumer lookup work, then packaged normal-script
 invocation, broader export regressions and hosted Linux/Windows gates. No issue
 completion or broader architecture claim follows from this checkpoint. See
 [entry-location evidence](evidence/call-site-entry-locations.json).
+
+## x86 driver ownership and switch audit — 2026-11-08
+
+**CONFIRMED diagnostic evidence, not a recovery fix:** the capture probe now
+retains raw p-code, body ranges, computed-reference hints and the complete
+function-ownership inventory. Read-only reopens of both existing x86 fixtures
+preserve their executable and saved database hashes. The existing capture,
+tail, argument, binding and plan comparisons still pass.
+
+In ET_EXEC, `cs_driver` starts at `0x401320`; its `cmp EDI,7`/`ja` guard precedes
+an eight-entry absolute-address table at `0x402008`. In PIE, the ELF entry is
+`0x1330`, with eight signed 32-bit offsets relative to table `0x2004`; decoded
+operations load, sign-extend and add the table base. Both tables lie in a
+non-writable load mapping, and an independent read of their bytes agrees with
+the eight recorded computed hints. Those observations do not yet prove that a
+production analysis may trust arbitrary computed references or table memory.
+
+Case zero belongs to a separate Ghidra function `caseD_0` (`0x401370` / `0x1388`),
+which the current `cs_*` probe selection excludes. The shared epilogue is also
+a separate `FUN_*` function (`0x401356` / `0x136e`), and the default case is
+`cs_driver.cold`. None independently establishes a new call frame. The ordinary
+driver body therefore has an escaping fallthrough, even though all instructions
+exist in the analyzed program. The original diagnostics correctly reject a
+complete call inventory and entry-dependent values under that split ownership.
+
+**PLANNED next:** establish guarded computed-target evidence, including table
+immutability/loader effects and alternate incoming edges, and resolve precise
+function ownership without silently rewriting analyst bodies. Test the current
+split analysis as a negative control and an explicitly corrected analyst view
+through the normal export path. Do not replace the switch fixture, cover padding
+with invented ranges, or seed ordinary entry facts at `caseD_0`/cold/epilogue
+labels. GDB's discontiguous origin problem remains separate. See the
+[bounded audit receipt](evidence/call-site-driver-audit.json).

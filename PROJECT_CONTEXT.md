@@ -22,6 +22,15 @@ Packaged normal-script invocation and hosted gates remain **PRESENT, UNVERIFIED*
 #120 has not started. See [entry-location evidence](docs/evidence/call-site-entry-locations.json)
 and the [full plan](docs/CALL-SITE-PLAN.md).
 
+**CONFIRMED x86 diagnosis:** both analyzed layouts split case zero into
+`caseD_0`, the default block into `cs_driver.cold`, and the shared epilogue into
+a `FUN_*` function. The driver's incomplete body and the probe's `cs_*`
+selection explain its missing ordinary call. Its computed switch uses absolute
+table addresses in ET_EXEC and signed relative offsets in PIE. An independent
+read confirms all eight targets per table, but production guard/table/ownership
+proofs remain **PLANNED**. Do not treat those split labels as fresh call frames.
+See the [diagnostic receipt](docs/evidence/call-site-driver-audit.json).
+
 ## Storage recovery and bounded local workflow — 2026-11-08
 
 **CONFIRMED:** the user paused feature development after excessive agent-created

@@ -117,6 +117,8 @@ public final class CallSiteEvidenceProbe {
                     row.put("thunk", function.function().thunk());
                     row.put("captureComplete", function.captureComplete());
                     row.put("omissions", function.omissions());
+                    row.put("body", function.body().stream().map(range -> java.util.Map.of(
+                        "first", range.first().toString(), "last", range.last().toString())).toList());
                     var instructions = new ArrayList<Object>();
                     for (var instruction : function.instructions()) {
                         var item = new LinkedHashMap<String, Object>();
@@ -133,6 +135,16 @@ public final class CallSiteEvidenceProbe {
                             AddressNormalizer.toElfAddress(instruction.transfer().returnPc().getOffset(), delta)));
                         item.put("callee", instruction.transfer().callee() == null ? null : instruction.transfer().callee().name());
                         item.put("original", instruction.original());
+                        item.put("assembly", instruction.assembly());
+                        item.put("fallThrough", instruction.fallThrough() == null ? null : instruction.fallThrough().toString());
+                        item.put("computedHints", instruction.targets().stream().map(Object::toString).toList());
+                        item.put("pcode", instruction.operations().stream().map(operation -> {
+                            var op = new LinkedHashMap<String, Object>();
+                            op.put("opcode", ghidra.program.model.pcode.PcodeOp.getMnemonic(operation.opcode()));
+                            op.put("output", operand(operation.output()));
+                            op.put("inputs", operation.inputs().stream().map(CallSiteEvidenceProbe::operand).toList());
+                            return op;
+                        }).toList());
                         instructions.add(item);
                     }
                     row.put("instructions", instructions);
@@ -143,6 +155,14 @@ public final class CallSiteEvidenceProbe {
                 result.put("rebaseDelta", delta);
                 result.put("classOrigin", GhidraCallSiteEvidence.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm());
                 result.put("functions", rows);
+                var owners = new ArrayList<Object>();
+                for (var function : program.getFunctionManager().getFunctions(true)) {
+                    var ranges = new ArrayList<Object>();
+                    for (var range : function.getBody()) ranges.add(java.util.Map.of(
+                        "first", range.getMinAddress().toString(), "last", range.getMaxAddress().toString()));
+                    owners.add(java.util.Map.of("name", function.getName(), "entry", function.getEntryPoint().toString(), "body", ranges));
+                }
+                result.put("functionOwnership", owners);
                 result.put("tails", tails);
                 result.put("tailOmissions", tailOmissions);
                 result.put("arguments", argumentRows);
@@ -235,5 +255,9 @@ public final class CallSiteEvidenceProbe {
             finally { program.endTransaction(transaction, false); }
         }
         finally { project.close(); }
+    }
+    private static Object operand(GhidraCallSiteEvidence.Operand value) {
+        return value == null ? null : java.util.Map.of("space", value.address().getAddressSpace().getName(),
+            "offset", Long.toHexString(value.address().getOffset()), "bytes", value.bytes());
     }
 }

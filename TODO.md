@@ -104,6 +104,15 @@
   x86 gaps, then complete packaged export and hosted acceptance before #120.
   See [evidence](docs/evidence/call-site-entry-locations.json).
 
+- **CONFIRMED x86 driver diagnosis:** both original x86 fixtures assign switch
+  case zero to `caseD_0`, the shared epilogue to a separate `FUN_*`, and the
+  default block to `cs_driver.cold`. The `cs_*` probe misses that ordinary call;
+  the driver body has an escaping fallthrough. Independent inspection matches
+  all eight table targets per layout (absolute ET_EXEC, signed-relative PIE).
+  Guarded table/entry/ownership proofs remain **PLANNED**; references alone do
+  not admit targets or new frame assumptions. See
+  [audit](docs/evidence/call-site-driver-audit.json).
+
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 
 **CONFIRMED:** the user selected this order: complete optional multi-file
