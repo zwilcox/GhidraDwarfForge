@@ -120,6 +120,21 @@ Ghidra parameter binding, caller completeness or hosted acceptance. See
 [serialization checkpoint](docs/CALL-SITE-PLAN.md#production-serializer-and-consumer-controls--2026-11-08)
 and its receipt; continue those requirements before #120.
 
+**CONFIRMED #117 integer entry binding:** an optional type-extraction observer
+captures resolved entry storage with the same canonical parameter identity and
+exported ordinal, preserving allocation corrections and automatic-parameter
+omissions. The binder checks ABI/type/storage/register agreement and requires a
+whole-register actual-value proof. Unsupported representations remain omitted.
+There are 469 decoder/binding checks, 240 independent VM evaluations and 712
+saved/rebased whole-register comparisons across x86-64/AArch64 ET_EXEC/PIE.
+Temporary source-known signatures model analyst curation and are rolled back;
+input and saved database hashes remain unchanged. AArch64 already had driver
+constant proofs; its eight ordinary calls are now checked explicitly. Only x86's
+driver remains incomplete. The five-target recovered-parameter regression and
+extension build pass. Normal-script connection, complete call inventories and
+full debugger/hosted acceptance are still pending; see the call-site plan and
+[binding evidence](docs/evidence/call-site-parameter-binding.json).
+
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 

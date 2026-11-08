@@ -113,14 +113,74 @@ def compare_arguments(reference, captured):
     return {"checks": checks, "transfers": observations}
 
 
+def compare_bindings(reference, captured):
+    evaluate = runpy.run_path(str(ROOT / "src/test/integration/check-call-values.py"))["evaluate"]
+    rows = {int(row["pc"], 16): row for row in captured["bindings"]}
+    first, second = (5, 4) if reference["target"] == "x86_64" else (0, 1)
+    addends = {"cs_normal": 1, "cs_tail_first": 1, "cs_tail_middle": 2, "cs_left": 3, "cs_right": 4}
+    checks, observations = 0, []
+    for call in reference["calls"]:
+        if call["callee"] is None:
+            assert int(call["pc"], 16) not in rows, "indirect target acquired a formal binding"
+            continue
+        row = rows[int(call["pc"], 16)]
+        assert row["caller"] == call["caller"] and row["callee"] == call["callee"]
+        args = row["arguments"]
+        if call["callee"] == "cs_checkpoint":
+            assert not args
+            continue
+        two = call["callee"] == "cs_recursive"
+        assert [a["ordinal"] for a in args] == ([0, 1] if two else [0]), row
+        assert [a["name"] for a in args] == (["value", "depth"] if two else ["value"]), row
+        assert [a["register"] for a in args] == ([first, second] if two else [first]), row
+        assert all(a["bytes"] == 8 and a["typeKey"] for a in args) and not row["omissions"], row
+        for value, depth in ((0, 0), (20, 3), (0xffffffff, 1), (0x7fffffff, 1), (0x80000000, 0), (17, 0xffffffff),
+                             (0xabcdef0000000014, 0x1234560000000003)):
+            registers = {first: value, second: depth}
+            expected = value + addends.get(call["caller"], 0)
+            if call["caller"] == "cs_diamond":
+                expected = value + (1 if call["callee"] == "cs_left" else 2)
+            elif call["caller"] == "cs_recursive" and call["callee"] == "cs_recursive":
+                expected = value + 1
+                assert evaluate(bytes.fromhex(args[1]["expression"]), 8, "little", registers) == (depth - 1) & 0xffffffff
+                checks += 1
+            elif call["caller"] == "cs_tail_recursive":
+                expected = value + depth
+            if not (call["caller"] == "cs_forward" or call["caller"] == "cs_recursive" and call["callee"] == "cs_leaf"):
+                expected &= 0xffffffff
+            assert evaluate(bytes.fromhex(args[0]["expression"]), 8, "little", registers) == expected, (call, row, value, depth)
+            checks += 1
+        # Temporary fixture type IDs are not persistent analyst type identities;
+        # compare semantic bindings and expressions across rolled-back processes.
+        observations.append({**row, "arguments": [{k: v for k, v in arg.items() if k != "typeKey"} for arg in args]})
+    driver = []
+    for row in rows.values():
+        if row["caller"] == "cs_driver" and reference["target"] == "aarch64":
+            expected = {"cs_tail_first": [20], "cs_tail_recursive": [50, 3], "cs_normal": [10],
+                        "cs_forward": [70], "cs_recursive": [40, 3], "cs_indirect": [60], "cs_diamond": [30]}[row["callee"]]
+            assert [a["name"] for a in row["arguments"]] == (["value", "depth"] if len(expected) == 2 else ["value"])
+            assert [a["register"] for a in row["arguments"]] == list(range(len(expected))) and not row["omissions"]
+            assert [evaluate(bytes.fromhex(a["expression"]), 8, "little", {}) for a in row["arguments"]] == expected
+            checks += len(expected)
+            driver.append(row["callee"])
+            observations.append({**row, "arguments": [{k: v for k, v in arg.items() if k != "typeKey"} for arg in row["arguments"]]})
+        elif row["caller"] in ("cs_driver", "cs_driver.cold", "cs_indirect"):
+            assert not row["arguments"], "unproved caller gained parameter values"
+    if reference["target"] == "aarch64":
+        assert sorted(driver) == sorted(["cs_tail_first", "cs_tail_recursive", "cs_normal", "cs_forward",
+                                         "cs_recursive", "cs_indirect", "cs_diamond", "cs_diamond"])
+    return {"checks": checks, "transfers": observations}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("reference", type=Path, help="completed call-site-reference.py output")
     parser.add_argument("output", type=Path)
     parser.add_argument("--ghidra", required=True, type=Path)
     parser.add_argument("--reuse-project", action="store_true", help="read an existing capture project; write fresh tail-state reports")
-    parser.add_argument("--report-name", default="tail-state", choices=("tail-state", "argument-state"),
+    parser.add_argument("--report-name", default="tail-state", choices=("tail-state", "argument-state", "parameter-binding"),
                         help="fresh report directory when reusing a saved project")
+    parser.add_argument("--bind-parameters", action="store_true", help="temporarily curate fixture integer signatures and validate actual entry binding")
     args = parser.parse_args()
     reference = args.reference.resolve()
     compiler = json.loads((reference / "result.json").read_text())
@@ -160,7 +220,8 @@ def main():
         output = reports_root / (variant + ".json")
         text = run([ROOT / "gradlew", "--no-daemon", "callSiteEvidenceProbe",
                     "-PcallSiteProject=" + str(project), "-PcallSiteInput=" + str(original),
-                    "-PcallSiteReport=" + str(output), "-PcallSiteRebase=" + str(shift)], reports_root / (variant + "-capture"), env)
+                    "-PcallSiteReport=" + str(output), "-PcallSiteRebase=" + str(shift),
+                    *(["-PcallSiteBindings=true"] if args.bind_parameters else [])], reports_root / (variant + "-capture"), env)
         assert "call-site-evidence-probe=PASS" in text
         captured = json.loads(output.read_text())
         assert "/build/classes/java/main/" in captured["classOrigin"], captured["classOrigin"]
@@ -168,15 +229,20 @@ def main():
                         "tails": compare_tails(compiler, captured), "tailOmissions": captured["tailOmissions"],
                         "arguments": compare_arguments(compiler, captured), "argumentOmissions": captured["argumentOmissions"],
                         "omissions": {f["name"]: f["omissions"] for f in captured["functions"] if f["omissions"]}})
+        if args.bind_parameters:
+            reports[-1]["bindings"] = compare_bindings(compiler, captured)
     assert reports[0]["calls"] == reports[1]["calls"], "rebase changed transfer identities or original bytes"
     assert reports[0]["tails"] == reports[1]["tails"], "rebase changed proved tail identities or original bytes"
     assert reports[0]["arguments"] == reports[1]["arguments"], "rebase changed integer actual-value expressions"
+    if args.bind_parameters:
+        assert reports[0]["bindings"] == reports[1]["bindings"], "rebase changed formal storage or argument values"
     assert reports[1]["delta"] - reports[0]["delta"] == 0x400000
     assert digest(original) == protected, "capture changed the original executable"
     assert program_hashes(project) == saved, "capture changed the saved program database"
     (reports_root / "result.json").write_text(json.dumps({
-        "status": "PASS_CAPTURE_TAIL_ARGUMENT_REFERENCE", "target": compiler["target"], "role": compiler["role"],
-        "scope": "Raw transfers, direct tail boundary states and integer expressions; production parameter mapping and DWARF emission remain incomplete",
+        "status": "PASS_CURATED_PARAMETER_BINDING" if args.bind_parameters else "PASS_CAPTURE_TAIL_ARGUMENT_REFERENCE",
+        "target": compiler["target"], "role": compiler["role"],
+        "scope": "Raw transfers, tail states, integer expressions and optional source-curated parameter binding; production completeness and DWARF integration remain incomplete",
         "inputSha256": protected, "savedProgramSha256": saved, "reports": reports,
     }, indent=4) + "\n")
     print(f"call-site-evidence-reference=PASS target={compiler['target']} role={compiler['role']}")

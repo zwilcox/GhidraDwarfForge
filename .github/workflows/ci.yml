@@ -690,7 +690,7 @@ jobs:
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke buildExtension
             python3 -B src/test/integration/check-call-values.py build/test-results/call-values/vectors.json
-            python3 -B src/test/integration/check-call-values.py build/test-results/call-argument-flow/vectors.json --min-count 100
+            python3 -B src/test/integration/check-call-values.py build/test-results/call-argument-flow/vectors.json --min-count 240
             python3 -B src/test/integration/debuglink-basename.py \
                 --jar "$PWD/build/libs/GhidraDwarfForge.jar" \
                 --results "$PWD/build/test-results/extension-build/debuglink-basename"
@@ -1044,6 +1044,10 @@ jobs:
               python3 src/test/integration/call-site-evidence.py \
                   "build/test-results/call-site-reference/$TARGET-$role" \
                   "build/test-results/call-site-capture/$TARGET-$role" --ghidra "$GHIDRA_INSTALL_DIR"
+              python3 -B src/test/integration/call-site-evidence.py \
+                  "build/test-results/call-site-reference/$TARGET-$role" \
+                  "build/test-results/call-site-capture/$TARGET-$role" --ghidra "$GHIDRA_INSTALL_DIR" \
+                  --reuse-project --report-name parameter-binding --bind-parameters
           done
 
       - name: Install extension

@@ -60,6 +60,17 @@
   establish completeness and run the full Ghidra/hosted acceptance matrix.
   See [scoped evidence](docs/evidence/call-site-serialization.json).
 
+- **CONFIRMED #117 entry-binding component:** type extraction can now snapshot
+  actual parameter entry storage alongside canonical formal identities and reuse
+  allocation corrections/automatic omissions. Whole-register integer binding
+  passes 469 decoder/binding checks, 240 independent VM evaluations and 712
+  saved/rebased evaluations. Original ELF and saved program hashes are unchanged.
+  AArch64's eight driver calls have proven constants; the incomplete-driver
+  limitation is x86-specific. The five-target parameter regression passes 610
+  checks, and the extension builds. Normal-script integration, ordinary-entry
+  assumptions, completeness, x86 caller coverage and full hosted/runtime
+  acceptance remain pending. See [binding evidence](docs/evidence/call-site-parameter-binding.json).
+
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 

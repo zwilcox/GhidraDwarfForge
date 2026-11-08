@@ -327,6 +327,7 @@ tasks.register("callSiteEvidenceProbe", JavaExec) {
     if (project.hasProperty("callSiteProject")) {
         args ghidraInstallDir, project.property("callSiteProject"), project.property("callSiteInput"),
             project.property("callSiteReport"), project.findProperty("callSiteRebase") ?: "0"
+        if (project.hasProperty("callSiteBindings")) args "curated-bind"
     }
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/call-site-evidence/settings").absolutePath

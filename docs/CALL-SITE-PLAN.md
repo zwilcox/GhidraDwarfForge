@@ -510,3 +510,56 @@ evidence. Next bind the recovered integer expressions to actual callee entry
 storage, prove completeness/caller coverage, and connect the normal export path.
 The full ambiguity/recursion/indirect/thunk, saved/rebased Ghidra, host and target
 acceptance matrix remains required. No #117 acceptance item is closed here.
+
+## Callee entry storage and integer binding — 2026-11-08
+
+**CONFIRMED component behavior:** an optional `GhidraTypeGraph.extract` observer
+now snapshots entry storage in the same loop that reserves each exported formal
+type. It reuses the selected allocation policy's result, including corrected
+storage and omitted automatic parameters. The snapshot uses the exported ordinal
+after omissions and retains the exact canonical formal identity. Existing callers
+do not request snapshots and retain their previous model behavior.
+
+`GhidraCallParameters.bind` checks the callee identity, selected ordinary ABI,
+canonical formal identity, scalar integer/enum type, direct single-register
+storage, low-bit placement and physical/DWARF register agreement. Typedef and
+qualified chains are followed with bounds. It reads the whole destination
+register from the earlier actual-value proof; known low bits do not justify
+inventing upper bits. Missing or decompiler-only storage, pointers, floating
+types, indirect/composite/stack storage, stale formal identities and unavailable
+whole-register values produce omissions. This is the initial integer component,
+not a claim of support for those other argument representations.
+
+**CONFIRMED local checks:**
+
+- The existing 25 real-decoder cases now include actual Ghidra parameter
+  allocation, extraction and binding. They pass 469 checks and 240 independent
+  DWARF VM evaluations, including upper-bit preservation and zero extension.
+  Additional controls cover typedefs/enums, unsupported types, narrow-only facts,
+  stale identities, indirect/high-slice omissions, allocation correction reuse,
+  hidden-return-parameter omission/reindexing and every observed binding
+  cancellation poll. An observer/no-observer comparison verifies unchanged
+  type/storage models on both selected targets.
+- Eight saved/rebased x86-64/AArch64 ET_EXEC/PIE views pass 712 independent
+  whole-register evaluations and retain the earlier 104 transfer comparisons,
+  72 tail proofs and 576 low-word evaluations. Source-known integer signatures
+  are applied only inside a rolled-back fixture transaction to model analyst
+  curation. The input ELF and saved database hashes remain unchanged.
+- AArch64's driver already had proven constant values in the preceding flow
+  checkpoint. Its eight ordinary calls now have explicit parameter/constant
+  checks, including two-argument recursion. The incomplete driver/split-cold-block
+  omissions concern x86; the unresolved indirect tail remains omitted on both.
+  Do not generalize the x86 coverage limitation to AArch64.
+- The five-target recovered-parameter regression passes 610 checks. The extension
+  build and workflow lint pass. CI reuses each existing reference project for the
+  curated binding checks; no duplicate import or extra installation is needed.
+  **Hosted execution remains unverified.**
+
+See [binding evidence](evidence/call-site-parameter-binding.json). This step does
+not emit these bound expressions through the normal Ghidra script. Next compose
+the verified captures/tails/arguments and parameter entries into a serialization
+plan with justified completeness, address x86 caller coverage and run the full
+Forge debugger comparison. Before integration, audit ordinary-call entry
+assumptions too: the current tail verifier checks incoming-edge dependencies for
+functions containing admitted tails, not every function used by argument flow.
+All six original acceptance items remain open until their full evidence is in.
