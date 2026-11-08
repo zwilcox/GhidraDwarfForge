@@ -2,6 +2,16 @@
 
 ## Current call-site checkpoint — 2026-11-08
 
+**CONFIRMED read-only preservation fix, packaged failure still undiagnosed:**
+run `42530193205` at `0f29bc0` passed the complete compiler/Forge comparison step
+on both primary lanes, including fresh saved-project hashes, ET_EXEC/PIE and
+rebased recovered runtime checks. Both then failed `original-headless` in the
+new packaged harness because its transcript contained an error. The job log
+only printed that label; the underlying Ghidra diagnostic remains unverified.
+The harness now includes bounded stdout/stderr tails in assertion failures,
+without weakening exit/status/marker checks. A new hosted run is needed to
+diagnose the installed path. Local artifact downloads remain refused.
+
 **CONFIRMED hosted component passes, preservation failure:** at `c6dd2f9`, run
 `42528939065` passed both native builds, the extension regression suite and release
 assembly. Both x86-64/AArch64 lanes passed isolated JNA, ET_EXEC compiler references

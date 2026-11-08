@@ -939,3 +939,16 @@ JSON receipts. No index exclusions or stabilization reopen is used.
 
 Python syntax, actionlint and whitespace checks pass. Local heavy work remains
 refused at 21.54/20 GiB; corrected-head fresh-project validation is pending in CI.
+
+**CONFIRMED follow-up:** [run `42530193205`](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42530193205)
+at `0f29bc0` passed the complete compiler/reference, serializer, saved-project
+capture, recovered-plan and runtime step in both primary lanes. This establishes
+the fresh-project preservation correction for the probe, including ET_EXEC/PIE
+and original/rebased views. Both installed-package steps subsequently failed
+the `original-headless` transcript error check. The captured log was retained
+only in the artifact, while the CI assertion printed its label; the exact
+Ghidra failure remains **UNCERTAIN**. Local artifact downloads remain refused.
+The packaged harness now includes bounded stdout/stderr tails for nonzero exit,
+reported script errors, unexpected validator stderr and missing success markers.
+All original acceptance checks remain. Static Python syntax/whitespace checks
+pass; a fresh hosted run is needed to expose and then fix the installed failure.

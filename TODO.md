@@ -2,6 +2,12 @@
 
 ## Storage maintenance — 2026-11-08
 
+- **CONFIRMED #117 read-only fix:** run `42530193205` at `0f29bc0` passed both
+  primary lanes' compiler/Forge comparisons, preservation and recovered runtime
+  checks. Both packaged runs then reported an error in `original-headless`.
+  Surface bounded transcript tails in the CI assertion and diagnose that error;
+  do not treat the successful probe as packaged acceptance.
+
 - **CONFIRMED #117 preservation gate failure:** `c6dd2f9` passed Linux/Windows
   native builds, the full extension suite and release assembly. Both primary
   lanes then failed the fresh saved-project hash check after passing JNA,

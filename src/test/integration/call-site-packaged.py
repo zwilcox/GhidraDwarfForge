@@ -84,10 +84,15 @@ def main():
                                     timeout=600 if headless else 120)
         stdout = (work / (label + ".stdout")).read_text()
         stderr = (work / (label + ".stderr")).read_text()
-        assert result.returncode == 0, (label, result.returncode)
-        assert "Traceback" not in stdout + stderr and "ERROR " not in stdout + stderr, label
+        # Headless can report script errors yet return zero. Keep those errors
+        # fatal and expose a bounded transcript in CI instead of only a label.
+        diagnostic = (f"{label}: exit={result.returncode}\n"
+                      f"stdout (last 12000 characters):\n{stdout[-12000:]}\n"
+                      f"stderr (last 8000 characters):\n{stderr[-8000:]}")
+        assert result.returncode == 0, diagnostic
+        assert "Traceback" not in stdout + stderr and "ERROR " not in stdout + stderr, diagnostic
         if not headless:
-            assert not stderr, (label, stderr)
+            assert not stderr, diagnostic
         return stdout + stderr
 
     reports, sessions, failures = [], [], []
@@ -103,8 +108,8 @@ def main():
                 "-noanalysis", "-max-cpu", "2",
                 "-scriptPath", SCRIPTS / "ghidra_scripts", "-postScript", "CheckCallSitePackagedExport.java",
                 binary, output, hex(shift), module, project], headless=True)
-            assert "packaged-call-site-export=PASS functions=13" in transcript
-            assert transcript.count("GhidraDwarfForge symbol export PASS") == 2
+            assert "packaged-call-site-export=PASS functions=13" in transcript, transcript[-20000:]
+            assert transcript.count("GhidraDwarfForge symbol export PASS") == 2, transcript[-20000:]
         finally:
             assert digest(binary) == protected, "packaged exporter changed original input"
             capture["require_program_preserved"](project, saved, work / (variant + "-program-preservation.json"))
