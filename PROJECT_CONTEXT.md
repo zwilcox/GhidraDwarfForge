@@ -20,23 +20,27 @@ removed, reclaiming 109.16 GiB. Before deletion, 1,019 selected reports/logs/scr
 were preserved and hash-verified in a 13.09 MiB archive under `.forge-work/evidence`.
 The entire libdwarf reproducer directory and all external-root files remain
 unchanged. Retained evidence now totals 6.69 GiB, still above the 5 GiB budget.
-A separate plan identifies six previously excluded PR166/PR167 root archives
-(2.30 GiB); their deletion awaits additional authorization. Heavy commands remain
-refused, with all remaining external evidence still registered. The user
-subsequently reactivated the main feature goal. #115 is confirmed
+The user then explicitly instructed us to skip further cleanup for this goal.
+The six identified PR166/PR167 root archives (2.30 GiB) are preserved under a
+fixed-file exception scoped to #115 → #117 → #120. Physical evidence remains
+6.69 GiB; budget-charged evidence is 4.39 GiB. The guard reports both and admits
+work without changing the original limits for new data. Remove the exception
+when the goal ends. The user reactivated the main feature goal. #115 is confirmed
 merged through PR189 (`71352a3`), with all sixteen final main-workflow jobs and
 all five performance jobs passing. The merge tree equals the retained tested
 `work/multifile-source` tree. #117 is now in source preparation; see
-[CALL-SITE-PLAN.md](docs/CALL-SITE-PLAN.md). Heavy execution remains refused pending
-the external-evidence cleanup decision. #120 has not started. These observations
+[CALL-SITE-PLAN.md](docs/CALL-SITE-PLAN.md). #120 has not started. These observations
 do not reinterpret the older historical feature notes below.
 
 **CONFIRMED #117 dependency audit:** source files checked byte-for-byte against
 the pinned v2.3.2 archive show that the producer rejects call-PC, return-PC,
 origin, parameter-reference and call-value attributes through the existing APIs.
 The current downstream patch does not address those checks. A standalone public
-API admission probe is **PRESENT, UNVERIFIED**; compilation and execution remain
-blocked by storage admission. The working branch incorporates `71352a3` through
+API admission probe now compiles with warnings treated as errors and runs in
+six isolated processes: the existing-attribute control serializes successfully;
+all five call-site modes fail with `DW_DLE_INPUT_ATTR_BAD (143)`. This is
+**CONFIRMED** producer rejection, not successful call-site export. The focused
+compatibility patch and emitted-artifact/debugger validation remain planned. The working branch incorporates `71352a3` through
 normal merge `6c0e949`; no new worktree was created. See the call-site plan for
 file hashes, expression limitations and the next native acceptance checkpoint.
 

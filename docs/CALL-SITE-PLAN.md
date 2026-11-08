@@ -70,10 +70,11 @@ The plan therefore requires positive and negative debugger observations.
    Call-site metadata supplements existing unwind information and never replaces it.
 6. Complete exact-head validation, review and protected integration before #120.
 
-**CONFIRMED current admission failure:** retained external evidence exceeds the
-approved budget. The cleanup plan is prepared and awaits explicit deletion
-approval. Read-only analysis and small planning files are proceeding; builds,
-artifact downloads and runtime matrices have not been started or bypassed.
+**CONFIRMED storage admission restored:** the user directed us to skip further
+cleanup for this goal after the approved 21-directory cleanup. Six fixed legacy
+archives are reported as a scoped exception; all new work retains the original
+budgets. The guard admits work and all 16 storage controls pass. See STORAGE.md.
+No artifact download or exporter/runtime matrix has started for #117 yet.
 
 ## Producer compatibility audit — 2026-11-08
 
@@ -102,16 +103,20 @@ to its members:
 - The current downstream patch changes relocation width and string ownership;
   it does not change any of these producer attribute/operation checks.
 
-**PRESENT, UNVERIFIED:** `src/test/native/call-site-producer-probe.c` isolates
+**CONFIRMED stock API reproduction:** `src/test/native/call-site-producer-probe.c` isolates
 five attribute admission cases, one per fresh process, plus a control using
 existing supported address/reference/location attributes. It uses only public
 APIs already declared in the production binding, checks return codes and error
 pointers, attempts serialization/section retrieval after successful admission,
-and finishes its producer. It is not wired into CI, compiled or run yet. Success
-would establish API admission only, not a valid ELF or debugger behavior. Once
-storage permits, run every mode against stock and candidate patched libraries;
-retain the explicit stock failures and require candidate success. Then validate
-the actual attribute forms, references and nested expressions independently.
+and finishes its producer. It compiles with `cc -std=c11 -Wall -Wextra -Werror`
+and runs under the storage guard against the retained stock v2.3.2 libraries.
+The control serializes successfully; `call-pc`, `return-pc`, `origin`, `parameter`
+and `value` each return 1 with `DW_DLE_INPUT_ATTR_BAD (143)`. The
+[evidence record](evidence/call-site-producer-stock.json) retains compiler,
+commands, native hashes and each process result. It is not wired into CI yet.
+Next run every mode against a candidate patched library and require admission
+success, then independently validate actual forms, references and nested
+expressions. API admission alone is not valid ELF or debugger acceptance.
 
 **PLANNED integration details:** retain formal-parameter DIE identities alongside
 `functionDies` and emit call sites after all definitions are allocated, before

@@ -66,7 +66,7 @@ class Guard:
         groups["scratch"] += [self.repo / name for name in (
             "build", "dist", ".gradle", ".ghidra-test", "jna-wrapper/target", "src/temp")]
         config = json.loads(self.config.read_text()) if self.config.exists() else {}
-        if not isinstance(config, dict) or set(config) - {"legacy_roots"}:
+        if not isinstance(config, dict) or set(config) - {"legacy_roots", "deferred_evidence"}:
             raise ValueError("Unknown storage configuration field; limits are not configurable here")
         legacy = config.get("legacy_roots", {})
         if not isinstance(legacy, dict) or set(legacy) - set(groups):
@@ -89,10 +89,42 @@ class Guard:
                  if part.startswith(b"worktree ")]
         extra = [p for p in trees if p != self.repo and p.exists()]
         groups["scratch"] += extra
-        return groups, extra
+        return groups, extra, config
+
+    def deferred_evidence(self, config):
+        """A user-authorized, fixed-file exception; physical usage stays visible."""
+        deferred = config.get("deferred_evidence")
+        if deferred is None:
+            return 0, None
+        if (not isinstance(deferred, dict) or
+                set(deferred) != {"scope", "authorization", "files"} or
+                not all(isinstance(deferred[key], str) and deferred[key].strip()
+                        for key in ("scope", "authorization")) or
+                not isinstance(deferred["files"], list) or not deferred["files"]):
+            raise ValueError("Deferred evidence requires explicit authorization, scope and fixed files")
+        roots = [Path(p) for p in config.get("legacy_roots", {}).get("evidence", [])]
+        seen = set()
+        total = 0
+        for record in deferred["files"]:
+            if not isinstance(record, dict) or set(record) != {"path", "identity"}:
+                raise ValueError("Invalid deferred evidence file record")
+            path = Path(record["path"])
+            if (not path.is_absolute() or path.resolve() != path or path.parent not in roots):
+                raise ValueError(f"Deferred evidence must be a direct, non-symlink legacy file: {path}")
+            info = path.lstat()
+            key = (info.st_dev, info.st_ino)
+            identity = [info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns,
+                        info.st_blocks * 512]
+            if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or
+                    identity != record["identity"] or key in seen):
+                raise ValueError(f"Deferred evidence changed, duplicated or is not a regular file: {path}")
+            seen.add(key)
+            total += info.st_blocks * 512
+        return total, deferred
 
     def snapshot(self):
-        groups, extra = self.roots()
+        groups, extra, config = self.roots()
+        deferred_bytes, deferred = self.deferred_evidence(config)
         problems = []
         if len(extra) > 1:
             problems.append(f"{len(extra)} extra worktrees exist; maximum is one")
@@ -113,10 +145,15 @@ class Guard:
                     if free < self.reserve:
                         problems.append(f"Less than {self.reserve / GIB:g} GiB free on {parent}")
             counts[category] = allocated(paths)
-            if counts[category] > self.limits[category]:
-                problems.append(f"{category}: {counts[category] / GIB:.2f} GiB exceeds "
+            charged = counts[category] - (deferred_bytes if category == "evidence" else 0)
+            if charged > self.limits[category]:
+                problems.append(f"{category}: {charged / GIB:.2f} GiB charged usage exceeds "
                                 f"{self.limits[category] / GIB:g} GiB budget")
+        charged_counts = dict(counts)
+        charged_counts["evidence"] -= deferred_bytes
         return {"status": "REFUSED" if problems else "READY", "usageBytes": counts,
+                "budgetUsageBytes": charged_counts, "deferredEvidenceBytes": deferred_bytes,
+                "deferredEvidence": deferred,
                 "limitsBytes": self.limits, "reserveBytes": self.reserve,
                 "roots": {k: [str(p) for p in v] for k, v in groups.items()},
                 "extraWorktrees": [str(p) for p in extra],

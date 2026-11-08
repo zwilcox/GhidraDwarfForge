@@ -219,6 +219,14 @@ These rules apply to local agent work, including reviews and downloads. See
   the user is addressing storage; a storage-maintenance request does not
   implicitly resume feature development.
 
+**User override, 2026-11-08:** after the approved cleanup, the user instructed
+“skip the cl.ean up for this goal.” For goal #115 → #117 → #120, preserve the six
+identified legacy PR166/PR167 root archives under the fixed-file exception in
+local configuration. Report their physical usage separately from budget-charged
+usage; new work retains the original budgets. Do not expand this exception to
+new files or changed archives. Retire the exception when this goal ends, without
+automatically deleting the archives. See `docs/STORAGE.md` for the mechanism.
+
 ## 7. Native/JNA rules
 
 Native ABI mistakes can terminate the entire Ghidra JVM. Native stability is a P0 release blocker.

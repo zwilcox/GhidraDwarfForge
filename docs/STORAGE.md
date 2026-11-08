@@ -133,3 +133,29 @@ root-level archives that were explicitly preserved. A separate local plan,
 2.30 GiB. That additional deletion is awaiting authorization and would reduce
 evidence to approximately 4.39 GiB. The 5 GiB limit and legacy registration remain
 unchanged. No build or integration run has bypassed the refusal.
+
+## User-directed cleanup deferral for the active goal
+
+After the cleanup above, the user instructed: “skip the cl.ean up for this goal.”
+The six identified root archives stay intact. A temporary `deferred_evidence`
+entry in local configuration records that authorization, the #115 → #117 → #120
+scope, and each exact file's device/inode, size, mtime and allocated bytes. Their
+SHA-256 hashes were checked against the prepared plan before enabling it.
+Only direct regular files in a registered legacy evidence root qualify; changes,
+missing files, duplicate inodes, hardlinks and symlinks fail closed.
+
+`usageBytes` continues to show total physical usage. `budgetUsageBytes` subtracts
+only those fixed 2.30 GiB from evidence; `deferredEvidenceBytes` and
+`deferredEvidence` show the exception explicitly. New files and growth receive
+no exemption, all original category limits remain, and filesystem free-space
+checks still include the external disk. This is an operating-policy exception,
+not filesystem immutability or an automatic goal-status integration. Remove it
+when the goal ends and review the retained archives; do not delete them as an
+automatic consequence of completion.
+
+**CONFIRMED:** all 16 storage controls pass under the guarded launcher, including
+physical-versus-charged accounting, new-growth refusal, changed/missing deferred
+files and duplicate/unauthorized exception records. The real guard is READY at
+6.69 GiB physical evidence and 4.39 GiB charged evidence. The standalone stock
+producer admission probe now compiles/runs through this guard; no additional
+legacy artifacts were deleted.

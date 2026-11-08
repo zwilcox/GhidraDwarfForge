@@ -101,6 +101,52 @@ class StorageGuardTests(unittest.TestCase):
         self.assertEqual(heartbeat.read_text(), value)
         self.assertFalse(list(self.scratch().glob("run-*")))
 
+    def deferred_fixture(self):
+        legacy = self.repo / "old-evidence"
+        legacy.mkdir()
+        archive = legacy / "archive"
+        archive.write_bytes(b"x" * (256 * 1024))
+        info = archive.stat()
+        record = {"path": str(archive), "identity": [info.st_dev, info.st_ino,
+            info.st_size, info.st_mtime_ns, info.st_blocks * 512]}
+        config = {"legacy_roots": {"evidence": [str(legacy)]},
+            "deferred_evidence": {"scope": "test goal", "authorization": "test approval",
+                "files": [record]}}
+        self.guard.workspace.mkdir()
+        self.guard.config.write_text(json.dumps(config))
+        return archive, config
+
+    def test_deferred_files_stay_visible_and_new_growth_is_charged(self):
+        archive, config = self.deferred_fixture()
+        report = self.guard.snapshot()
+        self.assertEqual(report["status"], "READY")
+        self.assertGreater(report["usageBytes"]["evidence"], self.guard.limits["evidence"])
+        self.assertEqual(report["usageBytes"]["evidence"] - report["budgetUsageBytes"]["evidence"],
+            archive.stat().st_blocks * 512)
+        (archive.parent / "new-artifact").write_bytes(b"x" * (256 * 1024))
+        self.assertEqual(self.guard.snapshot()["status"], "REFUSED")
+
+    def test_deferred_modification_and_disappearance_fail_closed(self):
+        archive, config = self.deferred_fixture()
+        archive.write_bytes(b"changed")
+        with self.assertRaises(ValueError):
+            self.guard.snapshot()
+        archive.unlink()
+        with self.assertRaises(FileNotFoundError):
+            self.guard.snapshot()
+
+    def test_deferred_duplicate_or_unapproved_scope_fails_closed(self):
+        archive, config = self.deferred_fixture()
+        config["deferred_evidence"]["files"] *= 2
+        self.guard.config.write_text(json.dumps(config))
+        with self.assertRaises(ValueError):
+            self.guard.snapshot()
+        config["deferred_evidence"]["files"].pop()
+        config["deferred_evidence"]["authorization"] = ""
+        self.guard.config.write_text(json.dumps(config))
+        with self.assertRaises(ValueError):
+            self.guard.snapshot()
+
     def test_missing_legacy_storage_and_invalid_config_fail_closed(self):
         self.guard.workspace.mkdir()
         for config in ([], {"legacy_roots": []}, {"limits": {"scratch": 999}},

@@ -13,17 +13,21 @@
 - **CONFIRMED cleanup:** 21 approved old artifact directories were removed,
   reclaiming 109.16 GiB after verifying a 13.09 MiB archive of 1,019 retained
   records. The libdwarf directory and external-root files remain intact.
-- **CONFIRMED outstanding cleanup:** evidence totals 6.69 GiB, above the 5 GiB
-  budget. Six previously excluded root archives account for 2.30 GiB; a separate
-  deletion plan awaits authorization. Keep the external directory registered in
-  `.forge-work/config.json` and do not bypass the guard refusal.
+- **CONFIRMED user-directed deferral:** skip additional cleanup for this goal.
+  Six fixed root archives (2.30 GiB) remain visible under a scoped exception;
+  physical evidence is 6.69 GiB, budget-charged evidence is 4.39 GiB. All new work
+  keeps the original budgets; the guard is READY and all 16 controls pass.
+  Retire this exception after #115 → #117 → #120; do not delete the archives
+  automatically. Keep the legacy registration.
 - **PLANNED, not configured:** a filesystem quota for a hard ceiling. The
   implemented monitoring can overshoot and does not contain arbitrary writes.
 - **CONFIRMED #117 prerequisite:** the pinned producer's attribute whitelists
   exclude required DWARF 5 call-site attributes. The source audit and isolated
   admission probe are recorded in [CALL-SITE-PLAN.md](docs/CALL-SITE-PLAN.md).
-  The probe is **PRESENT, UNVERIFIED**; it must be compiled and run against stock
-  and candidate libraries after storage admission, before exporter integration.
+  **CONFIRMED stock reproduction:** the compiled probe's control passes, and
+  all five call-site attribute modes fail with `DW_DLE_INPUT_ATTR_BAD (143)`.
+  Next test a focused compatibility patch before exporter integration; runtime
+  call-site acceptance remains incomplete.
 
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
