@@ -904,3 +904,38 @@ passed both architecture checks, then failed compilation because the renamed
 normalized integer now uses `elfEntryAddress`; no expression or location range
 changes. This failure supersedes any assumption that static scan success proves
 Java compilation. Corrected-head hosted validation is pending.
+
+## Fresh-project preservation gate — 2026-11-08
+
+**CONFIRMED:** [run `42528939065`](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42528939065)
+at `c6dd2f9` passed native Linux and Windows builds, all extension regressions,
+and release assembly. The package assembly log records ZIP SHA-256
+`b13fa29cc4947853a3bed29afcbd04e87dd426b8ca0767c53cc9274dc0dbb489`.
+Both primary lanes passed isolated JNA checks, 16 ET_EXEC compiler-reference
+sessions and 14 serializer-control sessions each, then failed the initial saved
+program preservation assertion. These passes do not establish PIE, packaged
+execution or the full hosted gate; the packaged steps were skipped.
+
+The standalone probe used `GhidraProject.openProject()` and then
+`openProgram(..., true)`. Inspection of the installed Ghidra 12.0.3 source shows
+that this opens a writable project container even though the program is opened
+read-only. `IndexedLocalFileSystem.dispose()` flushes the index when writable.
+Likewise, the local-project headless path opens a writable container even with
+`-readOnly`. The exact changed-file inventory of the failed CI run is
+**UNCERTAIN** because the former assertion recorded no before/after differences.
+Do not assume the program database itself changed, or excuse an unexplained
+hash difference as harmless metadata.
+
+**PRESENT, UNVERIFIED correction:** both probes now use
+`DefaultProjectData(ProjectLocator, false, false)` and
+`DomainFile.getReadOnlyDomainObject`, with explicit release/close and rolled-back
+curation. For the installed script, headless runs the fixture controller once
+without an import in an empty host project; the controller passes the saved
+read-only program through the normal script state to the real installed exporter.
+It clears that state and releases the view afterward. This preserves the actual
+analyzed fixture rather than replacing it with a fresh auto-analysis. The full
+`idata` hash assertion remains, now checked per view with before/after/difference
+JSON receipts. No index exclusions or stabilization reopen is used.
+
+Python syntax, actionlint and whitespace checks pass. Local heavy work remains
+refused at 21.54/20 GiB; corrected-head fresh-project validation is pending in CI.

@@ -83,6 +83,14 @@ def program_hashes(project):
     return result
 
 
+def require_program_preserved(project, before, receipt):
+    after = program_hashes(project)
+    changed = {name: {"before": before.get(name), "after": after.get(name)}
+               for name in sorted(before.keys() | after.keys()) if before.get(name) != after.get(name)}
+    receipt.write_text(json.dumps({"before": before, "after": after, "changed": changed}, indent=4) + "\n")
+    assert not changed, "capture changed saved program files: " + ", ".join(changed)
+
+
 def compare_arguments(reference, captured):
     evaluate = runpy.run_path(str(ROOT / "src/test/integration/check-call-values.py"))["evaluate"]
     expressions = {int(row["pc"], 16): row for row in captured["arguments"]}
@@ -267,6 +275,7 @@ def main():
     reports_root = work / args.report_name if args.reuse_project else work
     if args.reuse_project:
         reports_root.mkdir(exist_ok=False)
+    (reports_root / "saved-program-before.json").write_text(json.dumps(saved, indent=4) + "\n")
     # Read-only reopen through the current source runtime; do not overwrite a
     # user's installed extension or build another Ghidra installation.
     reports = []
@@ -280,7 +289,9 @@ def main():
                     *(["-PcallSiteConsumer=" + str(args.consumer.resolve()), "-PcallSiteProducer=" + str(args.producer.resolve())]
                       if args.consumer else [])], reports_root / (variant + "-capture"), env)
         assert "call-site-evidence-probe=PASS" in text
+        require_program_preserved(project, saved, reports_root / (variant + "-program-preservation.json"))
         captured = json.loads(output.read_text())
+        assert captured["readOnlyProject"] is True
         assert "/build/classes/java/main/" in captured["classOrigin"], captured["classOrigin"]
         reports.append({"variant": variant, "delta": captured["rebaseDelta"], "calls": compare(compiler, captured),
                         "tails": compare_tails(compiler, captured), "tailOmissions": captured["tailOmissions"],
@@ -305,7 +316,7 @@ def main():
         assert reports[0]["plan"] == reports[1]["plan"], "rebase changed call-site plan"
     assert reports[1]["delta"] - reports[0]["delta"] == 0x400000
     assert digest(original) == protected, "capture changed the original executable"
-    assert program_hashes(project) == saved, "capture changed the saved program database"
+    require_program_preserved(project, saved, reports_root / "program-preservation.json")
     (reports_root / "result.json").write_text(json.dumps({
         "status": "PASS_RECOVERED_PLAN_STRUCTURAL" if args.consumer else
             "PASS_CURATED_PARAMETER_BINDING" if args.bind_parameters else "PASS_CAPTURE_TAIL_ARGUMENT_REFERENCE",

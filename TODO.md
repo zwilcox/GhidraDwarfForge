@@ -2,6 +2,14 @@
 
 ## Storage maintenance — 2026-11-08
 
+- **CONFIRMED #117 preservation gate failure:** `c6dd2f9` passed Linux/Windows
+  native builds, the full extension suite and release assembly. Both primary
+  lanes then failed the fresh saved-project hash check after passing JNA,
+  compiler-reference and serializer controls. Correct the harness's writable
+  project container using a read-only saved view; retain all `idata` hashes and
+  add per-view differences. Packaged checks remain unexecuted. Validate this
+  correction on a fresh hosted run before proceeding with #117 acceptance.
+
 - **CONFIRMED hosted follow-up:** draft [PR190](https://github.com/zwilcox/GhidraDwarfForge/pull/190)
   is open. First run `42528603640` stopped before compilation because generic
   `pc` identifiers/comments matched the architecture scan. Renamed those to

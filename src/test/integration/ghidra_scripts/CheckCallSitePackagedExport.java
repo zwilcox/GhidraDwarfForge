@@ -3,11 +3,15 @@
 import com.google.gson.GsonBuilder;
 import ghidra.app.script.GhidraScript;
 import ghidra.framework.Application;
+import ghidra.framework.data.DefaultProjectData;
+import ghidra.framework.model.DomainFile;
+import ghidra.framework.model.ProjectLocator;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
+import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.SourceType;
 import ghidradwarfforge.AddressNormalizer;
 import ghidradwarfforge.GhidraImageBase;
@@ -28,7 +32,27 @@ public class CheckCallSitePackagedExport extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 4) throw new IllegalArgumentException("input new-output-directory rebase-shift expected-module");
+        if (args.length != 5) throw new IllegalArgumentException("input new-output-directory rebase-shift expected-module saved-project-parent");
+        if (currentProgram != null) throw new AssertionError("fixture must open its own read-only project view");
+        var project = new DefaultProjectData(new ProjectLocator(args[4], "Calls"), false, false);
+        try {
+            var file = Objects.requireNonNull(project.getFile("/input"));
+            if (file.isInWritableProject()) throw new AssertionError("fixture project must be read-only");
+            var program = (Program) file.getReadOnlyDomainObject(this, DomainFile.DEFAULT_VERSION, monitor);
+            try {
+                currentProgram = program;
+                checkPackaged(args);
+            }
+            finally {
+                currentProgram = null;
+                state.setCurrentProgram(null);
+                program.release(this);
+            }
+        }
+        finally { project.close(); }
+    }
+
+    private void checkPackaged(String[] args) throws Exception {
         Path input = Path.of(args[0]).toRealPath(), output = Path.of(args[1]).toAbsolutePath();
         Path expectedModule = Path.of(args[3]).toRealPath();
         Path module = Application.getModuleRootDir("GhidraDwarfForge").getFile(false).toPath().toRealPath();
@@ -95,6 +119,7 @@ public class CheckCallSitePackagedExport extends GhidraScript {
             var result = new LinkedHashMap<String, Object>();
             result.put("status", "PASS_PACKAGED_CALL_SITE_EXPORT");
             result.put("scope", "Real installed script, native pair and decompilation; fixture curation is rolled back");
+            result.put("readOnlyProject", true);
             result.put("java", System.getProperty("java.version"));
             result.put("classOrigin", origin.toString());
             result.put("jarSha256", hash(origin));

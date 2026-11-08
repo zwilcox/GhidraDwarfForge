@@ -11,10 +11,13 @@ import java.util.HexFormat;
 
 import com.google.gson.GsonBuilder;
 import ghidra.GhidraApplicationLayout;
-import ghidra.base.project.GhidraProject;
 import ghidra.framework.Application;
 import ghidra.framework.HeadlessGhidraApplicationConfiguration;
+import ghidra.framework.data.DefaultProjectData;
+import ghidra.framework.model.DomainFile;
+import ghidra.framework.model.ProjectLocator;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Program;
 import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.AddressNormalizer;
 import ghidradwarfforge.GhidraImageBase;
@@ -35,11 +38,17 @@ public final class CallSiteEvidenceProbe {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
-        var project = GhidraProject.openProject(args[1], "Calls");
+        // Read-only Program access alone does not make its project container
+        // read-only. Opening a writable container can rewrite its file index.
+        var project = new DefaultProjectData(new ProjectLocator(args[1], "Calls"), false, false);
+        Object consumer = new Object();
         try {
-            var program = project.openProgram("/", "input", true);
-            int transaction = program.startTransaction("temporary call-site capture rebase");
+            var file = java.util.Objects.requireNonNull(project.getFile("/input"));
+            if (file.isInWritableProject()) throw new AssertionError("fixture project must be read-only");
+            var program = (Program) file.getReadOnlyDomainObject(consumer, DomainFile.DEFAULT_VERSION, TaskMonitor.DUMMY);
+            int transaction = -1;
             try {
+                transaction = program.startTransaction("temporary call-site capture rebase");
                 long shift = Long.decode(args[4]);
                 if (shift != 0) program.setImageBase(program.getImageBase().add(shift), true);
                 long delta = AddressNormalizer.rebaseDelta(program.getImageBase().getOffset(), GhidraImageBase.originalImageBase(program));
@@ -155,6 +164,7 @@ public final class CallSiteEvidenceProbe {
                 var result = new LinkedHashMap<String, Object>();
                 result.put("scope", "Captured transfers, direct tail boundary states and integer register value expressions; no production parameter mapping or DWARF emission proof");
                 result.put("rebaseDelta", delta);
+                result.put("readOnlyProject", true);
                 result.put("curatedDriverBody", correctedBody);
                 result.put("provedSwitches", proof.switches().values().stream().map(dispatch -> java.util.Map.of(
                     "transfer", dispatch.transfer().toString(), "targets", dispatch.targets().stream().map(Object::toString).toList())).toList());
@@ -273,7 +283,12 @@ public final class CallSiteEvidenceProbe {
                     StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
                 System.out.println("call-site-evidence-probe=PASS functions=" + rows.size() + " delta=" + delta);
             }
-            finally { program.endTransaction(transaction, false); }
+            finally {
+                try {
+                    if (transaction != -1) program.endTransaction(transaction, false);
+                }
+                finally { program.release(consumer); }
+            }
         }
         finally { project.close(); }
     }

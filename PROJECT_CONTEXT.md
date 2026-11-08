@@ -2,6 +2,20 @@
 
 ## Current call-site checkpoint — 2026-11-08
 
+**CONFIRMED hosted component passes, preservation failure:** at `c6dd2f9`, run
+`42528939065` passed both native builds, the extension regression suite and release
+assembly. Both x86-64/AArch64 lanes passed isolated JNA, ET_EXEC compiler references
+and serializer controls, then failed the initial saved-program hash comparison.
+Packaged call-site tests were skipped, not passed. The probe opened its Program
+read-only inside a writable project container. Ghidra 12.0.3 source confirms that
+writable project disposal flushes its index; the old assertion did not identify
+which files differed, so the exact failed-file inventory remains unverified.
+Both harnesses now open the saved fixture with `DefaultProjectData` in read-only
+mode. The installed script runs in a separate empty host project and consumes
+that saved view; no second import or analysis is substituted. Preservation stays
+strict over every `idata` file, with before/after/difference receipts per view.
+Static checks pass; fresh hosted execution of this correction remains pending.
+
 **CONFIRMED first hosted gate failure:** draft PR190 at `f59f77f` started run
 `42528603640`. Workflow lint passed, but the extension job stopped at the
 architecture-boundary scan before compilation: generic standalone `pc` names

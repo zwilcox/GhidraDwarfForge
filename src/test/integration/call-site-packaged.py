@@ -66,6 +66,7 @@ def main():
     compiler = json.loads((args.reference / "result.json").read_text())
     assert compiler["status"] == "PASS_COMPILER_REFERENCE"
     saved = capture["program_hashes"](project)
+    (work / "saved-program-before.json").write_text(json.dumps(saved, indent=4) + "\n")
     protected = digest(binary)
     home = Path(os.environ.get("FORGE_CACHE_DIR", work / "cache")) / "ghidra-packaged-user"
     home.mkdir(parents=True, exist_ok=True)
@@ -92,18 +93,24 @@ def main():
     reports, sessions, failures = [], [], []
     for variant, shift in (("original", 0), ("rebased", 0x400000)):
         output = work / variant
+        # Headless local -process opens a writable project container even with
+        # -readOnly. Run the script once without an import in a small host
+        # project; the script opens the analyzed fixture as a read-only view.
+        host = work / (variant + "-host")
+        host.mkdir()
         try:
-            transcript = run(variant + "-headless", [ghidra / "support/analyzeHeadless", project, "Calls",
-                "-process", "input", "-readOnly", "-noanalysis", "-max-cpu", "2",
+            transcript = run(variant + "-headless", [ghidra / "support/analyzeHeadless", host, "Harness",
+                "-noanalysis", "-max-cpu", "2",
                 "-scriptPath", SCRIPTS / "ghidra_scripts", "-postScript", "CheckCallSitePackagedExport.java",
-                binary, output, hex(shift), module], headless=True)
+                binary, output, hex(shift), module, project], headless=True)
             assert "packaged-call-site-export=PASS functions=13" in transcript
             assert transcript.count("GhidraDwarfForge symbol export PASS") == 2
         finally:
             assert digest(binary) == protected, "packaged exporter changed original input"
-            assert capture["program_hashes"](project) == saved, "packaged exporter changed saved program"
+            capture["require_program_preserved"](project, saved, work / (variant + "-program-preservation.json"))
         result = json.loads((output / "export.json").read_text())
         assert result["status"] == "PASS_PACKAGED_CALL_SITE_EXPORT"
+        assert result["readOnlyProject"] is True
         assert Path(result["classOrigin"]).resolve() == (module / "lib/GhidraDwarfForge.jar").resolve()
         assert result["jarSha256"] == expected["lib/GhidraDwarfForge.jar"]
         assert result["scriptSha256"] == expected["ghidra_scripts/GhidraDwarfForge.java"]
