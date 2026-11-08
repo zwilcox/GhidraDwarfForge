@@ -493,3 +493,63 @@ Ghidra's production headless entry point. Local raw evidence is retained under
 `benchmark-final-01`. [Machine-readable measurements](evidence/multifile-benchmark.json)
 bind the summary, environment and installed module hashes. CI now runs the same
 fixture; hosted benchmark execution remains **PRESENT, UNVERIFIED**.
+
+## Historical performance baseline directory compatibility
+
+**CONFIRMED local diagnosis; hosted correction unverified:** the optional
+performance workflow still measures against pinned `1bb4c14`, with its separately
+audited array correction. That baseline predates `75860c6`, which adds the
+synthetic source directory as `DW_AT_comp_dir` to prevent a perf source-lookup
+crash. The first SQLite pair in Windows runs `42425532257` and `42426100636`
+therefore fails the old byte-equality assertion. This is separate from the
+Windows source-store race-hook failure and does not establish a production
+multi-file defect.
+
+`dwarf-revision-equivalence.py` allows only that documented semantic difference.
+Both first sidecars are retained before comparison. LLVM must validate each;
+all decoded DIE depths, tags, forms, values and references match after resolving
+reference offsets by DIE position and checking/removing exactly the candidate
+CU directory attribute. The directory must equal the actual output directory.
+The first CU abbreviation must gain only `DW_AT_comp_dir / DW_FORM_strp`; all
+remaining abbreviation bytes match. The string table must gain exactly one
+matching directory string, with every other byte preserved. ELF identity,
+section metadata and every other section, including `.debug_line`, ranges and
+locations, remain equal. This comparator is explicitly bounded to the ELF64
+little-endian DWARF 5 corpus and refuses a baseline that already has the field.
+
+The existing per-variant/profile byte equality, report equality, source-catalog
+comparison, project/input preservation, timings and consumer checks remain.
+Comparison runs outside measured export intervals. GNU and strict validation
+now additionally run on the retained baseline; the Linux consumer checks that
+the comparison receipt binds the candidate and baseline hashes. No production
+module, baseline revision, native pin or required-validation gate is changed.
+
+A local Java 21 replay uses a private copy of the failed Windows SQLite project
+and the three corrected baseline class files from that run's audited control.
+It retains the original release separately. The 12,338 decoded records match;
+GNU, LLVM and the pinned checker accept both sidecars. GDB passes compiler and
+both exporter function/source/value/step/return/exit checks. Negative controls
+reject changed types/references, addresses, source coordinates, locations,
+whitespace inside names, forms, CU address size, directory values, section
+bytes/metadata, target identity and extra abbreviation/string data.
+
+The initial replay encountered the saved project's Windows owner; the isolated
+JVM now uses that recorded owner identity. The original saved project is retained;
+Linux changes only CRLF to LF in four index/backup files of the private copy,
+with every other copied file byte-identical. That transport difference is
+recorded explicitly, not treated as a change to the analyzed program.
+Validation rehearsals also exposed a missing stderr capture and a stale private
+source timestamp relative to the baseline sidecar. Those attempts are retained;
+the final debugger checks select each matching source and its sidecar timestamp,
+without changing target or sidecar bytes. Native Windows and full repeated
+performance acceptance remain pending.
+
+A fresh Linux import of the same pinned U-Boot corpus also passes one
+baseline/candidate pair: 6,375 functions and 43,408 DIE records. The exact
+abbreviation/string exception and all remaining section comparisons pass;
+source differences are solely the previously accepted appended listing catalog,
+and report semantics match for both workloads. Both U-Boot sidecars pass
+GNU/LLVM/pinned checks and compiler/baseline/candidate GDB runtime checks.
+These diagnostic pairs are correctness evidence, not repeated performance
+measurements. The [receipt](evidence/multifile-performance-control.json) binds
+raw evidence, tested comparator sources and the retained failed attempts.

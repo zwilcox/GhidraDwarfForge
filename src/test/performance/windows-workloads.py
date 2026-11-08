@@ -43,6 +43,7 @@ def main():
         parser.error('native Windows and 2..10 pairs required')
     support = load('export-benchmark')
     catalog = load('catalog-source-equivalence')
+    dwarf_comparison = load('dwarf-revision-equivalence')
     corpus = args.corpus.resolve(strict=True)
     metadata = json.loads((corpus / 'corpus.json').read_text())
     assert metadata['schemaVersion'] == 1 and metadata['status'] == 'BUILT'
@@ -61,6 +62,7 @@ def main():
     protected = [Path(__file__).resolve(), helper, SOURCE / 'export-benchmark.py',
         SOURCE / 'headless-observations.py', SOURCE / 'jfr-phases.py',
         SOURCE / 'coverage-measurement-package.py', SOURCE / 'catalog-source-equivalence.py',
+        SOURCE / 'dwarf-revision-equivalence.py',
         args.baseline_control_receipt.resolve(strict=True),
         corpus / 'corpus.json']
     protected += [corpus / name for name in metadata['files']]
@@ -136,6 +138,7 @@ def main():
         samples, first_hashes, first_semantics, first_reports = [], {}, None, {}
         first_sources = {}
         source_comparison = None
+        dwarf_result = None
         exports = [(pair, variant, False) for pair in range(args.pairs)
             for variant in (('baseline', 'candidate') if pair % 2 == 0 else ('candidate', 'baseline'))]
         exports.append((args.pairs, 'candidate', True))
@@ -192,8 +195,12 @@ def main():
             if variant not in first_sources:
                 first_sources[variant] = Path(str(output) + '.c').read_bytes()
                 (case / (variant + '-first.dbg.c')).write_bytes(first_sources[variant])
+                shutil.copyfile(output, case / (variant + '-first.dbg'))
             if len(first_hashes) == 2:
-                assert first_hashes['baseline'][0] == first_hashes['candidate'][0], 'paired DWARF changed'
+                if dwarf_result is None:
+                    dwarf_result = dwarf_comparison.compare(case / 'baseline-first.dbg',
+                        case / 'candidate-first.dbg', Path(str(output) + '.c'),
+                        case / 'dwarf-comparison')
                 source_comparison = catalog.compare(first_sources['baseline'], first_sources['candidate'])
                 write(case / 'source-comparison.json', source_comparison)
             sample.update(pair=pair, variant=variant, artifactSha256=hashes,
@@ -209,6 +216,12 @@ def main():
             case / 'phases.log', case / 'phase-summary.json'], timeout=120)
         validation = {}
         for name, command in [('llvm', [shutil.which('llvm-dwarfdump'), '--verify', output]),
+                ('baseline-strict', [sys.executable, SOURCE.parent / 'integration/check-dwarfdump.py',
+                    case / 'baseline-first.dbg', case / 'baseline-strict-checks.log', '--original', binary,
+                    '--configuration', args.checker_configuration.resolve(strict=True)]),
+                ('baseline-readelf', [shutil.which('readelf'), '-h', '-SW', '-n',
+                    *['--debug-dump=' + view for view in ('info', 'abbrev', 'aranges', 'decodedline', 'Ranges', 'loc')],
+                    case / 'baseline-first.dbg']),
                 ('strict', [sys.executable, SOURCE.parent / 'integration/check-dwarfdump.py', output,
                     case / 'strict-checks.log', '--original', binary,
                     '--configuration', args.checker_configuration.resolve(strict=True)]),
@@ -240,7 +253,8 @@ def main():
         summary = {'status': 'WINDOWS_EXPORT_VALIDATED_GDB_PENDING', 'workload': workload,
             'sourceDirectory': str(case), 'sidecar': output.name, 'import': imported,
             'samples': samples, 'artifactSha256': first_hashes['candidate'],
-            'artifactSha256ByVariant': first_hashes, 'sourceComparison': source_comparison, 'semantics': first_semantics,
+            'artifactSha256ByVariant': first_hashes, 'sourceComparison': source_comparison,
+            'dwarfComparison': dwarf_result, 'semantics': first_semantics,
             'mediansSeconds': {variant: statistics.median(s['elapsedSeconds'] for s in samples
                 if s['variant'] == variant) for variant in installations},
             'validation': validation, 'strict': json.loads((case / 'strict-checks.log.check.json').read_text()),

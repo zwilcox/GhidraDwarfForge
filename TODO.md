@@ -94,9 +94,10 @@ hook compared a resolved destination with an unresolved temporary path. A
 Linux symlink-parent reproduction confirms the old comparison misses injection;
 the corrected test resolves the parent and requires exactly one injection.
 Java 21 passes the corrected race/cancellation checks, and the complete local
-store/reader/publisher checks pass. Production code is unchanged. The Windows
-path-spelling diagnosis still requires a passing hosted rerun; no Windows
-acceptance or full issue closure follows from the Linux reproduction.
+store/reader/publisher checks pass. Production code is unchanged. The subsequent native Windows host job `128565957060` in run `42425532357`
+passes at `59d5930`, including 1,454 store checks and 169 cancellation points.
+This confirms the corrected hook on Windows; newer multi-file formatter
+combinations and full issue acceptance still require their own hosted results.
 
 **CONFIRMED #115 discontiguous checkpoint:** two gap positions pass across
 x86-64/AArch64 non-PIE/PIE, initial/rebased programs and plain/zlib outputs:
@@ -149,6 +150,20 @@ project preservation pass. Cross-target missing-library warnings were resolved
 by an explicit fixture library search path; those failed attempts are retained.
 Hosted shared-object execution remains pending. Failed/empty-source edge cases,
 attachment/build-ID lifecycle combinations and final hosted acceptance remain.
+
+**CONFIRMED #115 performance-control diagnosis:** hosted Windows run
+`42426100636` fails the old cross-revision byte-equality assertion. The pinned
+`1bb4c14` measurement baseline predates the accepted `75860c6` CU compilation-
+directory addition. A Java 21 Linux replay of its retained Windows SQLite
+analysis project confirms that exact semantic difference: 12,338 DIE records
+otherwise match, with identical line/range/location and other ELF sections.
+A fresh U-Boot pair also matches 43,408 DIE records across 6,375 functions.
+GNU/LLVM/pinned validation and compiler/baseline/candidate GDB checks pass for
+both workloads. The revised control retains both first artifacts, validates their exact
+abbreviation/string additions, compares all DIE forms/references, preserves
+same-revision byte determinism, and rejects unrelated mutations. Production
+export code is unchanged. A corrected hosted Windows run is still required;
+this diagnosis does not complete #115. See [performance control evidence](docs/PERFORMANCE.md#historical-performance-baseline-directory-compatibility).
 
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming

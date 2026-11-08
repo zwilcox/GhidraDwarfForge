@@ -178,6 +178,10 @@ def main():
     for workload in metadata['workloads']:
         summary, = [s for s in recorded['workloads'] if s['workload']['name'] == workload['name']]
         assert summary['workload'] == workload
+        comparison = summary['dwarfComparison']
+        assert comparison['status'] == 'PASS'
+        assert comparison['baselineSha256'] == summary['artifactSha256ByVariant']['baseline'][0]
+        assert comparison['candidateSha256'] == summary['artifactSha256ByVariant']['candidate'][0]
         assert summary['status'] == 'WINDOWS_EXPORT_VALIDATED_GDB_PENDING'
         case = root / workload['name']
         case.mkdir()
