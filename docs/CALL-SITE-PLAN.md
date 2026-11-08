@@ -897,3 +897,10 @@ instruction proof or serialized DWARF field. Probe JSON retains its `pc` key;
 Java callers use the renamed record accessor. No local build or runtime suite
 was launched after the storage refusal. Corrected-head hosted execution remains
 required.
+
+The follow-up [run at `9f95376`](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42528777328)
+passed both architecture checks, then failed compilation because the renamed
+`entryAddress` local collided with the surrounding Ghidra `Address`. The
+normalized integer now uses `elfEntryAddress`; no expression or location range
+changes. This failure supersedes any assumption that static scan success proves
+Java compilation. Corrected-head hosted validation is pending.

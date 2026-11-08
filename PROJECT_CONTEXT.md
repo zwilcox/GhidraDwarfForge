@@ -9,6 +9,10 @@ and comments matched its target-register rule. The same read-only scan reproduce
 locally. Renaming these to instruction/entry addresses makes the unchanged scan
 pass. Diagnostic JSON retains its existing `pc` keys. Compilation, packaged
 execution and full hosted acceptance still require the corrected head.
+Follow-up `9f95376` run `42528777328` passed both architecture checks but exposed
+a duplicate local variable from that rename. The normalized value is now named
+`elfEntryAddress`, distinct from the surrounding Ghidra `Address`. This compile
+failure is retained; corrected-head hosted validation is still pending.
 
 **PRESENT, UNVERIFIED packaged harness:** the installed normal script now has a
 dedicated x86-64/AArch64 ET_EXEC/PIE/original/rebased CI harness. It checks the

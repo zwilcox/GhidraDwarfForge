@@ -7,6 +7,9 @@
   `pc` identifiers/comments matched the architecture scan. Renamed those to
   instruction/entry addresses; the unchanged static scan now passes locally.
   Full validation must run on the corrected head; #117 is still open.
+  Run `42528777328` passed the architecture checks but failed compilation on a
+  duplicate local introduced by the rename. Distinguish `elfEntryAddress` from
+  Ghidra's `entryAddress`; re-run the full hosted gate after that correction.
 
 - **PRESENT, UNVERIFIED #117 packaged harness:** the real installed script is
   wired into both required call-site CI lanes with package provenance, fixture

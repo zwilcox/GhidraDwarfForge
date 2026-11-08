@@ -162,21 +162,21 @@ public final class GhidraCallParameters {
                     var profile = UnwindAbiProfile.selectForCallSites(program, function, image, delta, monitor);
                     var mapped = destination(program, formal, entry, nodes, registers, profile, image.is64Bit() ? 8 : 4);
                     require(variable.byteSize() == integerBytes(nodes, formal.type()), "variable/formal widths differ");
-                    long entryAddress = variable.functionAddress();
+                    long elfEntryAddress = variable.functionAddress();
                     var ranges = new ArrayList<LocationRange>();
                     boolean changed = false;
                     for (var range : variable.locations()) {
                         monitor.checkCancelled();
-                        if (!range.storage().available() && range.start() <= entryAddress && entryAddress < range.end()) {
-                            if (range.start() < entryAddress) ranges.add(new LocationRange(range.start(), entryAddress, range.storage(), range.evidence()));
-                            ranges.add(new LocationRange(entryAddress, Math.addExact(entryAddress, 1), mapped.storage(),
+                        if (!range.storage().available() && range.start() <= elfEntryAddress && elfEntryAddress < range.end()) {
+                            if (range.start() < elfEntryAddress) ranges.add(new LocationRange(range.start(), elfEntryAddress, range.storage(), range.evidence()));
+                            ranges.add(new LocationRange(elfEntryAddress, Math.addExact(elfEntryAddress, 1), mapped.storage(),
                                 new Evidence(range.evidence().confidence(), "Ghidra formal entry storage before first instruction; no post-entry lifetime or value inferred")));
-                            if (entryAddress + 1 < range.end()) ranges.add(new LocationRange(entryAddress + 1, range.end(), range.storage(), range.evidence()));
+                            if (elfEntryAddress + 1 < range.end()) ranges.add(new LocationRange(elfEntryAddress + 1, range.end(), range.storage(), range.evidence()));
                             changed = true;
                         }
                         else ranges.add(range);
                     }
-                    if (changed) refined = new VariableLocation(variable.functionName(), entryAddress, variable.name(), variable.kind(),
+                    if (changed) refined = new VariableLocation(variable.functionName(), elfEntryAddress, variable.name(), variable.kind(),
                         variable.byteSize(), ranges);
                 }
                 catch (IllegalArgumentException unavailable) {
