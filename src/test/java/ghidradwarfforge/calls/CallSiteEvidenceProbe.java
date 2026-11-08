@@ -47,7 +47,7 @@ public final class CallSiteEvidenceProbe {
                 for (var function : program.getFunctionManager().getFunctions(true)) {
                     if (function.getName().startsWith("cs_")) selected.add(function);
                 }
-                boolean bindParameters = args.length == 6 && args[5].equals("curated-bind");
+                boolean bindParameters = args.length >= 6 && args[5].equals("curated-bind");
                 if (bindParameters) {
                     // Source-known fixture signatures model analyst curation. The
                     // transaction is rolled back; never infer these in production.
@@ -182,7 +182,41 @@ public final class CallSiteEvidenceProbe {
                         bindings.add(row);
                     }
                     result.put("bindings", bindings);
-                    result.put("scope", "Captured transfers and integer binding to source-curated fixture entry storage; no production call-site completeness or emission proof");
+                    var composed = GhidraCallSitePlan.recover(program, symbols, types, entries, registers, image, delta, TaskMonitor.DUMMY);
+                    result.put("plan", composed.plan().functions().stream().map(f -> java.util.Map.of(
+                        "caller", Long.toHexString(f.caller()), "completeness", f.completeness().name(),
+                        "sites", f.sites().stream().map(s -> {
+                            var site = new LinkedHashMap<String, Object>();
+                            site.put("pc", Long.toHexString(s.pc()));
+                            site.put("returnPc", Long.toHexString(s.returnPc()));
+                            site.put("tail", s.tail());
+                            site.put("callee", s.callee() == null ? null : Long.toHexString(s.callee()));
+                            site.put("arguments", s.arguments().stream().map(a -> java.util.Map.of(
+                                "ordinal", a.ordinal(), "name", a.name(), "typeKey", a.typeKey(), "register", a.dwarfRegister(),
+                                "bytes", a.value().bytes(), "expression", HexFormat.of().formatHex(a.value().dwarf(8, image.byteOrder())))).toList());
+                            return site;
+                        }).toList())).toList());
+                    result.put("planDiagnostics", composed.diagnostics());
+                    if (args.length == 8) {
+                        var source = ghidradwarfforge.GhidraSyntheticSource.decompile(program, symbols, delta, TaskMonitor.DUMMY);
+                        Path sidecar = Path.of(args[3] + ".dbg");
+                        Files.createDirectories(sidecar.getParent());
+                        var exporter = new ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter(
+                            ghidradwarfforge.elf.DebugSectionCompression.NONE, java.util.Map.of(), null, composed.plan());
+                        exporter.export(Path.of(args[2]), sidecar, Path.of(args[6]), Path.of(args[7]), symbols, source, types,
+                            sidecar.getFileName() + ".c", () -> false);
+                        Files.write(Path.of(sidecar + ".c"), source.utf8());
+                        byte[] first = Files.readAllBytes(sidecar);
+                        var repeatedSource = ghidradwarfforge.GhidraSyntheticSource.decompile(program, symbols, delta, TaskMonitor.DUMMY);
+                        exporter.export(Path.of(args[2]), sidecar, Path.of(args[6]), Path.of(args[7]), symbols, repeatedSource, types,
+                            sidecar.getFileName() + ".c", () -> false);
+                        if (!java.util.Arrays.equals(first, Files.readAllBytes(sidecar)) ||
+                                !java.util.Arrays.equals(source.utf8(), repeatedSource.utf8())) {
+                            throw new AssertionError("non-deterministic recovered sidecar/source");
+                        }
+                        result.put("sidecar", sidecar.toString());
+                    }
+                    result.put("scope", "Recovered call-site plan and integer bindings from curated saved Ghidra program; optional native emission is experimental until structural/runtime acceptance passes");
                 }
                 Path output = Path.of(args[3]);
                 Files.createDirectories(output.getParent());

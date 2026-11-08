@@ -1047,7 +1047,9 @@ jobs:
               python3 -B src/test/integration/call-site-evidence.py \
                   "build/test-results/call-site-reference/$TARGET-$role" \
                   "build/test-results/call-site-capture/$TARGET-$role" --ghidra "$GHIDRA_INSTALL_DIR" \
-                  --reuse-project --report-name parameter-binding --bind-parameters
+                  --reuse-project --report-name forge-plan --bind-parameters \
+                  --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+                  --producer "$PWD/native-integration/libdwarfp.so.2.3.2" --dwarfdump "$DWARFDUMP"
           done
 
       - name: Install extension

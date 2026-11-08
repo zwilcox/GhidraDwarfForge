@@ -5,8 +5,9 @@
 - **CONFIRMED:** the user reactivated feature goal #115 → #117 → #120 after
   storage maintenance. #115 is merged as `71352a3` with its final full/performance
   gates passing. #117 has a [complete acceptance plan](docs/CALL-SITE-PLAN.md),
-  and isolated production-serializer controls pass, but the normal Ghidra export
-  path is not connected to call-site emission yet; #120 follows it.
+  and recovered-plan structural checks pass. The normal script is connected and
+  compiles, but packaged invocation and full debugger acceptance remain open;
+  #120 follows it.
 - **CONFIRMED:** local storage policy and monitored launcher are implemented;
   see [STORAGE.md](docs/STORAGE.md) and AGENTS.md section 6.2. Tiny isolated tests
   cover launch refusal, live growth, process-group stopping, cleanup and accounting.
@@ -81,6 +82,16 @@
   plan, establish completeness and connect normal export; full runtime/hosted
   acceptance and x86 driver coverage remain pending.
 
+
+- **CONFIRMED #117 composition checkpoint:** eight recovered saved/rebased
+  sidecars pass structural validators and deterministic reruns. Conditional
+  expression joins now target an explicit `DW_OP_nop`, fixing the strict
+  consumer failure. All 64 debugger scenarios ran; 60 frame comparisons match,
+  while x86 recursion loses one virtual frame in four views. Positive entry
+  values also remain unavailable because formal parameters lack entry locations.
+  Fix these gaps and x86 driver coverage before full hosted integration. The
+  normal script connection compiles but packaged execution is **PRESENT,
+  UNVERIFIED**. See [evidence](docs/evidence/call-site-composition.json).
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 

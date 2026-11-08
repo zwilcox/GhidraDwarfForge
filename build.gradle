@@ -328,7 +328,12 @@ tasks.register("callSiteEvidenceProbe", JavaExec) {
         args ghidraInstallDir, project.property("callSiteProject"), project.property("callSiteInput"),
             project.property("callSiteReport"), project.findProperty("callSiteRebase") ?: "0"
         if (project.hasProperty("callSiteBindings")) args "curated-bind"
+        if (project.hasProperty("callSiteConsumer")) {
+            if (!project.hasProperty("callSiteBindings")) throw new GradleException("callSiteConsumer requires callSiteBindings")
+            args project.property("callSiteConsumer"), project.property("callSiteProducer")
+        }
     }
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/call-site-evidence/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/call-site-evidence/cache").absolutePath

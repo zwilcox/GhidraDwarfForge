@@ -43,7 +43,9 @@ def evaluate(code, address_bytes, byte_order, registers):
             position += 2
             if operation == 0x2f or stack.pop() != 0:
                 position += displacement
-            assert 0 <= position <= len(code), "branch escapes expression"
+                assert 0 <= position < len(code), "branch lacks an in-expression target"
+        elif operation == 0x96:
+            pass
         else:
             right, left = stack.pop(), stack.pop()
             operations = {

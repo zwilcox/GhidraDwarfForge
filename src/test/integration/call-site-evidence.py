@@ -175,16 +175,57 @@ def compare_bindings(reference, captured):
     return {"checks": checks, "transfers": observations}
 
 
+def compare_plan(reference, captured):
+    functions = {int(f["entry"], 16) - captured["rebaseDelta"]: f["name"] for f in captured["functions"]}
+    entries = {name: address for address, name in functions.items()}
+    plans = {functions[int(f["caller"], 16)]: f for f in captured["plan"]}
+    assert set(plans) == set(entries), (set(plans), set(entries))
+    partial = {"cs_indirect", "cs_leaf"}
+    if reference["target"] == "x86_64":
+        partial.update(("cs_driver", "cs_driver.cold"))
+    for name, plan in plans.items():
+        assert plan["completeness"] == ("PARTIAL" if name in partial else "ALL_CALLS"), (name, plan)
+    sites = {int(site["pc"], 16): (name, site) for name, plan in plans.items() for site in plan["sites"]}
+    assert len(sites) == sum(len(plan["sites"]) for plan in plans.values()), "ambiguous plan ownership"
+    bindings = {int(b["pc"], 16): b for b in captured["bindings"]}
+    checks = 0
+    for call in reference["calls"]:
+        pc = int(call["pc"], 16)
+        if call["callee"] is None:
+            assert pc not in sites, "unresolved indirect tail became a proved tail"
+            continue
+        name, site = sites[pc]
+        assert name == call["caller"] and site["tail"] == call["tail"]
+        assert int(site["returnPc"], 16) == int(call["returnPc"], 16), (call, site)
+        assert int(site["callee"], 16) == entries[call["callee"]]
+        assert site["arguments"] == bindings[pc]["arguments"], (call, site)
+        checks += 1
+    # Check every emitted site's binding, including driver calls outside the
+    # selected compiler oracle rows. Unknown/decompiler-only values stay absent.
+    for pc, (name, site) in sites.items():
+        assert site["arguments"] == bindings[pc]["arguments"], (name, site)
+    assert not plans["cs_indirect"]["sites"]
+    semantic = [{**plan, "sites": [{**site, "arguments": [
+        {k: v for k, v in arg.items() if k != "typeKey"} for arg in site["arguments"]]}
+        for site in plan["sites"]]} for plan in captured["plan"]]
+    return {"compilerComparisons": checks, "sites": len(sites), "functions": semantic}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("reference", type=Path, help="completed call-site-reference.py output")
     parser.add_argument("output", type=Path)
     parser.add_argument("--ghidra", required=True, type=Path)
     parser.add_argument("--reuse-project", action="store_true", help="read an existing capture project; write fresh tail-state reports")
-    parser.add_argument("--report-name", default="tail-state", choices=("tail-state", "argument-state", "parameter-binding", "entry-contract"),
+    parser.add_argument("--report-name", default="tail-state", choices=("tail-state", "argument-state", "parameter-binding", "entry-contract", "composed-plan", "forge-plan"),
                         help="fresh report directory when reusing a saved project")
     parser.add_argument("--bind-parameters", action="store_true", help="temporarily curate fixture integer signatures and validate actual entry binding")
+    parser.add_argument("--consumer", type=Path, help="emit and validate native sidecars from recovered plans")
+    parser.add_argument("--producer", type=Path)
+    parser.add_argument("--dwarfdump", type=Path)
     args = parser.parse_args()
+    if any((args.consumer, args.producer, args.dwarfdump)):
+        assert all((args.consumer, args.producer, args.dwarfdump, args.bind_parameters)), "emission requires both libraries, validator and binding"
     reference = args.reference.resolve()
     compiler = json.loads((reference / "result.json").read_text())
     assert compiler["status"] == "PASS_COMPILER_REFERENCE"
@@ -224,7 +265,9 @@ def main():
         text = run([ROOT / "gradlew", "--no-daemon", "callSiteEvidenceProbe",
                     "-PcallSiteProject=" + str(project), "-PcallSiteInput=" + str(original),
                     "-PcallSiteReport=" + str(output), "-PcallSiteRebase=" + str(shift),
-                    *(["-PcallSiteBindings=true"] if args.bind_parameters else [])], reports_root / (variant + "-capture"), env)
+                    *(["-PcallSiteBindings=true"] if args.bind_parameters else []),
+                    *(["-PcallSiteConsumer=" + str(args.consumer.resolve()), "-PcallSiteProducer=" + str(args.producer.resolve())]
+                      if args.consumer else [])], reports_root / (variant + "-capture"), env)
         assert "call-site-evidence-probe=PASS" in text
         captured = json.loads(output.read_text())
         assert "/build/classes/java/main/" in captured["classOrigin"], captured["classOrigin"]
@@ -234,18 +277,29 @@ def main():
                         "omissions": {f["name"]: f["omissions"] for f in captured["functions"] if f["omissions"]}})
         if args.bind_parameters:
             reports[-1]["bindings"] = compare_bindings(compiler, captured)
+            reports[-1]["plan"] = compare_plan(compiler, captured)
+        if args.consumer:
+            sidecar = Path(captured["sidecar"])
+            run(["readelf", "-h", "-S", "-n", "--debug-dump=info,abbrev,aranges,decodedline", sidecar], reports_root / (variant + "-gnu"), env)
+            run(["llvm-dwarfdump", "--verify", sidecar], reports_root / (variant + "-llvm"), env)
+            run(["python3", "-B", ROOT / "src/test/integration/check-dwarfdump.py", sidecar,
+                 reports_root / (variant + "-strict.txt"), "--tool", args.dwarfdump.resolve(), "--original", original],
+                reports_root / (variant + "-strict"), env)
+            reports[-1]["artifact"] = {"sidecarSha256": digest(sidecar), "sourceSha256": digest(Path(str(sidecar) + ".c"))}
     assert reports[0]["calls"] == reports[1]["calls"], "rebase changed transfer identities or original bytes"
     assert reports[0]["tails"] == reports[1]["tails"], "rebase changed proved tail identities or original bytes"
     assert reports[0]["arguments"] == reports[1]["arguments"], "rebase changed integer actual-value expressions"
     if args.bind_parameters:
         assert reports[0]["bindings"] == reports[1]["bindings"], "rebase changed formal storage or argument values"
+        assert reports[0]["plan"] == reports[1]["plan"], "rebase changed call-site plan"
     assert reports[1]["delta"] - reports[0]["delta"] == 0x400000
     assert digest(original) == protected, "capture changed the original executable"
     assert program_hashes(project) == saved, "capture changed the saved program database"
     (reports_root / "result.json").write_text(json.dumps({
-        "status": "PASS_CURATED_PARAMETER_BINDING" if args.bind_parameters else "PASS_CAPTURE_TAIL_ARGUMENT_REFERENCE",
+        "status": "PASS_RECOVERED_PLAN_STRUCTURAL" if args.consumer else
+            "PASS_CURATED_PARAMETER_BINDING" if args.bind_parameters else "PASS_CAPTURE_TAIL_ARGUMENT_REFERENCE",
         "target": compiler["target"], "role": compiler["role"],
-        "scope": "Raw transfers, tail states, integer expressions and optional source-curated parameter binding; production completeness and DWARF integration remain incomplete",
+        "scope": "Captured transfers, tails, integer bindings and composed plans; optional emission validates structure/determinism. Full debugger behavior and normal-script execution remain separate acceptance gates.",
         "inputSha256": protected, "savedProgramSha256": saved, "reports": reports,
     }, indent=4) + "\n")
     print(f"call-site-evidence-reference=PASS target={compiler['target']} role={compiler['role']}")

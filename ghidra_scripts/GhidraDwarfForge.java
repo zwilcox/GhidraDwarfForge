@@ -262,15 +262,21 @@ public class GhidraDwarfForge extends GhidraScript {
         monitor.checkCancelled();
         var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(
             target.name(), originalElf, monitor::isCancelled);
+        var callEntries = new ArrayList<ghidradwarfforge.GhidraCallParameters.Entry>();
         var typeModel = ExportPhase.measure("types-and-storage", () -> {
             var extractedTypes = GhidraTypeGraph.extract(currentProgram, functions, registers,
                 rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
                 decompilation.recoveredParameters(), decompilation.recoveredStatics(),
-                allocation);
+                allocation, callEntries::add);
             return ghidradwarfforge.GhidraCompilerCallPolicy.apply(currentProgram,
                 target, originalElf, extractedTypes, monitor, diagnostic);
         });
         monitor.checkCancelled();
+        var callSites = ExportPhase.measure("call-site-recovery", () ->
+            ghidradwarfforge.calls.GhidraCallSitePlan.recover(currentProgram, functions, typeModel,
+                callEntries, registers, originalElf, rebaseDelta, monitor));
+        callSites.diagnostics().forEach((address, reasons) -> reasons.forEach(reason ->
+            diagnostic.accept("Call-site metadata at ELF address 0x" + Long.toHexString(address) + ": " + reason)));
         var annotated = ExportPhase.measure("source-annotations", () -> {
             var contextualSource = sourceContext.compose(decompilation.source(), rebaseDelta,
                 annotationLimits.sourceBytes(), monitor);
@@ -331,7 +337,7 @@ public class GhidraDwarfForge extends GhidraScript {
             }
             var exporter = new MinimalDwarfSidecarExporter(compression,
                 formatterPlan == null ? Map.of() : formatterPlan.aliases(),
-                sourceBundle == null ? null : sourceBundle.fileLayout());
+                sourceBundle == null ? null : sourceBundle.fileLayout(), callSites.plan());
             if (recovered != null && recovered.plan().isPresent()) {
                 resultHolder[0] = exporter.exportWithFrames(input, stagedOutput,
                     consumer, producer, functions, source, typeModel,

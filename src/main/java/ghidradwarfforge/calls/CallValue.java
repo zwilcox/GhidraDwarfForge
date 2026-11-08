@@ -199,6 +199,10 @@ public sealed interface CallValue {
             out.writeBytes(no);
             out.write(0x2f); offset(out, yes.length, order); // DW_OP_skip
             out.writeBytes(yes);
+            // Keep the join at an operation within the expression, including
+            // when this select is the final full-width value. libdwarf's
+            // branch-target validator rejects a target past the last operation.
+            out.write(0x96); // DW_OP_nop
         }
         if (value.bytes() < addressBytes) { constant(out, mask(value.bytes())); out.write(0x1a); }
     }

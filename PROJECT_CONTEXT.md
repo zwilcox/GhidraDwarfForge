@@ -1,5 +1,22 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+## Current call-site checkpoint — 2026-11-08
+
+**CONFIRMED:** #115 is merged; #117 now composes recovered Ghidra call/tail and
+parameter evidence into the production writer. Eight saved/rebased x86-64 and
+AArch64 sidecars pass structural validators and deterministic reruns. A strict
+consumer failure found a conditional-expression join past the final operation;
+an explicit `DW_OP_nop` join fixes it without weakening validation. Original
+executables and saved databases are preserved.
+
+**CONFIRMED incomplete runtime acceptance:** 64 debugger observations show 60
+matching frame structures and four x86 recursion mismatches (one missing virtual
+frame across both layouts/views). Positive entry values are also unavailable:
+formal parameter DIEs lack entry locations. These gaps, x86 caller coverage,
+packaged normal-script execution and hosted gates remain required. The normal
+script connection compiles but is **PRESENT, UNVERIFIED** end to end. #120 has
+not started. See [current plan and evidence](docs/CALL-SITE-PLAN.md).
+
 ## Storage recovery and bounded local workflow — 2026-11-08
 
 **CONFIRMED:** the user paused feature development after excessive agent-created

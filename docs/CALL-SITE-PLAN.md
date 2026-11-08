@@ -1,9 +1,11 @@
 # Call-site and tail-call metadata — issue #117
 
-**CONFIRMED prerequisites and isolated serialization; Ghidra integration PLANNED:** this plan preserves all six acceptance items in
+**CONFIRMED recovered-plan structural validation; full runtime acceptance incomplete:** this plan preserves all six acceptance items in
 [issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117). The normal
-headless/UI export path does not emit call-site records yet. The isolated
-production-serializer controls below do not establish Ghidra recovery. #120 follows completion
+headless/UI script is now connected to call-site recovery and compiles, but its
+packaged end-to-end invocation remains **PRESENT, UNVERIFIED**. The saved-program
+producer probe establishes recovered plan emission with the debugger gaps below.
+#120 follows completion
 of #117. Storage controls remain mandatory throughout implementation.
 
 ## Verified starting point
@@ -605,3 +607,59 @@ it does not prove the absence of undiscovered computed entries or reconstruct
 actual execution history. The normal-script connection and justified call-site
 completeness remain pending, as do x86 driver coverage and the full Forge/hosted
 acceptance matrix. See [entry-contract evidence](evidence/call-site-entry-contract.json).
+
+## Recovered plan composition and first runtime gaps — 2026-11-08
+
+**CONFIRMED locally:** `GhidraCallSitePlan` composes immutable instruction captures,
+tail-boundary proofs, integer actual-value analysis and captured formal entry
+bindings into the production writer's plan. Profile selection precedes the
+64-bit loader analysis; unsupported ABIs/loader extensions return explicit
+omissions. Shared caller bodies are rejected before instruction-keyed value
+states can overwrite one another. Direct calls can survive a partial caller
+inventory, while unproved tails do not become call sites. An unexported target
+gets no origin or invented parameter bindings.
+
+`ALL_CALLS` requires complete original-instruction coverage, accepted known entry
+dependencies, a closed decoded value-flow graph, audited instruction semantics
+and representation of every admitted call/tail. Failure of any of those checks
+leaves `PARTIAL` with reasons. Missing argument expressions do not invalidate an
+otherwise complete call inventory. These claims describe the curated Ghidra
+function body under the selected ABI, not proof that undiscovered execution
+paths cannot exist. No computed reference is promoted to a direct origin.
+
+Eight saved/rebased x86-64/AArch64 ET_EXEC/PIE views retain 104 capture
+comparisons, 72 tail proofs, 576 low-word and 712 whole-register value checks.
+The plan compares 96 direct call/tail records to independent compiler PCs,
+return keys and origins. Actual decompiler source and recovered type models now
+feed the production native writer; all eight resulting sidecars pass GNU,
+LLVM and strict pinned libdwarf checks, with deterministic repeated sidecar and
+source bytes and unchanged original/saved-program hashes. Inherited frame
+alignment diagnostics remain accepted only with exact original corroboration.
+
+The first AArch64 native artifact exposed a conditional-expression join past
+the final operation. LLVM accepted it, but the strict consumer incremented its
+error count in `check_skip_branch_offsets` (confirmed by a native GDB watchpoint).
+`CallValue.Select` now ends with `DW_OP_nop`, giving every join an in-expression
+operation target. The independent VM enforces that bound and accepts all 7,980
+encoder vectors plus 240 decoded/binding vectors. The strict consumer passes
+the corrected artifact; the validator was not weakened.
+
+**CONFIRMED runtime observations, not full acceptance:** 64 native/QEMU debugger
+sessions cover four target/layout profiles, original/rebased views and all eight
+scenarios. Sixty frame-structure comparisons match compiler references. Four
+fail: x86-64 recursion (scenario 4) lacks the expected `cs_recursive` virtual
+frame in both layouts and both views. AArch64 frame comparisons all match.
+The positive `value@entry` acceptance also fails: recovered formal parameters
+have no entry location, so GDB cannot use them for entry-value lookup. These are
+open implementation gaps, not permitted omissions used to close the issue.
+
+The normal script collects the same entry snapshots and passes the recovered
+plan to the production writer. It compiles against the selected Ghidra API.
+**PRESENT, UNVERIFIED:** packaged headless/UI invocation, broader existing export
+regressions and hosted execution. CI now emits and structurally checks recovered
+plans in the existing saved-project step; no second import is added.
+
+Next resolve the x86 recursion lookup and evidence-backed formal entry locations,
+then x86 driver coverage, complete debugger comparisons and the full protected
+acceptance matrix. No original acceptance item is closed by this checkpoint.
+See [composition evidence](evidence/call-site-composition.json).

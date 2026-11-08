@@ -23,6 +23,9 @@ import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
 import ghidra.util.exception.CancelledException;
 import ghidradwarfforge.elf.ElfImage;
+import ghidradwarfforge.locations.TargetRegisterMap;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 
 /** Ordinary outgoing calls must not seed entry values at a split-frame label. */
 public final class CallEntryContractSmoke {
@@ -105,7 +108,49 @@ public final class CallEntryContractSmoke {
                 require(proof.omissions().containsKey(entry) != accepted, "entry omission not recorded: " + mode);
                 if (mode.equals("fallthrough")) require(proof.omissions().get(entry).contains("external fallthrough"), "missed actual fallthrough entry");
                 if (mode.equals("patched-call")) require(proof.omissions().get(entry).contains("differs from original ELF"), "missed original-byte disagreement");
+                var symbols = selected.stream().map(f -> new FunctionSymbol(f.getName(), f.getEntryPoint().getOffset(),
+                    java.util.stream.StreamSupport.stream(f.getBody().spliterator(), false)
+                        .map(r -> new FunctionRange(r.getMinAddress().getOffset(), r.getLength())).toList())).toList();
+                var plan = GhidraCallSitePlan.recover(program, symbols, null, List.of(),
+                    TargetRegisterMap.forElf(arm ? "aarch64" : "x86_64", image, () -> false), image, 0, TaskMonitor.DUMMY);
+                var callerPlan = plan.plan().functions().stream().filter(f -> f.caller() == entry.getOffset()).findFirst().orElseThrow();
+                require((callerPlan.completeness() == CallSitePlan.Completeness.ALL_CALLS) == accepted,
+                    "entry contract did not constrain completeness: " + mode);
+                require(callerPlan.sites().size() == 1 && !callerPlan.sites().getFirst().tail() &&
+                    callerPlan.sites().getFirst().pc() == entry.add(4).getOffset(), "lost independently verified ordinary call");
+                require(callerPlan.sites().getFirst().callee() == null && callerPlan.sites().getFirst().arguments().isEmpty(),
+                    "invented unexported callee/formals");
                 if (mode.equals("ordinary")) {
+                    var registers = TargetRegisterMap.forElf(arm ? "aarch64" : "x86_64", image, () -> false);
+                    int[] planPolls = {0};
+                    var repeated = GhidraCallSitePlan.recover(program, symbols, null, List.of(), registers, image, 0,
+                        new TaskMonitorAdapter(true) { @Override public void checkCancelled() { planPolls[0]++; } });
+                    require(plan.equals(repeated), "non-deterministic call-site composition");
+                    for (int index = 1; index <= planPolls[0]; index++) {
+                        final int stop = index; int[] count = {0};
+                        try {
+                            GhidraCallSitePlan.recover(program, symbols, null, List.of(), registers, image, 0,
+                                new TaskMonitorAdapter(true) { @Override public void checkCancelled() throws CancelledException {
+                                    if (++count[0] == stop) throw new CancelledException();
+                                } });
+                            throw new AssertionError("missed plan cancellation " + stop);
+                        }
+                        catch (CancelledException expected) { checks++; }
+                    }
+                    for (boolean loader : List.of(false, true)) {
+                        byte[] unsupported = original.clone();
+                        // Non-audited ABI flags or an unreviewed program-header
+                        // extension: neither may break the existing exporter.
+                        ByteBuffer.wrap(unsupported).order(ByteOrder.LITTLE_ENDIAN).putInt(loader ? 120 : 48,
+                            loader ? 0x60000042 : 1);
+                        Path other = output.resolve((arm ? "arm-" : "x86-") + (loader ? "loader" : "abi") + ".elf");
+                        Files.write(other, unsupported);
+                        var omitted = GhidraCallSitePlan.recover(program, symbols, null, List.of(), registers,
+                            ElfImage.read(other), 0, TaskMonitor.DUMMY);
+                        require(omitted.plan().equals(CallSitePlan.EMPTY) && !omitted.diagnostics().isEmpty(),
+                            "unsupported profile was not explicitly omitted");
+                        require(Arrays.equals(unsupported, Files.readAllBytes(other)), "unsupported input changed");
+                    }
                     int[] polls = {0};
                     GhidraTailStateProof.verify(program, selected, image, 0,
                         new TaskMonitorAdapter(true) { @Override public void checkCancelled() { polls[0]++; } });
