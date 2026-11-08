@@ -1,15 +1,17 @@
 # Call-site and tail-call metadata — issue #117
 
 See [the development usage and scope notes](CALL-SITES.md) for debugger commands,
-current proof bounds and unavailable-value behavior. Installed acceptance is
-still pending; those notes are not a released support claim.
+current proof bounds and unavailable-value behavior. Full acceptance is still
+pending; those notes are not a released support claim.
 
-**CONFIRMED recovered-plan structural and 64-case local runtime validation; packaged/hosted acceptance incomplete:** this plan preserves all six acceptance items in
-[issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117). The normal
-headless/UI script is now connected to call-site recovery and compiles, but its
-packaged end-to-end invocation remains **PRESENT, UNVERIFIED**. The saved-program
-producer probe now passes the debugger cases; the historical gaps and their
-resolution are recorded below.
+**CONFIRMED recovered-plan and packaged call-site checkpoints; full hosted acceptance incomplete:**
+this plan preserves all six acceptance items in
+[issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117). Run
+`42534617028` at `9f2d52c` passed both primary packaged call-site steps
+(jobs `128898929091` and `128898929089`), including all 64 runtime cases,
+structural validation, provenance, deterministic exports and original/saved
+database preservation. Remaining target/Windows gates and final review are
+pending. Historical gaps and their resolution are recorded below.
 #120 follows completion
 of #117. Storage controls remain mandatory throughout implementation.
 

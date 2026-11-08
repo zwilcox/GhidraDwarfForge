@@ -2,6 +2,13 @@
 
 ## Storage maintenance — 2026-11-08
 
+- **CONFIRMED #117 packaged checkpoint:** both primary packaged steps pass at
+  `9f2d52c` in run `42534617028`, covering 64 runtime scenarios plus validators,
+  determinism, provenance and preservation. Complete the remaining target and
+  Windows gates and final review before closing #117. The older Windows run
+  repeated the directory timeout; the final ordinary export reused the repeat
+  output directory. Current-head chooser diagnostics are still needed.
+
 - **CONFIRMED #117 packaged diagnosis:** AArch64 job `128894411072` rejected
   normal omission messages because Ghidra logs `printerr` as ERROR. Require
   two completed structured reports and account for each omission against its

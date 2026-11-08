@@ -1,8 +1,10 @@
 # Call sites, tail frames and entry values
 
-**PRESENT, UNVERIFIED as an installed feature:** issue #117 is still under
-validation. Recovered-plan tests pass on the profiles below, but installed-package
-acceptance and the complete hosted gate have not passed. This document describes
+**CONFIRMED packaged checks; full acceptance pending:** issue #117 is still under
+validation. Both selected profiles pass the installed-package call-site step in
+[run 42534617028](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42534617028)
+at `9f2d52c`, including all 64 runtime cases and structural/preservation checks.
+The complete hosted gate and final review have not passed. This document describes
 the development implementation, not a released support claim. The
 [acceptance plan](CALL-SITE-PLAN.md) records the remaining work and historical
 failures.
@@ -36,8 +38,9 @@ GDB/GDB-multiarch 15.1 and QEMU AArch64 8.2.2. Structural checks use GNU binutil
 2.42, LLVM 18.1.3 and the pinned libdwarf checker. Exact versions and fixture
 identities are retained in the [compiler reference receipt](evidence/call-site-compiler-reference.json);
 the [call-origin receipt](evidence/call-site-call-origins.json) records the later
-64-case recovered-runtime checkpoint. These component results do not establish
-installed-package acceptance, other debugger versions or Windows-hosted recovery.
+64-case recovered-runtime checkpoint. The later packaged step is identified
+above. These component results do not establish the full hosted gate, other
+debugger versions or Windows-hosted call-site recovery.
 
 The implementation currently requires little-endian ELF64 and an audited
 ordinary calling convention. Call-site argument expressions are limited to

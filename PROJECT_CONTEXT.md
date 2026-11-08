@@ -2,6 +2,18 @@
 
 ## Current call-site checkpoint — 2026-11-08
 
+**CONFIRMED packaged checkpoint:** run `42534617028` at `9f2d52c` passed
+`Packaged call-site and tail-call runtime checks` on x86-64 job `128898929091`
+and AArch64 job `128898929089`. Both roles and both analysis views ran through
+the installed script/native pair, report/provenance checks, deterministic
+exports, preserved original/saved database, structural validators and all 64
+GDB scenarios. The full target/Windows jobs and final acceptance review are
+still pending. The older `fd9c317` run passed ARM32 and both MIPS fixture setup
+checks, but Windows job `128895066136` repeated the chosen-directory timeout.
+Its log shows split/repeat exports in their intended directories, followed by
+the final ordinary export in the previous repeat directory. The interaction
+cause remains **UNCERTAIN**; current-head Windows has additional diagnostics.
+
 **CONFIRMED packaged transcript diagnosis:** AArch64 job `128894411072` in
 run `42533192785` exposed ordinary skipped-thunk/import diagnostics as the
 rejected `ERROR` lines. Production's diagnostic consumer records each message
