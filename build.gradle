@@ -287,6 +287,41 @@ tasks.register("ghidraUnwindCallsSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/unwind-calls/cache").absolutePath
 }
 
+tasks.register("callSiteEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks raw call/branch evidence, original bytes, overrides, thunks and incomplete bodies"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.GhidraCallSiteEvidenceSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/call-site-evidence").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/call-site-evidence/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/call-site-evidence/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
+}
+
+tasks.register("callSiteEvidenceProbe", JavaExec) {
+    group = "verification"
+    description = "Captures call-site evidence from a saved compiler-reference Ghidra project"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.CallSiteEvidenceProbe"
+    if (project.hasProperty("callSiteProject")) {
+        args ghidraInstallDir, project.property("callSiteProject"), project.property("callSiteInput"),
+            project.property("callSiteReport"), project.findProperty("callSiteRebase") ?: "0"
+    }
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/call-site-evidence/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/call-site-evidence/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
+}
+
 tasks.register("ghidraUnwindInstructionsSmoke", JavaExec) {
     group = "verification"
     description = "Checks native p-code caller identity flow and incomplete graph rejection"

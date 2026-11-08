@@ -33,9 +33,12 @@
   and extension build. Compiler references now pass 64 GDB sessions across
   native x86-64/QEMU AArch64 ET_EXEC/PIE, including positive tail frames and
   ambiguity/recursion/indirect controls, plus independent structural checks.
-  Next implement Ghidra evidence capture and production emission. Hosted
-  native/JNA/reference jobs, Windows runtime and Forge debugger behavior remain
-  incomplete; the compiler tests alone do not complete #117.
+  Raw Ghidra capture now passes 457 real-decoder checks and 104 saved/rebased
+  compiler-reference comparisons; annotations and incomplete bodies remain
+  explicit. Next prove return/stack state, actual arguments and completeness,
+  then integrate emission. Hosted native/JNA/reference/capture jobs, Windows
+  runtime and Forge debugger behavior remain incomplete; these prerequisites
+  do not complete #117.
 
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC

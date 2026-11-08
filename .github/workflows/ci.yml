@@ -686,7 +686,7 @@ jobs:
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
-              unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
+              unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke callSiteEvidenceSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke buildExtension
             python3 -B src/test/integration/debuglink-basename.py \
@@ -1033,6 +1033,9 @@ jobs:
               python3 src/test/integration/call-site-reference.py "$TARGET" \
                   "build/test-results/call-site-reference/$TARGET-$role" \
                   --role "$role" --dwarfdump "$DWARFDUMP"
+              python3 src/test/integration/call-site-evidence.py \
+                  "build/test-results/call-site-reference/$TARGET-$role" \
+                  "build/test-results/call-site-capture/$TARGET-$role" --ghidra "$GHIDRA_INSTALL_DIR"
           done
 
       - name: Install extension

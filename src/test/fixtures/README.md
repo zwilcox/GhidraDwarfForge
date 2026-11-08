@@ -11,6 +11,12 @@ values, runtime PIE bias, deterministic compilation and unchanged target bytes.
 The forwarding function is not automatically a Ghidra thunk. See
 `docs/CALL-SITE-PLAN.md` for the measured compiler/debugger versions and the
 remaining production-export acceptance work.
+`call-site-evidence.py REFERENCE OUTPUT --ghidra INSTALLATION` imports that
+reference's unchanged stripped-debug input and compares immutable production
+transfer capture before and after a temporary rebase. It uses raw p-code and
+original ELF bytes; analyzer thunk and CALL_RETURN annotations are observations,
+not proof of tail semantics. The standalone `callSiteEvidenceSmoke` Gradle task
+adds real-decoder mutation, gap, discontiguous, cancellation and identity controls.
 
 `runtime-relocations.c` creates ordinary and clustered relative dynamic
 relocations, including a PLT call. Its independent inventory harness builds

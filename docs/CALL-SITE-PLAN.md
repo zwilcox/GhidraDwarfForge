@@ -1,6 +1,6 @@
 # Call-site and tail-call metadata — issue #117
 
-**PLANNED, not implemented:** this plan preserves all six acceptance items in
+**CONFIRMED prerequisites; production emission PLANNED:** this plan preserves all six acceptance items in
 [issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117). No emitted
 call-site records or debugger behavior are claimed yet. #120 follows completion
 of #117. Storage controls remain mandatory throughout implementation.
@@ -45,7 +45,7 @@ The plan therefore requires positive and negative debugger observations.
 
 | Issue requirement | Implementation obligation | Required proof |
 | --- | --- | --- |
-| 1. Classify calls, tails, thunks, internal jumps and unresolved indirect transfers | Capture instruction bytes, default/current flow, p-code, address-space identity, whole instruction coverage, caller body and exact callee entry. Keep unsupported classifications explicit. | Independently inspected fixture disassembly and saved-Ghidra controls for each category; reject conflicting references, overrides, patched bytes and body gaps. |
+| 1. Classify calls, tails, thunks, internal jumps and unresolved indirect transfers | Capture instruction bytes, default/current flow, p-code, address-space identity, whole instruction coverage, caller body and exact callee entry. Keep unsupported classifications explicit. | Independently inspected fixture disassembly and saved-Ghidra controls for each category; reject conflicting direct references, incompatible overrides, patched bytes and body gaps. Retain CALL_RETURN as an annotation on a separately decoded jump, never as proof of tail semantics. |
 | 2. Correct attributes and justified parameter expressions | Add an immutable call-site model, a completeness result with reasons, and a later writer pass once callee/formal DIE identities exist. Separate destination storage from recoverable actual values. Normalize addresses once. | Raw DIE forms/targets/expressions and compiler controls; constants and proven incoming-value chains, plus clobbered/unknown omissions. No blanket all-call-sites flag. |
 | 3. Preserve uncertainty | Record unresolved targets and ambiguous paths without manufacturing origins, entry values or virtual histories. | GDB must keep unsupported values unavailable and avoid asserting a unique intermediate frame in ambiguous/recursive fixtures. |
 | 4. Compiler/Forge fixture comparison | One small source-built fixture family covering normal calls, a direct tail chain, conditional paths, recursion, thunks and an indirect tail. Disable incidental inlining where needed and verify what the compiler actually emitted. | Original compiler DWARF and stripped/curated Forge outputs from the same executable bytes; equivalent semantic probes rather than forced DIE-byte equality. |
@@ -257,3 +257,55 @@ Ghidra evidence capture/classification, recovered argument proofs, call-site DIE
 emission, saved-program/rebase controls and compiler/Forge runtime comparison.
 These reference oracles establish expectations for acceptance items 4 and 5;
 they do not complete those items without the production exporter comparison.
+
+## Immutable Ghidra capture — 2026-11-08
+
+**CONFIRMED local:** `GhidraCallSiteEvidence` preserves address-space-aware
+addresses, function/thunk identities, body ranges, raw p-code operands, decoder
+context, original-byte matches and transfer classifications in immutable records.
+It checks ELF/Program target agreement and uses the existing loader-write and
+file-backed executable-byte guards. The current loader-effect admission remains
+limited to its audited x86-64/AArch64 profiles; this adds no other architecture
+claim. No architecture register numbers or stack convention are embedded in the
+capture code. Full tail/argument semantics are deliberately not inferred from
+these observations. `captureComplete()` means inventory completeness only and
+must never become a DWARF all-call-sites flag on its own.
+
+Ghidra adds CALL_RETURN overrides to most direct tail-shaped jumps in these
+fixtures. The capturer retains that annotation while classifying the raw branch;
+other incompatible overrides are rejected. It also preserves computed-target
+references as hints, never as a callee origin. This matters because Ghidra labels
+the volatile indirect fixture as a thunk to its initial pointer value. The
+captured indirect transfer remains unresolved even in that case. A direct branch
+to another function remains a candidate until return/stack-state proof succeeds.
+An x86 get-PC instruction is an internal branch rather than a callee call;
+conditional-move p-code branches to the next instruction remain ordinary
+instructions, with their conditional effects retained for later value analysis.
+
+The real Sleigh suite passes 457 checks across 48 cases, including both targets,
+direct/indirect transfers, thunk annotations, conditional and discontiguous
+branches, missing/interior callees, computed hints, incompatible overrides,
+conflicting direct references, opaque instructions, changed bytes, incomplete
+bodies, rebase, target mismatch, snapshot immutability and cancellation at every
+observed poll of the two direct-call controls. The extension builds successfully
+and its ZIP still excludes the managed workspace.
+
+`call-site-evidence.py` imports each compiler reference through headless Ghidra,
+then reopens its saved program using the current source runtime, without changing
+the user's installed extension. Original and temporary rebased captures pass for
+ET_EXEC/PIE on x86-64 and AArch64: all 104 selected transfer records agree with
+the compiler's independently checked instruction PCs and callee identities.
+Rebase preserves normalized addresses and original-byte hashes. Two captures
+within each program view are identical, and the original ELF is unchanged.
+The x86 driver has an auto-analysis body split at its epilogue, so both original
+and rebased captures report an incomplete inventory; that omission is retained.
+An exact Ghidra function entry alone still does not prove that an external jump
+is a tail call—auto-analysis also creates an entry at the shared epilogue.
+
+See the [capture receipt](evidence/call-site-ghidra-capture.json). CI runs the
+Sleigh suite and saved-program comparisons, but **hosted execution is unverified**.
+The current production exporter does not invoke this new evidence path yet.
+**PLANNED next:** return/stack-state proofs for branch candidates, actual argument
+value analysis, justified completeness, and the later DIE emission pass. All
+six original issue acceptance items remain open until the real exporter and
+debugger comparisons satisfy them.

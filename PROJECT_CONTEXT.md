@@ -61,8 +61,18 @@ retain unavailable entry values and no invented intermediate history. Recursion
 and forwarding controls pass; stripped-debug copies lose all virtual frames
 while retaining physical callers. Final runs use the same patched standalone
 validator as CI, cached once locally. Hosted reference steps are wired but not
-run. Ghidra capture, call-site emission and Forge runtime comparisons remain
-unimplemented; see the call-site plan and its compiler-reference receipt.
+run; see the call-site plan and its compiler-reference receipt.
+
+**CONFIRMED #117 raw Ghidra capture:** immutable transfer snapshots now pass
+457 checks across 48 real-decoder cases, plus 104 compiler/Program comparisons
+across saved and rebased x86-64/AArch64 ET_EXEC/PIE inputs. CALL_RETURN overrides
+remain annotations on raw jumps; computed-reference and thunk hints never
+resolve an indirect origin. The x86 driver auto-analysis body split is reported
+as incomplete. An exact Ghidra function entry does not itself prove a tail call.
+The exporter does not invoke this evidence path yet. Return/stack-state proofs,
+argument values, justified completeness, emission and Forge runtime acceptance
+remain incomplete. The call-site plan records the exact local checks and CI
+wiring; hosted execution remains unverified.
 
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
