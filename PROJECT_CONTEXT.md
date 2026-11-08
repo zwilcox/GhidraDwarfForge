@@ -21,10 +21,19 @@ or moved. Heavy commands must refuse while this legacy backlog exceeds the
 budget. The user subsequently reactivated the main feature goal. #115 is confirmed
 merged through PR189 (`71352a3`), with all sixteen final main-workflow jobs and
 all five performance jobs passing. The merge tree equals the retained tested
-`work/multifile-source` tree. #117 is now in read-only preparation; see
+`work/multifile-source` tree. #117 is now in source preparation; see
 [CALL-SITE-PLAN.md](docs/CALL-SITE-PLAN.md). Heavy execution remains refused pending
 the external-evidence cleanup decision. #120 has not started. These observations
 do not reinterpret the older historical feature notes below.
+
+**CONFIRMED #117 dependency audit:** source files checked byte-for-byte against
+the pinned v2.3.2 archive show that the producer rejects call-PC, return-PC,
+origin, parameter-reference and call-value attributes through the existing APIs.
+The current downstream patch does not address those checks. A standalone public
+API admission probe is **PRESENT, UNVERIFIED**; compilation and execution remain
+blocked by storage admission. The working branch incorporates `71352a3` through
+normal merge `6c0e949`; no new worktree was created. See the call-site plan for
+file hashes, expression limitations and the next native acceptance checkpoint.
 
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC

@@ -59,6 +59,8 @@ The plan therefore requires positive and negative debugger observations.
 2. After storage admission succeeds, build the tiny compiler reference first.
    Record positive and negative tail-frame behavior before relying on GDB output
    as a Forge oracle. Reuse toolchains and promptly retire temporary runs.
+   Run the isolated producer admission probe below before selecting the native
+   compatibility fix; Java constants alone cannot enable these attributes.
 3. Implement model/classification and completeness evidence. Keep `Address`
    identities through capture and reserve integer normalization for serialization.
 4. Add producer constants and a call-site emission pass. Reuse audited APIs where
@@ -72,3 +74,49 @@ The plan therefore requires positive and negative debugger observations.
 approved budget. The cleanup plan is prepared and awaits explicit deletion
 approval. Read-only analysis and small planning files are proceeding; builds,
 artifact downloads and runtime matrices have not been started or bypassed.
+
+## Producer compatibility audit — 2026-11-08
+
+**CONFIRMED by source inspection, not runtime execution:** the pinned v2.3.2
+producer does not admit the standard call-site attributes through the existing
+Java-bound APIs. The retained official release archive matches the production
+SHA-256 in `native/libdwarf/PROVENANCE.md`; these inspected files are byte-identical
+to its members:
+
+| File under `src/lib/libdwarfp` | SHA-256 |
+| --- | --- |
+| `dwarf_pro_forms.c` | `1e693b054ab78ff71cad3759a6c1065e33464cb2d2c34a2ee03c109e2749f985` |
+| `dwarf_pro_expr.c` | `c40c8d8ae6f35898d69902fc44e8a2e27315d343b7c87345c76242c6e95eb485` |
+| `libdwarfp.h` | `3fd4cc23c0f9363d1b8875f45c06363d196413475d75fd28e3be915a40d7f7ae` |
+
+- `dwarf_add_AT_targ_address_c` rejects `DW_AT_call_pc` and
+  `DW_AT_call_return_pc` through its attribute whitelist.
+- The internal reference helper used by `dwarf_add_AT_reference_c` rejects
+  `DW_AT_call_origin` and `DW_AT_call_parameter` through a separate whitelist.
+- `dwarf_add_AT_location_expr_a` rejects `DW_AT_call_value`. The block API is
+  not a ready substitute: its expression-form selection also omits call-value
+  attributes, so it would select `DW_FORM_block` rather than `DW_FORM_exprloc`.
+- `dwarf_add_expr_gen_a` has no `DW_OP_entry_value` case. The current Java
+  expression model also has no nested-expression operation. Do not encode a
+  block pointer as a generic numeric operand or silently omit entry-value work.
+- The current downstream patch changes relocation width and string ownership;
+  it does not change any of these producer attribute/operation checks.
+
+**PRESENT, UNVERIFIED:** `src/test/native/call-site-producer-probe.c` isolates
+five attribute admission cases, one per fresh process, plus a control using
+existing supported address/reference/location attributes. It uses only public
+APIs already declared in the production binding, checks return codes and error
+pointers, attempts serialization/section retrieval after successful admission,
+and finishes its producer. It is not wired into CI, compiled or run yet. Success
+would establish API admission only, not a valid ELF or debugger behavior. Once
+storage permits, run every mode against stock and candidate patched libraries;
+retain the explicit stock failures and require candidate success. Then validate
+the actual attribute forms, references and nested expressions independently.
+
+**PLANNED integration details:** retain formal-parameter DIE identities alongside
+`functionDies` and emit call sites after all definitions are allocated, before
+adding the CU to the producer. Call/return PCs must be included in the relocation
+expectation derived from accepted call-site evidence; the existing validator
+currently accepts only function/scope/object addresses. Preserve its rejection
+of unexpected relocations. Add call-origin/reference tests through
+`Dwarf32InfoRepair`, whose section-offset repair shifts CU-relative references.

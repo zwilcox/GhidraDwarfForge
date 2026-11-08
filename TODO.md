@@ -16,6 +16,11 @@
   and retire the backlog with the user before resuming heavy commands.
 - **PLANNED, not configured:** a filesystem quota for a hard ceiling. The
   implemented monitoring can overshoot and does not contain arbitrary writes.
+- **CONFIRMED #117 prerequisite:** the pinned producer's attribute whitelists
+  exclude required DWARF 5 call-site attributes. The source audit and isolated
+  admission probe are recorded in [CALL-SITE-PLAN.md](docs/CALL-SITE-PLAN.md).
+  The probe is **PRESENT, UNVERIFIED**; it must be compiled and run against stock
+  and candidate libraries after storage admission, before exporter integration.
 
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
