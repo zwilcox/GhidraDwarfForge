@@ -56,7 +56,7 @@ public final class GhidraCallArgumentFlow {
             try {
                 require(function.captureComplete(), "incomplete instruction inventory");
                 require(!proof.omissions().containsKey(function.function().entry()), "unproved tail boundary or entry contract");
-                transfers.putAll(analyzeFunction(program, function, admitted, image, delta, monitor));
+                transfers.putAll(analyzeFunction(program, function, admitted, proof.switches(), image, delta, monitor));
             }
             catch (IllegalArgumentException unavailable) { omissions.put(function.function().entry(), unavailable.getMessage()); }
         }
@@ -64,7 +64,8 @@ public final class GhidraCallArgumentFlow {
     }
 
     private static Map<Address, State> analyzeFunction(Program program, FunctionEvidence capture,
-            Set<Address> admitted, ElfImage image, long delta, TaskMonitor monitor) throws CancelledException {
+            Set<Address> admitted, Map<Address, GhidraBoundedSwitch.Proof> switches,
+            ElfImage image, long delta, TaskMonitor monitor) throws CancelledException {
         var function = program.getFunctionManager().getFunctionAt(capture.function().entry());
         require(function != null, "caller disappeared");
         var profile = UnwindAbiProfile.selectForCallSites(program, function, image, delta, monitor);
@@ -79,7 +80,8 @@ public final class GhidraCallArgumentFlow {
             var kind = instruction.transfer().kind();
             require(kind != Kind.UNAVAILABLE, "unavailable instruction semantics");
             if (kind == Kind.DIRECT_TAIL_CANDIDATE || kind == Kind.INDIRECT_TAIL_CANDIDATE || kind == Kind.THUNK_TRANSFER) {
-                require(admitted.contains(instruction.address()), "external branch lacks a boundary proof");
+                require(admitted.contains(instruction.address()) || switches.containsKey(instruction.address()),
+                    "external branch lacks a boundary proof");
             }
             // Address-derived literals in Ghidra's p-code may have been rebased.
             // Do not serialize them as integer constants or silently treat them
@@ -92,6 +94,8 @@ public final class GhidraCallArgumentFlow {
             var successors = new ArrayList<Address>();
             if (instruction.fallThrough() != null) successors.add(instruction.fallThrough());
             if (kind == Kind.INTERNAL_BRANCH && !successors.contains(instruction.transfer().target())) successors.add(instruction.transfer().target());
+            var dispatch = switches.get(instruction.address());
+            if (dispatch != null) for (Address target : dispatch.targets()) if (!successors.contains(target)) successors.add(target);
             nodes.put(instruction.address(), instruction);
             edges.put(instruction.address(), successors);
         }
@@ -114,7 +118,9 @@ public final class GhidraCallArgumentFlow {
             Address address = pending.removeFirst();
             var instruction = nodes.get(address);
             require(instruction != null, "unresolved graph edge");
-            State after = execute(instruction, before.get(address), profile.permittedCells(),
+            // The switch proof establishes successors, not argument/frame state.
+            // Forget all incoming facts; later constant assignments can recover.
+            State after = switches.containsKey(address) ? EMPTY : execute(instruction, before.get(address), profile.permittedCells(),
                 addressComputations.contains(address), monitor).after();
             for (Address successor : edges.get(address)) {
                 monitor.checkCancelled();
@@ -127,7 +133,7 @@ public final class GhidraCallArgumentFlow {
         for (var instruction : capture.instructions()) {
             monitor.checkCancelled();
             State state = before.get(instruction.address());
-            if (state == null) continue;
+            if (state == null || switches.containsKey(instruction.address())) continue;
             var execution = execute(instruction, state, profile.permittedCells(),
                 addressComputations.contains(instruction.address()), monitor);
             Kind kind = instruction.transfer().kind();

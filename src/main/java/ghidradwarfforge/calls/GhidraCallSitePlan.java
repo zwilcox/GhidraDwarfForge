@@ -114,6 +114,7 @@ public final class GhidraCallSitePlan {
                 boolean call = transfer.kind() == GhidraCallSiteEvidence.Kind.DIRECT_CALL ||
                     transfer.kind() == GhidraCallSiteEvidence.Kind.INDIRECT_CALL;
                 if (!call && !tail) {
+                    if (proof.switches().containsKey(instruction.address())) continue;
                     switch (transfer.kind()) {
                         case DIRECT_TAIL_CANDIDATE, INDIRECT_TAIL_CANDIDATE, THUNK_TRANSFER, UNAVAILABLE ->
                             reasons.add(instruction.address() + ": transfer has no admitted call-site proof");

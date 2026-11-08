@@ -107,7 +107,9 @@ public final class UnwindFlow {
         public Node {
             effects = List.copyOf(effects);
             successors = List.copyOf(successors);
-            if (effects.size() > MAX_OPERATIONS || successors.size() > 2 ||
+            // Direct branches have at most two edges. Separately verified
+            // bounded switches can supply up to 256 distinct successors.
+            if (effects.size() > MAX_OPERATIONS || successors.size() > 256 ||
                     new LinkedHashSet<>(successors).size() != successors.size()) {
                 throw new IllegalArgumentException("instruction effects or edges exceed bounds");
             }

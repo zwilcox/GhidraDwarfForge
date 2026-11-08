@@ -744,3 +744,59 @@ through the normal export path. Do not replace the switch fixture, cover padding
 with invented ranges, or seed ordinary entry facts at `caseD_0`/cold/epilogue
 labels. GDB's discontiguous origin problem remains separate. See the
 [bounded audit receipt](evidence/call-site-driver-audit.json).
+
+## Guarded switch targets and corrected analyst ownership — 2026-11-08
+
+**CONFIRMED locally:** `GhidraBoundedSwitch` recognizes the bounded unsigned
+fallthrough predicate in decoded p-code, independently of computed-reference
+hints. It checks original instruction bytes and the selected integer ABI,
+then evaluates the bounded dispatch at original ELF addresses. This avoids
+mistaking a Ghidra rebase for a runtime pointer value. Scalar table reads must
+have a unique non-writable file-backed load mapping and no declared loader
+write footprint. Absolute ET_EXEC tables and signed relative PIE tables pass
+in original and rebased views; no broad switch/architecture support is claimed.
+
+The implementation bounds the index to at most 256 values, the linear dispatch
+window to 32 instructions, table reads to 4,096 distinct locations and candidate
+switches to 64 per captured function. Known alternate incoming edges and entry
+markers into the guarded window reject it. The proof supplies successors only;
+it does not repair ownership, assert a new call frame or preserve any argument
+or frame state. Graph integration requires a complete captured body containing
+every target. It discards incoming state at the dispatch; later independent
+constant assignments can establish arguments. Unresolved edges retain the old
+omissions. The flow engine admits up to 256 distinct successors with its existing
+node/fixed-point bounds; a 256-way conflicting join test loses all common facts.
+
+For the x86 positive fixture view, an explicit source-known analyst correction
+joins `caseD_0`, `cs_driver.cold` and the separate epilogue into `cs_driver`.
+Only their actual existing instruction ranges are added; intervening padding
+is not added. This lives exclusively in the fixture probe's rolled-back
+transaction. Production never silently rewrites a curated function body.
+The original split-body view remains a required negative control: no closed
+switch graph, no fabricated driver argument values and no complete call claim.
+The compiler fixture itself, its switch encoding and runtime scenarios are unchanged.
+
+All eight driver calls and ten integer arguments now compare correctly in each
+corrected x86 layout/view. All 32 AArch64 runtime cases pass; corrected x86
+passes 28 of 32. Four required failures remain: recursive discontiguous origin
+lookup (scenario 4 in both layouts/views). These are not expected-failure
+exemptions. CI retains the original split capture, adds the explicitly corrected
+view, and gates runtime comparisons on that view. The consumer failure still
+prevents a passing full x86 gate and issue completion.
+
+Validation includes 42 real-decoder cases and 371 checks for absolute/relative
+targets, misleading hints, writable/overlapping/zero-fill/missing table mappings,
+runtime relocation writes, guard bypasses, entry markers, patched instructions,
+unbounded/unknown indexes, opaque effects, cancellation and state forgetting.
+The loader-write control is an actual ELF dynamic `R_X86_64_RELATIVE` relocation
+over the table. Existing ELF byte (188), flow (105), argument (576), entry (963)
+and tail (613) checks pass, plus 240 independent VM vectors. Eight native
+artifacts pass GNU/LLVM/pinned validation and deterministic repeat checks; input
+and saved database hashes are preserved. Final cancellation/budget hardening
+was followed by the switch/entry suite and extension build; the receipt records
+that validation order. Normal-script compilation and workflow lint pass.
+
+**PRESENT, UNVERIFIED:** packaged normal-script invocation of the corrected view,
+full export regressions, and hosted Linux/Windows acceptance. Resolve the four
+remaining consumer failures and these requirements before integrating #117 or
+starting #120. See [bounded-switch evidence](evidence/call-site-bounded-switch.json).

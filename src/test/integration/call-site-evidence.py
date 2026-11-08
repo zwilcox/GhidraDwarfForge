@@ -65,9 +65,14 @@ def compare_tails(reference, captured):
     assert "external branch lacks a decoded exact callee entry" in omissions["cs_indirect"]
     indirect = next(call for call in reference["calls"] if call["caller"] == "cs_indirect")
     assert omissions["cs_leaf"] == "entry has an unproved incoming non-call transfer at " + instructions[int(indirect["pc"], 16)]["address"]
-    if reference["target"] == "x86_64":
+    if reference["target"] == "x86_64" and not captured.get("curatedDriverBody", False):
         assert "incomplete instruction inventory" in omissions["cs_driver"]
         assert "unproved incoming non-call transfer" in omissions["cs_driver.cold"]
+        assert not captured["provedSwitches"], "split ownership acquired a closed switch graph"
+    elif captured.get("curatedDriverBody", False):
+        assert "cs_driver" not in omissions and len(captured["provedSwitches"]) == 1
+        assert captured["switchTargets"]["maximumIndex"] == 7
+        assert captured["provedSwitches"][0]["targets"] == captured["switchTargets"]["targets"]
     return captured["tails"]
 
 
@@ -111,8 +116,10 @@ def compare_arguments(reference, captured):
         observations.append(row)
     assert "cs_indirect" in captured["argumentOmissions"]
     assert "cs_leaf" in captured["argumentOmissions"] and not any(row["caller"] == "cs_leaf" for row in expressions.values())
-    if reference["target"] == "x86_64":
+    if reference["target"] == "x86_64" and not captured.get("curatedDriverBody", False):
         assert "cs_driver.cold" in captured["argumentOmissions"] and "cs_driver" in captured["argumentOmissions"]
+    elif captured.get("curatedDriverBody", False):
+        assert "cs_driver" not in captured["argumentOmissions"]
     return {"checks": checks, "transfers": observations}
 
 
@@ -158,18 +165,18 @@ def compare_bindings(reference, captured):
         observations.append({**row, "arguments": [{k: v for k, v in arg.items() if k != "typeKey"} for arg in args]})
     driver = []
     for row in rows.values():
-        if row["caller"] == "cs_driver" and reference["target"] == "aarch64":
+        if row["caller"] == "cs_driver" and (reference["target"] == "aarch64" or captured.get("curatedDriverBody", False)):
             expected = {"cs_tail_first": [20], "cs_tail_recursive": [50, 3], "cs_normal": [10],
                         "cs_forward": [70], "cs_recursive": [40, 3], "cs_indirect": [60], "cs_diamond": [30]}[row["callee"]]
             assert [a["name"] for a in row["arguments"]] == (["value", "depth"] if len(expected) == 2 else ["value"])
-            assert [a["register"] for a in row["arguments"]] == list(range(len(expected))) and not row["omissions"]
+            assert [a["register"] for a in row["arguments"]] == [first, second][:len(expected)] and not row["omissions"]
             assert [evaluate(bytes.fromhex(a["expression"]), 8, "little", {}) for a in row["arguments"]] == expected
             checks += len(expected)
             driver.append(row["callee"])
             observations.append({**row, "arguments": [{k: v for k, v in arg.items() if k != "typeKey"} for arg in row["arguments"]]})
         elif row["caller"] in ("cs_driver", "cs_driver.cold", "cs_indirect"):
             assert not row["arguments"], "unproved caller gained parameter values"
-    if reference["target"] == "aarch64":
+    if reference["target"] == "aarch64" or captured.get("curatedDriverBody", False):
         assert sorted(driver) == sorted(["cs_tail_first", "cs_tail_recursive", "cs_normal", "cs_forward",
                                          "cs_recursive", "cs_indirect", "cs_diamond", "cs_diamond"])
     return {"checks": checks, "transfers": observations}
@@ -181,7 +188,7 @@ def compare_plan(reference, captured):
     plans = {functions[int(f["caller"], 16)]: f for f in captured["plan"]}
     assert set(plans) == set(entries), (set(plans), set(entries))
     partial = {"cs_indirect", "cs_leaf"}
-    if reference["target"] == "x86_64":
+    if reference["target"] == "x86_64" and not captured.get("curatedDriverBody", False):
         partial.update(("cs_driver", "cs_driver.cold"))
     for name, plan in plans.items():
         assert plan["completeness"] == ("PARTIAL" if name in partial else "ALL_CALLS"), (name, plan)
@@ -217,9 +224,10 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--ghidra", required=True, type=Path)
     parser.add_argument("--reuse-project", action="store_true", help="read an existing capture project; write fresh tail-state reports")
-    parser.add_argument("--report-name", default="tail-state", choices=("tail-state", "argument-state", "parameter-binding", "entry-contract", "composed-plan", "forge-plan", "entry-locations"),
+    parser.add_argument("--report-name", default="tail-state", choices=("tail-state", "argument-state", "parameter-binding", "entry-contract", "composed-plan", "forge-plan", "entry-locations", "switch-plan", "switch-regression"),
                         help="fresh report directory when reusing a saved project")
     parser.add_argument("--bind-parameters", action="store_true", help="temporarily curate fixture integer signatures and validate actual entry binding")
+    parser.add_argument("--correct-driver-body", action="store_true", help="explicit rolled-back source-known correction of the split x86 fixture body; preserve the original-view negative test")
     parser.add_argument("--consumer", type=Path, help="emit and validate native sidecars from recovered plans")
     parser.add_argument("--producer", type=Path)
     parser.add_argument("--dwarfdump", type=Path)
@@ -228,6 +236,8 @@ def main():
         assert all((args.consumer, args.producer, args.dwarfdump, args.bind_parameters)), "emission requires both libraries, validator and binding"
     reference = args.reference.resolve()
     compiler = json.loads((reference / "result.json").read_text())
+    if args.correct_driver_body:
+        assert compiler["target"] == "x86_64" and args.bind_parameters
     assert compiler["status"] == "PASS_COMPILER_REFERENCE"
     original = reference / "input"
     protected = digest(original)
@@ -266,6 +276,7 @@ def main():
                     "-PcallSiteProject=" + str(project), "-PcallSiteInput=" + str(original),
                     "-PcallSiteReport=" + str(output), "-PcallSiteRebase=" + str(shift),
                     *(["-PcallSiteBindings=true"] if args.bind_parameters else []),
+                    *(["-PcallSiteCorrectDriverBody=true"] if args.correct_driver_body else []),
                     *(["-PcallSiteConsumer=" + str(args.consumer.resolve()), "-PcallSiteProducer=" + str(args.producer.resolve())]
                       if args.consumer else [])], reports_root / (variant + "-capture"), env)
         assert "call-site-evidence-probe=PASS" in text

@@ -324,6 +324,9 @@ tasks.register("callSiteEvidenceProbe", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.calls.CallSiteEvidenceProbe"
+    if (project.hasProperty("callSiteCorrectDriverBody")) {
+        systemProperty "ghidradwarfforge.tests.curatedDriverBody", "true"
+    }
     if (project.hasProperty("callSiteProject")) {
         args ghidraInstallDir, project.property("callSiteProject"), project.property("callSiteInput"),
             project.property("callSiteReport"), project.findProperty("callSiteRebase") ?: "0"
@@ -393,6 +396,21 @@ tasks.register("callEntryContractSmoke", JavaExec) {
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/call-entry-contract/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/call-entry-contract/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
+}
+
+tasks.register("boundedSwitchProofSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.BoundedSwitchProofSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/bounded-switch").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/bounded-switch/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/bounded-switch/cache").absolutePath
     if (System.getenv("TMPDIR")) {
         systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
         systemProperty "jna.tmpdir", System.getenv("TMPDIR")

@@ -33,11 +33,13 @@ import ghidradwarfforge.unwind.UnwindFlow.*;
 public final class GhidraTailStateProof {
     public record Tail(Address caller, Address instruction, Address callee, String profile,
             State state, String originalInstructionSha256) { }
-    public record Result(List<FunctionEvidence> captures, List<Tail> tails, Map<Address, String> omissions) {
+    public record Result(List<FunctionEvidence> captures, List<Tail> tails, Map<Address, String> omissions,
+            Map<Address, GhidraBoundedSwitch.Proof> switches) {
         public Result {
             captures = List.copyOf(captures);
             tails = List.copyOf(tails);
             omissions = Collections.unmodifiableMap(new LinkedHashMap<>(omissions));
+            switches = Collections.unmodifiableMap(new LinkedHashMap<>(switches));
         }
     }
     private GhidraTailStateProof() { }
@@ -48,6 +50,7 @@ public final class GhidraTailStateProof {
         var captures = GhidraCallSiteEvidence.capture(program, functions, image, delta, monitor);
         var tails = new ArrayList<Tail>();
         var omissions = new LinkedHashMap<Address, String>();
+        var switches = new LinkedHashMap<Address, GhidraBoundedSwitch.Proof>();
         BooleanSupplier cancelled = () -> {
             try { monitor.checkCancelled(); return false; }
             catch (CancelledException cancellation) { return true; }
@@ -57,7 +60,9 @@ public final class GhidraTailStateProof {
                 monitor.checkCancelled();
                 if (capture.instructions().stream().noneMatch(item -> candidate(item.transfer().kind()))) continue;
                 try {
-                    tails.addAll(verifyFunction(program, capture, image, delta, monitor, cancelled));
+                    var dispatches = switches(program, capture, image, delta, monitor);
+                    tails.addAll(verifyFunction(program, capture, dispatches, image, delta, monitor, cancelled));
+                    switches.putAll(dispatches);
                 }
                 catch (IllegalArgumentException unavailable) {
                     omissions.put(capture.function().entry(), unavailable.getMessage());
@@ -113,7 +118,44 @@ public final class GhidraTailStateProof {
         }
         catch (CancellationException cancellation) { throw new CancelledException(); }
         monitor.checkCancelled();
-        return new Result(captures, tails, omissions);
+        return new Result(captures, tails, omissions, switches);
+    }
+
+    private static Map<Address, GhidraBoundedSwitch.Proof> switches(Program program, FunctionEvidence capture,
+            ElfImage image, long delta, TaskMonitor monitor) throws IOException, CancelledException {
+        var result = new LinkedHashMap<Address, GhidraBoundedSwitch.Proof>();
+        if (!capture.captureComplete()) return result;
+        var starts = new LinkedHashSet<Address>();
+        capture.instructions().forEach(i -> starts.add(i.address()));
+        int candidates = 0;
+        for (var instruction : capture.instructions()) {
+            monitor.checkCancelled();
+            if (instruction.transfer().kind() != Kind.INDIRECT_TAIL_CANDIDATE ||
+                    instruction.operations().isEmpty() || instruction.operations().getLast().opcode() != PcodeOp.BRANCHIND) continue;
+            require(++candidates <= 64, "bounded switch candidate budget exceeded");
+            var next = program.getListing().getInstructionAt(instruction.address());
+            for (int count = 0; count < 32; count++) {
+                monitor.checkCancelled();
+                var previous = program.getListing().getInstructionBefore(next.getAddress());
+                if (previous == null || !starts.contains(previous.getAddress()) ||
+                        !next.getAddress().equals(previous.getDefaultFallThrough())) break;
+                if (previous.getPrototype().getFlowType(previous.getInstructionContext()).isConditional()) {
+                    var comparison = program.getListing().getInstructionBefore(previous.getAddress());
+                    if (comparison == null || !starts.contains(comparison.getAddress())) break;
+                    try {
+                        var proof = GhidraBoundedSwitch.prove(program, comparison, image, delta, monitor);
+                        require(proof.transfer().equals(instruction.address()) && starts.containsAll(proof.targets()),
+                            "computed target is outside the captured caller body");
+                        result.put(instruction.address(), proof);
+                    }
+                    catch (IllegalArgumentException unavailable) { /* Leave the original unresolved-transfer omission. */ }
+                    break;
+                }
+                if (!previous.getPrototype().getFlowType(previous.getInstructionContext()).isFallthrough()) break;
+                next = previous;
+            }
+        }
+        return result;
     }
 
     private static List<Address> incomingBranches(Program program, FunctionEvidence capture, ElfCodeBytes original,
@@ -156,7 +198,8 @@ public final class GhidraTailStateProof {
         return List.copyOf(dependencies);
     }
 
-    private static List<Tail> verifyFunction(Program program, FunctionEvidence capture, ElfImage image, long delta,
+    private static List<Tail> verifyFunction(Program program, FunctionEvidence capture,
+            Map<Address, GhidraBoundedSwitch.Proof> switches, ElfImage image, long delta,
             TaskMonitor monitor, BooleanSupplier cancelled) throws CancelledException {
         require(capture.captureComplete(), "incomplete instruction inventory: " + String.join("; ", capture.omissions()));
         Function function = program.getFunctionManager().getFunctionAt(capture.function().entry());
@@ -171,7 +214,7 @@ public final class GhidraTailStateProof {
             var nativeInstruction = program.getListing().getInstructionAt(instruction.address());
             require(nativeInstruction != null, "captured instruction disappeared");
             profile.requireInstruction(nativeInstruction, monitor);
-            if (candidate(transfer.kind())) {
+            if (candidate(transfer.kind()) && !switches.containsKey(instruction.address())) {
                 // A computed jump may re-enter any body node. Never model an
                 // unresolved branch as a terminal merely to make a proof pass.
                 require(transfer.target() != null && transfer.callee() != null && !transfer.callee().external(),
@@ -188,8 +231,11 @@ public final class GhidraTailStateProof {
             var successors = new ArrayList<Address>();
             if (instruction.fallThrough() != null) successors.add(instruction.fallThrough());
             if (transfer.kind() == Kind.INTERNAL_BRANCH && !successors.contains(transfer.target())) successors.add(transfer.target());
+            var dispatch = switches.get(instruction.address());
+            if (dispatch != null) for (Address target : dispatch.targets()) if (!successors.contains(target)) successors.add(target);
             graph.put(instruction.address(), new Node<>(
-                GhidraUnwindInstructions.callSiteEffects(program, nativeInstruction, monitor), successors));
+                dispatch == null ? GhidraUnwindInstructions.callSiteEffects(program, nativeInstruction, monitor) :
+                    List.of(new Opaque("bounded dispatch does not preserve frame-state facts")), successors));
         }
         var flow = UnwindFlow.analyze(graph, capture.function().entry(), profile.entry(), profile.stackPointer(), cancelled);
         var result = new ArrayList<Tail>();

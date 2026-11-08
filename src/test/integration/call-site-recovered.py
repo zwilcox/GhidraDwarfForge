@@ -45,7 +45,7 @@ def main():
     parser.add_argument("capture", type=Path, help="existing saved-project capture root")
     parser.add_argument("--report-name", default="forge-plan")
     args = parser.parse_args()
-    assert args.report_name in ("forge-plan", "entry-locations")
+    assert args.report_name in ("forge-plan", "entry-locations", "switch-plan", "switch-regression")
     compiler = json.loads((args.reference / "result.json").read_text())
     work = args.capture.resolve() / args.report_name
     model = json.loads((work / "result.json").read_text())

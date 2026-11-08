@@ -686,7 +686,7 @@ jobs:
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
-              unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke callSiteEvidenceSmoke tailStateProofSmoke callEntryContractSmoke callValueSmoke callArgumentFlowSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
+              unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke callSiteEvidenceSmoke tailStateProofSmoke callEntryContractSmoke callValueSmoke callArgumentFlowSmoke boundedSwitchProofSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke buildExtension
             python3 -B src/test/integration/check-call-values.py build/test-results/call-values/vectors.json
@@ -1050,9 +1050,19 @@ jobs:
                   --reuse-project --report-name forge-plan --bind-parameters \
                   --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
                   --producer "$PWD/native-integration/libdwarfp.so.2.3.2" --dwarfdump "$DWARFDUMP"
+              runtime_report=forge-plan
+              if [[ "$TARGET" == x86_64 ]]; then
+                  python3 -B src/test/integration/call-site-evidence.py \
+                      "build/test-results/call-site-reference/$TARGET-$role" \
+                      "build/test-results/call-site-capture/$TARGET-$role" --ghidra "$GHIDRA_INSTALL_DIR" \
+                      --reuse-project --report-name switch-plan --bind-parameters --correct-driver-body \
+                      --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+                      --producer "$PWD/native-integration/libdwarfp.so.2.3.2" --dwarfdump "$DWARFDUMP"
+                  runtime_report=switch-plan
+              fi
               python3 -B src/test/integration/call-site-recovered.py \
                   "build/test-results/call-site-reference/$TARGET-$role" \
-                  "build/test-results/call-site-capture/$TARGET-$role"
+                  "build/test-results/call-site-capture/$TARGET-$role" --report-name "$runtime_report"
           done
 
       - name: Install extension

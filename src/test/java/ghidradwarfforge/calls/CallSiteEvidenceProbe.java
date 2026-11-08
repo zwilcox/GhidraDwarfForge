@@ -43,6 +43,8 @@ public final class CallSiteEvidenceProbe {
                 long shift = Long.decode(args[4]);
                 if (shift != 0) program.setImageBase(program.getImageBase().add(shift), true);
                 long delta = AddressNormalizer.rebaseDelta(program.getImageBase().getOffset(), GhidraImageBase.originalImageBase(program));
+                boolean correctedBody = Boolean.getBoolean("ghidradwarfforge.tests.curatedDriverBody");
+                if (correctedBody) correctDriverBody(program);
                 var selected = new ArrayList<Function>();
                 for (var function : program.getFunctionManager().getFunctions(true)) {
                     if (function.getName().startsWith("cs_")) selected.add(function);
@@ -153,6 +155,9 @@ public final class CallSiteEvidenceProbe {
                 var result = new LinkedHashMap<String, Object>();
                 result.put("scope", "Captured transfers, direct tail boundary states and integer register value expressions; no production parameter mapping or DWARF emission proof");
                 result.put("rebaseDelta", delta);
+                result.put("curatedDriverBody", correctedBody);
+                result.put("provedSwitches", proof.switches().values().stream().map(dispatch -> java.util.Map.of(
+                    "transfer", dispatch.transfer().toString(), "targets", dispatch.targets().stream().map(Object::toString).toList())).toList());
                 result.put("classOrigin", GhidraCallSiteEvidence.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm());
                 result.put("functions", rows);
                 var owners = new ArrayList<Object>();
@@ -167,6 +172,22 @@ public final class CallSiteEvidenceProbe {
                 result.put("tailOmissions", tailOmissions);
                 result.put("arguments", argumentRows);
                 result.put("argumentOmissions", argumentOmissions);
+                if (image.machine() == 62) {
+                    var driver = selected.stream().filter(f -> f.getName().equals("cs_driver")).findFirst().orElseThrow();
+                    var iterator = program.getListing().getInstructions(driver.getBody(), true);
+                    while (iterator.hasNext()) {
+                        var instruction = iterator.next();
+                        if (!instruction.getMnemonicString().equalsIgnoreCase("CMP")) continue;
+                        try {
+                            var dispatch = GhidraBoundedSwitch.prove(program, instruction, image, delta, TaskMonitor.DUMMY);
+                            result.put("switchTargets", java.util.Map.of("guard", dispatch.guardStart().toString(),
+                                "transfer", dispatch.transfer().toString(), "maximumIndex", dispatch.maximumIndex(),
+                                "targets", dispatch.targets().stream().map(Object::toString).toList(), "reads", dispatch.reads()));
+                        }
+                        catch (IllegalArgumentException unavailable) { result.put("switchOmission", unavailable.getMessage()); }
+                        break;
+                    }
+                }
                 if (bindParameters) {
                     var symbols = new ArrayList<FunctionSymbol>();
                     for (var function : selected) {
@@ -259,5 +280,24 @@ public final class CallSiteEvidenceProbe {
     private static Object operand(GhidraCallSiteEvidence.Operand value) {
         return value == null ? null : java.util.Map.of("space", value.address().getAddressSpace().getName(),
             "offset", Long.toHexString(value.address().getOffset()), "bytes", value.bytes());
+    }
+
+    /** Explicit source-known analyst correction, confined to this rolled-back fixture transaction. */
+    private static void correctDriverBody(ghidra.program.model.listing.Program program) throws Exception {
+        var names = new java.util.HashMap<String, Function>();
+        for (var function : program.getFunctionManager().getFunctions(true)) names.put(function.getName(), function);
+        var driver = java.util.Objects.requireNonNull(names.get("cs_driver"));
+        var cold = java.util.Objects.requireNonNull(names.get("cs_driver.cold"));
+        var zero = java.util.Objects.requireNonNull(names.get("caseD_0"));
+        var jump = program.getListing().getInstructionContaining(cold.getBody().getMaxAddress());
+        if (jump.getDefaultFlows().length != 1) throw new AssertionError("cold case has no exact epilogue target");
+        var epilogue = program.getFunctionManager().getFunctionAt(jump.getDefaultFlows()[0]);
+        if (epilogue == null || !epilogue.getName().startsWith("FUN_")) throw new AssertionError("missing split epilogue");
+        var body = new ghidra.program.model.address.AddressSet(driver.getBody());
+        for (var fragment : List.of(cold, zero, epilogue)) {
+            body.add(fragment.getBody());
+            if (!program.getFunctionManager().removeFunction(fragment.getEntryPoint())) throw new AssertionError("cannot curate fragment");
+        }
+        driver.setBody(body);
     }
 }

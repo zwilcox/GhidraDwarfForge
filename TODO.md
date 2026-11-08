@@ -113,6 +113,18 @@
   not admit targets or new frame assumptions. See
   [audit](docs/evidence/call-site-driver-audit.json).
 
+- **CONFIRMED bounded-switch recovery:** guards and original non-writable table
+  bytes now prove computed successors independently of reference hints, including
+  absolute and relative x86 tables after rebasing. Dispatch loses all incoming
+  state; later constants are recoverable. Explicit fixture-only analyst body
+  correction gives 28/32 passing x86 runtime cases; four discontiguous-recursion
+  failures remain. AArch64 remains 32/32. The original split-body views are retained
+  as negative controls. There are 42 switch cases/371 checks, eight structurally
+  valid deterministic artifacts, and passing entry/flow/tail/build/lint checks.
+  Next resolve the consumer recursion failure and run packaged normal-script
+  export with body curation, then full hosted acceptance. Production does not
+  silently repair analyst bodies. See [evidence](docs/evidence/call-site-bounded-switch.json).
+
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 
 **CONFIRMED:** the user selected this order: complete optional multi-file

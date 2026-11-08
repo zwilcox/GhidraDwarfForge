@@ -13,9 +13,9 @@ executables and saved databases are preserved.
 retained at the first instruction PC only, preserving existing later lifetime
 omissions. All 32 AArch64 GDB scenarios pass across ET_EXEC/PIE and original/rebased
 views, including positive entry values and unavailable ambiguous/indirect values.
-The same strict harness fails 20 of 32 x86 scenarios: driver argument coverage
-and discontiguous recursion lookup remain open. These are required acceptance
-failures, not permitted omissions. Eight sidecars still pass structural checks
+At that checkpoint the same strict harness failed 20 of 32 x86 scenarios:
+driver argument coverage and discontiguous recursion lookup remained open.
+These were required acceptance failures, not permitted omissions. Eight sidecars passed structural checks
 and deterministic reruns; 576 argument checks, 963 entry-contract checks and 240
 independent VM vectors pass. The extension builds and normal script compiles.
 Packaged normal-script invocation and hosted gates remain **PRESENT, UNVERIFIED**.
@@ -27,9 +27,22 @@ and the [full plan](docs/CALL-SITE-PLAN.md).
 a `FUN_*` function. The driver's incomplete body and the probe's `cs_*`
 selection explain its missing ordinary call. Its computed switch uses absolute
 table addresses in ET_EXEC and signed relative offsets in PIE. An independent
-read confirms all eight targets per table, but production guard/table/ownership
-proofs remain **PLANNED**. Do not treat those split labels as fresh call frames.
+read confirms all eight targets per table. Do not treat those split labels as fresh call frames.
 See the [diagnostic receipt](docs/evidence/call-site-driver-audit.json).
+
+**CONFIRMED bounded-switch checkpoint:** original-address p-code, a finite
+unsigned guard and non-writable, loader-unmodified table bytes now establish
+computed successors. The graph admits them only inside the captured caller
+body, loses all incoming state at dispatch, and recovers later constant arguments.
+An explicit rolled-back analyst correction joins the fixture's three mistaken
+fragments without padding; production never changes the analyst's body. Those
+corrected x86 views pass 28 of 32 debugger cases. The four remaining failures
+are discontiguous recursion, while all 32 AArch64 cases still pass. Original
+split-body views remain negative controls with no invented arguments/completeness.
+Eight artifacts pass structural/deterministic validation; 42 switch controls
+(371 checks), existing flow/entry/tail regressions, the build and lint pass.
+Packaged invocation and hosted acceptance remain open. See
+[switch evidence](docs/evidence/call-site-bounded-switch.json).
 
 ## Storage recovery and bounded local workflow — 2026-11-08
 
