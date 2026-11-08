@@ -885,3 +885,15 @@ at 21.54 GiB charged scratch against the unchanged 20 GiB budget. The next step
 is the already-required hosted pipeline on a draft PR; no retained local files
 are relocated or deleted, and no artifacts are downloaded while the local guard
 refuses them. Hosted outcomes and exact-head acceptance remain pending.
+
+Draft [PR190](https://github.com/zwilcox/GhidraDwarfForge/pull/190) was opened at
+`f59f77f`. First [hosted run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42528603640)
+passed workflow lint but stopped the extension job at the architecture scan,
+before Java compilation. Its standalone `pc` pattern also matches generic
+instruction-address identifiers/comments. The identical read-only scan reproduced
+locally; renaming those identifiers to `instructionAddress`/`entryAddress` and
+spelling out address terminology makes the unchanged scan pass. This changes no
+instruction proof or serialized DWARF field. Probe JSON retains its `pc` key;
+Java callers use the renamed record accessor. No local build or runtime suite
+was launched after the storage refusal. Corrected-head hosted execution remains
+required.

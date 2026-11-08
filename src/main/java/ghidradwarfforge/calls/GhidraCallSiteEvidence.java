@@ -195,7 +195,7 @@ public final class GhidraCallSiteEvidence {
             require((instruction.getFlowOverride() == FlowOverride.NONE && flow.equals(decoded) || annotatedJump) &&
                 !instruction.isFallThroughOverridden() && (targets.equals(defaults) || computedHints),
                 "listing control flow differs from raw decode");
-            require(instruction.getDelaySlotDepth() == 0 && !instruction.isInDelaySlot(), "delayed transfer requires a separate return-PC proof");
+            require(instruction.getDelaySlotDepth() == 0 && !instruction.isInDelaySlot(), "delayed transfer requires a separate return-address proof");
             require(Objects.equals(instruction.getFallThrough(), instruction.getDefaultFallThrough()), "fallthrough differs from raw decode");
             byte[] parsed = instruction.getParsedBytes();
             bytes = HexFormat.of().formatHex(parsed);
@@ -256,7 +256,7 @@ public final class GhidraCallSiteEvidence {
         if (flow.isCall()) {
             require(!flow.isConditional() && flow.hasFallthrough() && transfer.inputs().size() == 1 &&
                 operations.getLast() == transfer && Objects.equals(instruction.getFallThrough(), instruction.getMaxAddress().next()),
-                "call lacks an ordinary decoded return PC");
+                "call lacks an ordinary decoded return address");
             require(operations.stream().noneMatch(operation -> operation.opcode() == PcodeOp.BRANCH ||
                 operation.opcode() == PcodeOp.CBRANCH), "call has unproved intra-instruction control flow");
             if (opcode == PcodeOp.CALLIND) {

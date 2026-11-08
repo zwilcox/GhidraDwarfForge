@@ -122,12 +122,12 @@ public final class GhidraCallSitePlan {
                     }
                     continue;
                 }
-                long pc = normalize(instruction.address(), delta);
+                long instructionAddress = normalize(instruction.address(), delta);
                 // No delay slots are admitted by capture. The tail key follows
-                // the instruction for GDB lookup; it is not a runtime return PC.
+                // the instruction for GDB lookup; it is not a runtime return address.
                 Address continuation = tail ? instruction.end().next() : transfer.returnPc();
-                if (continuation == null || normalize(continuation, delta) <= pc ||
-                        exported.get(owner).ranges().stream().noneMatch(range -> range.contains(pc))) {
+                if (continuation == null || normalize(continuation, delta) <= instructionAddress ||
+                        exported.get(owner).ranges().stream().noneMatch(range -> range.contains(instructionAddress))) {
                     reasons.add(instruction.address() + ": unrepresentable call-site owner or return key");
                     continue;
                 }
@@ -146,7 +146,7 @@ public final class GhidraCallSitePlan {
                     arguments = bound.arguments();
                     for (String omission : bound.omissions()) note(diagnostics, owner, instruction.address() + ": " + omission);
                 }
-                sites.add(new CallSitePlan.Site(pc, normalize(continuation, delta), tail, origin, arguments));
+                sites.add(new CallSitePlan.Site(instructionAddress, normalize(continuation, delta), tail, origin, arguments));
             }
             // Successful value-flow analysis includes a closed, decoded graph,
             // audited instruction semantics and a valid known entry contract.

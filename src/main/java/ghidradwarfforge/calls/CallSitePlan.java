@@ -24,11 +24,11 @@ public record CallSitePlan(List<FunctionCalls> functions) {
     /**
      * returnPc is the actual continuation for normal calls. For admitted tails
      * it is explicitly the GCC/GDB post-transfer lookup key, not a saved machine
-     * return destination. pc always identifies the actual transfer instruction.
+     * return destination. instructionAddress always identifies the actual transfer instruction.
      */
-    public record Site(long pc, long returnPc, boolean tail, Long callee, List<Argument> arguments) {
+    public record Site(long instructionAddress, long returnPc, boolean tail, Long callee, List<Argument> arguments) {
         public Site {
-            if (pc < 0 || returnPc <= pc || callee != null && callee < 0 || arguments == null) {
+            if (instructionAddress < 0 || returnPc <= instructionAddress || callee != null && callee < 0 || arguments == null) {
                 throw new IllegalArgumentException("invalid call-site addresses");
             }
             arguments = arguments.stream().sorted(Comparator.comparingInt(Argument::ordinal)).toList();
@@ -44,7 +44,7 @@ public record CallSitePlan(List<FunctionCalls> functions) {
     public record FunctionCalls(long caller, Completeness completeness, List<Site> sites) {
         public FunctionCalls {
             if (caller < 0 || completeness == null || sites == null) throw new IllegalArgumentException("invalid call inventory");
-            sites = sites.stream().sorted(Comparator.comparingLong(Site::pc)).toList();
+            sites = sites.stream().sorted(Comparator.comparingLong(Site::instructionAddress)).toList();
         }
     }
     public CallSitePlan {
@@ -55,7 +55,7 @@ public record CallSitePlan(List<FunctionCalls> functions) {
         for (var function : functions) {
             if (!callers.add(function.caller())) throw new IllegalArgumentException("duplicate call inventory");
             for (var site : function.sites()) {
-                if (!pcs.add(site.pc()) || !returns.add(site.returnPc())) throw new IllegalArgumentException("duplicate call-site key");
+                if (!pcs.add(site.instructionAddress()) || !returns.add(site.returnPc())) throw new IllegalArgumentException("duplicate call-site key");
                 if (site.tail() && Objects.equals(site.callee(), function.caller())) {
                     throw new IllegalArgumentException("self-tail recursion is not a DWARF call-site entry");
                 }
@@ -73,9 +73,9 @@ public record CallSitePlan(List<FunctionCalls> functions) {
             var owner = symbols.get(function.caller());
             if (owner == null) throw new IllegalArgumentException("call-site owner is not exported");
             for (var site : function.sites()) {
-                if (owner.ranges().stream().noneMatch(range -> range.contains(site.pc())) ||
+                if (owner.ranges().stream().noneMatch(range -> range.contains(site.instructionAddress())) ||
                         (addressBytes == 4 && site.returnPc() > 0xffffffffL)) {
-                    throw new IllegalArgumentException("call-site PC is outside its owner or target width");
+                    throw new IllegalArgumentException("call-site instruction address is outside its owner or target width");
                 }
                 if (site.callee() != null && !symbols.containsKey(site.callee())) {
                     throw new IllegalArgumentException("call-site origin is not exported");

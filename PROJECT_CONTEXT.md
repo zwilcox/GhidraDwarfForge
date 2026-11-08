@@ -2,6 +2,14 @@
 
 ## Current call-site checkpoint — 2026-11-08
 
+**CONFIRMED first hosted gate failure:** draft PR190 at `f59f77f` started run
+`42528603640`. Workflow lint passed, but the extension job stopped at the
+architecture-boundary scan before compilation: generic standalone `pc` names
+and comments matched its target-register rule. The same read-only scan reproduced
+locally. Renaming these to instruction/entry addresses makes the unchanged scan
+pass. Diagnostic JSON retains its existing `pc` keys. Compilation, packaged
+execution and full hosted acceptance still require the corrected head.
+
 **PRESENT, UNVERIFIED packaged harness:** the installed normal script now has a
 dedicated x86-64/AArch64 ET_EXEC/PIE/original/rebased CI harness. It checks the
 installed release inventory and native/JAR provenance, explicitly adopts the

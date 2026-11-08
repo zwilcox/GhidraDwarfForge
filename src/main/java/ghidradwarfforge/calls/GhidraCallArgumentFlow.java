@@ -106,7 +106,7 @@ public final class GhidraCallArgumentFlow {
                 entry.put(register.getValue(), new Incoming(register.getKey(), register.getValue().bytes()));
             }
         }
-        // On stack-return profiles returnNumber may be the PC rather than an
+        // On stack-return profiles returnNumber may be the instruction pointer rather than an
         // argument register; the explicit exclusions above retain that distinction.
         var before = new LinkedHashMap<Address, State>();
         before.put(capture.function().entry(), new State(entry));

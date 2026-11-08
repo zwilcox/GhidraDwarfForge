@@ -233,7 +233,7 @@ public final class CallSiteEvidenceProbe {
                         "caller", Long.toHexString(f.caller()), "completeness", f.completeness().name(),
                         "sites", f.sites().stream().map(s -> {
                             var site = new LinkedHashMap<String, Object>();
-                            site.put("pc", Long.toHexString(s.pc()));
+                            site.put("pc", Long.toHexString(s.instructionAddress()));
                             site.put("returnPc", Long.toHexString(s.returnPc()));
                             site.put("tail", s.tail());
                             site.put("callee", s.callee() == null ? null : Long.toHexString(s.callee()));

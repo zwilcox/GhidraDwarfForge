@@ -117,7 +117,7 @@ public final class CallEntryContractSmoke {
                 require((callerPlan.completeness() == CallSitePlan.Completeness.ALL_CALLS) == accepted,
                     "entry contract did not constrain completeness: " + mode);
                 require(callerPlan.sites().size() == 1 && !callerPlan.sites().getFirst().tail() &&
-                    callerPlan.sites().getFirst().pc() == entry.add(4).getOffset(), "lost independently verified ordinary call");
+                    callerPlan.sites().getFirst().instructionAddress() == entry.add(4).getOffset(), "lost independently verified ordinary call");
                 require(callerPlan.sites().getFirst().callee() == null && callerPlan.sites().getFirst().arguments().isEmpty(),
                     "invented unexported callee/formals");
                 if (mode.equals("ordinary")) {

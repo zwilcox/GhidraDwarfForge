@@ -2,6 +2,12 @@
 
 ## Storage maintenance — 2026-11-08
 
+- **CONFIRMED hosted follow-up:** draft [PR190](https://github.com/zwilcox/GhidraDwarfForge/pull/190)
+  is open. First run `42528603640` stopped before compilation because generic
+  `pc` identifiers/comments matched the architecture scan. Renamed those to
+  instruction/entry addresses; the unchanged static scan now passes locally.
+  Full validation must run on the corrected head; #117 is still open.
+
 - **PRESENT, UNVERIFIED #117 packaged harness:** the real installed script is
   wired into both required call-site CI lanes with package provenance, fixture
   curation, preservation, deterministic reruns, structural validators and all

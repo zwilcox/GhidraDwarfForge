@@ -1093,9 +1093,9 @@ public final class MinimalDwarfSidecarExporter {
             for (var site : function.sites()) {
                 checkCancelled(cancelled);
                 Die die = newDie(producer, consumer, debug, DW_TAG_CALL_SITE, owner, errorOut);
-                addAddress(producer, consumer, debug, die, DW_AT_CALL_PC, site.pc(), errorOut);
+                addAddress(producer, consumer, debug, die, DW_AT_CALL_PC, site.instructionAddress(), errorOut);
                 addAddress(producer, consumer, debug, die, DW_AT_CALL_RETURN_PC, site.returnPc(), errorOut);
-                addresses.add(site.pc());
+                addresses.add(site.instructionAddress());
                 addresses.add(site.returnPc());
                 if (site.tail()) addFlag(producer, consumer, debug, die, DW_AT_CALL_TAIL_CALL, true, errorOut);
                 if (site.callee() != null) {
