@@ -38,8 +38,11 @@
   explicit. Direct-tail boundary-state checks now pass 570 checks in 47 decoder
   cases and 72 selected saved/rebased tail proofs, with original/database hashes
   preserved. The split cold-block false positive is fixed by checking known
-  incoming non-call edges and propagating rejected entry assumptions. Next
-  prove actual arguments and completeness, then integrate emission.
+  incoming non-call edges and propagating rejected entry assumptions. Integer
+  value expressions now pass 7,980 independent encoder vectors, 293 decoded
+  checks/120 value evaluations, 576 saved/rebased comparisons and five native
+  serialization profiles. Next bind expressions to actual parameter storage,
+  address incomplete caller coverage, justify completeness and integrate emission.
   Hosted native/JNA/reference/capture/tail jobs, Windows
   runtime and Forge debugger behavior remain incomplete; these prerequisites
   do not complete #117.

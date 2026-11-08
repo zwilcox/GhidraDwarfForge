@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import shutil
 import subprocess
@@ -75,12 +76,51 @@ def program_hashes(project):
     return result
 
 
+def compare_arguments(reference, captured):
+    evaluate = runpy.run_path(str(ROOT / "src/test/integration/check-call-values.py"))["evaluate"]
+    expressions = {int(row["pc"], 16): row for row in captured["arguments"]}
+    observations = []
+    first, second = (5, 4) if reference["target"] == "x86_64" else (0, 1)
+    addends = {"cs_normal": 1, "cs_tail_first": 1, "cs_tail_middle": 2, "cs_left": 3, "cs_right": 4}
+    checks = 0
+    for call in reference["calls"]:
+        if call["caller"] in ("cs_indirect", "cs_leaf"):
+            continue
+        row = expressions[int(call["pc"], 16)]
+        values = row["integerArgumentExpressions"]
+        assert row["caller"] == call["caller"] and values[0] is not None, (call, row)
+        for value, depth in ((0, 0), (20, 3), (0xffffffff, 1), (0x7fffffff, 1), (0x80000000, 0), (17, 0xffffffff)):
+            # P-code arithmetic is modular. Overflow samples test machine values;
+            # they do not assert defined signed-overflow behavior for the C source.
+            registers = {number: 0xdead00000000 + number for number in range(33)}
+            registers[first], registers[second] = value, depth
+            expected = value + addends.get(call["caller"], 0)
+            if call["caller"] == "cs_diamond":
+                expected = value + (1 if call["callee"] == "cs_left" else 2)
+            elif call["caller"] == "cs_recursive" and call["callee"] == "cs_recursive":
+                expected = value + 1
+                assert values[1] is not None
+                assert evaluate(bytes.fromhex(values[1]), 8, "little", registers) == (depth - 1) & 0xffffffff
+                checks += 1
+            elif call["caller"] == "cs_tail_recursive":
+                expected = value + depth
+            assert evaluate(bytes.fromhex(values[0]), 8, "little", registers) == expected & 0xffffffff, (call, row, value, depth)
+            checks += 1
+        observations.append(row)
+    assert "cs_indirect" in captured["argumentOmissions"]
+    if reference["target"] == "x86_64":
+        assert "cs_driver.cold" in captured["argumentOmissions"] and "cs_driver" in captured["argumentOmissions"]
+    return {"checks": checks, "transfers": observations}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("reference", type=Path, help="completed call-site-reference.py output")
     parser.add_argument("output", type=Path)
     parser.add_argument("--ghidra", required=True, type=Path)
     parser.add_argument("--reuse-project", action="store_true", help="read an existing capture project; write fresh tail-state reports")
+    parser.add_argument("--report-name", default="tail-state", choices=("tail-state", "argument-state"),
+                        help="fresh report directory when reusing a saved project")
     args = parser.parse_args()
     reference = args.reference.resolve()
     compiler = json.loads((reference / "result.json").read_text())
@@ -110,7 +150,7 @@ def main():
                     "-max-cpu", "2", "-log", work / "headless.log", "-scriptlog", work / "script.log"], work / "import", env)
         assert "call-site-observations=PASS functions=" in text
     saved = program_hashes(project)
-    reports_root = work / "tail-state" if args.reuse_project else work
+    reports_root = work / args.report_name if args.reuse_project else work
     if args.reuse_project:
         reports_root.mkdir(exist_ok=False)
     # Read-only reopen through the current source runtime; do not overwrite a
@@ -126,15 +166,17 @@ def main():
         assert "/build/classes/java/main/" in captured["classOrigin"], captured["classOrigin"]
         reports.append({"variant": variant, "delta": captured["rebaseDelta"], "calls": compare(compiler, captured),
                         "tails": compare_tails(compiler, captured), "tailOmissions": captured["tailOmissions"],
+                        "arguments": compare_arguments(compiler, captured), "argumentOmissions": captured["argumentOmissions"],
                         "omissions": {f["name"]: f["omissions"] for f in captured["functions"] if f["omissions"]}})
     assert reports[0]["calls"] == reports[1]["calls"], "rebase changed transfer identities or original bytes"
     assert reports[0]["tails"] == reports[1]["tails"], "rebase changed proved tail identities or original bytes"
+    assert reports[0]["arguments"] == reports[1]["arguments"], "rebase changed integer actual-value expressions"
     assert reports[1]["delta"] - reports[0]["delta"] == 0x400000
     assert digest(original) == protected, "capture changed the original executable"
     assert program_hashes(project) == saved, "capture changed the saved program database"
     (reports_root / "result.json").write_text(json.dumps({
-        "status": "PASS_CAPTURE_TAIL_STATE_REFERENCE", "target": compiler["target"], "role": compiler["role"],
-        "scope": "Raw transfers and direct tail boundary states; actual arguments and DWARF emission remain incomplete",
+        "status": "PASS_CAPTURE_TAIL_ARGUMENT_REFERENCE", "target": compiler["target"], "role": compiler["role"],
+        "scope": "Raw transfers, direct tail boundary states and integer expressions; production parameter mapping and DWARF emission remain incomplete",
         "inputSha256": protected, "savedProgramSha256": saved, "reports": reports,
     }, indent=4) + "\n")
     print(f"call-site-evidence-reference=PASS target={compiler['target']} role={compiler['role']}")

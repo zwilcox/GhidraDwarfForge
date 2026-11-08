@@ -91,6 +91,20 @@ complete call-site emission. Actual argument recovery, justified completeness,
 production emission, Forge GDB behavior and hosted acceptance remain incomplete.
 See the call-site plan and its tail-state receipt.
 
+**CONFIRMED #117 integer-expression checkpoint:** bounded call values now retain
+machine widths, incoming-register identities, slices/extensions, arithmetic and
+conditional selects. An independent DWARF VM passes 7,980 encoder vectors.
+Real Ghidra decoding passes 293 checks across 25 cases and 120 independently
+evaluated expressions; unknown loads, conflicting paths and unproved calls lose
+values. Saved x86-64/AArch64 ET_EXEC/PIE original/rebased programs pass 576
+numeric expression comparisons, including optimized recursion. JNA serializes
+generated conditional expressions in five target formats with LLVM/readelf and
+105 independent numerical checks. This establishes component expression
+behavior, not production parameter identity, pointer/stack argument support,
+call completeness or Forge GDB acceptance. The driver with incomplete analysis
+still has no argument-flow proof. The exporter remains unchanged; continue the
+full #117 emission and debugger acceptance work before #120.
+
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 

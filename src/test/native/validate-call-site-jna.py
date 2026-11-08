@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import runpy
 import subprocess
 
 
@@ -58,6 +59,25 @@ def main():
         if not re.search(rf"\bDW_AT_{attr}\s+DW_FORM_{form}\b", abbreviations):
             raise RuntimeError(f"incorrect form for {attr}")
     info = run(["readelf", "--debug-dump=info", str(object_path)])
+    values = []
+    for line in info.splitlines():
+        match = re.search(r"DW_AT_call_value\s*:\s*(\d+) byte block:\s*([0-9a-f ]+)\s*\(", line)
+        if match:
+            value = bytes(int(byte, 16) for byte in match[2].split())
+            assert len(value) == int(match[1]), line
+            values.append(value)
+    assert len(values) == 2 and values[0] == bytes.fromhex("a30150"), "missing original/generated copied expressions"
+    evaluate = runpy.run_path(str(Path(__file__).resolve().parents[1] / "integration/check-call-values.py"))["evaluate"]
+    mask = (1 << (width * 8)) - 1
+    generated_checks = 0
+    for first in (0, 1, 127, 128, 255, 0xffffffff, 0xffffffffffffffff):
+        for second in (0, 1, 0xffffffff):
+            first, second = first & mask, second & mask
+            signed_byte = (first & 255) - (256 if first & 128 else 0)
+            expected = (signed_byte + 1 if second == 0 else first + second) & mask
+            assert evaluate(values[1], width, "big" if args.profile == "mips32be" else "little",
+                            {5: first, 6: second}) == expected
+            generated_checks += 1
     if not re.search(rf"Pointer Size:\s+{width}\b", info):
         raise RuntimeError("target address width mismatch")
     address = 0x100001000 if width == 8 else 0x401000
@@ -80,6 +100,7 @@ def main():
             raise RuntimeError(f"incorrect {attribute} DIE reference")
     report = {"profile": args.profile, "status": "PASS", "addressBytes": width,
               "blockCopyVerified": True, "referencesVerified": True, "sectionsSha256": {},
+              "generatedExpressionChecks": generated_checks,
               "scope": "Producer/JNA/serialized forms only; not Ghidra extraction or GDB runtime"}
     for section in sections:
         with section.open("rb") as stream:

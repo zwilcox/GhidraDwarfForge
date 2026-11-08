@@ -7,6 +7,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.HexFormat;
 
 import com.google.gson.GsonBuilder;
 import ghidra.GhidraApplicationLayout;
@@ -18,6 +19,8 @@ import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.AddressNormalizer;
 import ghidradwarfforge.GhidraImageBase;
 import ghidradwarfforge.elf.ElfImage;
+import ghidradwarfforge.unwind.UnwindFlow.Bank;
+import ghidradwarfforge.unwind.UnwindFlow.Cell;
 
 /** Reopens a real analyzed fixture and invokes current production evidence capture. */
 public final class CallSiteEvidenceProbe {
@@ -59,6 +62,29 @@ public final class CallSiteEvidenceProbe {
                 var tailOmissions = new LinkedHashMap<String, String>();
                 proof.omissions().forEach((entry, reason) ->
                     tailOmissions.put(program.getFunctionManager().getFunctionAt(entry).getName(), reason));
+                var arguments = GhidraCallArgumentFlow.analyze(program, proof, image, delta, TaskMonitor.DUMMY);
+                if (!arguments.equals(GhidraCallArgumentFlow.analyze(program, proof, image, delta, TaskMonitor.DUMMY))) {
+                    throw new AssertionError("argument analysis was not deterministic");
+                }
+                var argumentRows = new ArrayList<Object>();
+                for (var transfer : arguments.transfers().entrySet()) {
+                    var item = new LinkedHashMap<String, Object>();
+                    item.put("caller", program.getFunctionManager().getFunctionContaining(transfer.getKey()).getName());
+                    item.put("pc", Long.toHexString(AddressNormalizer.toElfAddress(transfer.getKey().getOffset(), delta)));
+                    var values = new ArrayList<Object>();
+                    // Fixture-specific observer: this is not a production parameter-storage mapping.
+                    for (String name : image.machine() == 62 ? List.of("EDI", "ESI") : List.of("w0", "w1")) {
+                        var register = program.getRegister(name);
+                        var value = GhidraCallArgumentFlow.read(transfer.getValue().values(),
+                            new Cell(Bank.REGISTER, register.getAddress().getOffset(), 4));
+                        values.add(value == null ? null : HexFormat.of().formatHex(value.dwarf(image.is64Bit() ? 8 : 4, image.byteOrder())));
+                    }
+                    item.put("integerArgumentExpressions", values);
+                    argumentRows.add(item);
+                }
+                var argumentOmissions = new LinkedHashMap<String, String>();
+                arguments.omissions().forEach((entry, reason) ->
+                    argumentOmissions.put(program.getFunctionManager().getFunctionAt(entry).getName(), reason));
                 var rows = new ArrayList<Object>();
                 for (var function : captured) {
                     var row = new LinkedHashMap<String, Object>();
@@ -89,12 +115,14 @@ public final class CallSiteEvidenceProbe {
                     rows.add(row);
                 }
                 var result = new LinkedHashMap<String, Object>();
-                result.put("scope", "Captured transfers and direct tail boundary-state proofs; no argument or DWARF emission proof");
+                result.put("scope", "Captured transfers, direct tail boundary states and integer register value expressions; no production parameter mapping or DWARF emission proof");
                 result.put("rebaseDelta", delta);
                 result.put("classOrigin", GhidraCallSiteEvidence.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm());
                 result.put("functions", rows);
                 result.put("tails", tails);
                 result.put("tailOmissions", tailOmissions);
+                result.put("arguments", argumentRows);
+                result.put("argumentOmissions", argumentOmissions);
                 Path output = Path.of(args[3]);
                 Files.createDirectories(output.getParent());
                 Files.writeString(output, new GsonBuilder().serializeNulls().setPrettyPrinting().create().toJson(result) + "\n",

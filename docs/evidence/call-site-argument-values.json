@@ -1,0 +1,278 @@
+{
+    "scope": "Integer actual-value components only; no production parameter mapping, completeness claim, call-site emission or Forge GDB acceptance",
+    "ghidra": "12.0.3",
+    "java": "OpenJDK 25.0.4.1; Java 21 bytecode target",
+    "encoder": {
+        "status": "PASS",
+        "independentVmVectors": 7980,
+        "rejectedInvalidExpressions": 10,
+        "vectorsSha256": "8e9ede960d11b1dcbafad95e67ff80966f624b43c7983bbd994b415dd4402936"
+    },
+    "decodedFlow": {
+        "status": "PASS",
+        "cases": 25,
+        "checks": 293,
+        "independentVmVectors": 120,
+        "vectorsSha256": "64d98875285819c4f760a7191f5614f443e1a67cdb50220f1905f624dfe23119",
+        "cancellation": "Every observed poll of the incoming-register control on both selected profiles"
+    },
+    "tailStateRegression": {
+        "status": "PASS",
+        "checks": 570
+    },
+    "savedPrograms": [
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "inputSha256": "44ca7ac04166607e97c23621bb0d0b54c027e71537103aa39653a0eb49ac0761",
+            "savedProgramSha256": {
+                "00/00000000.prp": "38c9bfa2d9e78057e05a990880472900de86428ac8d9335d9d804abe12bf02f3",
+                "00/~00000000.db/db.1.gbf": "204d20179f52a389a70f1cf74c03dc722c7e276f77cf0bbf6dda45fa3ce894ad",
+                "~index.bak": "937592eda81c76c35c39a1f66fed44a2e018ffd122783da1230ec9196821d70b",
+                "~index.dat": "937592eda81c76c35c39a1f66fed44a2e018ffd122783da1230ec9196821d70b"
+            },
+            "resultSha256": "84568c784e25caf2d20e3b61662b0b41c878d7cb8e8c6376c5434a25f8259cd9",
+            "reports": [
+                {
+                    "variant": "original",
+                    "delta": 0,
+                    "expressionChecks": 72,
+                    "transferSites": 11,
+                    "omissions": {
+                        "cs_driver.cold": "unproved tail boundary or entry contract",
+                        "cs_indirect": "unproved tail boundary or entry contract",
+                        "cs_driver": "incomplete instruction inventory"
+                    },
+                    "captureSha256": "0aecca6635e9050b1881e88026a42f36f54fe2137657ef78aaedfcfdc8bf15b1"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 4194304,
+                    "expressionChecks": 72,
+                    "transferSites": 11,
+                    "omissions": {
+                        "cs_driver.cold": "unproved tail boundary or entry contract",
+                        "cs_indirect": "unproved tail boundary or entry contract",
+                        "cs_driver": "incomplete instruction inventory"
+                    },
+                    "captureSha256": "3fb74c6e8ada20f9b7edacdf481f930581a6bbd18f1bfefacb038a66f616a529"
+                }
+            ]
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "inputSha256": "b18b5d269edfec777f705b9c5e08d22f59f09243d788923c1323741e78e4c592",
+            "savedProgramSha256": {
+                "00/00000000.prp": "2f5bf1d02455efc2c4d4c80885a53823522028bcfb5774033d29b9096c79d8df",
+                "00/~00000000.db/db.1.gbf": "f8b55b3cb4d778d33b208e880477048b5a220c1aefe908a456774947a5b7a3fa",
+                "~index.bak": "c4819c307eefb274a3e6b11822789f3b0da6380457650a1d36939c2ba570e451",
+                "~index.dat": "c4819c307eefb274a3e6b11822789f3b0da6380457650a1d36939c2ba570e451"
+            },
+            "resultSha256": "141f7948a725e4fb853f2011884f540448656fe12e3bc76ec5a3ce68e8d5f2b5",
+            "reports": [
+                {
+                    "variant": "original",
+                    "delta": 1048576,
+                    "expressionChecks": 72,
+                    "transferSites": 11,
+                    "omissions": {
+                        "cs_driver.cold": "unproved tail boundary or entry contract",
+                        "cs_indirect": "unproved tail boundary or entry contract",
+                        "cs_driver": "incomplete instruction inventory"
+                    },
+                    "captureSha256": "166d4accf65da30ad9ce6e89b14b50b36b4aef96ddd48ead34b45b25474cacf2"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 5242880,
+                    "expressionChecks": 72,
+                    "transferSites": 11,
+                    "omissions": {
+                        "cs_driver.cold": "unproved tail boundary or entry contract",
+                        "cs_indirect": "unproved tail boundary or entry contract",
+                        "cs_driver": "incomplete instruction inventory"
+                    },
+                    "captureSha256": "03d9f7c9a18fda8b959d2d32de61880fdfeeb4b682d7c99dd9f88c7cac54f1e6"
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "inputSha256": "4141f968b2b67a8d9215d50790a1599b59aff1a4e38377513b8fa5b491f732ef",
+            "savedProgramSha256": {
+                "00/00000000.prp": "85c0e0fca86f506adfe32f49ad2d4a6c492b2ba36ffad1a705c668562ced2420",
+                "00/~00000000.db/db.1.gbf": "486ebe9d0ba48371d70b744e7495b92fbdf6d3b70cce03075a172b12660b78d4",
+                "~index.bak": "4e663f36eedd65422e9e12427645ba2635ffe2af3c6eabc8d2f8204c96ce14e9",
+                "~index.dat": "4e663f36eedd65422e9e12427645ba2635ffe2af3c6eabc8d2f8204c96ce14e9"
+            },
+            "resultSha256": "e76ada3bcfc3a4994acc45c34e08d4744a8f2046b2a635eb7ad764393ade9f42",
+            "reports": [
+                {
+                    "variant": "original",
+                    "delta": 0,
+                    "expressionChecks": 72,
+                    "transferSites": 11,
+                    "omissions": {
+                        "cs_indirect": "unproved tail boundary or entry contract"
+                    },
+                    "captureSha256": "8299ee3cd236a0c77aeb6e21dadf3123eb262c4cf45609d55dae0f4a3209b43e"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 4194304,
+                    "expressionChecks": 72,
+                    "transferSites": 11,
+                    "omissions": {
+                        "cs_indirect": "unproved tail boundary or entry contract"
+                    },
+                    "captureSha256": "2a3ba6f9a03e8ec145bcf0b87f750876abf5ab9dd2e2cb08c022cb7a236f181b"
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "inputSha256": "4e8dd09bdb50cfd86fd61bfd78d5651d7fa08ce1e49effa9db8fbc1a9c8b0258",
+            "savedProgramSha256": {
+                "00/00000000.prp": "aaeeca678bf36da1c92eeaa95768b1c03be56a78a1031bfae70a1e1834fb38fe",
+                "00/~00000000.db/db.1.gbf": "30945ca59b06600a99b352d74fe42f2c6f6e00441fd6fd764baef53230a3b9c4",
+                "~index.bak": "3dd57b63a69f5b35d2e4be92503b1720cadbb32490f7ac4e2c4ecf63c9b35823",
+                "~index.dat": "3dd57b63a69f5b35d2e4be92503b1720cadbb32490f7ac4e2c4ecf63c9b35823"
+            },
+            "resultSha256": "a9585d2f8803efceed1028a98e290aecb6b6685239a6a6c24ae5b6dcf1c1afc0",
+            "reports": [
+                {
+                    "variant": "original",
+                    "delta": 1048576,
+                    "expressionChecks": 72,
+                    "transferSites": 11,
+                    "omissions": {
+                        "cs_indirect": "unproved tail boundary or entry contract"
+                    },
+                    "captureSha256": "237084753881a163e17c72b35a8458e41675606b5d39ced14d25ca19cae9d21a"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 5242880,
+                    "expressionChecks": 72,
+                    "transferSites": 11,
+                    "omissions": {
+                        "cs_indirect": "unproved tail boundary or entry contract"
+                    },
+                    "captureSha256": "77e082b7f94f7e452c7c3f337282bac3375ab137c8a8bc2854d8180ee74c5f7b"
+                }
+            ]
+        }
+    ],
+    "nativeSerialization": [
+        {
+            "profile": "x86_64",
+            "status": "PASS",
+            "addressBytes": 8,
+            "blockCopyVerified": true,
+            "referencesVerified": true,
+            "sectionsSha256": {
+                ".debug_abbrev": "ace2f1dd38dc4aa43e1abefe5ca32e3b4dfd296dfe3a5e7513508e8ffa216a45",
+                ".debug_info": "ef95c6a55a49cf5b096f6404fbf91a7057c6b9362085e28cfcde8c684ccb0e87"
+            },
+            "generatedExpressionChecks": 21,
+            "scope": "Producer/JNA/serialized forms only; not Ghidra extraction or GDB runtime",
+            "producerLogSha256": "9f2af2ad25e3419578edd711759e985f8857ad76192a744df205bf8f7dd80e7d",
+            "commandsSha256": "c4d538603c1a37848ea77e3d43e810fc1b31428903c8f2a0f2b1f7e7531ddf64"
+        },
+        {
+            "profile": "aarch64",
+            "status": "PASS",
+            "addressBytes": 8,
+            "blockCopyVerified": true,
+            "referencesVerified": true,
+            "sectionsSha256": {
+                ".debug_abbrev": "ace2f1dd38dc4aa43e1abefe5ca32e3b4dfd296dfe3a5e7513508e8ffa216a45",
+                ".debug_info": "ef95c6a55a49cf5b096f6404fbf91a7057c6b9362085e28cfcde8c684ccb0e87"
+            },
+            "generatedExpressionChecks": 21,
+            "scope": "Producer/JNA/serialized forms only; not Ghidra extraction or GDB runtime",
+            "producerLogSha256": "99884893384060dc3359e84cddbb6dba9e2214cf51d226d2aba2394e895a8336",
+            "commandsSha256": "dabaa8bc1e6b36d677e069629b50613872c19c42aeb4e85a58bf8d674b930fe6"
+        },
+        {
+            "profile": "arm32",
+            "status": "PASS",
+            "addressBytes": 4,
+            "blockCopyVerified": true,
+            "referencesVerified": true,
+            "sectionsSha256": {
+                ".debug_abbrev": "ace2f1dd38dc4aa43e1abefe5ca32e3b4dfd296dfe3a5e7513508e8ffa216a45",
+                ".debug_info": "4011b8f5f65c419bfa404a92df14471d84345a55f8e51f3a87e305be8513151d"
+            },
+            "generatedExpressionChecks": 21,
+            "scope": "Producer/JNA/serialized forms only; not Ghidra extraction or GDB runtime",
+            "producerLogSha256": "8bc4f5b35c885a041db5fe46464582940bc9857cedd9b15391324f0faf1a077a",
+            "commandsSha256": "f9a931059b8c69b700f6ad376e9be58cb0409e32ba450983c62184db42343660"
+        },
+        {
+            "profile": "mips32be",
+            "status": "PASS",
+            "addressBytes": 4,
+            "blockCopyVerified": true,
+            "referencesVerified": true,
+            "sectionsSha256": {
+                ".debug_abbrev": "ace2f1dd38dc4aa43e1abefe5ca32e3b4dfd296dfe3a5e7513508e8ffa216a45",
+                ".debug_info": "3ea0534fc6943489574be7a4805fe8c5b481cae076d85a412da17c049ec24f69"
+            },
+            "generatedExpressionChecks": 21,
+            "scope": "Producer/JNA/serialized forms only; not Ghidra extraction or GDB runtime",
+            "producerLogSha256": "78407cbec9ec73c3d59cd859c03a219bf4b6b119ac0f1d17ab4af05821387f4a",
+            "commandsSha256": "eb5dca5dcf5a96c9850a5d296b2405a02d433e1c76d97f05291d262a775d212b"
+        },
+        {
+            "profile": "mips32le",
+            "status": "PASS",
+            "addressBytes": 4,
+            "blockCopyVerified": true,
+            "referencesVerified": true,
+            "sectionsSha256": {
+                ".debug_abbrev": "ace2f1dd38dc4aa43e1abefe5ca32e3b4dfd296dfe3a5e7513508e8ffa216a45",
+                ".debug_info": "4011b8f5f65c419bfa404a92df14471d84345a55f8e51f3a87e305be8513151d"
+            },
+            "generatedExpressionChecks": 21,
+            "scope": "Producer/JNA/serialized forms only; not Ghidra extraction or GDB runtime",
+            "producerLogSha256": "344b0356be32c6f825175a08a4c464e7224ad4c0a1b8eb53c25f6ae43064a25d",
+            "commandsSha256": "eb395ec559a74a79f427d388348b151e98371ef511ab306aea0a8df56ef172b6"
+        }
+    ],
+    "extensionBuild": {
+        "status": "PASS",
+        "name": "ghidra_12.0.3_PUBLIC_20261108_GhidraDwarfForge.zip",
+        "bytes": 5021775,
+        "sha256": "f91cace70aa0bd59407ea6e9bb63363d05f0c52ded960f6d2341942a945f5e57",
+        "managedWorkspaceEntries": 0
+    },
+    "workflowLint": "PASS",
+    "hosted": "PRESENT, UNVERIFIED",
+    "commands": [
+        "GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC python3 support/storage-guard.py run --cwd /home/ziggy/GhidraDwarfForge -- ./gradlew --no-daemon callValueSmoke callArgumentFlowSmoke tailStateProofSmoke buildExtension",
+        "After adding conditional-select cases and tightening micro-branch bounds, guarded ./gradlew --no-daemon callArgumentFlowSmoke buildExtension",
+        "Guarded python3 -B src/test/integration/check-call-values.py build/test-results/call-values/vectors.json",
+        "Guarded python3 -B src/test/integration/check-call-values.py build/test-results/call-argument-flow/vectors.json --min-count 100",
+        "Guarded saved-project runner reopens original/rebased views via callSiteEvidenceProbe; compare, compare_tails and compare_arguments validate outputs against compiler results; program_hashes and original digest are unchanged",
+        "Guarded five-profile runner: ./gradlew --no-daemon callSiteProducerSmoke -PlibdwarfPath=.forge-work/cache/libdwarf-callsite/lib/libdwarf.so.2.3.2 -PlibdwarfpPath=.forge-work/cache/libdwarf-callsite/lib/libdwarfp.so.2.3.2 -PtargetProfile=PROFILE -PcallSiteOutput=SECTIONS; python3 -B src/test/native/validate-call-site-jna.py --profile PROFILE --sections SECTIONS --output VALIDATION",
+        "actionlint .github/workflows/ci.yml"
+    ],
+    "retainedSetupFailure": "Initial observer compilation used a nonexistent ElfImage.addressSize() helper; corrected to existing ELF-class accessor before all recorded runtime checks.",
+    "sourceSha256": {
+        "src/main/java/ghidradwarfforge/calls/CallValue.java": "ee554e3ca9ee67ed50d975466dd6fb5f26a0a89bb3558ed7575cca5379f13763",
+        "src/main/java/ghidradwarfforge/calls/GhidraCallArgumentFlow.java": "f594f1bd0c3078d7f6b1ac12c90d85d22023346f12fd2691ecdd112d3e626711",
+        "src/test/java/ghidradwarfforge/calls/CallValueSmoke.java": "051da366da2f32c66df178173e3d20943bd46cf2089612416197de9e0498ee79",
+        "src/test/java/ghidradwarfforge/calls/GhidraCallArgumentFlowSmoke.java": "80177aa0833ab0fdf62ea09277e533097610cb4e91cb3055bcecae54e1dd3b3e",
+        "src/test/java/ghidradwarfforge/calls/CallSiteEvidenceProbe.java": "f0367df26891d7c956ed67bff66b5289184a77c294b6014876d159c568602f83",
+        "src/test/integration/check-call-values.py": "4bf45132db1574f2823c40066935abd7379c65c36df397feaa4a349390c4dff4",
+        "src/test/integration/call-site-evidence.py": "3ca14b071b34acbb3e7f0cc99151e9930fe2fe35441af0d7688fef14f1f61556",
+        "src/test/java/ghidradwarfforge/nativeapi/CallSiteProducerSmoke.java": "f4f9ca7865123f25133ab6af70d601d39a1b7c360c7898971f88573f793c928f",
+        "src/test/native/validate-call-site-jna.py": "b8f607b08e21cb1b180e577883444d0892b86fd1e778d197f686b68b1e07e0c7",
+        "build.gradle": "ccd786f52e104ae7649ad3d3945359181c8c8cebc45d5d214c8f6c80d72fe17b",
+        ".github/workflows/ci.yml": "5b01df6c3321cc4cf60c2a8416cd5378a199dec6ec05e782afe8367f6d118baf"
+    }
+}

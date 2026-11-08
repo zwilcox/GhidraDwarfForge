@@ -338,6 +338,31 @@ tasks.register("tailStateProofSmoke", JavaExec) {
     }
 }
 
+tasks.register("callValueSmoke", JavaExec) {
+    group = "verification"
+    description = "Encodes bounded integer call values for independent DWARF VM validation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.CallValueSmoke"
+    args layout.buildDirectory.file("test-results/call-values/vectors.json").get().asFile
+}
+
+tasks.register("callArgumentFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Recovers actual integer arguments from decoded Ghidra instructions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.GhidraCallArgumentFlowSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/call-argument-flow").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/call-argument-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/call-argument-flow/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
+}
+
 tasks.register("ghidraUnwindInstructionsSmoke", JavaExec) {
     group = "verification"
     description = "Checks native p-code caller identity flow and incomplete graph rejection"

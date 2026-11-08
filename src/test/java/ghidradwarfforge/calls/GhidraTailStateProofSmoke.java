@@ -59,7 +59,7 @@ public final class GhidraTailStateProofSmoke {
     private static String jump(boolean arm, int from, int target) {
         return arm ? word(0x14000000 | ((target - from) >> 2) & 0x03ffffff) : "e9" + word(target - from - 5);
     }
-    private static byte[] elf(boolean arm, byte[] code, byte[] leaf) {
+    static byte[] elf(boolean arm, byte[] code, byte[] leaf) {
         var out = ByteBuffer.allocate(176 + code.length + leaf.length).order(ByteOrder.LITTLE_ENDIAN);
         out.put(new byte[] {0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0});
         out.putShort(16, (short) 2).putShort(18, (short) (arm ? 183 : 62)).putInt(20, 1);

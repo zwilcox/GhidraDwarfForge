@@ -686,9 +686,11 @@ jobs:
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
-              unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke callSiteEvidenceSmoke tailStateProofSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
+              unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke callSiteEvidenceSmoke tailStateProofSmoke callValueSmoke callArgumentFlowSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke buildExtension
+            python3 -B src/test/integration/check-call-values.py build/test-results/call-values/vectors.json
+            python3 -B src/test/integration/check-call-values.py build/test-results/call-argument-flow/vectors.json --min-count 100
             python3 -B src/test/integration/debuglink-basename.py \
                 --jar "$PWD/build/libs/GhidraDwarfForge.jar" \
                 --results "$PWD/build/test-results/extension-build/debuglink-basename"

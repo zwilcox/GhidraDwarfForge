@@ -7,6 +7,7 @@ import java.lang.ref.Reference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,6 +19,7 @@ import com.sun.jna.ptr.PointerByReference;
 
 import ghidradwarfforge.nativeapi.DwarfNativeTypes.Debug;
 import ghidradwarfforge.nativeapi.DwarfNativeTypes.Die;
+import ghidradwarfforge.calls.CallValue;
 
 /** Isolated ABI/serialization test; these synthetic calls are not runtime evidence. */
 public final class CallSiteProducerSmoke {
@@ -144,6 +146,18 @@ public final class CallSiteProducerSmoke {
             block(parameter, DW_AT_CALL_VALUE, value);
             // libdwarf must own a copy after return, not a borrowed Java buffer.
             Arrays.fill(value, (byte) 0);
+            Die generated = die(DW_TAG_CALL_SITE_PARAMETER, site);
+            block(generated, DW_AT_LOCATION, new byte[] {0x51});
+            var first = new CallValue.Incoming(5, profile.width());
+            var second = new CallValue.Incoming(6, profile.width());
+            var condition = CallValue.binary(CallValue.Op.EQUAL, second, new CallValue.Literal(0, profile.width()), 1);
+            var signedByte = CallValue.extend(CallValue.slice(first, 0, 1), true, profile.width());
+            var computed = CallValue.select(condition,
+                CallValue.binary(CallValue.Op.ADD, signedByte, new CallValue.Literal(1, profile.width()), profile.width()),
+                CallValue.binary(CallValue.Op.ADD, first, second, profile.width()));
+            byte[] generatedValue = computed.dwarf(profile.width(), profile.littleEndian() ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
+            block(generated, DW_AT_CALL_VALUE, generatedValue);
+            Arrays.fill(generatedValue, (byte) 0);
             check(producer.dwarf_add_die_to_debug_a(debug, unit, error), error);
             LongByReference count = new LongByReference();
             check(producer.dwarf_transform_to_disk_form_a(debug, count, error), error);

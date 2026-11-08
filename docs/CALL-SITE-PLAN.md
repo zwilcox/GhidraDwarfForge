@@ -388,3 +388,62 @@ an explicit consumer convention, tested against GCC, rather than being
 misrepresented as a preserved machine return address. Also retain
 `DW_AT_call_pc` identifying the actual transfer instruction. These source
 observations are not production export acceptance.
+
+## Integer actual-value expressions — 2026-11-08
+
+**CONFIRMED component behavior:** `CallValue` describes constants, function-entry
+register values, slices, zero/sign extension, modular integer arithmetic and
+conditional selects. Every intermediate retains its machine byte width. The
+encoder uses nested entry-value blocks rather than referring to potentially
+clobbered live registers, and masks narrower results. Select branches honor
+target byte order. Expression limits are 256 nodes, depth 32 and 4,096 emitted
+bytes. Nonconstant shifts remain unavailable. These generic encoding checks
+do not imply Ghidra extraction support for every target format.
+
+`GhidraCallArgumentFlow` interprets the captured raw p-code under the selected
+x86-64/AArch64 ordinary integer profiles. It checks the instruction profile,
+requires resolved control-flow boundaries, propagates to a fixed point, and
+retains only common values at machine-level joins. Bounded acyclic conditional
+p-code within an instruction can instead produce a select expression. Partial
+register writes preserve known unaffected bits; subsequent slices simplify
+irrelevant upper bits so a constant does not depend on an unavailable entry
+register. Unknown loads and unproved ordinary calls forget values. Memory values
+are not tracked; a spill/reload therefore remains unavailable even when the
+separate tail-state analysis proves stack restoration. Instructions with known
+non-flow memory references do not turn rebased address computations into integer
+constants. Pointer provenance and production parameter-type/storage matching
+remain separate unfinished obligations.
+
+**CONFIRMED local validation:**
+
+- The independent Python DWARF VM evaluates 7,980 generated boundary/random
+  vectors against unbounded-arithmetic expectations for 32-/64-bit expression
+  stacks and both byte orders. Ten invalid/budget cases are rejected.
+- Twenty-five real-decoder cases pass 293 checks and 120 independent emitted
+  expression evaluations. They cover wrapping, constants, subregister writes,
+  call clobbering, definitions after calls, joins, loads, untracked spill/reload,
+  known and unknown conditional selects, rebasing, determinism, original hashes
+  and cancellation at every observed poll of both incoming-register controls.
+- Eight saved/rebased program views pass 576 numerical expression comparisons
+  at eleven selected transfer sites per view. Positive and zero/nonzero recursive
+  conditions are covered. Overflow samples check machine arithmetic rather than
+  claiming defined signed-overflow semantics for the original C source. Original
+  ELF and saved database hashes remain unchanged; rebasing preserves expressions.
+- The isolated JNA producer serializes an additional generated conditional
+  expression in all five target formats. LLVM/readelf validate the actual bytes,
+  the independent VM passes 105 checks extracted from native-produced sections,
+  and the existing 8 success/8 error lifetimes, copied-buffer and deterministic
+  section checks pass for each format. No native declaration changed.
+- The extension builds and workflow lint passes. CI includes both new component
+  suites, VM evaluations, native expressions and saved-project comparisons;
+  **hosted execution is unverified**.
+
+See [integer-expression evidence](evidence/call-site-argument-values.json) for
+commands, source/report hashes and scoped counts. The saved fixture's incomplete
+driver, split cold block and unresolved indirect tail remain explicit omissions;
+their argument values are not invented. The observer's first two integer
+registers are fixture expectations, not a production ABI/parameter mapping.
+No call-site DIEs are emitted by the production exporter yet. Next complete
+parameter identity/storage matching and caller coverage, choose tested completeness
+and consumer-PC handling, and run the full compiler/Forge GDB comparison. All
+original issue requirements remain required; this checkpoint does not close #117.
