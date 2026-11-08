@@ -216,3 +216,44 @@ Next: compiler reference fixtures and Ghidra control-flow/argument evidence,
 followed by the exporter pass and debugger acceptance. These isolated ABI and
 form checks do not establish runtime tail-call reconstruction or recovered
 entry values; none of the original six acceptance items is closed by them alone.
+
+## Compiler reference and debugger oracle — 2026-11-08
+
+**CONFIRMED local compiler reference, not Forge behavior:** the source-built
+`call-site-reference.c` family passes 64 GDB sessions across native x86-64 and
+QEMU AArch64, each as ET_EXEC and PIE. `call-site-reference.py` builds the fixture
+twice with identical bytes, preserves the original image, and compares full
+compiler DWARF with a copy stripped of debug information but retaining ordinary
+unwind data. GNU disassembly independently checks every selected direct call,
+tail transfer, return-PC boundary and callee identity against the DWARF graph.
+Readelf, LLVM and the repository's pinned standalone checker pass, with only
+byte-identical inherited `.eh_frame` alignment diagnostics corroborated by the
+existing strict checker. See the [receipt](evidence/call-site-compiler-reference.json).
+
+GDB 15.1 reconstructs both virtual frames in the direct tail chain, including
+entry arguments 20 and 21 and the leaf argument 23. The normal-call control has
+only physical frames. Both outcomes of the ambiguous diamond and the unresolved
+indirect tail omit intermediate frames and leave the leaf entry value unavailable.
+Ordinary recursion retains three physical recursive frames plus the final virtual
+recursive frame, while that leaf's entry value remains unavailable. Optimized
+self-tail recursion has only one virtual function frame; the test does not invent
+four historical invocations. A forwarding function supplies a further positive
+tail-frame control, but its code alone is not evidence of a Ghidra thunk.
+Removing debug information removes every virtual frame without removing the
+ordinary physical callers. PIE tests require a nonzero observed runtime bias.
+
+The exact environment is GCC 13.3.0, GDB 15.1, LLVM 18.1.3, GNU binutils 2.42 and
+QEMU 8.2.2. AArch64 produces the known QEMU vDSO string-table warning in both
+compiler and absent-debug controls; only that exact diagnostic is admitted,
+recorded, and required to match between each paired run. An initial raw checker
+run reproduced the already documented GNU location-view reference bug. The final
+tests retain normal compiler debug output and use the production CI validation
+bundle, including its existing location-view patch; no new suppression or
+checker patch was added. This tool is cached once for subsequent work.
+
+**PRESENT, hosted execution unverified:** the compiler harness is wired into the
+x86-64 and AArch64 Linux CI lanes for both roles. **PLANNED remaining:** actual
+Ghidra evidence capture/classification, recovered argument proofs, call-site DIE
+emission, saved-program/rebase controls and compiler/Forge runtime comparison.
+These reference oracles establish expectations for acceptance items 4 and 5;
+they do not complete those items without the production exporter comparison.

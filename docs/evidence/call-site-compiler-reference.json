@@ -1,0 +1,1032 @@
+{
+    "scope": "Compiler DWARF and absent-debug controls only; Forge extraction, call-site emission and runtime acceptance remain incomplete",
+    "hosted": "PRESENT, UNVERIFIED; wired into x86-64/AArch64 Linux lanes",
+    "sourceSha256": {
+        "src/test/fixtures/call-site-reference.c": "75fe4e6e759296530d777fef6d39cd32909e96711eba948819690f46ad3c164d",
+        "src/test/integration/call-site-reference.py": "f14e3c4b2f074667d0d76ccdbcacb2f4fe278cbd55ad2c7b9e00bf401ece2abd",
+        "src/test/integration/call-site-reference-gdb.py": "36f52bdfcb268f3ef28becec14da2eae9aaee78b57013cf79df2fd9d54d92427",
+        ".github/workflows/ci.yml": "6e8a88d0c7b8ba188b8f63a1a40c6874b5280cd374b9edcdce3dc8f1c474e7a4"
+    },
+    "validatorMetadataSha256": "77b85c70c663628c536da6c60e9e4fa780f5e7042a0c2ab1fd9c2190127d653d",
+    "validatorExecutableSha256": "e730e2f9151ca54a20c67ae344465a7c9150920016e5e6fd3c0bbaab14e29468",
+    "profiles": [
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "status": "PASS_COMPILER_REFERENCE",
+            "versions": {
+                "aarch64-linux-gnu-gcc": "aarch64-linux-gnu-gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+                "aarch64-linux-gnu-objdump": "GNU objdump (GNU Binutils for Ubuntu) 2.42",
+                "readelf": "GNU readelf (GNU Binutils for Ubuntu) 2.42",
+                "llvm-dwarfdump": "Ubuntu LLVM version 18.1.3",
+                "gdb-multiarch": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1",
+                "qemu-aarch64-static": "qemu-aarch64 version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)"
+            },
+            "debuggerSessions": 16,
+            "validator": {
+                "uncorroboratedErrors": 0,
+                "corroboratedFrameDiagnostics": 16
+            },
+            "imageSha256": {
+                "reference": "8e3911b6d5b1da1008ca38a91823f22e620f4a47dc6fd7340a24f92cb8fc3a76",
+                "input": "4141f968b2b67a8d9215d50790a1599b59aff1a4e38377513b8fa5b491f732ef"
+            },
+            "runtime": [
+                {
+                    "scenario": 0,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        11,
+                        10
+                    ],
+                    "sink": 11,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 0,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null,
+                        null
+                    ],
+                    "sink": 11,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 1,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_tail_middle",
+                        "cs_tail_first"
+                    ],
+                    "entryValues": [
+                        23,
+                        21,
+                        20
+                    ],
+                    "sink": 23,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 1,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 23,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 2,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 34,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 2,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 34,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 3,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 36,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 3,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 36,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 4,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_recursive"
+                    ],
+                    "entryValues": [
+                        null,
+                        43,
+                        42,
+                        41,
+                        40
+                    ],
+                    "sink": 43,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 4,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "sink": 43,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 5,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_tail_recursive"
+                    ],
+                    "entryValues": [
+                        53,
+                        50
+                    ],
+                    "sink": 53,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 5,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 53,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 6,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 60,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 6,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 60,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 7,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_forward"
+                    ],
+                    "entryValues": [
+                        70,
+                        70
+                    ],
+                    "sink": 70,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 7,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 70,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                }
+            ],
+            "rawResultSha256": "3e10745052477a746090d6007325ede101fcd745c1163c2beb22ea26e366a181"
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "status": "PASS_COMPILER_REFERENCE",
+            "versions": {
+                "aarch64-linux-gnu-gcc": "aarch64-linux-gnu-gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+                "aarch64-linux-gnu-objdump": "GNU objdump (GNU Binutils for Ubuntu) 2.42",
+                "readelf": "GNU readelf (GNU Binutils for Ubuntu) 2.42",
+                "llvm-dwarfdump": "Ubuntu LLVM version 18.1.3",
+                "gdb-multiarch": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1",
+                "qemu-aarch64-static": "qemu-aarch64 version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)"
+            },
+            "debuggerSessions": 16,
+            "validator": {
+                "uncorroboratedErrors": 0,
+                "corroboratedFrameDiagnostics": 15
+            },
+            "imageSha256": {
+                "reference": "8c65785297bad5003e9dcf77305c52b17e39fa2ed8e7b3b48d76bde707784d68",
+                "input": "4e8dd09bdb50cfd86fd61bfd78d5651d7fa08ce1e49effa9db8fbc1a9c8b0258"
+            },
+            "runtime": [
+                {
+                    "scenario": 0,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        11,
+                        10
+                    ],
+                    "sink": 11,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 0,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null,
+                        null
+                    ],
+                    "sink": 11,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 1,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_tail_middle",
+                        "cs_tail_first"
+                    ],
+                    "entryValues": [
+                        23,
+                        21,
+                        20
+                    ],
+                    "sink": 23,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 1,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 23,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 2,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 34,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 2,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 34,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 3,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 36,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 3,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 36,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 4,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_recursive"
+                    ],
+                    "entryValues": [
+                        null,
+                        43,
+                        42,
+                        41,
+                        40
+                    ],
+                    "sink": 43,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 4,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "sink": 43,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 5,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_tail_recursive"
+                    ],
+                    "entryValues": [
+                        53,
+                        50
+                    ],
+                    "sink": 53,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 5,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 53,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 6,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 60,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 6,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 60,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 7,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_forward"
+                    ],
+                    "entryValues": [
+                        70,
+                        70
+                    ],
+                    "sink": 70,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                },
+                {
+                    "scenario": 7,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 70,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": [
+                        "warning: BFD: warning: system-supplied DSO at <vdso-address> has a corrupt string table index"
+                    ]
+                }
+            ],
+            "rawResultSha256": "6a2c760870574f9b88c49fe1592daf98d7107600cac9143a4eabde911ad4b80f"
+        },
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "status": "PASS_COMPILER_REFERENCE",
+            "versions": {
+                "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+                "objdump": "GNU objdump (GNU Binutils for Ubuntu) 2.42",
+                "readelf": "GNU readelf (GNU Binutils for Ubuntu) 2.42",
+                "llvm-dwarfdump": "Ubuntu LLVM version 18.1.3",
+                "gdb": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1"
+            },
+            "debuggerSessions": 16,
+            "validator": {
+                "uncorroboratedErrors": 0,
+                "corroboratedFrameDiagnostics": 14
+            },
+            "imageSha256": {
+                "reference": "925fac156bd6423c30793e7ce9f26b22367723e965c5a1bad4a557b6e0bfd419",
+                "input": "44ca7ac04166607e97c23621bb0d0b54c027e71537103aa39653a0eb49ac0761"
+            },
+            "runtime": [
+                {
+                    "scenario": 0,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        11,
+                        10
+                    ],
+                    "sink": 11,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 0,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null,
+                        null
+                    ],
+                    "sink": 11,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 1,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_tail_middle",
+                        "cs_tail_first"
+                    ],
+                    "entryValues": [
+                        23,
+                        21,
+                        20
+                    ],
+                    "sink": 23,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 1,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 23,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 2,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 34,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 2,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 34,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 3,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 36,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 3,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 36,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 4,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_recursive"
+                    ],
+                    "entryValues": [
+                        null,
+                        43,
+                        42,
+                        41,
+                        40
+                    ],
+                    "sink": 43,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 4,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "sink": 43,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 5,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_tail_recursive"
+                    ],
+                    "entryValues": [
+                        53,
+                        50
+                    ],
+                    "sink": 53,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 5,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 53,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 6,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 60,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 6,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 60,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 7,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_forward"
+                    ],
+                    "entryValues": [
+                        70,
+                        70
+                    ],
+                    "sink": 70,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 7,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 70,
+                    "nonzeroLoadBias": false,
+                    "exitCode": 0,
+                    "warnings": []
+                }
+            ],
+            "rawResultSha256": "5ce86272616a662559ac4f2c1d0b2a410adc106f339cd70d10741f8749129d5c"
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "status": "PASS_COMPILER_REFERENCE",
+            "versions": {
+                "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+                "objdump": "GNU objdump (GNU Binutils for Ubuntu) 2.42",
+                "readelf": "GNU readelf (GNU Binutils for Ubuntu) 2.42",
+                "llvm-dwarfdump": "Ubuntu LLVM version 18.1.3",
+                "gdb": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1"
+            },
+            "debuggerSessions": 16,
+            "validator": {
+                "uncorroboratedErrors": 0,
+                "corroboratedFrameDiagnostics": 12
+            },
+            "imageSha256": {
+                "reference": "8e6a309b5ceaea61deb55e2c958a605923e98997531e472fee588585964def21",
+                "input": "b18b5d269edfec777f705b9c5e08d22f59f09243d788923c1323741e78e4c592"
+            },
+            "runtime": [
+                {
+                    "scenario": 0,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        11,
+                        10
+                    ],
+                    "sink": 11,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 0,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null,
+                        null
+                    ],
+                    "sink": 11,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 1,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_tail_middle",
+                        "cs_tail_first"
+                    ],
+                    "entryValues": [
+                        23,
+                        21,
+                        20
+                    ],
+                    "sink": 23,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 1,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 23,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 2,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 34,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 2,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 34,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 3,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 36,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 3,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 36,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 4,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_recursive"
+                    ],
+                    "entryValues": [
+                        null,
+                        43,
+                        42,
+                        41,
+                        40
+                    ],
+                    "sink": 43,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 4,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "sink": 43,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 5,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_tail_recursive"
+                    ],
+                    "entryValues": [
+                        53,
+                        50
+                    ],
+                    "sink": 53,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 5,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 53,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 6,
+                    "mode": "compiler",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 60,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 6,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 60,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 7,
+                    "mode": "compiler",
+                    "tailFrames": [
+                        "cs_forward"
+                    ],
+                    "entryValues": [
+                        70,
+                        70
+                    ],
+                    "sink": 70,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                },
+                {
+                    "scenario": 7,
+                    "mode": "absent",
+                    "tailFrames": [],
+                    "entryValues": [
+                        null
+                    ],
+                    "sink": 70,
+                    "nonzeroLoadBias": true,
+                    "exitCode": 0,
+                    "warnings": []
+                }
+            ],
+            "rawResultSha256": "a39d277a4e7fcd5b0b4e471f79b91770d148076e5782c73417b3743c4ce120c3"
+        }
+    ]
+}

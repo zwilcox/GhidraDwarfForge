@@ -51,7 +51,18 @@ The rebuilt extension excludes `.forge-work`. Hosted Windows/Java 21 and
 Ghidra-emitted artifact/debugger validation remain incomplete. See the call-site plan and committed native-form evidence. The working
 branch incorporates `71352a3` through
 normal merge `6c0e949`; no new worktree was created. See the call-site plan for
-file hashes, expression limitations and the next native acceptance checkpoint.
+file hashes and expression limitations.
+
+**CONFIRMED #117 compiler oracle:** GCC-built ET_EXEC and PIE fixtures pass
+64 GDB sessions on native x86-64 and QEMU AArch64, with disassembly/DWARF graph
+comparison and GNU/LLVM/pinned checker validation. The tests require direct
+tail-chain virtual frames and entry values, while ambiguous and indirect tails
+retain unavailable entry values and no invented intermediate history. Recursion
+and forwarding controls pass; stripped-debug copies lose all virtual frames
+while retaining physical callers. Final runs use the same patched standalone
+validator as CI, cached once locally. Hosted reference steps are wired but not
+run. Ghidra capture, call-site emission and Forge runtime comparisons remain
+unimplemented; see the call-site plan and its compiler-reference receipt.
 
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC

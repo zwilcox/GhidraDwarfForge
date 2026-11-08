@@ -1023,6 +1023,18 @@ jobs:
           python3 src/test/native/validate-call-site-jna.py --profile "$TARGET" \
             --sections "$results/sections" --output "$results/validation"
 
+      - name: Compiler call-site and tail-frame reference controls
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          for role in exec pie; do
+              python3 src/test/integration/call-site-reference.py "$TARGET" \
+                  "build/test-results/call-site-reference/$TARGET-$role" \
+                  --role "$role" --dwarfdump "$DWARFDUMP"
+          done
+
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
 

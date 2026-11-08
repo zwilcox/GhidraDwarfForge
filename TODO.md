@@ -30,9 +30,12 @@
   admission/form cases with readelf/LLVM checks. Production build/packaging pins
   are wired; local packaging controls and workflow lint pass. Standalone JNA and
   independent serialized-form checks pass for five profiles, plus the Gradle smoke
-  and extension build. Next implement compiler references and Ghidra evidence
-  capture. Hosted native/JNA jobs, Windows runtime, Ghidra emission and debugger
-  behavior remain incomplete.
+  and extension build. Compiler references now pass 64 GDB sessions across
+  native x86-64/QEMU AArch64 ET_EXEC/PIE, including positive tail frames and
+  ambiguity/recursion/indirect controls, plus independent structural checks.
+  Next implement Ghidra evidence capture and production emission. Hosted
+  native/JNA/reference jobs, Windows runtime and Forge debugger behavior remain
+  incomplete; the compiler tests alone do not complete #117.
 
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC

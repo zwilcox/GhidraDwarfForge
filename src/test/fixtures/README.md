@@ -1,5 +1,17 @@
 # Integration fixtures
 
+`call-site-reference.c` is the compiler reference for #117. Its harness
+`src/test/integration/call-site-reference.py TARGET OUTPUT --role exec|pie
+--dwarfdump TOOL` validates compiler DWARF and stripped-debug controls on native
+x86-64 and QEMU AArch64. Eight runtime scenarios cover ordinary calls, direct
+tail chains, both ambiguous branch outcomes, ordinary/optimized recursion,
+an unresolved indirect tail and a forwarding function. The harness checks actual
+machine transfers, virtual versus physical frames, entry values, unavailable
+values, runtime PIE bias, deterministic compilation and unchanged target bytes.
+The forwarding function is not automatically a Ghidra thunk. See
+`docs/CALL-SITE-PLAN.md` for the measured compiler/debugger versions and the
+remaining production-export acceptance work.
+
 `runtime-relocations.c` creates ordinary and clustered relative dynamic
 relocations, including a PLT call. Its independent inventory harness builds
 x86-64/AArch64 executable, PIE and shared-object variants with retained link
