@@ -1,5 +1,9 @@
 # Call-site and tail-call metadata — issue #117
 
+See [the development usage and scope notes](CALL-SITES.md) for debugger commands,
+current proof bounds and unavailable-value behavior. Installed acceptance is
+still pending; those notes are not a released support claim.
+
 **CONFIRMED recovered-plan structural and 64-case local runtime validation; packaged/hosted acceptance incomplete:** this plan preserves all six acceptance items in
 [issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117). The normal
 headless/UI script is now connected to call-site recovery and compiles, but its
