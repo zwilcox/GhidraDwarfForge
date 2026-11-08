@@ -180,6 +180,45 @@ follow the repository's actual protection rules. Do not confuse this platform
 limitation with missing user authorization. Treat release publication according
 to its task scope rather than bundling it into routine PR integration.
 
+### 6.2 Storage budget and cleanup — user-approved 2026-11-08
+
+These rules apply to local agent work, including reviews and downloads. See
+[docs/STORAGE.md](docs/STORAGE.md) for commands, accounting and limitations.
+
+- Keep the main repository and at most **one** additional active worktree.
+  Reuse it; new worktrees belong in `.forge-work/scratch/worktree`. Before
+  removal, verify tracked/untracked changes and preservation of all commits.
+  Never delete a branch, analyst input, or uncommitted work as routine cleanup.
+- Use the primary checkout's `.forge-work` workspace. Budgets are **20 GiB**
+  scratch/build data, **10 GiB** shared caches/tools, and **5 GiB** retained
+  evidence. Existing repository build outputs and registered worktrees count
+  toward scratch; explicitly register legacy evidence/cache directories too.
+- Run local builds, integration tests, artifact downloads and extraction through
+  `python3 support/storage-guard.py run -- COMMAND`. Run `status` before work
+  and include usage in progress/handoff reports. No heavy command may launch
+  with less than **50 GiB free** on an accounted filesystem or an exceeded budget.
+- Do not bypass a refusal by running unguarded, changing limits, creating a new
+  workspace, or moving accumulation to another disk. Stop and explain the actual
+  requirement before requesting a user-approved budget change.
+- Do not use `/dev/shm` for project checkouts, builds, downloads or evidence.
+  Do not start detached workers/daemons from the guard; use Gradle `--no-daemon`.
+  Honor the shared cache/temp paths supplied by the launcher. Put toolchains
+  in its cache, downloads in scratch, and selected final evidence in evidence.
+- Plan peak download **plus extraction** space before launching. Monitoring is
+  a soft guard, not a quota or filesystem sandbox; commands must keep their
+  writes in accounted paths. A hard ceiling requires a separately configured
+  filesystem quota, which is not currently installed by this repository.
+- After a task, remove owned disposable intermediate/download files; keep
+  concise reports, hashes and CI links plus only selected bounded evidence.
+  Do not retain full artifact copies for every PR revision and main push.
+  Never blindly clean ignored paths that may contain user work. The guard
+  automatically removes only the per-run temporary directory it created.
+- After integration, review and retire the extra worktree and superseded
+  owned outputs. Share caches across tasks. Clean up while below budget,
+  not only after the filesystem fills. Keep the feature goal paused while
+  the user is addressing storage; a storage-maintenance request does not
+  implicitly resume feature development.
+
 ## 7. Native/JNA rules
 
 Native ABI mistakes can terminate the entire Ghidra JVM. Native stability is a P0 release blocker.

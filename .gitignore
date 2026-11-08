@@ -28,3 +28,6 @@ hs_err_pid*.log
 
 # Local headless-test projects
 .ghidra-test/
+
+# Bounded local development workspace (see docs/STORAGE.md)
+.forge-work/

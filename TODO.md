@@ -1,5 +1,23 @@
 # TODO.md — GhidraDwarfForge
 
+## Storage maintenance — 2026-11-08
+
+- **CONFIRMED:** the user reactivated feature goal #115 → #117 → #120 after
+  storage maintenance. #115 is merged as `71352a3` with its final full/performance
+  gates passing. #117 has a [complete acceptance plan](docs/CALL-SITE-PLAN.md),
+  but no implementation or runtime claim yet; #120 follows it.
+- **CONFIRMED:** local storage policy and monitored launcher are implemented;
+  see [STORAGE.md](docs/STORAGE.md) and AGENTS.md section 6.2. Tiny isolated tests
+  cover launch refusal, live growth, process-group stopping, cleanup and accounting.
+  No exporter build, hosted CI run, download or feature work is part of this change.
+- **CONFIRMED outstanding cleanup:** the external agent-artifact directory is
+  approximately 116 GiB, above the 5 GiB evidence budget. It is registered in
+  `.forge-work/config.json`; do not bypass the resulting guard refusal. Review
+  and retire the backlog with the user before resuming heavy commands.
+- **PLANNED, not configured:** a filesystem quota for a hard ceiling. The
+  implemented monitoring can overshoot and does not contain arbitrary writes.
+
+
 **CONFIRMED AArch64 vector-storage integration:** PR #123 passes both complete
 hosted gates at `8b6749e3`, separate package/raw/runtime/both-host review, and
 normal protected merge `3a60eab` with the same tree. Fresh uploaded-artifact

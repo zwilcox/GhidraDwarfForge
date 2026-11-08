@@ -1,5 +1,32 @@
 # PROJECT_CONTEXT.md — GhidraDwarfForge
 
+## Storage recovery and bounded local workflow — 2026-11-08
+
+**CONFIRMED:** the user paused feature development after excessive agent-created
+worktrees and retained build/CI data exhausted storage. The user removed the old
+worktree directory, the main checkout's approximately 131 GiB build directory,
+and approximately 16 GiB of project files from `/dev/shm`. Do not recreate them.
+
+**CONFIRMED:** the user approved a main checkout plus one active worktree, 20 GiB
+scratch/build, 10 GiB shared caches/tools, 5 GiB retained evidence, and 50 GiB free
+space before heavy work. `support/storage-guard.py` provides preflight, periodic
+monitoring, a single-command lock, shared cache/temp paths and process-group
+stopping. This is a soft guard, not an installed filesystem quota or sandbox.
+See [storage policy](docs/STORAGE.md) and AGENTS.md section 6.2.
+
+**CONFIRMED remaining backlog:** the external
+`/mnt/external_drive/GhidraDwarfForge-agent-artifacts` directory measured 116 GiB
+and is registered locally against the same evidence budget. It was not deleted
+or moved. Heavy commands must refuse while this legacy backlog exceeds the
+budget. The user subsequently reactivated the main feature goal. #115 is confirmed
+merged through PR189 (`71352a3`), with all sixteen final main-workflow jobs and
+all five performance jobs passing. The merge tree equals the retained tested
+`work/multifile-source` tree. #117 is now in read-only preparation; see
+[CALL-SITE-PLAN.md](docs/CALL-SITE-PLAN.md). Heavy execution remains refused pending
+the external-evidence cleanup decision. #120 has not started. These observations
+do not reinterpret the older historical feature notes below.
+
+
 **CONFIRMED AArch64 vector-storage integration:** PR #123 passes both complete
 hosted gates at `8b6749e3`, separate package/raw/runtime/both-host review, and
 normal protected merge `3a60eab` with the same tree. Fresh uploaded-artifact
