@@ -1,0 +1,199 @@
+{
+    "head": "d701e2b9bf3b849b94e6d496f5b1ec6e85970312",
+    "run": 42432375106,
+    "artifact": 13603625596,
+    "archiveSha256": "6c0f639758e4640a3907ae4af341d1c55862b46fd1beb7b79e8f05062dce5c19",
+    "scope": "Three measured pairs plus warmups per size. Small-sample observations, not statistical significance or a general performance guarantee.",
+    "benchmarks": [
+        {
+            "functions": 1000,
+            "samples": 8,
+            "jarSha256": "e58169211d329fb3eb82ccfd8a610a7d967e2705662b35277661624034022e39",
+            "medians": {
+                "single": {
+                    "exportSeconds": 6.8,
+                    "peakResidentKiB": 407556,
+                    "symbolLoadSeconds": 0.001838715,
+                    "allFunctionLookupSeconds": 0.02365015,
+                    "scatteredListingSeconds": 0.014465851,
+                    "fileQualifiedBreakpointsSeconds": 0.006278365
+                },
+                "multi": {
+                    "exportSeconds": 7.13,
+                    "peakResidentKiB": 423720,
+                    "symbolLoadSeconds": 0.001850809,
+                    "allFunctionLookupSeconds": 0.032104614,
+                    "scatteredListingSeconds": 0.014826911,
+                    "fileQualifiedBreakpointsSeconds": 0.006679723
+                }
+            },
+            "comparisons": {
+                "exportSeconds": {
+                    "pairedMultiOverSingle": [
+                        1.0258992805755396,
+                        1.053191489361702,
+                        1.0558823529411765
+                    ],
+                    "observation": "observed regression",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                },
+                "peakResidentKiB": {
+                    "pairedMultiOverSingle": [
+                        1.0396608073491742,
+                        1.0519190624806234,
+                        1.0094456407535708
+                    ],
+                    "observation": "observed regression",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                },
+                "symbolLoadSeconds": {
+                    "pairedMultiOverSingle": [
+                        1.0065774195565924,
+                        1.0099012511411212,
+                        1.0101218257942433
+                    ],
+                    "observation": "observed regression",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                },
+                "allFunctionLookupSeconds": {
+                    "pairedMultiOverSingle": [
+                        1.337139778338537,
+                        1.3574803542472245,
+                        1.3475436970184953
+                    ],
+                    "observation": "observed regression",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                },
+                "scatteredListingSeconds": {
+                    "pairedMultiOverSingle": [
+                        1.021124509024737,
+                        1.0380652226474643,
+                        1.0237533327247994
+                    ],
+                    "observation": "observed regression",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                },
+                "fileQualifiedBreakpointsSeconds": {
+                    "pairedMultiOverSingle": [
+                        1.0552899856794637,
+                        1.0464997284157922,
+                        1.0650530830877147
+                    ],
+                    "observation": "observed regression",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                }
+            },
+            "sizes": {
+                "single": {
+                    "sidecarBytes": 229208,
+                    "sourceBytesIncludingIndexAndManifest": 655715,
+                    "totalArtifactBytes": 884923,
+                    "files": 2,
+                    "largestSourceFileBytes": 655715
+                },
+                "multi": {
+                    "sidecarBytes": 229736,
+                    "sourceBytesIncludingIndexAndManifest": 762371,
+                    "totalArtifactBytes": 992107,
+                    "files": 13,
+                    "largestSourceFileBytes": 557007
+                }
+            }
+        },
+        {
+            "functions": 10000,
+            "samples": 8,
+            "jarSha256": "e58169211d329fb3eb82ccfd8a610a7d967e2705662b35277661624034022e39",
+            "medians": {
+                "single": {
+                    "exportSeconds": 23.39,
+                    "peakResidentKiB": 1084852,
+                    "symbolLoadSeconds": 0.016436199,
+                    "allFunctionLookupSeconds": 0.247076154,
+                    "scatteredListingSeconds": 0.11443929,
+                    "fileQualifiedBreakpointsSeconds": 0.009318678
+                },
+                "multi": {
+                    "exportSeconds": 23.29,
+                    "peakResidentKiB": 1310852,
+                    "symbolLoadSeconds": 0.01650666,
+                    "allFunctionLookupSeconds": 0.322826017,
+                    "scatteredListingSeconds": 0.066824959,
+                    "fileQualifiedBreakpointsSeconds": 0.009219274
+                }
+            },
+            "comparisons": {
+                "exportSeconds": {
+                    "pairedMultiOverSingle": [
+                        1.0038477982043608,
+                        1.0134899912967799,
+                        0.9910371318822022
+                    ],
+                    "observation": "mixed/inconclusive",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                },
+                "peakResidentKiB": {
+                    "pairedMultiOverSingle": [
+                        1.2834528485883363,
+                        1.397363431712526,
+                        0.9218621526254273
+                    ],
+                    "observation": "mixed/inconclusive",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                },
+                "symbolLoadSeconds": {
+                    "pairedMultiOverSingle": [
+                        1.0262605119346635,
+                        1.0069763233986293,
+                        0.9944020478903951
+                    ],
+                    "observation": "mixed/inconclusive",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                },
+                "allFunctionLookupSeconds": {
+                    "pairedMultiOverSingle": [
+                        1.3119395372541496,
+                        1.3000802416569914,
+                        1.298648245895303
+                    ],
+                    "observation": "observed regression",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                },
+                "scatteredListingSeconds": {
+                    "pairedMultiOverSingle": [
+                        0.5830413653204725,
+                        0.5865396202537871,
+                        0.5877502298380215
+                    ],
+                    "observation": "observed reduction",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                },
+                "fileQualifiedBreakpointsSeconds": {
+                    "pairedMultiOverSingle": [
+                        1.0004115390616566,
+                        0.9927988016256972,
+                        0.972750603506335
+                    ],
+                    "observation": "mixed/inconclusive",
+                    "scope": "Small-sample observation, not statistical significance or a general performance guarantee."
+                }
+            },
+            "sizes": {
+                "single": {
+                    "sidecarBytes": 2152080,
+                    "sourceBytesIncludingIndexAndManifest": 6446895,
+                    "totalArtifactBytes": 8598975,
+                    "files": 2,
+                    "largestSourceFileBytes": 6446895
+                },
+                "multi": {
+                    "sidecarBytes": 2143216,
+                    "sourceBytesIncludingIndexAndManifest": 7511899,
+                    "totalArtifactBytes": 9655115,
+                    "files": 85,
+                    "largestSourceFileBytes": 5451311
+                }
+            }
+        }
+    ]
+}

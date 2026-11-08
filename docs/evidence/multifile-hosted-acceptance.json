@@ -1,0 +1,145 @@
+{
+    "status": "IMPLEMENTATION_VALIDATED_PROTECTED_INTEGRATION_PENDING",
+    "head": "d701e2b9bf3b849b94e6d496f5b1ec6e85970312",
+    "fullRun": 42432375106,
+    "performanceRun": 42432375119,
+    "receipts": [
+        {
+            "path": "hosted-d701e2b-package-audit.json",
+            "sha256": "44b10c2c9575b19ebe596a67947c6bcd9bd2814dbc522b23b9a780365204347b",
+            "bytes": 7212
+        },
+        {
+            "path": "hosted-d701e2b-formatters-audit.json",
+            "sha256": "43993fcf929f9b51b47d02e08bcaa415429d546f3950715d48c3bcb949cb931a",
+            "bytes": 3592
+        },
+        {
+            "path": "hosted-d701e2b-windows-multifile-audit.json",
+            "sha256": "78dc18bc49420452fe2473f4c1ff3e3fc21a2d676f642be7b4b5d1440a002062",
+            "bytes": 1098
+        },
+        {
+            "path": "windows-gui-consumer-d701e2b/receipt.json",
+            "sha256": "baf2d11f713f1d5ddbd600f62ae25e75bb177dca70048b33039f45c99bedac78",
+            "bytes": 66452
+        },
+        {
+            "path": "hosted-d701e2b-attachment-audit.json",
+            "sha256": "9cec5acee87a24120743487e0c2f32efa95e96c16bbfdb3a48a1a36f99ca9b46",
+            "bytes": 6993
+        },
+        {
+            "path": "hosted-d701e2b-performance-audit.json",
+            "sha256": "1241dbea3de85f289d31b74d7149cba287c258288a53e6a60bb75a5810650a3f",
+            "bytes": 64119
+        },
+        {
+            "path": "hosted-d701e2b-mips32le-audit.json",
+            "sha256": "0fabc6feb497189304135d98358f5e70afe3525c8deef01cd2bcc2d3f8caf1fe",
+            "bytes": 723
+        },
+        {
+            "path": "hosted-d701e2b-mips32be-audit.json",
+            "sha256": "5840802a28fe1a90dc0d392c60f25999b703ed5e30ed2f1c250725ec0fb29439",
+            "bytes": 747
+        },
+        {
+            "path": "hosted-d701e2b-mips32be-lifecycle/source-edge-audit.json",
+            "sha256": "d058696cf17b424fb047f9cbb87553a5460e4a4264a86976751af641a766af54",
+            "bytes": 1298
+        },
+        {
+            "path": "hosted-d701e2b-mips32le-lifecycle/source-edge-audit.json",
+            "sha256": "a3d9333b06d847cd6519cb49977fad85ba71efcd6291f8adba50cc0b267b995d",
+            "bytes": 1720
+        },
+        {
+            "path": "hosted-d701e2b-arm32-audit.json",
+            "sha256": "dead056180b26a525b47563ba27067dc5c660ea5b818b857a63eee32df73be6a",
+            "bytes": 730
+        },
+        {
+            "path": "hosted-d701e2b-x86_64-review/target-source-audit.json",
+            "sha256": "556ee01c0ded27fb6f610d908e7b9dcc0ae067def62920efdc57b29cd3b1e425",
+            "bytes": 4166
+        },
+        {
+            "path": "hosted-d701e2b-x86_64-review/semantic-benchmark-audit.json",
+            "sha256": "e301f6dce6d9750fd5f89fa6e0fa28c9e2b11fea42fa57ce996dbec013061e6b",
+            "bytes": 10762
+        },
+        {
+            "path": "hosted-d701e2b-x86_64-review/gap-audit.json",
+            "sha256": "26866b4c1238e404a188feb5b4966ebc0f654b8058468bfe25de734565c5d6ed",
+            "bytes": 1377
+        },
+        {
+            "path": "hosted-d701e2b-x86_64-review/source-edge-audit.json",
+            "sha256": "09747be76ccf85366b10778c9e01e103b651c012f32041a19972da0bf4e3945f",
+            "bytes": 1716
+        },
+        {
+            "path": "hosted-d701e2b-x86_64-review/build-id-refresh-audit.json",
+            "sha256": "f5be6c990c7d24366c5daea3963e5fab7e6d3a91d1baea987aac910667d86aa7",
+            "bytes": 2277
+        },
+        {
+            "path": "hosted-d701e2b-aarch64-review/target-source-audit.json",
+            "sha256": "253e827087c3054778f287583943c1f50e4ab0598371d341eab2fc5e1b35faeb",
+            "bytes": 4178
+        },
+        {
+            "path": "hosted-d701e2b-aarch64-review/semantic-benchmark-audit.json",
+            "sha256": "b36be968acc56bc808780d9675dffe8d1b058ac9be223b085855fbe3ad1630fb",
+            "bytes": 2183
+        },
+        {
+            "path": "hosted-d701e2b-aarch64-review/gap-audit.json",
+            "sha256": "a05aa7f10dbad416c62fe3f127607b5dcc89d1541e8cc224cd151bb25cdff8d0",
+            "bytes": 1378
+        },
+        {
+            "path": "hosted-d701e2b-aarch64-review/source-edge-audit.json",
+            "sha256": "58e6dad51cd40bf374584d6d37230f334542228fe0b852d8a1b0c89456f8db8a",
+            "bytes": 1718
+        }
+    ],
+    "remaining": [
+        "Required validation on the final documentation head",
+        "Ordinary protected integration of PR189"
+    ],
+    "subsequentIssues": [
+        117,
+        120
+    ],
+    "targetArtifacts": {
+        "x86_64": {
+            "job": 128588573300,
+            "artifact": 13603625596,
+            "archiveSha256": "6c0f639758e4640a3907ae4af341d1c55862b46fd1beb7b79e8f05062dce5c19"
+        },
+        "aarch64": {
+            "job": 128588573248,
+            "artifact": 13603033126,
+            "archiveSha256": "32d6f3f3508563cc5e39c4eecb30e7834b01451b785ea793ca3c0bd4c468ab6d"
+        }
+    },
+    "requiredValidation": {
+        "job": 128623795323,
+        "conclusion": "success",
+        "head": "d701e2b9bf3b849b94e6d496f5b1ec6e85970312"
+    },
+    "scope": "Implementation revision 52358db validated in hosted head d701e2b; all seven issue115 requirements reviewed. Final documentation gate and protected merge are separate.",
+    "fullRunUrl": "https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42432375106",
+    "performanceRunUrl": "https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42432375119",
+    "evidenceDirectory": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile",
+    "completedTargetJobs": {
+        "x86_64": 128588573300,
+        "aarch64": 128588573248,
+        "arm32": 128588573255,
+        "mips32be": 128588573246,
+        "mips32le": 128588573284
+    },
+    "liveTargetJobs": {}
+}

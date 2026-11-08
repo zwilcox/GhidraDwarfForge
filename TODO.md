@@ -15,17 +15,26 @@ all 16 jobs in run `42394809285` passed. Final raw artifact review covers all
 five targets and native Windows production/transported consumers; the merge
 retains the tested tree. The formatter checkpoint notes below are historical.
 
-**CONFIRMED local #115 implementation and audited evidence; hosted acceptance
-pending:** optional deterministic source partitioning preserves one CU/canonical
-type graph and the single-file default. The current
-[seven-item acceptance audit](docs/MULTIFILE-ACCEPTANCE.md) identifies the actual
-code, local proof and remaining hosted gates. Fourteen archives, 27 semantic/target
-case records, 31 retained result records and the latest runtime's three-class
-attachment delta have been checked. Earlier checkpoint notes below retain their
-historical scope and then-pending lists; they are not the current remaining-work
-list. Final-head Linux/Windows/architecture jobs, privileged attachment evidence,
-corrected Windows performance controls, raw artifact review and protected
-integration remain required. #115 is not complete; #117/#120 have not started.
+**CONFIRMED #115 implementation and hosted acceptance:** optional deterministic
+source partitioning preserves one CU/canonical type graph and the single-file
+default. The [seven-item acceptance audit](docs/MULTIFILE-ACCEPTANCE.md) records
+local and final hosted proof for production revision `52358db` in head `d701e2b`.
+All sixteen jobs in [run 42432375106](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42432375106),
+including `required-validation`, pass; the separate performance run
+`42432375119` also passes. Raw review covers five target source/DSO matrices,
+lexical/types, discontiguous stepping, publication failures, source failures,
+Windows GUI/transported consumers, privileged attachment and build-ID recovery.
+The [hosted benchmark](docs/evidence/multifile-hosted-benchmark.json) retains
+regressions: at 1,000 functions all measured paired directions worsen; at
+10,000 functions scattered listing improves but all-function lookup regresses,
+with other timing/memory results mixed. Artifact size grows at both sizes.
+
+This is the pre-integration acceptance checkpoint, not a release announcement.
+Final documentation must retain the enforced validation gate, followed by the
+ordinary protected merge of [PR189](https://github.com/zwilcox/GhidraDwarfForge/pull/189).
+Then proceed to #117 and #120, in that order. Their implementation has not started.
+Earlier checkpoint notes below are historical and their pending lists are
+superseded by the acceptance audit.
 
 **CONFIRMED #115 consumer checkpoint:** the actual multi-file GDB companion
 passes eight local original/moved-tree and source-rule ownership cases, including

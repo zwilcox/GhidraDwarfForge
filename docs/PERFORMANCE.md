@@ -491,12 +491,53 @@ from evidence/projects. Optional `--java` selects the runtime explicitly through
 Ghidra's production headless entry point. Local raw evidence is retained under
 `issue115-multifile/benchmark-final-02`; the failed attempt is
 `benchmark-final-01`. [Machine-readable measurements](evidence/multifile-benchmark.json)
-bind the summary, environment and installed module hashes. CI now runs the same
-fixture; hosted benchmark execution remains **PRESENT, UNVERIFIED**.
+bind the summary, environment and installed module hashes. Hosted execution was
+unverified at that local checkpoint; the final hosted results follow.
+
+### Hosted multi-file observations at d701e2b
+
+**CONFIRMED:** final full run `42432375106`, artifact `13603625596`, passes the
+1,000/10,000-function benchmark and its independent raw artifact audit. Each size
+has one warmup plus three measured exports per layout. Source semantics,
+validators, native GDB navigation/runtime checks and deterministic reruns pass.
+The [retained measurements](evidence/multifile-hosted-benchmark.json) include
+medians, every paired ratio and artifact sizes. These results supplement the
+local samples above.
+
+| Functions | Metric | Single median | Multi median | Paired observation |
+| --- | --- | ---: | ---: | --- |
+| 1,000 | Export (s) | 6.800000 | 7.130000 | observed regression |
+| 1,000 | Peak RSS (KiB) | 407556 | 423720 | observed regression |
+| 1,000 | Symbol load (s) | 0.001839 | 0.001851 | observed regression |
+| 1,000 | All-function lookup (s) | 0.023650 | 0.032105 | observed regression |
+| 1,000 | Scattered listing (s) | 0.014466 | 0.014827 | observed regression |
+| 1,000 | File-qualified breakpoints (s) | 0.006278 | 0.006680 | observed regression |
+| 10,000 | Export (s) | 23.390000 | 23.290000 | mixed/inconclusive |
+| 10,000 | Peak RSS (KiB) | 1084852 | 1310852 | mixed/inconclusive |
+| 10,000 | Symbol load (s) | 0.016436 | 0.016507 | mixed/inconclusive |
+| 10,000 | All-function lookup (s) | 0.247076 | 0.322826 | observed regression |
+| 10,000 | Scattered listing (s) | 0.114439 | 0.066825 | observed reduction |
+| 10,000 | File-qualified breakpoints (s) | 0.009319 | 0.009219 | mixed/inconclusive |
+
+All six paired directions worsen at 1,000 functions. At 10,000, scattered listing
+improves while all-function lookup worsens; export, RSS, symbol-load and
+file-qualified-breakpoint directions are mixed. Total artifact bytes grow from
+884,923 to 992,107 and from 8,598,975 to 9,655,115. The largest multi-file source
+part remains 557,007 and 5,451,311 bytes because the declaration catalog is
+indivisible. No statistical significance, hard file-size bound or general
+navigation speedup is claimed.
 
 ## Historical performance baseline directory compatibility
 
-**CONFIRMED local diagnosis; hosted correction unverified:** the optional
+**CONFIRMED hosted correction:** run `42432375119` at `d701e2b` passes Windows
+workloads and Linux validators/GDB. The retained raw review checks twenty
+measured reports plus two profiles, actual artifact hashes and the bounded
+DWARF exception below. SQLite baseline/candidate median times are 78.41/80.96
+seconds; U-Boot times are 183.82/194.82 seconds, retaining its same one-function
+timeout. No speedup or complete-recovery claim follows. See the
+[hosted acceptance audit](MULTIFILE-ACCEPTANCE.md).
+
+**HISTORICAL diagnosis:** the optional
 performance workflow still measures against pinned `1bb4c14`, with its separately
 audited array correction. That baseline predates `75860c6`, which adds the
 synthetic source directory as `DW_AT_comp_dir` to prevent a perf source-lookup
@@ -542,7 +583,8 @@ Validation rehearsals also exposed a missing stderr capture and a stale private
 source timestamp relative to the baseline sidecar. Those attempts are retained;
 the final debugger checks select each matching source and its sidecar timestamp,
 without changing target or sidecar bytes. Native Windows and full repeated
-performance acceptance remain pending.
+performance acceptance were still pending at that diagnostic checkpoint; the
+hosted run recorded above subsequently passed.
 
 A fresh Linux import of the same pinned U-Boot corpus also passes one
 baseline/candidate pair: 6,375 functions and 43,408 DIE records. The exact
