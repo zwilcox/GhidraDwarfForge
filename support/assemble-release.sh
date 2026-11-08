@@ -14,6 +14,7 @@ output="$output_parent/$(basename "$4")"
 repository_dir=$(realpath "$(dirname "$0")/..")
 release_version=$(tr -d '\r\n' < "$repository_dir/VERSION")
 pinned_patch_sha256=b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696
+pinned_call_site_patch_sha256=0594de0f49bba5dcec9a37206bbca612bcc430740e87670264e1d3cef26a3714
 
 [[ "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]] || {
     echo "invalid semantic version in VERSION: $release_version" >&2
@@ -23,10 +24,11 @@ pinned_patch_sha256=b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedad
 [[ -d "$linux_input" ]] || { echo "Linux native directory is missing" >&2; exit 1; }
 [[ -d "$windows_input" ]] || { echo "Windows native directory is missing" >&2; exit 1; }
 
-temporary_root=$(mktemp -d -t ghidra-dwarf-forge-release.XXXXXXXX)
+temporary_parent=$(realpath "${TMPDIR:-/tmp}")
+temporary_root=$(mktemp -d -p "$temporary_parent" ghidra-dwarf-forge-release.XXXXXXXX)
 cleanup() {
     case "$temporary_root" in
-        /tmp/ghidra-dwarf-forge-release.*|"${RUNNER_TEMP:-/nonexistent}"/ghidra-dwarf-forge-release.*)
+        "$temporary_parent"/ghidra-dwarf-forge-release.*)
             rm -rf -- "$temporary_root"
             ;;
         *)
@@ -187,6 +189,7 @@ required_compliance_files=(
     "$libdwarf_compliance/licenses/LIBDWARFCOPYRIGHT"
     "$libdwarf_compliance/licenses/LIBDWARFP-COPYING"
     "$libdwarf_compliance/patches/0001-preserve-aarch64-relocation-type.patch"
+    "$libdwarf_compliance/patches/0002-admit-dwarf5-call-site-attributes.patch"
     "$libdwarf_compliance/source/libdwarf-2.3.2.tar.xz"
     "$libdwarf_compliance/SOURCE-SHA256SUMS"
     "$windows_runtime_compliance/PACKAGE-VERSIONS.txt"
@@ -212,43 +215,47 @@ cp -R "$windows_runtime_compliance" "$module/third_party/windows-runtime"
     sha256sum -c RUNTIME-SHA256SUMS
 )
 
-bundled_patch_sha256=$(sha256sum < \
-    "$module/third_party/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch")
-bundled_patch_sha256=${bundled_patch_sha256%% *}
-if [[ $bundled_patch_sha256 != "$pinned_patch_sha256" ]]; then
-    echo 'bundled corresponding-source patch does not match the pinned SHA-256' >&2
-    exit 1
-fi
-for platform in linux_x86_64 win_x86_64; do
-    metadata="$module/os/$platform/BUILD-METADATA.txt"
-    # GNU sha256sum prefixes a record with '\' when its filename is escaped.
-    # Accept that encoding and CRLF metadata, but require the canonical hash.
-    if ! recorded_patch_sha256=$(awk '
-        {
-            sub(/\r$/, "")
-            if ($0 == "source patch SHA-256:") {
-                records++
-                if (getline <= 0) invalid = 1
+patch_names=(0001-preserve-aarch64-relocation-type.patch 0002-admit-dwarf5-call-site-attributes.patch)
+patch_hashes=("$pinned_patch_sha256" "$pinned_call_site_patch_sha256")
+patch_headers=('source patch SHA-256:' 'call-site source patch SHA-256:')
+for patch_index in "${!patch_names[@]}"; do
+    bundled_patch_sha256=$(sha256sum < "$module/third_party/libdwarf/patches/${patch_names[$patch_index]}")
+    bundled_patch_sha256=${bundled_patch_sha256%% *}
+    if [[ $bundled_patch_sha256 != "${patch_hashes[$patch_index]}" ]]; then
+        echo 'bundled corresponding-source patch does not match the pinned SHA-256' >&2
+        exit 1
+    fi
+    for platform in linux_x86_64 win_x86_64; do
+        metadata="$module/os/$platform/BUILD-METADATA.txt"
+        # GNU sha256sum prefixes a record with '\' when its filename is escaped.
+        # Accept that encoding and CRLF metadata, but require the canonical hash.
+        if ! recorded_patch_sha256=$(awk -v marker="${patch_headers[$patch_index]}" '
+            {
                 sub(/\r$/, "")
-                sub(/^\\/, "")
-                hash = substr($0, 1, 64)
-                separator = substr($0, 65, 2)
-                if (length(hash) != 64 || hash ~ /[^0-9a-f]/ || length($0) <= 66 ||
-                        (separator != "  " && separator != " *")) invalid = 1
+                if ($0 == marker) {
+                    records++
+                    if (getline <= 0) invalid = 1
+                    sub(/\r$/, "")
+                    sub(/^\\/, "")
+                    hash = substr($0, 1, 64)
+                    separator = substr($0, 65, 2)
+                    if (length(hash) != 64 || hash ~ /[^0-9a-f]/ || length($0) <= 66 ||
+                            (separator != "  " && separator != " *")) invalid = 1
+                }
             }
-        }
-        END {
-            if (records != 1 || invalid) exit 1
-            print hash
-        }
-    ' "$metadata"); then
-        echo "invalid source patch SHA-256 record in $platform BUILD-METADATA.txt" >&2
-        exit 1
-    fi
-    if [[ $recorded_patch_sha256 != "$bundled_patch_sha256" ]]; then
-        echo "$platform patch SHA-256 does not match bundled corresponding source" >&2
-        exit 1
-    fi
+            END {
+                if (records != 1 || invalid) exit 1
+                print hash
+            }
+        ' "$metadata"); then
+            echo "invalid source patch SHA-256 record in $platform BUILD-METADATA.txt" >&2
+            exit 1
+        fi
+        if [[ $recorded_patch_sha256 != "$bundled_patch_sha256" ]]; then
+            echo "$platform patch SHA-256 does not match bundled corresponding source" >&2
+            exit 1
+        fi
+    done
 done
 
 {
@@ -258,6 +265,7 @@ done
     echo "libdwarf-source-commit=af7b278c6aa2ae9daad94fb7f8bffdc0e9980993"
     echo "libdwarf-archive-sha256=7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd"
     echo "libdwarf-patch-sha256=$pinned_patch_sha256"
+    echo "libdwarf-call-site-patch-sha256=$pinned_call_site_patch_sha256"
     echo "host-platforms=linux_x86_64,win_x86_64"
 } > "$module/RELEASE-MANIFEST.txt"
 

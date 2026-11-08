@@ -162,3 +162,27 @@ The reusable native install occupies approximately 7 MiB in the shared cache.
 The temporary source/build tree was retired after verification; scratch returned
 to approximately 23 MiB. Selected receipts and command results are retained,
 without a duplicate native/source artifact archive.
+
+## Native pipeline and package wiring — 2026-11-08
+
+**PRESENT, hosted execution unverified:** all four native builds now verify and
+apply patch 0002 after patch 0001. Linux runs the 15 form/serialization cases;
+Windows compiles and executes all 15 API-admission modes. Both metadata records
+identify each patch separately. Release assembly requires both pinned patches,
+matches their hashes to both platform metadata files and includes both in the
+corresponding-source payload and release manifest.
+
+**CONFIRMED local controls:** workflow lint and the guarded release-package suite
+pass. Ten added negative cases independently exercise missing, malformed,
+duplicated and mismatched call-site patch records on both platform inputs, and
+missing/changed corresponding-source patch files. Existing release ZIPs survive
+rejection; positive checks cover deterministic ZIPs, manifests, CRLF/escaped
+Windows metadata and executable launcher/supervisor modes. See the
+[packaging receipt](evidence/call-site-packaging.json). These are synthetic native
+package fixtures, not execution of Windows DLLs.
+
+The assembler and test now honor the guard's temporary parent during cleanup.
+The old timestamp assertion incorrectly matched zipinfo's archive-path header
+when that path contained the repository name; it now inspects actual ZIP entry
+timestamps. No timestamp requirement was relaxed. JNA, hosted integration and
+all Ghidra/GDB acceptance work remain incomplete.

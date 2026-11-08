@@ -2,15 +2,18 @@
 
 Production native builds are pinned to the official libdwarf 2.3.2 release.
 
-**PRESENT, not integrated into production native builds:**
+**PRESENT; hosted integration unverified:**
 `patches/0002-admit-dwarf5-call-site-attributes.patch` is the issue #117 candidate
 for producer attribute admission. Its SHA-256 is
 `0594de0f49bba5dcec9a37206bbca612bcc430740e87670264e1d3cef26a3714`.
 Applied after patch 0001 to the verified release archive, it passes the Linux
 x86-64 ABI probe and 15 isolated admission/form cases, including independent
 readelf/LLVM checks. See `docs/CALL-SITE-PLAN.md` and its evidence record.
-The current CI/release contract still applies only patch 0001; integrating and
-pinning patch 0002 on both native hosts remains required before exporter use.
+The CI/release contract now pins and applies both patches to primary and
+comparison native builds on both hosts. Linux runs independent form checks;
+Windows runs all 15 API admission cases. These new hosted jobs have not yet run.
+Local release-package controls reject missing/mismatched patch provenance and
+source on both platform inputs; they do not establish Windows runtime behavior.
 
 | Field | Value |
 |---|---|
@@ -54,9 +57,9 @@ from this pinned source. It passes only the primary reviewed artifacts to
 deterministic release assembly and does not commit opaque native binaries to
 the source tree.
 
-Both builds apply the repository-owned patch
-`patches/0001-preserve-aarch64-relocation-type.patch`. libdwarf 2.3.2's private
-producer attribute structure stores `R_AARCH64_ABS32` (258) and
+Both builds apply the repository-owned patches in numeric order.
+`patches/0001-preserve-aarch64-relocation-type.patch` fixes relocation width and
+string ownership. libdwarf 2.3.2's private producer attribute structure stores `R_AARCH64_ABS32` (258) and
 `R_AARCH64_ABS64` (257) in a `Dwarf_Ubyte`, truncating those values and breaking
 `DW_FORM_strp` output for AArch64. The patch widens that private field to `int`,
 matching the internal relocation fields it is compared against.
@@ -72,7 +75,7 @@ release bundles the exact patch with the upstream source archive.
 Git attributes force the patch to LF on every checkout host. All four primary
 and comparison builds verify its pinned SHA-256 before applying it. Release
 assembly also requires the bundled patch to match that pin and each platform's
-single recorded patch hash. Windows metadata may use CRLF lines and GNU
+separately labeled recorded patch hashes. Windows metadata may use CRLF lines and GNU
 checksum filename escaping; those encodings do not change the required hash.
 
 The Windows CI build writes `BUILD-METADATA.txt` beside its DLL artifact with

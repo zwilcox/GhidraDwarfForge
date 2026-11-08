@@ -27,9 +27,10 @@
   **CONFIRMED stock reproduction:** the compiled probe's control passes, and
   all five call-site attribute modes fail with `DW_DLE_INPUT_ATTR_BAD (143)`.
   **CONFIRMED local candidate:** patch 0002 passes the Linux ABI probe and 15
-  admission/form cases with readelf/LLVM checks. Next integrate its production
-  build/packaging pins and validate the JNA path before exporter use. Windows,
-  runtime debugger behavior and full call-site acceptance remain incomplete.
+  admission/form cases with readelf/LLVM checks. Production build/packaging pins
+  are wired; local packaging controls and workflow lint pass. Next validate the
+  standalone JNA path and hosted native jobs before exporter use. Windows runtime,
+  debugger behavior and full call-site acceptance remain incomplete.
 
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC

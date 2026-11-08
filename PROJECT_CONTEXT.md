@@ -42,8 +42,9 @@ all five call-site modes fail with `DW_DLE_INPUT_ATTR_BAD (143)`. This is
 **CONFIRMED** producer rejection, not successful call-site export. A separate
 candidate patch 0002 now passes the Linux ABI probe and 15 API/form cases with
 readelf and LLVM verification, including nested entry-value blocks. Production
-patch integration, Windows/JNA and emitted-artifact/debugger validation remain
-planned. See the call-site plan and committed native-form evidence. The working
+workflow/package wiring now includes both patch pins; local release-package
+controls and workflow lint pass. Hosted Windows/JNA and emitted-artifact/debugger
+validation remain incomplete. See the call-site plan and committed native-form evidence. The working
 branch incorporates `71352a3` through
 normal merge `6c0e949`; no new worktree was created. See the call-site plan for
 file hashes, expression limitations and the next native acceptance checkpoint.

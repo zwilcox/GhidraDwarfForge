@@ -17,6 +17,7 @@ env:
   LIBDWARF_ARCHIVE: libdwarf-2.3.2.tar.xz
   LIBDWARF_ARCHIVE_SHA256: 7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd
   LIBDWARF_PATCH_SHA256: b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696
+  LIBDWARF_CALL_SITE_PATCH_SHA256: 0594de0f49bba5dcec9a37206bbca612bcc430740e87670264e1d3cef26a3714
   LIBDWARF_SOURCE_COMMIT: af7b278c6aa2ae9daad94fb7f8bffdc0e9980993
 
 jobs:
@@ -92,6 +93,9 @@ jobs:
           printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
             sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
+          printf '%s\n' "$LIBDWARF_CALL_SITE_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch" |
+            sha256sum -c -
+          patch -p1 --fuzz=0 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" 2>&1 | tee "$result_directory/configure.log"
           make -j"$(nproc)" 2>&1 | tee "$result_directory/make.log"
@@ -121,6 +125,7 @@ jobs:
             "$compliance/licenses/LIBDWARFCOPYRIGHT"
           cp src/lib/libdwarfp/COPYING "$compliance/licenses/LIBDWARFP-COPYING"
           cp "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" \
+            "$GITHUB_WORKSPACE/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch" \
             "$compliance/patches/"
           cp "$GITHUB_WORKSPACE/$LIBDWARF_ARCHIVE" "$compliance/source/"
           source_manifest=$(mktemp)
@@ -136,6 +141,8 @@ jobs:
             echo "source archive SHA-256: $LIBDWARF_ARCHIVE_SHA256"
             echo 'source patch SHA-256:'
             sha256sum "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
+            echo 'call-site source patch SHA-256:'
+            sha256sum "$GITHUB_WORKSPACE/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch"
             echo 'configure: --enable-shared --enable-dwarfgen --disable-static'
             gcc --version
             echo 'SHA-256:'
@@ -151,6 +158,9 @@ jobs:
             -o "$result_directory/libdwarf-abi-probe"
           "$result_directory/libdwarf-abi-probe" | tee "$result_directory/abi-probe.log"
 
+          python3 "$GITHUB_WORKSPACE/src/test/native/check-call-site-producer.py" \
+            --prefix "$PWD/install" --output "$result_directory/call-site-forms"
+
           cd "$GITHUB_WORKSPACE"
           mkdir native-linux-rebuild-source native-linux-rebuild
           tar -xf "$LIBDWARF_ARCHIVE" -C native-linux-rebuild-source
@@ -158,6 +168,9 @@ jobs:
           printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
             sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
+          printf '%s\n' "$LIBDWARF_CALL_SITE_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch" |
+            sha256sum -c -
+          patch -p1 --fuzz=0 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" > "$result_directory/rebuild-configure.log" 2>&1
           make -j"$(nproc)" > "$result_directory/rebuild-make.log" 2>&1
@@ -394,6 +407,9 @@ jobs:
           printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
             sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
+          printf '%s\n' "$LIBDWARF_CALL_SITE_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch" |
+            sha256sum -c -
+          patch -p1 --fuzz=0 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" 2>&1 | tee "$result_directory/configure.log"
           make -j"$(nproc)" 2>&1 | tee "$result_directory/make.log"
@@ -503,6 +519,8 @@ jobs:
             echo "source archive SHA-256: $LIBDWARF_ARCHIVE_SHA256"
             echo 'source patch SHA-256:'
             sha256sum "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
+            echo 'call-site source patch SHA-256:'
+            sha256sum "$GITHUB_WORKSPACE/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch"
             echo 'configure: --enable-shared --enable-dwarfgen --disable-static'
             echo 'Windows runtime packages:'
             cat "$runtime_compliance/PACKAGE-VERSIONS.txt"
@@ -524,6 +542,19 @@ jobs:
           "$result_directory/libdwarf-abi-probe.exe" |
             tee "$result_directory/abi-probe.log"
 
+          gcc -std=c11 -Wall -Wextra -Werror \
+            -Isrc/lib/libdwarf -Isrc/lib/libdwarfp \
+            "$GITHUB_WORKSPACE/src/test/native/call-site-producer-probe.c" \
+            -Lsrc/lib/libdwarfp/.libs -Lsrc/lib/libdwarf/.libs -ldwarfp -ldwarf \
+            -o "$result_directory/call-site-producer-probe.exe"
+          for mode in control call-pc return-pc origin parameter value target target-clobbered \
+              data-location data-value block-value block-target block-target-clobbered \
+              block-data-location block-data-value; do
+            PATH="$GITHUB_WORKSPACE/native-windows-out:$PATH" \
+              "$result_directory/call-site-producer-probe.exe" "$mode" |
+              tee "$result_directory/call-site-$mode.log"
+          done
+
           cd "$GITHUB_WORKSPACE"
           mkdir native-windows-rebuild-source native-windows-rebuild
           tar -xf "$LIBDWARF_ARCHIVE" -C native-windows-rebuild-source
@@ -531,6 +562,9 @@ jobs:
           printf '%s\n' "$LIBDWARF_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
             sha256sum -c -
           patch -p1 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
+          printf '%s\n' "$LIBDWARF_CALL_SITE_PATCH_SHA256  $GITHUB_WORKSPACE/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch" |
+            sha256sum -c -
+          patch -p1 --fuzz=0 < "$GITHUB_WORKSPACE/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch"
           ./configure --enable-shared --enable-dwarfgen --disable-static \
             --prefix="$PWD/install" > "$result_directory/rebuild-configure.log" 2>&1
           make -j"$(nproc)" > "$result_directory/rebuild-make.log" 2>&1
@@ -724,6 +758,8 @@ jobs:
           echo "$LIBDWARF_ARCHIVE_SHA256  $module/third_party/libdwarf/source/$LIBDWARF_ARCHIVE" |
             sha256sum -c -
           echo "$LIBDWARF_PATCH_SHA256  $module/third_party/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" |
+            sha256sum -c -
+          echo "$LIBDWARF_CALL_SITE_PATCH_SHA256  $module/third_party/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch" |
             sha256sum -c -
           test -s "$module/THIRD_PARTY_NOTICES.md"
           test -s "$module/ghidra_scripts/GhidraDwarfForge.java"
