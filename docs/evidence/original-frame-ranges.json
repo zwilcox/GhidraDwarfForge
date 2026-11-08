@@ -1,0 +1,555 @@
+{
+    "issue": 112,
+    "status": "CONFIRMED local record/header inventory; ELF qualification, precedence and production integration PLANNED",
+    "sources": {
+        "src/main/java/ghidradwarfforge/unwind/OriginalFrameRanges.java": "aac7ef5b4843b7b8ea817788c504e1136d4d2f906ab22c9a0287a25bb24c90d3",
+        "src/test/java/ghidradwarfforge/unwind/OriginalFrameRangesSmoke.java": "40dc1f43cab2cc4f36b5b6aab965f2f29c4410d5402f6a4820cb8451208d4322",
+        "src/test/integration/original-frame-ranges.py": "213f4152c604e52bf858c6df08ceb8a51d8ba8d885edc57af1cb6a34b3a0c8b3",
+        ".github/workflows/ci.yml": "c1a4bce7e7eb9c3704fc1b598cf8519b9f94c20c19b790555dd6c7544faa0fcb",
+        "build.gradle": "0fa4fc08a58c28882ebe7667d933afbbcfca98ab464247461eb07cbd1ec149f4"
+    },
+    "primarySources": {
+        "DWARF5": {
+            "url": "https://dwarfstd.org/doc/DWARF5.pdf",
+            "sha256": "cc9a9b49163aa7c65923b45ade0df6f5dff5ee50ecf8e5938c03ffbfa06a25e4",
+            "sections": [
+                "6.4.1",
+                "7.24"
+            ]
+        },
+        "GDB15.1": {
+            "url": "https://gnu.googlesource.com/binutils-gdb/+/refs/tags/gdb-15.1-release/gdb/dwarf2/frame.c",
+            "sha256": "de498a8bc417f1c9f2a4979e4358b03b4655663fa70f2faaf76ef0ad75ee689b",
+            "functions": [
+                "read_encoded_value",
+                "decode_frame_entry_1"
+            ]
+        },
+        "existingPinnedAmd64Psabi": {
+            "revision": "e1ce098331da5dbd66e1ffc74162380bcc213236",
+            "sha256": "2d42f2ab76b99a3b8456e6bc07e18314e85991119f72db90ca1175328e27b705"
+        }
+    },
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/original-frame-ranges.tar.gz",
+        "sha256": "d429f1c4f5a1f7e7348588efa3ae4c560c0502a1cfe67a9332a5344009ccf2c3",
+        "bytes": 1662518
+    },
+    "commands": [
+        "./gradlew --init-script build/flow-gradle/init.gradle --project-cache-dir build/flow-gradle/cache originalFrameRangesSmoke callFrameEncoderSmoke buildExtension",
+        "python3 src/test/integration/original-frame-ranges.py build/flow-gradle/output/classes/java build/original-frame-ranges-final --java <Java21>/bin/java --dwarfdump <pinned-validation-bundle>/bin/dwarfdump",
+        "bash src/test/integration/architecture-neutrality.sh",
+        "actionlint .github/workflows/ci.yml"
+    ],
+    "validation": {
+        "componentChecks": 4275,
+        "encoderChecks": 158,
+        "buildExtension": "PASS",
+        "architectureGuard": "PASS",
+        "workflowLint": "PASS",
+        "compilerCases": 12,
+        "independentGnuLlvmRanges": "PASS",
+        "llvmVerify": "PASS",
+        "strict": "PASS with exact inherited EH alignment corroboration against separate byte-identical compiler rebuild",
+        "originalSourcesAndBinariesUnchanged": true,
+        "independentBuildsIdentical": true,
+        "gdb": "NOT RERUN: no emitted or production behavior change; header inventory is not runtime rule certification"
+    },
+    "cases": [
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "section": "debug_frame",
+            "frames": [
+                [
+                    24,
+                    0,
+                    4198400,
+                    23
+                ],
+                [
+                    48,
+                    0,
+                    4198423,
+                    57
+                ],
+                [
+                    104,
+                    0,
+                    4198480,
+                    28
+                ],
+                [
+                    136,
+                    0,
+                    4198508,
+                    54
+                ]
+            ],
+            "originalSha256": "0abcca41e6fb61e4ab6f870e68f1372fd42aefdf9c5084302cbe5e40269d1b17",
+            "sectionSha256": "a1eb6241cdbecc905fc3cd88e4f22448a61f8dfdb756d6f513b3a5781cc97282",
+            "inventorySha256": "ca13b86d04573cb578f659eb4520c0ec6606ea8b701101f7ab4b7aaf994911c2",
+            "strictReportedErrors": 0,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": []
+        },
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "section": "eh_frame",
+            "frames": [
+                [
+                    24,
+                    0,
+                    4198400,
+                    23
+                ],
+                [
+                    44,
+                    0,
+                    4198423,
+                    57
+                ],
+                [
+                    88,
+                    0,
+                    4198480,
+                    28
+                ],
+                [
+                    116,
+                    0,
+                    4198508,
+                    54
+                ]
+            ],
+            "originalSha256": "61680253aaec4c7bb5402bd19d351fd9fc53bfc4361a8e53474acd620cf5bfd9",
+            "sectionSha256": "9508d60b128935be2fa85dfae6e35e9fc4f06b97e05bdeb80330aefa2669a932",
+            "inventorySha256": "ff3550187c2f4be76c17278d4f8c55e3f887ed564f760cf7752b504ed38b5aac",
+            "strictReportedErrors": 4,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": [
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000010, len size=0x00000004, extn size=0x00000000, totl length=0x00000014, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000018. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000028, len size=0x00000004, extn size=0x00000000, totl length=0x0000002c, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x0000002c. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000018, len size=0x00000004, extn size=0x00000000, totl length=0x0000001c, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000058. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000018, len size=0x00000004, extn size=0x00000000, totl length=0x0000001c, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000074. ***"
+            ]
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "section": "debug_frame",
+            "frames": [
+                [
+                    24,
+                    0,
+                    4096,
+                    23
+                ],
+                [
+                    48,
+                    0,
+                    4119,
+                    57
+                ],
+                [
+                    104,
+                    0,
+                    4176,
+                    28
+                ],
+                [
+                    136,
+                    0,
+                    4204,
+                    54
+                ]
+            ],
+            "originalSha256": "9105b5b39bba0a639c013b979918266d97fefa489aa79e71cb30ba4789ef8514",
+            "sectionSha256": "03fd9ee37dfd5dab8b0444656375a007084137c3c50372b8e5b15a0ace2c3c8a",
+            "inventorySha256": "9514abda88a1cd55f3b106352f80c7aced3c34e4b4d661d1c2cbedefefbf9408",
+            "strictReportedErrors": 0,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": []
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "section": "eh_frame",
+            "frames": [
+                [
+                    24,
+                    0,
+                    4096,
+                    23
+                ],
+                [
+                    44,
+                    0,
+                    4119,
+                    57
+                ],
+                [
+                    88,
+                    0,
+                    4176,
+                    28
+                ],
+                [
+                    116,
+                    0,
+                    4204,
+                    54
+                ]
+            ],
+            "originalSha256": "25f2a0823a9a01c75ebeb8b2f0d12e7f6f05f88d71d684caf237390112e88e45",
+            "sectionSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed",
+            "inventorySha256": "09959636ea713d60a71105953d2882c082ebc36becde0cec807d4e13116d7283",
+            "strictReportedErrors": 4,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": [
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000010, len size=0x00000004, extn size=0x00000000, totl length=0x00000014, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000018. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000028, len size=0x00000004, extn size=0x00000000, totl length=0x0000002c, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x0000002c. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000018, len size=0x00000004, extn size=0x00000000, totl length=0x0000001c, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000058. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000018, len size=0x00000004, extn size=0x00000000, totl length=0x0000001c, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000074. ***"
+            ]
+        },
+        {
+            "target": "x86_64",
+            "role": "shared",
+            "section": "debug_frame",
+            "frames": [
+                [
+                    24,
+                    0,
+                    4208,
+                    22
+                ],
+                [
+                    48,
+                    0,
+                    4230,
+                    57
+                ],
+                [
+                    104,
+                    0,
+                    4287,
+                    28
+                ],
+                [
+                    136,
+                    0,
+                    4315,
+                    57
+                ]
+            ],
+            "originalSha256": "ba4ea95137c8cc8dce3ffc4fa3c6606b39f3f65a8d6d95770ccca9382b5de713",
+            "sectionSha256": "c6421ae12bbcc45527ac8ac2c2583d6c152d43beb0ffca5dd9c13b65c8b3430f",
+            "inventorySha256": "d485464403229060a62cb41d8ab365e68731a80773fcd386a14bba592dc5e23b",
+            "strictReportedErrors": 0,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": []
+        },
+        {
+            "target": "x86_64",
+            "role": "shared",
+            "section": "eh_frame",
+            "frames": [
+                [
+                    24,
+                    0,
+                    4208,
+                    22
+                ],
+                [
+                    44,
+                    0,
+                    4230,
+                    57
+                ],
+                [
+                    88,
+                    0,
+                    4287,
+                    28
+                ],
+                [
+                    116,
+                    0,
+                    4315,
+                    57
+                ],
+                [
+                    144,
+                    0,
+                    4096,
+                    64
+                ],
+                [
+                    184,
+                    0,
+                    4160,
+                    48
+                ]
+            ],
+            "originalSha256": "98b135048e170ffa33c51a5bf4d2f3e51d89b7175af3fc6f542f1f5437c4d2ff",
+            "sectionSha256": "a6cf18b8251acf8c411f217824bf60c17b6218ab4ad89f195d21785e160a0a29",
+            "inventorySha256": "dc10f99b7168b8573347d19847eb95b2378cc4b1eeb1036f99241f3b483c3785",
+            "strictReportedErrors": 5,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": [
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000010, len size=0x00000004, extn size=0x00000000, totl length=0x00000014, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000018. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000028, len size=0x00000004, extn size=0x00000000, totl length=0x0000002c, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x0000002c. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000018, len size=0x00000004, extn size=0x00000000, totl length=0x0000001c, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000058. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000018, len size=0x00000004, extn size=0x00000000, totl length=0x0000001c, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000074. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000010, len size=0x00000004, extn size=0x00000000, totl length=0x00000014, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x000000b8. ***"
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "section": "debug_frame",
+            "frames": [
+                [
+                    16,
+                    0,
+                    4194536,
+                    20
+                ],
+                [
+                    40,
+                    0,
+                    4194556,
+                    60
+                ],
+                [
+                    88,
+                    0,
+                    4194616,
+                    28
+                ],
+                [
+                    128,
+                    0,
+                    4194644,
+                    56
+                ]
+            ],
+            "originalSha256": "4d2cbef7a47f3f1514cabb602b8ec2aab1c9202765e3904280764cc6859c89ae",
+            "sectionSha256": "6d4936d5679e3289c4ccb2566fc565d37b885c7c666cafaeb47802b3537ae669",
+            "inventorySha256": "ebb00e8560afe8f6c286d153e52cd99d22115ddaab1a43115533646914d51886",
+            "strictReportedErrors": 0,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": []
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "section": "eh_frame",
+            "frames": [
+                [
+                    20,
+                    0,
+                    4194536,
+                    20
+                ],
+                [
+                    40,
+                    0,
+                    4194556,
+                    60
+                ],
+                [
+                    76,
+                    0,
+                    4194616,
+                    28
+                ],
+                [
+                    108,
+                    0,
+                    4194644,
+                    56
+                ]
+            ],
+            "originalSha256": "25274bd22f5bb86a9e2ad150a226b2b8ad4bf874e72a494ea8d911fc39c73792",
+            "sectionSha256": "068d6967c3e987a030050ab73b0f13f824d116c63850e75c7235a0bdfaf0052d",
+            "inventorySha256": "3e6fc357c4cc0f40521b873a821a46791740434cd5149e43d9b72c051ca3d99b",
+            "strictReportedErrors": 3,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": [
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000010, len size=0x00000004, extn size=0x00000000, totl length=0x00000014, addr size=0x00000008, mod=0x00000004 must be zero in cie, offset 0x00000000. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000010, len size=0x00000004, extn size=0x00000000, totl length=0x00000014, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000014. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000020, len size=0x00000004, extn size=0x00000000, totl length=0x00000024, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000028. ***"
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "section": "debug_frame",
+            "frames": [
+                [
+                    16,
+                    0,
+                    404,
+                    20
+                ],
+                [
+                    40,
+                    0,
+                    424,
+                    60
+                ],
+                [
+                    88,
+                    0,
+                    484,
+                    28
+                ],
+                [
+                    128,
+                    0,
+                    512,
+                    56
+                ]
+            ],
+            "originalSha256": "82bf5ed7442b6c88d4554aa9a1bceb9f965a24c06ab08d9d48da6a9e9f657a3f",
+            "sectionSha256": "1dc49b96ca75d2f60858434eebdb737ae3a7c9d506a6be74251d91613103123c",
+            "inventorySha256": "e6f0dea4c425ba328d7ad93e6e7694b7a27c025ed62f91229d08126cda023a24",
+            "strictReportedErrors": 0,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": []
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "section": "eh_frame",
+            "frames": [
+                [
+                    20,
+                    0,
+                    460,
+                    20
+                ],
+                [
+                    40,
+                    0,
+                    480,
+                    60
+                ],
+                [
+                    76,
+                    0,
+                    540,
+                    28
+                ],
+                [
+                    108,
+                    0,
+                    568,
+                    56
+                ]
+            ],
+            "originalSha256": "c19d0c3f45c1d38ce20f2da5b3385f3337060825e8f4d3950f85e9a3d65032b2",
+            "sectionSha256": "22f50280c8cc3e2e1b03da51a3f8c519eb6854ee8a0c4f42288c984ec156a8f7",
+            "inventorySha256": "c0f3e884083bfcbe811b6a14e53bf5de1f7a0984b1d4f5b655b41c6422d24166",
+            "strictReportedErrors": 3,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": [
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000010, len size=0x00000004, extn size=0x00000000, totl length=0x00000014, addr size=0x00000008, mod=0x00000004 must be zero in cie, offset 0x00000000. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000010, len size=0x00000004, extn size=0x00000000, totl length=0x00000014, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000014. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000020, len size=0x00000004, extn size=0x00000000, totl length=0x00000024, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000028. ***"
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "shared",
+            "section": "debug_frame",
+            "frames": [
+                [
+                    16,
+                    0,
+                    832,
+                    24
+                ],
+                [
+                    40,
+                    0,
+                    856,
+                    60
+                ],
+                [
+                    88,
+                    0,
+                    916,
+                    28
+                ],
+                [
+                    128,
+                    0,
+                    944,
+                    60
+                ]
+            ],
+            "originalSha256": "410d8714acf7e5ddd24f05cb92fcd5ce87cc2b7299abe505f3e1c03c220ad01c",
+            "sectionSha256": "be3da91b313f13ef8a83b68f877ce27f5eebef6e542e69fa6bfceb109e861c7c",
+            "inventorySha256": "516031d2915254c7fb86999669815c5272b347e39834514b524ef8c2a90db0f3",
+            "strictReportedErrors": 0,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": []
+        },
+        {
+            "target": "aarch64",
+            "role": "shared",
+            "section": "eh_frame",
+            "frames": [
+                [
+                    20,
+                    0,
+                    896,
+                    24
+                ],
+                [
+                    40,
+                    0,
+                    920,
+                    60
+                ],
+                [
+                    76,
+                    0,
+                    980,
+                    28
+                ],
+                [
+                    108,
+                    0,
+                    1008,
+                    60
+                ]
+            ],
+            "originalSha256": "9c90a2ae182c7b2181f744549b63a0fc37da4bf95d05c666a19d13e03ab48259",
+            "sectionSha256": "191ed04192c48b67273d0c52d9b7250ad4773b80e99076f7f7f72f22e0464432",
+            "inventorySha256": "9833eab8d9b30d1ab25ccd567be39f618109420d8f97478a1d67cbfc153f0a1b",
+            "strictReportedErrors": 3,
+            "strictStatus": "PASS",
+            "corroboratedDiagnostics": [
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000010, len size=0x00000004, extn size=0x00000000, totl length=0x00000014, addr size=0x00000008, mod=0x00000004 must be zero in cie, offset 0x00000000. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000010, len size=0x00000004, extn size=0x00000000, totl length=0x00000014, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000014. ***",
+                "*** DWARF CHECK: DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE len=0x00000020, len size=0x00000004, extn size=0x00000000, totl length=0x00000024, addr size=0x00000008, mod=0x00000004 must be zero in fde, offset 0x00000028. ***"
+            ]
+        }
+    ],
+    "retainedFailures": [
+        "Initial strict harness omitted original corroboration and rejected known EH alignment diagnostics",
+        "Second harness used wrong metadata suffix .json instead of .check.json",
+        "New negative control failed before unsigned encoded-address domain check; unsigned high bits could masquerade as signed displacement"
+    ],
+    "remaining": [
+        "Complete ELF source discovery/compression/relocation/identity qualification",
+        "Original-range precedence and record reconciliation in real exporter",
+        "Unchanged global-writing C compiler fixture callee proof and full runtime/failure/cancellation matrix",
+        "PR166 current hosted/workload integration, then full #112/#110/#109 goal"
+    ]
+}

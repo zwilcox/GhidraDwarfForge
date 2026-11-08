@@ -5,6 +5,9 @@ import java.nio.ByteOrder;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
 
 import ghidradwarfforge.dwarf.DwarfLocationExpression.AddressOperation;
 import ghidradwarfforge.dwarf.DwarfLocationExpression.Expression;
@@ -18,21 +21,39 @@ public final class Dwarf5LocationLists {
     private static final int DW_LLE_END_OF_LIST = 0x00;
     private static final int DW_LLE_START_END = 0x07;
     private static final int DW_OP_ADDR = 0x03;
-    private record PlannedRange(LocationRange range, Expression expression) {
+    public record PlannedRange(LocationRange range, Expression expression) {
+        public PlannedRange {
+            Objects.requireNonNull(range);
+            Objects.requireNonNull(expression);
+        }
     }
 
     private record PlannedList(VariableLocation variable, List<PlannedRange> ranges) {
     }
 
-    public record Result(byte[] section, Map<VariableLocation, Long> offsets) {
-        public Result {
-            section = section.clone();
-            offsets = Map.copyOf(offsets);
+    /** Owns the bytes and the exact plans that produced them. */
+    public static final class Result {
+        private final byte[] section;
+        private final Map<VariableLocation, Long> offsets;
+        private final Map<VariableLocation, List<PlannedRange>> plans;
+
+        private Result(byte[] section, Map<VariableLocation, Long> offsets,
+                Map<VariableLocation, List<PlannedRange>> plans) {
+            this.section = section;
+            this.offsets = Map.copyOf(offsets);
+            this.plans = Map.copyOf(plans);
         }
 
-        @Override
         public byte[] section() {
             return section.clone();
+        }
+
+        public Map<VariableLocation, Long> offsets() {
+            return offsets;
+        }
+
+        public Map<VariableLocation, List<PlannedRange>> plans() {
+            return plans;
         }
 
         public boolean empty() {
@@ -45,23 +66,37 @@ public final class Dwarf5LocationLists {
 
     public static Result build(List<VariableLocation> variables, int addressBytes,
             ByteOrder order) {
+        return build(variables, addressBytes, order, () -> false);
+    }
+
+    public static Result build(List<VariableLocation> variables, int addressBytes,
+            ByteOrder order, BooleanSupplier cancelled) {
+        Objects.requireNonNull(variables);
+        Objects.requireNonNull(order);
+        Objects.requireNonNull(cancelled);
+        checkCancelled(cancelled);
         if (addressBytes != 4 && addressBytes != 8) {
             throw new IllegalArgumentException("unsupported address size " + addressBytes);
         }
-        List<PlannedList> listed = variables.stream()
-            .map(Dwarf5LocationLists::plan)
-            .filter(java.util.Objects::nonNull)
-            .toList();
+        List<PlannedList> listed = new java.util.ArrayList<>();
+        for (VariableLocation variable : variables) {
+            checkCancelled(cancelled);
+            PlannedList planned = plan(variable, cancelled);
+            if (planned != null) listed.add(planned);
+        }
         if (listed.isEmpty()) {
-            return new Result(new byte[0], Map.of());
+            return new Result(new byte[0], Map.of(), Map.of());
         }
 
         ByteArrayOutputStream lists = new ByteArrayOutputStream();
         long unitOffset = 12;
         Map<VariableLocation, Long> offsets = new LinkedHashMap<>();
+        Map<VariableLocation, List<PlannedRange>> plans = new LinkedHashMap<>();
         for (PlannedList list : listed) {
+            checkCancelled(cancelled);
             offsets.put(list.variable(), Math.addExact(unitOffset, lists.size()));
-            writeList(lists, list, addressBytes, order);
+            plans.put(list.variable(), list.ranges());
+            writeList(lists, list, addressBytes, order, cancelled);
         }
 
         ByteArrayOutputStream body = new ByteArrayOutputStream();
@@ -74,16 +109,17 @@ public final class Dwarf5LocationLists {
         ByteArrayOutputStream section = new ByteArrayOutputStream();
         writeUnsigned(section, body.size(), 4, order);
         section.writeBytes(body.toByteArray());
-        return new Result(section.toByteArray(), offsets);
+        checkCancelled(cancelled);
+        return new Result(section.toByteArray(), offsets, plans);
     }
 
-    private static PlannedList plan(VariableLocation variable) {
-        if (!variable.hasDefensibleLocation() ||
-                (variable.locations().size() <= 1 && !variable.changesLocation())) {
+    private static PlannedList plan(VariableLocation variable, BooleanSupplier cancelled) {
+        if (variable.locations().size() <= 1) {
             return null;
         }
         java.util.ArrayList<PlannedRange> ranges = new java.util.ArrayList<>();
         for (LocationRange range : variable.locations()) {
+            checkCancelled(cancelled);
             if (!range.storage().available()) {
                 continue;
             }
@@ -99,9 +135,10 @@ public final class Dwarf5LocationLists {
     }
 
     private static void writeList(ByteArrayOutputStream output,
-            PlannedList list, int addressBytes, ByteOrder order) {
+            PlannedList list, int addressBytes, ByteOrder order, BooleanSupplier cancelled) {
         for (PlannedRange planned : list.ranges()) {
-            byte[] expression = encodeExpression(planned.expression(), addressBytes, order);
+            checkCancelled(cancelled);
+            byte[] expression = encodeExpression(planned.expression(), addressBytes, order, cancelled);
             output.write(DW_LLE_START_END);
             writeUnsigned(output, planned.range().start(), addressBytes, order);
             writeUnsigned(output, planned.range().end(), addressBytes, order);
@@ -112,9 +149,10 @@ public final class Dwarf5LocationLists {
     }
 
     private static byte[] encodeExpression(Expression expression, int addressBytes,
-            ByteOrder order) {
+            ByteOrder order, BooleanSupplier cancelled) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         for (Operation operation : expression.operations()) {
+            checkCancelled(cancelled);
             if (operation instanceof AddressOperation address) {
                 output.write(DW_OP_ADDR);
                 writeUnsigned(output, address.address(), addressBytes, order);
@@ -128,7 +166,7 @@ public final class Dwarf5LocationLists {
                 case DwarfLocationExpression.DW_OP_DEREF -> {
                     // Target-address-sized memory dereference has no operands.
                 }
-                case DwarfLocationExpression.DW_OP_REGX -> writeUleb(output,
+                case DwarfLocationExpression.DW_OP_REGX, DwarfLocationExpression.DW_OP_PIECE -> writeUleb(output,
                     generic.operand1());
                 case DwarfLocationExpression.DW_OP_BREGX -> {
                     writeUleb(output, generic.operand1());
@@ -174,6 +212,12 @@ public final class Dwarf5LocationLists {
             int shift = order == ByteOrder.LITTLE_ENDIAN ? index * 8 :
                 (width - index - 1) * 8;
             output.write((int) (value >>> shift) & 0xff);
+        }
+    }
+
+    private static void checkCancelled(BooleanSupplier cancelled) {
+        if (cancelled.getAsBoolean()) {
+            throw new CancellationException("location-list planning cancelled");
         }
     }
 }

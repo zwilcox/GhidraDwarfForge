@@ -1,0 +1,381 @@
+{
+    "issue": 108,
+    "status": "CONFIRMED Windows host and downstream GDB acceptance; full feature acceptance pending",
+    "head": "3829626050f57fd3a3e21e89bc64dcf39f76e4b5",
+    "productionRun": 42088664715,
+    "jobs": {
+        "windowsHost": 127467822635,
+        "windowsAttachmentGdb": 127478623962
+    },
+    "artifacts": [
+        {
+            "id": 13446851138,
+            "name": "windows-host-validation",
+            "digest": "sha256:cab67d9fa2f5df312725e082328ae5641dc453ea91297f3565ace01ebaf93e19",
+            "head": "3829626050f57fd3a3e21e89bc64dcf39f76e4b5"
+        },
+        {
+            "id": 13445564159,
+            "name": "windows-attachment-gdb-diagnostics",
+            "digest": "sha256:fb17a07224e8aab8353b2185e031b225a67806f815ec406260ab31ac93f6ca76",
+            "head": "3829626050f57fd3a3e21e89bc64dcf39f76e4b5"
+        }
+    ],
+    "localReviewRoot": "/dev/shm/forge-review-3829626-windows",
+    "guiCases": [
+        {
+            "run": "run.0e7a375504fe48c29683a09ebd5dde95 GUI paths",
+            "selectedMode": [
+                "script-manager-action=double-click",
+                "chooser=select",
+                "gdb-loader=true",
+                "compression=false",
+                "input_sha256=68a3cec9be4183c88c001c77be28fc0da5061fd3399937664d7cfa94d14f07f5",
+                "result=PASS"
+            ],
+            "artifactBindingsVerified": {
+                "inputPath": "68a3cec9be4183c88c001c77be28fc0da5061fd3399937664d7cfa94d14f07f5",
+                "outputPath": "bc0ef21c34db699b022da3be3213ac47086bdaaa83f1af7b88c461f499f1394d",
+                "sourcePath": "350b4b094ae6a5ac1c1694133b1618fd82018f39efc6d80d15a1ab43da419e2b"
+            },
+            "reportSha256": "9b7247521b6cfb45573cbc1a99241fef30ed5d6624d7db5c7c328f72ac9538ce",
+            "summary": {
+                "functions": "15",
+                "unknownSignatureFunctions": "0",
+                "recoveredGlobalsKnown": "YES",
+                "recoveredGlobals": "21",
+                "source": {
+                    "functions": "15",
+                    "unavailableInstructionFunctions": "0",
+                    "unavailableTokenFunctions": "0",
+                    "decodedInstructions": "222",
+                    "anchoredInstructions": "68",
+                    "lineVisibleInstructions": "222"
+                },
+                "variables": {
+                    "recoveredVariables": "49",
+                    "emittedVariables": "49",
+                    "variablesWithLocation": "44",
+                    "knownScopeVariables": "5",
+                    "unknownScopeVariables": "44",
+                    "knownScopeBytes": "240",
+                    "coveredScopeBytes": "0",
+                    "extentUnavailableReason": ""
+                },
+                "variablesByKind": {
+                    "PARAMETER": {
+                        "recoveredVariables": "5",
+                        "emittedVariables": "5",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "5",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "240",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    },
+                    "LOCAL": {
+                        "recoveredVariables": "44",
+                        "emittedVariables": "44",
+                        "variablesWithLocation": "44",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "44",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    },
+                    "FUNCTION_STATIC": {
+                        "recoveredVariables": "0",
+                        "emittedVariables": "0",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    }
+                },
+                "functionTypes": {
+                    "recoveredRoots": "7",
+                    "emittedRoots": "7",
+                    "opaqueFreeEmittedRoots": "3",
+                    "recoveredNodes": "8",
+                    "resolvedEmittedNodes": "4",
+                    "opaqueEmittedNodes": "4",
+                    "notEmittedNodes": "0",
+                    "implicitVoidNodes": "0",
+                    "emittedImplicitVoidNodes": "0"
+                }
+            },
+            "comparison": "gui-comparison=PASS identical/changed/incomparable/malformed/retry/read-only",
+            "cliReadback": "PASS with locally validated exact production class bytes",
+            "reviewedFiles": {
+                "result.txt": "9bb036b58d01133d8ad9c10836089fcfd93c81b78701d418d76c916c8e65a8dd",
+                "select/coverage.png": "ff31fe81576735d39806562ae8fd7620c8975f0dd4a7dc0b20f3e1f6940f3eda",
+                "select/comparison-changed.txt.png": "2f8ef6b77c99d8b4f87fc614f8eaeab6ca32fdaa3d216b249ffc02e607daa28d",
+                "select/comparison-identical.txt": "faac1ca80020a4b2893e314fb11952ad979c60774ab66db1491a9fc68613aba3",
+                "select/comparison-changed.txt": "a6f325988d1578bfc4c9f4ce61b0cfbe961b7d2ef54109120ccfcceafc282dc2",
+                "select/comparison-incomparable.txt": "748f8c1362d5216b22e2ee0bcd3725835666f561c2bfe6ac290bc1333c003be3",
+                "select/comparison-retry.txt": "faac1ca80020a4b2893e314fb11952ad979c60774ab66db1491a9fc68613aba3",
+                "llvm-verify.txt": "a165bb032a8e810fcecc5a533e5daa7e1cd0911760062efd1eecd9b370678c1f",
+                "review-cli-summary.txt": "5ebd2b9f43c415d4ce734be76e253e47e9dc9210df81a54d4872759dad44a6cb"
+            }
+        },
+        {
+            "run": "run.9377638a421845e38407b8ba8aa2cc1c GUI paths",
+            "selectedMode": [
+                "script-manager-action=double-click",
+                "chooser=select",
+                "gdb-loader=false",
+                "compression=false",
+                "input_sha256=68a3cec9be4183c88c001c77be28fc0da5061fd3399937664d7cfa94d14f07f5",
+                "result=PASS"
+            ],
+            "artifactBindingsVerified": {
+                "inputPath": "68a3cec9be4183c88c001c77be28fc0da5061fd3399937664d7cfa94d14f07f5",
+                "outputPath": "ebe46eeb5d35f54e8468de019df1876b8fef14d832c6ac2ee2607a646124a414",
+                "sourcePath": "350b4b094ae6a5ac1c1694133b1618fd82018f39efc6d80d15a1ab43da419e2b"
+            },
+            "reportSha256": "a79dd3aca70313a43e5b0ffe86a4711ad8622db6d4077863900edff8c70f0737",
+            "summary": {
+                "functions": "15",
+                "unknownSignatureFunctions": "0",
+                "recoveredGlobalsKnown": "YES",
+                "recoveredGlobals": "21",
+                "source": {
+                    "functions": "15",
+                    "unavailableInstructionFunctions": "0",
+                    "unavailableTokenFunctions": "0",
+                    "decodedInstructions": "222",
+                    "anchoredInstructions": "68",
+                    "lineVisibleInstructions": "222"
+                },
+                "variables": {
+                    "recoveredVariables": "49",
+                    "emittedVariables": "49",
+                    "variablesWithLocation": "44",
+                    "knownScopeVariables": "5",
+                    "unknownScopeVariables": "44",
+                    "knownScopeBytes": "240",
+                    "coveredScopeBytes": "0",
+                    "extentUnavailableReason": ""
+                },
+                "variablesByKind": {
+                    "PARAMETER": {
+                        "recoveredVariables": "5",
+                        "emittedVariables": "5",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "5",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "240",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    },
+                    "LOCAL": {
+                        "recoveredVariables": "44",
+                        "emittedVariables": "44",
+                        "variablesWithLocation": "44",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "44",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    },
+                    "FUNCTION_STATIC": {
+                        "recoveredVariables": "0",
+                        "emittedVariables": "0",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    }
+                },
+                "functionTypes": {
+                    "recoveredRoots": "7",
+                    "emittedRoots": "7",
+                    "opaqueFreeEmittedRoots": "3",
+                    "recoveredNodes": "8",
+                    "resolvedEmittedNodes": "4",
+                    "opaqueEmittedNodes": "4",
+                    "notEmittedNodes": "0",
+                    "implicitVoidNodes": "0",
+                    "emittedImplicitVoidNodes": "0"
+                }
+            },
+            "comparison": "gui-comparison=PASS identical/changed/incomparable/malformed/retry/read-only",
+            "cliReadback": "PASS with locally validated exact production class bytes",
+            "reviewedFiles": {
+                "result.txt": "9bb036b58d01133d8ad9c10836089fcfd93c81b78701d418d76c916c8e65a8dd",
+                "select/coverage.png": "f7d18b953ae2cc787d1f567bd1b8049bedeefa4d40180b8b300e4ed5cf3e97df",
+                "select/comparison-changed.txt.png": "a40a01d28fcb728c6721930419d40131ba77f26dd62cafae88575ee19610e90a",
+                "select/comparison-identical.txt": "faac1ca80020a4b2893e314fb11952ad979c60774ab66db1491a9fc68613aba3",
+                "select/comparison-changed.txt": "a6f325988d1578bfc4c9f4ce61b0cfbe961b7d2ef54109120ccfcceafc282dc2",
+                "select/comparison-incomparable.txt": "748f8c1362d5216b22e2ee0bcd3725835666f561c2bfe6ac290bc1333c003be3",
+                "select/comparison-retry.txt": "faac1ca80020a4b2893e314fb11952ad979c60774ab66db1491a9fc68613aba3",
+                "llvm-verify.txt": "d1340c0033aebbd7900bd8b35f1cb2e3a5c9c29db5f1a6945168c8a1ac46fd3a",
+                "review-cli-summary.txt": "5ebd2b9f43c415d4ce734be76e253e47e9dc9210df81a54d4872759dad44a6cb"
+            }
+        },
+        {
+            "run": "run.a8e4bfad94024b599be5828b9117aaad GUI paths",
+            "selectedMode": [
+                "script-manager-action=double-click",
+                "chooser=select",
+                "gdb-loader=false",
+                "compression=true",
+                "input_sha256=68a3cec9be4183c88c001c77be28fc0da5061fd3399937664d7cfa94d14f07f5",
+                "result=PASS"
+            ],
+            "artifactBindingsVerified": {
+                "inputPath": "68a3cec9be4183c88c001c77be28fc0da5061fd3399937664d7cfa94d14f07f5",
+                "outputPath": "ef9f429e5de940c633dbbd42ff76ed4b4aee0112b0591cd3dcc5179f8634d42b",
+                "sourcePath": "350b4b094ae6a5ac1c1694133b1618fd82018f39efc6d80d15a1ab43da419e2b"
+            },
+            "reportSha256": "7d7ae71251c6a13f6b4fc92c444ef748a1a278b3697c7d160817975489757b54",
+            "summary": {
+                "functions": "15",
+                "unknownSignatureFunctions": "0",
+                "recoveredGlobalsKnown": "YES",
+                "recoveredGlobals": "21",
+                "source": {
+                    "functions": "15",
+                    "unavailableInstructionFunctions": "0",
+                    "unavailableTokenFunctions": "0",
+                    "decodedInstructions": "222",
+                    "anchoredInstructions": "68",
+                    "lineVisibleInstructions": "222"
+                },
+                "variables": {
+                    "recoveredVariables": "49",
+                    "emittedVariables": "49",
+                    "variablesWithLocation": "44",
+                    "knownScopeVariables": "5",
+                    "unknownScopeVariables": "44",
+                    "knownScopeBytes": "240",
+                    "coveredScopeBytes": "0",
+                    "extentUnavailableReason": ""
+                },
+                "variablesByKind": {
+                    "PARAMETER": {
+                        "recoveredVariables": "5",
+                        "emittedVariables": "5",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "5",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "240",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    },
+                    "LOCAL": {
+                        "recoveredVariables": "44",
+                        "emittedVariables": "44",
+                        "variablesWithLocation": "44",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "44",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    },
+                    "FUNCTION_STATIC": {
+                        "recoveredVariables": "0",
+                        "emittedVariables": "0",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    }
+                },
+                "functionTypes": {
+                    "recoveredRoots": "7",
+                    "emittedRoots": "7",
+                    "opaqueFreeEmittedRoots": "3",
+                    "recoveredNodes": "8",
+                    "resolvedEmittedNodes": "4",
+                    "opaqueEmittedNodes": "4",
+                    "notEmittedNodes": "0",
+                    "implicitVoidNodes": "0",
+                    "emittedImplicitVoidNodes": "0"
+                }
+            },
+            "comparison": "gui-comparison=PASS identical/changed/incomparable/malformed/retry/read-only",
+            "cliReadback": "PASS with locally validated exact production class bytes",
+            "reviewedFiles": {
+                "result.txt": "9bb036b58d01133d8ad9c10836089fcfd93c81b78701d418d76c916c8e65a8dd",
+                "select/coverage.png": "9b2f87c15cfddfbc4bd40660566f9dff9a20e97669ccfefb4060129dd27364a3",
+                "select/comparison-changed.txt.png": "f187f665d7fa7051527ed893adeb5044fb74d2809b0bb0cf125ff514143bb147",
+                "select/comparison-identical.txt": "faac1ca80020a4b2893e314fb11952ad979c60774ab66db1491a9fc68613aba3",
+                "select/comparison-changed.txt": "a6f325988d1578bfc4c9f4ce61b0cfbe961b7d2ef54109120ccfcceafc282dc2",
+                "select/comparison-incomparable.txt": "748f8c1362d5216b22e2ee0bcd3725835666f561c2bfe6ac290bc1333c003be3",
+                "select/comparison-retry.txt": "faac1ca80020a4b2893e314fb11952ad979c60774ab66db1491a9fc68613aba3",
+                "llvm-verify.txt": "86dd7dc64e23ce10500421f058ba875d52b6e4509cdb365f60873a0d9885ea0b",
+                "review-cli-summary.txt": "5ebd2b9f43c415d4ce734be76e253e47e9dc9210df81a54d4872759dad44a6cb"
+            }
+        }
+    ],
+    "protectedConsumerHashesVerified": 930,
+    "attachmentConsumerOutcomes": [
+        {
+            "case": "initial-runtime",
+            "targetSha256": "d0550e7f5e5c7e5dc025c57a58d1da59ec96f1778705ecd49437273b3514d683",
+            "sidecarSha256": "2b4c8324c3aeab8ce1d517dd981e05b055b98c5e87dd6ca8bf87d56846c67989",
+            "sourceSha256": "c743c8f3dba3b7884b4d40c76e93e1c0208302c37384ce2351d498fc98423a2d"
+        },
+        {
+            "case": "initial-bad-crc",
+            "targetSha256": "d0550e7f5e5c7e5dc025c57a58d1da59ec96f1778705ecd49437273b3514d683",
+            "sidecarSha256": "b68790d08220ff7a9e59400e6332b8d98196268810bd8e965aa3b32c9501ed9b",
+            "sourceSha256": "c743c8f3dba3b7884b4d40c76e93e1c0208302c37384ce2351d498fc98423a2d"
+        },
+        {
+            "case": "refresh-runtime",
+            "targetSha256": "2cdcedafba6491398986823231c64113642c9d2ddbf0798c9ed745c9975165e9",
+            "sidecarSha256": "561597c36b9d5e39f99f08c2d6d13f52a7331bd88d272eb8427223b79ae3efa0",
+            "sourceSha256": "2a14d02c45225aa11f0e0546dbd93386d6ce71a5a49c3a46046d50a11dd9b30c"
+        },
+        {
+            "case": "refresh-bad-crc",
+            "targetSha256": "2cdcedafba6491398986823231c64113642c9d2ddbf0798c9ed745c9975165e9",
+            "sidecarSha256": "a7d5a58874aa330723099f1ae770a8b01fe36b11898ea6aaba89d358865e57c0",
+            "sourceSha256": "2a14d02c45225aa11f0e0546dbd93386d6ce71a5a49c3a46046d50a11dd9b30c"
+        }
+    ],
+    "guiConsumer": {
+        "status": "PASS",
+        "hostContract": "windows-x64-local-ntfs-raw-security-v1",
+        "sourceRelocatedFromWindows": true,
+        "checks": [
+            "native GUI initial/refresh/recovery",
+            "retained receipt chain",
+            "changed target-endian CRC",
+            "both pairs GNU/LLVM/pinned libdwarf",
+            "fresh automatic GDB source/type/break/next/step/exit",
+            "both CRC negative controls"
+        ]
+    },
+    "consumerResultSha256": "81dedb110557ef64f4dbdc0b0055b4b75698dc042674791469b80ebfdefb8e1e",
+    "visualReview": "Both summary and comparison controls fit the Windows desktop in the retained 1024x768 screenshots. Long table values have a scrollable details view.",
+    "scope": [
+        "Native Windows GUI plain, compressed and companion exports; saved reports and actual mouse-driven comparison/error/retry controls.",
+        "GNU/LLVM validation on Windows; strict libdwarf and actual Linux GDB consumer checks for Windows attachment generations.",
+        "GDB source is explicitly relocated from Windows paths by the consumer.",
+        "Coverage reports continue to say independent validation NOT_RUN; external evidence does not mutate the reports."
+    ],
+    "teardownObservation": {
+        "status": "UNCERTAIN exact cause; retained for review",
+        "case": "run.9377638a421845e38407b8ba8aa2cc1c GUI paths",
+        "message": "Exception while removing reference.",
+        "position": "After gui-script-manager=PASS, after explicit tool/project disposal, during process exit; no stack trace or failed process exit.",
+        "guiLogSha256": "da940fc51858108bf2cf411fd61b4a11047b9c83776ede3ce9388740c647c4bf",
+        "sourceInference": "The exact message occurs in OpenJDK Java2D Disposer catch paths. This is consistent with Java2D teardown but does not identify the caught exception.",
+        "source": "https://github.com/openjdk/jdk21u/blob/master/src/java.desktop/share/classes/sun/java2d/Disposer.java"
+    },
+    "remaining": [
+        "Five target lanes and raw emission evidence review",
+        "Windows large-workload pairs, JFR, large-report CLI and downstream consumer",
+        "Final source review and current required-validation protected merge"
+    ],
+    "retainedArchiveDirectory": "build/review-ci-42088664715/windows"
+}

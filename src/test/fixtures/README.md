@@ -1,5 +1,26 @@
 # Integration fixtures
 
+`runtime-relocations.c` creates ordinary and clustered relative dynamic
+relocations, including a PLT call. Its independent inventory harness builds
+x86-64/AArch64 executable, PIE and shared-object variants with retained link
+relocations and optional RELR packing. Sectionless copies must retain identical
+runtime inventories. It does not establish unwind synthesis or runtime ABI
+support for another target.
+
+`synthetic-cfi.c` and its two `synthetic-cfi-start-*.S` startup files are
+freestanding x86-64/AArch64 compiler references for #112. The dedicated
+`synthetic-cfi-reference.py` harness builds them with `.debug_frame` and no
+runtime unwind tables, then creates a separate input with debug information
+removed. It compares compiler, absent-CFI and disabled-DWARF-unwinder behavior
+through nested calls and recursive returns. This tests the independent oracle;
+it does not establish production synthetic-CFI support. See
+`docs/SYNTHETIC-CFI-EVIDENCE.md` for commands and remaining acceptance.
+`synthetic-cfi-shared-driver.c` supplies a real `dlopen` consumer and a stable
+call-preserved register witness for the original-CFI preservation matrix. Its
+load-bias observation supports explicit shared-sidecar loading in GDB. The
+preservation fixture explicitly curates source-built function names/extents;
+it never supplies unwind rules to the exporter.
+
 `semantic.c` and `shared_semantic.c` are redistributable source-built fixtures
 shared across target architectures. They intentionally contain functions,
 globals, parameters, locals, arrays, an enum, union, typedef, function pointer,
@@ -7,6 +28,15 @@ and recursive structure. `semantic.c` supplies the ET_EXEC and PIE programs,
 including their `main`; `shared_semantic.c` supplies the ET_DYN library and
 intentionally defines no `main`. The separate `shared_driver.c` executable
 loads the stripped library and calls its exported `recovered_add` function.
+
+`gdb-loader-shared-driver.c` is a Linux/glibc loader lifecycle fixture. It uses
+`dlopen`, `dlmopen` and `dlinfo` to expose independent runtime library biases,
+exercise duplicate instances and unload/reload them. It is built and compared
+byte-for-byte by the ordinary fixture reproducibility gate. The separate
+`gdb-loader-lifecycle.c` preload is compiled by the native attach/exec test; it
+permits tracing its owned child, stops it for attachment and execs the explicitly
+selected replacement image after exit. Neither fixture patches the original
+target executable or changes the production exporter's platform assumptions.
 
 The integration preparation script applies explicit analyst register storage
 to `recovered_add` parameters using each target ABI's input registers. The
@@ -192,6 +222,14 @@ and a matching multi-architecture or cross GDB. Cross-compilation or headless
 Ghidra import by itself is not a complete architecture-support test.
 
 Focused harnesses build additional fixtures independently of the Makefile:
+
+- `mips-wide-arguments.py` uses `mips_wide_arguments.c` for separate O32,
+  N32 and N64 argument contracts. O32 covers both byte orders and executable,
+  PIE/rebased and shared/rebased layouts, including combined integer/floating/
+  aggregate/stack arguments. Natural structure alignment, incoming-value gaps,
+  hidden result buffers and guarded debugger calls are checked independently.
+  See `docs/MIPS-O32-ARGUMENTS.md` for measured compiler-reference limitations
+  and the wrong-location, failure and cancellation controls.
 
 - `bitfield-values-export.sh` uses `bitfield-values.c` on each target. Compiler
   and Forge DWARF must both read initialized `{a=5,b=17}` values from four-byte
@@ -650,3 +688,88 @@ and explicitly load the stripped library's sidecar at its observed runtime bias.
 The driver result objects are volatile so compiler-reference DWARF also passes
 all required validators. See `docs/AARCH64-PARAMETER-ALLOCATION.md` for the
 computed-storage correction, exact reference boundaries and acceptance evidence.
+
+`arm-aggregate-pcs.c` supplies source-known base/VFP structure, HFA, split core/
+stack and exhausted-HFA arguments and returns in LE and BE8. Its separate
+`arm-aggregate-pcs-reference.py` harness checks raw ABI carriers, typed compiler
+values and name/pointer injected calls. Observation labels follow argument
+capture so the compiler's stack copies have been established. Passing these
+references does not imply Forge support; current exporter omissions and the
+next implementation work are recorded in `docs/research/ARM-AGGREGATE-PCS.md`.
+
+`arm-hfa-lifetimes.c` keeps float/double aggregate parameters immutable while
+result-register writes overwrite their incoming physical storage. Its harness
+checks exact compiler instruction bytes, independent raw carriers, initialized
+compiler locations and Forge values through frame release in LE and BE8.
+See `docs/ARM-HFA-STORAGE.md` for acceptance and remaining scope.
+
+## Natural ARM aggregate investigation
+
+`arm-stack-aggregates.c` exercises base/VFP arguments after core or floating
+register exhaustion, alignment, packed and partial words, mixed fields and
+conditional comparisons. The source-built LE/BE8 reproduction is
+`src/test/integration/arm-stack-aggregates.py`. Its full-availability assertion
+currently fails on documented conservative omissions. The separately selected
+`--availability-contract audited-prefix --with-controls` mode verifies exact
+values, raw carriers and instruction-derived unavailable boundaries in LE/BE8,
+including exec/PIE, rebased projects, decompilation failures and copy
+cancellation. The PIE mode checks relocated literal pools, actual runtime load
+bias and distinct BE8 partial-object lifetimes. Twelve copied-fixture mutation
+controls reject wrong addresses, raw carriers and gap boundaries. See
+[the local contract](../../../docs/ARM-STACK-AGGREGATES.md) and
+[the retained full-availability failures](../../../docs/research/ARM-STACK-AGGREGATES.md).
+
+
+`arm-stack-shared-before.c` and `arm-stack-shared-driver.c` extend the same
+aggregate source into an actually loaded LE shared library. The driver calls
+the leading neighbor before the aggregate entry, so a real decompiler failure
+must leave later functions usable. The shared contract checks source-known GOT
+relocations and live target addresses, with distinct unavailable boundaries.
+See [shared aggregate evidence](../../../docs/ARM-SHARED-AGGREGATES.md).
+
+`mips-fpr-system-start.S` runs the existing `fp_register_aliases.c` fixture as a
+bare-metal O32 program on the 64-bit MIPS system emulator. The actual startup
+sets FR=1, preserving complete FPR transport for independent FPXX/FP64A
+compiler-DWARF references. Both byte orders also run the production exporter;
+unproven Ghidra double-pair locations remain unavailable. Wrong-carrier and
+wrong-mode controls are required. See
+[the reference contract](../../../docs/MIPS-FPR-SYSTEM-REFERENCE.md).
+
+`cfi-encoder-x86_64.S` and `cfi-encoder-aarch64.S` are freestanding recursive
+assembler references for explicit call-frame rule serialization. Their separate
+stripped inputs execute under native GDB or QEMU/GDB with reference, generated
+plain/compressed, and absent CFI. The harness compares caller/register traces at
+instruction boundaries for non-PIE and static PIE. These plans do not recover
+rules from Ghidra. See [the encoder contract](../../../docs/CFI-RULE-ENCODER.md).
+
+`analyst-annotations.c` is the compiler reference for planned listing-comment,
+equate and optional instruction-context preservation. It provides real name
+conflicts, fixed-width values, code markers and a body suitable for an explicit
+curated gap. The separate preparation harness applies comments and equates to a
+private saved Ghidra program. See `docs/ANALYST-ANNOTATIONS.md`; passing these
+compiler/curation fixtures does not establish production annotation export.
+
+`equate-retained-names.cpp` supplies retained C++ function names that collide
+with synthetic equate names and type names. The `equate-retained-names.py`
+harness checks original function breakpoints and synthetic constant lookup
+through the installed exporter.
+
+`perf-build-id.c` is a bounded CPU-loop reference for native x86-64 exec/PIE
+sampling. `build-id-perf-report.py` builds it independently of the Makefile,
+compares ELF-symbol and DWARF-only compiler controls, and exercises installed,
+refreshed and removed Forge generations against the same recorded samples.
+The fixture refuses privileged execution. See
+[the consumer contract](../../../docs/BUILD-ID-CONSUMERS.md) for the distinction
+between offline source lookup and recovered-name sample reporting.
+
+`formatter-values.c` contains explicitly designated signed/unsigned 8/16/32/64-bit
+flags, aliases, zero/unknown/high bits, nested ordinary-memory structures and
+bitfields with recursive/null/unreadable pointer values. Distinct and ambiguous
+same-named types and escaped analyst labels are applied by `ApplyFormatterFixture`.
+`formatter-runtime.py` uses compiler DWARF to test debugger APIs;
+`formatter-export.py` strips all symbols/DWARF, applies explicit analyst types in
+Ghidra, and tests the real saved-program exporter and generated companion in GDB
+CLI/MI and LLDB independently. `CancelDuringFormatters` interrupts preparation and
+rendering and proves restoration/retry of the previous generation. The publisher
+also tests rollback after each installation step with all three companions enabled.
+Pointer summaries display addresses without traversing the pointed-to memory.

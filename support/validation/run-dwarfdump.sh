@@ -33,4 +33,8 @@ for argument in "$@"; do
     esac
     previous=$argument
 done
-exec "$bundle/libexec/dwarfdump" "--file-name=$configuration" "$@"
+executable="$bundle/libexec/dwarfdump"
+if [[ -f "$bundle/libexec/dwarfdump.exe" ]]; then
+    executable="$bundle/libexec/dwarfdump.exe"
+fi
+exec "$executable" "--file-name=$configuration" "$@"

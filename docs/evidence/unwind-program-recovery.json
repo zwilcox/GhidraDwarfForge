@@ -1,0 +1,168 @@
+{
+    "status": "CONFIRMED locally; production exporter and hosted additions unverified",
+    "baseCommit": "4a4a4848a79d6dd2f6566c66e757a4317418d617",
+    "utc": "2026-11-06T10:02:31.639802+00:00",
+    "sourceSha256": {
+        "PROJECT_CONTEXT.md": "6855f417e778db0abfe7beb28d8c5cb7d6f2ef25db7e6d0139b3625231b44a5f",
+        "TODO.md": "68b2be4a72046d303af39d8054935fedd9ba56e67eff416e3f652d7e13cee188",
+        "src/test/integration/unwind-frame-recovery.py": "81075ca676356be6d15c2c93fa5638aaf30a308a15fcaefb74b652292c170d14",
+        "src/test/java/ghidradwarfforge/unwind/GhidraUnwindCallsSmoke.java": "67923b3c14f782b257faee35ded7cda768f82c9799ff4e9eb8fd0e7055d087fd",
+        "src/test/java/ghidradwarfforge/unwind/UnwindFrameRecoveryProbe.java": "cc70b4f8fa090be07d2c23b7bd0e68f9033c7f4137dd55334aacfd8b91eee1f6",
+        "src/main/java/ghidradwarfforge/unwind/GhidraUnwindRecovery.java": "303916f509cc8a319480f3ab86f0c1255e0607f2563f67113378cf17ead13d77",
+        "docs/UNWIND-PROGRAM-RECOVERY.md": "624f55279e1a1d85ce030b05cd14af8313956a8bc06c5204054ee2370ab8baad",
+        "src/main/java/ghidradwarfforge/unwind/GhidraUnwindCalls.java": "e50bd18abb87614a4358d2ce87aeaffd4b6f81604b23e5b1ab001118debfb19e",
+        "src/main/java/ghidradwarfforge/unwind/GhidraUnwindFrames.java": "eaef555420f404b0f6a40d15ce283ade337bf3854a5ebab96becc4c97f23418d",
+        "src/test/integration/cfi-encoder.py": "01a10f4485a58b2365952c284ddc8bc96cffa14b07649e7747a77db651c21861",
+        "src/test/integration/cfi-encoder-gdb.py": "7c2a4cac37347f6d1f02dff1a572ba0fac32b22f8c48dcec74fd54b0912c9fbf",
+        "src/test/integration/cfi-encoder-gdb.sh": "dc1bab90938db33545ee8f316d202e879311bfd103901a457fad56f91bd18b9c",
+        "src/test/fixtures/cfi-encoder-x86_64.S": "64bc61ffc97b43f8435393559f06c14c83314758802582cd00f2f3d9235d7bde",
+        "src/test/fixtures/cfi-encoder-aarch64.S": "ce3f6231c28686aed1121bf1a2c38723f264c2ad0012d8e2547292785c8e955f",
+        "src/test/fixtures/cfi-shrinkwrap-x86_64.S": "2c7595070ab9473a79c9867e72a500998c10bb2ad3d63062cbe0c88e62107474",
+        "src/test/fixtures/cfi-shrinkwrap-aarch64.S": "f13d2d16230b0960a5bde74fc7b9641adbee657e73326011a875272d82701b2f",
+        "src/test/fixtures/synthetic-cfi-shared-driver.c": "bd6ec84ae215586b6f3eb881c902fab3a775cb18521aa17e5cc8f23749e35e5a"
+    },
+    "nativeChecks": 10491,
+    "collectionCancellationPolls": {
+        "x86": 1992,
+        "aarch64": 3973
+    },
+    "cases": {
+        "encoder": [
+            {
+                "target": "x86_64",
+                "role": "exec",
+                "stops": 40,
+                "planSha256": "e06985a878f3c65f7b1f00bbbf845ea642901ff9ca705ee78e6ae55fb7f9787f",
+                "frameSha256": "b69d8d86cba2553da102bcf047e2941701766ce47f1a9167c21d5622de2d8f6b",
+                "programEvidenceSha256": "299d88c15ddbde10815b1831659073c7b10f1918138befa6c349954bf3c9df1c",
+                "refusal": "refusals={00401034=ELF process entry is not an ordinary called frame}]"
+            },
+            {
+                "target": "x86_64",
+                "role": "pie",
+                "stops": 40,
+                "planSha256": "530e4ed59e5f881db4d474fedcdc375142fb85f044d9bd4645d3d8b27fcc5c14",
+                "frameSha256": "968f9fc7d7e8ac2781cc8ebb63d78907380817d254ccd52d0fd2815441e3565a",
+                "programEvidenceSha256": "83ab4355eddacd285030d0db1d126e6978ac2ea8aa5ac4ca4829ccc9c6ebb505",
+                "refusal": "refusals={00001034=ELF process entry is not an ordinary called frame}]"
+            },
+            {
+                "target": "x86_64",
+                "role": "shared",
+                "stops": 40,
+                "planSha256": "530e4ed59e5f881db4d474fedcdc375142fb85f044d9bd4645d3d8b27fcc5c14",
+                "frameSha256": "968f9fc7d7e8ac2781cc8ebb63d78907380817d254ccd52d0fd2815441e3565a",
+                "programEvidenceSha256": "83ab4355eddacd285030d0db1d126e6978ac2ea8aa5ac4ca4829ccc9c6ebb505",
+                "refusal": "refusals={00001034=ELF process entry is not an ordinary called frame}]"
+            },
+            {
+                "target": "aarch64",
+                "role": "exec",
+                "stops": 36,
+                "planSha256": "a8479977818562c8d8b663ffee1bf3e4a98f5d4881008d6fe5c5e322a58fa5ce",
+                "frameSha256": "0017c169f003dd13acaf3892cd3ae560076b219e0350ff061bcddc6a99b9b105",
+                "programEvidenceSha256": "9768aff02293f0ff3c5acd5e3e88c27a7a3cd28d377d3b236e244bd2e1b28669",
+                "refusal": "refusals={004000ec=ELF process entry is not an ordinary called frame}]"
+            },
+            {
+                "target": "aarch64",
+                "role": "pie",
+                "stops": 36,
+                "planSha256": "6b67bee1d5b2c9d8ea25bbd55e466c7b119dffbab93c5dd64dbb8a12e647cf49",
+                "frameSha256": "f645495b988bca99631d3cef84a793467893567cf36935b95f06ed44e051ce13",
+                "programEvidenceSha256": "9ce527a4c312497f018bcb201cdb6f118e4c840609d9187c81a801de8101a455",
+                "refusal": "refusals={000001d0=ELF process entry is not an ordinary called frame}]"
+            },
+            {
+                "target": "aarch64",
+                "role": "shared",
+                "stops": 36,
+                "planSha256": "4fd8381e0fcb93c22f4e7149e95327ae23518531a917f77364972447537b3618",
+                "frameSha256": "ad557a15a07d99a65a58dfffe5d7656435ad612aaedcf2f5b8fbe3f9aba716c3",
+                "programEvidenceSha256": "1a3024caa8ff59c82f2dfc95d00c38121488cecf52bfa56cdcfadf5252221a40",
+                "refusal": "refusals={00000294=ELF process entry is not an ordinary called frame}]"
+            }
+        ],
+        "shrinkwrap": [
+            {
+                "target": "x86_64",
+                "role": "exec",
+                "stops": 51,
+                "planSha256": "d4e72ec132161605231608669ee38ed1df82c609887736c6c64a300f23162806",
+                "frameSha256": "aca1ff65f5356c569cf0a04875360cb620914118936b1db6cce725eaf4619f15",
+                "programEvidenceSha256": "50d108b95b2505fd73cd250dab7369559d21256083bcefc6f19931b4418f9ac4",
+                "refusal": "refusals={0040103a=ELF process entry is not an ordinary called frame}]"
+            },
+            {
+                "target": "x86_64",
+                "role": "pie",
+                "stops": 51,
+                "planSha256": "e4a8e4501c2e090fabd8e315dd8fd8eaaf791845e83bf1f03aa5be342b883dfd",
+                "frameSha256": "2ad255c194b120a9c1640acecd1b94f3b93e30dba01d0cc4ea499ebb1fc1587e",
+                "programEvidenceSha256": "3d15fb45b9d578ef7b2dcb230c532cbfa0f48d3c5f0118fef934978dc1dd5514",
+                "refusal": "refusals={0000103a=ELF process entry is not an ordinary called frame}]"
+            },
+            {
+                "target": "x86_64",
+                "role": "shared",
+                "stops": 51,
+                "planSha256": "e4a8e4501c2e090fabd8e315dd8fd8eaaf791845e83bf1f03aa5be342b883dfd",
+                "frameSha256": "2ad255c194b120a9c1640acecd1b94f3b93e30dba01d0cc4ea499ebb1fc1587e",
+                "programEvidenceSha256": "3d15fb45b9d578ef7b2dcb230c532cbfa0f48d3c5f0118fef934978dc1dd5514",
+                "refusal": "refusals={0000103a=ELF process entry is not an ordinary called frame}]"
+            },
+            {
+                "target": "aarch64",
+                "role": "exec",
+                "stops": 53,
+                "planSha256": "36534c4a1ef97ed2d4178781b66967854245c8042bee2a3720be2caa32209e3f",
+                "frameSha256": "4987b681ff54561817916c0e798319e0d8558d02a9503fca71f8d4041ff3ab11",
+                "programEvidenceSha256": "7465f615ddb15db84680d23a2acfe4731de18875b06666fcc43de0763498014d",
+                "refusal": "refusals={004000f8=ELF process entry is not an ordinary called frame}]"
+            },
+            {
+                "target": "aarch64",
+                "role": "pie",
+                "stops": 53,
+                "planSha256": "a53cc0fc7a4661cb18718042e15658d550329bdf53fe735f7ef955ce183e476d",
+                "frameSha256": "cfb87f4fddb6bfa70f1f1d23c8cde7b36726e223219089b7f21210c7513f7261",
+                "programEvidenceSha256": "f39a7f5ba39782ee3d2e88d86c5eee724b7c02ace403e0cccfc87a827ff4eac1",
+                "refusal": "refusals={000001dc=ELF process entry is not an ordinary called frame}]"
+            },
+            {
+                "target": "aarch64",
+                "role": "shared",
+                "stops": 53,
+                "planSha256": "762fdfdc2c694f0cfaafa55b8357b1a82aa4f193f07a3f21f330cd1a1cf4540a",
+                "frameSha256": "4296fcd35ffc83d69788ec0572bd820e8e9ae4a7b33a60fe8c15668df22d3a40",
+                "programEvidenceSha256": "5bd8764553ccf05e0c642aefe4ebba80149da83f12a923a55557d539a70d68e8",
+                "refusal": "refusals={0000034c=ELF process entry is not an ordinary called frame}]"
+            }
+        ]
+    },
+    "totals": {
+        "runtimeCases": 12,
+        "sidecars": 24,
+        "gdbSessions": 60
+    },
+    "extension": {
+        "file": "build/flow-gradle/dist/ghidra_12.0.3_PUBLIC_20261106_GhidraDwarfForge.zip",
+        "sha256": "06d1a7e55dac8e91c0af45b257eae507816f5e9526623ec01a5b3759bfd9ce76"
+    },
+    "scope": "Program-level collection serializes actual recovered plans, with startup refusal and independent root-proof agreement. Test-only byte importer and minimal CU still do not prove full exporter integration. Strict global-store refusal unchanged.",
+    "commands": [
+        "JAVA_HOME=<Java21> GHIDRA_INSTALL_DIR=<Ghidra12.0.3> ./gradlew --init-script build/flow-gradle/init.gradle --project-cache-dir build/flow-gradle/cache ghidraUnwindCallsSmoke",
+        "JAVA_HOME=<Java21> GHIDRA_INSTALL_DIR=<Ghidra12.0.3> python3 src/test/integration/unwind-frame-recovery.py build/flow-gradle/output/classes/java build/program-recovery-<family> --fixture-family <encoder|shrinkwrap> --java <Java21>/bin/java --gradle-init build/flow-gradle/init.gradle --gradle-cache build/flow-gradle/cache --dwarfdump <pinned>/bin/dwarfdump",
+        "JAVA_HOME=<Java21> GHIDRA_INSTALL_DIR=<Ghidra12.0.3> ./gradlew --init-script build/flow-gradle/init.gradle --project-cache-dir build/flow-gradle/cache buildExtension",
+        "actionlint .github/workflows/ci.yml",
+        "bash src/test/integration/architecture-neutrality.sh",
+        "python3 -m py_compile src/test/integration/unwind-frame-recovery.py",
+        "git diff --check"
+    ],
+    "nativePin": "af7b278c6aa2ae9daad94fb7f8bffdc0e9980993",
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/unwind-program-recovery.tar.gz",
+        "sha256": "5699ac61fa707fb0ebe781958870e2a176f63dab6ac6fa04d039c8ae6935bc6f",
+        "bytes": 4747415
+    }
+}

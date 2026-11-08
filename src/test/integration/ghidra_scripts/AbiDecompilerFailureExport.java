@@ -1,4 +1,4 @@
-// Exercise a real native failure after saving a dynamically indirect ABI parameter.
+// Exercise a real native failure after saving a defensible ABI parameter.
 // @category DWARF.Tests
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -21,8 +21,12 @@ import ghidradwarfforge.output.ArtifactPairPublisher;
 public class AbiDecompilerFailureExport extends GhidraScript {
     @Override
     protected void run() throws Exception {
-        if (getScriptArgs().length != 2) throw new IllegalArgumentException("output failed-function");
-        String failedName = getScriptArgs()[1];
+        if (getScriptArgs().length < 2 || getScriptArgs().length > 3) {
+            throw new IllegalArgumentException("output failed-function [saved-parameter]");
+        }
+        String failureSelection = getScriptArgs()[1];
+        boolean symbolOnlyReference = getScriptArgs().length == 3 && getScriptArgs()[2].equals("--symbol-only");
+        String parameterName = getScriptArgs().length == 3 && !symbolOnlyReference ? getScriptArgs()[2] : "value";
         Path input = Path.of(currentProgram.getExecutablePath());
         Path output = Path.of(getScriptArgs()[0]);
         var elf = ElfImage.read(input);
@@ -30,6 +34,17 @@ public class AbiDecompilerFailureExport extends GhidraScript {
         var natives = PackagedNativeLibraries.resolve();
         long delta = AddressNormalizer.rebaseDelta(currentProgram.getImageBase().getOffset(),
             GhidraImageBase.originalImageBase(currentProgram));
+        String failedName;
+        if (failureSelection.startsWith("@")) {
+            var selected = currentProgram.getFunctionManager().getFunctionAt(toAddr(
+                Math.addExact(Long.decode(failureSelection.substring(1)), delta)));
+            if (selected == null) throw new AssertionError("no analyzed failure-reference function at " + failureSelection);
+            failedName = selected.getName();
+        }
+        else {
+            failedName = failureSelection;
+        }
+        println("abi-decompiler-selected-failure=" + failedName);
         var functions = GhidraFunctionSymbols.extractDetailed(currentProgram, monitor, this::println, delta).functions();
         var failures = new ArrayList<String>();
         var decompilation = GhidraSyntheticSource.decompileDetailed(currentProgram, functions, delta, monitor,
@@ -49,7 +64,8 @@ public class AbiDecompilerFailureExport extends GhidraScript {
                 finally {
                     if (!decompiler.setOptions(new DecompileOptions())) throw new AssertionError("cannot restore decompiler options");
                 }
-            });
+            }, ghidradwarfforge.targets.TargetParameterAllocation.forProgram(
+                currentProgram, elf, monitor, this::println), this::println);
         var source = decompilation.source();
         var failed = source.functions().stream().filter(f -> f.name().equals(failedName)).findFirst().orElseThrow();
         if (failures.size() != 1 || failed.decompiled() || source.functions().stream().filter(f -> !f.decompiled()).count() != 1 ||
@@ -59,17 +75,22 @@ public class AbiDecompilerFailureExport extends GhidraScript {
         var registers = TargetRegisterMap.forElf(target.name(), elf, monitor::isCancelled);
         var extracted = GhidraTypeGraph.extract(currentProgram, functions, registers, delta, monitor, this::println,
             decompilation.recoveredReturns(), decompilation.recoveredParameters(), decompilation.recoveredStatics(),
-            ghidradwarfforge.targets.Aarch64ParameterAllocation.forProgram(currentProgram, elf, monitor, this::println));
-        var model = GhidraCompilerCallPolicy.apply(currentProgram, target, extracted, monitor, this::println);
-        if (model.variableStorage().variables().stream().noneMatch(variable ->
-                variable.functionName().equals(failedName) && variable.name().equals("value") &&
+            ghidradwarfforge.targets.TargetParameterAllocation.forProgram(currentProgram, elf, monitor, this::println));
+        var model = GhidraCompilerCallPolicy.apply(currentProgram, target, elf, extracted, monitor, this::println);
+        if (!symbolOnlyReference && model.variableStorage().variables().stream().noneMatch(variable ->
+                variable.functionName().equals(failedName) && variable.name().equals(parameterName) &&
                 variable.hasDefensibleLocation())) {
-            throw new AssertionError("saved indirect carrier disappeared before failure filtering");
+            throw new AssertionError("saved parameter disappeared before failure filtering");
         }
+        var modeCues = ghidradwarfforge.GhidraArm32FunctionModes.extract(currentProgram,
+            functions, target, delta, monitor, this::println);
+        var sectionModes = ghidradwarfforge.GhidraArm32SectionModes.extract(currentProgram,
+            elf, functions, target, delta, monitor, this::println);
         Path sourceOutput = Path.of(output + ".c");
         ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
             staged -> new MinimalDwarfSidecarExporter().export(input, staged, natives.consumer(), natives.producer(),
-                functions, source, model, sourceOutput.getFileName().toString()),
+                functions, source, model, sourceOutput.getFileName().toString(), monitor::isCancelled,
+                modeCues, java.util.List.of(), java.util.List.of(), sectionModes, this::println),
             source::writeAtomically, monitor::checkCancelled);
         failures.forEach(message -> println("native-decompiler-failure=" + message));
         println("abi-decompiler-failure=PASS");

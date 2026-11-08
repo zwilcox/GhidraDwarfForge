@@ -1,0 +1,102 @@
+{
+    "status": "CONFIRMED isolated native Windows token-scope acceptance; public operation/GUI and current-head acceptance remain incomplete",
+    "head": "f9bd2de1be6796e8acc6d8ffecaa6791ac30b588",
+    "run": 41680805435,
+    "job": 126079085292,
+    "artifactId": 13253386157,
+    "artifactSha256": "ab2935965b1d7385a880035cba393000f0375d341a6f540af164a6eb51636178",
+    "jarSha256": "c62b0549243003494e2ebe9ed5e4fdca69b5319914b606eeab3d3437b7e624c3",
+    "productionSourcesVerified": 143,
+    "testAndHarnessSourcesVerified": [
+        "src/test/java/ghidradwarfforge/output/WindowsAttachmentPrivilegeProbe.java",
+        "src/test/java/ghidradwarfforge/output/WindowsFileSecurityProbe.java",
+        "src/test/integration/windows-attachment-host.ps1"
+    ],
+    "nativeResult": "windows-attachment-privilege=PASS cycles=128 originalAttributes=0 handles=297 restored=true already-enabled=true exceptional-exit=true",
+    "verified": [
+        "Actual Java21 isolated Windows process",
+        "Own existing SeSecurityPrivilege enabled and independently read back",
+        "Already-enabled nested scope retains state",
+        "Injected operation failure restores original disabled state",
+        "Idempotent close",
+        "128 measured cycles without native handle growth",
+        "No stderr/native crash/timeout"
+    ],
+    "notProven": [
+        "Interactive standard-user UAC consent/decline",
+        "Windows real ELF attachment or GUI execution",
+        "Corrected Windows cancellation-file identity",
+        "Current-head required gate"
+    ],
+    "commands": [
+        {
+            "label": "java-version",
+            "executable": "C:\\hostedtoolcache\\windows\\Java_Temurin-Hotspot_jdk\\21.0.13-9.0\\x64\\bin\\java.exe",
+            "arguments": [
+                "-version"
+            ],
+            "exit": 0,
+            "timedOut": false
+        },
+        {
+            "label": "compile",
+            "executable": "C:\\hostedtoolcache\\windows\\Java_Temurin-Hotspot_jdk\\21.0.13-9.0\\x64\\bin\\javac.exe",
+            "arguments": [
+                "--release",
+                "21",
+                "-cp",
+                "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\GhidraDwarfForge.jar;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\jna-5.14.0.jar;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\gson-2.9.0.jar",
+                "-d",
+                "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\classes",
+                "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\WindowsFileSecurityProbe.java",
+                "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\WindowsAttachmentHostSmoke.java",
+                "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\WindowsAttachmentTransactionSmoke.java",
+                "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\WindowsAttachmentPrivilegeProbe.java"
+            ],
+            "exit": 0,
+            "timedOut": false
+        },
+        {
+            "label": "helper-privilege",
+            "executable": "C:\\hostedtoolcache\\windows\\Java_Temurin-Hotspot_jdk\\21.0.13-9.0\\x64\\bin\\java.exe",
+            "arguments": [
+                "-Xint",
+                "-XX:+UseSerialGC",
+                "--enable-native-access=ALL-UNNAMED",
+                "-cp",
+                "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\classes;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\GhidraDwarfForge.jar;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\jna-5.14.0.jar;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\gson-2.9.0.jar",
+                "ghidradwarfforge.output.WindowsAttachmentPrivilegeProbe"
+            ],
+            "exit": 0,
+            "timedOut": false
+        },
+        {
+            "label": "host-stores",
+            "executable": "C:\\hostedtoolcache\\windows\\Java_Temurin-Hotspot_jdk\\21.0.13-9.0\\x64\\bin\\java.exe",
+            "arguments": [
+                "-Xint",
+                "-XX:+UseSerialGC",
+                "--enable-native-access=ALL-UNNAMED",
+                "-cp",
+                "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\classes;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\GhidraDwarfForge.jar;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\jna-5.14.0.jar;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\gson-2.9.0.jar",
+                "ghidradwarfforge.output.WindowsAttachmentHostSmoke",
+                "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\owned"
+            ],
+            "exit": 0,
+            "timedOut": false
+        },
+        {
+            "label": "host-transaction",
+            "executable": "C:\\hostedtoolcache\\windows\\Java_Temurin-Hotspot_jdk\\21.0.13-9.0\\x64\\bin\\java.exe",
+            "arguments": [
+                "--enable-native-access=ALL-UNNAMED",
+                "-cp",
+                "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\classes;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\GhidraDwarfForge.jar;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\jna-5.14.0.jar;D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\provenance\\gson-2.9.0.jar",
+                "ghidradwarfforge.output.WindowsAttachmentTransactionSmoke",
+                "D:\\a\\GhidraDwarfForge\\GhidraDwarfForge\\build\\test-results\\attachment-windows\\transactions"
+            ],
+            "exit": 0,
+            "timedOut": false
+        }
+    ]
+}

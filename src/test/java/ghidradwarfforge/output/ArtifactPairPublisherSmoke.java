@@ -20,6 +20,7 @@ public final class ArtifactPairPublisherSmoke {
         }
         Path directory = Files.createTempDirectory("forge-artifact-pair-");
         try {
+            testFreshPublication(Files.createDirectory(directory.resolve("fresh")));
             Path artifact = directory.resolve("fixture.dbg");
             Path source = directory.resolve("fixture.dbg.c");
             Path artifactStage = directory.resolve("artifact.staged");
@@ -146,6 +147,68 @@ public final class ArtifactPairPublisherSmoke {
             assertText(artifact, "timestamp artifact");
             assertText(source, "timestamp source");
         }
+    }
+
+    private static void testFreshPublication(Path directory) throws Exception {
+        Path artifact = directory.resolve("pair.dbg");
+        Path source = directory.resolve("pair.dbg.c");
+        ArtifactPairPublisher.stageAndPublishNew(artifact, source, stage -> write(stage, "new artifact"),
+            stage -> write(stage, "new source"), () -> { });
+        assertText(artifact, "new artifact");
+        assertText(source, "new source");
+        try {
+            ArtifactPairPublisher.stageAndPublishNew(artifact, source,
+                stage -> { throw new AssertionError("existing pair reached exporter"); },
+                stage -> { throw new AssertionError("existing pair reached source writer"); }, () -> { });
+            throw new AssertionError("fresh publication overwrote a prior generation");
+        }
+        catch (IOException expected) { }
+        assertText(artifact, "new artifact");
+        assertText(source, "new source");
+        Files.delete(artifact);
+        Files.delete(source);
+        // A destination appearing after the read-only preflight is still protected.
+        try {
+            ArtifactPairPublisher.stageAndPublishNew(artifact, source, stage -> write(stage, "unused artifact"),
+                stage -> write(stage, "unused source"), () -> write(source, "concurrent source"));
+            throw new AssertionError("fresh publication replaced a late source");
+        }
+        catch (IOException expected) { }
+        assertText(source, "concurrent source");
+        if (Files.exists(artifact)) throw new AssertionError("failed fresh pair left an artifact");
+        Files.delete(source);
+        Path artifactStage = directory.resolve("artifact.stage");
+        Path sourceStage = directory.resolve("source.stage");
+        write(artifactStage, "staged artifact");
+        write(sourceStage, "staged source");
+        try {
+            ArtifactPairPublisher.publishNew(directory.resolve(".").resolve(artifactStage.getFileName()), artifact, sourceStage, source,
+                () -> write(source, "source created between installations"));
+            throw new AssertionError("second installation overwrote a concurrent source");
+        }
+        catch (IOException expected) { }
+        assertText(source, "source created between installations");
+        if (Files.exists(artifact)) throw new AssertionError("exclusive pair rollback left first installation");
+        Files.delete(source);
+        try {
+            ArtifactPairPublisher.publishNew(artifactStage, artifact, sourceStage, source,
+                () -> { throw new java.util.concurrent.CancellationException("controlled cancellation after first installation"); });
+            throw new AssertionError("exclusive pair ignored unchecked cancellation");
+        }
+        catch (java.util.concurrent.CancellationException expected) { }
+        if (Files.exists(artifact) || Files.exists(source)) throw new AssertionError("cancelled exclusive pair left an installation");
+        Files.delete(artifactStage);
+        Files.delete(sourceStage);
+        try {
+            ArtifactPairPublisher.stageAndPublishNew(artifact, source, stage -> write(stage, "cancel artifact"),
+                stage -> write(stage, "cancel source"), () -> { throw new ghidra.util.exception.CancelledException(); });
+            throw new AssertionError("fresh publication ignored cancellation");
+        }
+        catch (ghidra.util.exception.CancelledException expected) { }
+        try (var paths = Files.list(directory)) {
+            if (paths.findAny().isPresent()) throw new AssertionError("fresh failure/cancellation left staging files");
+        }
+        System.out.println("fresh-pair-no-overwrite-and-rollback=PASS");
     }
 
     /**

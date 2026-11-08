@@ -132,7 +132,7 @@ def main():
         hashes = current
     run('compiler-gnu', ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline,loc', reference])
     run('compiler-llvm', ['llvm-dwarfdump', '--verify', reference])
-    run('compiler-strict', ['python3', source / 'check-dwarfdump.py', reference, case / 'compiler-strict.log', '--original', binary])
+    run('compiler-strict-driver', ['python3', source / 'check-dwarfdump.py', reference, case / 'compiler-strict.log', '--original', binary])
     run('gnu', ['readelf', '-h', '-SW', '-n', '--debug-dump=info,abbrev,aranges,decodedline,loc', output])
     run('llvm', ['llvm-dwarfdump', '--verify', output])
     run('strict-driver', ['python3', source / 'check-dwarfdump.py', output, case / 'strict.log', '--original', binary])

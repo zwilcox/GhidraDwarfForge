@@ -1,0 +1,170 @@
+{
+    "status": "CONFIRMED_LOCAL_LINUX_BUILD_ID_COMMAND",
+    "parent": "d043e6d",
+    "issue": 109,
+    "package": {
+        "ghidra": "/dev/shm/forge-lldb-worktree/build/build-id-installer/packaged-readonly-fix/ghidra",
+        "jarSha256": "2bfb00573e32bc1b7c84ff65175cbf38a6a353580f0ceaa1abc527aff7b70cc0",
+        "releaseSha256": "6b19adc173007a11d4ef5b727904748b09aff04e4eda73244c3a2b57325baa00"
+    },
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/build-id-command-linux-20261106.tar.gz",
+        "sha256": "c8ae7333918e7eb7d6bfe8edf80463e50f8b51bef27245c7e1a8693b5eb6223f",
+        "verifiedFiles": 5762,
+        "packagedJavaFiles": 217,
+        "selectedPaths": [
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/readonly-reproduction",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/readonly-refresh-reproduction",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/readonly-metadata-fix",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/command-readonly-fix",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/curated-readonly-fix-v2-exec",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/curated-readonly-fix-v2-pie",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/command-linux-provenance",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/packaged-readonly-fix/release.zip",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/packaged-readonly-fix/installation.json",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/packaged-readonly-fix/assemble.log",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/packaged/release.zip",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/packaged/installation.json",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/build-readonly-fix.log",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/shared-copy-regression.log",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/readonly-metadata-fix.log",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/command-readonly-fix.log",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/matrix-readonly-fix.log",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/curated-readonly-fix.log",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/curated-readonly-fix-v2.log",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/curated-readonly-fix-v2.commands.json",
+            "/dev/shm/forge-lldb-worktree/build/build-id-installer/release-package-test.log"
+        ]
+    },
+    "sourceProvenance": {
+        "path": "/dev/shm/forge-lldb-worktree/build/build-id-installer/command-linux-provenance/source-hashes.json",
+        "sha256": "174a032c505ca4fec010362fe6354a78e1c6926291acc710c20f169a07b0429a",
+        "packagedJavaFiles": 217,
+        "comparison": "Every packaged Java source matches the current working source byte-for-byte."
+    },
+    "matrix": {
+        "checks": 226,
+        "freshGdbSessions": 50,
+        "negativeEmptyOrRemovedSessions": 20,
+        "positiveSessions": 30,
+        "host": "production Linux Intel LP64/ext4",
+        "targets": [
+            {
+                "target": "aarch64",
+                "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/aarch64/result.json",
+                "sha256": "cf54c07a9a4eebafa612ff1245d89288d5727f6d3442171670182bc092487bed",
+                "subresults": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/aarch64/exec/result.json": "cb8ca3e39d58b8841f3c1ecc9524f4134568c3edfe5437da9cd1fd4ebcfede9c",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/aarch64/pie/result.json": "4f7a24f602629d4d6755388a439cf1c4efae28adea1ac19d44b618469dff2768"
+                }
+            },
+            {
+                "target": "arm32",
+                "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/arm32/result.json",
+                "sha256": "04d53ec40d4d8865550cdcdcfe45f645c79daee1a54be42807a4c82ec5827a23",
+                "subresults": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/arm32/exec/result.json": "bb8982b854f18f5422cd450102ae907f995c6cf83ec1661943264c9bc241dcc2",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/arm32/pie/result.json": "04e547e6f57cb4110cc69d951ce6610712f3824d4f78119535f68b854c0b8264"
+                }
+            },
+            {
+                "target": "mips32be",
+                "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/mips32be/result.json",
+                "sha256": "686eceb736b8f64110c20618befd461349105004da1ac1656983be9a3fb85e08",
+                "subresults": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/mips32be/exec/result.json": "7b249504f6ff1d2828b766b05c4ad94c1672e9b1a5879c5077a306ff7e45ea5c",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/mips32be/pie/result.json": "49ce81920b94c7984f646e6209cfd9ca9872c378f0e51ea38138a8aa9b1b4b3c"
+                }
+            },
+            {
+                "target": "mips32le",
+                "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/mips32le/result.json",
+                "sha256": "46d6806675c40b8cd772ed1b2e1affbcaeb3d114032b982b32001f7ce3d3de41",
+                "subresults": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/mips32le/exec/result.json": "c834f0f937bdc40cc7f7bf6f7249108cf329bda1ed35bcdd7b15986a9abeab1b",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/mips32le/pie/result.json": "5d71ca79383c2bc57e52f8ecff42299d239578ff118e1fbfd07c5bcc9c54619f"
+                }
+            },
+            {
+                "target": "x86_64",
+                "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/x86_64/result.json",
+                "sha256": "78f1063078d2ba5d6f601baf344c4ea348eb56c857f4179a47d6a4185a3312f8",
+                "subresults": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/x86_64/exec/result.json": "f4da03a991f101987395ac47794f4887e3bb204f0ba64110aba12f71a487e863",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/x86_64/identity/result.json": "94b69bd144cddba67a4fcc0f7706c213b09ce82ccca20db44212c4c3eda2612c",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/x86_64/command/result.json": "e3835dbf2ec36b2a4e181ab7d1f8fdd2711b49681fb515bf3788d1e77e0cae54",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/x86_64/pie/result.json": "2f7891e7074d841b4dcf89618e7c5c9c65da1f409ad166f40bde72cfd6a0acb3"
+                }
+            }
+        ],
+        "scope": "All five targets, exec and PIE; none/zlib real producer exports. Install, explicit update, removal and recovery. Old source/sidecar hidden for successful GDB lookups. Core x86-64 tests include process exits, cancellation, identity/alias/collision refusals and provenance preservation."
+    },
+    "command": {
+        "checks": 27,
+        "freshGdbSessions": 10,
+        "standaloneResult": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/command-readonly-fix/result.json",
+        "standaloneResultSha256": "e51a16467aad238676c6d240da56e1bd05eab1641dae55270d20797d9525ac71",
+        "matrixResult": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/matrix-readonly-fix/x86_64/command/result.json",
+        "cases": [
+            "spaces, Unicode, quotes and literal dollar signs",
+            "preview and UTF-8 encoded pathname transport",
+            "SHA, bounded request, duplicate, unknown field/action, relative path and alias refusals",
+            "install/idempotent/explicit update/remove/recover",
+            "stdin/file cancellation after real selected validator starts",
+            "0444 and 0555, with and without ACL/user attributes, install and refresh"
+        ]
+    },
+    "readonlyFix": {
+        "previousJarSha256": "4c9e8d50e79249b6c18ad70f48d83d4d9b7b976786294b9a1aaaa0e8831779fb",
+        "reproductions": [
+            "readonly-reproduction/install.stdout: fsetxattr errno 13",
+            "readonly-refresh-reproduction/update.stdout: AccessDeniedException on publish.debug"
+        ],
+        "fix": "Apply metadata on a writable owned stage with user attributes before the ACL, then restore the exact mode. Copy replacement bytes with independently bound existing-registration metadata before sealing; do not reopen a completed read-only copy for writing.",
+        "nativeMetadataOracle": "PASS, including 0444/0555 ACL/raw-xattr preservation, stale snapshots, cancellation, inode policy and handle/alias checks.",
+        "originalPreservation": "All selected original bytes remain unchanged; command read-only inputs also retain supported metadata."
+    },
+    "savedAnalystRefresh": {
+        "freshHeadlessExports": 4,
+        "freshGhidraProcesses": 6,
+        "freshGdbSessions": 4,
+        "results": [
+            {
+                "role": "exec",
+                "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/curated-readonly-fix-v2-exec/result.json",
+                "sha256": "4edcd32c5bcf3ed6bdf73e21b35ab7b1abfedd658c6e6b8dbe27bb7379f670c7",
+                "originalSha256": "68a3cec9be4183c88c001c77be28fc0da5061fd3399937664d7cfa94d14f07f5"
+            },
+            {
+                "role": "pie",
+                "path": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/build-id-linux-host/curated-readonly-fix-v2-pie/result.json",
+                "sha256": "fa46b608aaeffffca93a1d8b13c839669fc1cf515cbfecad5f9338e3180d87ce",
+                "originalSha256": "abd94af02f9facc7efefbb5f329d4a5aa6de385b56c74daad6a18888619f7729"
+            }
+        ],
+        "scope": "Actual saved analyst function/type/member edits, separate reopen/export process, source retention after old exports are hidden."
+    },
+    "sharedRegression": {
+        "attachmentFileStoreSmoke": 75,
+        "attachmentTargetStoreSmoke": 63,
+        "attachmentTransactionSmoke": 532,
+        "attachmentOperationSmoke": 103,
+        "scope": "Model-host smoke suites; not Windows native acceptance."
+    },
+    "otherChecks": [
+        "Java 21 testClasses and buildExtension PASS",
+        "Production native-inclusive release assembly PASS",
+        "Release package shell fixture PASS",
+        "Python compile, actionlint, Bash syntax, new Bash launcher shellcheck and git diff --check PASS"
+    ],
+    "interruptedHarness": "First post-fix curated rerun passed a target subdirectory instead of the fixture root and stopped before import. Both corrected v2 roles pass; the failed invocation log is retained, not counted as acceptance.",
+    "remaining": [
+        "Native Windows installer and PowerShell launcher acceptance",
+        "Shared-object and applicable sectionless installation/discovery",
+        "Installation-specific LLDB and Linux perf discovery/symbolization",
+        "Updated hosted matrix, independent review and protected integration",
+        "Prior #110 PR183 protected integration"
+    ],
+    "limits": "No full issue completion, release, hidden-metadata preservation, power-loss guarantee or Windows installation claim. Previous pre-fix passes are not counted as validation of this final package."
+}

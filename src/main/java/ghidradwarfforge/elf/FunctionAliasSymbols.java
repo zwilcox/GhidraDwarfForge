@@ -181,7 +181,7 @@ public final class FunctionAliasSymbols {
         return a < b ? b - a < sizeA : a - b < sizeB;
     }
 
-    private static Set<ByteBuffer> originalNames(ElfImage image, BooleanSupplier cancelled,
+    static Set<ByteBuffer> originalNames(ElfImage image, BooleanSupplier cancelled,
             Consumer<String> diagnostic) throws IOException {
         boolean hasStatic = image.sections().stream().anyMatch(s -> s.type == 2);
         if (!hasStatic) {
@@ -244,7 +244,7 @@ public final class FunctionAliasSymbols {
         return names;
     }
 
-    private static String hash(FileChannel input, long offset, long size, BooleanSupplier cancelled) throws IOException {
+    static String hash(FileChannel input, long offset, long size, BooleanSupplier cancelled) throws IOException {
         MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("SHA-256");

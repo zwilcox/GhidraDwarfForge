@@ -1,0 +1,20 @@
+{
+    "run": 41607172238,
+    "head": "bdfae025e20d5168dfe43e3cff9a14b9c8aeade6",
+    "artifactId": 13218160762,
+    "artifactSha256": "fce80bd2617fc8c479263fad004251d522cb1be5951f29d1e8c298b0b7abcd8e",
+    "status": "PASS",
+    "observations": 14,
+    "descriptorCycles": 128,
+    "supplementaryGroupApplication": true,
+    "sourceAndDependencyHashes": {
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/libs/GhidraDwarfForge.jar": "d54651735dc859d227058e7d9c2a9fa55de85be0cfa8aa7119347df9ee0c7545",
+        "/home/runner/work/_temp/ghidra/ghidra_12.0.3_PUBLIC/Ghidra/Framework/Pty/lib/jna-5.14.0.jar": "34ed1e1f27fa896bca50dbc4e99cf3732967cec387a7a0d5e3486c09673fe8c6",
+        "/home/runner/work/_temp/ghidra/ghidra_12.0.3_PUBLIC/Ghidra/Framework/Generic/lib/gson-2.9.0.jar": "c96d60551331a196dac54b745aa642cd078ef89b6f267146b705f2c2cbef052d",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/src/test/java/ghidradwarfforge/output/LinuxFileMetadataProbe.java": "5c44356dee68ebb6759cd4ba3470421825146e8033c7ae7316da871c2d8dea97",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/src/test/native/linux-metadata-contract.c": "d4adc916ad07d33e3ac5b4a6abf4eac3c5487621da9e81f6f5f971fe9cc56952",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/src/test/integration/linux-file-metadata.py": "c665ddbe214c4aea7f31cc14ac380059062477506be10326a900fa4b45dd826c",
+        "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/src/main/java/ghidradwarfforge/output/LinuxFileMetadata.java": "32a46d55aea268e4cdc3ff17ede5d7fa110dd0dd78d005b63f28f284b2efcd4c"
+    },
+    "review": "Raw source hashes match Git; production JAR Java21; all fourteen independent inode-policy/stat/xattr observations agree; actual source/stage NOATIME and stale-policy rejections; native C ABI and descriptor checks pass. Complete metadata admission is not claimed."
+}

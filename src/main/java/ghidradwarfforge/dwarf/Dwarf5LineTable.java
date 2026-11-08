@@ -11,16 +11,91 @@ import java.util.TreeMap;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 import ghidradwarfforge.source.SyntheticSourceFile.SourceLine;
+import ghidradwarfforge.source.SourcePartitionPlan;
 
 /** Minimal deterministic DWARF 5 line program using evidence-backed rows. */
 public final class Dwarf5LineTable {
-    static record LineRow(long address, int line) {
+    public static record LineRow(long address, int line) {
     }
 
-    static record LineSequence(long start, long endExclusive, List<LineRow> rows) {
-        LineSequence {
+    public static record LineSequence(long start, long endExclusive, List<LineRow> rows) {
+        public LineSequence {
             rows = List.copyOf(rows);
         }
+    }
+
+    public record FilePosition(int file, int line) {
+        public FilePosition {
+            if (file < 0 || line < 0) throw new IllegalArgumentException("invalid source file position");
+        }
+    }
+
+    /** File table and the translation from retained logical source evidence. */
+    public static final class FileLayout {
+        private final List<String> names;
+        private final SourcePartitionPlan partitions;
+
+        private FileLayout(List<String> names, SourcePartitionPlan partitions) {
+            this.names = List.copyOf(names);
+            this.partitions = partitions;
+            if (names.isEmpty() || names.stream().anyMatch(name -> name.isBlank() || name.indexOf('\0') >= 0) ||
+                    names.stream().distinct().count() != names.size()) {
+                throw new IllegalArgumentException("invalid or duplicate line-table file name");
+            }
+        }
+
+        public static FileLayout single(String fileName) {
+            if (fileName == null) throw new IllegalArgumentException("invalid line-table file name");
+            return new FileLayout(List.of(fileName), null);
+        }
+
+        public static FileLayout partitioned(String indexName, List<String> partNames,
+                SourcePartitionPlan partitions) {
+            if (indexName == null || partitions == null || partNames == null ||
+                    partNames.size() != partitions.parts().size()) {
+                throw new IllegalArgumentException("partition file names differ from source plan");
+            }
+            var names = new ArrayList<String>();
+            names.add(indexName);
+            names.addAll(partNames);
+            return new FileLayout(names, partitions);
+        }
+
+        public List<String> names() { return names; }
+
+        public void requireSource(ghidradwarfforge.source.SyntheticSourceFile source) {
+            if (partitions != null) partitions.requireSource(source);
+        }
+
+        public FilePosition locate(int logicalLine) {
+            if (partitions == null) return new FilePosition(0, logicalLine);
+            var position = partitions.locate(logicalLine);
+            return new FilePosition(position.file(), position.line());
+        }
+    }
+
+    /** Encoded bytes, retained logical rows, and their exact file/line translation. */
+    public static final class Result {
+        private final byte[] section;
+        private final List<LineSequence> sequences;
+        private final FileLayout files;
+
+        private Result(byte[] section, List<LineSequence> sequences, FileLayout files) {
+            // Private construction transfers the newly encoded array into this result.
+            this.section = section;
+            this.sequences = List.copyOf(sequences);
+            this.files = files;
+        }
+
+        public byte[] section() {
+            return section.clone();
+        }
+
+        public List<LineSequence> sequences() {
+            return sequences;
+        }
+
+        public FileLayout files() { return files; }
     }
 
     private static final int DW_FORM_STRING = 0x08;
@@ -44,9 +119,27 @@ public final class Dwarf5LineTable {
 
     public static byte[] build(String fileName, String sourceDirectory, int addressBytes,
             ByteOrder byteOrder, List<FunctionSymbol> functions, List<SourceLine> sourceLines) {
-        if (fileName == null || fileName.isBlank() || fileName.indexOf('\0') >= 0) {
-            throw new IllegalArgumentException("invalid line-table file name");
-        }
+        return buildWithPlan(fileName, sourceDirectory, addressBytes, byteOrder,
+            functions, sourceLines).section;
+    }
+
+    public static Result buildWithPlan(String fileName, String sourceDirectory, int addressBytes,
+            ByteOrder byteOrder, List<FunctionSymbol> functions, List<SourceLine> sourceLines) {
+        return buildWithPlan(fileName, sourceDirectory, addressBytes, byteOrder, functions, sourceLines, false);
+    }
+
+    /** Retain a source-file table even when no instruction has defensible source evidence. */
+    public static Result buildWithPlan(String fileName, String sourceDirectory, int addressBytes,
+            ByteOrder byteOrder, List<FunctionSymbol> functions, List<SourceLine> sourceLines,
+            boolean retainFileTable) {
+        return buildWithPlan(FileLayout.single(fileName), sourceDirectory, addressBytes,
+            byteOrder, functions, sourceLines, retainFileTable);
+    }
+
+    public static Result buildWithPlan(FileLayout files, String sourceDirectory, int addressBytes,
+            ByteOrder byteOrder, List<FunctionSymbol> functions, List<SourceLine> sourceLines,
+            boolean retainFileTable) {
+        java.util.Objects.requireNonNull(files, "source files");
         if (sourceDirectory == null || sourceDirectory.isBlank() ||
                 sourceDirectory.indexOf('\0') >= 0) {
             throw new IllegalArgumentException("invalid line-table source directory");
@@ -60,23 +153,30 @@ public final class Dwarf5LineTable {
             writeExtended(program, DW_LNE_SET_ADDRESS,
                 address(sequence.start(), addressBytes, byteOrder));
             program.write(DW_LNS_SET_FILE);
-            writeUleb(program, 0); // DWARF 5 file table indices are zero-based.
+            int currentFile = files.locate(sequence.rows().getFirst().line()).file();
+            writeUleb(program, currentFile); // DWARF 5 file table indices are zero-based.
             long currentAddress = sequence.start();
             long currentLine = 1;
             for (LineRow row : sequence.rows()) {
+                FilePosition position = files.locate(row.line());
+                if (position.file() != currentFile) {
+                    program.write(DW_LNS_SET_FILE);
+                    writeUleb(program, position.file());
+                    currentFile = position.file();
+                }
                 long addressDelta = Math.subtractExact(row.address(), currentAddress);
                 if (addressDelta != 0) {
                     program.write(DW_LNS_ADVANCE_PC);
                     writeUleb(program, addressDelta);
                 }
-                long lineDelta = Math.subtractExact((long) row.line(), currentLine);
+                long lineDelta = Math.subtractExact((long) position.line(), currentLine);
                 if (lineDelta != 0) {
                     program.write(DW_LNS_ADVANCE_LINE);
                     writeSleb(program, lineDelta);
                 }
                 program.write(DW_LNS_COPY);
                 currentAddress = row.address();
-                currentLine = row.line();
+                currentLine = position.line();
             }
             long finalDelta = Math.subtractExact(sequence.endExclusive(), currentAddress);
             if (finalDelta != 0) {
@@ -86,7 +186,11 @@ public final class Dwarf5LineTable {
             writeExtended(program, DW_LNE_END_SEQUENCE, new byte[0]);
         }
         if (sequences.isEmpty()) {
-            return new byte[0];
+            if (!retainFileTable) return new Result(new byte[0], sequences, files);
+            // Select the DWARF 5 file without emitting a matrix row or an address.
+            // Consumers can list file:line while function addresses remain unmapped.
+            program.write(DW_LNS_SET_FILE);
+            writeUleb(program, 0);
         }
 
         ByteArrayOutputStream header = new ByteArrayOutputStream();
@@ -109,10 +213,12 @@ public final class Dwarf5LineTable {
         writeUleb(header, DW_FORM_STRING);
         writeUleb(header, DW_LNCT_DIRECTORY_INDEX);
         writeUleb(header, DW_FORM_UDATA);
-        writeUleb(header, 1); // file_names_count
-        header.writeBytes(fileName.getBytes(StandardCharsets.UTF_8));
-        header.write(0);
-        writeUleb(header, 0); // directory index
+        writeUleb(header, files.names().size());
+        for (String name : files.names()) {
+            header.writeBytes(name.getBytes(StandardCharsets.UTF_8));
+            header.write(0);
+            writeUleb(header, 0); // directory index
+        }
 
         ByteArrayOutputStream body = new ByteArrayOutputStream();
         writeUnsigned(body, 5, 2, byteOrder);
@@ -125,7 +231,7 @@ public final class Dwarf5LineTable {
         ByteArrayOutputStream result = new ByteArrayOutputStream();
         writeUnsigned(result, body.size(), 4, byteOrder);
         result.writeBytes(body.toByteArray());
-        return result.toByteArray();
+        return new Result(result.toByteArray(), sequences, files);
     }
 
     /**

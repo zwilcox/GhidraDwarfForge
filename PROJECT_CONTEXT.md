@@ -27,6 +27,3076 @@ the external-evidence cleanup decision. #120 has not started. These observations
 do not reinterpret the older historical feature notes below.
 
 
+## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
+
+**CONFIRMED:** the user selected this order: complete optional multi-file
+synthetic source (#115), then call-site/tail-call metadata (#117), then the
+Cortex-M debugging profile (#120). Preserve every original acceptance item;
+complete required validation and protected integration before advancing to the
+next issue. #187 remains last outside this goal. No release publication is
+requested.
+
+**CONFIRMED previous goal complete:** #111 merged through
+[PR188](https://github.com/zwilcox/GhidraDwarfForge/pull/188) as `1b165f5` after
+all 16 jobs in run `42394809285` passed. Final raw artifact review covers all
+five targets and native Windows production/transported consumers; the merge
+retains the tested tree. The formatter checkpoint notes below are historical.
+
+**CONFIRMED #115 implementation and hosted acceptance:** optional deterministic
+source partitioning preserves one CU/canonical type graph and the single-file
+default. The [seven-item acceptance audit](docs/MULTIFILE-ACCEPTANCE.md) records
+local and final hosted proof for production revision `52358db` in head `d701e2b`.
+All sixteen jobs in [run 42432375106](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42432375106),
+including `required-validation`, pass; the separate performance run
+`42432375119` also passes. Raw review covers five target source/DSO matrices,
+lexical/types, discontiguous stepping, publication failures, source failures,
+Windows GUI/transported consumers, privileged attachment and build-ID recovery.
+The [hosted benchmark](docs/evidence/multifile-hosted-benchmark.json) retains
+regressions: at 1,000 functions all measured paired directions worsen; at
+10,000 functions scattered listing improves but all-function lookup regresses,
+with other timing/memory results mixed. Artifact size grows at both sizes.
+
+**CONFIRMED integration, 2026-11-08:**
+[PR189](https://github.com/zwilcox/GhidraDwarfForge/pull/189) merged as `71352a3`;
+issue #115 is closed. Final full run `42446082844` and performance run
+`42446082851` passed. #117 is in preparation and #120 follows it; neither has
+implemented call-site/Cortex-M behavior yet. This is not a release announcement.
+Earlier checkpoint notes below are historical and their pending lists are
+superseded by the acceptance audit and this integration record.
+
+**CONFIRMED #115 consumer checkpoint:** the actual multi-file GDB companion
+passes eight local original/moved-tree and source-rule ownership cases, including
+quoted Unicode paths and missing dependencies. Current generation reproduces
+the published companion byte-for-byte; 29 Python controls and existing live
+single-file ET_EXEC/PIE/shared-object loader tests pass. Attachment export binding
+now verifies all manifest/part hashes and host identities, original-input identity
+and ordered DWARF source names. Missing/changed/replaced original dependencies
+are refused by exported and relocated validation. The build-ID installer now
+retains independent complete source inventories for reported and relocated
+artifacts. Actual Linux ext4 installation, GNU/LLVM/pinned validation, fresh GDB
+discovery and cross-file stepping with old exports hidden, missing retained-file
+controls, failure/cancellation retries and retained-source removal pass on Java 21.
+A 5,000-file record test verifies expanded generation budgets while keeping the
+small request/state limits. Broader semantic/host fixtures, attachment
+combinations, benchmarks and the hosted gate remain pending. No full
+#115 acceptance item is closed.
+
+**CONFIRMED #115 option checkpoint:** Bash and PowerShell forward the optional
+positive source-line target and protect source parts/manifests from log aliases
+before launch, including old generations and future generated names. Both wrapper
+suites pass locally; PowerShell execution was on Linux. The installed Bash wrapper
+passes real export, GNU/LLVM/pinned validation and eight GDB loader cases. The
+installed Linux/Java 21 Script Manager journey passes cancellation, invalid input,
+repeated multi-file output and unchanged subsequent single-file export. Its real
+artifacts pass validators and GDB name/type/source/stepping checks. Windows and
+broader target acceptance remain pending; no full #115 requirement is closed.
+
+**CONFIRMED #115 lexical checkpoint:** Java 21 production exports pass locally
+for x86-64/AArch64 non-PIE, PIE and rebased PIE. The complete bundle reconstructs
+the single-file source; independent decoded DIE/line comparison preserves type
+references, scopes, ranges and locations, with unchanged non-presentation DWARF
+sections and thirteen rejected decoded-input mutations per case. Compiler-backed
+GDB shadowed-variable and caller-frame observations match single/multi-file
+exports; file-qualified lookup resolves distinct caller/callee files. GNU/LLVM/
+pinned checks, repeated bytes and original/saved-program preservation pass.
+The six-case CI step is present but hosted execution is unverified. Broader
+types/targets, publication combinations and the benchmark remain pending; no full
+#115 requirement is closed. See [scoped evidence](docs/MULTIFILE-SOURCE.md).
+
+**CONFIRMED #115 type/target checkpoint:** six x86-64/AArch64 cases preserve
+shared recursive and duplicate-name types across source files, with raw-DIE,
+cold-GDB and runtime value checks. Fifteen x86-64/AArch64/ARM32/MIPS-BE/MIPS-LE
+non-PIE/PIE/rebased-PIE cases additionally pass real source stepping, decoded
+semantic comparison, GNU/LLVM/pinned validators, identity/preservation and
+deterministic reruns on Java 21. The target fixture is partially stripped; it
+does not replace the fully stripped curated tests. Both matrices are wired into
+CI; hosted/Windows execution, the benchmark and remaining publication/consumer
+combinations are pending. No full #115 requirement is closed by these scoped
+checks alone. See [acceptance evidence](docs/MULTIFILE-SOURCE.md).
+
+**CONFIRMED #115 benchmark checkpoint:** the corrected paired 1,000/10,000-function
+experiment passes locally on Java 21: sixteen production exports, full-symbol
+GDB checks, source navigation/runtime checks, semantic comparison, structural
+validators, preservation and deterministic reruns. Scattered listing improves
+in every measured pair, while all-function lookup regresses; export time, RSS
+and symbol-load comparisons are inconclusive. Artifact size increases, and the
+trailing annotation catalog remains an oversized indivisible part. The first
+full attempt failed from private application logs filling tmpfs and is retained;
+the corrected complete run stores those logs with external evidence. See
+[measurements and limits](docs/PERFORMANCE.md#optional-multi-file-source-comparison-115).
+Hosted benchmark execution remains pending.
+
+**CONFIRMED #115 hosted test failure:** run `42423790371` at `9dc1186`
+fails Windows `sourceBundleStoreSmoke` before later host acceptance. Its race
+hook compared a resolved destination with an unresolved temporary path. A
+Linux symlink-parent reproduction confirms the old comparison misses injection;
+the corrected test resolves the parent and requires exactly one injection.
+Java 21 passes the corrected race/cancellation checks, and the complete local
+store/reader/publisher checks pass. Production code is unchanged. The subsequent native Windows host job `128565957060` in run `42425532357`
+passes at `59d5930`, including 1,454 store checks and 169 cancellation points.
+This confirms the corrected hook on Windows; newer multi-file formatter
+combinations and full issue acceptance still require their own hosted results.
+
+**CONFIRMED #115 discontiguous checkpoint:** two gap positions pass across
+x86-64/AArch64 non-PIE/PIE, initial/rebased programs and plain/zlib outputs:
+96 exports and 120 GDB sessions. Single/multi semantic comparisons, full bundle
+reruns, validators, frame oracles and original/program preservation pass. Direct
+source `step`/`next` cross into a mapped conditional. Crossing into unmapped
+prologue setup instead stops without a source line and requires instruction
+stepping to the next recovered line; that limitation is explicitly tested.
+No line is fabricated for excluded bytes. The two initial fixture failures
+and the compiler-corroborated QEMU diagnostic are retained. These scoped local
+checks do not close remaining consumer/publication or hosted/Windows acceptance.
+
+**CONFIRMED #115 combined-consumer checkpoint:** fully stripped PIE/zlib
+multi-file exports pass on all five targets with actual GDB CLI/MI formatter
+values, validators, deterministic formatter toggles and preserved original/source
+inventories. x86-64/AArch64 also combine the GDB loader and strict unwind
+companion and pass LLDB 18.1.3. Four production cancellation points cover
+formatter preparation/rendering and source preparation/reused installation;
+retry preserves every dependency. Transported x86-64 artifacts pass GDB/LLDB
+with producer source files hidden, then restored byte-identically. Initial LLDB
+runs lacked its private library environment and remain recorded as failures.
+The five-case CI step and stronger transported-source check are present;
+native Windows combinations, fresh-generation publication failures and remaining
+attachment/build-ID refresh/recovery coverage are still pending.
+
+**CONFIRMED #115 publication checkpoint:** the production script passes 84
+interruption cases across x86-64/AArch64/MIPS32-BE: fresh/replacement outputs,
+cancellation/injected I/O failures, and seven preparation/install/publication
+checkpoints. Interruptions after one, two and all three mutable replacements
+restore the old generation or remove fresh finals. Complete unreferenced source
+parts are retained, analyst content and originals remain unchanged, and every
+retry passes deterministic reruns, validators and actual GDB source stepping.
+The first MIPS fixture lacked usable runtime unwind FDEs; its GDB failure is
+retained. The corrected fixture uses the existing source-oracle build flags.
+The CI lanes are wired; hosted publication acceptance remains pending.
+
+**PRESENT, UNVERIFIED Windows combination:** native PowerShell formatter tests
+now include `-SourceLines 8` for exec/plain and PIE/zlib, with complete dependency
+hashes and four production cancellation points. The Linux consumer receives
+both complete Windows generations and hides producer source during GDB/LLDB
+checks. The new Windows combinations require hosted execution; local Python
+and workflow checks are not native Windows evidence.
+
+**CONFIRMED #115 shared-object checkpoint:** ten Java 21 cases pass across
+all five targets, each with normal and rebased Ghidra analysis. The runtime
+loader supplies an independent DSO load bias; compiler/single/multi GDB runs
+verify relocated names, file-qualified breakpoints, cross-file stepping and
+values. Full semantic comparison, validators, repeated output and original/
+project preservation pass. Cross-target missing-library warnings were resolved
+by an explicit fixture library search path; those failed attempts are retained.
+Hosted shared-object execution remains pending. Failed/empty-source edge cases,
+attachment/build-ID lifecycle combinations and final hosted acceptance remain.
+
+**CONFIRMED #115 performance-control diagnosis:** hosted Windows run
+`42426100636` fails the old cross-revision byte-equality assertion. The pinned
+`1bb4c14` measurement baseline predates the accepted `75860c6` CU compilation-
+directory addition. A Java 21 Linux replay of its retained Windows SQLite
+analysis project confirms that exact semantic difference: 12,338 DIE records
+otherwise match, with identical line/range/location and other ELF sections.
+A fresh U-Boot pair also matches 43,408 DIE records across 6,375 functions.
+GNU/LLVM/pinned validation and compiler/baseline/candidate GDB checks pass for
+both workloads. The revised control retains both first artifacts, validates their exact
+abbreviation/string additions, compares all DIE forms/references, preserves
+same-revision byte determinism, and rejects unrelated mutations. Production
+export code is unchanged. A corrected hosted Windows run is still required;
+this diagnosis does not complete #115. See [performance control evidence](docs/PERFORMANCE.md#historical-performance-baseline-directory-compatibility).
+
+**CONFIRMED #115 source-edge checkpoint:** real native instruction-limit failures
+pass for all-failed and mixed source, plus empty function-source bodies with
+known symbols retained, in single/multi layouts on x86-64, AArch64 PIE and both
+MIPS32 byte orders. Forty-eight successful exports, 24 GDB cases, deterministic
+complete inventories, raw file-only tables and semantic comparisons pass.
+Thirty-two empty-selection refusals preserve existing/fresh destinations; zero
+function selection remains unsupported rather than fabricating symbols. The
+unchanged default two-mode invocation additionally passes four exports/two GDB
+cases. Initial empty-selection/comparator/old-fixture failures are retained.
+The existing four-target annotation pipeline now runs these cases. Hosted
+execution remains pending; attachment/build-ID lifecycle combinations and the
+final exact-head gate remain. See [source-edge evidence](docs/evidence/multifile-source-edges.json).
+
+**CONFIRMED #115 build-ID refresh/recovery checkpoint:** actual saved analyst
+function/type/member edits pass with complete multi-file inventories for x86-64
+non-PIE and PIE on Linux ext4/Java 21. The launcher retains independent reported
+and relocated copies; fresh GDB finds source, types and live arguments with every
+original export dependency hidden. Sixteen update interruption/cancellation/sync
+failure cases retain both generations and recover the correct registration;
+32 missing-manifest/part controls refuse recovery without changing state or
+registration. Twenty multi-file GDB sessions plus two default single-file sessions
+pass. GNU/LLVM/pinned checks and original/source inventory preservation pass;
+[raw evidence](docs/evidence/multifile-build-id-refresh.json) is archived and
+read-back verified. Attachment lifecycle combinations and final hosted Windows,
+performance and exact-head acceptance remain; this does not complete #115.
+
+**CONFIRMED #115 attachment source guard fix:** the regression reproduced a
+prepared transaction committing after a source dependency disappeared. Complete
+index-authenticated dependencies now receive host identity/metadata checks through
+commit; refresh/rollback require the previous source bundle. Explicit recovery
+still permits damaged new-generation dependencies when restoring an intact prior
+association. Java 21 controller tests pass 592 checks; the extension builds and
+operation/binding/recovery/helper regressions pass. Real non-PIE/PIE Ghidra exports,
+live GNU/LLVM/pinned validators and twelve native GDB sessions pass through saved
+analyst refresh, eight missing-dependency preparation refusals and eight rollbacks.
+The default adds two GDB sessions. These local integration runs use the limited
+Linux test host; CI now runs both layouts under the privileged production host.
+[Archived evidence](docs/evidence/multifile-attachment-source.json) is read-back
+verified. Hosted production-host/Windows/performance and final exact-head acceptance
+remain unverified; #115 is not yet complete.
+
+**PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
+its raw counterpart is explicitly conditional on raw-input support becoming
+available. Recheck that dependency when reaching #120; do not silently declare
+raw-input behavior implemented or close unsupported acceptance items.
+
+## Historical goal: optional GDB/LLDB formatters (#111) — 2026-11-07 UTC
+
+**CONFIRMED:** the user selected all six acceptance requirements of #111. The
+previous seven-issue goal is integrated through PR186 (`41887ff`); this formatter
+work is a new goal. #187 remains last, apart from the requested upstream report
+preparation. Release publication is not included.
+
+**CONFIRMED implemented and exercised:** explicit canonical-key selections,
+synthetic typedef witnesses, generation-bound Python companions, independent GDB
+and LLDB adapters, flags/aggregate summaries, and recoverable publication.
+Formatters remain disabled by default (no formatter generated without a
+selection). See [formatter design and acceptance](docs/DEBUGGER-FORMATTERS.md)
+for the six original requirements and tested profiles. Protected integration
+and final-revision required checks are tracked in
+[PR188](https://github.com/zwilcox/GhidraDwarfForge/pull/188).
+
+**HISTORICAL implementation checkpoints:** the local progress and failures below
+precede the hosted Linux and Windows evidence recorded afterward. Their pending
+statements describe those individual checkpoints, not the latest scoped results.
+
+**CONFIRMED local checkpoint:** production saved-program, fully stripped ET_EXEC
+fixtures pass GNU/LLVM/strict libdwarf validation, repeated generation and disabled
+export comparisons, GDB CLI/MI on x86-64, AArch64 and big-endian MIPS32, and LLDB
+18.1.3 on x86-64/AArch64. Controls exercise 8/16/32/64-bit signed/unsigned flags,
+unknown bits, aliases/zero, recursive pointers, bounded nested summaries, native
+children, unreadable memory, stale artifacts and foreign modules. These are local
+fixtures, not the full acceptance or hosted gate. A stale LLDB summary cache defect
+was reproduced and corrected using uncached summaries. Four/five-file publisher
+rollback/cancellation and Bash wrapper alias checks also pass.
+
+**CONFIRMED expanded checkpoint:** same-named canonical types, hostile label
+escaping, production preparation/render cancellation, invalid selection failure,
+PIE/zlib and combined five-file generation checks now pass in local runs. The
+five-target workflow includes dedicated formatter tests. PowerShell wrapper
+forwarding/log-alias tests pass on Linux; this is not native Windows evidence.
+
+**CONFIRMED portable checkpoint:** moved Linux artifacts pass GDB CLI/MI and
+LLDB without changing companion/ELF bytes. Missing and mismatched co-located
+files are refused instead of falling back to an older export. An explicitly
+unlocated analyst variable also exercises actual debugger unavailable-value APIs.
+Native Windows exec/PIE producer and Linux consumer stages are now present in CI.
+
+**CONFIRMED hosted prerequisite failure:** run `42387275399` at `caa381f`
+passes Linux native, extension build and workflow lint. Native Windows stops
+before formatter production because MSYS2 zlib `1.4-2` links the checker to
+`libz-1.dll`, absent from the previous dependency allowlist. The official package
+and its PE imports are audited; the exact filename is now admitted alongside
+legacy `zlib1.dll`, retaining recursive dependency, notice and hash checks.
+Local release assembly accepts both names and rejects `libz-2.dll`; hosted
+Windows and the complete gate still need a passing rerun. See
+`docs/evidence/formatter-msys2-zlib-runtime.json`.
+
+**CONFIRMED prerequisite progress and inventory correction:** run `42388197297`
+at `1e914f9` passes both native builds, extension build and release assembly.
+The Windows zlib correction is validated in the actual checker and production
+packages. x86-64 and AArch64 then stop before formatter tests because the new
+fixture appears in the wrong position in the sorted source inventory. Moving
+its existing entry restores both local fixture-reproducibility checks (15
+byte-identical artifacts per target). The exact inventory guard is retained;
+see `docs/evidence/formatter-fixture-inventory.json`. The complete hosted gate
+and native Windows formatter acceptance remain pending.
+
+**CONFIRMED local formatter-log protection correction:** an owned reproduction
+showed that a log hard link could overwrite the formatter companion when its
+parent directory ended in a newline. Command substitution removed the newline
+while computing the protected companion path; the original ELF was unchanged.
+The Bash wrapper now preserves directory bytes using parameter expansion. The
+full wrapper suite passes, including hard-link and symlink rejection before
+Ghidra launches and companion-byte preservation. Final hosted validation remains
+required; see `docs/evidence/formatter-log-directory-newline.json`.
+
+**CONFIRMED Windows formatter fixture-path failure:** run `42388197297`
+reaches native Windows formatter setup, where Ghidra's recorded `/D:/...`
+executable path is rejected by `Path.of`. Both fixture harnesses now pass the
+already hash-bound original ELF path explicitly. A corrected local x86-64
+five-companion production run passes validators, GDB CLI/MI, LLDB, deterministic
+toggles and cancellation/retry. This is a fixture correction; the production
+exporter already handles the Windows path convention. Native Windows production
+and transported-consumer acceptance still require a passing rerun. See
+`docs/evidence/formatter-windows-fixture-path.json`.
+
+**CONFIRMED hosted Linux formatter acceptance:** run `42390876041` at
+`ef876bee49e2f1165626e9766b33ea4b5bd9b668` passes ten production formatter
+cases: plain non-PIE and zlib PIE on x86-64, AArch64, ARM32, MIPS32 big-endian
+and MIPS32 little-endian. All five profiles pass actual GDB CLI/MI; x86-64 and
+AArch64 also pass LLDB summary/child checks. Two relocated x86-64 generations
+pass both debuggers with byte-identical artifacts and missing/mismatched-file
+controls. Raw review binds the reports and companions to the actual CI release
+package. The documented `coverage.typeNodes` query finds all nine selected keys
+in both default and enabled reports. See
+`docs/evidence/formatter-linux-acceptance.json` and the six-requirement map in
+`docs/DEBUGGER-FORMATTERS.md`. This proves the formatter stages, not the full gate.
+
+**CONFIRMED native Windows production and corrected local consumers:** the same
+run's Windows host job passes both non-PIE and PIE five-companion exports,
+deterministic toggles, cancellation/retry and invalid choices. Raw review binds
+its artifacts to the actual package and compiler inputs. The hosted Linux
+consumer then rejects a missing-source warning caused by the recorded Windows
+build directory; formatter assertions themselves pass. Supplying the transported
+source directory fixes source listing in GDB CLI/MI without changing artifact
+bytes or weakening warning checks. Both Windows artifacts pass the corrected
+local GDB/LLDB and strict-validator consumers. See
+`docs/evidence/formatter-windows-acceptance.json`.
+
+**Integration checkpoint:** the corrected hosted consumer and complete
+final-revision `required-validation` gate remain required before protected merge
+and closure of #111. PR188's checks and merge state are the integration record;
+the scoped evidence above is not a whole-run success claim. No release
+publication or #187 work is included.
+
+## Historical development log
+
+The dated checkpoints below preserve earlier findings and failures. Their
+running-job, pending-validation and open-issue statements describe those
+checkpoints, not the current status above. Later acceptance evidence supersedes
+those statements only within its explicitly verified scope.
+
+**CONFIRMED #109 target artifact upload failure (2026-11-07 UTC):** all
+x86-64 test stages in run `42329832669` pass, but artifact upload rejects the
+intentional command-path fixture `request λ "literal".json`. The other four
+target jobs pass with raw artifact review; x86-64 raw review and the required
+gate are not accepted. The workflow now retains the entire diagnostics tree
+inside one PAX tar.gz, preserving the original names, hidden files and bytes.
+Local quoted/Unicode/control-character/hidden-file/link retention checks and
+workflow lint pass. Hosted upload and full acceptance remain required. See
+`docs/evidence/build-id-target-artifact-retention.json`. This supersedes the
+running-x86 notes below; no runtime assertion or filename test was weakened.
+
+
+**CONFIRMED current #109 ARM/MIPS target jobs and artifact reviews
+(2026-11-07 UTC):** at `0f74abd`, run `42329832669` passes AArch64, ARM32,
+MIPS32 big-endian and MIPS32 little-endian. Independent review binds their
+archives, executed reviewers and raw results: 56 installer checks, 32 GDB
+lifecycle sessions, 36 retained generations and 230 supervised validator
+executions. The AArch64 installed LLDB/offline-perf checks also pass within
+their documented scope. Sectionless ET_EXEC still uses the explicit fallback;
+35 unretained AArch64 regression input paths remain runtime-oracle evidence,
+not independently rehashed copies. See
+`docs/evidence/build-id-targets-current-acceptance.json`. The x86-64 job,
+combined required gate, final acceptance and protected integration remain.
+
+
+**CONFIRMED #109 integration-harness locale failure and local correction
+(2026-11-07 UTC):** run `42324179974` fails MIPS little-endian floating-register
+validation because the harness forces `LC_ALL=C`, giving Java an ASCII native
+filesystem encoding. The audited Linux directory host correctly refuses it.
+The harness now selects `C.UTF-8`; production admission is unchanged. An isolated
+exact-package reproduction confirms both the refusal and correction. With ambient
+`LC_ALL=C`, twelve fresh plain/zlib non-PIE/PIE exports pass structural and QEMU/GDB
+checks, plus four source-relocation and four derived-validation cases. See
+`docs/evidence/build-id-linux-locale.json`. A corrected full hosted gate is still
+required. Run `42329832669` is testing corrected head `0f74abd`; the passing
+Windows jobs below do not complete its five-target gate.
+
+**CONFIRMED current #109 Windows installer and hosted consumer (2026-11-07 UTC):**
+At corrected head `0f74abd`, run `42329832669` passes native Windows host job
+`128276867134` and downstream GDB job `128283282420`. Independent review verifies
+73 native checks, 14 interruptions, 25 retained generations, 1,050 manifest files,
+175 supervised validator executions and 50 strict original/sidecar reports.
+The actual installed initial/analyst-curated artifacts pass two fresh GDB runtime
+sessions and four controls, including file-local lookup and transferred-source
+mapping. Shared consumer regression review checks 13 strict reports, 2,959 hash
+bindings and compiler/Forge unwind traces. The five-target gate, final artifact
+review and protected integration remain outstanding. See
+`docs/evidence/windows-build-id-current-acceptance.json`. Earlier pending Windows
+notes are historical within this scope; this does not complete the overall goal.
+
+**CONFIRMED #109 Windows validator path failure (2026-11-06):**
+run `42314434393` passes the lock checks and reaches derived-artifact validation,
+where MinGW GNU readelf renders the Unicode installation directory as `?` and
+reports a missing file. The original/export hashes remain bound and no public
+registration is written. The CI candidate selects MSYS2's GNU readelf and adds
+independent ASCII/Unicode/long-path compiler-ELF controls plus malformed-input
+refusal before the installer runs. The controls cover both an unset locale and
+the actual supervisor C locale; direct-process success alone does not prove
+supervised installation. This tool selection is **PRESENT, UNVERIFIED**
+until native tests and the full supervisor/installer workflow pass. No validator
+is skipped and the original executable is unchanged. See
+`docs/evidence/windows-build-id-validator-paths.json`. Full #109 acceptance remains
+open; earlier isolated-lock success is not full Windows installation acceptance.
+
+
+**CONFIRMED #109 sampled perf characterization (2026-11-06):**
+required job `128221726634` in run `42312429042` records actual x86-64 exec/PIE
+samples with perf 6.8.12. Compiler ELF-symbol controls resolve the hot function;
+compiler DWARF-only controls and both installed Forge generations do not recover
+its name. Offline source queries and GDB discovery pass. An independent artifact
+audit verifies four retained generations and replays the samples with perf 7.0.14,
+confirming the same limitation. This is **not** recovered-name sample-report
+support. See `docs/evidence/build-id-perf-recording.json`. The full run also
+exposed a missing fixture inventory entry for `perf-build-id.c`; that test setup
+omission is corrected without changing the export or validation requirements.
+Native Windows isolated locking also passes job `128226945808`, with raw logs
+and source/package provenance inspected. Full Windows installer lifecycle and
+the complete latest-head gate remain outstanding. Earlier sampling-unverified
+and isolated-lock-unverified notes below are historical.
+
+
+**CONFIRMED #109 lock defects and local Linux correction (2026-11-06):**
+the corrected Windows SACL fixture passes, then native installation exposes a
+production lock readback failure: Windows rejects reading the exclusively locked
+file through a second handle. Independent Linux reproduction also proves that
+closing such a second handle silently releases the old process-scoped lock while
+Java still reports it valid. Windows now verifies bytes through the locking
+channel; Linux uses an audited open-file-description lock that survives metadata
+handle closes. Isolated Linux contention/cancellation tests, 123 transaction
+checks and 27 packaged command checks with ten GDB sessions pass. Native Windows
+lock/lifecycle acceptance remains **PRESENT, UNVERIFIED**. The unchanged format
+still supports whole-file exclusion and full identity/metadata/content checks.
+See `docs/evidence/build-id-locking.json`. Final perf/hosted acceptance and
+protected integration remain outstanding.
+
+**CONFIRMED local #109 perf fixture preflight (2026-11-06):**
+new native x86-64 exec/PIE fixtures pass four packaged headless exports, saved
+analyst-name edits, production install/update/remove, strict/LLVM validation,
+GDB retained-source discovery and offline perf source queries. Actual sampling
+is **PRESENT, UNVERIFIED**: a separate required `perf-build-id` job records bounded
+software CPU-clock samples and compares installed/updated/removed generations
+with independent compiler ELF-symbol and DWARF-only controls. A successful
+characterization will distinguish actual recovered-name symbolization from a
+corroborated consumer limitation. No event/report support is claimed from the
+local preflight. See `docs/evidence/build-id-perf-preflight.json` and
+`docs/BUILD-ID-CONSUMERS.md`. Windows acceptance and final integration remain
+outstanding.
+
+**CONFIRMED #110 and final #112 protected integration (2026-11-06):**
+PR #183 merged normally as `9c3029f97a418eb3c63742213d68392608ff15a2`
+after required run `42291314960` passed every job. The tested and merged trees
+are identical. Artifact review reparses 2,844 positive strict records, separates
+139 intentional rejection records and corrupted evidence controls, inspects 47
+LLDB result records, and verifies retained input hashes plus package/native/source
+manifests. All 210 packaged source files match tested head `0ee9a3d`. Issues #110
+and #112 are closed; component PRs #177–#182 are verified ancestors and reconciled.
+See `docs/evidence/lldb-final-acceptance.json` and `docs/DEBUGGER-CONSUMERS.md`.
+This supersedes pending-integration notes in the historical checkpoints below.
+Build-ID installation #109 remains active; its native Windows fixture correction
+and final combined hosted acceptance are still required. No release was published.
+
+**CONFIRMED #109 Windows installer refusal; fixture correction awaiting validation
+(2026-11-06):** run `42303689282` passes export/attachment but refuses the first
+installer operation for unsupported SACL metadata. The test used high-level
+`Get-Acl`/`Set-Acl` for DACL protection, unlike the already audited native
+DACL-only fixture. The harness now reuses that native helper, checks absent-SACL
+preservation, and separately requires explicit null-SACL installation refusal.
+Production admission is unchanged. Python/workflow checks and cross-compilation
+pass; the correction and downstream consumer remain **PRESENT, UNVERIFIED**
+until a native rerun passes. See `docs/evidence/windows-build-id-sacl-fixture.json`.
+
+**PRESENT, UNVERIFIED #109 Windows downstream consumer (2026-11-06):**
+`windows-build-id-gdb.py` and the downstream Linux CI step now verify hashes,
+native host provenance, validators, exact build-ID discovery and runtime
+behavior for the retained Windows installer initial/curated generations.
+Transferred Windows source paths require an explicit GDB substitution; an
+independent compiler control confirms the path behavior, including Unicode and
+shell punctuation. Actual native installer artifacts are still required before
+claiming this consumer path passes. See the Windows section of
+`docs/BUILD-ID-INSTALLATION.md` and `docs/evidence/windows-build-id-consumer-preflight.json`.
+
+**CONFIRMED local #109 installed-consumer checkpoint (2026-11-06):**
+production Linux install/update/remove passes LLDB 18.1.3 and offline perf 7.0.14
+on x86-64/AArch64 exec and PIE. Eight LLDB runtime sessions pass 80 observations;
+sixteen absence/mismatch sessions and 64 perf queries complete the controls.
+LLDB rejects mismatched Forge/compiler files. perf accepts their misplaced
+build-ID paths, independently confirming a consumer limitation rather than a
+Forge pairing guarantee. The separate perf cache is explicitly tested through
+independent snapshots: it hard-links inputs, stays stale until explicit update,
+and does not supply this version's cache-only probe lookup. See
+`docs/BUILD-ID-CONSUMERS.md` and its receipt. Hosted acceptance, Windows installer
+acceptance and protected integration remain outstanding; perf event/report
+symbolization remains unverified. This supersedes the pending local LLDB/perf
+statements in the earlier checkpoint history below.
+
+**CONFIRMED local #109 shared/sectionless checkpoint (2026-11-06):**
+ten fresh headless exports and production Linux installations pass across all
+five targets. Shared libraries pass fresh automatic GDB discovery, runtime
+arguments/types/source stepping and removal controls. For sectionless ET_EXEC,
+matching compiler controls independently prove that GDB 15.1 cannot discover the
+sidecar by build ID; explicit loading of the installed Forge sidecar passes
+source lookup, exact addresses, breakpoints, stepping and normal exit. This is
+not sectionless automatic-discovery acceptance. The install/update command now
+reports that limitation and explicit-loading alternatives. The final package
+passes 35 layout runtime sessions, ten compiler controls and the 27-check/ten-
+GDB-session command regression. See `docs/BUILD-ID-LAYOUTS.md` and its receipt.
+The workflow includes these cases; hosted acceptance remains pending. Native
+Windows installation, installation-specific LLDB/perf and protected integration
+remain incomplete, including #110's prerequisite integration.
+
+**CONFIRMED local #109 command and Linux acceptance checkpoint (2026-11-06):**
+the packaged command now provides explicit install/update/remove/recover, bounded
+SHA-bound requests, preview, cancellation and GDB setup. The production Linux
+host passes 226 checks and 50 fresh GDB sessions across all five targets' exec/PIE
+layouts. This includes crash/recovery controls, identity refusals and read-only
+mode/ACL/user-attribute preservation. Four fresh saved-program exports additionally
+prove analyst name/type/member refresh in exec and PIE with the old exports absent.
+Two independently reproduced read-only installation/refresh defects are corrected;
+the final tested package, native metadata oracle and shared attachment regressions
+pass. See `docs/BUILD-ID-INSTALLATION.md` and `docs/evidence/build-id-command-linux.json`.
+Windows launcher code and its new native CI installer/recovery harness are
+**PRESENT, UNVERIFIED**. The harness consumes actual Windows original and saved-
+curation exports and tests the PowerShell command, metadata, crash recovery,
+locks, cancellation and Windows namespace controls. Local probe compilation and
+a seven-check/four-GDB-session Linux regression pass; those are not Windows
+acceptance. Shared/sectionless installation,
+installation-specific LLDB/perf acceptance, Windows acceptance and the full hosted
+gate/protected integration remain outstanding. #110 integration still precedes
+goal completion. Earlier transaction/component-only scope notes below are historical.
+
+**CONFIRMED local #109 transaction checkpoint:** installation/update/removal and
+recovery now pass 123 controls with both the test metadata host and the production
+Linux ext4 host. Ten exec/PIE target layouts pass fresh GDB discovery, source,
+value and stepping checks; the nine additional layouts use the test metadata
+host. Linux checks additionally preserve non-default permissions, an access ACL
+and user attribute. Root and transaction-directory identity safeguards pass.
+Thirteen production-host identity controls additionally reject absent, malformed
+and conflicting IDs, a same-ID/different-original collision and input aliases.
+See `docs/BUILD-ID-TRANSACTION.md` for exact evidence and limits. The launcher,
+Windows installation, curated refresh and full consumer/identity matrix remain
+PLANNED; #110 hosted acceptance and protected integration remain required.
+
+**CONFIRMED local ARM aggregate oracle correction:** PR183's ARM32 lane found
+one stale exact-entry comparison after the memory byte-piece compatibility
+change. The independent decoder already required byte pieces; its final r3/SP
+comparison now requires the exact 4/1/8-byte stack tails and retains the ARM
+register bit piece. The failing hosted artifact replays successfully. Ten fresh
+little-/big-endian exec/PIE/rebased layouts, plus little-endian shared layouts,
+pass 2,692 compiler/Forge/physical-carrier observations each, 60 strict reports,
+80 failure exports and ten cancellation controls. See
+`docs/evidence/arm-memory-piece-regression.json`. Production code is unchanged;
+latest-head hosted acceptance and #110 protected integration remain required.
+
+**CONFIRMED local companion source-path regression fix:** the next PR184 run
+reached companion-loader checks and exposed the same relative filename display
+assumption in their native, remote and attach/exec oracles. All three now request
+absolute GDB filename display without weakening assertions. Fifteen fresh exports
+pass strict validation across all five targets and exec/PIE/sectionless layouts;
+nineteen companion sessions, three native ASLR runs and one attach/exec run pass.
+The old native oracle fails on the same artifact, and direct `info line` output
+confirms that only presentation changes. See
+`docs/evidence/companion-source-path-regression.json`. Hosted acceptance is still
+required; build-ID installation remains incomplete.
+
+**CONFIRMED local #109 derived-artifact validation:** a read-only byte proof now
+binds the relocated sidecar and retained source to the original export without
+rewriting its report. Forty fresh GNU/LLVM/pinned-strict policy runs pass on
+twenty retained plain/zlib cases across all five targets; 220 refusal and 140
+sampled cancellation controls pass. Ordinary evidence remains schema 2; schema 3
+distinguishes derived inputs from reported export inputs. See
+`docs/DERIVED-ARTIFACT-VALIDATION.md`. The metadata adapter in these probes is
+explicitly test-only. Native host acceptance, required build-ID selection,
+retained-generation ownership, publication/update/removal and recovery remain
+PLANNED; #110 hosted acceptance/protected integration still precedes completion.
+
+**CONFIRMED local #109 ELF source-relocation stage:** production code now copies
+the matched sidecar, appends relocated plain/zlib payloads, and changes only
+three section offset/size fields. Sixty fresh exports and twenty relocated
+exec/PIE cases across all five targets pass structural/GDB checks; eight
+x86-64/AArch64 cases also pass LLDB and offline perf. Original bytes, compression,
+line programs, deterministic repeats and cancellation/refusal controls pass.
+See `docs/SOURCE-SIDECAR-RELOCATION.md` and its receipt. Full hosted acceptance
+remains pending. The installer's pair binding, retained generations, permissions,
+atomic install/update/removal and recovery remain PLANNED; this is only an
+unpublished staging writer. #110 protected integration remains required.
+
+**CONFIRMED local #109 source-relocation component:** a pure Java transformer
+changes only the synthetic CU/line directory, retaining DIE offsets, existing
+strings and executable line-program bytes. Ten exec/PIE cases across all five
+targets pass validators and GDB with the former source absent; x86-64/AArch64
+also pass LLDB and offline perf source lookup. Refusal/cancellation, deterministic
+repeat and input-preservation controls pass. See
+`docs/ADR-0006-BUILD-ID-INSTALLATION.md` and its evidence receipt. This is not an
+installer: production ELF/compression packaging, identity-bound generations,
+atomic install/update/removal and recovery remain PLANNED. Hosted acceptance
+and #110 protected integration remain required before goal completion.
+
+**CONFIRMED local source-path regression fix:** hosted PR184 exposed a GDB
+presentation mismatch on ARM32 and both MIPS byte orders: the new compilation
+directory makes GDB print relative filenames, while the oracle requires the
+exact absolute source path. The oracle now explicitly requests absolute filename
+display and retains every assertion. Fifteen fresh extended-section exports and
+GDB runs pass across all five targets, including exec/PIE and five deterministic
+repeats; original hashes and strict validation pass. The old oracle's failure is
+reproduced after otherwise successful runtime. See
+`docs/evidence/synthetic-source-path-regression.json`. The full updated hosted
+gate remains required; #109 installation is still incomplete.
+
+**CONFIRMED local #109 prerequisite:** the exporter now records the actual
+synthetic-source directory in `DW_AT_comp_dir`, matching its line table. This
+avoids a reproduced perf 7.0.14 source-listing crash with an absent optional
+attribute. The pinned native binding passes C audits and sixteen isolated
+producer lifecycles before Ghidra use. Twelve real x86-64/AArch64 exec/PIE exports
+pass validators, GDB, LLDB and offline perf source/variable lookup, including
+rebasing, deterministic repeats and empty-root controls. See
+`docs/SYNTHETIC-SOURCE-DIRECTORY.md`. Combined hosted/Windows acceptance is
+pending; #109 installation, source retention, provenance and atomic update/removal
+remain unimplemented. PR #183 carries combined #110 validation and the final
+#112 documentation; both still need its protected integration.
+
+**CONFIRMED #112 implementation acceptance:** PR #176 merged normally as
+`6b582b4007311f334b954d361458b0775c35904e`; its tree exactly matches tested head
+`06348e1`. Run `42242341105` passes every required job, including both synthesis
+targets, the other three target regressions, Linux/Windows native builds and
+Windows-produced artifact consumption. Independent retained-artifact review
+rechecks 2,834 positive strict reports, intentional rejection controls, package
+identity and native provenance. See `docs/UNWIND-ACCEPTANCE.md` and its final
+receipt. The ADR now accepts only the documented opt-in ordinary integer
+profiles; no release or asynchronous-frame support is implied. Final acceptance
+documentation is awaiting protected integration alongside the combined #110
+LLDB stack. #110 hosted acceptance and #109 installation remain unfinished.
+Earlier checkpoint-specific pending statements below are historical.
+
+**CONFIRMED local #110 automatic-discovery checkpoint:** configured build-ID
+roots resolve compiler/Forge symbols and pass actual x86-64/AArch64 exec/PIE
+and shared-library runtime checks. Wrong and unconfigured roots are rejected.
+Sectionless originals retain build IDs but LLDB 18 exposes no UUID; both
+producer controls fail automatic lookup as expected, while the explicit module
+workflow still passes. See `docs/LLDB-DISCOVERY.md` and the requirement map in
+`docs/DEBUGGER-CONSUMERS.md`. Hosted acceptance/protected integration remain;
+this fixture arrangement does not implement #109's installer or refresh policy.
+
+**CONFIRMED local #110 floating/vector checkpoint:** scalar floating-point values
+and clobber gaps pass compiler/Forge LLDB comparisons on x86-64 and AArch64.
+AArch64 exec/PIE/rebased-PIE vector traces match all 119 GDB instruction stops,
+including stack/register transitions and honest unavailable intervals. The
+explicit Cortex-A53 transport matches the existing GDB vector profile; the
+pinned LLDB default-SVE missing-Neon limitation is independently reproduced
+with compiler and Forge symbols. See `docs/LLDB-FLOATING-VECTORS.md`.
+Hosted acceptance and remaining #110 discovery/support work stay open; #112
+integration still precedes completion of #110, then #109.
+
+**CONFIRMED local #110 shared/sectionless checkpoint:** both selected targets
+pass explicitly loaded shared-library source/value checks, including rebased
+analysis and real runtime load bias. Sectionless ET_EXEC lookup succeeds with
+direct attachment but LLDB 18.1.3 misses its named breakpoint with either
+compiler or Forge symbols; an explicitly loaded separate symbol module passes
+the original-byte/source-step/exit checks. See `docs/LLDB-ELF-LAYOUTS.md` for the
+exact workflow and limits. Hosted integration, remaining storage/discovery
+controls and the final LLDB support contract remain open; #112 and #109 ordering
+is unchanged.
+
+**CONFIRMED local #110 memory-piece and bitfield checkpoint:** exact byte-aligned
+memory fragments now use equivalent byte pieces that LLDB 18.1.3 can consume.
+Both selected targets pass compiler/GDB/LLDB instruction comparisons for exec,
+PIE and rebased PIE, including honest unavailable intervals. Packed/ordinary
+bitfield values and deterministic exports pass both consumers; all twelve ARM32
+mixed-incoming cases pass the existing GDB/strict checks. See
+`docs/LLDB-MEMORY-PIECES.md`. Hosted acceptance, remaining LLDB layouts/discovery
+and final consumer support remain open; #112 integration still precedes full
+#110 completion, followed by #109.
+
+**CONFIRMED local #110 register-piece and semantic checkpoint:** LLDB 18.1.3
+misreads the previous split-register bit-piece expression as a memory address.
+Explicit target metadata now permits byte-piece encoding for validated AMD64
+and AAPCS64 general registers; other slices retain their explicit bit offsets.
+Fresh production exports pass both GDB and LLDB semantic checks, with honest
+AArch64 unavailable tails and a separately corroborated compiler union-array
+consumer limitation. See `docs/LLDB-REGISTER-PIECES.md`. Hosted validation and
+the complete #110 layout/storage/discovery matrix remain incomplete; #112's
+protected integration still comes first, followed by full #110 and #109.
+
+**CONFIRMED local #110 CFI compatibility checkpoint:** LLDB 18.1.3 stops
+reading the original generated CIE at its CFA-relative value opcode. An equivalent
+standard value expression preserves all following rules. Fresh normal exports
+pass the existing x86-64/AArch64 exec/PIE/shared GDB matrix; plain/compressed
+non-PIE sidecars additionally match compiler references at every executed ordinary
+LLDB boundary. See `docs/LLDB-CFI-COMPATIBILITY.md`. The new hosted LLDB step and
+full #110 source/type/location/layout/discovery matrix remain incomplete. This
+work is on a separate branch; #112's exact-head gate and integration come first,
+followed by full #110 and #109. No issue is closed by this checkpoint.
+
+**CONFIRMED scoped Windows checkpoint and #112 acceptance audit:** native Windows
+run `42235627038` passes the new PowerShell and GUI producers at `1872477`.
+Its eight downloaded sidecars pass fresh local GNU/LLVM/pinned strict validation
+and fourteen compiler-reference GDB sessions, with transport hashes preserved.
+Six new actual decoder refusal cases cover syscall/interrupt/exception transitions;
+the expanded profile suite passes 775 checks. The six original issue requirements
+and promised matrix now have an explicit evidence map in `docs/UNWIND-ACCEPTANCE.md`.
+The latest full hosted gate, exact artifact review, final ADR acceptance and
+protected integration remain; #112 is not complete. Then continue #110/#109.
+Earlier checkpoint-specific pending statements below are historical.
+
+**CONFIRMED locally — discontiguous runtime and refusal cases for #112:** both
+targets pass non-PIE/PIE strict normal exports of curated split function bodies,
+including compression, rebasing, deterministic repeat, saved comments and
+read-only project preservation. Forty exports, twenty generated strict-validated
+sidecars and 32 GDB sessions pass. All ordinary callers select DWARF at 160
+retained reference/positive gap stops; partial-instruction ownership explicitly
+omits that function's CFI and selects runtime fallback. No production algorithm
+changed. See `docs/DISCONTIGUOUS-UNWIND.md`. Native Windows, combined hosted/artifact
+and final #112/ADR acceptance remain, then #110/#109.
+
+**CONFIRMED locally — compiler frame pointers for #112:** unchanged compiler C
+with explicit frame-pointer use passes both targets' recovered and normal export
+paths: 28 exports, ten failure/invalid-option controls, sixteen validated sidecars
+and 42 GDB sessions. The additional caller-value oracle matches RBP/X29 at every
+executed ordinary boundary (99 x86-64, 85 AArch64), including recursive callers.
+No production algorithm change was needed. See `docs/FRAME-POINTER-UNWIND.md`.
+Actual noncontiguous-body runtime coverage, native Windows/hosted and final ADR
+acceptance remain; #112 is incomplete, followed by #110/#109. PR176's lint fix
+passed its hosted lint job in run `42235627038`; the remaining jobs are pending.
+
+**CONFIRMED hosted lint correction:** PR176's updated head `50b1da3` started
+run `42235018469`; ShellCheck rejected the unquoted literal `role=exec` in the
+new GUI step. Quoting it reproduces and resolves SC2209 with explicit local
+ShellCheck. Prior local Actionlint invocations omitted optional ShellCheck because
+it was absent from PATH. See `docs/evidence/powershell-unwind-ci-lint.json`.
+The production code and validated outputs are unchanged; updated hosted acceptance
+is still required. Full #112, then #110/#109, remain active.
+
+**CONFIRMED locally — PowerShell unwind forwarding for #112:** the installed
+PowerShell wrapper passes five real Linux exports through an explicit isolated
+launcher adapter, preserves its four-file generation on an invalid range, and
+passes four GNU/LLVM/pinned strict checks plus six compiler-reference GDB
+sessions. This does not establish native Windows process/DLL behavior. CI now
+runs the same producer on Windows and requires Windows provenance in its Linux
+GDB consumer. Cross-host companion relocation is not claimed. See
+`docs/PRODUCTION-UNWIND.md` and `docs/evidence/powershell-unwind-journeys.json`.
+Full #112 hosted/ADR acceptance remains, followed by #110 and #109.
+
+**CONFIRMED locally — production unwind journeys for #112:** real installed
+GUI choices pass on x86-64 and AArch64, including three cancellation points per
+target. The actual GDB companion loads all six target/image-role combinations
+with matching compiler-reference boundary and return traces. Eight rebased saved
+projects pass 32 exports and 24 GDB sessions while preserving analyst comments,
+project files, original CFI and original executable bytes. GNU/LLVM/pinned strict
+checks pass on all 24 GUI/saved-project sidecars. See
+`docs/PRODUCTION-UNWIND.md` and `docs/evidence/production-unwind-journeys.json`.
+CI wiring includes these tests and a Windows GUI-to-Linux-GDB handoff; the new
+Windows path is PRESENT, UNVERIFIED. Native PowerShell synthesis, hosted gates
+and the full #112 acceptance audit remain. #110/#109 remain next; #74/#108 and
+#116/#114 are complete. Earlier pending local-journey notes are historical.
+
+**CONFIRMED locally — normal-wrapper unwind integration for #112:** off/strict/
+conditioned/compressed exports pass on x86-64 and AArch64 executable/PIE/shared
+compiler fixtures, including deterministic generations, bound evidence, validators
+and instruction-boundary/recursive-return GDB comparisons. The normal exporter
+preserves analyst comments/constants with generated frames and passes sixteen
+real recovery/serialization/evidence/loader cancellation/failure controls across
+the two shared-library cases, including rebasing and typed constant lookup.
+See `docs/PRODUCTION-UNWIND.md`. The dedicated GUI chooser and Windows path are
+PRESENT, UNVERIFIED; existing-CFI production journeys and hosted gates remain.
+PR175 merged as `5b4ca014`, closing #116/#114; PR176 run `42221824335` still runs.
+#112 is incomplete; #110/#109 remain next. Earlier pending entries are historical.
+
+**CONFIRMED locally — relocated-pointer compiler matrix for #112:** both targets
+now pass executable/PIE/shared exports of the unchanged C fixture. AArch64's GOT
+load uses a separately acknowledged fixed-pointer condition qualified from
+original relative-relocation/RELRO metadata; it is not an inferred runtime fact.
+The six cases pass 54 exports, 24 staged controls, 24 sidecars and 78 GDB sessions;
+strict regressions and 14 native refusal controls also pass. See
+`docs/RELOCATED-POINTER-UNWIND.md`. The exact tested package is recorded in its
+receipt. Normal CLI/GUI synthesis, shipping policy, additional compiler/state
+variation and ADR acceptance remain incomplete. Full #112/#110/#109 stay open.
+PR176's CI fix is merged into this branch; its hosted gate remains pending.
+PR175 passed all fifteen jobs and merged normally as `5b4ca014`; #116/#114
+are closed with the acceptance map on main. Earlier pending entries are historical.
+
+**CONFIRMED locally — complete executed compiler instruction paths for #112:**
+all four conditioned sidecar variants now match independent compiler references
+at every executed ordinary instruction boundary: 90 snapshots on x86-64 and 77
+on AArch64. Caller PCs, stack-pointer offsets, saved-register witnesses and actual
+DWARF unwinder selection agree throughout prologues, nested/recursive calls, the
+global write and returns. The new matrix passes 18 exports, 8 failure controls,
+8 sidecars and 26 GDB sessions. See `docs/CONDITIONED-COMPILER-UNWIND.md`. This is
+one executed non-PIE path per target, not universal coverage or proof of external
+stack separation. Normal CLI/GUI synthesis remains off; #112/#110/#109 stay open.
+PR176's large-ELF compile correction is pushed as `34c42c3`; its new gate and
+PR175's existing gate remain pending.
+
+**CONFIRMED locally — conditioned compiler/GDB export for #112:** explicit
+projection and collection retain their accepted stack-separation condition in
+normalized evidence JSON. Real headless exports of unchanged compiler C match
+all observed backtrace/register/recursive-return states on x86-64 and AArch64:
+18 exports, 8 failure controls, 8 sidecars and 16 GDB sessions. Strict regressions
+also pass on both targets. See `docs/CONDITIONED-COMPILER-UNWIND.md`. The external
+condition is not proved; normal CLI/GUI synthesis and shipping policy remain
+unsettled. Full #112/#110/#109 remain incomplete. PR176's standalone large-ELF
+compile dependency failure is being corrected separately; PR175 retains priority.
+
+**CONFIRMED locally — conditional stack-separation analysis for #112:** explicit
+external address-range conditions now remain attached to flows, verified call
+groups and summaries; strict callers reject conditional summaries. Both unchanged
+compiler fixtures pass conditional four-function proofs at original/rebased
+addresses while strict and one-byte-short conditions still refuse. Unqualified
+frame projection rejects conditional evidence, so this does not emit CFI or settle
+shipping policy. The new suite passes 82 checks; strict native export regressions
+pass on both targets. See `docs/UNWIND-STACK-SEPARATION.md`. Conditional projection,
+provenance and compiler/GDB acceptance remain next; normal CLI/GUI synthesis is off.
+
+**CONFIRMED local PR176 CI correction:** hosted run `42217484551` failed the
+standalone large-ELF test because its hand-maintained `javac` inputs omitted the
+new frame writer dependencies. Adding the current production source path fixes
+that compilation without Ghidra/native dependencies. The unchanged >2 GiB test
+passes with a 64 MiB Java heap, GNU/LLVM/pinned strict validators and GDB behavior.
+See `docs/CFI-INTEGRATION.md`. The updated hosted gate is still required; no
+production source changed and full #112/#110/#109 remain incomplete.
+
+**CONFIRMED locally — combined unwind integration:** current main `8041fdab`
+and the preserved unwind commit stack now share one tested branch. Both
+annotation-aware normal exports and explicit frame exports retain their APIs.
+Two saved-annotation profiles, eight native-frame cases and all intrinsic-context
+modes pass with 38 retained strict reports. The combined package has 730 matching
+Java 21 classes and 207 matching production sources. See `docs/CFI-INTEGRATION.md`.
+This replaces the planned serial integration route for PR167–174; those PRs remain
+open until combined hosted acceptance. PR175 keeps priority. Full #112 compiler,
+policy, provenance/ADR and normal-entry-point acceptance remain incomplete.
+
+**CONFIRMED locally — #112 captured unwind descriptions:** bounded deterministic
+JSON now records recovered instruction/byte evidence, exact frame rules, omissions
+and root refusals, bound to staged artifact/source hashes without claiming
+independent validation. The component passes 720 checks. Sixteen native/QEMU
+cases pass 144 exports, 64 failure controls, 64 sidecars and 144 GDB sessions;
+compressed/original runtime frames, rebases and failed decompilation are included.
+See `docs/UNWIND-EVIDENCE-REPORT.md`. Standard CLI/GUI synthesis and report
+publication, full compiler-reference/ADR acceptance and hosted stack integration
+remain incomplete. PR175 still awaits its architecture gate; #110/#109 remain queued.
+
+**CONFIRMED locally — #112 processor-typed runtime frames:** a real source-built
+AMD64 `SHT_X86_64_UNWIND` input reproduced the former PROGBITS-only refusal.
+An isolated target description now recognizes the validated ELF64 little-endian
+layout while refusing unexpected source names, wrong targets/layouts and unknown
+types. The final package passes 1,256 inventory/cancellation checks, complete
+checker controls, six processor-type cases and six ordinary x86-64/AArch64
+regressions: 108 exports, 24 failure controls, 48 sidecars and 108 GDB sessions.
+See `docs/TYPED-UNWIND-SECTIONS.md`. Hosted stack acceptance and full #112 policy,
+compiler-reference and normal CLI/GUI enablement remain incomplete. PR175 and
+PR166's separate main-push runs are still active; no issue is closed by this result.
+
+**CONFIRMED locally — #112 runtime/original frame coexistence:** twelve real
+export cases pass across x86-64/AArch64, both assembler families and exec/PIE/shared
+roles. Original `.eh_frame` and `.eh_frame_hdr` retain exact bytes and geometry;
+only uncovered recursive records are generated. This includes 108 exports,
+24 staged failure controls, 48 validator-clean/corroborated sidecars and 108 GDB
+sessions. The complete matrix was rerun after correcting input-summary receipt
+names and adding standalone retention checks. See
+`docs/RUNTIME-FRAME-COEXISTENCE.md`. Hosted acceptance, compiler-C storage policy,
+ADR/provenance and normal CLI/GUI enablement remain open. PR166 has merged as
+`8041fdab`; its final acceptance documentation is PR175. Earlier pending-PR166
+statements below are historical. Full #112/#110/#109 remain incomplete.
+
+**CONFIRMED locally — #112 native original/generated frame coexistence:**
+thirty-six real-export cases pass with plain/gABI/GNU original records across
+both initial targets, fixture families and exec/PIE/shared roles: 324 exports,
+72 failure controls, 144 sidecars and 324 GDB sessions. Original leaf/outer-boundary
+records remain exact; only the uncovered recursive frame is generated. An
+incomplete-original AArch64 control matches the independent assembler's same
+four frames and unavailable-x29 error, without inventing missing knowledge.
+Four no-original shared regressions also pass. See
+`docs/NATIVE-FRAME-COEXISTENCE.md`. Hosted acceptance, user-facing enablement and
+compiler-C storage policy remain open; PR166 retains priority.
+
+**CONFIRMED locally — #112 real native frame export:** an explicit internal API
+now joins actual ELF import, decompiler/type extraction, native DWARF production
+and qualified frame packaging. Fourteen cases pass on x86-64/AArch64 across
+ordinary/shrink-wrapped exec/PIE/shared fixtures and failed decompilation:
+126 successful exports, 28 failure controls, 56 sidecars and 126 GDB sessions.
+Unchanged-program reruns are deterministic; rebased frame rules and debugger
+traces agree. Ordinary export regressions also pass. See
+`docs/NATIVE-FRAME-EXPORT.md`. Standard CLI/GUI synthesis, unchanged compiler-C
+storage policy, coexistence through this API and hosted acceptance remain open.
+PR166 retains first integration priority; #112/#110/#109 are not complete.
+
+**CONFIRMED locally — export consistency prerequisite for #112:** the installed
+exporter now checks input bytes and Ghidra's modification counter after extraction
+and before publishing pairs or companions. A real failing-before mutation
+reproduction is retained. Twenty-six native checks and eight installed failure
+controls pass on x86-64/AArch64; twelve successful exports are deterministic and
+four sidecars pass validators and GDB. See `docs/EXPORT-CONSISTENCY.md`. This is an
+optimistic guard, not a frozen snapshot. Recovered-frame integration and hosted
+acceptance remain open; PR166 retains first priority.
+
+**CONFIRMED locally — #112 program-wide recovery collection:** valid call groups
+now combine into one deterministic plan with per-root refusal diagnostics and
+original-byte evidence. Mixed valid/invalid programs, shared-callee deduplication,
+original precedence, I/O failures and 5,965 injected collection cancellation
+checkpoints pass within a 10,491-check native suite. Twelve runtime cases pass
+using the collected plan, including explicitly refused startup functions. See
+`docs/UNWIND-PROGRAM-RECOVERY.md`. Production-exporter wiring, the unchanged
+compiler-C case and hosted acceptance remain open. PR166 retains first priority.
+
+**CONFIRMED locally — #112 shared-library runtime frames:** both controlled
+fixture families now run after dynamic loading on native x86-64 and QEMU AArch64.
+Twelve executable/PIE/shared cases pass across twenty-four sidecars and sixty
+GDB sessions, including absent/disabled-CFI controls. The oracle checks actual
+relocated function addresses and ABI stack alignment; two initial test defects
+and their corrections are retained. See `docs/UNWIND-SHARED-RUNTIME.md`. These
+assembly references do not replace unchanged compiler-C or production-exporter
+acceptance. Hosted additions remain PRESENT, UNVERIFIED; PR166 keeps priority.
+
+**CONFIRMED locally — #112 split/shrink-wrapped runtime frames:** four new
+x86-64/AArch64 non-PIE/PIE cases exercise both an unsaved early return and separate
+allocation/register-save transitions before a common return. The existing proof
+and projection pass without production algorithm changes: eight sidecars,
+sixteen debugger sessions, 51/53 instruction stops, original/rebased agreement,
+and unchanged inputs. Default-family regressions and all five fixture inventories
+also pass. See `docs/UNWIND-SHRINKWRAP.md`. These controlled assembly references
+do not replace the unchanged compiler-C acceptance. Automatic integration and
+full #112/#110/#109 remain PLANNED; PR166 retains first integration priority.
+
+**CONFIRMED locally — #112 qualified frame writer:** an explicit plan API now
+checks original coverage/loader writes, decodes original plain/GNU/gABI frame
+records with identity checks, and emits one active composed frame section while
+retaining original stored bytes. Twelve cases/twenty-four sidecars and GDB
+comparisons pass, including every observed writer cancellation poll. See
+`docs/QUALIFIED-FRAME-WRITER.md`. Automatic synthesis and full evidence/ADR
+acceptance remain PLANNED. PR166 integration retains first priority.
+
+**CONFIRMED locally — #112 frame composition:** original compiler CIE/FDE bytes
+can remain an exact prefix while disjoint generated records use correct section
+offsets. 362 component checks and four x86-64/AArch64 exec/PIE cases pass across
+eight validator-clean sidecars and eight compiler-comparison GDB sessions.
+See `docs/FRAME-COMPOSITION.md`. Automatic exporter integration, global-store
+evidence and full synthesis acceptance remain PLANNED; the ordinary raw-frame
+collision guard remains active. PR166 still has first integration priority.
+
+**CONFIRMED locally — #112 compiler memory effects:** direct RAM operands now
+become explicit loads/stores with collision-free temporary coordinates. Audited
+ENDBR64/CSET/SETNZ support removes earlier compiler-reference blockers; 751
+profile, 1849 native instruction and 4470 native callee checks pass, along with
+encoder/recovered-frame validator and GDB regressions. Both unchanged compiler
+references resolve the exact global store and still refuse the unproved stack
+alias, including rebased probes. No storage-separation assumption was enabled;
+that profile boundary is awaiting user preference. See `docs/UNWIND-MEMORY-EFFECTS.md`.
+Production integration and full #112/#110/#109 acceptance remain PLANNED.
+
+**CONFIRMED hosted — #112 preservation prerequisite:** PR167 at `06dbfec7`
+passes all five targets, Windows and required-validation. Independent downloaded
+artifact review verifies thirty preservation cases, sixty packaged exports,
+thirty raw checker reports and six removed-frame controls. PR167 is ready,
+not merged; PR166 (#116/#114) still has first integration priority. See
+`docs/evidence/original-cfi-hosted-review.json`.
+
+**CONFIRMED locally — #112 original unwind precedence:** selected loader write
+footprints now protect the recovery verifier's original code/frame evidence.
+The planner excludes whole instructions touched by original FDE coverage, splits
+ranges at those omissions, and preserves unrelated recovered coverage. 282 effect
+checks, 4352 native checks, four compiler/loader executions and all four existing
+recovered-CFI validator/GDB runtime cases pass. PIE COPY and implicit GOT/DT_DEBUG
+writes have explicit controls. See `docs/ORIGINAL-UNWIND-PRECEDENCE.md` for pinned
+sources, limitations and retained fixture failures. Production integration,
+global-write alias proof and full #112/#110/#109 acceptance remain PLANNED;
+PR166 current-head integration still has priority. Hosted additions are
+PRESENT, UNVERIFIED.
+
+**CONFIRMED locally — #112 runtime relocation inventory:** the new bounded
+reader preserves gABI REL/RELA/PLT/RELR records, raw dynamic tags and table
+provenance, distinguishes retained link relocations, and rejects ambiguous or
+incomplete input. 932 component checks and twelve compiler cases/twenty-four
+named/sectionless variants pass against independent byte/GNU inventories.
+AArch64 RELR uses explicit LLD 18; initial compiler/validator/tool limitations
+are retained. See `docs/RUNTIME-RELOCATION-INVENTORY.md`. Processor-specific
+write/resolver effects and unknown relocation schemes still require qualification;
+this component does not authorize synthesis. Original/generated precedence,
+production integration and full #112/#110/#109 acceptance remain open. PR166's
+current checks at `86f0253` retain priority.
+
+**CONFIRMED locally — #112 original ELF frame sources:** named, compressed,
+sectionless and unnamed frame inventories now retain file/hash evidence and
+cross-check EH search-table addresses against referenced FDEs. The initial
+collector's mismatched-address acceptance has a failing-before regression.
+1158 source checks and 36 compiler-built variants pass alongside range,
+sectionless and encoder regressions. See docs/ORIGINAL-FRAME-SOURCES.md.
+Runtime relocation qualification, precedence and production integration remain
+PLANNED; these inventories alone do not authorize synthesis. PR166 integration
+and the full #112/#110/#109 objective remain open.
+
+**CONFIRMED locally — #112 original frame range reader:** complete CIE/FDE
+header inventories now distinguish declared coverage from unknown metadata.
+The bounded parser passes 4275 checks; twelve unchanged compiler-reference
+exec/PIE/shared cases across x86-64/AArch64 and debug/EH formats agree with GNU
+and LLVM. Strict EH alignment diagnostics are retained and corroborated against
+independent byte-identical rebuilds. See docs/ORIGINAL-FRAME-RANGES.md.
+ELF source/decompression/relocation qualification, precedence and production
+integration remain PLANNED; parsed ranges do not certify unwind rule semantics.
+PR166 integration and the full #112/#110/#109 goal remain open.
+
+**CONFIRMED locally — #112 original instruction agreement:** the native call
+verifier now checks every captured instruction against its original executable
+load mapping and retains file-offset/hash evidence. Patched instruction, sparse
+file, sectionless, overlap, cancellation and rebase controls pass (140 ELF and
+4148 native checks); all four recovered-CFI runtime cases still pass validators
+and GDB, with independently checked complete byte coverage. See
+`docs/UNWIND-CODE-AGREEMENT.md`. Production publication identity, global-write
+alias proof, original unwind precedence and the full exporter matrix remain
+required. PR166 hosted/workload integration retains priority; #112/#110/#109
+remain open.
+
+**CONFIRMED locally — #112 native recovered CFI runtime checkpoint:** recovered
+instruction states now produce complete frame rows with explicit unknown/gap
+omissions. An AArch64 GDB caller-PC bias exposed a pre-call link-register rule
+that validators accepted; call rows now require agreement before and after the
+call. Both targets' non-PIE/PIE plain/compressed artifacts pass GNU/LLVM/strict
+validation and match independent GDB traces at 40/36 instruction stops, including
+actual DWARF unwinder selection across five ordinary frames. Rebased independent
+JVM plans and repeated sidecars are deterministic. See
+`docs/UNWIND-FRAME-RECOVERY.md`. The test-only importer/CU is not production-exporter
+acceptance: global-write alias proof, original unwind coverage checks and the full
+compiler/shared/failure matrix remain required. PR166 hosted/workload priority
+and the full #112/#110/#109 scope are unchanged.
+
+**CONFIRMED locally — #112 closed callee obligations:** direct/self/mutual
+callee groups now verify actual native call targets, all reachable return
+identities and stack-relative write bounds before publishing a summary. The
+pure suite passes 182 checks; twenty native fixtures pass 662, with cancellation,
+retry and expected negative diagnostics. See `docs/UNWIND-CALLS.md`. This initial
+stack-writing verifier does not yet prove global-write alias safety: the existing
+compiler fixture's `cfi_sink` write remains an explicit outstanding requirement.
+Full projection/byte-agreement/precedence/exporter/GDB acceptance, #110 and #109
+remain open; PR166 current hosted/workload integration still has priority.
+
+**CONFIRMED locally — #112 converged-effect verification hook:** the flow
+analysis can now replay final reachable states through the same transfer logic,
+exposing immutable per-effect snapshots for callee write-bound verification.
+The 102-check flow suite covers speculative-loop rejection, old-address
+post-increment semantics, rejection and cancellation; profile/native/encoder
+regressions and extension build pass. This is a prerequisite for the still
+PLANNED verified call summaries, not proof of arbitrary call behavior. See
+`docs/evidence/unwind-replay.json`. Full goal scope and PR166 priority are unchanged.
+
+**CONFIRMED locally — #112 ordinary unwind profile boundary:** exact ELF and
+Ghidra compiler/convention selection now seeds separate caller/register/stack
+identities. Mandatory instruction policies reject hidden AArch64 PAC (observed
+empty p-code), SIMD and wrong execution modes. Eleven native fixtures pass 235
+checks, including complete return identities and cancellation/retry; existing
+flow/native/encoder suites and extension build pass. See
+`docs/UNWIND-PROFILES.md`. Verified call summaries, frame projection, original-byte
+agreement and production synthesis remain PLANNED. PR166 current hosted/workload
+acceptance retains priority; full #112/#110/#109 remain open.
+
+**CONFIRMED locally — #112 caller-identity flow component:** a fixed-point
+analysis and real Ghidra instruction adapter now prove agreeing joins, reject
+conflicting facts, track exact saves/restores and preserve discontiguous decoded
+bodies. Native AArch64 post-increment evidence exposed premature stack-slot
+expiration; it now occurs at the machine-instruction boundary. The effect suite
+passes 75 checks and 17 native instruction cases pass 582, including cancellation,
+partial/override rejection and missing-call-proof omissions. See
+`docs/UNWIND-FLOW.md`. ABI selection is now tested above; verified call summaries, rule projection and
+production synthesis remain PLANNED; current PR166 integration has priority.
+
+**CONFIRMED pinned unwind ABI observations — #112:** AMD64 psABI
+`e1ce098331da5dbd66e1ffc74162380bcc213236` and the existing Arm 2025Q4
+`daa7a94ca55973736c0e434a67a6e4bbcd35d7fa` baseline are captured with source hashes.
+Ghidra's AArch64 unaffected-X30 entry cannot prove incoming LR survival through
+calls; caller return-address identity needs separate treatment. The audit also
+records partial SIMD preservation and ordinary versus process-entry conventions.
+See `docs/UNWIND-ABI-AUDIT.md`. Profile selection and instruction/control-flow
+components now have local evidence above; production recovery remains PLANNED; no new architecture support is claimed.
+
+**CONFIRMED locally — #112 CIE initialization audit correction:** explicit
+immutable CIE rules replace the encoder's unconditional undefined defaults.
+Pinned AADWARF64's used-callee-saved initialization requirement exposed the gap;
+the prior X19 CIE fails the new independent assertion despite earlier GDB passes.
+All target harnesses pass again and the component suite now has 158 checks. See
+`docs/evidence/cfi-explicit-cie.json`. Production recovery remains PLANNED and
+current hosted acceptance is still required.
+
+**CONFIRMED locally — #112 explicit CFI encoder:** the immutable rule model,
+pure Java serializer and aligned plain/compressed ELF packaging pass 155 component
+checks and independent GNU/LLVM/pinned strict validation. Both runtime targets
+pass non-PIE/PIE reference comparisons at every recorded instruction boundary,
+with explicit DWARF-unwinder and malformed-frame controls. A full-4-GiB ELF32
+length rejection has failing-before evidence. See `docs/CFI-RULE-ENCODER.md`.
+CI is wired but hosted execution is PRESENT, UNVERIFIED. Ghidra recovery and
+production synthesis remain PLANNED; this does not complete #112. #116/#114
+integration remains first, then full #112/#110/#109.
+
+**CONFIRMED locally — #112 original-CFI preservation prerequisite:** linked
+sidecars now retain compiler `.debug_frame`/`.zdebug_frame`; colliding generated
+frames are rejected and ET_REL frames remain inactive with a diagnostic.
+Thirty x86-64/AArch64 real-export cases cover exec, PIE and loaded shared objects
+with plain/gABI/GNU compression, rebasing and retained link relocations. GDB
+matches independent caller/register/return traces; six removed-frame controls
+prove target-frame DWARF use. Twelve layout/cancellation cases and compression,
+sectionless-unwind and allocation regressions pass. See
+`docs/ORIGINAL-CFI-PRESERVATION.md` for exact scope, curation and local/hosted
+limits. Hosted acceptance remains pending; production synthesis is still PLANNED.
+
+**CONFIRMED locally — #112 independent compiler references; synthesis PLANNED:**
+the new x86-64/AArch64 harness validates compiler `.debug_frame`, exact nested
+caller values, recursive return stepping, deterministic builds and unchanged
+allocated input bytes. No-CFI and disabled-DWARF controls show that AArch64's
+fallback can pass the same backtrace, so actual DWARF-unwinder selection is part
+of the oracle. The proposed evidence model, original `.debug_frame` preservation
+gap and complete remaining acceptance are in `docs/SYNTHETIC-CFI-EVIDENCE.md`.
+ADR-0002 still prohibits production synthesis. #116/#114 PR166 hosted acceptance
+has priority; #112, #110 and #109 remain open. No release is implied.
+
+**HISTORICAL #112 preservation defect, fixed locally above:** a real `f64a00f` export
+retires the reference's compiler `.debug_frame`; explicit sidecar loading loses
+the full x86-64 backtrace. A diagnostic sidecar-only section-name restoration
+recovers all eight frames with identical original CFI bytes. Both variants pass
+GNU/LLVM/strict validation. See `docs/evidence/synthetic-cfi-preservation-probe.json`.
+
+**CONFIRMED integrated #116/#114:** PR166 at `21f8da3` passes all fifteen
+integration jobs and the performance workflow. Independent package, five-target,
+Windows host/workload and consumer review passes; normal protected merge
+`8041fdab` preserves the tested tree. See [the final acceptance map](docs/ANNOTATION-ACCEPTANCE.md)
+for each issue requirement, exact artifact bindings and limitations. Separate
+main-push run `42210149331` remains under observation. Earlier pending checkpoints
+below are historical within this scope. Continue #112, then #110 and #109;
+#162/#163 remain low priority. Documentation publication and issue reconciliation
+follow this acceptance record.
+
+**CONFIRMED intrinsic report retention correction — #116/#114:** current-head
+run `42176440117` failed the final x86-64 retention audit because the intrinsic
+harness reused wrapper stdout as its raw strict-report path. Independent artifact
+review found exactly four overwritten reports and 589 intact passing reports.
+The paths are now separate and the standalone harness checks retention before
+success. Fresh installed exports pass all four modes/eight exports, deterministic
+pairs, GNU/LLVM/strict validation, GDB and four retained reports. The existing
+three positive/ten negative retention controls pass. Production code is unchanged;
+635 installed classes match the reviewed head. See
+`docs/evidence/intrinsic-report-retention.json`. The same head's Windows workload
+and independent consumer review passed, but fresh hosted gates remain required
+before PR166 integration. Full #112/#110/#109 remain open.
+
+**CONFIRMED context report retention correction — #116/#114:** run
+`42160948862` at `3543c78` failed the final MIPS little-endian retention audit.
+The boundary harness reused its wrapper stdout path as the strict validator's
+raw report path, overwriting the already-validated header with a success marker.
+The wrapper now has a separate log, and the standalone harness rechecks report
+retention before success. Fresh ARM32 and both MIPS byte orders pass fourteen
+native exports (seven deterministic output pairs), GNU/LLVM/pinned strict checks,
+compiler/Forge QEMU GDB, and all seven retained reports. Report-damage controls
+pass three positive and ten negative cases. The original damaged hosted report
+remains rejected; no checker rule changed. See
+`docs/evidence/context-report-retention.json`. Fresh hosted acceptance is still
+required before PR166 integration; #112/#110/#109 remain open.
+
+**CONFIRMED Windows workload and independent consumer review — #116/#114:**
+run `42160948934` at `3543c78` passes both workloads and downstream Linux GDB.
+Independent archive review binds the package's 635 production classes, six
+Windows checkout helpers, corpus files, 1,136 unchanged protected inputs, and
+all eleven export/profile samples per workload. Paired DWARF is identical;
+source changes are exactly the annotation catalog. Original frame bytes and
+strict diagnostic multiplicities match on Windows and Linux; source relocation,
+PIE bias, function lookup, stepping, global values and return/exit oracles pass.
+The existing U-Boot decompilation timeout is identical in both versions. Hosted
+median baseline/candidate times were 111.67/117.16 seconds for SQLite and
+236.43/244.03 for U-Boot; these observations do not isolate causation or establish
+a stable performance regression. See
+`docs/evidence/annotation-windows-current-review.json`. The separate integration
+run failed boundary-report retention as recorded above; this successful workload
+review does not replace fresh exact-head acceptance or close either issue.
+
+**CONFIRMED GUI test-order correction — #116/#114:** hosted run `42153031601`
+failed the context Off equality check after its native attachment refresh deliberately
+renamed the function. Retained source differs only in the declaration/call name and
+its resulting equate-conflict diagnostic. Context choices now run before that
+mutation, preserving exact equality and all attachment checks. The current hosted
+package passes the corrected local Linux GUI journey, validators and GDB; the
+combined OS-authorized and Windows journeys still require hosted reruns. See
+`docs/evidence/context-gui-ordering.json`. No production exporter change.
+
+**CONFIRMED delay-slot containment and ARM mode controls — #114:** native
+MIPS p-code folds delay-slot effects under the branch address, so operation-address
+filtering alone crossed a selected body gap. The reader now completes bounded
+byte observations first and requires every delay slot in that same range before
+emitting either p-code variant. It retains the branch bytes/assembly and explains
+omissions. Both MIPS byte orders pass complete/gap/partial/budget controls;
+ARM→Thumb→ARM context and literal gaps pass independently. Seven real native
+failure exports pass validators and QEMU/GDB; all five existing context pipelines
+also pass. See `docs/evidence/context-boundaries.json`. Current hosted targets,
+Windows interaction and workload acceptance remain for #116/#114, then
+#112/#110/#109. No issue is closed by these local results.
+
+**CONFIRMED Linux context chooser — #114:** the installed Script Manager
+launcher passes actual Cancel/Off/Assembly/P-code/Both interactions. Off preserves
+default source; all enabled choices retain diagnostic warnings. All four pairs
+pass GNU/LLVM/pinned strict validation and live GDB, with identical 83 executable
+address/source-text rows and no executable context comments. See
+`docs/evidence/context-gui.json`. Windows interaction is wired but remains
+**PRESENT, UNVERIFIED** for this addition. Current hosted/workload acceptance remains before closing #116/#114;
+mode/delay-gap controls are recorded above.
+
+**CONFIRMED historical Windows workload review:** run `42139043195` at
+`7e14037` passed Windows SQLite/U-Boot exports and downstream Linux GDB consumers.
+Retained artifact hashes, all ten paired samples per workload and exact source
+prefix/catalog hashes confirm the listing-catalog comparison fix. This does not
+substitute for current-head validation; see
+`docs/evidence/annotation-windows-workload-review.json`.
+
+**CONFIRMED local intrinsic controls — #114:** an x86-64 CPUID fixture passes
+all four context modes through the installed exporter, GNU/LLVM/pinned strict
+validators and live GDB. Independent native token inspection distinguishes actual
+CALLOTHER operations from ordinary calls named `halt_baddata` and
+`cpuid_basic_info`. Context comments have no executable rows; address/source-text
+pairs match context-off exactly. Fresh-process outputs and saved inputs are
+unchanged. See `docs/evidence/intrinsic-context.json`. Windows interaction,
+current hosted/workload gates remain;
+then continue #112/#110/#109. Neither #114 nor #116 is closed.
+
+**CONFIRMED local all-failed source lookup — #114:** source-bearing exports
+retain a DWARF5 file table without executable rows when all decompilations fail.
+Real native all-failed/mixed cases pass validators and native/QEMU GDB on x86-64,
+AArch64 PIE and both MIPS32 byte orders. Failed functions remain signature-free;
+coverage gains no executable evidence. Fresh x86 annotation integration passes.
+See `docs/evidence/failed-source-context.json`. Windows and current hosted acceptance remain. The normal merge
+`efed29e` incorporates accepted #108 documentation and restores PR166 CI.
+
+**CONFIRMED local optional instruction context — #114:** the reader and native
+warning/failure composition pass all five profiles. Four context-enabled default
+exporter profiles pass validators, native/QEMU GDB, deterministic reruns and eleven
+cancellation/recovery stages each; default-off x86 source is unchanged. CLI and
+an opt-in GUI launcher use the shared mode. Windows interaction and current hosted acceptance remain required. All-failed and intrinsic checks are recorded above. See `docs/evidence/source-context.json` and `docs/ANALYST-ANNOTATIONS.md`.
+#108's final PR165 passed all fifteen checks and merged normally as `6793b701`;
+issue #108 is closed. Remaining goal: #116/#114, then #112/#110/#109.
+
+**CONFIRMED fixture inventory correction — #116:** hosted run `42143872354`
+stopped the x86-64 and AArch64 lanes before exporter validation because
+`equate-retained-names.cpp` was absent from the reviewed source inventory. The
+fixture is now listed and documented. Both complete local
+`fixture-reproducibility.sh x86_64` and `fixture-reproducibility.sh aarch64`
+checks pass, including 15 byte-identical artifacts per target and retained
+partially stripped symbols. Fresh hosted acceptance remains pending.
+
+**CONFIRMED reference details, cancellation and Linux desktop — #116:** each
+equate reference now retains its own resolved width/sign/value beside its owner
+and status. Five default cases pass seven in-flight cancellation points and a
+same-process retry each, including native constant emission and the equate
+compositor. Previous output pairs and saved programs remain unchanged. Both
+ordinary and compressed Script Manager journeys preserve all comment categories
+and typed lookup, with validators, GDB and a relocated compressed-artifact
+consumer passing. The shared Windows journey now includes these checks; hosted
+Windows acceptance remains pending. See `docs/evidence/equate-cancellation-gui.json`.
+Optional #114 context and later #112/#110/#109 remain in scope.
+
+**CONFIRMED default equate integration — #116:** the shared exporter now collects
+live high-p-code evidence, writes a reversible non-executable lookup catalog and
+emits collision-safe synthetic constants. Four Linux profiles (x86-64, AArch64
+PIE and both MIPS32 byte orders) plus a fresh x86-64 pipeline pass structural
+validators, deterministic reruns, unchanged inputs/projects and 140 GDB lookups
+per case. A retained C++ name fixture proves original function breakpoints and
+synthetic type-name collisions. Recovered coverage is unchanged. See
+`docs/evidence/equate-default-export.json`. The fixture's saved nonzero-first-use
+local remains explicitly unavailable; these tests do not establish its lifetime.
+GUI/Windows/full hosted acceptance, optional #114 context, and later
+#112/#110/#109 remain required. Earlier component-only notes are historical.
+
+**CONFIRMED Windows workload comparison correction — #116:** run
+`42134637694` failed because its frozen pre-annotation source hash excluded the
+new catalog. Actual SQLite DWARF and report semantics match exactly; the old
+source SHA is reproduced by the exact prefix before 12,044 appended listing
+comments. The workload harness now permits only this bounded source addition,
+keeps identical cross-version DWARF/semantics and complete per-version/profile
+repeatability, and retains both source versions. Portable mutation controls pass;
+fresh full Windows/U-Boot execution remains pending. See
+`docs/evidence/annotation-windows-catalog.json`.
+
+**CONFIRMED isolated equate emission — #116:** the production producer now
+emits synthetic constants with stable planned lookup names, exact signed/unsigned
+values and explicit const types. Four profiles pass GNU/LLVM/pinned strict and
+104 GDB lookups each; width controls exposed and corrected a big-endian padding
+bug that validators missed. Name planning passes saved-model/ELF collision,
+identity, cancellation and independent hashing checks. Default collection/source
+catalog wiring and retained demangled-name collision coverage remain required;
+see `docs/evidence/equate-constants.json` and `docs/ANALYST-ANNOTATIONS.md`.
+#114 context and the later #112/#110/#109 work remain in scope.
+
+**CONFIRMED equate evidence component — #116:** enum metadata, decoded operand
+values and live high-p-code constants now have separate validated observations.
+Four saved profiles and a fresh full x86-64 pipeline pass identical independent
+readbacks, eleven negative controls, all 26 interpretation cancellation points
+and checked callback cancellation. Source/validator/GDB checks still pass in the
+full pipeline. See `docs/evidence/equate-evidence.json`. Default equate collection,
+collision-safe debugger names and constant emission remain required.
+
+**CONFIRMED second CI correction:** after the wrapper fix, run `42133208293`
+reached the architecture guard and flagged a generic local named `pc` and a
+comment mentioning MIPS32. Renaming the local and removing the target-specific
+example from that comment preserves behavior. The unchanged gate and its seven
+rejection controls pass locally; fresh hosted acceptance remains required.
+
+**CONFIRMED CI portability correction — #116/#114:** PR #166 run
+`42132969992` stopped in the wrapper test because its new assertion required
+`rg`, absent on the extension-build runner. The assertion now uses the existing
+`grep` dependency; the complete Linux wrapper test passes locally. Exporter
+behavior is unchanged. A new hosted run is required; this failed run is not
+acceptance evidence.
+
+**CONFIRMED installed default comments — #116/#114:** the shared export script
+now preserves stored listing comments with separate native warning handling.
+Five Linux headless cases (four architecture profiles plus a fresh x86-64
+pipeline) pass GNU/LLVM/pinned strict validation, GDB source/type/global checks,
+identical reruns and four pre-publication limit failures each. An actual JFR
+recording includes the new source-annotations phase with unchanged artifacts.
+See `docs/evidence/annotation-default-export.json`. GUI interaction, Windows,
+hosted/full workload acceptance, equate debugger values and optional context
+remain required. Earlier component-only notes below describe historical scope.
+
+**CONFIRMED controlled saved-comment export — #116/#114:** listing comments now
+compose with actual native token evidence on x86-64, AArch64 PIE and MIPS32 in
+both byte orders. GNU/LLVM/pinned strict validation and native/QEMU GDB pass;
+comments remain non-executable, failed decompilation retains a symbol-only
+function and readable catalog, and fresh JVM exports are identical. The complete
+x86-64 pipeline also passes. See `docs/evidence/annotation-placement.json`.
+Default GUI/headless wiring, equate debugger values and optional context remain
+planned. #108 implementation is merged as PR #164; its final documentation is
+in PR #165 with hosted checks running. Earlier progress notes below are historical.
+
+**CONFIRMED packaged raw inventory — #116/#114:** `GhidraAnnotationInventory`
+now reads all listing categories and exact stored equates/references while retaining
+Ghidra address objects. Four saved-program profiles pass independent readback,
+complete address counts, exact limits, incomplete-inventory rejection and every
+observed cancellation checkpoint. Two reopens preserve all project files. The
+complete new x86-64 build/curate/extract CI sequence also passes locally; hosted
+execution is pending. See `docs/evidence/annotation-inventory.json`. Production
+source placement, equate interpretation/debugger values and optional context remain
+planned. #108 protected integration remains the priority.
+
+**CONFIRMED isolated exporter integration — #116/#114:** controlled annotations
+now pass through the real producer and matched ELF writer. GNU/LLVM/pinned strict
+validation and native x86-64 GDB pass: six inserted comment rows remain
+non-executable, original source mappings and variable values survive, and source
+lookup works from an unrelated working directory. Eight artifacts are identical
+across fresh producer JVMs; the unchanged baseline also passes. See
+`docs/evidence/annotation-emission.json`. The CI case is added but has not run
+hosted. Saved-program extraction and production GUI/headless integration remain
+planned; #108 protected integration is still the priority.
+
+**CONFIRMED components only — #116/#114 text and line composition:** the
+reversible encoder and a separate compositor now preserve annotation payloads,
+original source bytes, function boundaries and all executable line/token evidence.
+Model/writer checks retain coverage across both address widths and byte orders;
+538 composition cancellation checkpoints, budget/negative controls, C lexical
+checks, Gradle smoke and extension packaging pass. See
+`docs/evidence/annotation-composition.json` and `annotation-text.json` beside it.
+Neither component is connected to the production exporter yet. Real Ghidra
+extraction, validator/GDB integration and hosted acceptance remain planned;
+#108 protected integration remains the priority.
+
+**CONFIRMED preparation only — #116/#114:** eight compiler-reference cases now
+pass sixteen native/QEMU GDB value/width checks each. Four saved-program cases
+preserve actual conflicting local/type/enum/global names alongside all fifty
+comments and fourteen equates, with identical independent reopens. Local storage
+comes from observed compiler GDB entry-SP evidence; dynamic-only constant53 still
+resolves. See `docs/evidence/annotation-saved-conflicts.json` and
+`docs/ANALYST-ANNOTATIONS.md`. Production annotation implementation remains
+planned; #108 protected integration is still the current priority.
+Four profiles also pass real native instruction-limit failure, pre-cancelled
+invocation and recovery through the same interfaces with unchanged projects.
+See `docs/evidence/annotation-native-failures.json`; this does not establish
+production export failure/cancellation behavior.
+A saved-equate producer/consumer experiment additionally passes 528 constant
+checks in two frames on four profiles without shadowing real names; see
+`docs/evidence/annotation-name-policy.json`. This uses a separate synthetic
+unit alongside compiler DWARF, not the production recovered sidecar.
+
+**CONFIRMED — #108 implementation integrated and final acceptance published:**
+all fifteen integration jobs and five performance jobs pass at `6e0cb95`.
+Independent package, raw DWARF/GDB, host GUI, workload and complete ARM32 reviews
+are recorded in `docs/COVERAGE-ACCEPTANCE.md` and
+`docs/evidence/coverage-ci-6e0cb95.json`. PR164 merged normally as `41e85b9`
+with an identical tested tree and strict protection intact. Earlier pending
+#108 checkpoints below are historical. #74 remains complete. The remaining goal
+order is #116/#114, #112, #110, then #109; no release is implied.
+
+**CONFIRMED locally — #108 final review corrections:** unavailable function
+variable inventories now display Unknown instead of N/A (0/0); mixed summaries
+disclose missing inventories while retaining observed counts. A failing-before
+regression, unknown/mixed/known-empty controls, strict CLI round trips, component
+checks, extension build and ten packaged CLI cases pass. The MIPS32LE lane at
+`3829626` also exposed a connected-preparation test fixture that retained
+completed coverage in a terminal report. Production correctly rejected it;
+the fixture now clears coverage and separately tests malformed retained claims.
+Six actual packaged terminal controls pass. See
+`docs/evidence/coverage-final-review-fixes.json`. The presentation is the only
+production behavior changed in this follow-up; fresh hosted acceptance remains
+required. Earlier Windows evidence below stays bound to `3829626`.
+
+**CONFIRMED — #108 Windows workload acceptance:** performance run `42088664392`
+at `3829626` passes all five jobs, including the independent Linux GDB consumer.
+Review verifies all 22 reports from ten alternating measurement pairs and two
+separate profiled exports, exact artifact/report repeatability, original hashes,
+both hosts' validators, nine JFR phases and actual large-report CLI readback.
+SQLite median wall time is 87.08/87.34 seconds; U-Boot is 184.17/192.16 seconds.
+U-Boot median peak job commitment grows from 1.35 to 2.40 GB; this Windows metric
+is not Linux RSS. Project program data is unchanged, with only Ghidra index/journal
+backup maintenance. See `docs/evidence/coverage-ci-3829626-workloads.json` for
+the exact scope, baseline correction, retained artifacts and limitations.
+The five full architecture lanes and protected integration remain pending.
+
+**CONFIRMED — #108 current Windows host acceptance:** run `42088664715` at
+`3829626` passes the Windows host and downstream GDB jobs. Review verifies the
+downloaded artifact digests, three GUI report/input/output/source bindings and
+all 930 hashes protected by the consumer. Plain, compressed and companion GUI
+exports retain working save/comparison/error/retry controls within the desktop.
+The Windows-produced attachment generations pass Linux GNU/LLVM/pinned strict
+validation and actual GDB with explicit source relocation. One message after
+the GUI PASS marker matches an OpenJDK Java2D disposal catch path; its exact
+exception is not recorded and remains uncertain. Evidence and limits are in
+`docs/evidence/coverage-ci-3829626-windows.json`. Five target lanes and protected
+integration are still pending; #108 remains active.
+
+**CONFIRMED locally — #108 Windows measurement preparation:** the workflow now
+compares against production main `1bb4c14` with a separately derived, explicitly
+non-release array correction. Its three recompiled classes must match the actual
+candidate; all 507 baseline classes also match the independent clean Gradle build
+locally. A source-root audit accounts for the candidate delta and rejects changes
+to classes with unchanged source. Original modules remain protected; native build
+identities are recorded rather than attributing all revision cost to Java alone.
+Five pairs, exact artifact equality, deterministic reports, large-report CLI,
+JFR/validators and independent GDB remain required on Windows. Local helper,
+negative controls and workflow lint pass; hosted execution is pending. See
+`docs/evidence/coverage-windows-measurement-control.json`.
+
+**CONFIRMED locally — #108 final paired workloads and CI follow-ups:** five
+alternating baseline/candidate pairs each for SQLite and U-Boot preserve exact
+artifacts and deterministic reports, with validator/GDB checks passing. Median
+wall time is 34.62/39.28 seconds and 114.82/126.58 seconds; scorecards materially
+increase memory use. See `docs/evidence/coverage-large-workloads.json` for the
+matched array correction, exact populations, costs and retained failures.
+Hosted run `42080744656` exposed an invalid schema-two terminal test fixture and
+a coverage window larger than the Windows desktop. The terminal controls are
+corrected; screen-bounded coverage/comparison windows pass the real 1024x768
+Linux GUI journey, validators, GDB and CLI. Current JFR phase controls pass too.
+See `docs/evidence/coverage-ci-followups.json`. Corrected hosted acceptance and
+the Windows workload comparison remain pending; its old instrumentation-only
+class guard must be replaced with an audited coverage-feature comparison.
+
+**CONFIRMED defect and local correction — #108 transient array keys:** the first
+repeated SQLite experiment found a fresh-process array ID changing in otherwise
+identical reports. Ghidra `ArrayDataType` inherits a generated ID; persisted
+`ArrayDB` has none. Array keys now use the existing structural fallback, while
+named persistent identities remain intact. Regression checks pass on all five
+profiles, before/after immutable reopen. Final repeated workload, artifact and
+hosted acceptance remain pending. The measurement baseline receives this same
+single correction to isolate scorecard overhead and retain exact artifact equality.
+Hosted fixture inventory failures were also fixed by listing the two new reviewed
+emission sources; local x86/AArch64 reproducibility passes. See
+`docs/evidence/coverage-array-identity.json`.
+
+**CONFIRMED locally — #108 whole-report byte bound:** 1,500 saved Ghidra locals
+with individually legal 48,084-unit derived type paths exceed the unchanged 64 MiB
+production report budget. x86-64 and rebased AArch64 PIE reject before publication,
+preserve existing pair/companion files, and pass deterministic retry plus validators
+and native/QEMU GDB checks. The original string-limit regression still passes.
+The cross-architecture coverage controls now include this byte-bound test. See
+`docs/evidence/coverage-whole-report-limit.json`. Repeated final large-workload
+overhead and hosted acceptance remain pending.
+
+**CONFIRMED locally — #108 paired native type regressions:** actual production
+exports swap two canonical types between resolved and opaque while preserving all
+summary totals. Independent raw-DIE traversal predicts the exact CLI state changes
+in both directions. A source-failure export retains allocated type DIEs but correctly
+reports all three types as unattached to the function. GNU/LLVM/pinned strict
+validators and GDB pass for all three artifacts; sidecar, source and report bytes
+are deterministic on rerun. This is an isolated controlled-model emission test,
+not a Ghidra extraction/identity claim. See `docs/evidence/coverage-type-pairs.json`.
+Repeated final large-workload overhead, whole-report byte stress and hosted
+host/target acceptance remain pending.
+
+**ACTIVE hosted validation — #108 draft PR [#164](https://github.com/zwilcox/GhidraDwarfForge/pull/164):**
+the first extension-build gate flagged generic “PC” prose as register-specific
+logic. Those five comments/labels now spell out address ranges/bytes; the guard
+and audited-file boundary are unchanged. Architecture controls and presentation
+checks pass locally; fresh hosted acceptance remains pending. See
+`docs/evidence/coverage-hosted-architecture-gate.json`.
+
+**CONFIRMED locally — #108 GUI comparison:** the coverage window now offers
+Compare report, with a background read/compare task, cooperative cancellation,
+explicit incomparability/errors, and a bounded result view that preserves the exact
+change count after display clipping. The real Linux GUI passes identical/changed/
+legacy/malformed/retry cases and preserves selected report files. The full export,
+save, attachment preview/preparation, cancellation, validator/GDB and packaged CLI
+journey also passes. Component cancellation and clipped-count checks pass; Windows/
+hosted acceptance, paired native type regressions and large-workload overhead
+remain pending. See `docs/evidence/coverage-gui-comparison.json`.
+
+**CONFIRMED locally — #108 variable comparison and real curation:** CLI comparison
+now exposes declaration/type/provenance/storage changes and exact location ranges
+at explicitly reported variable bindings. Coverage loss/gain uses only common
+evidenced scope; unknown populations remain unavailable. Parameter ordinals,
+local internal-name/block pairs and static name/block/address tuples are reported
+correspondence, not declaration lineage. Renamed locals appear as removed/added.
+65,536 interval controls and all 149 variable-comparison cancellation points pass.
+Real production exports before/after rebase, saved use-site curation and rename
+pass raw-DWARF, validators, GDB and CLI checks on x86-64 and rebased AArch64 PIE.
+The selected curated function is unchanged by rebase; exact lost inner-local
+ranges match raw DWARF and GDB's unavailable value. GUI comparison, paired type
+regression evidence, large-workload overhead and hosted acceptance remain pending.
+See `docs/evidence/coverage-variable-comparison.json`.
+
+**CONFIRMED locally — #108 individual type reporting and comparison:** production
+schema-two reports now use metric definition two, with a shared canonical type
+graph and per-function recovered/attached roots. The strict reader recomputes
+function and union counts; legacy definition-one bytes remain compatible. CLI
+comparison exposes individual resolved/opaque/missing states and reference changes
+by reported canonical key, including offsetting changes hidden by equal totals.
+The raw-DWARF/GDB fixture, packaged x86-64 and rebased AArch64 PIE journeys, and
+20 staging failure/cancellation controls per target pass locally. Individual
+variable/range correspondence, GUI comparison, repeated large-workload overhead
+and hosted acceptance remain required. See
+`docs/evidence/coverage-type-report.json`.
+
+**CONFIRMED locally — #108 comparison evidence:** real Ghidra database probes on
+x86-64, AArch64 and both MIPS32 byte orders reproduce reuse of the same database/
+symbol ID after undo and a different declaration. Those IDs cannot prove local
+identity across reports. A canonical type graph evidence component retains
+individual resolved/opaque/absent states and reference multiplicities, including
+implicit void and failed-function attachment gaps. Component cancellation/deep
+shared-graph checks and independent raw-DWARF/validator/GDB checks pass. Production
+wire-format integration and individual comparison remain planned; #108 remains
+incomplete. See `docs/evidence/coverage-identity-and-type-graph.json`.
+
+**CONFIRMED locally — #108 CLI and partial comparison:** the packaged read-only
+report launcher displays summaries, per-function rows and selected evidence. It
+matches reported original SHA/profile and ELF-link-time function entries, handles
+renames/path moves, and exposes individual lost/gained source anchors even when
+totals are equal. Unknown populations and incompatible reports remain explicit.
+Java 21 checks, ten packaged CLI cases, release assembly, and a fresh GUI/validator/
+GDB journey pass on Linux. Windows execution remains **PRESENT, UNVERIFIED**.
+Comparison is incomplete: export-local variable IDs and absent per-type states
+cannot prove individual variable/range/type transitions; every comparison states
+these limits. Extend that evidence and implement GUI comparison before claiming
+#108 complete. Repeated large-workload overhead and hosted acceptance also remain.
+See `docs/evidence/coverage-cli-comparison.json`.
+
+**CONFIRMED locally — #108 GUI presentation:** the console now receives a short
+coverage summary; a modeless per-function view shows static metrics, provenance
+and omission reasons. Explicit Save report retains the complete preflighted JSON
+in a new file without replacing existing files or aliases. Ordinary-pair and
+companion GUI journeys pass real report saving, hash binding, attachment preview/
+decline, fresh preparation with retained coverage, cancellation, validators and
+GDB on Linux. The fixture saves 82,250 bytes while retaining only 5,110/5,567
+console characters. Windows/hosted acceptance, CLI/report comparison and repeated
+large-workload overhead remain pending. See
+`docs/evidence/coverage-gui-presentation.json`. The earlier GUI truncation failure
+below is retained history; #108 remains incomplete.
+
+**HISTORICAL #108 GUI defect; report-limit preservation remains confirmed:** a real derived
+Ghidra pointer type exceeds the 65,536-unit report string limit. Pair and companion
+rejection preserve existing files, clean stages and retry deterministically on
+x86-64 and rebased AArch64 PIE; validators/GDB pass. The first named-typedef probe
+did not exceed the emitted limit because it used a compact universal ID.
+A fresh real GUI run exposes console truncation: an 82,321-character report line
+overflows the 50,000-character console, losing its prefix and earlier status text.
+The actual exported pair matches the logged hashes, but the GUI journey fails
+before attachment preparation. Readable coverage presentation and access to the
+complete JSON are the next priority; increasing the console limit is not a fix.
+See `docs/evidence/coverage-report-limits-and-gui.json`. #108 remains incomplete.
+
+**CONFIRMED local production staging for #108; full acceptance pending:** the
+ordinary installed exporter now captures decoded instructions and prepares its
+schema-two coverage report before publishing the sidecar/source generation.
+The same callback serves normal pairs, GDB companions and fresh attachment
+preparation. Terminal reports carry null coverage; legacy `toJson()` and schema-one
+readers remain compatible. Packaged x86-64 and rebased AArch64 PIE exports pass
+validators/GDB and deterministic reruns. Both targets pass 16 cancellation/injected
+failure controls spanning capture, assembly, writing and readback, preserving prior
+pairs/companions and leaving no stages. Fresh GUI attachment acceptance, real
+large-report limit failures, repeated overhead, comparison/presentation and the
+full hosted matrix remain required. Earlier statements that ordinary exports
+still use schema one describe the historical component checkpoint below.
+
+**HISTORICAL #108 component checkpoint before production staging:** an isolated follow-on
+branch now retains the exact line-emission plan and indexes decoded instruction
+coverage without conflating token anchors with debugger line carry-forward.
+Native-free byte-decoding tests cover overlap, gaps, declarations, collisions,
+duplicates, empty/failed functions and cancellation in both widths/byte orders.
+Four baseline/candidate line sections are byte-identical. The capture helper now
+passes real Ghidra database tests for x86-64, AArch64 and both MIPS32 byte orders,
+including rebases, undecoded gaps, missing/changed functions and cancellation.
+Per-function token provenance excludes declaration-only rows, with unchanged
+source bytes and old mappings in baseline comparisons. The helper is not yet
+connected to exporter reports. Canonical type accounting passes 29 native-free
+checks, including opaque targets, implicit void, missing/repeated edges and a
+20,000-node shared chain. Actual producer emission evidence is now returned
+through `ExportResult`: exact lines, represented types and per-function
+declarations with expressions/lists/omissions. A source-built fixture independently
+checks serialized DIE ownership/type edges, raw lists and native GDB values,
+including opaque/recursive/void types, partial-location rejection, symbol-only
+failure and native-phase cancellation. Full parent/candidate sidecar/source bytes
+match. The updated package passes the lexical journeys below; report consumption
+remains pending. Location extent now distinguishes actual owner ranges from
+independently evidenced visibility, withholds percentages for unknown scopes,
+retains failed declarations in counts and exposes aggregate overflow. Twenty-one
+component checks and the expanded raw-DWARF/GDB fixture pass: the late local
+has 2/5 visible PC-byte coverage, and ten recovered declarations include four
+known-scope variables with 12/21 variable-PC-byte coverage plus six explicitly
+excluded unknown-scope variables. The recovered/emitted inventory now passes 27 component checks, all 273 cancellation
+checkpoints and the raw-DWARF/GDB fixture. It retains per-kind populations,
+export-local scoped identities, declaration/storage provenance, omitted
+declarations and explicit unknown scopes. Source inventory now also preserves null versus zero evidence, exact instruction
+points and union totals across overlapping functions. Its 64 checks and independent
+raw-line/disassembly/native-GDB fixture pass (six decoded/two anchored/four visible).
+The combined scorecard assembler passes its native raw-DWARF/GDB fixture and all
+148 cancellation checkpoints. It retains failed/unknown signatures, canonical
+function type unions, separate recovered globals and post-policy ABI restrictions.
+A proposed exact-counter coverage JSON payload passes UTF-8/string bounds,
+2,260 cancellation points and native raw-metric comparison. Shared streaming
+reader primitives preserve all 429 malformed-report and 432 detailed-reader
+checks. The proposed payload's strict decoder passes 503 malformed controls,
+287 sampled cancellation points and exact native-fixture object/byte round trips.
+It validates internal consistency without authenticating reported artifact facts.
+Explicit schema-two writing and all reader paths now pass local migration,
+full-document budget, selected-byte binding and native-fixture round-trip checks.
+Legacy schema-one bytes remain unchanged. Production staging, comparison/UI
+and measured overhead remain pending; ordinary exports still use schema one.
+Actual saved SQLite/U-Boot probes now pass with a lossless storage-evidence
+dictionary and explicit scoped limits: one million legacy values, five million
+coverage values, six million total, unchanged 64 MiB/string/depth/array caps.
+SQLite's payload shrinks from 56,392,815 to 19,897,363 bytes with every range/detail
+independently compared; U-Boot's compact payload is 54,600,521 bytes and repeats
+identically across two processes. Full report preflight, strict validators and
+GDB behavior pass; original/module/project snapshots match. Single-run timing/RSS
+observations are retained, not generalized performance acceptance. Production
+staging, repeated overhead/failure/cancellation controls and the full matrix remain
+required; see `docs/evidence/coverage-workload-admission.json`.
+Location-list results retain their actual immutable plans and honor cancellation.
+Their four byte streams match the parent; 237 raw-byte/negative checks pass.
+Real packaged x86-64 and rebased AArch64 PIE lexical-variable journeys pass
+validators and GDB (QEMU for AArch64), including x86-64 failure/cancellation
+controls. This is refactor validation, not public scorecard acceptance.
+Report schema integration, variable coverage, serialized type validation,
+comparison/presentation,
+large-workload cost and full validator/GDB acceptance remain planned. This does
+not complete #108 or move its integration ahead of #74. See
+`docs/COVERAGE-SCORECARDS.md` for definitions and the full remaining acceptance.
+
+**CONFIRMED #74 implementation and measured acceptance:** measurement PR159
+merged as `762dbbd` after CI `41989520429` and performance workflow `41989520582`
+passed. Compression PR160 merged as `5d81e4f` after all 15 jobs in combined CI
+`42010699187` passed at `6281660`. Both merge trees match their tested heads.
+Current raw-artifact review covers all five targets, 75 compression exports,
+Linux/Windows GUI and GDB consumers, original preservation and cancellation.
+Pinned SQLite/U-Boot workloads and all optimization decisions are documented;
+no general speed or memory improvement is claimed. See
+`docs/PERFORMANCE-ACCEPTANCE.md` and
+`docs/evidence/compression-integrated-42010699187.json`. Final documentation PR161 merged as `1bb4c14` after all 15 jobs in
+`42027852702` passed; the merge tree equals tested head `238da8c`. The final
+closure audit passed and #74 is closed. No release publication or completion
+of later goal issues is included.
+
+**HISTORICAL pre-integration checkpoints follow.**
+
+**HISTORICAL #74 measurements and consumer validation before PR159 integration:**
+performance workflow `41989520582` at `3276396` passes all five jobs, including
+native Windows paired exports and independent Linux compiler/Forge GDB checks.
+Raw review binds all 22 exports, 717 independently checked protected-file hashes,
+both binary JFR recordings and source-relocation positive/negative controls.
+Two private `launch.properties` files are recorded unchanged by the Windows job
+but are unavailable in the retained artifact subset. See
+`docs/evidence/performance-windows-workloads-41989520582.json`.
+
+Opt-in zlib is implemented and measured in PR160: production Linux SQLite and
+U-Boot sidecars shrink 65.39% and 60.11%, with no general speed or memory claim.
+The fixture-isolation correction preserves report-bound shared outputs.
+Cache, parallelism and other candidate decisions are explicitly resolved in
+`docs/PERFORMANCE-WORKPLAN.md`; deferral is not implementation. Full required
+integration gates, normal merges and final acceptance remain required. #74 and
+the later goal issues are open; no release publication is included.
+
+**HISTORICAL checkpoint paragraphs follow.** Earlier pending Windows measurements
+and provisional optimization decisions retain the evidence available at their
+dates; the current paragraph and P3.5 acceptance section supersede them within
+their stated scope. They do not reopen already accepted unrelated work.
+
+**CONFIRMED compression test interference; corrected locally:** run `41983547971`
+passes all five MIPS big-endian compression cases, then correctly rejects automatic
+association because the compression harness overwrote shared fixture sidecars
+bound to earlier producer reports. Compression now uses private input/reference
+copies and checks preservation of shared file content, sizes, modes and mtimes,
+including failure cleanup. Ten x86-64/MIPS big-endian cases (30 real exports)
+pass GNU/LLVM/pinned checks, GDB, decompression equivalence and determinism;
+shared fixtures and private inputs remain unchanged. The correction changes test
+harnesses only. Full corrected hosted acceptance and #74 integration remain open.
+See `docs/evidence/compression-fixture-isolation-20261105.json`.
+
+**CONFIRMED local compression candidate; hosted acceptance pending:** opt-in
+gABI zlib compression preserves the default plain output. Eight ELF container
+layouts and 25 actual five-target exec/PIE/shared/sectionless/rebased cases pass
+equivalence, determinism, validators and GDB. Production compression cancellation
+preserves the prior pair and permits retry. The Linux Script Manager shortcut
+and independent compressed-artifact consumer replay pass. Native Windows's
+compressed GUI journey and Linux replay pass at `995e0df`; archive and 139
+protected-file hashes have been reviewed. Production SQLite's five paired
+comparisons plus two profiles pass: 65.39% smaller, medians 34.76s plain/35.06s
+zlib, no speed/memory improvement claim. Production U-Boot also passes the
+five-pair/two-profile protocol: 60.11% smaller, medians 114.80s/115.35s, existing
+timeout and omissions retained. Broader Windows measurements and corrected
+exact-head CI remain pending. `05953e9` fixes the
+large-ELF smoke's missing standalone compilation dependency. Final #74 acceptance
+remains open; see `docs/ELF-COMPRESSION.md`.
+
+**CONFIRMED Windows #74 measurements; consumer correction validated locally:**
+run `41977254778` at `cfc212c` completes five native Windows baseline/candidate
+pairs and a separate profile for both pinned workloads, with unchanged artifacts,
+curated report counts and protected inputs. Native GNU/LLVM/libdwarf checks pass.
+The hosted Linux consumer fails because compiler-reference source paths still
+refer to the build worker. Explicit relocation from verified corpus sources now
+passes local replay of both unchanged Windows artifacts and real-GDB positive/
+negative source controls. No diagnostic is suppressed. Fresh hosted acceptance
+and the required gate remain pending. Cache and parallel-decompilation deferrals
+are now explicit against both hosts' measurements; compression remains in PR160.
+See `docs/PERFORMANCE-WORKPLAN.md`; full #74 and all later goal issues stay open.
+
+**CONFIRMED Windows runtime-observer correction; workload acceptance pending:**
+Run `41975183135` passes native accounting, corpus and package preparation,
+imports SQLite and completes the first baseline export. Its observer then
+rejects PowerShell's SGR-colored Java 21 banner. The retained log contains
+`openjdk version "21.0.13"`; the observer now removes only SGR presentation
+codes, with positive/negative controls preserving runtime and packaged-script
+identity checks. No full Windows measurement or consumer acceptance is claimed.
+
+**CONFIRMED broader local measurements; Windows workloads pending:** five
+same-compiler U-Boot pairs pass artifact/report identity, validators, GDB and
+preservation checks. Private-copy compression/index experiments pass for zlib,
+zstd and GDB indexes on SQLite/U-Boot; the tested `.debug_names` route fails LLVM
+verification. Opt-in zlib compression is selected as the next bounded production
+change, but remains **PLANNED**. Native Windows accounting and the shared pinned
+corpus build pass. Windows workload run `41973112213` completes its first import
+then fails the mandatory runtime observation because `launch.bat` emits no JVM
+version banner by default. Both isolated test installations now pin Java 21 and
+request `-showversion`; the corrected native workload run is pending. See
+`docs/PERFORMANCE-WORKPLAN.md` and `docs/evidence/performance-candidates-local-20261105.json`.
+Full #74 acceptance and every later goal issue remain incomplete.
+
+**CONFIRMED local performance continuation; #74 remains incomplete:** the
+current work preserves Ghidra 12.0.3/Java 21 and pinned libdwarf 2.3.2. Optional
+JFR phase events pass real Java 21 failure/cancellation tests and a packaged
+SQLite headless export with deterministic artifacts and validator/GDB checks.
+The source/decompilation phase dominates the profiled SQLite and U-Boot runs;
+this does not justify a general optimization or architecture claim. The full
+pinned U-Boot harness now passes locally, including its honest single timeout,
+and same-compiler SQLite pairs preserve every artifact byte. Cancellation and
+forced decompilation-failure regressions pass. Native Windows accounting controls pass run
+`41971951834`; the initial process-count oracle failure is retained. Real Windows
+workload/consumer jobs are present but unverified. Full corpus/host measurements, candidate
+decisions, final CI and integration remain required. See
+`docs/PERFORMANCE-WORKPLAN.md` for scope, observed timings and retained failures.
+
+**CONFIRMED integration baseline:** PR158 is merged as
+`6c776d7415fc5222f7e1314c0c5192454c8aced5`; its separate main-push run
+`41921433443` reports success at that exact commit. The earlier Windows race
+and pending-integration notes below are historical checkpoints. This resolves
+their conflict with the current merged baseline; it does not substitute for
+new #74 validation or authorize release publication.
+
+**CONFIRMED Windows chooser correction; separate clean-launch click oracle fixed locally:**
+At `ba65267`, run41897626643/job126818305192 passes the delayed-chooser control
+and the first modifying Windows GUI journey: attachment, changed-curation refresh,
+recovery and real active-validator cancellation. Independent retained-artifact
+review and local Linux GDB replay verify four CLI/GUI generations, CRC rejection,
+210 validator-log hashes and 631 protected Windows files. The job then fails its
+second, clean GUI launch because an older control requires click counts `[1,2,3,4]`;
+Windows correctly delivers `[3,4,5,6]` and two actions. The corrected oracle accepts
+consecutive positive counts while retaining exactly one action per gesture. An
+added primed real-click case reproduces the higher starting count locally; the
+full actual-Java21 Linux GUI and both validator/GDB journeys pass. See
+`docs/evidence/gui-click-count-offset-local-20261104.json`. **PRESENT, UNVERIFIED
+on Windows:** the corrected clean-launch control. Full required CI and C1 remain
+incomplete. The hosted GDB consumer was skipped; local replay is scoped evidence.
+
+**CONFIRMED final-head Windows GUI test race; local correction validated:**
+Run41890465382 at `edd3dce` fails Windows host job126794435767: the active
+cancellation test selects the earlier decline request, then times out waiting for
+a validator that was never launched. Its preview and screenshot confirm the wrong
+selection. Native Windows long-path and CLI attachment checks pass in that run.
+The chooser test now waits for Ghidra's asynchronous initialization, checks the
+accepted file, and verifies intended review paths before confirming a target
+change. A controlled delayed-listing regression reproduces the old selection and
+passes with the correction. Actual Java21 Linux Script Manager export/preparation/
+decline/cancellation, validators and both GDB journeys pass locally. See
+`docs/evidence/gui-chooser-refresh-local-20261104.json`. **PRESENT, UNVERIFIED on
+Windows:** the corrected chooser interaction. Final required CI and C1 integration
+remain incomplete; #72 stays open.
+
+**CONFIRMED current Windows and Linux host acceptance; integration remains open:**
+At `be2e806`, run41882141913 passes the complete Windows host job126765207504 and
+Windows-artifact GDB consumer126775392304. Independent review confirms native
+CLI and GUI attachment/changed-curation refresh/recovery, actual GUI cancellation
+after validator startup, preserved target and prior generations, 210 validator-log
+hashes, 726 protected Windows artifact hashes, and four positive GDB generations
+plus four CRC rejections. Actual Java21 long-path startup/cancellation passes;
+GUI validator status paths are 318–321 characters. The former Windows GUI launch
+failure is resolved for this tested workflow. See
+`docs/evidence/windows-attachment-41882141913.json`.
+
+The same head's Linux GUI journey, package/native manifests and Windows
+coordinator evidence pass independent review. Current attachment reviews cover
+all five target profiles, including MIPS32 big-endian: fifteen initial/rollback/
+GDB cases, two saved-curation refreshes and eight abrupt recoveries. The complete
+A1–A7 audit is recorded in `docs/DEBUGLINK-ATTACHMENT-ACCEPTANCE.md`. The full
+target regression gate and final C1 protected integration remain pending; #72
+is not closed. #107 remains merged.
+The earlier checkpoint paragraphs below are **HISTORICAL** where superseded by
+this acceptance record; they do not turn a previously unresolved failure into
+a current blocker.
+
+**CONFIRMED Windows long-cwd failure; correction awaits native acceptance:**
+Manual run41878689772 completes on actual Windows Java21.0.13: short cwd and
+short cwd with 355-character log paths succeed, while ordinary and extended-prefix
+long cwd both fail with CreateProcess error267. This explains the process-start
+failure mechanism seen in the modifying GUI; the full corrected journey remains
+required. See `docs/evidence/windows-validator-paths-41878689772.json`.
+
+The supervisor now selects a short canonical ancestor only for Windows process
+cwd, retaining the original evidence destination and absolute file arguments.
+Its native output creation resolves extended-length paths while retaining
+exclusive creation/no-follow behavior. Deep-path execution, cancellation and
+collision fixtures are added without shortening GUI paths. **PRESENT, UNVERIFIED
+on native Windows:** the corrected helper and complete GUI regression. No ELF,
+DWARF or native producer binding changes are involved.
+
+The new cwd test uses escaped JSON to avoid depending on Python stdout encoding.
+An explicit CP1252 local run reproduced the previous test's UTF-8 decoding failure;
+the corrected observer passes all 38 actual-Java21 supervisor checks under the same
+encoding. This is a test-only correction; production path handling is unchanged.
+
+**CONFIRMED hosted Windows refresh step; new GUI failure under investigation:**
+Run41873454505/job126733683157 passes real Windows headless export and the
+attachment/rollback/saved-curation refresh step with the corrected FSRL check.
+Independent review now confirms initial/refresh receipt chains, unchanged prior
+generations, strict backup-based import identity, changed CRC and 140 retained
+validator log hashes. A separate Linux GDB replay of both Windows-produced CLI
+generations passes source/type/argument/runtime and CRC-rejection checks. See
+`docs/evidence/windows-attachment-operation-41873454505.json`. Its GUI job fails
+at the first authorized attachment. The selected records directory is218
+characters; nested validator evidence exceeds300. Only empty supervisor stdout/
+stderr exist, with no native status, tool output, backup or receipt. The subsequent isolated Windows probe confirms long working-directory process
+creation is rejected; corrected GUI acceptance remains required.
+
+The manual host-observation workflow now runs a small actual-Java21 Windows
+probe with short/long/prefixed working directories and long redirection paths.
+It retains actual launch outcomes without calling an observed rejection a
+feature pass. Local Java21-compatible compilation, child execution and workflow
+lint pass; native observations subsequently confirm long-cwd rejection as recorded above. The passing Linux GUI/cancellation,
+exact package and Windows component evidence below retain their scope. #72 and
+the complete A1–A7/C1 gate remain incomplete.
+
+**CONFIRMED scoped Linux attachment artifacts:** run41873454505 now has
+independent passing reviews for fifteen initial/rollback/runtime cases: x86-64,
+AArch64, ARM32 and both MIPS32 byte orders, each with ET_EXEC, PIE and no-build-ID inputs.
+The ARM/MIPS cases use QEMU/GDB. Two x86 saved-curation refreshes and eight abrupt
+recoveries also pass review. Original-prefix checks retain `e_shentsize` and allow
+only the intended section-table pointer/count/index fields to change. See
+`docs/evidence/linux-attachment-41873454505.json`. These artifacts are from
+`7d7b2ef`; the corrected Windows supervisor and complete final-head gate remain
+pending. These scoped reviews do not close #72.
+
+**CONFIRMED current-head Linux GUI cancellation and attachment acceptance:**
+At `7d7b2ef`, run41873454505/job126732491182 passes the full Linux GUI job. Independent
+artifact review confirms real TaskDialog Cancel/Yes after a native validator PID,
+helper130, archived supervisor `cancelled`/cleanupComplete, unchanged target and
+absent transaction outputs. It also checks initial/changed-curation receipt/hash/
+CRC chains, 70 live-validator log hashes, both GDB source/type/break/next/step/exit
+and CRC-negative transcripts, and restoration of the initial association through
+saved recovery. See `docs/evidence/linux-gui-attachment-41873454505.json`.
+
+The same head's package review matches all 146 production Java sources, 264 raw
+repository files, 503 Java21 classes and release/native manifests. Native Windows
+component review verifies 18 coordinator outcomes, eight abrupt exits, own-token
+restoration and the actual packaged JAR; see
+`docs/evidence/windows-attachment-components-41873454505.json`. These component
+checks do not establish complete Windows refresh/GUI acceptance. The Windows
+host and five target lanes remain live; full A1–A7/C1 and #72 remain incomplete.
+
+**CONFIRMED scoped Windows real attachment; two test observers corrected locally:**
+Run41866768900/job126708313285 passes current-permission and explicit RunAs
+commits plus rollback with a deliberately two-link validator helper. Independent
+review rehashes 105 validator logs and checks retained target/backup/pair bytes,
+native identity/metadata claims, receipt bindings and debuglink CRCs. See
+`docs/evidence/windows-attachment-operation-41866768900.json`. The job then
+fails the saved-curation fixture's native-path comparison. Ghidra stores the
+local FSRL path; the fixture now derives that spelling through Ghidra's API while
+retaining strict import SHA checks and wrong-path/wrong-hash rejection controls.
+
+Run41868915417/job126717722771 reaches the active native validator but its GUI
+observer cannot find a TaskMonitorComponent message. Script Manager uses
+TaskDialog's separate status area and Cancel button. The corrected observer
+requires the exact task title/message and real Cancel/Yes interaction. A local
+actual-Java21 TaskLauncher control reproduces the old lookup's absence and proves
+worker cancellation; the full installed GUI/validator/GDB regression also passes.
+The saved-curation/refresh/validator/GDB regression passes locally with the limited
+Linux test host (operation JVM21, headless JVM25), including wrong-path/hash
+rejections. Two earlier private-layout setup failures are retained. See
+`docs/evidence/attachment-test-observers-local-20261104.json`.
+
+**PRESENT, UNVERIFIED:** corrected Windows refresh and both native authorized GUI
+cancellation journeys still need hosted acceptance. The full required gate,
+Windows consumer and A1–A7/C1 audit remain open. #72 is not complete; #107 remains
+merged. Earlier checkpoints retain their original scope.
+
+**PRESENT, UNVERIFIED native GUI cancellation journey; local controls pass:**
+The Script Manager fixture now launches an authorized attachment with an owned
+validator that records its PID and waits during its version query. Only after
+that process is observed running does the test click Ghidra's actual task Cancel
+button and confirm Yes. It requires helper exit130, a terminated validator, an
+unchanged target/pair/request and no backup/transaction publication. Both native
+GUI lanes and the retained-artifact consumer require this case. Private native
+supervisor status remains in the authorization wrapper's diagnostic archive for
+independent review; the unprivileged GUI checks process termination directly.
+
+The GUI now maps the helper's cancellation exit130 to Ghidra's CancelledException
+after waiting for cleanup, so Script Manager reports cancellation explicitly.
+Actual Java21 child cleanup/drain, extension build and installed Linux GUI
+regression pass, including a real Cancel-button/confirmation control and
+GNU/LLVM/pinned-strict/GDB checks. Both platform fixture builds pass warnings as
+errors; the Linux fixture is actually stopped through the production supervisor.
+The new native authorized GUI journey still needs hosted acceptance. See
+`docs/evidence/gui-active-cancellation-local-20261104.json`. #72 remains incomplete.
+
+**CONFIRMED Windows hard-link admission failure; correction locally verified:**
+Run41697807284 attempt2/job126646526652 passes the earlier supervisor timeout
+control and reaches actual attachment. The current-permission helper returns
+`Windows attachment metadata rejects hardlinks` before backup or transaction
+publication. Validator tools were being inspected as single-link recovery files.
+The helper, combined validator and strict configuration check now use a distinct
+read-only identity/content observation for tools. Targets and recovery material
+retain the complete single-link metadata policy; selected cross-role aliases
+still fail before writes. Validation evidence is schema2 with explicit tool
+observation semantics, rather than a metadata-preservation claim.
+
+Actual Java21 passes helper229, strict-report260, recovery204 and transaction532
+checks (eight abrupt exits), plus the extension build. An owned two-link supervisor
+reproduces rejection with the previous production JAR and passes real GNU/LLVM/
+pinned-strict validation with the corrected JAR. The x86-64 real-export controller
+then passes commit, rollback, GDB and CRC-negative checks using that same linked
+tool. See `docs/evidence/validator-input-hardlinks-local-20261104.json`.
+The Windows real-operation fixture now deliberately adds a supervisor hard link,
+records tool identities/link counts and requires current-permission and RunAs
+commits plus rollback/refresh. Native Windows execution and the full required
+gate remain pending; #72 is not complete. No supervisor timeout was changed.
+
+**CONFIRMED current-head Linux GUI acceptance; Windows full job failed before attachment:**
+At `188d413`, run41697807284/job126139026490 passes the complete Linux GUI job:
+real consecutive double-click control, explicit pkexec attachment, curated refresh,
+saved recovery, ordinary chooser cancellation, validators and automatic GDB/CRC
+checks. The retained package and GUI artifact were independently reviewed; see
+`docs/evidence/linux-gui-attachment-41697807284.json`. Production Linux CLI evidence
+at the identical production JAR covers fifteen real cases across five targets,
+two saved-program refreshes and eight abrupt recoveries; see
+`docs/evidence/linux-attachment-41693381663.json`.
+
+Windows job126140208967 failed in the supervisor smoke's first successful-command
+control after its five-second deadline. Native status records zero stdout/stderr
+and complete process cleanup. This run never reached the new current-permission
+attachment diagnostic or RunAs; the prior real-operation failure remains unresolved.
+A rerun of this terminal job was refused by GitHub while its other workflow jobs
+were still running. No timeout or production policy has been changed on this
+evidence. Complete Windows operation/GUI validation and the full A1–A7/C1 gate
+remain incomplete. Earlier checkpoints below retain their historical scope.
+
+**CONFIRMED Windows path correction; real RunAs attachment still fails:**
+job126124091548/run41693381663 passes native helper219, recovery156, the Unicode
+child cleanup test and eight PowerShell encoder controls. Real headless export
+and a public preview using a Unicode request filename also pass. The explicitly
+authorized helper then exits1 before any backup, validation or transaction output;
+the owned executable remains byte-identical. Its elevated console was not
+redirected, so the cause is **UNCERTAIN**. See
+`docs/evidence/windows-helper-paths-41693381663.json`.
+The native fixture now separately requires a fresh current-permission commit and
+a fresh RunAs commit, preserving redirected helper diagnostics from the former.
+This is additional test coverage, not an elevation retry or a replacement for
+RunAs acceptance. Java21 compilation and Python parsing pass; native execution
+of the diagnostic fixture remains pending. Complete A1–A7/C1 is still open.
+
+**CONFIRMED scoped native Linux GUI attachment/refresh/recovery:** run41693381663
+at `0f70308` proves the unprivileged Script Manager/pkexec initial and curated
+refresh commits, then saved-request restoration. Independent checks of retained
+artifacts prove unchanged program headers/original prefixes, receipt chains,
+GNU/LLVM/pinned-strict acceptance, both automatic GDB source/step journeys and
+CRC refusal. See `docs/evidence/linux-gui-attachment-41693381663.json`.
+The complete hosted job still failed afterward: the test observer accepted only
+click count2, while Ghidra also launches on positive even counts such as4. A new
+real-mouse control reproduces the old failure with counts1/2/3/4 and two actual
+launches. Matching Ghidra's event policy fixes it; the local installed GUI,
+validators and GDB regression pass. No product dispatch is changed or retried.
+Windows real-operation/GUI acceptance and the final required gate remain pending.
+
+**CONFIRMED defects in run41689061371; corrections locally verified, hosted acceptance pending:**
+Linux GUI job126107904107 committed both initial attachment and curated refresh,
+then recovery preview failed while traversing the root-private candidate directory.
+The read-only review now labels and defers only that staging-path check. Modifying
+recovery still preflights every role before opening a native host or writing.
+Regression cases cover both receipt phases, initial/refresh, an inaccessible
+private directory and a non-directory parent; refused execution preserves the
+target/receipt and creates no recovery outputs. CI diagnostics upload the existing
+owned archive instead of trying to traverse root-private staging directories.
+
+Windows job126110049339 passed the native cancellation identity checks but its
+child process received `?` instead of `λ` in a filename. GUI preview and the
+PowerShell launcher now transport literal request/control paths as bounded,
+canonical UTF-8 Base64 arguments, decoded before the existing absolute-path,
+alias, content-pin and consent checks. Unicode remains in the child fixture;
+the native Windows public-launcher fixture now also selects a Unicode request
+filename. This changes application arguments, not JVM installation/classpath
+support. Actual Java21 local helper219, recovery204, transaction532 (eight abrupt
+exits) and child cleanup/drain checks pass, as do extension build, eight PowerShell
+encoding controls and workflow lint. Native Windows execution, complete GUI
+recovery/consumer validation and the final required gate remain **PRESENT,
+UNVERIFIED**. The installed Linux GUI regression also passes export, default
+declines, validators and GDB stepping; see
+`docs/evidence/attachment-path-recovery-local-20261103.json`. Earlier
+pending-cause/readiness notes below are historical.
+
+**PRESENT, UNVERIFIED native Windows GUI journeys:** the shared Script Manager
+harness now selects PowerShell7/RunAs, checks durable receipt phases and exercises
+initial attachment, curated refresh and saved recovery on the existing runner
+token. The required Linux consumer checks both GUI-produced generations with
+pinned validators, automatic GDB source/stepping and CRC refusal, without changing
+downloaded artifacts. This does not claim an interactive standard-user UAC prompt.
+Java21 compilation, PowerShell parsing and lint pass; local compiler controls
+verify Windows-style source relocation and quoted directories containing spaces.
+Native Windows execution remains pending.
+
+**CONFIRMED Linux GUI harness admission failure; corrected query pending:**
+job126100727964/run41686788301 passes the real reference export but stops before
+Ghidra GUI launch. Polkit refuses an unprivileged `pkcheck` query carrying action
+details. The runner now performs only that readiness query through its existing
+sudo authority, retaining the unprivileged script PID as the checked subject.
+Ghidra and its actual confirmation flow remain unprivileged. Local ShellCheck/
+actionlint pass; native GUI execution is still unverified.
+
+**CONFIRMED Windows cancellation identity correction; new child-test failure:**
+job126097709777/run41685703952 passes149 helper checks with
+`cancellation-native-identity=true`, then fails `attachmentGuiProcessSmoke`
+before preparation/recovery and real-export tests. Its old assertion discarded
+the child exit/output details. The fixture now retains stdout, stderr and exit/
+cancellation status and includes a bounded stderr tail in failures; the actual
+Java21 Linux control still passes. The Windows child-failure cause is UNCERTAIN
+until the diagnostic rerun. This is not a complete Windows or GUI acceptance.
+
+**CONFIRMED scoped authorization checks:** independent Windows artifacts from
+run41680805435 prove own-token privilege restoration, nested/exceptional cleanup
+and128 cycles without handle growth. The local installed Linux GUI additionally
+proves that accepting the target-change review then cancelling the separate
+authorization choice starts no modifying helper and preserves every selected file.
+Both real export pairs still pass validators/GDB. See
+`docs/evidence/windows-attachment-privilege-41680805435.json` and
+`docs/evidence/attachment-authorization-decline-local-20261103.json`.
+These are component checks; native modifying GUI, Windows real-operation and the
+final required gate remain incomplete.
+
+**PRESENT, UNVERIFIED native GUI completion harness:** the Linux CI reference
+job now drives the real preparation/attachment, changed-curation refresh and
+saved-request recovery scripts. Ghidra remains unprivileged; a temporary
+runner-only polkit rule authorizes its explicitly selected separate helper.
+Both generations require receipt/CRC checks, structural validators and fresh
+GDB automatic discovery, source stepping and CRC rejection. Java21 compilation,
+ShellCheck/actionlint and independent objcopy/GDB consumer controls pass locally;
+this is not evidence of a successful native GUI transaction. Native execution
+and Windows acceptance remain pending.
+
+**CONFIRMED local GUI preparation; native modifying GUI acceptance remains unverified:**
+`ExportAndAttachGhidraDwarfForge.java` selects an initial/refresh operation, exports
+the current program to a fresh pair, captures the completed report directly from
+script state, binds its hashes and publishes an explicit request. Refresh selects
+the original backup for export; the prior pair is retained. Publication rejects
+existing/late destinations and rolls back a failed second installation. Local
+Java21 passes27 preparation controls and fresh-pair collision/cancellation tests.
+Installed Linux Script Manager passes real preparation and separate default
+decline in ordinary and GDB-loader regressions; every generated pair passes
+GNU/LLVM/pinned-libdwarf and native GDB. See
+`docs/evidence/attachment-preparation-local-20261103.json`.
+
+**CONFIRMED native Windows cancellation defect; correction awaiting rerun:**
+job126079953727 fails because Windows Java `BasicFileAttributes.fileKey()` is null.
+The cancellation channel now reuses the existing audited Windows opened-handle
+volume/file-ID/size/time reader, without new native signatures, security privilege
+changes or a weaker identity fallback. Local Linux helper149 and recovery112
+checks/build pass; they do not prove Windows execution. Native modifying GUI,
+Windows real-operation/refresh/GDB artifact acceptance and the final gate remain
+incomplete; A1–A7/C1 are not closed.
+
+**CONFIRMED local GUI preview/decline; full native GUI flow remains unverified:**
+the installed Script Manager discovers attachment/recovery scripts. The attachment
+script previews the selected request in a separate JVM, displays readable paths
+and defaults to Cancel; actual Java21/Xvfb/Openbox input proves Enter declines
+without starting a modifying helper or changing any selected input/output.
+The same run's real export passes GNU/LLVM/pinned-libdwarf and native GDB checks.
+The GUI can explicitly request pkexec/RunAs and forwards a cooperative file-based
+cancellation channel. Helper149, recovery112, separate-child stop/drain tests,
+launcher12 routing cases, extension build, release assembly and lint pass locally.
+See `docs/evidence/attachment-gui-local-20261103.json` and `docs/ATTACHMENT-HELPER.md`.
+Successful modifying GUI attachment/refresh/recovery, native authorization/
+cancellation, current Windows artifacts and the
+complete final gate remain incomplete. No A1–A7/C1 row is closed by this checkpoint.
+
+**CONFIRMED further Windows fixture failure; correction pending native rerun:**
+run41677412507/job126069625449 passes strict-report260 and helper115 checks,
+then fails recovery-request admission. The test fabricated receipt paths from
+the temporary-directory selection spelling instead of resolved paths, unlike
+production `AttachmentOperation`. The fixture now records `toRealPath()` paths
+and separately checks the original selection spelling resolves to those claims.
+Actual Java21 passes112 recovery admission checks locally. Receipt matching and
+the production recovery policy are unchanged; Windows short-name acceptance
+still requires its corrected native run.
+
+**CONFIRMED Windows smoke-test failure reproduced and corrected locally:**
+job126047872007 failed in the CRLF variant of `StrictDwarfReportSmoke` before
+attachment execution. Windows checkout had already converted the retained
+fixture to CRLF; the test converted it again to CRCRLF. The test now checks
+the checkout bytes first, normalizes only its mutation baseline to LF, checks
+both LF/CRLF and explicitly rejects CRCRLF. Actual Java21 passes260 checks
+against both the repository fixture and a separate CRLF checkout simulation.
+Production parser acceptance is unchanged. Native Windows rerun is pending.
+
+**PRESENT, UNVERIFIED Windows public launcher:** a PowerShell7 script now
+previews explicit selections, requires confirmation and requests RunAs only with
+an explicit authorization option. The isolated helper can enable only its own
+already-held SeSecurityPrivilege and restores/verifies the original state.
+Microsoft API/header audit and Windows x64 ABI assertions pass; Java21 helper115
+checks, build, PowerShell parsing, release assembly and workflow lint pass locally.
+CI now exercises native token scope cleanup and invokes the packaged launcher on
+the real Windows export. Native artifact acceptance, interactive UAC/cancellation
+and Ghidra GUI journeys remain incomplete. See
+`docs/WINDOWS-ATTACHMENT-AUTHORIZATION.md`.
+
+**PRESENT, UNVERIFIED Linux public launcher:** the installed
+`support/ghidra-dwarf-forge-attach` previews the pinned request, requires explicit
+target-change confirmation and offers explicitly selected sudo/pkexec authorization
+for the separate helper. No automatic elevation retry is added. Local routing
+controls, actual Java21 read-only preview/refusal, helper108 checks, executable
+base-ZIP inspection and release assembly pass. Linux production CI now invokes
+the packaged launcher. Hosted execution, actual authorization journeys, Windows
+launcher and GUI acceptance remain incomplete. See `docs/ATTACHMENT-HELPER.md`.
+
+**PRESENT, UNVERIFIED native saved-recovery execution:** ATTACH/REFRESH requests
+now explicitly select a fresh recoveryInvocation destination. The helper
+exclusively publishes and verifies its recovery selections before PREPARED or
+target replacement, with pins for both exact possible receipt phases. The saved
+file is then bound through transaction completion. Local initial/refresh tests
+prove ordering, no overwrite and target preservation on publication refusal.
+Native crash tests now save this file before the abrupt child and use it in a
+fresh recovery helper. Authorization launchers, GUI, native artifact acceptance
+and final C1 remain pending. See `docs/ATTACHMENT-HELPER.md`.
+
+**PRESENT, UNVERIFIED earlier Windows validation:** a dedicated Linux x86
+reference job now builds the same fixture and runs the same real headless export
+and structural validators used by the architecture lane. Windows consumes its
+four reference files immediately after that job succeeds, instead of waiting for
+the entire five-target matrix. The final required gate still explicitly requires
+all five target lanes, both host paths, Windows-artifact GDB checks and the new
+reference job. Local actionlint/ShellCheck and diff checks pass; hosted execution
+of this dependency change is pending.
+
+**PRESENT, UNVERIFIED public recovery helper:** `AttachmentHelper --recover`
+now accepts an explicit bounded recovery request plus request/receipt SHA-256
+pins and mandatory target-change consent. It reconstructs claims from the
+selected interruption record without following embedded artifact paths, then
+runs the native recovery coordinator. JSON output is explicitly UTF-8. Actual
+Java21 passes108 recovery admission checks; the existing532 coordinator checks
+pass. CI's8 native Linux interruption cases now recover via fresh helper JVMs
+and independently verify durable receipts and restored bytes/metadata. Native
+helper evidence, authorization
+launchers and GUI integration remain incomplete. See `docs/ATTACHMENT-HELPER.md`.
+
+**PRESENT, UNVERIFIED native helper execution:** `AttachmentHelper` now runs
+explicit SHA-256-pinned ATTACH/REFRESH selections in a separate process through
+the real host/validator/transaction. Explicit target-change consent is mandatory;
+no automatic elevation or fallback is introduced. It retains request/tool
+bindings, supports an opt-in stdin cancellation channel and reports committed
+outcomes even if subsequent host cleanup fails. Actual Java21 passes88 admission,
+72 request and80 operation checks; extension build and workflow lint pass.
+CI now routes all15 Linux production initial cases through the helper and keeps
+the existing GDB/CRC/metadata oracles. Native helper evidence, authorization
+launchers, durable public recovery, GUI journeys and final C1 remain pending.
+See `docs/ATTACHMENT-HELPER.md`.
+
+**CONFIRMED scoped production Linux attachment:** independent artifact review
+at `e3601f9` /41660525292 accepts fifteen real initial/rollback cases across
+x86-64, AArch64, ARM32 and both MIPS32 byte orders (exec/PIE/no-build-ID), two saved
+Ghidra changed-CRC refresh cases and eight abrupt native recovery cases.
+Release/test provenance, live validator logs, fresh local LLVM, preserved ELF
+program bytes, receipt chains and actual native/QEMU GDB arguments/source/type
+behavior are checked. The ARM32/AArch64 QEMU vDSO warning is reproduced by the
+untouched compiler reference. See `docs/evidence/linux-attachment-operation-41660525292.json`.
+Windows real-operation/refresh/consumer evidence, public
+helper/CLI/GUI execution and the final exact-head gate remain incomplete.
+
+**PLANNED separate-helper public flow; CONFIRMED local request admission:**
+attachment will run outside Ghidra, with OS authorization requested only by
+an explicit user action when needed. This is the stated implementation
+assumption after the optional preference question; it does not authorize any
+current elevation. `AttachmentInvocation` now transports explicit absolute
+artifact/tool selections, rejects malformed or ambiguous requests and includes
+the request file/tools in read-only preflight. Actual Java21 passes72 checks
+and the existing80 operation checks; the extension builds. CLI/GUI launch,
+authorization and cancellation/recovery UX remain planned, and Windows request
+tests are assigned to CI. See `docs/ATTACHMENT-HELPER.md`. Full A1–A7/C1 remain
+incomplete; public attachment is not enabled by this transport class.
+
+**PRESENT, UNVERIFIED Windows saved-curation refresh:** the native real-ELF
+harness now saves analyst function/type/member edits in a Ghidra project,
+reopens it, rejects the attached image's changed import hash, and exports a
+fresh pair against the retained original backup. A separate Java21 fixture
+uses the production Windows Host, live validators and refresh coordinator;
+it checks changed CRC, metadata preservation, an independent prior-image
+backup and retained previous pair/receipt. Python independently checks the
+receipt chain, validator log hashes, ELF debuglink bytes and program headers.
+Java21 probe compilation, Python/PowerShell parsing and workflow lint pass;
+Windows execution remains pending. A required Linux consumer job now checks
+both Windows-produced generations in fresh GDB sessions, with explicit source
+relocation and CRC refusal controls. A local compiler control proves the
+Windows-style source-path lookup/runtime and CRC-negative mechanisms only;
+actual Windows-artifact acceptance remains pending. Public controls and full
+A1–A7/C1 remain incomplete.
+
+**CONFIRMED mount-bound visibility acceptance:** completed extension-build
+41650311183 at2b89ec3 passes154 mount checks, independent native stat/findmnt
+comparison,8 unprivileged and168 privileged lifecycle checks. Retained sources,
+dependencies and outputs were independently reviewed; see
+`docs/evidence/linux-visibility-mount-41650311183.json`. The Linux Host has separate isolated privileged evidence below; real-ELF
+acceptance remains pending.
+
+**CONFIRMED isolated Linux attachment Host:** extension-build41652044404
+at `bdef6f6` passes 26 privileged Host checks and seven unprivileged checks.
+Independent backup, ownership/metadata application, replacement, restoration,
+refusals and cleanup are recorded in
+`docs/evidence/linux-attachment-host-41652044404.json`. Run41657292709 adds
+independent Python owner/mode/nanosecond-mtime/xattr/inode readback; all ten
+commands, provenance hashes and exact sources are reviewed in
+`docs/evidence/linux-attachment-host-readback-41657292709.json`. These sentinel
+checks do not establish real ELF/GDB or public attachment acceptance. CI now
+publishes production attachment/refresh archives immediately after those steps
+while the broader target suites continue; full evidence review remains required.
+
+**PRESENT, UNVERIFIED production-host integration:** the real ELF/GDB and
+saved-curation refresh harnesses now select `LinuxAttachmentHost` in CI.
+Prepared and interrupted-transaction sessions share the coordinator's read-only
+path preflight; recovery no longer requires a nonexistent original backup.
+Eight abrupt-child cases cover initial/refresh at prepared, replaced,
+before-commit and committed boundaries. Hosted execution remains pending.
+Explicit CI-owned fixture processes use sudo; production code never elevates,
+and this test configuration does not decide the public invocation policy.
+Actual Java21 generic suites pass 80/138/105/75/63/532 checks; the extension
+build, Java21 probe compilation, Python parsing and workflow lint pass locally.
+Public controls and full A1–A7/C1 acceptance remain incomplete.
+
+**CONFIRMED local Linux mount binding; hosted acceptance pending:** the
+visibility session now matches native mount ID/device to the current platform
+thread's mountinfo record and requires writable ext4. It rejects ext2/ext3,
+missing/duplicate IDs, mismatched devices and unreviewed optional mount fields;
+full selected records and opened-directory observations must remain stable.
+Actual Java21 passes154 mount controls with native stat/findmnt comparison and
+128 descriptor cycles, plus unprivileged session refusal/cleanup. Privileged
+session/Host acceptance remains **PRESENT, UNVERIFIED**. See
+`docs/research/LINUX-METADATA-VISIBILITY.md`.
+
+**CONFIRMED Windows strict-checker acceptance:** completed native-windows
+41648274797 passes raw ASCII/Unicode valid checks and malformed-version refusal.
+Independent bundle/source/hash/manifest/import review, strict-output replay and
+LLVM verification of retained fixtures are recorded in
+`docs/evidence/windows-checker-utf8-41648274797.json`. This closes the checker
+prerequisite, not real-ELF attachment acceptance. Review found the Windows
+operation fixture relocated the source while retaining the original export
+report/DWARF source path; the fixture now selects the original protected source.
+Java21 compilation and Python parsing pass; native operation remains
+**PRESENT, UNVERIFIED**. No production source-path check was weakened.
+
+**PRESENT, UNVERIFIED Linux visibility lifecycle:** the internal session now
+creates an exclusive private canary, verifies a random trusted attribute, and
+binds repeated complete snapshots to one platform thread. It never elevates or
+opens a target. Changed snapshots refuse cleanup; cancellation cleanup handles
+owned empty files. Local actual-Java21 unprivileged/virtual-thread/cancellation
+refusal and cleanup pass; privileged lifecycle tests are assigned to CI and
+remain unverified. Full Linux Host admission, public invocation policy and
+A1–A7/C1 remain incomplete. See `docs/research/LINUX-METADATA-VISIBILITY.md`.
+
+**CONFIRMED Windows checker checkout failure:** run41647056047 stops before
+compilation because the newly pinned manifest digest differs on Windows. A
+fresh Git checkout with core.autocrlf=true reproduces CRLF conversion for all
+three UTF-8 input files; explicit LF attributes retain their pinned digests.
+The corrected checkout experiment and workflow lint pass locally. Native
+compilation/Unicode execution remain **PRESENT, UNVERIFIED**. See
+`docs/evidence/windows-checker-checkout-41647056047.json`.
+
+**CONFIRMED Windows checker ASCII success and Unicode failure:** run41645197563
+passes raw version and complete strict validation of the compiler ELF, then
+loses λ/字 path characters as question marks and fails to open the selected
+configuration/input. See `docs/evidence/windows-checker-unicode-41645197563.json`.
+The private checker now embeds a per-process UTF-8 manifest plus an early
+GetACP check refusing lossy fallback. Windows10 version1903+ supports that
+manifest; older hosts are admitted only if the actual process code page is
+UTF-8. This is a validation-tool policy, not a changed Ghidra release baseline.
+Cross-compilation/resource linkage and local checks pass; corrected native
+runtime remains **PRESENT, UNVERIFIED**.
+
+
+**CONFIRMED Linux visibility experiment:** completed native-linux job41645197563
+passes owned-canary read/list, child-only capability-drop and unchanged-parent
+controls on ext4. Independent source/manifest/output review is recorded in
+`docs/evidence/linux-metadata-visibility-41645197563.json`. This establishes the
+bounded mechanism only; production lifecycle/admission and privilege policy
+remain open. The same workflow fails a separate ShellCheck redirect warning;
+the corrected pipeline uses unprivileged tee with pipefail. Local actionlint
+now runs with a private ShellCheck0.9.0 and passes. No full gate is claimed.
+
+
+**CONFIRMED Windows checker build; runtime harness correction pending:**
+41643748238 builds the private patched consumer/checker with audited imports.
+Its raw-tool harness then fails before invoking the checker because a copied
+Python environment dictionary loses Windows case-insensitive lookup. The fix
+reads SystemRoot through `os.environ`; dependency isolation is retained.
+See `docs/evidence/windows-checker-environment-41643748238.json`. No native
+valid/corrupt/Unicode or real-attachment runtime acceptance is claimed yet.
+
+**PRESENT, UNVERIFIED Linux visibility experiment:** a standalone owned-canary
+probe tests exact protected-attribute reads/listing before and after dropping
+capabilities only in its child process. Local unprivileged refusal passes;
+privileged execution is unavailable locally (noninteractive sudo requires a
+password) and is assigned to CI. It creates/removes only its own new temporary
+file/directory and does not change production privilege policy. See
+`docs/research/LINUX-METADATA-VISIBILITY.md`; full host admission remains open.
+
+
+**CONFIRMED Windows checker build failure; correction pending:** native job
+41641903394 reached the pinned configure guard rejecting static libdwarf on
+Windows. The corrected builder uses a private patched consumer DLL beside the
+real Windows checker, with complete dependency audit and separate validation
+artifact packaging; Linux stays static. See
+`docs/evidence/windows-checker-static-41641903394.json`. Native build/runtime is
+still **PRESENT, UNVERIFIED**. The raw-tool harness now also requires exact
+Unicode configuration/input paths; its Linux replay passes.
+
+
+**PRESENT, UNVERIFIED #72 Windows real-export integration:** a new standalone
+Java21 probe connects the production Windows Host, AttachmentOperation and fresh
+GNU/LLVM/pinned validation to the actual Windows headless export. It exercises
+initial attachment and post-replacement rollback only on owned copies, retaining
+metadata/backup/receipt/log evidence. An independent Python check verifies
+unchanged fixture inputs, separate backup identity and exact debuglink name/CRC.
+The required windows-host job runs it after real export. Local compilation,
+Python syntax and workflow lint pass; native execution, runtime GDB and real
+refresh remain required. Public attachment is still disabled.
+
+
+**CONFIRMED #72 Windows refresh coordinator:** completed attachment job
+41639509678 at `81d0a8a` passes independent source/JAR, retained-file and receipt
+review: 18 outcomes,275 coordinator checks and eight abrupt child exits. Both
+generations and changed CRCs are verified; lost/changed prior-pair controls
+refuse unsafe transitions. See `docs/evidence/windows-attachment-refresh-41639509678.json`.
+These sentinel fixtures do not establish real-ELF/public attachment acceptance.
+
+**PRESENT, UNVERIFIED Windows strict-checker build:** the pinned validation-only
+consumer builder now supports native MSYS2 MINGW64, retaining all eight patches,
+explicit configuration and audited compression DLLs/notices. CI builds and
+exercises the raw executable with a compiler-built ELF/DWARF5 positive and
+corrupted-version negative from a path with spaces, without MSYS DLL lookup.
+The equivalent Linux build/runtime and existing configuration regression pass;
+native Windows execution remains required. No shipped producer changes.
+
+
+**CONFIRMED #72 Windows initial recovery:** completed job41637595188 at
+`1ca676f` passes independent source/JAR and retained-byte/receipt review: real
+sharing-lock refusal, commit/rollback/cancel/concurrent target and four abrupt
+process exits with explicit recovery. Native receipt update acceptance from
+41636333521 is also recorded. The new refresh scenarios and lost/changed prior
+pair controls are **PRESENT, UNVERIFIED** on Windows. See
+`docs/WINDOWS-ATTACHMENT-HOST.md` and its evidence receipts. Full A1–A7/C1 remain
+incomplete.
+
+**CONFIRMED initial #72 Windows Host integration:** completed
+attachment-windows job41635698690 at `5412e20` passes independent review of the
+artifact, 133 production sources, three test sources, raw descriptors, retained
+bytes and independently reconstructed metadata digests. All 268 checks and128
+cleanup cycles pass. Later receipt/lock/coordinator cases remain pending.
+See `docs/evidence/windows-attachment-host-41635698690.json`.
+
+**PRESENT, UNVERIFIED #72 Windows recovery coverage:** native host tests now
+include a real no-delete-sharing handle, replacement refusal with unchanged
+files, successful replacement after unlock, coordinator commit/rollback/cancel,
+concurrent-target protection and four abrupt process-exit/recovery boundaries.
+Local compilation/parser/lint checks pass; hosted execution remains required.
+See `docs/WINDOWS-ATTACHMENT-HOST.md`.
+
+**CONFIRMED local #72 receipt integration:** receipt updates now use the
+mandatory host atomic-replacement operation and verify the full installed
+fingerprint. Actual Java21 receipt/file/target/transaction/operation suites pass
+105/75/63/532/80 checks, including persistent recovery-record failure. A fresh
+real x86-64 exporter-artifact replay passes GNU/LLVM/pinned validation and GDB
+attachment/CRC behavior with the limited Linux test host. Windows Host receipt
+coverage is added but remains **PRESENT, UNVERIFIED**. See
+`docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
+**CONFIRMED #72 volume component:** native Windows job41634160584 at
+`380d272` passes exact-source artifact review, native/C#/Java volume identity,
+flush/refusal checks and 128 stable handle cycles. The new complete Host/store
+integration is still **PRESENT, UNVERIFIED**. See
+`docs/evidence/windows-volume-binding-41634160584.json`.
+
+**CONFIRMED #72 raw-security correction:** completed native Windows job
+41633832399 at `2f7ea4d` passes independent artifact/source review. Inherited and
+protected DACLs now preserve the complete raw descriptor, with ten expected
+refusals and cleanup checks. See `docs/evidence/windows-security-staging-41633832399.json`.
+**PRESENT, UNVERIFIED:** `WindowsAttachmentHost` now connects native mechanisms
+to the transaction interfaces; a dedicated required Windows job tests actual
+backup/replacement/restoration using the built JAR. Native host acceptance and
+full A1–A7/C1 remain open. See `docs/WINDOWS-ATTACHMENT-HOST.md`.
+
+**PRESENT, UNVERIFIED #72 volume binding:** the reviewed native fixed-volume
+experiment now has a bounded JNA implementation in directory snapshots, with
+same-directory native/C#/Java comparison and existing cleanup/failure coverage.
+Local standalone compilation, extension build and PowerShell parsing pass;
+Windows execution remains required. See `docs/WINDOWS-DIRECTORY-SYNC.md`.
+
+**CONFIRMED #72 review finding:** Windows job41632042195 at `77a3c0f`
+passed its assertions, but independent artifact review found three inherited
+ACE flags changed in the raw security descriptor. High-level DACL comparison
+hid the change. The attachment path now supplies the kernel-read legacy
+descriptor and requires complete raw descriptor equality; native acceptance of
+this correction is **PRESENT, UNVERIFIED**. Protected-DACL raw equality, ten
+intended refusals and the native fixed-volume identity experiment passed in the
+reviewed artifact. See `docs/evidence/windows-security-raw-ace-41632042195.json`.
+Full production hosts, public controls and complete #72 acceptance remain open.
+
+**CONFIRMED #72 raw-reader progress:** run41630413755 at `1fe9635`
+passes raw Java/native agreement, cleanup and inherited-DACL stage application.
+The protected fixture's PowerShell Set-Acl also introduced a present-null SACL,
+so its absent-SACL precondition failed before protected application. Native
+DACL-only fixture setup now verifies unchanged SACL state; explicit null-SACL
+source/stage refusals are retained. Per-profile before/after evidence is saved
+immediately. Full corrected native acceptance remains pending; see
+`docs/WINDOWS-FILE-SECURITY.md`. Product privilege policy is still pending.
+
+**CONFIRMED native #72 directory mechanism:** JNA implementation at `373f33b`
+and completed Windows job41619066926 pass independent raw source/artifact review:
+C/C# identity/filesystem agreement, real write denial, stale/late paths,
+cancellation and 128 flat handle cycles. This follows the native NTFS flush
+experiment from41617008207. Complete host admission, durability and public
+controls remain required. See `docs/WINDOWS-DIRECTORY-SYNC.md`.
+
+**CONFIRMED local/hosted #72 filename policy:** production Linux UTF-8 and portable
+ASCII basename policies reject lossy native-byte aliases and unsupported names
+before attachment writes. Actual Java 21 refusal/transaction controls and real
+x86 no-build-ID plus MIPS big-endian validator/GDB cases pass. Completed Linux
+and native Windows jobs in run41615861678 also pass independent artifact/source
+review; this is component acceptance, not a full gate. Full metadata admission, durability and
+public controls are still required. See `docs/DEBUGLINK-BASENAME.md`.
+
+**CONFIRMED native #72 backup-stream admission:** completed Windows job
+in run 41611451207 at `440df66` passes real source/stage EA refusal, Unicode
+streams, cancellation and 128 native/Java cleanup cycles. Independent raw
+artifact/source/command review passes. The earlier GC-count and test-output
+failures remain recorded; SACL visibility and full host admission/durability
+are still incomplete. See `docs/WINDOWS-BACKUP-STREAMS.md`.
+
+**CONFIRMED #107 integrated:** final loader head `caa4916` passed complete
+required-validation run41602638145. All five target artifacts, package, both
+host GUI journeys and fresh GNU/LLVM/pinned strict checks were independently
+reviewed. PR157 merged normally as `c8e3afae3108ffe7d6a4b4d335463040426bc49c`
+on 2026-11-03; issue107 is closed. See `docs/GDB-LOADER-ACCEPTANCE.md` and
+`docs/evidence/gdb-loader-41602638145.json`. No release was published.
+
+**CONFIRMED remaining goal work:** complete the full #72 opt-in attachment
+contract. Its branch includes the integrated loader plus transaction, validator
+and native mechanisms, but still needs complete production hosts, protected
+metadata admission, durability/recovery integration, public controls and full
+acceptance. The original #107/#72 scope is retained in
+`docs/DEBUG-LOADING-COMPLETION-PLAN.md`; the loader's companion publisher does
+not satisfy the executable attachment/backup/receipt contract.
+
+**CONFIRMED native Windows #72 namespace acceptance:** run 41604998416 at
+`a473949` passes opened-stage publication/replacement, ten namespace scenarios,
+six additional rejections and 128 handle-lifetime cycles. Raw native artifacts
+were independently reviewed. Linux directory identity/fsync also passes hosted
+run 41603738214. These mechanisms do not complete host admission, durability
+or public controls; see `docs/WINDOWS-FILE-RENAME.md` and `docs/LINUX-DIRECTORY-SYNC.md`.
+
+**CONFIRMED local #72 inode-policy correction:** native Linux metadata now
+queries inode flags/project/allocation policy that statx omits. The old code
+lost NOATIME while reporting successful copying; actual source/stage and stale
+policy controls now refuse before changing metadata. Fourteen independent
+observations and descriptor/ACL/group controls pass locally and in the reviewed
+completed hosted job from run 41607172238; hidden-attribute policy remains pending.
+See `docs/LINUX-FILE-METADATA.md`.
+
+**CONFIRMED local #72 directory operations:** the production Linux primitive
+now supplies opened-directory/mount identity and explicit fsync with changed-path
+refusal. The independent C/Java 21 harness passes 494 assertions and 128 cleanup
+cycles. Receipt/backup/target/transaction/operation suites and a real live-validator/
+GDB replay pass using these calls. Full host admission and durability acceptance
+remain incomplete; see `docs/LINUX-DIRECTORY-SYNC.md`.
+
+**CONFIRMED local #72 Linux replacement integration:** commit/rollback,
+refresh and crash-recovery tests now use the production `renameat2` replacement
+primitive. Actual Java 21 suites and a real x86-64 live-validator/GDB/CRC replay
+pass. This supplies namespace replacement, not complete metadata admission or
+host durability. See `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
+**CONFIRMED native Windows #72 metadata acceptance:** run 41601490096 at
+`0e2d404` passes all four ACL/attribute application profiles, 13 independent
+snapshots, negative/cancellation cases and 128 handle-lifetime cycles. Raw
+artifact/source/dependency/Java 21 evidence was reviewed; see
+`docs/WINDOWS-FILE-METADATA.md`. The failed prior runs remain failed. SACLs/EAs,
+visibility policy, full host durability and public controls are still required.
+
+**CONFIRMED local #72 Linux metadata primitive:** `LinuxFileMetadata` now reads
+native opened-file identity and bounded visible attributes, and applies ordinary
+permissions/ownership/mtime, user xattrs and access ACLs to an already owned
+private stage with readback verification. Isolated Java 21 tests independently
+check native stat/xattr bytes, explicit/default ACLs, group changes, rejection,
+cancellation and descriptor cleanup. This is not a complete host adapter:
+inaccessible metadata can be hidden by Linux, and complete admission remains
+unimplemented pending the explicit privilege/visibility policy choice. No
+attachment option is enabled. See `docs/LINUX-FILE-METADATA.md`.
+
+**CONFIRMED local #72 live refresh and sectionless validation:** saved x86-64
+non-PIE/PIE refresh now uses the production live validator for both generations;
+GDB source/type/member/value checks and retained backups/generations pass. The
+live policy also accepts real sectionless x86-64, AArch64 and MIPS big-endian
+pairs without requiring a header-bearing reference input. Original frames are
+independently derived from the original search table and checked through a
+private non-loadable view when needed. ELF32/64, both byte orders, malformed
+frame metadata, payload corruption and cancellation controls pass on Java 21.
+These tests use the limited Linux test host; production metadata adapters,
+public CLI/GUI and full hosted acceptance remain open. CI run 41589665939
+exposed a missing executable bit on the packaged Linux validator helper. Release
+assembly now restores that bit after provenance checks; an extraction regression
+passes locally. The failed hosted run remains failed. See
+`docs/VALIDATOR-SUPERVISION.md` and `docs/ATTACHMENT-TRANSACTION-PROTOCOL.md`.
+
+**CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
+retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`
+passed [run 41516782822](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41516782822)
+and independent artifact review, then integrated through the normal protected
+merge `0447ba02e420118662eadf6d64495bdab40fb5bf`. Ghidra 12.0.3, Java 21-compatible bytecode and the
+pinned libdwarf 2.3.2 producer remain the baseline. This is development-branch
+acceptance; it does not publish a release or change alpha.2.
+
+All original requirements are mapped in
+[the acceptance audit](docs/TARGET-ABI-ACCEPTANCE.md); the exact supported
+profiles and limitations are in [TARGET-PROFILES.md](docs/TARGET-PROFILES.md).
+Earlier candidate/local/pending paragraphs below are historical checkpoints.
+They do not reopen an accepted row or broaden its tested contract.
+
+**CONFIRMED retention-guard fixture separation:** the combined x86 artifact
+contains deliberate invalid receipts from the checker and evidence-reader
+self-tests. The final retention step now explicitly excludes only their two
+top-level directories, recording every excluded receipt separately from export
+passes. Default scanning remains strict; malformed production receipts and
+similarly named or nested directories still fail. Thirteen controls pass, and
+the guard accepts 535 export reports from the combined x86 artifact after eight
+known namespace reports are freshly rechecked in a separate directory. Archived
+damaged reports remain unchanged. Sixteen fresh i386 GDB replays also pass all
+eight integer/shared layouts and 3,000 instruction observations. Production
+bytes are unchanged; the corrected commit still requires its full hosted gate.
+
+**CONFIRMED namespace validator-retention follow-up:** the complete uploaded
+AArch64 report audit found the same driver/raw-log collision in the isolated
+namespace/global harness. Its eight variants now use separate driver logs.
+Fresh packaged x86-64 and AArch64 runs pass all sixteen variants, cold GDB
+lookups and ordinary runtime comparisons; eight retained hosted sidecars also
+pass fresh strict checks. A final target-lane guard now rechecks every passing
+receipt against its complete raw report after all harnesses finish. Real-report
+controls reject empty, wrapper-overwritten, truncated, missing and
+receipt-mismatched evidence. Exporter/native bytes are unchanged. The corrected
+commit still requires the full hosted gate; see `docs/TARGET-ABI-ACCEPTANCE.md`.
+
+**CONFIRMED validator-evidence correction:** independent AArch64 review found
+five harnesses capturing checker stdout into the checker's own raw report path.
+The checker completed its validation, but the wrapper then overwrote the report
+prefix or entire report. Separate `*-driver.log` paths preserve both outputs.
+Real-validator controls reproduce all five collisions and verify complete raw
+reports with the corrected paths. Exporter and native binaries are unchanged;
+combined hosted acceptance remains required. See `docs/TARGET-ABI-ACCEPTANCE.md`.
+
+**CONFIRMED local MIPS system-reference startup correction:** the minimal
+hosted QEMU installation lacks an unused VGA ROM. Disabling the default VGA
+device passes all four FPXX/FP64A byte-order cases with the uploaded combined
+package and replays the exact failed hosted compiler ELF successfully. The
+strict value/omission and corruption controls remain intact; corrected hosted
+acceptance is pending. See `docs/MIPS-FPR-SYSTEM-REFERENCE.md`.
+
+**CONFIRMED combined ABI candidate; final acceptance pending:** the normal
+merge of PR125–PR154 with current main preserves the complete P2.3–P2.3c scope
+and the user logo. The P2.3–P2.3c TODO sections now separate historical baseline
+notes from expanded candidate evidence, and restore the already accepted PR77
+shared-library checkpoint. The clean combined build passes all 128 Gradle tasks plus
+wrapper, architecture-isolation and release-assembly checks; its exporter JAR
+is byte-identical to the recently tested component package. All twenty original
+requirement rows now map to concrete implementation and behavioral evidence in
+`docs/TARGET-ABI-ACCEPTANCE.md`. Exact-head hosted host/target gates,
+independent uploaded-artifact review and protected integration remain required.
+The goal and #69–#71 remain open; #68's existing closure does not waive its
+combined regression checks. Earlier component status notes below are historical
+checkpoints and must be read with this acceptance audit.
+
+**CONFIRMED local O32 mixed/wide coverage:** ten byte-order/layout cases pass
+40 normal/failure exports, ten cancellations, 24,780 instruction-level parameter
+observations and forty wrong-location/late-gap rejections. Natural fixture type
+alignment is corrected; separate O32 slots, compiler-reference defects and
+existing honest mixed-storage/call guards are explicit. N32/N64 regressions pass
+with unchanged production code. See `docs/MIPS-O32-ARGUMENTS.md`. Hosted acceptance, protected
+integration and the full original P2.3–P2.3c audit remain open.
+
+**CONFIRMED local MIPS FPXX/FP64A reference:** the unmodified 64-bit system
+emulator supplies full FPR values at actual FR=1 for both O32 byte orders.
+Four maintained compiler/Forge cases pass eight exports, strict validation,
+deterministic preservation and wrong-carrier/wrong-mode controls. Forge retains
+correct floats and explicit unavailable double pairs; production code is
+unchanged. See `docs/MIPS-FPR-SYSTEM-REFERENCE.md`. Hosted acceptance,
+integration, broader floating storage and the full P2.3–P2.3c audit remain open.
+
+**CONFIRMED local hosted-i386 reference correction:** PR150's compiler-vector
+finish operation can dereference incidental EAX and emit a GDB memory error.
+The exact independently corroborated consumer failure is now retained as a
+reference limitation, with all Forge/value/error gates intact. Four layouts pass
+sixteen exports, four cancellations, sixteen wrong-location rejections and eight
+deterministic reference controls; GDB 15.1/17.1 controls and twelve diagnostic
+negatives pass. Production code is unchanged. See `docs/I386-ABI-MATRIX.md`.
+Hosted acceptance, protected integration and the full P2.3–P2.3c audit remain open.
+
+**CONFIRMED local i386 ABI-selection correction:** reserved ELF flags previously
+left debugger calls enabled. Nine real i386 selections now pass ordinary values,
+positive calls or unchanged-state rejection through names and callbacks. Three
+AArch64 regressions and the rebased eleven-function i386 failure/cancellation
+matrix pass with the same package; 3,317 new metadata assertions pass. See
+`docs/I386-ABI-SELECTION.md`. A separate compat32 stack-location omission remains
+an open research finding, not a validated profile. Hosted acceptance, protected
+integration and the full original P2.3–P2.3c scope audit remain open.
+
+**CONFIRMED local i386 ABI matrix:** isolated XMM0–7 register mapping enables
+explicit vector/SSE storage. Eleven libc-backed scalar/vector/aggregate and
+additional-convention functions pass exec/sectionless/PIE/rebased-PIE comparisons.
+Sixteen deterministic normal/failure exports, four production cancellations and
+sixteen structurally valid wrong-location rejections pass; the AArch64 regression
+also passes. Compiler automatic vector/SSE return limitations and guarded custom
+calls remain explicit. See `docs/I386-ABI-MATRIX.md`. Exact-head hosted acceptance,
+protected integration, remaining target-ABI classification and the full original
+P2.3–P2.3c scope audit remain open.
+
+**CONFIRMED local GNU-vector validator correction:** the pinned standalone
+reader had no accepted form class for GCC's vector flag. A pinned validation-only
+table correction passes 16 positive and 48 negative metadata cases across both
+ELF classes/byte orders and DWARF4/5, with 128 old/new observations. Existing
+checker regressions and 97 evidence controls pass. Shipped native libraries and
+production code are unchanged. See `docs/GNU-VECTOR-VALIDATION.md`.
+Hosted acceptance, protected integration and the full original P2.3–P2.3c
+requirements remain open; the separate i386 ABI matrix is still under acceptance.
+
+**CONFIRMED local shared Thumb lifetime-oracle correction:** PR146's hosted
+ARM lane expected unavailable parameters after their original registers changed.
+Independent instruction bytes and raw stack/register observations instead prove
+retained values. Ordinary/rebased shared cases now require those exact values,
+full location-list ranges and the later honest unknown-store gap. Four wrong-slot/
+wrong-register controls pass LLVM but fail GDB at the required PCs. Fresh shared,
+rebased shared and PIE/sectionless runs pass validators, deterministic export,
+failure/cancellation and original preservation with unchanged production code.
+See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`. Exact-head hosted acceptance,
+protected integration and all original P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local i386 decompiler correction:** validated return/argument storage
+now reaches native source generation and analyst call-site overrides without
+editing the saved program. Four i386 layouts and an x86-64 layout regression
+pass ten deterministic exports, strict validators and compiler/Forge GDB checks;
+i386 additionally passes helper stepping, native failure isolation and callback
+cancellation. Six model suites pass. The missing fixture inventory entry that
+failed PR145's hosted target lanes is corrected and locally verified. See
+`docs/I386-DECOMPILER-ALLOCATION.md`. Exact-head hosted acceptance,
+protected integration and every remaining original P2.3–P2.3c row remain open.
+
+**CONFIRMED local floating layout correction:** object size and meaningful value
+width are now distinct. Four i386 layouts and an x86-64 global-layout regression
+pass ten deterministic exports, compiler/Forge sizeof/stride/member/value checks,
+structural validators and six model suites. The previous package fails at the
+expected ten-byte i386 sizeof/stride. See `docs/FLOATING-TYPE-LAYOUT.md`.
+Synthetic decompiler signatures, the remaining original ABI rows, hosted
+acceptance and protected integration remain open; P2.3–P2.3c are not complete.
+
+**CONFIRMED local i386 allocation correction:** a spurious hidden result pointer
+shifted extended floating arguments in the pinned Ghidra model. The read-only
+correction passes four libc-backed exec/sectionless/PIE/rebase cases, eight
+deterministic exports, compiler/Forge entry and return checks, strict validators,
+nine model suites and the existing rebased integer regression. See `docs/I386-EXTENDED-RETURN.md`.
+HISTORICAL: that checkpoint left padding/sizeof and synthetic signatures unresolved;
+the current layout follow-up above fixes the selected sizeof/stride cases;
+vector/extra-convention references expose separate GDB limits. Hosted acceptance,
+protected integration and the full original P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local ARM incoming-oracle correction:** the PR136 hosted failure
+was an obsolete first-store unavailability expectation. Twelve fresh exports
+pass the independently audited register/spill/reload contract at all ten
+instructions: 140 compiler/Forge observations and 48 required unavailable
+pairs. Six early-gap, late-gap and wrong-carrier controls reject at exact PCs.
+See `docs/MIXED-INCOMING-PREFIX.md`. Production sources are unchanged;
+fresh hosted acceptance, protected integration and the complete original
+P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local ARM context/conflict controls:** twenty controls across ten
+exec/PIE/shared, ordinary/rebased and sectionless layouts pass eighty
+deterministic exports and 390 exact GDB instruction observations. Ten baseline
+runs add 980 observations; two failure/cancellation/live/omission compositions
+add 274. Tests prove Ghidra context-write rejection, conservative omission
+during supported edits, byte-identical restoration and inherited-conflict
+preservation. See `docs/ARM-MIXED-MODE-MAPPINGS.md`. Production code is
+unchanged. Exact-head hosted acceptance, protected integration and the full
+original P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local ARM shared aggregate composition:** a real libc-backed
+loader/driver executes the fourteen-function LE DSO in ordinary/rebased forms.
+Exact GOT relocation, raw carrier and typed checks pass 660 stops per variant,
+16 deterministic failure exports and two cancellations; sixteen deliberate
+shared corruptions reject. Three exec/PIE regressions and twelve PIE corruption
+controls pass with the unchanged production package. See
+`docs/ARM-SHARED-AGGREGATES.md`. Hosted acceptance, protected integration and all remaining original ABI rows
+remain open; the full P2.3–P2.3c goal is unchanged.
+
+**CONFIRMED local ARM aggregate PIE composition:** all eight LE/BE8
+exec/PIE and ordinary/rebased cases pass compiler/Forge comparison, raw carrier
+checks, strict validators and preservation: 2,032 stops per variant, 64
+failure exports, 7,632 neighboring/496 symbol-only observations and eight
+cancellations. Twelve PIE corruptions fail at the required checks. A separately
+pinned validation-only correction removes libdwarf's invented low-address
+floor; 20 positive/36 negative cases and 16 old-checker defect reproductions
+pass, alongside existing validator regressions and 97 evidence controls.
+Production sources and the tested package are unchanged. Hosted acceptance,
+shared composition, protected integration and every remaining original
+P2.3–P2.3c requirement remain open. See `docs/ARM-STACK-AGGREGATES.md`.
+
+**CONFIRMED local exhausted-stack aggregate contract:** four LE/BE8 ordinary/
+rebased cases pass exact instruction, raw DWARF/carrier and typed-value checks:
+1,012 baseline stops per symbol-file variant, 32 deterministic failure exports,
+3,802 neighboring and 246 symbol-only stops, and four production-copy
+cancellations. The separately named audited prefix requires 492 unavailable
+field observations at proven uncertainty boundaries; the original full-
+availability research failures remain retained. Eight runtime mutation controls
+reject altered gaps, carriers and instructions. CI is wired; exact-head hosted
+acceptance and broader PIE/shared compositions remain required. See `docs/ARM-STACK-AGGREGATES.md`.
+All original P2.3–P2.3c requirements remain in scope.
+
+**CONFIRMED tracker reconciliation:** GitHub #68 is closed as completed by
+`zwilcox` on 2026-11-01; #69–#71 remain open. The inspected #68 event has no
+linked commit or acceptance comment. Earlier statements that all four tracker
+issues are open are historical. The full user-requested requirement audit stays
+active independently of tracker status; no issue was reopened or scope removed.
+
+**CONFIRMED local byte-slice and reference progress:** shared incoming analysis
+now preserves exact partial-register bytes through wider transfers and proven
+carry-free joins. Twenty-two model suites, 24 LE/BE8 aggregate controls, two
+default HFA cases and three x86/AArch64 runtime regressions pass. The natural
+aggregate investigation has zero wrong numeric values over 506 stops but still
+fails full availability at 130/116 field observations. Exact compiler-only
+windows now have live raw corroboration; Forge receives no exception. See
+`docs/research/ARM-STACK-AGGREGATES.md`. Portable pipeline acceptance and all #68–#71 requirements remain open.
+
+**CONFIRMED AArch64 allocation component accepted:** PR #124 passed all twelve
+exact-head jobs and independent hosted artifact replay, then merged normally as
+`453a7e9be61f1e34f3bae79f43f7ead2192bfcc2`; the merge tree equals tested head
+`035b9eb`. See `docs/AARCH64-PARAMETER-ALLOCATION.md`.
+This component does not close the full #68–#71 objective.
+
+**CONFIRMED local ARM aggregate failure/cancellation compositions:** twelve
+LE/BE8 storage/control combinations pass 48 deterministic native-failure exports
+and twelve cancellations during production copying. Neighboring functions retain
+138 exact aggregate values and 30 gaps; failed aggregate functions expose no
+parameter at all 168 checked PCs. Structural validators, original/program/output
+preservation and both default regressions pass. See
+`docs/ARM-AGGREGATE-STORAGE-CONTROLS.md`. Broader layouts and exhausted-stack
+behavior, hosted integration and all original #68–#71 requirements remain open.
+
+**CONFIRMED local ARM aggregate storage controls:** all 48 LE/BE8 combinations
+of VFP HFA, base-PCS aggregate and mixed integer/float aggregate storage pass.
+GDB checks 582 exact typed aggregate values and 90 unavailable boundaries;
+compiler/raw comparisons, GNU/LLVM/pinned strict validation, deterministic
+repeats and original/program preservation pass. Three deliberate oracle errors
+are rejected at exact PCs; both default lifetime regressions and all five
+fixture inventories pass. See `docs/ARM-AGGREGATE-STORAGE-CONTROLS.md`.
+Additional layouts, exhausted-stack and failure/cancellation compositions,
+hosted integration and the full #68–#71 requirements remain open.
+
+**CONFIRMED local ARM HFA representation and lifetime correction:** the preceding
+package swaps BE8 two-float fields and loses a surviving LE aggregate after a
+result-register write. The candidate normalizes computed HFA members and uses
+shared exact upper-piece facts. Four aggregate cases pass 48 typed entries and
+176 prefix instructions; two immutable HFA cases pass all 56 Forge instruction
+observations through frame release. Model, validator and cross-target runtime
+regressions pass. See `docs/ARM-HFA-STORAGE.md`; hosted acceptance, remaining
+aggregate compositions and the full #68–#71 requirements remain open.
+
+**CONFIRMED local load-boundary oracle correction:** hosted run `41375799121`
+reached the sectionless Thumb boundary fixture but its expected inventory omitted
+two primary mode function symbols. The corrected test independently checks all
+32 instruction bytes and both original section addresses, then requires exactly
+those two cues and the analyst alias. The exact hosted artifact passes raw
+inventory, six corruption controls and compiler/Forge GDB execution. Fresh
+ordinary, function-tag-conflict and mapping-conflict exports pass their distinct
+validator/runtime contracts. Production code is unchanged. See
+`docs/ARM-BE8-PROFILE.md`; exact-head hosted acceptance and all #68–#71
+requirements remain open.
+
+**CONFIRMED local shared-parameter oracle correction:** hosted run `41372370267`
+reached ARM shared export but retained an obsolete incoming-register-only
+expectation. The unchanged packaged exporter preserves a copied first argument
+and a spilled second argument. All 27 instruction boundaries of the exact hosted
+artifact pass source-known GDB value/gap checks; fresh shared/exec exports pass
+strict validators and their existing debugger workflows. Only the shared
+expectations change. See `docs/ARM-BE8-PROFILE.md`; a new hosted gate and all
+remaining #68–#71 requirements are still required.
+
+**CONFIRMED local ARM aggregate call classification:** four packaged LE/BE8
+base/VFP cases now pass raw transfers, captured values, 36 typed returns,
+72 injected calls and 24 unchanged-state rejections. Ordinary mixed structures
+are PCS-independent; HFAs retain precise mismatch and hidden-return guards.
+Focused model and existing scalar/aggregate regressions pass. See
+`docs/ARM-AGGREGATE-CALLS.md`. Q-register locations, saved aggregate lifetimes,
+broader compositions and hosted acceptance remain required; #68–#71 stay open.
+
+**CONFIRMED ARM aggregate compiler references; exporter gaps remain:** four
+LE/BE8 base/VFP combinations pass raw ABI, typed-value, return and injected-call
+checks. Fresh exports identify missing Q-register HFA locations, unavailable
+saved aggregate copies and the existing aggregate call restriction. See
+`docs/research/ARM-AGGREGATE-PCS.md` for exact evidence and retained pilot failures.
+This is an independent reference checkpoint, not completed aggregate support;
+all original #68–#71 requirements remain active.
+
+**CONFIRMED local PCS fixture-inventory correction:** PR132's inventory repair
+is merged, and `arm-pcs-profile.c` is registered in this branch's explicit list.
+All five target reproducibility checks pass. Run `41369300493` remains a failed
+setup run; new hosted acceptance is required. Production code and the validated
+fixture contents are unchanged; #68–#71 remain open.
+
+**CONFIRMED local fixture-inventory correction:** hosted run `41364588706`
+stopped target setup because the reviewed ARM call-reference C/assembly sources
+were missing from the explicit fixture inventory. Both names are now registered;
+all five target reproducibility checks pass, and an unregistered-source control
+still rejects before building. See `docs/ARM-BE8-PROFILE.md`. This repairs test
+setup only; a new hosted gate and the full #68–#71 requirements remain open.
+
+**CONFIRMED local ARM PCS declaration/metadata/failure controls:** twenty
+LE/BE8 base/VFP cases pass the unchanged packaged exporter. Addressless
+prototypes retain types and call policy without fabricated symbols; missing
+attributes select GDB's base PCS, while contradictory flags reject injected
+calls with precise diagnostics. The matrix includes 24 actual native failure
+exports and twelve cancellations preserving existing artifacts. See
+`docs/ARM-PCS-CONTROLS.md` for exact counts, retained reference/harness failures
+and receipts. Hosted acceptance and broader #68–#71 requirements remain open.
+
+**CONFIRMED local implicit ARM convention correction:** extraction now preserves
+recorded unknown convention names separately from the default model Ghidra
+actually uses for dynamic storage. Twelve LE/BE8 base/VFP cases pass real
+export, structural validators and compiler-relative GDB behavior, including
+unresolved custom-storage and callback rejection without target-state changes.
+The old-package failing baseline is retained. CI wiring and full ABI acceptance
+remain pending; see `docs/ARM-PCS-CALL-PROFILE.md`. All #68–#71 requirements
+remain active.
+
+**CONFIRMED local ARM PCS call checkpoint; full ABI work remains open:**
+The bounded original-ELF attribute reader and per-signature PCS policy pass 2,986
+model checks and the complete 120-task model/build run. Four LE/BE8 base/VFP
+executables pass real packaged scalar/wide/exhausted-argument exports, validators,
+natural values, typed returns, injected name/pointer calls and unchanged-state
+rejections. A separately pinned QEMU D/Q alias correction supplies trustworthy
+consumer references. LE uses GDB 15.1; BE8 uses 17.1, with the latter's LE upper
+bit-piece regression retained explicitly. Existing ARM aggregate and non-ARM
+calling-convention regressions pass. Broader profiles/compositions, hosted
+acceptance and protected integration remain required. See
+`docs/ARM-PCS-CALL-PROFILE.md`; #68–#71 remain open.
+
+**CONFIRMED independent ARM call-reference progress:** mixed base/VFP compiler
+runs reproduce GDB's global PCS selection and QEMU 8.2.2's reversed BE8 floating
+register writes. A private one-line QEMU correction restores the D-register
+round trip and VFP injected-call values in both data orders; ordinary program
+calls and raw returns remain correct. This supplies a corrected consumer
+reference, not Forge acceptance. Per-function exporter classification and the
+full original ABI rows remain open. See `docs/research/ARM-PCS-CALL-REFERENCE.md`.
+
+**CONFIRMED local hosted-oracle correction:** run `41359234173` exposed a
+sectionless alias test that counted analyst aliases but omitted the newly enabled
+primary ARM mode function symbols. The corrected inventory imports independently
+compiler-checked sectioned cues and checks the PLT resolver's four instructions
+and mapping boundaries separately. It passes the exact hosted artifact, all six
+symbol-corruption controls, and nine fresh ARM/Thumb/mixed exec/PIE/rebased runs.
+Production code is unchanged; a new hosted run is required. See
+`docs/ARM-THUMB-EXTENDED-LAYOUTS.md`. Full #68–#71 scope remains open.
+
+**CONFIRMED local BE8 floating and upper-register correction:** the shared scalar
+flow preserves logical upper registers across disjoint writes and rejects
+overlap, reused slots and contradictory physical aliases. The BE8 target map
+separates Ghidra's little-endian physical register layout from big-endian data.
+Both base/VFP argument fixtures pass validators and debugger observations through
+frame release. BE8 register bit pieces require the separately pinned, unmodified
+GDB 17.1 validation profile: GDB 15.1 demonstrably displays a wrong upper value.
+The full local model suite passes. Hosted acceptance, injected calls/typed returns
+and the broader ABI requirements remain open; see `docs/ARM-BE8-PROFILE.md`.
+
+**CONFIRMED local BE8 scalar checkpoint; full ABI work remains open:** matching
+EABI5 BE8 ELF/Ghidra instruction/data encoding passes 61 model checks, 32 native
+lifetimes, strict validators and six compiler/Forge debugger runs. Repeated
+artifacts are byte-identical; input/program/package bytes are preserved. Saved
+parameter migration now also passes a shared terminal-boundary correction in
+both ARM data orders: the stack copy remains readable until frame release.
+Base/VFP calls/returns and broader storage/layout/control cases remain incomplete.
+See `docs/ARM-BE8-PROFILE.md`; #68–#71 remain open.
+
+**CONFIRMED local sectionless shared composition:** contiguous/split shared and
+rebased shared mixed-body cases pass 810 saved/live/failure debugger observations,
+sixteen calls, eight native failure exports and four cancellations. The oracle
+measures the loader's live link_map because sectionless objects have no GDB From
+address, and verifies original header/code bytes before using the bias. See
+`docs/ARM-MIXED-MODE-MAPPINGS.md`. Runtime context/conflict controls, broader ABI
+profiles and exact-head hosted integration remain open; #68–#71 are not complete.
+
+**CONFIRMED local inherited/omitted ARM mapping acceptance:** five retained-symbol
+split layouts preserve every original symbol and mapping, with 1,045 saved/live/
+failure debugger observations and twenty injected calls. Eight stripped layouts
+pass explicit unknown-data omission controls with 208 instruction observations,
+exact diagnostics and no invented mapping. See `docs/ARM-MIXED-MODE-MAPPINGS.md`.
+Broader ABI profiles and exact-head integration remain required; #68–#71 remain open.
+
+**CONFIRMED local discontiguous mixed-body acceptance:** eight additional ARM
+layouts pass two-range bodies with an excluded data word, six exact mapping
+boundaries, raw DWARF range/line checks and compiler/Forge runtime comparisons.
+Saved/live/failure exports total 1,672 debugger observations, 32 injected calls,
+16 native failure exports and eight cancellations. CI covers both contiguous
+and split bodies. See `docs/ARM-MIXED-MODE-MAPPINGS.md` for source-map limits,
+receipts and retained harness failures. Runtime context/conflict controls,
+the remaining original ABI requirements and
+exact-head hosted integration remain open; this does not complete #68–#71.
+
+**CONFIRMED local mixed-mode layout/source expansion; full ABI goal remains open:**
+Eight ARM mixed-body layouts pass compiler/Forge source stepping, named/address
+breakpoints, injected function-pointer calls, raw symbol preservation, validators,
+determinism and failure/cancellation. This includes shared/rebased libraries and
+sectionless exec/PIE/rebased executables. See `docs/ARM-MIXED-MODE-MAPPINGS.md`
+for 832 observations, exact package receipts and retained failed experiments.
+The producer is unchanged in this expansion. Remaining ARM/MIPS/i386
+requirements, exact-head hosted
+gates and protected integration remain required; #68–#71 are not complete.
+
+**CONFIRMED live-program follow-up:** all eight layouts also pass two exports
+before closing fresh analysis, with identical artifacts, matching saved-program
+mode inventories and 736 additional compiler/Forge observations. The full
+sectionless/rebased/control/live command passes and CI includes live checks for
+every layout. Live-session behavior is now confirmed locally; inherited mapping and the full original ABI scope remain open. See the same mapping evidence document.
+
+**CONFIRMED local production ARM32 mixed-body mapping progress:**
+The real exporter now emits complete evidence-backed ARM/Thumb/data section
+mappings. Non-PIE, PIE and rebased PIE pass raw mapping checks, compiler-relative
+static decoding, twelve actual instruction observations, strict validators,
+determinism and original/program preservation. Six real decompiler-failure
+exports and three cancellations pass; ELF/writer and real-Ghidra models pass
+33/84 checks. The final package also passes the AArch64 vector/control regression.
+See `docs/ARM-MIXED-MODE-MAPPINGS.md`. Shared/sectionless mixed compositions,
+source-step acceptance, broader ABI requirements and exact-head integration
+remain open; the complete #68–#71 scope is unchanged.
+
+**CONFIRMED ARM32 mixed-body defect and consumer reference:**
+A source-built function switches ARM → Thumb → ARM with twelve independently
+checked executed instructions. The current curated production sidecar passes
+validators but misdecodes Thumb before attachment. A separate standard mapping
+symbol experiment fixes decoding and preserves every DWARF byte; it is not a
+production correction. The reproducible research harness passes and records
+all input/package/program preservation evidence. See
+`docs/research/ARM-MIXED-BODY-MODES.md`. Implementing validated extraction and
+writer support, the remaining ABI profiles and exact-head integration remains
+required; all #68–#71 requirements stay active.
+
+**CONFIRMED local ARM32 shared-library mode acceptance:**
+Stripped shared objects and explicitly rebased shared objects pass static mode
+checks, measured runtime relocation, source stepping, direct/indirect calls and
+exact register-clobber gaps with the unchanged production package. Both cases
+also pass repeated native decompilation failures and production cancellation.
+The PIE/sectionless regression passes after the harness extension. CI includes
+both shared roles. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md` for receipts and the
+PIC-specific second-argument boundary. Mixed-body modes, per-function ABI/BE8,
+broader storage and exact-head hosted acceptance remain open; #68–#71 retain
+their full original scope.
+
+**CONFIRMED local ARM32 sectionless and failure/cancellation acceptance:**
+Fresh sectionless imports now pass all four exec/PIE/rebased/dynamic-symbol
+roles, with independent raw inventory and real debugger checks. The combined
+eight-case matrix passes 16 native decompilation-failure exports and eight
+production copy cancellations. A separate empty-GNU-hash control requires an
+honest mode-symbol omission where no complete symbol count exists. The pipeline
+now runs these checks. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`; shared loading,
+mixed-body/ABI/BE8 work and exact-head hosted acceptance remain required.
+All original #68–#71 completion requirements remain active.
+
+**CONFIRMED local ARM32 PIE mode progress; full acceptance remains open:**
+The original ET_DYN omission now has a reproduced static-decoding failure and a
+candidate correction using existing byte/owner/mode checks. Four packaged
+exec/PIE/rebased/dynamic-symbol cases pass compiler/Forge runtime, validators,
+determinism and original-preservation checks. See `docs/ARM-THUMB-EXTENDED-LAYOUTS.md`
+for exact evidence and literal-pool oracle boundaries. Sectionless production
+behavior is PRESENT, UNVERIFIED beyond model checks; shared/mixed-body/BE8/ABI
+work, failure/cancellation composition and hosted acceptance remain required.
+All #68–#71 requirements remain active.
+
+**CONFIRMED aligned-aggregate and live-session MIPS defects; correction under validation:**
+Explicit aggregate alignment now skips the required register slot and caps
+argument alignment at 16 without changing formal types. A separate fresh-import
+failure was traced to Ghidra lazily serializing an empty killed-register list;
+the fingerprint correction preserves strict rejection of nonempty changes.
+434 model checks, all 20 saved-program layout/control cases and all 20 final
+live-session cases pass locally. Exact-head hosted acceptance remains pending. See
+`docs/MIPS-ALIGNED-COMPOSITES.md`. The full #68–#71 goal remains open.
+
+**CONFIRMED expanded MIPS layout validation:** the v3 production package now
+passes all 20 ABI/endian/exec/PIE/rebase/shared cases, with 1,280 exact Forge
+values and 640 compiler-body values plus GNU/LLVM/strict validation. A versioned,
+checksum-pinned GDB 17.1 builder passes locally and is wired into candidate CI.
+All 20 failure/cancellation compositions pass locally. Broader lifetime/ABI
+requirements and exact-head hosted acceptance remain in progress. See `docs/MIPS-LAYOUT-ALLOCATION.md`.
+
+**CONFIRMED AArch64 indirect-argument component integrated:** PR121 merged as
+`54dc96313ef497df89f59f0a06fe87622e77e7d8` after all twelve jobs passed in
+run `41332889175`. Independent artifact review checked 3,273 source-known
+available values across three layouts, raw location transitions, validators
+and failure/cancellation evidence. This supersedes older pending statements
+for that component only. PR122 is refreshed onto main at `086eaee98e821f7fa9532d7bb85b1f347963cc39`
+and requires a new exact-head gate. None of issues #68–#71 is closed.
+
+**CONFIRMED further MIPS layout defects; candidate acceptance in progress:**
+N32/N64 now have an owned nested-aggregate/128-bit alignment audit. Candidate
+allocation and unnamed-register-slice corrections pass 256 exact entry/body
+values across both ABIs and byte orders with unmodified GDB 17.1. GDB 15.1 has
+a separately reproduced high-register-piece consumer defect. Structural
+validators and local models pass; exact-head broader runtime/hosted acceptance
+and all original issue rows remain required. See `docs/MIPS-LAYOUT-ALLOCATION.md`.
+
+**CONFIRMED local wider MIPS runtime and call progress; acceptance pending:**
+The N32 allocation and truncated-stack corrections now have versioned tests
+covering 20 ABI/endian/layout cases, 9,500 Forge instruction observations and
+320 compiler/Forge injected calls through names and callbacks. Twenty matching
+failure/cancellation compositions pass. Separate float/double returns pass 24
+cases, and eight original unhomed regressions retain 3,472 passing observations.
+GNU/LLVM/pinned strict validation, deterministic reruns and preserved inputs/
+program databases pass locally; the packaged AArch64 regression also passes.
+A bounded ELF/language/type policy fixes previously suppressed N32/N64 returns.
+The validation-only GNU location-view checker correction has 48 controls and
+18 original real-artifact checks. See `docs/MIPS-WIDE-CALL-PROFILE.md` and
+`docs/MIPS-WIDE-ARGUMENT-ALLOCATION.md`. Broader allocation/storage auditing,
+hosted acceptance, protected integration and all original #68–#71 rows remain
+required. The full four-issue goal remains open.
+
+**CONFIRMED local MIPS N32/N64 scalar candidate; acceptance pending:** both byte
+orders now pass 20 non-PIE/PIE/rebased/shared/rebased-shared packaged cases, with
+348 compiler and 348 Forge instruction observations, separate source stepping,
+typed globals, clean validators and deterministic preserved-input exports.
+ELF64 target selection and physical register mappings remain isolated; no
+native binding or binary changed. MIPS PIE separate symbols use the measured
+loader bias after attachment to avoid a reproduced GDB frame-lookup warning.
+Forty failure exports, twenty cancellations and the AArch64 ABI regression also
+pass. Hosted gates and protected integration remain pending. Separate wider
+fixtures expose N32 aggregate/mixed allocation defects and compiler entry
+limitations for the next correction. See `docs/MIPS-WIDE-SCALAR-PROFILE.md`; all four target issues and
+the broader ABI requirements remain open.
+
+**CONFIRMED MIPS reference investigation; full profile remains incomplete:**
+Private GCC/glibc N32 and N64 non-PIE compiler references execute and pass typed
+GDB floating-value checks. N64 exposed a validation-consumer bug in four-byte
+GNU frame termination; a validation-only correction and malformed-input controls
+are under test. FPXX runtime-mode experiments retain distinct big/little-endian
+failures rather than claiming a universal reference. See
+`docs/research/MIPS-ABI-COMPLETION.md`. All four target issues remain open.
+
 **CONFIRMED AArch64 vector-storage integration:** PR #123 passes both complete
 hosted gates at `8b6749e3`, separate package/raw/runtime/both-host review, and
 normal protected merge `3a60eab` with the same tree. Fresh uploaded-artifact

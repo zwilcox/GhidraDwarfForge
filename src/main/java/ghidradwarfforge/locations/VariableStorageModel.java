@@ -25,12 +25,20 @@ public record VariableStorageModel(List<VariableLocation> variables) {
         UNKNOWN_LIFETIME, REGISTER_MODIFIED, CALL_CLOBBERED
     }
 
-    /** A target-specific, already verified Ghidra-to-DWARF register mapping. */
-    public record DwarfRegister(String ghidraName, int dwarfNumber) {
+    /**
+     * A verified Ghidra-to-DWARF register mapping. lowBytePieceBits is the
+     * maximum low-bit byte piece whose ABI placement is known, or zero when
+     * only explicitly offset bit pieces are justified.
+     */
+    public record DwarfRegister(String ghidraName, int dwarfNumber, int lowBytePieceBits) {
+        public DwarfRegister(String ghidraName, int dwarfNumber) {
+            this(ghidraName, dwarfNumber, 0);
+        }
+
         public DwarfRegister {
             requireText(ghidraName, "Ghidra register name");
-            if (dwarfNumber < 0) {
-                throw new IllegalArgumentException("DWARF register number must be nonnegative");
+            if (dwarfNumber < 0 || lowBytePieceBits < 0 || lowBytePieceBits % Byte.SIZE != 0) {
+                throw new IllegalArgumentException("invalid DWARF register or byte-piece contract");
             }
         }
     }

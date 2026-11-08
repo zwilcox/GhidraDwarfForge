@@ -83,10 +83,23 @@ try:
             assert number("$pc") == pc + 4 and float(gdb.parse_and_eval("$s0")) == sum(expected)
             tail = {key: parameter(key) for key in ("first", "second")}
             for key, value in zip(("first", "second"), expected):
-                assert tail[key]["available"] == (variant == "compiler"), tail
-                if variant == "compiler":
-                    assert tail[key]["value"] == value
+                assert tail[key]["available"] and tail[key]["value"] == value, tail
             row["lifetime"] = {"write": pc, "end": pc + 4, "tail": tail}
+            row["terminalValues"] = []
+            if variant == "forge":
+                # Source-known surviving values are s14 and the unchanged s1,
+                # even after frame release. Do not resurrect the old stack slots.
+                while number("$pc") < code["raw"] + code["size"]:
+                    values = {key: parameter(key) for key in ("first", "second")}
+                    assert all(values[key]["available"] and values[key]["value"] == value
+                        for key, value in zip(("first", "second"), expected)), values
+                    assert float(gdb.parse_and_eval("$s14")) == expected[0]
+                    assert float(gdb.parse_and_eval("$s1")) == expected[1]
+                    row["terminalValues"].append({"pc": number("$pc"), "parameters": values})
+                    gdb.execute("stepi")
+                    if not code["raw"] <= number("$pc") < code["raw"] + code["size"]:
+                        break
+                assert len(row["terminalValues"]) == 3
             boundary.delete()
     gdb.execute("continue")
     result["exitCode"] = number("$_exitcode")

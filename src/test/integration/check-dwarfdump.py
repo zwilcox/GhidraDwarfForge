@@ -172,8 +172,12 @@ def elf_frame_identity(path, include_offset=False):
             require(end >= 0, "unterminated ELF section name")
             if names[section[0]:end] == b".eh_frame":
                 frames.append(section)
-        require(len(frames) == 1 and frames[0][1] == 1 and frames[0][5] > 0,
-            "frame corroboration requires one nonempty PROGBITS .eh_frame")
+        machine = struct.unpack_from(endian + "H", header, 18)[0]
+        # AMD64 psABI 1.0 sections 4.2.2-4.2.4 define this processor type.
+        # It denotes the same runtime records, not arbitrary processor data.
+        frame_types = {1, 0x70000001} if wide and endian == "<" and machine == 62 else {1}
+        require(len(frames) == 1 and frames[0][1] in frame_types and frames[0][5] > 0,
+            "frame corroboration requires one nonempty supported .eh_frame section")
         section = frames[0]
         payload = region(section[4], section[5])
         identity = {"class": header[4], "byte_order": header[5], "os_abi": header[7],
@@ -231,6 +235,8 @@ def main():
     parser.add_argument("artifact", type=Path)
     parser.add_argument("log", type=Path)
     parser.add_argument("--tool", default=os.environ.get("DWARFDUMP", "dwarfdump"))
+    parser.add_argument("--configuration", type=Path,
+        help="explicit pinned configuration for the native checker without its shell launcher")
     parser.add_argument("--original", type=Path,
         help="corroborate only byte-identical inherited .eh_frame alignment diagnostics")
     parser.add_argument("--frame-reference", type=Path,
@@ -243,13 +249,23 @@ def main():
     reference = arguments.frame_reference.resolve(strict=True) if arguments.frame_reference is not None else None
     require(reference is None or original is not None, "frame reference requires a sectionless original")
     log = arguments.log.absolute()
-    command = [tool, "--no-follow-debuglink", "-ka", "-ki", "-kd", str(artifact)]
+    configuration_options = []
+    configuration = None
+    if arguments.configuration is not None:
+        configuration = arguments.configuration.resolve(strict=True)
+        require(hashlib.sha256(configuration.read_bytes()).hexdigest() ==
+            "842bba9230de82059dfcef1485114cf3c33eae8be2973c649d176f4ad18972ef",
+            "explicit checker configuration differs from pinned configuration")
+        configuration_options = ["--file-name=" + str(configuration)]
+    command = [tool, *configuration_options, "--no-follow-debuglink", "-ka", "-ki", "-kd", str(artifact)]
     metadata = {"command": command, "cwd": str(Path.cwd()), "status": "FAILED"}
     metadata_path = log.with_name(log.name + ".check.json")
     stderr_path = log.with_name(log.name + ".stderr")
     original_log = log.with_name(log.name + ".original.txt")
     original_stderr = original_log.with_name(original_log.name + ".stderr")
     inputs = [artifact] + ([original] if original is not None else []) + ([reference] if reference is not None else [])
+    if configuration is not None:
+        inputs.append(configuration)
     destinations = [log, stderr_path, metadata_path] + (
         [original_log, original_stderr] if original is not None else [])
 

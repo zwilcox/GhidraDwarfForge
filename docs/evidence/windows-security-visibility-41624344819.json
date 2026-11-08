@@ -1,0 +1,89 @@
+{
+    "status": "PASS component evidence review",
+    "head": "49dd0b65e02cac78db6b35afbbde12f0aa6a2383",
+    "run": 41624344819,
+    "artifactId": 13225029493,
+    "artifactSha256": "5e366ecf4bc5406420d6484c01a0a697c7c1adf5d751486d7f7bb90c534b2880",
+    "sourceFilesVerified": 24,
+    "observations": {
+        "status": "OBSERVED",
+        "create": {
+            "status": "OBSERVED",
+            "created": true,
+            "disabledPrivilegeOpenError": 1314,
+            "insufficientHandleQueryError": 5,
+            "initialPrivilegeAttributes": 0,
+            "restoredPrivilegeAttributes": 0,
+            "before": {
+                "control": 40964,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "auditAces": 0,
+                "labelAces": 0,
+                "saclHex": null
+            },
+            "complete": {
+                "control": 43028,
+                "saclPresent": true,
+                "saclDefaulted": false,
+                "auditAces": 1,
+                "labelAces": 1,
+                "saclHex": "020030000200000002401400890012000101000000000001000000001100140001000000010100000000001000200000"
+            },
+            "ordinary": {
+                "control": 32772,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "auditAces": 0,
+                "labelAces": 0,
+                "saclHex": null
+            },
+            "queryFields": 66047,
+            "queryAccess": 16908288,
+            "openedAccess": 17432576,
+            "handleCycles": 128,
+            "handlesBefore": 82,
+            "handlesAfter": 82
+        },
+        "read": {
+            "status": "OBSERVED",
+            "created": false,
+            "disabledPrivilegeOpenError": 1314,
+            "insufficientHandleQueryError": 5,
+            "initialPrivilegeAttributes": 0,
+            "restoredPrivilegeAttributes": 0,
+            "before": {
+                "control": 43028,
+                "saclPresent": true,
+                "saclDefaulted": false,
+                "auditAces": 1,
+                "labelAces": 1,
+                "saclHex": "020030000200000002401400890012000101000000000001000000001100140001000000010100000000001000200000"
+            },
+            "complete": {
+                "control": 43028,
+                "saclPresent": true,
+                "saclDefaulted": false,
+                "auditAces": 1,
+                "labelAces": 1,
+                "saclHex": "020030000200000002401400890012000101000000000001000000001100140001000000010100000000001000200000"
+            },
+            "ordinary": {
+                "control": 32772,
+                "saclPresent": false,
+                "saclDefaulted": false,
+                "auditAces": 0,
+                "labelAces": 0,
+                "saclHex": null
+            },
+            "queryFields": 66047,
+            "queryAccess": 16908288,
+            "openedAccess": 16908288,
+            "handleCycles": 128,
+            "handlesBefore": 82,
+            "handlesAfter": 82
+        },
+        "scope": "Test-only child token and owned audit/label fixture; complete descriptor agrees across two native APIs. No production elevation, host admission or metadata-preservation claim"
+    },
+    "scope": "Native whole-security query and independent path API agree on actual audit and integrity-label SACL; insufficient rights and duplicate creation refuse, read preserves metadata, and 128 cycles retain handles. Not production JNA, host admission, privilege policy or full PR acceptance."
+}

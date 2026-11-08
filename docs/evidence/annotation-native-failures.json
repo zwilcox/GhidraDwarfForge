@@ -1,0 +1,132 @@
+{
+    "issues": [
+        116,
+        114
+    ],
+    "status": "CONFIRMED isolated native failure/cancellation fixture; production annotation behavior PLANNED",
+    "baseline": {
+        "ghidra": "12.0.3",
+        "java": 21,
+        "parentCommit": "1a33854"
+    },
+    "sourceSha256": {
+        "src/test/integration/analyst-annotations-failures.py": "b8cf62f134fb05362a6801b4742f1dcb81bc0593ed809b92c40e21a9ab3a2cc4",
+        "src/test/integration/ghidra_scripts/VerifyAnalystAnnotationFailures.java": "7bf90e1cafffe3416bc93e476f3f1d64ab54208e3879c345ad0d5b0ff94f66ef"
+    },
+    "cases": [
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "result": "/dev/shm/forge-annotation-conflicts/aarch64-pie-ybpmddrh/curation-kpin1hmj/native-failures-0tz2af49/result.json",
+            "sha256": "278e6314f1e165c06e238a053dfb4e47912d9c036ace2f621785c76320e507b9",
+            "readbackSha256": "5f0a0f8de9ef0125fd678483467d1222eefdf306512eca74c34e954f980941e2",
+            "instructionLimit": {
+                "completed": false,
+                "cancelled": false,
+                "error": "\nLow-level Error: Flow exceeded maximum allowable instructions",
+                "source": null,
+                "hasMarkup": false
+            },
+            "cancelled": {
+                "completed": false,
+                "cancelled": true,
+                "error": "",
+                "source": null,
+                "hasMarkup": false
+            },
+            "comments": 5,
+            "normalOutputIdenticalAfterFailureAndCancellation": true,
+            "projectUnchanged": true
+        },
+        {
+            "target": "mips32be",
+            "role": "exec",
+            "result": "/dev/shm/forge-annotation-conflicts/mips32be-exec-8msufgpw/curation-v1ml2ljg/native-failures-paxu3fvx/result.json",
+            "sha256": "cae2a73556b33493adb3f69385c0d403a3c6034aa3f080ba1af1501bcf806ae5",
+            "readbackSha256": "e51860d247d0fec362c23cbabbabab106e6da105d1db9a49a4a2b0c93bdb9128",
+            "instructionLimit": {
+                "completed": false,
+                "cancelled": false,
+                "error": "\nLow-level Error: Flow exceeded maximum allowable instructions",
+                "source": null,
+                "hasMarkup": false
+            },
+            "cancelled": {
+                "completed": false,
+                "cancelled": true,
+                "error": "",
+                "source": null,
+                "hasMarkup": false
+            },
+            "comments": 5,
+            "normalOutputIdenticalAfterFailureAndCancellation": true,
+            "projectUnchanged": true
+        },
+        {
+            "target": "mips32le",
+            "role": "exec",
+            "result": "/dev/shm/forge-annotation-conflicts/mips32le-exec-0e1h0_c9/curation-8vl36dtv/native-failures-nmjtcx7c/result.json",
+            "sha256": "81fc011b9e4853df72058e2c54cc9b3b5361020c85c7b8dcf693dfa4f9fcd166",
+            "readbackSha256": "e51860d247d0fec362c23cbabbabab106e6da105d1db9a49a4a2b0c93bdb9128",
+            "instructionLimit": {
+                "completed": false,
+                "cancelled": false,
+                "error": "\nLow-level Error: Flow exceeded maximum allowable instructions",
+                "source": null,
+                "hasMarkup": false
+            },
+            "cancelled": {
+                "completed": false,
+                "cancelled": true,
+                "error": "",
+                "source": null,
+                "hasMarkup": false
+            },
+            "comments": 5,
+            "normalOutputIdenticalAfterFailureAndCancellation": true,
+            "projectUnchanged": true
+        },
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "result": "/dev/shm/forge-annotation-conflicts/x86_64-exec-vkbmuxmv/curation-6t6goduu/native-failures-r3e_y6ct/result.json",
+            "sha256": "0f1305dd421e851345aaadd7e10ae0ff7af54f4727e869cd656433765b5ad6b4",
+            "readbackSha256": "fad97d5d1ec5465467cc5f417ea313e0b32acbf0eb13b7815616774bd1ec10af",
+            "instructionLimit": {
+                "completed": false,
+                "cancelled": false,
+                "error": "\nLow-level Error: Flow exceeded maximum allowable instructions",
+                "source": null,
+                "hasMarkup": false
+            },
+            "cancelled": {
+                "completed": false,
+                "cancelled": true,
+                "error": "",
+                "source": null,
+                "hasMarkup": false
+            },
+            "comments": 5,
+            "normalOutputIdenticalAfterFailureAndCancellation": true,
+            "projectUnchanged": true
+        }
+    ],
+    "checks": [
+        "Actual native DecompileOptions maximum instruction count1 causes completed=false, a specific limit error and no source/markup on four saved-program target profiles.",
+        "All five failed-function comment categories remain available through the independent listing API after native failure.",
+        "Restoring the instruction budget on the same failed DecompInterface produces exactly the original normal output.",
+        "A cancellable TaskMonitorAdapter is explicitly cancelled before invocation; native result reports cancelled with no source/markup. The same interface then produces exactly the original normal output.",
+        "Two independent read-only JVM reopens produce byte-identical observations. All saved project files and protected input/helper files remain unchanged."
+    ],
+    "archive": {
+        "path": "build/test-results/annotation-native-failures-evidence.tar.gz",
+        "sha256": "02d16ee74e608c6125bac5a8d234d4bcad745e00ae026317eb0c5061cdea8c66",
+        "bytes": 18242
+    },
+    "limits": [
+        "API fixture preparation only; no emitted ELF/DWARF was changed or validated by this new harness. Compiler references have separate GNU/LLVM/strict/GDB evidence in annotation-saved-conflicts.json.",
+        "Pre-cancelled native invocation does not prove timely cancellation during an active export or output cleanup.",
+        "Normal native text still contains incidental unsafe closing comment delimiters and omits some listing categories. Production extraction/escaping/mapping must handle those independently.",
+        "Actual Forge symbol-only failure isolation, diagnostic source lookup, context controls and pipeline acceptance remain required."
+    ]
+}

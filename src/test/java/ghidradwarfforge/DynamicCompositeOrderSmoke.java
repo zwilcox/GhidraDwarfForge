@@ -256,7 +256,7 @@ public final class DynamicCompositeOrderSmoke {
             checkSerialization(nodes);
             checkPieces(actual, numbers, bits, custom ? "converted custom pieces are not in object memory order" :
                 "computed pieces are not in object memory order");
-            checkExpression((CompositeStorage) actual, bytes, numbers, bits);
+            checkExpression((CompositeStorage) actual, bytes, numbers, bits, target.wordBytes() == 8);
         }
         require(Arrays.equals(nodes, effective.getVarnodes()), "normalization mutated Ghidra storage");
     }
@@ -272,7 +272,7 @@ public final class DynamicCompositeOrderSmoke {
         }
     }
 
-    private static void checkExpression(CompositeStorage storage, int bytes, List<Integer> numbers, List<Integer> bits) {
+    private static void checkExpression(CompositeStorage storage, int bytes, List<Integer> numbers, List<Integer> bits, boolean bytePieces) {
         var location = new VariableLocation("function", 0x1000, "value", VariableKind.PARAMETER, bytes,
             List.of(new LocationRange(0x1000, 0x1004, storage,
                 new Evidence(Confidence.USER_DEFINED, "actual computed parameter"))));
@@ -281,7 +281,8 @@ public final class DynamicCompositeOrderSmoke {
         List<GenericOperation> expected = new ArrayList<>();
         for (int i = 0; i < numbers.size(); i++) {
             expected.add(new GenericOperation(DwarfLocationExpression.DW_OP_REGX, numbers.get(i), 0));
-            expected.add(new GenericOperation(DwarfLocationExpression.DW_OP_BIT_PIECE, bits.get(i), 0));
+            expected.add(new GenericOperation(bytePieces ? DwarfLocationExpression.DW_OP_PIECE :
+                DwarfLocationExpression.DW_OP_BIT_PIECE, bytePieces ? bits.get(i) / 8 : bits.get(i), 0));
         }
         require(((Expression) expression).operations().equals(expected), "emitter changed declared object order");
     }
@@ -318,7 +319,7 @@ public final class DynamicCompositeOrderSmoke {
         var direct = new CompositeStorage(List.of(new Piece(map.register(target.registers().get(1), 0, 32), 32),
             new Piece(map.register(target.registers().get(0), 0, 32), 32)));
         checkExpression(direct, 8, List.of(map.dwarfNumbers().get(target.registers().get(1)),
-            map.dwarfNumbers().get(target.registers().get(0))), List.of(32, 32));
+            map.dwarfNumbers().get(target.registers().get(0))), List.of(32, 32), target.wordBytes() == 8);
     }
 
     private static void observeCustom(ProgramDB program, Target target) throws Exception {
@@ -340,7 +341,7 @@ public final class DynamicCompositeOrderSmoke {
             }
             Storage actual = GhidraVariableStorage.stableParameter(program, function, function.getParameter(0), map, TaskMonitor.DUMMY);
             checkPieces(actual, numbers, bits, "explicit custom parameter is not in object memory order");
-            checkExpression((CompositeStorage) actual, i == 0 ? 8 : 12, numbers, bits);
+            checkExpression((CompositeStorage) actual, i == 0 ? 8 : 12, numbers, bits, target.wordBytes() == 8);
             Function localFunction = at(program, 0x2100 + i * 0x200);
             var local = Arrays.stream(localFunction.getLocalVariables()).filter(v -> v.getName().equals("custom_local")).findFirst().orElseThrow();
             checkPieces(GhidraVariableStorage.stableLocal(program, localFunction, local, map, TaskMonitor.DUMMY),

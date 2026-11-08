@@ -21,10 +21,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('target', choices=('mips32be', 'mips32le'))
-    parser.add_argument('--profile', choices=('fpxx', 'fp32'), required=True)
+    parser.add_argument('--profile', choices=('fpxx', 'fp32', 'n32', 'n64'), required=True)
     parser.add_argument('--scalar', choices=('float', 'double'), required=True)
     parser.add_argument('--role', choices=('exec', 'pie', 'pie-rebased'), default='exec')
     parser.add_argument('--previous-ghidra', type=Path)
+    parser.add_argument('--toolchain-root', type=Path)
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
@@ -55,12 +56,32 @@ def main():
     write('protected-before.json', before)
     reference, binary = case / 'call.reference', case / 'call.input'
     prefix = 'mips-linux-gnu-' if args.target == 'mips32be' else 'mipsel-linux-gnu-'
+    wide = args.profile in ('n32', 'n64')
+    compiler_environment, tool_flags = [], []
+    sysroot = Path('/usr/mips-linux-gnu' if args.target == 'mips32be' else '/usr/mipsel-linux-gnu')
+    emulator = 'qemu-mips' + ('el' if args.target == 'mips32le' else '') + '-static'
+    abi_flags = ['-m' + args.profile]
+    if wide:
+        prefix = 'mips64' + ('el' if args.target == 'mips32le' else '') + '-linux-gnuabi64-'
+        sysroot = Path('/usr') / prefix[:-1]
+        emulator = 'qemu-mips' + ('64' if args.profile == 'n64' else 'n32') + (
+            'el' if args.target == 'mips32le' else '') + '-static'
+        abi_flags = ['-mabi=' + ('64' if args.profile == 'n64' else 'n32'), '-march=mips64r2']
+    compiler, objcopy = prefix + 'gcc', prefix + 'objcopy'
+    if args.toolchain_root:
+        assert wide, 'extracted compiler option is for N32/N64'
+        toolchain = args.toolchain_root.resolve(strict=True)
+        compiler_environment = ['env', 'LD_LIBRARY_PATH=' + str(toolchain / 'usr/lib/x86_64-linux-gnu')]
+        compiler = toolchain / 'usr/bin' / (prefix + 'gcc-12')
+        objcopy = toolchain / 'usr/bin' / (prefix + 'objcopy')
+        tool_flags = ['--sysroot=' + str(toolchain), '-B' + str(toolchain / 'usr' / prefix[:-1] / 'bin') + '/']
+        sysroot = toolchain / 'usr' / prefix[:-1]
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
     if args.scalar == 'float':
         flags.append('-DFORGE_SCALAR_FLOAT')
-    run('compile', [prefix + 'gcc', '-O1', '-g3', '-gdwarf-5', '-gno-variable-location-views',
-        '-m' + args.profile, *flags, '-Wl,--build-id=sha1', fixture, '-o', reference])
-    run('strip', [prefix + 'objcopy', '--strip-debug', reference, binary])
+    run('compile', [*compiler_environment, compiler, *tool_flags, '-O1', '-g3', '-gdwarf-5', '-gno-variable-location-views',
+        *abi_flags, *flags, '-Wl,--build-id=sha1', fixture, '-o', reference])
+    run('strip', [*compiler_environment, objcopy, '--strip-debug', reference, binary])
     before.update({str(p): support.digest(p) for p in (reference, binary)})
     write('protected-before.json', before)
     run('symbols', ['readelf', '-sW', reference])
@@ -74,8 +95,9 @@ def main():
     assert len(symbols) == 3
     run('input-header', ['readelf', '-hA', binary])
     text = (case / 'input-header.log').read_text()
-    assert ('FP ABI: Hard float (double precision)' if args.profile == 'fp32' else 'FP ABI: Hard float (32-bit CPU, Any FPU)') in text
-    write('metadata.json', {'target': args.target, 'profile': args.profile, 'scalar': args.scalar,
+    assert ('FP ABI: Hard float (double precision)' if args.profile != 'fpxx' else 'FP ABI: Hard float (32-bit CPU, Any FPU)') in text
+    entry, = re.findall(r'Entry point address:\s+(0x[0-9a-f]+)', text)
+    write('metadata.json', {'entryAddress': int(entry, 16), 'emulator': emulator, 'sysroot': str(sysroot), 'target': args.target, 'profile': args.profile, 'scalar': args.scalar,
         'role': args.role, 'symbols': symbols})
     project = case / 'project'
     project.mkdir()

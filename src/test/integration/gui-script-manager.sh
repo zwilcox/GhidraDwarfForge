@@ -21,6 +21,7 @@ test -s "$module/ghidra_scripts/GhidraDwarfForge.java"
 test -s "$module/ghidra_scripts/ExportGhidraDwarfForge.java"
 (cd "$module" && sha256sum -c RELEASE-SHA256SUMS) >/dev/null
 root="$repository/build/test-results/gui-script-manager"
+if [[ ${GHIDRA_GUI_UNWIND:-0} == 1 ]]; then root="$repository/build/test-results/gui-unwind"; fi
 mkdir -p "$root"
 work=$(mktemp -d "$root/run.XXXXXXXX")
 mkdir -p "$work/classes" "$work/settings" "$work/cache" "$work/tmp" "$work/user" \
@@ -35,7 +36,7 @@ cleanup() {
         kill "$xvfb_pid" 2>/dev/null || true
         wait "$xvfb_pid" 2>/dev/null || true
     fi
-    for restricted in "$work/select/readonly" "$work/cancel/readonly"; do
+    for restricted in "$work/select/readonly" "$work/cancel/readonly" "$work/readonly"; do
         if [[ -d "$restricted" ]]; then
             chmod u+w "$restricted"
         fi
@@ -51,11 +52,13 @@ javac --release 21 -cp "$classpath" -d "$work/classes" \
     "$repository/src/test/integration/gui/GuiTestSupport.java" \
     "$repository/src/test/integration/gui/GuiWindowGeometrySmoke.java" \
     "$repository/src/test/integration/gui/GuiTableClickSmoke.java" \
+    "$repository/src/test/integration/gui/GuiFileChooserSmoke.java" \
+    "$repository/src/test/integration/gui/GuiTaskCancellation.java" \
     "$repository/src/test/integration/gui/GuiScriptManagerSmoke.java"
-"$xvfb" -displayfd 3 -screen 0 1280x1024x24 -nolisten tcp \
+"$xvfb" -displayfd 3 -screen 0 "${GHIDRA_GUI_SCREEN:-1280x1024x24}" -nolisten tcp \
     3>"$work/display.txt" >"$work/xvfb.log" 2>&1 &
 xvfb_pid=$!
-for attempt in {1..100}; do
+for ((attempt=0; attempt<100; attempt++)); do
     if [[ -s "$work/display.txt" ]]; then
         break
     fi
@@ -88,7 +91,7 @@ DISPLAY=":$display" XDG_CONFIG_HOME="$work/wm-config" XDG_CACHE_HOME="$work/wm-c
     "$openbox" --sm-disable --config-file "$work/openbox.xml" \
     >"$work/openbox.log" 2>&1 &
 openbox_pid=$!
-for attempt in {1..100}; do
+for ((attempt=0; attempt<100; attempt++)); do
     kill -0 "$openbox_pid"
     LC_ALL=C DISPLAY=":$display" xprop -root _NET_SUPPORTING_WM_CHECK > "$work/wm-ready.txt"
     if grep -Eq '^_NET_SUPPORTING_WM_CHECK\(WINDOW\): window id # 0x[1-9a-fA-F][0-9a-fA-F]*$' "$work/wm-ready.txt"; then
@@ -101,9 +104,38 @@ DISPLAY=":$display" timeout 60 "$java" -Djava.awt.headless=false \
     -Duser.home="$work/user" -Djava.io.tmpdir="$work/tmp" \
     -cp "$work/classes" GuiWindowGeometrySmoke "$work/native-geometry" \
     > "$work/native-geometry.log" 2>&1
-function_address=$(readelf -Ws "$reference" | awk '$8 == "recovered_add" && !found++ { print $2 }')
+if [[ ${GHIDRA_GUI_UNWIND:-0} == 1 ]]; then
+    function_address=$(python3 - "$reference" <<'PYTHON'
+import re, subprocess, sys
+text = subprocess.check_output(['readelf', '-sW', sys.argv[1]], text=True)
+values = set(re.findall(r'(?m)^\s*\d+:\s*([0-9a-f]+)\s+8\s+OBJECT\s+GLOBAL\s+DEFAULT\s+\d+\s+cfi_sink$', text))
+assert len(values) == 1
+first = int(values.pop(), 16)
+print(f'{first:x}:{first+7:x}')
+PYTHON
+)
+else
+    function_address=$(readelf -Ws "$reference" | awk '$8 == "recovered_add" && !found++ { print $2 }')
+fi
 test -n "$function_address"
-DISPLAY=":$display" timeout 300 "$java" --enable-native-access=ALL-UNNAMED \
+gui_timeout=300
+if [[ ${GHIDRA_GUI_NATIVE_ATTACHMENT:-0} == 1 ]]; then
+    test "$(id -u)" != 0
+    command -v pkexec >/dev/null
+    checker_bundle=$(dirname "$(dirname "$(realpath "${DWARFDUMP:?pinned checker selection required}")")")
+    export FORGE_GUI_READELF FORGE_GUI_LLVM FORGE_GUI_STRICT FORGE_GUI_CONFIGURATION
+    FORGE_GUI_READELF=$(realpath "$(command -v readelf)")
+    FORGE_GUI_LLVM=$(realpath "$(command -v llvm-dwarfdump)")
+    FORGE_GUI_STRICT="$checker_bundle/libexec/dwarfdump"
+    FORGE_GUI_CONFIGURATION="$checker_bundle/share/dwarfdump/dwarfdump.conf"
+    test -x "$FORGE_GUI_STRICT"
+    test -s "$FORGE_GUI_CONFIGURATION"
+    export FORGE_GUI_CANCEL_VALIDATOR="$work/cancel-validator"
+    cc -std=c11 -O2 -Wall -Wextra -Werror \
+        "$repository/src/test/native/attachment-cancel-validator.c" -o "$FORGE_GUI_CANCEL_VALIDATOR"
+    gui_timeout=900
+fi
+DISPLAY=":$display" timeout "$gui_timeout" "$java" --enable-native-access=ALL-UNNAMED \
     -Djava.awt.headless=false -Duser.home="$work/user" \
     -Dapplication.settingsdir="$work/settings" -Dapplication.cachedir="$work/cache" \
     -Dapplication.tempdir="$work/tmp" -Djava.io.tmpdir="$work/tmp" \
@@ -111,36 +143,78 @@ DISPLAY=":$display" timeout 300 "$java" --enable-native-access=ALL-UNNAMED \
     "$ghidra" "$module" "$fixture" "$work" "$function_address" \
     2>&1 | tee "$work/gui.log"
 kill -0 "$openbox_pid"
-input="$work/select/readonly/fixture"
-sidecar="$work/select/chosen/fixture.dbg"
-readelf -h -S -n "$input" > "$work/input-elf.txt" 2> "$work/readelf.stderr"
-readelf -h -S -n "$sidecar" > "$work/sidecar-elf.txt" 2>> "$work/readelf.stderr"
-readelf --debug-dump=info --debug-dump=abbrev --debug-dump=aranges \
-    --debug-dump=decodedline --debug-dump=Ranges --debug-dump=loc "$sidecar" \
-    > "$work/readelf-dwarf.txt" 2>> "$work/readelf.stderr"
-test ! -s "$work/readelf.stderr"
-llvm-dwarfdump --verify "$sidecar" > "$work/llvm-verify.txt" 2>&1
-python3 "$repository/src/test/integration/check-dwarfdump.py" \
-    "$sidecar" "$work/dwarfdump.txt" --original "$input"
-gdb --nx --batch \
-    -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
-    -ex "file $input" -ex 'set auto-solib-add off' -ex "symbol-file $sidecar" \
-    -ex 'info functions gui_recovered_add' -ex 'ptype gui_recovered_add' \
-    -ex 'list gui_recovered_add' -ex 'break gui_recovered_add' \
-    -ex 'python exits=[]; gdb.events.exited.connect(lambda event: exits.append(event.exit_code))' \
-    -ex run -ex 'python assert gdb.selected_frame().name() == "gui_recovered_add"' \
-    -ex 'python import os; assert os.path.isfile(gdb.selected_frame().find_sal().symtab.fullname())' \
-    -ex 'python before=int(gdb.parse_and_eval("$pc"))' -ex next \
-    -ex 'python assert int(gdb.parse_and_eval("$pc")) != before' \
-    -ex 'python before=int(gdb.parse_and_eval("$pc"))' -ex step \
-    -ex 'python assert int(gdb.parse_and_eval("$pc")) != before' \
-    -ex 'disable breakpoints' -ex continue -ex 'python assert exits == [0], exits' \
-    -ex 'echo SCRIPT_MANAGER_GDB_PASS\n' > "$work/gdb.txt" 2> "$work/gdb.stderr"
-test ! -s "$work/gdb.stderr"
-grep -Fxq 'SCRIPT_MANAGER_GDB_PASS' "$work/gdb.txt"
-if grep -Ei '^[[:space:]]*(warning:|Error|Traceback|AssertionError)|No such file' "$work/gdb.txt"; then
-    exit 1
+if [[ ${GHIDRA_GUI_UNWIND:-0} == 1 ]]; then
+    python3 "$repository/src/test/integration/gui-unwind-evidence.py" "$work" "$reference" \
+        --target "${GHIDRA_GUI_UNWIND_TARGET:?target required}" --dwarfdump "${DWARFDUMP:?pinned checker required}"
+    exit 0
 fi
-printf '%s\n' 'script-manager-structural-validation=PASS' 'script-manager-gdb=PASS' \
-    >> "$work/result.txt"
+validate_pair() {
+    local work=$1 input=$2 sidecar=$3 validation_case=$4
+    local start_command
+    local -a load_commands
+    readelf -h -S -n "$input" > "$work/input-elf.txt" 2> "$work/readelf.stderr"
+    readelf -h -S -n "$sidecar" > "$work/sidecar-elf.txt" 2>> "$work/readelf.stderr"
+    readelf --debug-dump=info --debug-dump=abbrev --debug-dump=aranges \
+        --debug-dump=decodedline --debug-dump=Ranges --debug-dump=loc "$sidecar" \
+        > "$work/readelf-dwarf.txt" 2>> "$work/readelf.stderr"
+    test ! -s "$work/readelf.stderr"
+    llvm-dwarfdump --verify "$sidecar" > "$work/llvm-verify.txt" 2>&1
+    python3 "$repository/src/test/integration/check-dwarfdump.py" \
+        "$sidecar" "$work/dwarfdump.txt" --original "$input"
+    load_commands=(-ex "symbol-file $sidecar")
+    start_command=run
+    if [[ "$validation_case" == export && "${GHIDRA_GUI_GDB_LOADER:-0}" == 1 ]]; then
+        load_commands=(-ex starti -ex "source $sidecar.gdb.py" -ex forge-load)
+        start_command='continue'
+    fi
+    # $pc belongs to GDB Python, not the launching shell.
+    # shellcheck disable=SC2016
+    gdb --nx --batch \
+        -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
+        -ex "file $input" -ex 'set auto-solib-add off' "${load_commands[@]}" \
+        -ex 'info functions gui_recovered_add' -ex 'ptype gui_recovered_add' \
+        -ex 'list gui_recovered_add' -ex 'break gui_recovered_add' \
+        -ex 'python exits=[]; gdb.events.exited.connect(lambda event: exits.append(event.exit_code))' \
+        -ex "$start_command" -ex 'python assert gdb.selected_frame().name() == "gui_recovered_add"' \
+        -ex 'python constant=gdb.parse_and_eval("GUI_EQUATE_VALUE"); assert int(constant) == 0x31415926 and constant.type.sizeof == 4 and constant.address is None' \
+        -ex 'python import os; assert os.path.isfile(gdb.selected_frame().find_sal().symtab.fullname())' \
+        -ex 'python before=int(gdb.parse_and_eval("$pc"))' -ex next \
+        -ex 'python assert int(gdb.parse_and_eval("$pc")) != before' \
+        -ex 'python before=int(gdb.parse_and_eval("$pc"))' -ex step \
+        -ex 'python assert int(gdb.parse_and_eval("$pc")) != before' \
+        -ex 'disable breakpoints' -ex continue -ex 'python assert exits == [0], exits' \
+        -ex 'echo SCRIPT_MANAGER_GDB_PASS\n' > "$work/gdb.txt" 2> "$work/gdb.stderr"
+    test ! -s "$work/gdb.stderr"
+    grep -Fxq 'SCRIPT_MANAGER_GDB_PASS' "$work/gdb.txt"
+    if grep -Ei '^[[:space:]]*(warning:|Error|Traceback|AssertionError)|No such file' "$work/gdb.txt"; then
+        exit 1
+    fi
+    printf '%s\n' 'script-manager-structural-validation=PASS' 'script-manager-gdb=PASS' \
+        >> "$work/result.txt"
+}
+validate_pair "$work" "$work/select/readonly/fixture" "$work/select/chosen/fixture.dbg" export
+if [[ ${GHIDRA_GUI_COMPRESSION:-0} != 1 && ${GHIDRA_GUI_GDB_LOADER:-0} != 1 ]]; then
+    for mode in off assembly p-code both; do
+        context_case="$work/select/source-context/$mode"
+        validate_pair "$context_case" "$work/select/readonly/fixture" "$context_case/output/fixture.dbg" context
+    done
+    python3 "$repository/src/test/integration/gui-context-evidence.py" "$work/select/source-context"
+    for mode in split repeat default; do
+        source_case="$work/select/source-files/$mode"
+        validate_pair "$source_case" "$work/select/readonly/fixture" "$source_case/output/fixture.dbg" source-files
+    done
+fi
+readelf -SW "$work/select/chosen/fixture.dbg" > "$work/export-sections.txt"
+if [[ ${GHIDRA_GUI_COMPRESSION:-0} == 1 ]]; then
+    grep -Eq '[.]debug_info[[:space:]]+PROGBITS.*[[:space:]]C[[:space:]]' "$work/export-sections.txt"
+fi
+prepared="$work/select/attachment-prepare"
+mkdir -p "$prepared/validation"
+validate_pair "$prepared/validation" "$prepared/fixture" "$prepared/prepared.dbg" prepared
+if [[ ${GHIDRA_GUI_NATIVE_ATTACHMENT:-0} == 1 ]]; then
+    python3 "$repository/src/test/integration/gui-attachment-verify.py" \
+        "$work/select/attachment-native" "$fixture" "$function_address"
+fi
+python3 "$repository/src/test/integration/coverage-report-tool.py" "$ghidra" "$module" \
+    "$work/select/coverage-report.json"
 echo "gui-script-manager-integration=PASS"

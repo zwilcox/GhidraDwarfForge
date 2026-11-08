@@ -22,12 +22,33 @@ def main():
     parser.add_argument('--discontiguous', action='store_true', help='record an explicit analyst visibility gap around an effect-free instruction')
     parser.add_argument('--calls', action='store_true', help='compose both lexical identities with inspected calls')
     parser.add_argument('--controls', action='store_true', help='also test stale/coalesced evidence, actual decompiler failure and cancellation')
+    parser.add_argument('--coverage-controls', action='store_true', help='also test production coverage staging cancellation and failure preservation')
+    parser.add_argument('--source-lines', type=int, help='also compare a single-file baseline with partitioned source')
+    parser.add_argument('--java', type=Path, help='explicit Java runtime; launch the production headless entry point directly')
     args = parser.parse_args()
+    if args.source_lines is not None and not 1 <= args.source_lines <= 2147483647:
+        parser.error('--source-lines must be in 1..2147483647')
     ghidra = args.ghidra.resolve(strict=True)
+    headless = [ghidra / 'support/analyzeHeadless']
+    if args.java:
+        java = args.java.resolve(strict=True)
+        vmargs = subprocess.check_output([java, '-cp', ghidra / 'support/LaunchSupport.jar',
+            'LaunchSupport', ghidra, '-vmargs'], text=True).splitlines()
+        headless = [java, *vmargs, '-Xmx2G', '-XX:ParallelGCThreads=2', '-XX:CICompilerCount=2',
+            '-Djava.awt.headless=true', '-cp', ghidra / 'Ghidra/Framework/Utility/lib/Utility.jar',
+            'ghidra.Ghidra', 'ghidra.app.util.headless.AnalyzeHeadless']
     repository = Path(__file__).resolve().parents[3]
     results = repository / 'build/test-results/lexical-shadow'
     results.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix=args.target + '-' + args.role + '-', dir=results))
+    if args.java:
+        # Ghidra caches compiled scripts under user.home. A cache created by a
+        # newer runtime cannot be loaded by Java 21; keep this explicit-runtime
+        # run isolated instead of deleting or rewriting the user's cache.
+        for name in ('java-home', 'java-tmp'):
+            (case / name).mkdir()
+        headless[1:1] = ['-Duser.home=' + str(case / 'java-home'),
+            '-Djava.io.tmpdir=' + str(case / 'java-tmp')]
     print('lexical-shadow-results=' + str(case), flush=True)
     commands = []
 
@@ -50,6 +71,7 @@ def main():
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
     harness = repository / 'src/test/integration'
     files = [source, module, Path(__file__), *harness.glob('lexical-shadow*'),
+        harness / 'check-multifile-semantics.py',
         harness / 'check-lexical-shadow.py', harness / 'ghidra_scripts/PrepareLexicalShadow.java',
         harness / 'ghidra_scripts/LexicalDecompilerFailureExport.java',
         harness / 'ghidra_scripts/CancelDuringElfCopy.java']
@@ -86,21 +108,46 @@ def main():
     project = case / 'project'
     project.mkdir()
     rebase = ['-postScript', 'RebaseFixtureProgram.java', '0x2000000'] if args.role == 'pie-rebased' else []
-    run('import', [ghidra / 'support/analyzeHeadless', project, 'Lexical', '-import', stripped,
+    run('import', [*headless, project, 'Lexical', '-import', stripped,
         '-loader', 'ElfLoader', '-analysisTimeoutPerFile', '120', '-scriptPath', harness / 'ghidra_scripts',
         *rebase, '-postScript', 'PrepareLexicalShadow.java', case / 'labels.json',
         case / 'compiler-storage.json', case / 'prepared.json'])
     assert 'lexical-shadow-preparation=PASS' in (case / 'import.log').read_text()
     assert json.loads((case / 'prepared.json').read_text())['javaVersion'].startswith('21.')
     project_before = {str(p): digest(p) for p in project.rglob('*') if p.is_file() and not p.name.endswith('.lock')}
+    source_options = []
+    if args.source_lines is not None:
+        baseline = case / 'baseline' / output.name
+        baseline.parent.mkdir()
+        run('export-baseline', [*headless, project, 'Lexical', '-process', 'stripped',
+            '-readOnly', '-noanalysis', '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(baseline)])
+        assert 'GhidraDwarfForge symbol export PASS' in (case / 'export-baseline.log').read_text()
+        run('baseline-llvm', ['llvm-dwarfdump', '--verify', baseline])
+        run('baseline-strict', ['python3', harness / 'check-dwarfdump.py', baseline,
+            case / 'baseline-dwarfdump.log', '--original', stripped])
+        run('baseline-gdb', ['bash', harness / 'lexical-shadow-gdb.sh', case, target, 'forge', baseline])
+        assert 'lexical-shadow-gdb=forge PASS' in (case / 'baseline-gdb.log').read_text()
+        for name in ('observations', 'calls'):
+            observed = case / ('forge-' + name + '.json')
+            if observed.exists():
+                (case / ('baseline-' + name + '.json')).write_bytes(observed.read_bytes())
+        source_options = ['--source-lines=' + str(args.source_lines)]
     pair = None
+    inventory = None
     for iteration in ['first', 'repeat']:
-        run('export-' + iteration, [ghidra / 'support/analyzeHeadless', project, 'Lexical', '-process', 'stripped',
-            '-readOnly', '-noanalysis', '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(output)])
+        run('export-' + iteration, [*headless, project, 'Lexical', '-process', 'stripped',
+            '-readOnly', '-noanalysis', '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(output), *source_options])
         assert 'GhidraDwarfForge symbol export PASS' in (case / ('export-' + iteration + '.log')).read_text()
         current = [digest(output), digest(Path(str(output) + '.c'))]
         assert pair is None or pair == current
         pair = current
+        if args.source_lines is not None:
+            current_inventory = {p.name: digest(p) for p in case.glob('forge-src-*')}
+            assert current_inventory and (inventory is None or inventory == current_inventory)
+            inventory = current_inventory
+    if args.source_lines is not None:
+        run('source-semantics', ['python3', harness / 'check-multifile-semantics.py',
+            stripped, baseline, output, case / 'source-semantics'])
     project_after = {str(p): digest(p) for p in project.rglob('*') if p.is_file() and not p.name.endswith('.lock')}
     changed = {p for p in project_before.keys() | project_after.keys() if project_before.get(p) != project_after.get(p)}
     allowed = {str(project / 'Lexical.rep/idata' / name) for name in ['~index.bak', '~journal.bak']}
@@ -125,6 +172,11 @@ def main():
     run('strict', ['python3', harness / 'check-dwarfdump.py', output, case / 'dwarfdump.log', '--original', stripped])
     run('forge-gdb', ['bash', harness / 'lexical-shadow-gdb.sh', case, target, 'forge', output])
     assert 'lexical-shadow-gdb=forge PASS' in (case / 'forge-gdb.log').read_text()
+    if args.source_lines is not None:
+        for name in ('observations', 'calls'):
+            observed = case / ('baseline-' + name + '.json')
+            if observed.exists():
+                assert json.loads(observed.read_text()) == json.loads((case / ('forge-' + name + '.json')).read_text())
     diagnostics = []
     for phase in ['compiler', 'forge']:
         warnings = [line for line in (case / (phase + '-gdb.log')).read_text().splitlines()
@@ -143,10 +195,19 @@ def main():
         assert compiler_calls == forge_calls and {r['block'] for r in forge_calls} == {'outer', 'inner'}
     receipt = {'status': 'LEXICAL_SHADOW_PASS', 'target': target, 'role': args.role,
         'discontiguous': args.discontiguous, 'calls': args.calls,
+        'sourceLines': args.source_lines, 'sourceInventory': inventory,
         'javaRuntime': 21, 'protected': protected, 'outputPair': pair,
         'observations': len(json.loads((case / 'forge-observations.json').read_text())),
         'scope': 'explicit analyst block visibility, shadow lookup, initialization gaps; full goal remains open'}
     (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
+    if args.coverage_controls:
+        run('coverage-staging-driver', ['python3', harness / 'coverage-staging.py', ghidra, case], timeout=900)
+        run('coverage-limit-driver', ['python3', harness / 'coverage-staging.py', ghidra, case, '--real-limit'], timeout=900)
+        run('coverage-byte-limit-driver', ['python3', harness / 'coverage-staging.py', ghidra, case, '--byte-limit'], timeout=1200)
+        run('coverage-curation-driver', ['python3', harness / 'coverage-curation.py', ghidra, case], timeout=900)
+        receipt['coverageCuration'] = 'PASS'
+        receipt['coverageStaging'] = 'PASS'
+        (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
     if args.controls:
         run('negative-driver', ['python3', harness / 'lexical-shadow-controls.py', case, ghidra], timeout=900)
         run('failure-driver', ['python3', harness / 'lexical-shadow-failure.py', case, ghidra], timeout=900)

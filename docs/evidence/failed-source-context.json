@@ -1,0 +1,412 @@
+{
+    "issue": 114,
+    "status": "CONFIRMED local all-failed/mixed production source/type/DWARF and GDB acceptance; hosted pending",
+    "archive": {
+        "path": "build/test-results/failed-source-context.tar.gz",
+        "sha256": "85804fc1fc17a4746fbb9694700f027d90c50c941a8bb5473fb5d54bb029ef78",
+        "bytes": 2328876,
+        "files": 620,
+        "manifest": "build/test-results/failed-source-context.tar.manifest.json",
+        "manifestSha256": "634685eb25ed5cb7d8204b8b50760ca34a24040f1cf21010cae16f5ea7598977"
+    },
+    "cases": [
+        {
+            "status": "PASS_NATIVE_FAILED_SOURCE_EXPORT",
+            "target": "x86_64",
+            "cases": [
+                {
+                    "mode": "all",
+                    "nativeFailures": [
+                        "annotation_probe",
+                        "annotation_conflicts",
+                        "annotation_failure"
+                    ],
+                    "rawRows": 0,
+                    "gdb": {
+                        "status": "PASS",
+                        "mode": "all",
+                        "bias": 0,
+                        "contextLine": 14,
+                        "failedFunctions": [
+                            "annotation_probe",
+                            "annotation_conflicts",
+                            "annotation_failure"
+                        ],
+                        "steps": [],
+                        "exit": 0
+                    },
+                    "corroboratedWarnings": []
+                },
+                {
+                    "mode": "mixed",
+                    "nativeFailures": [
+                        "annotation_probe"
+                    ],
+                    "rawRows": 11,
+                    "gdb": {
+                        "status": "PASS",
+                        "mode": "mixed",
+                        "bias": 0,
+                        "contextLine": 33,
+                        "failedFunctions": [
+                            "annotation_probe"
+                        ],
+                        "steps": [
+                            {
+                                "command": "next",
+                                "line": 16
+                            },
+                            {
+                                "command": "step",
+                                "line": 20
+                            }
+                        ],
+                        "exit": 0
+                    },
+                    "corroboratedWarnings": []
+                }
+            ],
+            "generations": [
+                {
+                    "mixed.json": "9c2eb8bf89cc188a2e091db6293d77f0eaa105e1387f74cb0e791d610ae9b486",
+                    "mixed.dbg": "e725b06a208b85fe90a112c7d89d6311d0028b1063dcccc79d6378bf46a711d0",
+                    "mixed.dbg.c": "433a9a06efabe864fffa25165f1bc73c820b85cf42f88d9ffccb4deefc4903d0",
+                    "all.json": "668afbcbd5a1d127774d655499e9a97c577c2c8a45553e5c9054702efab09dfa",
+                    "all.dbg": "86cfffcca9b6c3ce907e3087ad9446cb791bc666f4e82d5b837836dc77686fb3",
+                    "all.dbg.c": "83ef427eac9cc6532d04ea8ad7ee588582344cfd4a622eb677fba12186d63a0e"
+                },
+                {
+                    "mixed.dbg": "e725b06a208b85fe90a112c7d89d6311d0028b1063dcccc79d6378bf46a711d0",
+                    "mixed.dbg.c": "433a9a06efabe864fffa25165f1bc73c820b85cf42f88d9ffccb4deefc4903d0",
+                    "all.dbg": "86cfffcca9b6c3ce907e3087ad9446cb791bc666f4e82d5b837836dc77686fb3",
+                    "all.dbg.c": "83ef427eac9cc6532d04ea8ad7ee588582344cfd4a622eb677fba12186d63a0e",
+                    "mixed.json": "9c2eb8bf89cc188a2e091db6293d77f0eaa105e1387f74cb0e791d610ae9b486",
+                    "all.json": "668afbcbd5a1d127774d655499e9a97c577c2c8a45553e5c9054702efab09dfa"
+                }
+            ],
+            "protectedSha256": {
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/ghidra_scripts/ExportFailedSourceContext.java": "1900a9bcaea154e77642e5ff90bb26bff0a959ac0fa6c99ad5a52d57b9608c2e",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context.py": "40aa52b8b1dd447027ffbb38b964e9125ca68933836127d07a190ce3dbc155d5",
+                "/dev/shm/forge-file-only-module-ho_dspj9/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "00ba88b4ed436b4c67bd465574e5171b9716a17f97cc9317608548edbf072bed",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context-gdb.py": "c078457e151a49bf218354a085bcee22b909f48ef4feeb417852613e4e8cc7ba",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context-gdb.sh": "6ae9a6537f7ed22775762db454998f57229d8a7eb9745186bcdbe8d25701990a",
+                "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/x86_64-exec-jk7gmxhr/stripped": "6a5293951d24c84bef3bed6984604e4b56b3e0f23c4ed7378b415802b0416498",
+                "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/x86_64-exec-jk7gmxhr/reference": "7bb39ff6ec86ab6e868800700693fbefab96a685e52d2489ea7bb2580735a82e",
+                "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/x86_64-exec-jk7gmxhr/labels.json": "763e68326caabf45cb9ef8509e17f955a84fe35f818308577232ad04f163da59",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad"
+            },
+            "firstReopenBackups": []
+        },
+        {
+            "status": "PASS_NATIVE_FAILED_SOURCE_EXPORT",
+            "target": "aarch64",
+            "cases": [
+                {
+                    "mode": "all",
+                    "nativeFailures": [
+                        "annotation_probe",
+                        "annotation_conflicts",
+                        "annotation_failure"
+                    ],
+                    "rawRows": 0,
+                    "gdb": {
+                        "status": "PASS",
+                        "mode": "all",
+                        "bias": 129477735088128,
+                        "contextLine": 14,
+                        "failedFunctions": [
+                            "annotation_probe",
+                            "annotation_conflicts",
+                            "annotation_failure"
+                        ],
+                        "steps": [],
+                        "exit": 0
+                    },
+                    "corroboratedWarnings": [
+                        "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                    ]
+                },
+                {
+                    "mode": "mixed",
+                    "nativeFailures": [
+                        "annotation_probe"
+                    ],
+                    "rawRows": 11,
+                    "gdb": {
+                        "status": "PASS",
+                        "mode": "mixed",
+                        "bias": 125777952833536,
+                        "contextLine": 33,
+                        "failedFunctions": [
+                            "annotation_probe"
+                        ],
+                        "steps": [
+                            {
+                                "command": "next",
+                                "line": 16
+                            },
+                            {
+                                "command": "step",
+                                "line": 20
+                            }
+                        ],
+                        "exit": 0
+                    },
+                    "corroboratedWarnings": [
+                        "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index"
+                    ]
+                }
+            ],
+            "generations": [
+                {
+                    "mixed.json": "46f53bcd809d82f9f0b5eed6a61c9fc31ada22303d02d42bbd49c47ae90fa5cd",
+                    "mixed.dbg": "e91050bbba1f9bfe8270bdc5c1f77b615db677d30adbbeb201ed101db7f59cde",
+                    "mixed.dbg.c": "11c3b26f1b9991b208a5a885bce8eb3389a21670ff3a08bfcdeb6a4ae853c0d6",
+                    "all.json": "370100f06892767a3e10abfb0466f1c96c4f8b5b8f4a7616a3758fa7e781e6d8",
+                    "all.dbg": "044536c9e4714dd8983b931d4da7a12cd3546adbe4211722f27c673cd80ef8e8",
+                    "all.dbg.c": "3a0fb8bf717976f2e7476fe95bcd1d7d2bb56c19c2f710d0f66018654495a224"
+                },
+                {
+                    "mixed.dbg": "e91050bbba1f9bfe8270bdc5c1f77b615db677d30adbbeb201ed101db7f59cde",
+                    "mixed.dbg.c": "11c3b26f1b9991b208a5a885bce8eb3389a21670ff3a08bfcdeb6a4ae853c0d6",
+                    "all.dbg": "044536c9e4714dd8983b931d4da7a12cd3546adbe4211722f27c673cd80ef8e8",
+                    "all.dbg.c": "3a0fb8bf717976f2e7476fe95bcd1d7d2bb56c19c2f710d0f66018654495a224",
+                    "mixed.json": "46f53bcd809d82f9f0b5eed6a61c9fc31ada22303d02d42bbd49c47ae90fa5cd",
+                    "all.json": "370100f06892767a3e10abfb0466f1c96c4f8b5b8f4a7616a3758fa7e781e6d8"
+                }
+            ],
+            "protectedSha256": {
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/ghidra_scripts/ExportFailedSourceContext.java": "1900a9bcaea154e77642e5ff90bb26bff0a959ac0fa6c99ad5a52d57b9608c2e",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context.py": "40aa52b8b1dd447027ffbb38b964e9125ca68933836127d07a190ce3dbc155d5",
+                "/dev/shm/forge-file-only-module-ho_dspj9/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "00ba88b4ed436b4c67bd465574e5171b9716a17f97cc9317608548edbf072bed",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context-gdb.py": "c078457e151a49bf218354a085bcee22b909f48ef4feeb417852613e4e8cc7ba",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context-gdb.sh": "6ae9a6537f7ed22775762db454998f57229d8a7eb9745186bcdbe8d25701990a",
+                "/dev/shm/forge-annotation-conflicts/aarch64-pie-ybpmddrh/stripped": "7e43062ab015ccc428ab59d7fe38eaa17ee2202cbecdc5db22ac176c02e0f31e",
+                "/dev/shm/forge-annotation-conflicts/aarch64-pie-ybpmddrh/reference": "559104e7e8ae95a9eec8a9b4a197fa62fa0a6f165d303b4b7518288d5809ca8d",
+                "/dev/shm/forge-annotation-conflicts/aarch64-pie-ybpmddrh/labels.json": "6be8edd106f06a4d2394365feeba2074ef65bba2837ea34d8858ba1088359a11",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad"
+            },
+            "firstReopenBackups": []
+        },
+        {
+            "status": "PASS_NATIVE_FAILED_SOURCE_EXPORT",
+            "target": "mips32be",
+            "cases": [
+                {
+                    "mode": "all",
+                    "nativeFailures": [
+                        "annotation_probe",
+                        "annotation_conflicts",
+                        "annotation_failure"
+                    ],
+                    "rawRows": 0,
+                    "gdb": {
+                        "status": "PASS",
+                        "mode": "all",
+                        "bias": 0,
+                        "contextLine": 14,
+                        "failedFunctions": [
+                            "annotation_probe",
+                            "annotation_conflicts",
+                            "annotation_failure"
+                        ],
+                        "steps": [],
+                        "exit": 0
+                    },
+                    "corroboratedWarnings": []
+                },
+                {
+                    "mode": "mixed",
+                    "nativeFailures": [
+                        "annotation_probe"
+                    ],
+                    "rawRows": 12,
+                    "gdb": {
+                        "status": "PASS",
+                        "mode": "mixed",
+                        "bias": 0,
+                        "contextLine": 33,
+                        "failedFunctions": [
+                            "annotation_probe"
+                        ],
+                        "steps": [
+                            {
+                                "command": "next",
+                                "line": 16
+                            },
+                            {
+                                "command": "step",
+                                "line": 0
+                            }
+                        ],
+                        "exit": 0
+                    },
+                    "corroboratedWarnings": []
+                }
+            ],
+            "generations": [
+                {
+                    "mixed.json": "4f7de6696e94c700ce73258cd0b51ce519d71baee1fb12bf43876db7983b0a71",
+                    "mixed.dbg": "08c20083cc81b893fbcfb88d42b3952e12e2a537727488c5646bd0e3e5d04d77",
+                    "mixed.dbg.c": "13c49b7150376b74e694c668d45fd4c13b4ebc50f5056120cb8bc1de37e39608",
+                    "all.json": "235da37d59c17449be0c6db317e23000db6c86f050a99a55bf39dc22b88d0b10",
+                    "all.dbg": "0857784c06aef55c5692f327d4c5d47f8b906648206c04d02bfc3a30ba3a2b08",
+                    "all.dbg.c": "abc6e0d9444e122e67fe03f4573a7eeaa86eae49353a870f51bd534deb989d41"
+                },
+                {
+                    "mixed.dbg": "08c20083cc81b893fbcfb88d42b3952e12e2a537727488c5646bd0e3e5d04d77",
+                    "mixed.dbg.c": "13c49b7150376b74e694c668d45fd4c13b4ebc50f5056120cb8bc1de37e39608",
+                    "all.dbg": "0857784c06aef55c5692f327d4c5d47f8b906648206c04d02bfc3a30ba3a2b08",
+                    "all.dbg.c": "abc6e0d9444e122e67fe03f4573a7eeaa86eae49353a870f51bd534deb989d41",
+                    "mixed.json": "4f7de6696e94c700ce73258cd0b51ce519d71baee1fb12bf43876db7983b0a71",
+                    "all.json": "235da37d59c17449be0c6db317e23000db6c86f050a99a55bf39dc22b88d0b10"
+                }
+            ],
+            "protectedSha256": {
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/ghidra_scripts/ExportFailedSourceContext.java": "1900a9bcaea154e77642e5ff90bb26bff0a959ac0fa6c99ad5a52d57b9608c2e",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context.py": "40aa52b8b1dd447027ffbb38b964e9125ca68933836127d07a190ce3dbc155d5",
+                "/dev/shm/forge-file-only-module-ho_dspj9/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "00ba88b4ed436b4c67bd465574e5171b9716a17f97cc9317608548edbf072bed",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context-gdb.py": "c078457e151a49bf218354a085bcee22b909f48ef4feeb417852613e4e8cc7ba",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context-gdb.sh": "6ae9a6537f7ed22775762db454998f57229d8a7eb9745186bcdbe8d25701990a",
+                "/dev/shm/forge-annotation-conflicts/mips32be-exec-8msufgpw/stripped": "a4884e772d07ec7fcbf6d9aad7138bebc8f11319b12ac2359e6fe7a15040ab17",
+                "/dev/shm/forge-annotation-conflicts/mips32be-exec-8msufgpw/reference": "05f6269f69ebdc2424f4968e01753c0f6aaf4e060a5b2580b6d3c3abe38fd359",
+                "/dev/shm/forge-annotation-conflicts/mips32be-exec-8msufgpw/labels.json": "fffaa2e10dd80f9e2213b8e921e8ff00dc1114e63fbf461d5d3886b867e1701f",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad"
+            },
+            "firstReopenBackups": []
+        },
+        {
+            "status": "PASS_NATIVE_FAILED_SOURCE_EXPORT",
+            "target": "mips32le",
+            "cases": [
+                {
+                    "mode": "all",
+                    "nativeFailures": [
+                        "annotation_probe",
+                        "annotation_conflicts",
+                        "annotation_failure"
+                    ],
+                    "rawRows": 0,
+                    "gdb": {
+                        "status": "PASS",
+                        "mode": "all",
+                        "bias": 0,
+                        "contextLine": 14,
+                        "failedFunctions": [
+                            "annotation_probe",
+                            "annotation_conflicts",
+                            "annotation_failure"
+                        ],
+                        "steps": [],
+                        "exit": 0
+                    },
+                    "corroboratedWarnings": []
+                },
+                {
+                    "mode": "mixed",
+                    "nativeFailures": [
+                        "annotation_probe"
+                    ],
+                    "rawRows": 12,
+                    "gdb": {
+                        "status": "PASS",
+                        "mode": "mixed",
+                        "bias": 0,
+                        "contextLine": 33,
+                        "failedFunctions": [
+                            "annotation_probe"
+                        ],
+                        "steps": [
+                            {
+                                "command": "next",
+                                "line": 16
+                            },
+                            {
+                                "command": "step",
+                                "line": 0
+                            }
+                        ],
+                        "exit": 0
+                    },
+                    "corroboratedWarnings": []
+                }
+            ],
+            "generations": [
+                {
+                    "mixed.json": "740e241420e017e29c485e4491c5fc4da290e76e655844949bdc0f32000c691a",
+                    "mixed.dbg": "ec25da63bce8fd784e37bad7f33249656520023f7ca982eb1a40a3d32bb16ac6",
+                    "mixed.dbg.c": "af0f79004c7561956afa9688672cbb1a1cc10528d134beb612afedc25d45c665",
+                    "all.json": "b7ddc6d91ee68b11d548540b6357ec2e5ac8de89cff42c637355cce8183e82f9",
+                    "all.dbg": "13fbdf5cd77b8becfa37fc9aa36178f49e9c0c774694c85ee21c331d50103059",
+                    "all.dbg.c": "94bdbd3366c8392dc4c926bb598f0430429f5086ad76449438d8cbcc40c6dcc5"
+                },
+                {
+                    "mixed.dbg": "ec25da63bce8fd784e37bad7f33249656520023f7ca982eb1a40a3d32bb16ac6",
+                    "mixed.dbg.c": "af0f79004c7561956afa9688672cbb1a1cc10528d134beb612afedc25d45c665",
+                    "all.dbg": "13fbdf5cd77b8becfa37fc9aa36178f49e9c0c774694c85ee21c331d50103059",
+                    "all.dbg.c": "94bdbd3366c8392dc4c926bb598f0430429f5086ad76449438d8cbcc40c6dcc5",
+                    "mixed.json": "740e241420e017e29c485e4491c5fc4da290e76e655844949bdc0f32000c691a",
+                    "all.json": "b7ddc6d91ee68b11d548540b6357ec2e5ac8de89cff42c637355cce8183e82f9"
+                }
+            ],
+            "protectedSha256": {
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/ghidra_scripts/ExportFailedSourceContext.java": "1900a9bcaea154e77642e5ff90bb26bff0a959ac0fa6c99ad5a52d57b9608c2e",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context.py": "40aa52b8b1dd447027ffbb38b964e9125ca68933836127d07a190ce3dbc155d5",
+                "/dev/shm/forge-file-only-module-ho_dspj9/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "00ba88b4ed436b4c67bd465574e5171b9716a17f97cc9317608548edbf072bed",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context-gdb.py": "c078457e151a49bf218354a085bcee22b909f48ef4feeb417852613e4e8cc7ba",
+                "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/src/test/integration/failed-source-context-gdb.sh": "6ae9a6537f7ed22775762db454998f57229d8a7eb9745186bcdbe8d25701990a",
+                "/dev/shm/forge-annotation-conflicts/mips32le-exec-0e1h0_c9/stripped": "d765954dae3e70216f0a6d12d09f8261bce65a45823f526a8e9d494be736652b",
+                "/dev/shm/forge-annotation-conflicts/mips32le-exec-0e1h0_c9/reference": "fe5d27e12b2af31db5db9e2b4c4c314aa19dfbfb7e3e7f6b2a4abc046685e8a5",
+                "/dev/shm/forge-annotation-conflicts/mips32le-exec-0e1h0_c9/labels.json": "fffaa2e10dd80f9e2213b8e921e8ff00dc1114e63fbf461d5d3886b867e1701f",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+                "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad"
+            },
+            "firstReopenBackups": []
+        }
+    ],
+    "pipeline": {
+        "status": "PASS_PACKAGED_ANNOTATION_INVENTORY",
+        "target": "x86_64",
+        "role": "exec",
+        "case": "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/x86_64-exec-jk7gmxhr",
+        "curation": "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/x86_64-exec-jk7gmxhr/curation-9x6vt6z_",
+        "inventory": "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/x86_64-exec-jk7gmxhr/curation-9x6vt6z_/inventory-wo501k6p",
+        "equateEvidence": "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/x86_64-exec-jk7gmxhr/curation-9x6vt6z_/equate-evidence-xpusfhvj",
+        "constants": "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/equate-constants-m3e80oqy",
+        "retainedNames": "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/retained-equates-un8pqzd6",
+        "placement": "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/x86_64-exec-jk7gmxhr/curation-9x6vt6z_/placement-j2mgoo4k",
+        "contextExport": "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/x86_64-exec-jk7gmxhr/curation-9x6vt6z_/default-export-6esiddd2",
+        "failedSource": "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/x86_64-exec-jk7gmxhr/curation-9x6vt6z_/failed-source-ioauh9hv",
+        "defaultExport": "/dev/shm/forge-file-only-pipeline/x86_64-4z1p__z0/x86_64-exec-jk7gmxhr/curation-9x6vt6z_/default-export-qs7r22tc"
+    },
+    "exactTestedProductionClasses": 634,
+    "sourceSha256": {
+        "src/main/java/ghidradwarfforge/dwarf/Dwarf5LineTable.java": "92f87a1efe6ebf30b29d50a962008c187edca588cc62a4c656626ff7cce4d76a",
+        "src/main/java/ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": "1c3129981d3d7dc18b621370bc9817b059cefe8e7c42ebf884aa2db846a901b6"
+    },
+    "normalCompatibility": "Both widths and byte orders: retainFileTable=true produces byte-identical ordinary sequences; no-source empty plan remains absent. Fresh x86 complete default/context annotation pipeline passes.",
+    "nativePin": "libdwarf2.3.2 af7b278c6aa2ae9daad94fb7f8bffdc0e9980993; no new JNA calls",
+    "failureControls": [
+        "Actual native max-instruction budget, not a forged failed-source DTO.",
+        "Three selected failures vs first selected failure followed by two real successful decompilations.",
+        "Raw DWARF failed functions have no type/decl_file/decl_line/children despite three recovered signatures.",
+        "All-failed line program is exactly set_file0 with no address or matrix rows.",
+        "Production coverage emits no signature or line-visible instructions for failed functions.",
+        "GDB uses the emitted sidecar after removing compiler symbols; explicit source lookup from unrelatedcwd, originalglobalvalue/type, actualbreakpoints/exit and mixednext/step.",
+        "Input/project/library/module hashes unchanged; separate JVM generations identical."
+    ],
+    "testCorrections": [
+        "Emission lines is a Result object with an empty sequences list, not an empty object.",
+        "Curated symbols can live in GDB file scope; use actual global-or-static CU symbol to inspect its line table.",
+        "Set the later-function breakpoint before source stepping so a short function cannot run through the rest of the program before the oracle installs it."
+    ],
+    "remaining": [
+        "CALLOTHER/same-spelled ordinary function controls",
+        "GUI/Windows interaction and current hosted/workload gates",
+        "Broader ARM mode/delay-gap controls",
+        "Later goal112/110/109; no issue114/116 closure"
+    ]
+}

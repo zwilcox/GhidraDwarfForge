@@ -348,8 +348,11 @@ Do not add `.debug_names`, compression, or other accelerators before the core DI
   failure.
 
 The explicit first-milestone GDB workflow is `file <original>` followed by
-`set auto-solib-add off` and `symbol-file <original>.dbg`. Automatic build-ID
-discovery remains planned.
+`set auto-solib-add off` and `symbol-file <original>.dbg`. The development
+build also implements opt-in build-ID installation and retained source; see
+`docs/BUILD-ID-INSTALLATION.md` and its acceptance map for validated host/consumer
+profiles and integration status. Ordinary export does not install automatically.
+Sectionless ELF automatic discovery has a separately documented consumer limit.
 
 ## 10. Build, run, and validation commands
 

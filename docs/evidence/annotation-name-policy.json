@@ -1,0 +1,99 @@
+{
+    "issue": 116,
+    "status": "CONFIRMED isolated saved-equate/consumer experiment; production annotation support PLANNED",
+    "root": "/dev/shm/forge-annotation-names-kwer6nsz",
+    "baseline": {
+        "ghidra": "12.0.3",
+        "java": 21,
+        "libdwarf": "2.3.2",
+        "sourcePin": "af7b278c6aa2ae9daad94fb7f8bffdc0e9980993",
+        "productionHead": "6e0cb9549ce77895b3d988e4ecd801322086516a",
+        "fixtureHead": "5bfb5f3"
+    },
+    "producerSourceSha256": "e37c8925a23cdf9bdee8185ffa1b9f466d9bee08afdb9256aca447c9e8451221",
+    "protectedInputsAndHeaders": {
+        "/dev/shm/forge-unknown-inventory-mup01sqg/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "7fdacc9a39c9b352f4adf8338f483b4018b93e99675ab0eb339f9a890a6f82ff",
+        "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarf.so.2.3.2": "613d86accc88ea0fe369b7d6ade0d4fe605a451a7675b0c2453f21b328de81b7",
+        "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/libdwarf-linux-integration/libdwarfp.so.2.3.2": "fa82f4524de69634c7301fa5bdd53327aa89040da92c1d086271df51119531ad",
+        "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/native-windows-build-diagnostics/strict-checker-build/build.wKCIdX8I/libdwarf-2.3.2/src/lib/libdwarfp/libdwarfp.h": "3fd4cc23c0f9363d1b8875f45c06363d196413475d75fd28e3be915a40d7f7ae",
+        "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/native-windows-build-diagnostics/strict-checker-build/build.wKCIdX8I/libdwarf-2.3.2/src/lib/libdwarf/libdwarf.h": "e96d60afd9b99ef9202d3b56e4510685e658c2f4945c7603afe2481d789f861f",
+        "/home/ziggy/GhidraDwarfForge-worktrees/elf-compression/build/review-ci-42010699187/native-windows-build-diagnostics/strict-checker-build/build.wKCIdX8I/libdwarf-2.3.2/src/lib/libdwarf/dwarf.h": "e722bfad6165dc107224204c4664db49d2e15893b851aa8517e1f0ae40048479",
+        "/dev/shm/forge-annotation-conflicts/aarch64-pie-ybpmddrh/reference": "559104e7e8ae95a9eec8a9b4a197fa62fa0a6f165d303b4b7518288d5809ca8d",
+        "/dev/shm/forge-annotation-conflicts/aarch64-pie-ybpmddrh/stripped": "7e43062ab015ccc428ab59d7fe38eaa17ee2202cbecdc5db22ac176c02e0f31e",
+        "/dev/shm/forge-annotation-conflicts/aarch64-pie-ybpmddrh/labels.json": "6be8edd106f06a4d2394365feeba2074ef65bba2837ea34d8858ba1088359a11",
+        "/dev/shm/forge-annotation-conflicts/mips32be-exec-8msufgpw/reference": "05f6269f69ebdc2424f4968e01753c0f6aaf4e060a5b2580b6d3c3abe38fd359",
+        "/dev/shm/forge-annotation-conflicts/mips32be-exec-8msufgpw/stripped": "a4884e772d07ec7fcbf6d9aad7138bebc8f11319b12ac2359e6fe7a15040ab17",
+        "/dev/shm/forge-annotation-conflicts/mips32be-exec-8msufgpw/labels.json": "fffaa2e10dd80f9e2213b8e921e8ff00dc1114e63fbf461d5d3886b867e1701f",
+        "/dev/shm/forge-annotation-conflicts/mips32le-exec-0e1h0_c9/reference": "fe5d27e12b2af31db5db9e2b4c4c314aa19dfbfb7e3e7f6b2a4abc046685e8a5",
+        "/dev/shm/forge-annotation-conflicts/mips32le-exec-0e1h0_c9/stripped": "d765954dae3e70216f0a6d12d09f8261bce65a45823f526a8e9d494be736652b",
+        "/dev/shm/forge-annotation-conflicts/mips32le-exec-0e1h0_c9/labels.json": "fffaa2e10dd80f9e2213b8e921e8ff00dc1114e63fbf461d5d3886b867e1701f",
+        "/dev/shm/forge-annotation-conflicts/x86_64-exec-vkbmuxmv/reference": "7bb39ff6ec86ab6e868800700693fbefab96a685e52d2489ea7bb2580735a82e",
+        "/dev/shm/forge-annotation-conflicts/x86_64-exec-vkbmuxmv/stripped": "6a5293951d24c84bef3bed6984604e4b56b3e0f23c4ed7378b415802b0416498",
+        "/dev/shm/forge-annotation-conflicts/x86_64-exec-vkbmuxmv/labels.json": "763e68326caabf45cb9ef8509e17f955a84fe35f818308577232ad04f163da59"
+    },
+    "cases": [
+        {
+            "target": "aarch64",
+            "case": "/dev/shm/forge-annotation-names-kwer6nsz/aarch64",
+            "savedReadbackSha256": "568ffb30d0f88da31eb37530d636ee02989f28edd0daa5053a152706cfda4793",
+            "sidecarSha256": "d2f454259272ebf285cc219fe43d22399700b09d10ed7d664e261265374b7165",
+            "constantViews": 33,
+            "deterministicFreshProcesses": true,
+            "gdbDiagnostics": "warning: BFD: warning: system-supplied DSO at 0x400000860000 has a corrupt string table index\n",
+            "diagnosticsMatchCompilerOnlyControlExactly": true
+        },
+        {
+            "target": "mips32be",
+            "case": "/dev/shm/forge-annotation-names-kwer6nsz/mips32be",
+            "savedReadbackSha256": "0b225478443b6a4b7744ac61971ff8418fd4aa2a31fbd6455facba8b6e905a8e",
+            "sidecarSha256": "637c11fd9f728e8cd4ad9e6dcbcce596af1f8767645d1431af15b0b8aebfd73e",
+            "constantViews": 33,
+            "deterministicFreshProcesses": true,
+            "gdbDiagnostics": "",
+            "diagnosticsMatchCompilerOnlyControlExactly": true
+        },
+        {
+            "target": "mips32le",
+            "case": "/dev/shm/forge-annotation-names-kwer6nsz/mips32le",
+            "savedReadbackSha256": "5a886903e52c41f81a5bc267226d875f0939243b0d8b92aa453d18b67523c24b",
+            "sidecarSha256": "e3146f577e110100293e9ca90b5c0f6ecff96b5201f47ba2cbd552ea27438a0e",
+            "constantViews": 33,
+            "deterministicFreshProcesses": true,
+            "gdbDiagnostics": "",
+            "diagnosticsMatchCompilerOnlyControlExactly": true
+        },
+        {
+            "target": "x86_64",
+            "case": "/dev/shm/forge-annotation-names-kwer6nsz/x86_64",
+            "savedReadbackSha256": "62dca09d0775bd7a19cf903949e9d858b10eeaf1cbd7ab2f26e9fd42c5ef5b3b",
+            "sidecarSha256": "5e8d7cdad977d2494cfa914bfabd5560fbb9bdcbd82ad7ad0369eced4e120064",
+            "constantViews": 33,
+            "deterministicFreshProcesses": true,
+            "gdbDiagnostics": "",
+            "diagnosticsMatchCompilerOnlyControlExactly": true
+        }
+    ],
+    "checks": [
+        "Actual saved EquateTable readback supplies fourteen records per case: unreferenced/Unicode/malformed records, duplicate enum display names, extrema and a resolved dynamic-only reference.",
+        "Each emits signed64 stored-value and unsigned64 stored-bits conveniences; three validated enum views and one dynamic-width unsigned bits view preserve their evidence. Only unique nonconflicting ANNOTATION_NEGATIVE gets direct display-name lookup in this fixture.",
+        "Alias identity uses domain-separated length-prefixed exact UTF-16 units, independent of value/references. Order permutation, edited values/references, distinct lone surrogates/canonical-equivalent Unicode and an explicitly reserved generated alias exercise allocator properties. This candidate is not the production complete-name collector.",
+        "Thirty-three artificial const-qualified variable DIEs have const_value and no location; there are no synthetic subprograms. GNU inspection, LLVM verification and pinned strict checks pass on all four sidecars. Independent producer processes give identical bytes.",
+        "GDB retains original compiler DWARF and adds the independent synthetic constant CU. Both annotation_probe and annotation_conflicts resolve every convenience unqualified and file-qualified with exact value/width, const type and rejected assignment. Original global101, local11, enum3 and structure member remain intact; duplicate display name remains unavailable.",
+        "528 constant expression checks and64 original compiler value/width checks pass across native x86-64, AArch64 PIE and both MIPS32 byte orders. All four runtime processes exit normally; PIE loading uses observed load bias.",
+        "AArch64 GDB reports a system-supplied DSO corrupt string-table index. A separate compiler-only execution reproduces the exact diagnostic bytes without loading any synthetic constants. Other three stderr streams are empty. This is retained as an existing consumer/environment diagnostic, not a sidecar validator waiver.",
+        "Original saved-fixture binaries and native/package/header files remain unchanged. No interactive Ghidra JVM or new JNA signature is used."
+    ],
+    "archive": {
+        "path": "build/test-results/annotation-name-policy-evidence.tar.gz",
+        "sha256": "834c6420a2b3e5c7a95cd4d621f9388ba7997d6751bcf57e59c9f2752678469e",
+        "bytes": 162632
+    },
+    "retainedReviewCorrection": "Initial finalization required empty GDB stderr and failed on the AArch64 system DSO warning. Independent compiler-only controls now corroborate that exact warning before acceptance.",
+    "limits": [
+        "Separate synthetic CU alongside original compiler DWARF, not the complete Forge-generated sidecar containing recovered program declarations.",
+        "Candidate allocation and typed-view selection cover this fixture; exhaustive real-name collection, language keywords, conflicting/unresolved scalar references and metadata integration remain production work.",
+        "The forced generated-alias reservation is an allocator control, not an additional real compiler declaration. Real global/local/type/enum conflicts are exercised by the original compiler fixture.",
+        "Enum width/sign comes from saved validated evidence; dynamic bits width does not assert a signed source type or lexical lifetime.",
+        "No generic macro or direct ambiguous-name lookup claim. Source escaping, revised line maps and production GUI/headless/failure/cancellation acceptance remain required."
+    ]
+}

@@ -64,7 +64,19 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y \
             build-essential zlib1g-dev libzstd-dev curl xz-utils patch \
-            autoconf automake libtool pkg-config patchelf
+            autoconf automake libtool pkg-config patchelf llvm
+
+      - name: Prove protected Linux xattr visibility on an owned canary
+        run: |
+          set -euo pipefail
+          results="$PWD/build/test-results/native-linux/metadata-visibility"
+          mkdir -p "$results"
+          cp src/test/native/linux-metadata-visibility.c "$results/"
+          cc -std=c11 -O2 -Wall -Wextra -Werror \
+            "$results/linux-metadata-visibility.c" -o "$results/probe"
+          "$results/probe" --unprivileged "$results" > "$results/unprivileged.json"
+          sudo -n "$results/probe" --privileged "$results" | tee "$results/privileged.json"
+          sha256sum "$results/linux-metadata-visibility.c" "$results/probe" > "$results/SHA256SUMS"
 
       - name: Build pinned libdwarf producer
         run: |
@@ -92,6 +104,8 @@ jobs:
           readelf -d ../native-out/libdwarfp.so.2.3.2 | grep -q '(RUNPATH).*[$]ORIGIN'
           nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
             grep -Eq '[[:space:]]T[[:space:]]+dwarf_producer_init$'
+          nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
+            grep -Eq '[[:space:]]T[[:space:]]+dwarf_add_AT_comp_dir_a$'
           nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
             grep -Eq '[[:space:]]T[[:space:]]+dwarf_pro_set_default_string_form$'
           nm -D --defined-only ../native-out/libdwarfp.so.2.3.2 |
@@ -166,6 +180,15 @@ jobs:
       - name: Validate relocated standalone checker configuration
         run: python3 src/test/integration/dwarfdump-configuration.py "$PWD/validation-tool"
 
+      - name: Validate GNU frame terminators and malformed-prefix rejection
+        run: python3 src/test/integration/dwarfdump-eh-terminators.py "$PWD/validation-tool/bin/dwarfdump"
+      - name: Validate GNU location views and actual DIE-reference controls
+        run: python3 src/test/integration/dwarfdump-locviews.py "$PWD/validation-tool/bin/dwarfdump"
+      - name: Validate low ELF addresses and out-of-range rejection
+        run: python3 src/test/integration/dwarfdump-elf-bounds.py "$PWD/validation-tool/bin/dwarfdump"
+      - name: Validate GNU vector flag forms and invalid metadata rejection
+        run: python3 src/test/integration/dwarfdump-gnu-vector.py "$PWD/validation-tool/bin/dwarfdump"
+
       - name: Validate complete bounded diagnostics and allocation rollback
         run: |
           sources=(build/test-results/validation-tool-build/build.*/libdwarf-2.3.2)
@@ -188,14 +211,29 @@ jobs:
             build/test-results/validation-tool-build/**/patch.log
             build/test-results/validation-tool-build/**/reader-patch.log
             build/test-results/validation-tool-build/**/diagnostic-patch.log
+            build/test-results/validation-tool-build/**/terminator-patch.log
+            build/test-results/validation-tool-build/**/locviews-patch.log
+            build/test-results/validation-tool-build/**/bounds-patch.log
+            build/test-results/validation-tool-build/**/vector-patch.log
             build/test-results/validation-tool-build/**/config.log
             build/test-results/validation-tool-build/**/make.log
             build/test-results/validation-tool-build/**/dependencies.txt
             build/test-results/validation-tool-build/**/version.txt
             build/test-results/dwarfdump-diagnostic-capacity/
             build/test-results/dwarfdump-configuration/
+            build/test-results/dwarfdump-eh-terminators/
+            build/test-results/dwarfdump-locviews/
+            build/test-results/dwarfdump-elf-bounds/
+            build/test-results/dwarfdump-gnu-vector/
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Build and exercise Linux validator process owner
+        run: |
+            support/build-validator-supervisor.sh linux native-out build/test-results/native-linux/supervisor
+            python3 src/test/integration/validator-supervisor.py \
+                --helper native-out/forge-validator-supervisor \
+                --results build/test-results/native-linux/supervisor/runtime
 
       - uses: actions/upload-artifact@v7
         with:
@@ -231,6 +269,30 @@ jobs:
             throw "PowerShell wrapper safety checks failed with exit code $LASTEXITCODE"
           }
 
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Check companion publication before building native libraries
+        shell: pwsh
+        run: |
+          $results = 'build/test-results/native-windows/companion-publisher'
+          $classes = "$results/classes"
+          New-Item -ItemType Directory -Force $classes | Out-Null
+          $sources = @(
+            'src/main/java/ghidradwarfforge/output/FileSystemPaths.java'
+            'src/main/java/ghidradwarfforge/output/FileDigests.java'
+            'src/main/java/ghidradwarfforge/output/ArtifactPairPublisher.java'
+            'src/main/java/ghidradwarfforge/output/CompanionArtifactPublisher.java'
+            'src/test/java/ghidradwarfforge/output/CompanionArtifactPublisherSmoke.java'
+          )
+          & javac --release 21 -d $classes @sources 2>&1 | Tee-Object -FilePath "$results/compile.log"
+          if ($LASTEXITCODE -ne 0) { throw 'Companion publication test compilation failed' }
+          & java -cp $classes ghidradwarfforge.output.CompanionArtifactPublisherSmoke 2>&1 |
+            Tee-Object -FilePath "$results/runtime.log"
+          if ($LASTEXITCODE -ne 0) { throw 'Companion publication test failed' }
+
       - name: Install MSYS2 MinGW64 build dependencies
         uses: msys2/setup-msys2@v2
         with:
@@ -238,8 +300,11 @@ jobs:
           update: true
           install: >-
             base-devel
+            binutils
             curl
+            git
             mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-clang
             mingw-w64-x86_64-zlib
             mingw-w64-x86_64-zstd
             autoconf
@@ -247,14 +312,82 @@ jobs:
             libtool
             pkgconf
 
+      - name: Check isolated helper token ABI against Windows headers
+        run: |
+          mkdir -p build/test-results/native-windows/token-abi
+          gcc -std=c11 -Wall -Wextra -Werror -c support/validation/windows-token-layout.c \
+              -o build/test-results/native-windows/token-abi/layout.o
+          cp support/validation/windows-token-layout.c build/test-results/native-windows/token-abi/
+
+      - name: Locate audited Windows metadata compiler
+        run: printf 'FORGE_METADATA_CC=%s\n' "$(cygpath -w "$(command -v gcc)")" >> "$GITHUB_ENV"
+
+      - name: Isolated Windows identity and metadata application
+        shell: pwsh
+        run: |
+          $dependencies = Join-Path $PWD 'build/test-dependencies'
+          New-Item -ItemType Directory -Force $dependencies | Out-Null
+          $jna = Join-Path $dependencies 'jna-5.14.0.jar'
+          $gson = Join-Path $dependencies 'gson-2.9.0.jar'
+          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar' -OutFile $jna
+          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.9.0/gson-2.9.0.jar' -OutFile $gson
+          if ((Get-FileHash $jna -Algorithm SHA256).Hash.ToLowerInvariant() -ne '34ed1e1f27fa896bca50dbc4e99cf3732967cec387a7a0d5e3486c09673fe8c6' -or
+              (Get-FileHash $gson -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'c96d60551331a196dac54b745aa642cd078ef89b6f267146b705f2c2cbef052d') {
+              throw 'Test dependency differs from the selected Ghidra JNA/Gson bytes'
+          }
+          & ./src/test/integration/windows-file-metadata.ps1 `
+              -JavaExe (Get-Command java).Source -JavacExe (Get-Command javac).Source `
+              -Compiler $env:FORGE_METADATA_CC -Jna $jna -Gson $gson `
+              -Results (Join-Path $PWD 'build/test-results/native-windows/file-metadata')
+
+      - name: Fetch pinned Windows native source
+        run: |
+          curl -fL --retry 3 \
+            "https://github.com/davea42/libdwarf-code/releases/download/$LIBDWARF_VERSION/$LIBDWARF_ARCHIVE" \
+            -o "$LIBDWARF_ARCHIVE"
+          echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
+
+      - name: Build isolated pinned Windows DWARF checker
+        id: windows-checker-build
+        run: |
+          support/build-validation-dwarfdump.sh "$LIBDWARF_ARCHIVE" \
+            validation-tool-windows build/test-results/native-windows/strict-checker-build
+          printf 'FORGE_VALIDATION_CLANG=%s\n' "$(cygpath -w "$(command -v clang)")" >> "$GITHUB_ENV"
+
+      - name: Exercise raw Windows checker on compiler ELF and malformed DWARF
+        shell: pwsh
+        run: |
+          python src/test/integration/native-dwarfdump.py --bundle validation-tool-windows `
+            --compiler $env:FORGE_VALIDATION_CLANG --clang-target x86_64-linux-gnu `
+            --results build/test-results/native-windows/strict-checker-runtime
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows DWARF checker controls failed' }
+
+      - name: Locate GNU readelf path controls
+        run: |
+          printf 'FORGE_VALIDATION_READELF=%s\n' "$(cygpath -w /usr/bin/readelf.exe)" >> "$GITHUB_ENV"
+          printf 'FORGE_MINGW_READELF=%s\n' "$(cygpath -w /mingw64/bin/readelf.exe)" >> "$GITHUB_ENV"
+
+      - name: Check GNU readelf on native Windows Unicode and long paths
+        shell: pwsh
+        run: |
+          python src/test/integration/windows-readelf-paths.py `
+            --readelf $env:FORGE_VALIDATION_READELF --mingw-readelf $env:FORGE_MINGW_READELF `
+            --compiler $env:FORGE_VALIDATION_CLANG `
+            --results build/test-results/native-windows/readelf-paths
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows GNU readelf path controls failed' }
+
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.windows-checker-build.outcome == 'success'
+        with:
+          name: dwarfdump-windows-validation
+          path: validation-tool-windows/
+          if-no-files-found: error
+
       - name: Build and audit pinned Windows DLLs
         run: |
           set -euo pipefail
           result_directory="$PWD/build/test-results/native-windows"
           mkdir -p "$result_directory"
-          curl -fL --retry 3 \
-            "https://github.com/davea42/libdwarf-code/releases/download/$LIBDWARF_VERSION/$LIBDWARF_ARCHIVE" \
-            -o "$LIBDWARF_ARCHIVE"
           echo "$LIBDWARF_ARCHIVE_SHA256  $LIBDWARF_ARCHIVE" | sha256sum -c -
           tar -xf "$LIBDWARF_ARCHIVE"
           cd libdwarf-2.3.2
@@ -276,6 +409,7 @@ jobs:
           test -n "$producer"
           test -n "$consumer"
           nm -g "$producer" | grep -Eq '[[:space:]]T[[:space:]]+dwarf_producer_init$'
+          nm -g "$producer" | grep -Eq '[[:space:]]T[[:space:]]+dwarf_add_AT_comp_dir_a$'
           nm -g "$producer" |
             grep -Eq '[[:space:]]T[[:space:]]+dwarf_pro_set_default_string_form$'
           nm -g "$producer" | grep -Eq '[[:space:]]T[[:space:]]+dwarf_transform_to_disk_form_a$'
@@ -341,12 +475,14 @@ jobs:
           }
           copy_package_notices mingw-w64-x86_64-zlib zlib
           copy_package_notices mingw-w64-x86_64-zstd zstd
-          test -f ../native-windows-out/zlib1.dll
+          # MSYS2 zlib 1.4 links libz.dll.a to libz-1.dll; older packages
+          # use zlib1.dll. Copy the actual recursively audited imports.
+          test -f ../native-windows-out/zlib1.dll || test -f ../native-windows-out/libz-1.dll
           test -f ../native-windows-out/libzstd.dll
           for bundled_dll in ../native-windows-out/*.dll; do
             bundled_name=$(basename "$bundled_dll" | tr '[:upper:]' '[:lower:]')
             case "$bundled_name" in
-              libdwarf-*.dll|libdwarfp-*.dll|libzstd.dll|zlib1.dll) ;;
+              libdwarf-*.dll|libdwarfp-*.dll|libzstd.dll|zlib1.dll|libz-1.dll) ;;
               *)
                 echo "bundled DLL has no reviewed notice policy: $bundled_name" >&2
                 exit 1
@@ -421,6 +557,17 @@ jobs:
           support/compare-native-builds.sh windows native-windows-out \
             native-windows-rebuild "$result_directory/reproducibility.log"
 
+      - name: Build Windows validator process owner
+        run: support/build-validator-supervisor.sh windows native-windows-out build/test-results/native-windows/supervisor
+
+      - name: Exercise native Windows validator process ownership
+        shell: pwsh
+        run: |
+            python src/test/integration/validator-supervisor.py `
+                --helper native-windows-out/forge-validator-supervisor.exe `
+                --results build/test-results/native-windows/supervisor/runtime
+            if ($LASTEXITCODE -ne 0) { throw 'Windows validator supervisor controls failed' }
+
       - uses: actions/upload-artifact@v7
         with:
           name: libdwarf-windows-integration
@@ -470,25 +617,53 @@ jobs:
           mkdir -p build/test-results/extension-build
           {
             src/test/integration/headless-wrapper.sh
+            python3 src/test/integration/attachment-launcher.py
             src/test/integration/architecture-neutrality.sh
             python3 src/test/integration/architecture-neutrality-smoke.py
-            ./gradlew addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
-              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke \
+            python3 -B -m unittest discover -s src/test/python -p test_gdb_loader.py -v
+            python3 -B -m unittest discover -s src/test/python -p test_jfr_phases.py -v
+            python3 -B -m unittest discover -s src/test/python -p test_headless_observations.py -v
+            cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
+            build/linux-rename-contract
+            cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-build-id-lock-contract.c -o build/linux-build-id-lock-contract
+            build/linux-build-id-lock-contract
+            ./gradlew buildIdFileLockSmoke -PbuildIdLockFile="$PWD/build/test-results/extension-build/owned-build-id-lock"
+            cc -std=c11 -O2 -Wall -Wextra -Werror native/supervisor/forge-supervisor-linux.c -o build/forge-validator-supervisor
+            ./gradlew validatorSupervisorSmoke \
+                -PsupervisorPath="$PWD/build/forge-validator-supervisor" \
+                -PsupervisorPython="$(command -v python3)" \
+                -PsupervisorResults="$PWD/build/test-results/extension-build/supervisor"
+            ./gradlew formatterPlanSmoke exportPhaseSmoke addressNormalizerSmoke elfImageBaseSmoke dwarfTargetSmoke \
+              ghidraTargetAgreementSmoke outputPathPolicySmoke pathTraversalSmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentReceiptStoreSmoke attachmentFileStoreSmoke attachmentTargetStoreSmoke attachmentTransactionSmoke attachmentExportBindingSmoke attachmentOperationSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke debuglinkBasenameSmoke \
               exportReportSmoke exportReportClaimsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke \
               fileDigestsSmoke elfBuildIdSmoke \
-              matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
+              debugCompressionSmoke matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
-              syntheticSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
-              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
+              syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke annotationTextSmoke annotatedSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
+              ghidraVariableIdentitySmoke ghidraInstructionEvidenceSmoke sourceCoverageSmoke sourceCoverageInventorySmoke coverageComparisonPresentationSmoke coverageVariableComparisonSmoke coverageTypeEvidenceSmoke typeGraphEvidenceSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke exportCoverageSmoke coverageComparisonSmoke coveragePresentationSmoke coverageReportJsonSmoke reportValueReaderSmoke coverageReportClaimsSmoke exportReportCoverageSmoke \
+              variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
-              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
-              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
+              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
+              functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
-              packagedNativeLibrariesSmoke existingDebugSidecarSmoke \
+              packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
+              unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
-              elfCopyCancellationSmoke ghidraImageBaseSmoke buildExtension
+              elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke buildExtension
+            python3 -B src/test/integration/debuglink-basename.py \
+                --jar "$PWD/build/libs/GhidraDwarfForge.jar" \
+                --results "$PWD/build/test-results/extension-build/debuglink-basename"
+            python3 -B src/test/integration/linux-file-metadata.py \
+                --jar "$PWD/build/libs/GhidraDwarfForge.jar" --ghidra "$GHIDRA_INSTALL_DIR" \
+                --results "$PWD/build/test-results/extension-build/linux-file-metadata"
+            python3 -B src/test/integration/linux-metadata-visibility-session.py \
+                --jar "$PWD/build/libs/GhidraDwarfForge.jar" --ghidra "$GHIDRA_INSTALL_DIR" \
+                --results "$PWD/build/test-results/extension-build/linux-visibility-session" --privileged
+            python3 -B src/test/integration/linux-directory-sync.py \
+                --jar build/libs/GhidraDwarfForge.jar --ghidra "$GHIDRA_INSTALL_DIR" \
+                --results "$PWD/build/test-results/extension-build/linux-directory-sync"
             src/test/integration/release-package.sh
             zipinfo -l dist/*.zip | grep -Eq \
               '^-rwxr-xr-x.*GhidraDwarfForge/support/ghidra-dwarf-forge-headless$'
@@ -505,6 +680,7 @@ jobs:
         with:
           name: extension-build-diagnostics
           path: build/test-results/extension-build/
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
 
@@ -573,6 +749,40 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  attachment-windows:
+    needs: [ extension-build, native-windows ]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v8
+        with:
+          name: ghidra-dwarf-forge-extension-base
+          path: attachment-extension
+      - uses: actions/download-artifact@v8
+        with:
+          name: native-windows-build-diagnostics
+          path: attachment-native
+      - name: Native Windows host backup replacement and restore
+        shell: pwsh
+        run: |
+          $extension = @(Get-ChildItem attachment-extension -Filter '*.zip')
+          if ($extension.Count -ne 1) { throw 'Expected one extension archive' }
+          ./src/test/integration/windows-attachment-host.ps1 `
+            -ExtensionZip $extension[0].FullName `
+            -NativeDiagnostics (Resolve-Path attachment-native).Path `
+            -Results "$PWD/build/test-results/attachment-windows"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: attachment-windows-diagnostics
+          path: build/test-results/attachment-windows/
+          if-no-files-found: warn
+          retention-days: 14
+
   target-preflight:
     needs: [ release-package, native-linux ]
     runs-on: ubuntu-24.04
@@ -597,27 +807,65 @@ jobs:
           packages=(gdb-multiarch llvm dwarfdump)
           case "$TARGET" in
             x86_64)
-              packages+=(gcc g++ binutils gdb libc6-i386 qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
+              packages+=(gcc g++ gcc-multilib libc6-dev-i386 binutils gdb libc6-i386 qemu-user-static xvfb openbox x11-utils libxtst6 libxi6 libxrender1 acl)
               ;;
             aarch64)
               packages+=(gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
-                libc6-dev-arm64-cross qemu-user-static)
+                libc6-dev-arm64-cross qemu-user-static lld-18 gdb xvfb openbox x11-utils libxtst6 libxi6 libxrender1)
               ;;
             arm32)
               packages+=(gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
-                libc6-dev-armhf-cross qemu-user-static)
+                libc6-dev-armhf-cross qemu-user-static libglib2.0-dev zlib1g-dev ninja-build pkg-config)
               ;;
             mips32be)
               packages+=(gcc-mips-linux-gnu g++-mips-linux-gnu binutils-mips-linux-gnu
-                libc6-dev-mips-cross qemu-user-static)
+                libc6-dev-mips-cross qemu-user-static qemu-system-mips gcc-multilib-mips64-linux-gnuabi64
+                libc6-dev-mips64-cross libc6-dev-mipsn32-mips64-cross)
               ;;
             mips32le)
               packages+=(gcc-mipsel-linux-gnu g++-mipsel-linux-gnu binutils-mipsel-linux-gnu
-                libc6-dev-mipsel-cross qemu-user-static)
+                libc6-dev-mipsel-cross qemu-user-static qemu-system-mips gcc-multilib-mips64el-linux-gnuabi64
+                libc6-dev-mips64el-cross libc6-dev-mipsn32-mips64el-cross)
               ;;
           esac
+          if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+              packages+=(lldb-18=1:18.1.3-1ubuntu1 python3-lldb-18=1:18.1.3-1ubuntu1 linux-tools-generic)
+          fi
+          if [[ "$TARGET" == mips32be || "$TARGET" == mips32le || "$TARGET" == arm32 ]]; then
+              packages+=(build-essential python3-dev libgmp-dev libmpfr-dev
+                libexpat1-dev libncurses-dev texinfo)
+          fi
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y "${packages[@]}"
+
+      - name: Build pinned MIPS register-piece debugger
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        run: python3 support/validation/build-mips-gdb.py "$RUNNER_TEMP/mips-gdb"
+
+      - name: Build pinned ARM big-endian register-piece debugger
+        if: matrix.target == 'arm32'
+        run: python3 support/validation/build-mips-gdb.py "$RUNNER_TEMP/arm-gdb" --target-profile arm32
+
+      - name: Build pinned ARM register alias reference emulators
+        if: matrix.target == 'arm32'
+        run: |
+          python3 support/validation/build-arm-qemu.py "$RUNNER_TEMP/arm-qemu-d-only" \
+              --correct-d-register-writes
+          python3 support/validation/build-arm-qemu.py "$RUNNER_TEMP/arm-qemu-aliases" \
+              --archive "$RUNNER_TEMP/arm-qemu-d-only/qemu-8.2.2.tar.xz" \
+              --correct-d-register-writes --correct-q-register-aliases
+
+      - name: Preserve ARM emulator build receipts
+        if: always() && matrix.target == 'arm32'
+        run: |
+          for profile in d-only aliases; do
+              destination="build/test-results/arm-qemu-build/$profile"
+              mkdir -p "$destination"
+              if [[ -d "$RUNNER_TEMP/arm-qemu-$profile" ]]; then
+                  find "$RUNNER_TEMP/arm-qemu-$profile" -maxdepth 1 -type f \
+                      \( -name '*.json' -o -name '*.log' \) -exec cp {} "$destination/" \;
+              fi
+          done
 
       - name: Cache Ghidra 12.0.3 archive
         uses: actions/cache@v6
@@ -704,9 +952,32 @@ jobs:
               -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
               -PtargetProfile="$profile" \
               -PnativeIterations="$iterations"
+          if [[ "$TARGET" == mips32be || "$TARGET" == mips32le ]]; then
+              wide_profile=${TARGET/mips32/mips64}
+              src/test/integration/run-isolated-native-smoke.sh \
+                  "build/test-results/native-producer/$wide_profile" \
+                  ./gradlew nativeProducerSmoke \
+                    -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+                    -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+                    -PtargetProfile="$wide_profile" -PnativeIterations=16
+          fi
+          if [[ "$TARGET" == arm32 ]]; then
+              src/test/integration/run-isolated-native-smoke.sh \
+                  "build/test-results/native-producer/arm32be8" \
+                  ./gradlew nativeProducerSmoke \
+                    -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+                    -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+                    -PtargetProfile=arm32be8 -PnativeIterations=32
+          fi
 
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
+
+      - name: Check packaged GDB companion with live compiler references
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 -B src/test/integration/gdb-loader-mappings.py \
+            --companion-jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar"
 
       - name: Isolated class producer specifications and conflicting lookup aliases
         if: matrix.target == 'x86_64'
@@ -736,6 +1007,297 @@ jobs:
           make -C src/test/fixtures "$TARGET"
           src/test/integration/fixture-reproducibility.sh "$TARGET"
 
+      - name: Validate independent compiler unwind references
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/synthetic-cfi-reference.py "$TARGET" \
+            "build/test-results/synthetic-cfi-reference/$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Validate explicit CFI encoder plans and debugger behavior
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew callFrameEncoderSmoke
+          python3 src/test/integration/cfi-encoder.py build/classes/java \
+            "build/test-results/cfi-encoder/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/cfi-composition.py build/classes/java \
+            "build/test-results/cfi-encoder/$TARGET" "build/test-results/cfi-composition/$TARGET" --dwarfdump "$DWARFDUMP"
+          for encoding in plain gabi gnu; do
+            python3 src/test/integration/cfi-composition.py build/classes/java \
+              "build/test-results/cfi-encoder/$TARGET" "build/test-results/cfi-writer/$TARGET/$encoding" \
+              --original-encoding "$encoding" --dwarfdump "$DWARFDUMP"
+          done
+
+      - name: Reject input and program changes before export publication
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/export-consistency.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+            "build/test-results/export-consistency/$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Validate optional formatters in GDB CLI/MI and LLDB
+        id: formatter-tests
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          consumers=()
+          companions=()
+          if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+              consumers+=(--lldb lldb-18)
+              companions+=(--companions)
+          fi
+          python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "build/test-results/formatters/$TARGET/exec" --role exec \
+              --dwarfdump "$DWARFDUMP" "${consumers[@]}" "${companions[@]}"
+          python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "build/test-results/formatters/$TARGET/pie-zlib" --role pie --compression zlib \
+              --dwarfdump "$DWARFDUMP" "${consumers[@]}"
+          python3 src/test/integration/formatter-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "build/test-results/formatters/$TARGET/multifile-pie-zlib" --role pie --compression zlib \
+              --source-lines 8 --dwarfdump "$DWARFDUMP" "${consumers[@]}" "${companions[@]}"
+          if [[ "$TARGET" == x86_64 ]]; then
+              for role in exec pie-zlib multifile-pie-zlib; do
+                  python3 src/test/integration/formatter-portable.py \
+                      "build/test-results/formatters/$TARGET/$role" \
+                      "build/test-results/formatters/portable/$role" --producer-host Linux \
+                      --lldb lldb-18 --dwarfdump "$DWARFDUMP"
+              done
+          fi
+
+      - name: Archive formatter evidence before the remaining regressions
+        if: always() && steps.formatter-tests.outcome != 'skipped'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          mkdir -p build/artifact-archives
+          if [[ -d build/test-results/formatters ]]; then
+              tar --format=pax -czf "build/artifact-archives/formatters-$TARGET.tar.gz" \
+                  -C build/test-results/formatters .
+          fi
+
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.formatter-tests.outcome != 'skipped'
+        with:
+          name: formatter-evidence-${{ matrix.target }}
+          path: build/artifact-archives/formatters-${{ matrix.target }}.tar.gz
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Validate recovered CFI in executables, PIE and loaded shared libraries
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew unwindFrameRowsSmoke ghidraUnwindCallsSmoke elfCodeBytesSmoke
+          python3 src/test/integration/unwind-frame-recovery.py build/classes/java \
+            "build/test-results/unwind-frame-recovery/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/unwind-frame-recovery.py build/classes/java \
+            "build/test-results/unwind-shrinkwrap/$TARGET" --target "$TARGET" \
+            --fixture-family shrinkwrap --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/compiler-memory-effects.py \
+            "build/test-results/compiler-memory-effects/$TARGET" --target "$TARGET" --conditional-proof
+
+      - name: Compare conditioned native frames with unchanged compiler references
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie shared; do
+            options=()
+            if [[ "$role" == shared ]]; then options+=(--relocated-pointers); fi
+            python3 src/test/integration/compiler-unwind-export.py \
+              "build/test-results/compiler-unwind-export/$TARGET/$role" --target "$TARGET" --role "$role" "${options[@]}" \
+              --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+              --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+            python3 src/test/integration/production-unwind-export.py \
+              "build/test-results/compiler-unwind-export/$TARGET/$role" \
+              "build/test-results/production-unwind-export/$TARGET/$role" \
+              --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+              --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+            python3 src/test/integration/production-unwind-companion.py \
+              "build/test-results/production-unwind-export/$TARGET/$role" \
+              "build/test-results/compiler-unwind-export/$TARGET/$role" \
+              "build/test-results/production-unwind-companion/$TARGET/$role"
+          done
+          python3 src/test/integration/production-unwind-controls.py \
+            "build/test-results/compiler-unwind-export/$TARGET/shared" \
+            "build/test-results/production-unwind-controls/$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+            --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+            --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+          python3 src/test/integration/compiler-pointer-refusals.py \
+            "build/test-results/compiler-pointer-refusals/$TARGET" --target "$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" \
+            --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+            --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+
+      - name: Compare LLDB caller frames with independent compiler references
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/cfi-unwind-lldb.py \
+            "build/test-results/compiler-unwind-export/$TARGET/exec" \
+            "build/test-results/production-unwind-export/$TARGET/exec" \
+            "build/test-results/lldb-cfi/$TARGET" --target "$TARGET" --lldb lldb-18
+
+      - name: Validate compiler frame pointers and recovered caller values
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/compiler-unwind-export.py \
+            "build/test-results/compiler-frame-pointer/$TARGET" --target "$TARGET" --frame-pointer keep \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+            --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+            --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+          python3 src/test/integration/production-unwind-export.py \
+            "build/test-results/compiler-frame-pointer/$TARGET" \
+            "build/test-results/production-frame-pointer/$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" \
+            --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
+            --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
+          python3 src/test/integration/frame-pointer-gdb.py \
+            "build/test-results/compiler-frame-pointer/$TARGET" \
+            "build/test-results/production-frame-pointer/$TARGET" \
+            "build/test-results/frame-pointer-values/$TARGET"
+
+      - name: Validate discontiguous unwind ranges and partial-instruction refusals
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/discontiguous-unwind.py \
+            "build/test-results/discontiguous-unwind/$TARGET" --target "$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/discontiguous-unwind-controls.py \
+            "build/test-results/discontiguous-unwind/$TARGET" \
+            "build/test-results/discontiguous-unwind-controls/$TARGET" \
+            --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+
+      - name: Multi-file source stepping across discontiguous bodies and compressed DWARF
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for position in prologue body; do
+              python3 src/test/integration/discontiguous-unwind.py \
+                  "build/test-results/multifile-discontiguous/$TARGET-$position" --target "$TARGET" \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP" --source-lines 8 \
+                  --gap-position "$position"
+          done
+
+      - name: Validate real native exports with recovered frames and source
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for family in unwind-frame-recovery unwind-shrinkwrap; do
+            python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+              "build/test-results/$family/$TARGET" "build/test-results/native-$family/$TARGET" \
+              --target "$TARGET" --dwarfdump "$DWARFDUMP"
+          done
+          python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+            "build/test-results/unwind-frame-recovery/$TARGET" "build/test-results/native-frame-failed-source/$TARGET" \
+            --target "$TARGET" --roles exec --failed-source-name cf_checkpoint --dwarfdump "$DWARFDUMP"
+
+      - name: Preserve original records alongside recovered native frame exports
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for encoding in plain gabi gnu; do
+            for family in unwind-frame-recovery unwind-shrinkwrap; do
+              python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+                "build/test-results/$family/$TARGET" "build/test-results/native-coexistence/$encoding/$family/$TARGET" \
+                --target "$TARGET" --original-encoding "$encoding" --dwarfdump "$DWARFDUMP"
+            done
+          done
+
+      - name: Preserve runtime unwind records alongside recovered native frames
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for family in unwind-frame-recovery unwind-shrinkwrap; do
+            python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+              "build/test-results/$family/$TARGET" "build/test-results/native-runtime-coexistence/$family/$TARGET" \
+              --target "$TARGET" --original-runtime --dwarfdump "$DWARFDUMP"
+          done
+
+      - name: Export rebased saved projects with original and recovered unwind records
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          # Cover both targets, all image roles, each original compression, and
+          # ordinary/shrink-wrapped frames through the installed normal wrapper.
+          while read -r encoding family role; do
+            python3 src/test/integration/production-unwind-saved.py \
+              "build/test-results/native-coexistence/$encoding/$family/$TARGET" \
+              "build/test-results/production-unwind-saved/$TARGET/$encoding" \
+              --target "$TARGET" --roles "$role" --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+          done <<'CASES'
+          plain unwind-frame-recovery exec
+          gabi unwind-shrinkwrap pie
+          gnu unwind-frame-recovery shared
+          CASES
+          python3 src/test/integration/production-unwind-saved.py \
+            "build/test-results/native-runtime-coexistence/unwind-shrinkwrap/$TARGET" \
+            "build/test-results/production-unwind-saved/$TARGET/runtime" \
+            --target "$TARGET" --roles shared --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
+
+      - name: Preserve processor-typed runtime unwind records
+        if: matrix.target == 'x86_64'
+        run: |
+          for family in unwind-frame-recovery unwind-shrinkwrap; do
+            python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
+              "build/test-results/$family/x86_64" "build/test-results/typed-runtime-coexistence/$family" \
+              --target x86_64 --original-runtime --runtime-section-type processor --dwarfdump "$DWARFDUMP"
+          done
+
+      - name: Preserve inherited unavailable-register limits
+        if: matrix.target == 'aarch64'
+        run: |
+          python3 src/test/integration/unwind-incomplete-original.py "$GHIDRA_INSTALL_DIR" \
+            build/test-results/unwind-frame-recovery/aarch64 \
+            build/test-results/native-inherited-unavailable/aarch64 --dwarfdump "$DWARFDUMP"
+
+      - name: Compare original frame ranges with independent compiler and validator inventories
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew originalFrameRangesSmoke originalFrameSourcesSmoke
+          python3 src/test/integration/original-frame-ranges.py build/classes/java \
+            "build/test-results/original-frame-ranges/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Compare runtime relocation tables with independent GNU inventories
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew elfRuntimeRelocationsSmoke
+          python3 src/test/integration/runtime-relocations.py build/classes/java \
+            "build/test-results/runtime-relocations/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Verify COPY and TLS descriptor loader effects
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          ./gradlew elfRelocationEffectsSmoke
+          python3 src/test/integration/relocation-effects.py \
+            --classes "build/classes/java/main:build/classes/java/test" \
+            --output "build/test-results/relocation-effects/$TARGET" --target "$TARGET"
+
       - name: Verify fixture identity and stripping
         env:
           TARGET: ${{ matrix.target }}
@@ -753,6 +1315,14 @@ jobs:
             exit 1
           fi
           readelf -Ws "$partial" | grep -Eq '[[:space:]]recovered_add$'
+
+      - name: Preserve original compiler CFI through actual export and GDB
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/original-cfi-preservation.py "$TARGET" "$GHIDRA_INSTALL_DIR" \
+            "build/test-results/original-cfi-preservation/$TARGET" --dwarfdump "$DWARFDUMP"
 
       - name: Headless Ghidra preflight
         env:
@@ -840,6 +1410,7 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
           src/test/integration/copy-cancellation-export.sh "$GHIDRA_INSTALL_DIR"
+          GHIDRA_GDB_LOADER=1 src/test/integration/copy-cancellation-export.sh "$GHIDRA_INSTALL_DIR"
 
       - name: Reject definite ELF and Ghidra processor disagreement
         if: matrix.target == 'x86_64' || matrix.target == 'mips32le'
@@ -868,9 +1439,42 @@ jobs:
                       capture=("FORGE_VALIDATION_EVIDENCE_DIR=$evidence_root/cases/$role"
                           "FORGE_VALIDATION_TOOLSET=$evidence_root/tools/toolset.json") ;;
               esac
+              if [[ "$role" == exec || "$role" == pie || "$role" == shared || "$role" == exec.no-sections ]]; then
+                  capture+=("GHIDRA_GDB_LOADER=1")
+              fi
               env "${capture[@]}" FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
                   "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
+              if [[ "$role" == exec || "$role" == pie || "$role" == exec.no-build-id ]]; then
+                  basename_args=()
+                  if [[ "$TARGET" == x86_64 && "$role" == exec.no-build-id ]]; then
+                      basename_args=(--sidecar-basename 'literal λ ;$[quoted].dbg')
+                  fi
+                  attachment_results="$RUNNER_TEMP/forge-attachment-production/$TARGET.$role"
+                  attachment_status=0
+                  sudo -n env JAVA_HOME="$JAVA_HOME" JAVA="$JAVA_HOME/bin/java" JAVAC="$JAVA_HOME/bin/javac" \
+                      python3 src/test/integration/attachment-elf-controller.py --production-linux-host \
+                      --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" \
+                      --target "$TARGET" --role "$role" "${basename_args[@]}" \
+                      --report-log "$PWD/build/test-results/headless-symbol-export/$TARGET.$role.log" \
+                      --strict-validator "$DWARFDUMP" \
+                      --supervised-validator-helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor" \
+                      --result-dir "$attachment_results" || attachment_status=$?
+                  mkdir -p "$PWD/build/test-results/attachment-elf-controller"
+                  if sudo -n test -d "$attachment_results"; then
+                      sudo -n tar -czf - -C "$attachment_results" . |
+                          tee "$PWD/build/test-results/attachment-elf-controller/$TARGET.$role.tar.gz" > /dev/null
+                  fi
+                  if [[ "$attachment_status" -ne 0 ]]; then exit "$attachment_status"; fi
+              fi
               if [[ "$role" == "exec.no-sections" ]]; then
+                  python3 -B src/test/integration/attachment-sectionless-validator.py \
+                      --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+                      --ghidra "$GHIDRA_INSTALL_DIR" \
+                      --report-log "$PWD/build/test-results/headless-symbol-export/$TARGET.$role.log" \
+                      --strict-validator "$DWARFDUMP" \
+                      --supervised-validator-helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor" \
+                      --result-dir "$PWD/build/test-results/attachment-sectionless-validator/$TARGET"
                   python3 src/test/integration/sectionless-load-ranges.py \
                       "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.stripped" \
                       "$PWD/build/fixtures/$TARGET/semantic.exec.no-sections.ghidra-forge.dbg" \
@@ -883,20 +1487,58 @@ jobs:
                   else
                       src/test/integration/shared-object-gdb.sh "$TARGET"
                   fi
+                  if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+                      python3 src/test/integration/shared-object-lldb.py build/fixtures \
+                          "build/test-results/lldb-shared-$TARGET" --target "$TARGET" --lldb lldb-18
+                      python3 src/test/integration/shared-object-lldb.py build/fixtures \
+                          "build/test-results/lldb-shared-discovery-$TARGET" --target "$TARGET" --lldb lldb-18 --discovery
+                  fi
               else
                   FIXTURE_ROLE="$role" src/test/integration/qemu-gdb-symbols.sh "$TARGET"
+                  if [[ "$role" == exec.no-sections && ( "$TARGET" == x86_64 || "$TARGET" == aarch64 ) ]]; then
+                      python3 src/test/integration/sectionless-lldb.py build/fixtures \
+                          "build/test-results/lldb-sectionless-$TARGET" --target "$TARGET" --lldb lldb-18
+                      python3 src/test/integration/sectionless-lldb.py build/fixtures \
+                          "build/test-results/lldb-sectionless-discovery-limit-$TARGET" --target "$TARGET" \
+                          --lldb lldb-18 --loading automatic
+                  fi
+              fi
+              if [[ "$TARGET:$role" == "x86_64:pie" ]]; then
+                  python3 -B src/test/integration/gdb-companion-native.py \
+                      --input "build/fixtures/$TARGET/semantic.pie.stripped" \
+                      --sidecar "build/fixtures/$TARGET/semantic.pie.ghidra-forge.dbg" \
+                      --reference "build/fixtures/$TARGET/semantic.pie.reference" \
+                      --results build/test-results/gdb-companion-native
+                  python3 -B src/test/integration/gdb-companion-attach.py \
+                      --input "build/fixtures/$TARGET/semantic.pie.stripped" \
+                      --sidecar "build/fixtures/$TARGET/semantic.pie.ghidra-forge.dbg" \
+                      --results build/test-results/gdb-companion-attach
+              elif [[ "$role" == exec.no-sections || ( "$TARGET" != x86_64 && ( "$role" == exec || "$role" == pie ) ) ]]; then
+                  src/test/integration/gdb-companion-remote.sh "$TARGET" "$role"
+                  if [[ "$role" == pie ]]; then
+                      src/test/integration/gdb-companion-remote.sh "$TARGET" "$role" no-hostio
+                  fi
+              fi
+              if [[ "$role" == shared ]]; then
+                  src/test/integration/gdb-companion-shared.sh "$TARGET" normal
+                  src/test/integration/gdb-companion-shared.sh "$TARGET" ambiguous
+                  if [[ "$TARGET" != x86_64 ]]; then
+                      src/test/integration/gdb-companion-shared.sh "$TARGET" normal no-hostio
+                  fi
               fi
               if [[ "$TARGET:$role" == "x86_64:exec" ]]; then
                   sidecar="build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg"
                   source_file="$sidecar.c"
                   first=$(sha256sum "$sidecar" | cut -d' ' -f1)
                   first_source=$(sha256sum "$source_file" | cut -d' ' -f1)
-                  FIXTURE_ROLE="exec" src/test/integration/headless-symbol-export.sh \
+                  first_companion=$(sha256sum "$sidecar.gdb.py" | cut -d' ' -f1)
+                  GHIDRA_GDB_LOADER=1 FIXTURE_ROLE="exec" src/test/integration/headless-symbol-export.sh \
                       "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" x86_64
                   second=$(sha256sum "$sidecar" | cut -d' ' -f1)
                   second_source=$(sha256sum "$source_file" | cut -d' ' -f1)
                   test "$first" = "$second"
                   test "$first_source" = "$second_source"
+                  test "$first_companion" = "$(sha256sum "$sidecar.gdb.py" | cut -d' ' -f1)"
                   src/test/integration/controlled-decompiler-failure.sh \
                       "$GHIDRA_INSTALL_DIR" "$consumer" "$producer"
               fi
@@ -907,6 +1549,55 @@ jobs:
             --capture "exec.no-build-id=$evidence_root/cases/exec.no-build-id/receipt.json" \
             --output "$evidence_root/index.json"
           echo "FORGE_VALIDATION_EVIDENCE_INDEX=$evidence_root/index.json" >> "$GITHUB_ENV"
+
+      - name: LLDB compiler and Forge source, types, stack and register pieces
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/semantic-lldb.py build/fixtures \
+            "build/test-results/lldb-semantic-$TARGET" --target "$TARGET" --lldb lldb-18
+
+      - name: Retain production attachment evidence before broader target tests
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-linux-attachment-${{ matrix.target }}
+          path: build/test-results/attachment-elf-controller/*.tar.gz
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: GDB companions from rebased PIE and shared-library analysis
+        env:
+          TARGET: ${{ matrix.target }}
+          GHIDRA_GDB_LOADER: '1'
+          GHIDRA_REBASE_DELTA: '0x400000'
+          FORGE_SYMBOL_SUFFIX: gdb-rebased.dbg
+        run: |
+          set -euo pipefail
+          export FORGE_SYMBOL_RESULTS="$PWD/build/test-results/gdb-companion-rebased-export"
+          consumer="$PWD/native-integration/libdwarf.so.2.3.2"
+          producer="$PWD/native-integration/libdwarfp.so.2.3.2"
+          for role in pie shared; do
+              FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
+                  "$GHIDRA_INSTALL_DIR" "$consumer" "$producer" "$TARGET"
+              if [[ "$role" == shared ]]; then
+                  src/test/integration/gdb-companion-shared.sh "$TARGET" ambiguous
+                  if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+                      python3 src/test/integration/shared-object-lldb.py build/fixtures \
+                          "build/test-results/lldb-shared-rebased-$TARGET" --target "$TARGET" \
+                          --suffix "$FORGE_SYMBOL_SUFFIX" --lldb lldb-18
+                  fi
+              elif [[ "$TARGET" == x86_64 ]]; then
+                  python3 -B src/test/integration/gdb-companion-native.py \
+                      --input "build/fixtures/$TARGET/semantic.pie.stripped" \
+                      --sidecar "build/fixtures/$TARGET/semantic.pie.$FORGE_SYMBOL_SUFFIX" \
+                      --reference "build/fixtures/$TARGET/semantic.pie.reference" \
+                      --results build/test-results/gdb-companion-rebased-native
+              else
+                  src/test/integration/gdb-companion-remote.sh "$TARGET" pie
+              fi
+          done
 
       # Consume primary export reports before later x86 regressions reuse their log paths.
       - name: Streamed file digests and target-endian GNU debuglink CRC
@@ -985,6 +1676,40 @@ jobs:
         if: matrix.target == 'x86_64'
         run: src/test/integration/saved-program-determinism.sh "$GHIDRA_INSTALL_DIR"
 
+      - name: Saved analyst edits through backup-based attachment refresh
+        if: matrix.target == 'x86_64'
+        run: |
+            set -euo pipefail
+            for selection in exec:0 pie:0 exec:8 pie:8; do
+                role=${selection%:*}
+                source_lines=${selection#*:}
+                attachment_results="$RUNNER_TEMP/forge-attachment-refresh/$role-$source_lines"
+                attachment_status=0
+                sudo -n env JAVA_HOME="$JAVA_HOME" JAVA="$JAVA_HOME/bin/java" JAVAC="$JAVA_HOME/bin/javac" \
+                    python3 src/test/integration/attachment-curated-refresh.py --production-linux-host \
+                    --ghidra "$GHIDRA_INSTALL_DIR" \
+                    --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+                    --fixture-dir "$PWD/build/fixtures" --role "$role" \
+                    --strict-validator "$DWARFDUMP" \
+                    --supervised-validator-helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor" \
+                    --result-dir "$attachment_results" --source-lines "$source_lines" || attachment_status=$?
+                mkdir -p "$PWD/build/test-results/attachment-curated-refresh"
+                if sudo -n test -d "$attachment_results"; then
+                    sudo -n tar -czf - -C "$attachment_results" . |
+                        tee "$PWD/build/test-results/attachment-curated-refresh/$role-$source_lines.tar.gz" > /dev/null
+                fi
+                if [[ "$attachment_status" -ne 0 ]]; then exit "$attachment_status"; fi
+            done
+
+      - name: Retain saved-curation attachment refresh evidence
+        if: always() && matrix.target == 'x86_64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-linux-attachment-refresh
+          path: build/test-results/attachment-curated-refresh/*.tar.gz
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Validate function-pointer convention extension and malformed metadata
         if: matrix.target == 'x86_64'
         run: python3 src/test/integration/dwarfdump-subroutine-conventions.py "$DWARFDUMP"
@@ -996,10 +1721,14 @@ jobs:
             --forge-fixture "$PWD/build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg" \
             --forge-original "$PWD/build/fixtures/x86_64/semantic.exec.stripped"
 
-      - name: Bit-field values through the real exporter and GDB
+      - name: Bit-field values through the real exporter, GDB and applicable LLDB
         env:
           TARGET: ${{ matrix.target }}
-        run: src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+        run: |
+          if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+              export FORGE_LLDB=lldb-18
+          fi
+          src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
       - name: Freestanding i386 stack values through stripped exec and PIE exports
         if: matrix.target == 'x86_64'
@@ -1007,6 +1736,39 @@ jobs:
           for role in exec sectionless pie pie-rebased; do
               python3 src/test/integration/i386-profile-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
+
+      - name: i386 libc scalar floating arguments and x87 returns
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          for role in exec sectionless pie pie-rebased; do
+              python3 src/test/integration/i386-extended-return-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
+          done
+          python3 src/test/integration/i386-extended-return-export.py "$GHIDRA_INSTALL_DIR" --target x86_64 --role exec
+
+      - name: i386 libc vector aggregate and explicit convention matrix
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          python3 src/test/integration/i386-abi-matrix-diagnostics-test.py
+          for role in exec sectionless pie pie-rebased; do
+              python3 src/test/integration/i386-abi-matrix-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
+          done
+
+      - name: i386 ELF metadata and compiler ABI selection
+        if: matrix.target == 'x86_64'
+        run: |
+          set -euo pipefail
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --role "$role"
+          done
+          for compiler in windows clangwindows; do
+              python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --compiler "$compiler"
+          done
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --osabi 3
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --osabi 9
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --abi-version 1
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --flags 1
 
       - name: i386 shared-library stack values and curated/original lookup
         if: matrix.target == 'x86_64'
@@ -1198,10 +1960,10 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           for role in exec pie pie-rebased; do
-              python3 src/test/integration/composite-value-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+              python3 src/test/integration/composite-value-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --lldb lldb-18
               if [[ "$TARGET" == x86_64 ]]; then
-                  python3 src/test/integration/composite-value-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --red-zone
-                  python3 src/test/integration/composite-value-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --frame-pointer-leaf
+                  python3 src/test/integration/composite-value-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --red-zone --lldb lldb-18
+                  python3 src/test/integration/composite-value-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --frame-pointer-leaf --lldb lldb-18
               fi
           done
 
@@ -1211,10 +1973,58 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           for role in exec pie pie-rebased; do
-              python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+              coverage_controls=()
+              if [[ "$role" == pie-rebased ]]; then
+                  coverage_controls=(--coverage-controls)
+              fi
+              python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" "${coverage_controls[@]}"
               python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --discontiguous --controls
               python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --discontiguous --controls --calls
           done
+
+      - name: Multi-file source stepping and semantic preservation across ELF targets
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/multifile-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
+          done
+
+      - name: Multi-file source preserves lexical identities, locations and call visibility
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+                  --role "$role" --discontiguous --calls --source-lines 8
+              python3 src/test/integration/same-name-types-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+                  --role "$role" --source-lines 8
+          done
+
+      - name: Multi-file shared objects retain relocated source lookup and stepping
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in shared shared-rebased; do
+              python3 src/test/integration/multifile-shared-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+                  --role "$role" --dwarfdump "$DWARFDUMP"
+          done
+
+      - name: Multi-file publication cancellation, rollback and retry
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64' || matrix.target == 'mips32be'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/multifile-publication.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --work "$PWD/build/test-results/multifile-publication/$TARGET" --dwarfdump "$DWARFDUMP"
+
+      - name: Measure multi-file export and debugger navigation at large function counts
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/performance/multifile-benchmark.py "$GHIDRA_INSTALL_DIR" \
+              --work "$PWD/build/test-results/multifile-benchmark" \
+              --counts 1000 10000 --pairs 3 --source-lines 1000
 
       - name: Class ownership and object parameters preserve saved identities and lookup
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
@@ -1497,9 +2307,40 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
+      - name: BE8 scalar data and instruction encoding
+        if: matrix.target == 'arm32'
+        run: |
+          python3 src/test/integration/arm-be8-reference.py "$GHIDRA_INSTALL_DIR"
+          python3 src/test/integration/arm-be8-reference.py "$GHIDRA_INSTALL_DIR" --little-endian
+
+      - name: Mixed ARM and Thumb function section mappings
+        if: matrix.target == 'arm32'
+        run: |
+          for shape in contiguous split; do
+              shape_args=()
+              if [[ "$shape" == split ]]; then shape_args=(--split --with-omissions --with-context-controls); fi
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
+                      --production --role "$role" --with-controls --with-live "${shape_args[@]}"
+              done
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
+                      --production --role "$role" --sectionless --with-controls --with-live "${shape_args[@]}"
+              done
+          done
+          for role in exec pie pie-rebased shared shared-rebased; do
+              python3 src/test/integration/arm-mixed-mode-reference.py "$GHIDRA_INSTALL_DIR" \
+                  --production --role "$role" --split --retain-symbols --with-controls --with-live
+          done
+
       - name: Recovered ARM and Thumb instruction modes
         if: matrix.target == 'arm32'
-        run: src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
+        run: |
+          for role in exec pie pie-rebased pie-dynamic shared shared-rebased; do
+              FORGE_THUMB_ROLE="$role" src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
+          done
+          FORGE_THUMB_ROLE=pie FORGE_THUMB_HASH_STYLE=gnu FORGE_THUMB_EXPECT_MODE_OMISSION=1 \
+              src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
 
       - name: Saved dynamic parameter storage and debugger values
         env:
@@ -1510,6 +2351,55 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/dynamic-composite-storage-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
+      - name: Actual emission evidence matches raw DWARF and debugger behavior
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/integration/emission-evidence.py "$GHIDRA_INSTALL_DIR" \
+              "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2"
+
+      - name: Annotation composition preserves executable lines and debugger lookup
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/integration/emission-evidence.py "$GHIDRA_INSTALL_DIR" \
+              "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2" --annotations
+
+      - name: Bounded instruction context and native diagnostic source composition
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/instruction-context-pipeline.py "$GHIDRA_INSTALL_DIR" \
+              "$PWD/build/fixtures/$TARGET/semantic.exec.stripped" \
+              "$PWD/build/test-results/instruction-context/$TARGET"
+
+      - name: Saved annotations retain all categories, spaces and raw equate references
+        if: matrix.target != 'arm32'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/annotation-inventory-pipeline.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+              --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --producer "$PWD/native-integration/libdwarfp.so.2.3.2"
+
+      - name: Instruction context preserves ARM modes and delay-slot body boundaries
+        if: matrix.target == 'arm32' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/context-boundaries.py "$TARGET" "$GHIDRA_INSTALL_DIR" \
+              "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2" \
+              "$PWD/build/test-results/context-boundaries/$TARGET"
+
+      - name: Intrinsic instruction context and same-spelled ordinary calls
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/integration/intrinsic-context.py "$GHIDRA_INSTALL_DIR" \
+              "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2" \
+              "$PWD/build/test-results/intrinsic-context"
 
       - name: Isolated indirect pointer producer and operand-free dereference
         if: matrix.target == 'aarch64'
@@ -1543,7 +2433,7 @@ jobs:
         if: matrix.target == 'aarch64'
         run: |
           for role in exec pie pie-rebased; do
-              python3 src/test/integration/aarch64-vector.py "$GHIDRA_INSTALL_DIR" --role "$role" --with-controls
+              python3 src/test/integration/aarch64-vector.py "$GHIDRA_INSTALL_DIR" --role "$role" --with-controls --lldb lldb-18
           done
 
       - name: AArch64 ELF language and compiler debugger-call profiles
@@ -1569,9 +2459,183 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/mips-truncated-space-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: MIPS N32 and N64 scalar ABI runtime and loader profiles
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          endian=${TARGET#mips32}
+          for abi in n32 n64; do
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/mips-wide-abi.py "$GHIDRA_INSTALL_DIR" \
+                      --abi "$abi" --endian "$endian" --role "$role" --with-controls
+              done
+          done
+
+      - name: MIPS O32 FPXX and FP64A system-emulator references
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          for profile in fpxx fp64a; do
+              python3 src/test/integration/mips-fpr-system.py "$GHIDRA_INSTALL_DIR" \
+                  --endian "${TARGET#mips32}" --profile "$profile"
+          done
+
+      - name: MIPS O32 mixed and wide arguments in both byte orders
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          python3 src/test/integration/mips-o32-arguments-oracle-test.py
+          for role in exec pie pie-rebased shared shared-rebased; do
+              python3 src/test/integration/mips-wide-arguments.py "$GHIDRA_INSTALL_DIR" \
+                  --abi o32 --endian "${TARGET#mips32}" --role "$role" --with-controls
+          done
+
+      - name: MIPS N32 and N64 wider arguments, returns and debugger calls
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          python3 src/test/integration/mips-wide-arguments-oracle-test.py
+          endian=${TARGET#mips32}
+          for abi in n32 n64; do
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/mips-wide-arguments.py "$GHIDRA_INSTALL_DIR" \
+                      --abi "$abi" --endian "$endian" --role "$role" --with-controls
+              done
+              for scalar in float double; do
+                  for role in exec pie pie-rebased; do
+                      python3 src/test/integration/mips-floating-call-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
+                          --profile "$abi" --scalar "$scalar" --role "$role"
+                  done
+              done
+          done
+
+      - name: MIPS N32 and N64 aggregate layout and alignment
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          endian=${TARGET#mips32}
+          for abi in n32 n64; do
+              for role in exec pie pie-rebased shared shared-rebased; do
+                  python3 src/test/integration/mips-layout-arguments.py "$GHIDRA_INSTALL_DIR" \
+                      --abi "$abi" --endian "$endian" --role "$role" \
+                      --gdb "$RUNNER_TEMP/mips-gdb/build/gdb/gdb" \
+                      --gdb-data-directory "$RUNNER_TEMP/mips-gdb/build/gdb/data-directory"
+              done
+          done
+
       - name: ARM per-function dynamic base and VFP parameters
         if: matrix.target == 'arm32'
-        run: src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
+        run: |
+          src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
+          FORGE_PCS_BE8=1 FORGE_PCS_GDB="$RUNNER_TEMP/arm-gdb/build/gdb/gdb" \
+              FORGE_PCS_GDB_DATA="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory" \
+              src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
+
+      - name: ARM D and Q alias causal controls
+        if: matrix.target == 'arm32'
+        run: |
+          python3 src/test/integration/arm-q-alias-reference.py \
+              --gdb "$RUNNER_TEMP/arm-gdb/build/gdb/gdb" \
+              --gdb-data "$RUNNER_TEMP/arm-gdb/build/gdb/data-directory" \
+              --d-only-qemu "$RUNNER_TEMP/arm-qemu-d-only/build" \
+              --alias-qemu "$RUNNER_TEMP/arm-qemu-aliases/build"
+
+      - name: ARM scalar PCS calls and exhausted arguments
+        if: matrix.target == 'arm32'
+        run: |
+          for order in little big; do
+              gdb=$(command -v gdb-multiarch)
+              data=/usr/share/gdb
+              if [[ "$order" == big ]]; then
+                  gdb="$RUNNER_TEMP/arm-gdb/build/gdb/gdb"
+                  data="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory"
+              fi
+              for pcs in softfp hard; do
+                  for convention in explicit implicit guards; do
+                      options=()
+                      if [[ "$convention" != explicit ]]; then
+                          options+=(--implicit-default)
+                      fi
+                      if [[ "$convention" == guards ]]; then
+                          options+=(--guard-controls --failure-controls)
+                      fi
+                      python3 src/test/integration/arm-pcs-profile.py "$GHIDRA_INSTALL_DIR" \
+                          --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" --declarations \
+                          --qemu-arm "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-arm" \
+                          --qemu-armeb "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-armeb" "${options[@]}"
+                  done
+                  for metadata in absent conflict; do
+                      python3 src/test/integration/arm-pcs-profile.py "$GHIDRA_INSTALL_DIR" \
+                          --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" \
+                          --declarations --implicit-default --guard-controls --failure-controls --metadata "$metadata" \
+                          --qemu-arm "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-arm" \
+                          --qemu-armeb "$RUNNER_TEMP/arm-qemu-aliases/build/qemu-armeb"
+                  done
+              done
+          done
+
+      - name: ARM aggregate calls and floating storage with compiler references
+        if: matrix.target == 'arm32'
+        run: |
+          python3 src/test/integration/arm-stack-aggregates-reference-test.py
+          python3 src/test/integration/arm-stack-aggregates-contract-test.py
+          python3 src/test/integration/arm-stack-shared-contract-test.py
+          for order in little big; do
+              gdb=$(command -v gdb-multiarch)
+              data=/usr/share/gdb
+              qemu="$RUNNER_TEMP/arm-qemu-aliases/build/qemu-arm"
+              if [[ "$order" == big ]]; then
+                  gdb="$RUNNER_TEMP/arm-gdb/build/gdb/gdb"
+                  data="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory"
+                  qemu="$RUNNER_TEMP/arm-qemu-aliases/build/qemu-armeb"
+              fi
+              for pcs in softfp hard; do
+                  python3 src/test/integration/arm-aggregate-calls.py "$GHIDRA_INSTALL_DIR" \
+                      --order "$order" --pcs "$pcs" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
+              done
+              aggregate_roles=(exec exec-rebased pie pie-rebased)
+              if [[ "$order" == little ]]; then
+                  aggregate_roles+=(shared shared-rebased)
+              fi
+              for role in "${aggregate_roles[@]}"; do
+                  python3 src/test/integration/arm-stack-aggregates.py "$GHIDRA_INSTALL_DIR" \
+                      --order "$order" --role "$role" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu" \
+                      --availability-contract audited-prefix --with-controls
+              done
+              pie_cases=(build/test-results/arm-stack-aggregates/"$order".pie.*)
+              test "${#pie_cases[@]}" -eq 1
+              python3 src/test/integration/arm-stack-pie-controls.py "${pie_cases[0]}"
+              if [[ "$order" == little ]]; then
+                  for role in shared shared-rebased; do
+                      shared_cases=(build/test-results/arm-stack-aggregates/"$order.$role".*)
+                      test "${#shared_cases[@]}" -eq 1
+                      python3 src/test/integration/arm-stack-shared-controls.py "${shared_cases[0]}"
+                  done
+              fi
+              python3 src/test/integration/arm-hfa-lifetimes.py "$GHIDRA_INSTALL_DIR" \
+                  --order "$order" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu"
+              for storage in hfa base mixed; do
+                  for control in lower neighbor upper wide reuse adjacent unknown-disjoint unknown-alias; do
+                      failure_controls=()
+                      if [[ "$control" == upper || "$control" == unknown-alias ]]; then
+                          failure_controls=(--failure-controls)
+                      fi
+                      python3 src/test/integration/arm-hfa-lifetimes.py "$GHIDRA_INSTALL_DIR" \
+                          --order "$order" --gdb "$gdb" --gdb-data "$data" --qemu "$qemu" \
+                          --storage "$storage" --control "$control" "${failure_controls[@]}"
+                  done
+              done
+          done
 
       - name: Isolated scalar register bit-piece producer
         if: matrix.target == 'arm32'
@@ -1597,10 +2661,84 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          src/test/integration/floating-registers-export.sh \
-            "$GHIDRA_INSTALL_DIR" \
-            "$PWD/native-integration/libdwarf.so.2.3.2" \
-            "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+          set -euo pipefail
+          mkdir -p build/test-results/build-id
+          if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+              export FORGE_LLDB=lldb-18
+              # Offline DWARF lookup does not require the running kernel's perf
+              # build. Use the installed generic tools binary, not its wrapper.
+              FORGE_PERF=$(python3 -c 'from pathlib import Path; paths = sorted(p.resolve() for p in Path("/usr/lib/linux-tools").glob("*/perf") if p.is_file()); assert paths; print(paths[-1])')
+              export FORGE_PERF
+          fi
+          export FORGE_SOURCE_RELOCATION_JAR="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar"
+          export FORGE_DERIVED_TEST_CLASSES="$PWD/build/classes/java/test"
+          for compression in none zlib; do
+              GHIDRA_DEBUG_COMPRESSION="$compression" src/test/integration/floating-registers-export.sh \
+                "$GHIDRA_INSTALL_DIR" \
+                "$PWD/native-integration/libdwarf.so.2.3.2" \
+                "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET" \
+                | tee "build/test-results/build-id/floating-$compression.log"
+          done
+          none_run=$(sed -n 's/^floating-register-results=//p' build/test-results/build-id/floating-none.log)
+          zlib_run=$(sed -n 's/^floating-register-results=//p' build/test-results/build-id/floating-zlib.log)
+          python3 src/test/integration/build-id-matrix.py "$none_run" "$zlib_run" \
+              "$PWD/build/test-results/build-id/installation" --target "$TARGET" \
+              --ghidra "$GHIDRA_INSTALL_DIR" --jar "$FORGE_SOURCE_RELOCATION_JAR" \
+              --test-classes "$FORGE_DERIVED_TEST_CLASSES"
+          if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
+              for role in exec pie; do
+                  other='pie'
+                  if [[ "$role" == pie ]]; then
+                      other='exec'
+                  fi
+                  python3 src/test/integration/build-id-consumers.py \
+                      --configuration "$PWD/build/test-results/build-id/installation/none-$role.json" \
+                      --updated-configuration "$PWD/build/test-results/build-id/installation/zlib-$role.json" \
+                      --mismatch-sidecar "$none_run/$TARGET/$other/artifacts/floating.dbg" \
+                      --mismatch-reference "$none_run/$TARGET/$other/floating.reference" \
+                      --labels "$none_run/$TARGET/$role/labels.txt" \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --java "$(command -v java)" \
+                      --lldb "$FORGE_LLDB" --perf "$FORGE_PERF" --target "$TARGET" \
+                      --output "$PWD/build/test-results/build-id/consumers-$role"
+              done
+          fi
+          layout_root="$PWD/build/test-results/build-id/layouts"
+          mkdir -p "$layout_root/fixtures/$TARGET"
+          for name in semantic.exec.stripped semantic.exec.no-sections.stripped semantic.exec.reference \
+              libsemantic.so.stripped libsemantic.so.reference \
+              semantic.shared-driver.stripped semantic.shared-driver.reference; do
+              cp -- "build/fixtures/$TARGET/$name" "$layout_root/fixtures/$TARGET/$name"
+          done
+          for role in shared exec.no-sections; do
+              FORGE_SYMBOL_FIXTURES="$layout_root/fixtures" FORGE_SYMBOL_RESULTS="$layout_root/exports" \
+                  FIXTURE_ROLE="$role" src/test/integration/headless-symbol-export.sh \
+                  "$GHIDRA_INSTALL_DIR" "$PWD/native-integration/libdwarf.so.2.3.2" \
+                  "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
+              layout_options=()
+              if [[ "$role" == exec.no-sections ]]; then
+                  layout_options+=(--sectionless-discovery-limit)
+              fi
+              python3 src/test/integration/build-id-layouts.py --fixtures "$layout_root/fixtures" \
+                  --exports "$layout_root/exports" --target "$TARGET" --role "$role" \
+                  --configuration "$PWD/build/test-results/build-id/installation/none-exec.json" \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --java "$(command -v java)" \
+                  --output "$layout_root/$role" "${layout_options[@]}"
+          done
+          if [[ "$TARGET" == x86_64 ]]; then
+              for role in exec pie; do
+                  python3 src/test/integration/build-id-curated-refresh.py \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" --role "$role" \
+                      --tools-configuration "$PWD/build/test-results/build-id/installation/none-exec.json" \
+                      --output "$PWD/build/test-results/build-id/curated-$role" \
+                      --scratch "$RUNNER_TEMP/build-id-curated-$role" --java "$(command -v java)"
+                  python3 src/test/integration/build-id-curated-refresh.py \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" --role "$role" \
+                      --tools-configuration "$PWD/build/test-results/build-id/installation/none-exec.json" \
+                      --output "$PWD/build/test-results/build-id/curated-multifile-$role" \
+                      --scratch "$RUNNER_TEMP/build-id-curated-multifile-$role" --java "$(command -v java)" \
+                      --source-lines 8 --recovery
+              done
+          fi
 
       - name: ARM register pair prefix at an ordinary terminal return
         if: matrix.target == 'arm32'
@@ -1608,7 +2746,11 @@ jobs:
 
       - name: ARM incoming register and stack pieces
         if: matrix.target == 'arm32'
-        run: src/test/integration/mixed-incoming-prefix-export.sh "$GHIDRA_INSTALL_DIR"
+        run: |
+          src/test/integration/mixed-incoming-prefix-export.sh "$GHIDRA_INSTALL_DIR"
+          cases=(build/test-results/mixed-incoming-prefix/run.*/acceptance.json)
+          test "${#cases[@]}" -eq 1
+          python3 src/test/integration/mixed-incoming-prefix-controls.py "$(dirname "${cases[0]}")"
 
       - name: Explicit MIPS FP32 reference, register pieces, and whole aliases
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
@@ -1674,6 +2816,15 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
+      - name: Opt-in compressed DWARF equivalence, determinism and GDB
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/integration/compression-export.py "$GHIDRA_INSTALL_DIR" "$TARGET"
+          if [[ "$TARGET" == x86_64 ]]; then
+              bash src/test/integration/compression-cancellation.sh "$GHIDRA_INSTALL_DIR"
+          fi
+
       - name: Real-world distro binary export and debugging
         if: matrix.target == 'x86_64'
         run: src/test/integration/real-world-export.sh "$GHIDRA_INSTALL_DIR"
@@ -1691,10 +2842,39 @@ jobs:
             "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
             "$PWD/build/fixtures/x86_64/semantic.exec.reference"
 
+      - name: Installed unwind chooser cancellation, export and debugger behavior
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+          GHIDRA_GUI_UNWIND: '1'
+        run: |
+          role='exec'
+          export GHIDRA_GUI_UNWIND_TARGET="$TARGET"
+          if [[ "$TARGET" == aarch64 ]]; then
+            role=shared
+            export GHIDRA_GUI_UNWIND_SHARED=1 GHIDRA_GUI_UNWIND_POINTER_REQUIRED=1
+          fi
+          compiler="$PWD/build/test-results/compiler-unwind-export/$TARGET/$role/$TARGET-$role/compiler"
+          export GHIDRA_GUI_UNWIND_DRIVER="$compiler/driver"
+          src/test/integration/gui-script-manager.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$compiler/without-cfi" "$compiler/reference"
+
       - name: Installed Script Manager discovery, export, console, and cancellation
         if: matrix.target == 'x86_64'
         run: |
           src/test/integration/gui-script-manager.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+          GHIDRA_GUI_GDB_LOADER=1 src/test/integration/gui-script-manager.sh \
+            "$GHIDRA_INSTALL_DIR" \
+            "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+            "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+          GHIDRA_GUI_COMPRESSION=1 src/test/integration/gui-script-manager.sh \
             "$GHIDRA_INSTALL_DIR" \
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
             "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
@@ -1759,22 +2939,111 @@ jobs:
             FORGE_REPORT_MANIFEST="$PWD/build/test-results/report-handoff/$TARGET.json" \
             src/test/integration/build-id-discovery.sh "$TARGET"
 
+      - name: Verify complete retained validator reports
+        run: |
+          python3 src/test/integration/retained-validator-reports-test.py build/test-results
+          python3 src/test/integration/retained-validator-reports.py build/test-results \
+            --exclude-validator-self-tests \
+            --output build/test-results/retained-validator-reports.json
+
       - name: Retain bounded primary fixture diagnostics
         if: always()
         env:
           TARGET: ${{ matrix.target }}
         run: python3 src/test/integration/capture-primary-fixtures.py "$TARGET"
 
+      - name: Retain target debugger build evidence
+        if: always() && (matrix.target == 'mips32be' || matrix.target == 'mips32le' || matrix.target == 'arm32')
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          profile=mips
+          if [[ "$TARGET" == arm32 ]]; then profile=arm; fi
+          mkdir -p "build/test-results/$profile-gdb"
+          shopt -s nullglob
+          files=("$RUNNER_TEMP/$profile-gdb/"*.log "$RUNNER_TEMP/$profile-gdb/"*.json)
+          if [[ ${#files[@]} -gt 0 ]]; then
+              cp "${files[@]}" "build/test-results/$profile-gdb/"
+          fi
+
+      - name: Archive target diagnostics with exact fixture filenames
+        if: always()
+        run: |
+          python3 src/test/integration/archive-target-diagnostics-test.py
+          python3 support/archive-target-diagnostics.py \
+            build/test-results build/target-preflight.tar.gz
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: target-preflight-${{ matrix.target }}
-          path: build/test-results/
+          path: build/target-preflight.tar.gz
+          compression-level: 0
           if-no-files-found: warn
           retention-days: 14
 
+  # Produce the Windows comparison input independently of the long target
+  # matrix. The final gate still requires that entire matrix and both hosts.
+  linux-x86-export-reference:
+    needs: [ release-package, native-linux ]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install reference fixture and validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc binutils llvm gdb dwarfdump xvfb openbox x11-utils libxtst6 libxi6 libxrender1 polkitd pkexec
+
+      - name: Cache Ghidra 12.0.3 archive
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/ghidra-download/${{ env.GHIDRA_ARCHIVE }}
+          key: ghidra-${{ env.GHIDRA_ARCHIVE_SHA256 }}
+
+      - name: Install pinned Ghidra
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ghidra-download" "$RUNNER_TEMP/ghidra"
+          archive="$RUNNER_TEMP/ghidra-download/$GHIDRA_ARCHIVE"
+          if [[ ! -f "$archive" ]]; then
+              curl -fL --retry 3 "$GHIDRA_DOWNLOAD_URL" -o "$archive"
+          fi
+          echo "$GHIDRA_ARCHIVE_SHA256  $archive" | sha256sum -c -
+          unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
+          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ghidra-dwarf-forge-extension
+          path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: libdwarf-linux-integration
+          path: native-integration
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-linux-validation
+          path: validation-tool
+
+      - name: Export and validate the Windows comparison fixture
+        run: |
+          set -euo pipefail
+          (cd validation-tool && sha256sum -c SHA256SUMS)
+          chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
+          export DWARFDUMP="$PWD/validation-tool/bin/dwarfdump"
+          unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
+          make -C src/test/fixtures x86_64
+          FIXTURE_ROLE=exec GHIDRA_GDB_LOADER=1 src/test/integration/headless-symbol-export.sh \
+              "$GHIDRA_INSTALL_DIR" "$PWD/native-integration/libdwarf.so.2.3.2" \
+              "$PWD/native-integration/libdwarfp.so.2.3.2" x86_64
+
       - uses: actions/upload-artifact@v7
-        if: matrix.target == 'x86_64'
         with:
           name: linux-x86-export-reference
           path: |
@@ -1784,8 +3053,133 @@ jobs:
             build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg.c
           if-no-files-found: error
 
+      - name: Build independent compiler unwind input for native Windows GUI
+        run: |
+          python3 src/test/integration/synthetic-cfi-reference.py x86_64 \
+            build/test-results/windows-unwind-reference --dwarfdump "$PWD/validation-tool/bin/dwarfdump"
+
+      - name: Build independent ELF formatter inputs for native Windows
+        run: python3 src/test/integration/formatter-reference.py build/test-results/windows-formatter-reference
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-x86-formatter-reference
+          path: build/test-results/windows-formatter-reference/
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-x86-unwind-reference
+          path: build/test-results/windows-unwind-reference/
+          if-no-files-found: error
+
+      - name: Unprivileged GUI attachment, curated refresh, and recovery through explicit authorization
+        run: |
+          DWARFDUMP="$PWD/validation-tool/bin/dwarfdump" \
+              bash src/test/integration/gui-attachment-authorized-ci.sh \
+              "$GHIDRA_INSTALL_DIR" \
+              "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
+              "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
+              "$PWD/build/fixtures/x86_64/semantic.exec.reference"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: linux-x86-export-reference-diagnostics
+          path: |
+            build/test-results/headless-symbol-export/
+            build/test-results/gui-authorization/
+            build/test-results/windows-unwind-reference/
+          if-no-files-found: warn
+          retention-days: 14
+
+  perf-build-id:
+    needs: [ release-package, native-linux ]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install native perf fixture and validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc binutils llvm gdb linux-tools-generic util-linux
+
+      - name: Cache Ghidra 12.0.3 archive
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.temp }}/ghidra-download/${{ env.GHIDRA_ARCHIVE }}
+          key: ghidra-${{ env.GHIDRA_ARCHIVE_SHA256 }}
+
+      - name: Install pinned Ghidra
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ghidra-download" "$RUNNER_TEMP/ghidra"
+          archive="$RUNNER_TEMP/ghidra-download/$GHIDRA_ARCHIVE"
+          if [[ ! -f "$archive" ]]; then
+              curl -fL --retry 3 "$GHIDRA_DOWNLOAD_URL" -o "$archive"
+          fi
+          echo "$GHIDRA_ARCHIVE_SHA256  $archive" | sha256sum -c -
+          unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
+          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ghidra-dwarf-forge-extension
+          path: dist
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-linux-validation
+          path: validation-tool
+
+      - name: Record native exec and PIE samples and characterize installed symbolization
+        run: |
+          set -euo pipefail
+          (cd validation-tool && sha256sum -c SHA256SUMS)
+          chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
+          unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
+          mkdir -p build/test-results/perf-build-id
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          import shutil
+          root = Path.cwd()
+          tools = {'readelf': shutil.which('readelf'), 'llvm': shutil.which('llvm-dwarfdump'),
+              'strict': str(root / 'validation-tool/libexec/dwarfdump'),
+              'configuration': str(root / 'validation-tool/share/dwarfdump/dwarfdump.conf')}
+          assert all(tools.values())
+          (root / 'build/test-results/perf-build-id/tools.json').write_text(json.dumps({'tools': tools}) + '\n')
+          PY
+          FORGE_PERF=$(python3 -c 'from pathlib import Path; paths = sorted(p.resolve() for p in Path("/usr/lib/linux-tools").glob("*/perf") if p.is_file()); assert paths; print(paths[-1])')
+          for role in exec pie; do
+              python3 src/test/integration/build-id-perf-report.py \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --java "$(command -v java)" \
+                  --tools-configuration "$PWD/build/test-results/perf-build-id/tools.json" \
+                  --perf "$FORGE_PERF" --role "$role" --record-with-sudo \
+                  --output "$PWD/build/test-results/perf-build-id/$role" \
+                  --scratch "$RUNNER_TEMP/perf-build-id-$role"
+          done
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: perf-build-id-validation
+          include-hidden-files: true
+          path: build/test-results/perf-build-id/
+          if-no-files-found: error
+          retention-days: 14
+
   windows-host:
-    needs: [ release-package, native-windows, target-preflight ]
+    needs: [ release-package, native-windows, linux-x86-export-reference ]
+    # The reference files are uploaded before the Linux GUI journey. Still
+    # exercise Windows when that later journey fails; missing reference files
+    # fail artifact download, and required-validation independently requires
+    # the complete Linux reference/GUI job to succeed.
+    if: ${{ always() && !cancelled() && needs.release-package.result == 'success' && needs.native-windows.result == 'success' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -1802,8 +3196,10 @@ jobs:
           msystem: MINGW64
           update: true
           install: >-
+            binutils
             mingw-w64-x86_64-binutils
             mingw-w64-x86_64-llvm
+            mingw-w64-x86_64-gcc
 
       - name: Cache Ghidra 12.0.3 archive
         uses: actions/cache@v6
@@ -1844,6 +3240,21 @@ jobs:
           name: linux-x86-export-reference
           path: linux-reference
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-x86-unwind-reference
+          path: linux-unwind-reference
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-x86-formatter-reference
+          path: linux-formatter-reference
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-windows-validation
+          path: validation-tool-windows
+
       - name: Record exact Windows toolchain versions
         shell: pwsh
         env:
@@ -1871,6 +3282,8 @@ jobs:
             & .\gradlew.bat --version
             '[readelf]'
             & readelf.exe --version
+            '[installation-readelf]'
+            & (Join-Path $env:MSYS2_LOCATION 'usr\bin\readelf.exe') --version
             '[llvm-dwarfdump]'
             & llvm-dwarfdump.exe --version
           } 2>&1 | Tee-Object -FilePath "$resultDirectory\tool-versions.txt"
@@ -1879,27 +3292,33 @@ jobs:
         shell: pwsh
         run: ./src/test/integration/windows-desktop-acl.ps1
 
-      - name: Install extension and run native-independent Windows checks
+      - name: Install extension and run focused Windows checks
         shell: pwsh
         run: |
           $resultDirectory = 'build\test-results\windows-host'
           New-Item -ItemType Directory -Force $resultDirectory | Out-Null
+          python -B -m unittest discover -s src/test/python -p test_jfr_phases.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'JFR phase summary controls failed' }
+          python -B -m unittest discover -s src/test/python -p test_headless_observations.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Headless observation controls failed' }
           [scriptblock]::Create((Get-Content -Raw .\support\ghidra-dwarf-forge-headless.ps1)) | Out-Null
+          & .\src\test\integration\attachment-path-argument.ps1 |
+            Tee-Object -FilePath "$resultDirectory\path-argument.log"
           $extension = Get-ChildItem dist -Filter '*.zip' | Select-Object -First 1
           if ($null -eq $extension) { throw 'extension ZIP is missing' }
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
-          & .\gradlew.bat dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke exportReportSmoke `
-            syntheticSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
-            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
-            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
-            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
-            elfBuildIdSmoke exportReportClaimsSmoke matchedElfPrefixSmoke `
+          & .\gradlew.bat formatterPlanSmoke exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
+            syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
+            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
+            functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
+            registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
+            elfBuildIdSmoke exportReportClaimsSmoke debugCompressionSmoke matchedElfPrefixSmoke `
             matchedElfAllocationsSmoke exportArtifactHashBindingSmoke exportReportDetailsSmoke executableProgramBytesSmoke `
             debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke 2>&1 |
             Tee-Object -FilePath "$resultDirectory\native-independent.log"
           if ($LASTEXITCODE -ne 0) {
-            throw "native-independent Windows checks failed with exit code $LASTEXITCODE"
+            throw "focused Windows checks failed with exit code $LASTEXITCODE"
           }
 
       - name: Windows file-lock publication rollback
@@ -1943,6 +3362,16 @@ jobs:
           'windows-file-lock-publication=PASS' |
             Set-Content -Path (Join-Path $lockDirectory 'result.txt') -Encoding utf8
 
+      - name: Actual JVM cancellation through Windows validator process owner
+        shell: pwsh
+        run: |
+            $helper = (Resolve-Path native-windows/forge-validator-supervisor.exe).Path
+            $python = (Get-Command python).Source
+            $results = Join-Path $PWD 'build\test-results\windows-host\supervisor'
+            & .\gradlew.bat validatorSupervisorSmoke "-PsupervisorPath=$helper" `
+                "-PsupervisorPython=$python" "-PsupervisorResults=$results"
+            if ($LASTEXITCODE -ne 0) { throw 'Windows JVM validator cancellation failed' }
+
       - name: Isolated Windows producer ABI smoke test
         shell: pwsh
         env:
@@ -1973,6 +3402,20 @@ jobs:
           }
           'isolated-native-producer=PASS' |
             Add-Content -Path "$resultDirectory\native-producer-status.txt" -Encoding utf8
+
+          foreach ($wideProfile in @('mips64be', 'mips64le', 'arm32be8')) {
+              & .\gradlew.bat nativeProducerSmoke `
+                "-PlibdwarfPath=$($consumer.FullName)" `
+                "-PlibdwarfpPath=$($producer.FullName)" `
+                "-PtargetProfile=$wideProfile" -PnativeIterations=16 2>&1 |
+                Tee-Object -FilePath "$resultDirectory\$wideProfile.log"
+              $wideStatus = $LASTEXITCODE
+              "exit_status=$wideStatus" |
+                Set-Content -Path "$resultDirectory\$wideProfile-status.txt" -Encoding utf8
+              if ($wideStatus -ne 0) {
+                  throw "isolated $wideProfile producer failed or crashed with exit code $wideStatus"
+              }
+          }
 
           $module = Join-Path $env:GHIDRA_INSTALL_DIR `
             'Ghidra\Extensions\GhidraDwarfForge'
@@ -2016,7 +3459,77 @@ jobs:
             -ProducerDll $producer.FullName `
             -LinuxReferenceDirectory (Resolve-Path linux-reference)
 
+      - name: Native Windows attachment rollback and saved-curation refresh
+        shell: pwsh
+        timeout-minutes: 25
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          python src/test/integration/windows-attachment-operation.py `
+            --ghidra $env:GHIDRA_INSTALL_DIR `
+            --original build/test-results/windows-host/work/semantic.exec.stripped `
+            --reference linux-reference/semantic.exec.reference `
+            --sidecar build/test-results/windows-host/work/semantic.exec.ghidra-forge.dbg `
+            --report-log build/test-results/windows-host/headless.log `
+            --helper native-windows/forge-validator-supervisor.exe `
+            --readelf (Join-Path $env:MSYS2_LOCATION 'usr\bin\readelf.exe') `
+            --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe') `
+            --checker-bundle validation-tool-windows `
+            --results build/test-results/windows-host/attachment-operation
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows real-ELF attachment failed' }
+
+      - name: Native Windows build-ID installation and interrupted recovery
+        shell: pwsh
+        timeout-minutes: 20
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          python src/test/integration/windows-build-id-installation.py `
+            --ghidra $env:GHIDRA_INSTALL_DIR `
+            --attachment-results build/test-results/windows-host/attachment-operation `
+            --original build/test-results/windows-host/work/semantic.exec.stripped `
+            --sidecar build/test-results/windows-host/work/semantic.exec.ghidra-forge.dbg `
+            --test-classes build/classes/java/test `
+            --compiler (Join-Path $mingwBin 'gcc.exe') `
+            --results build/test-results/windows-host/build-id-installation
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows build-ID installation failed' }
+
       - name: Native Windows Script Manager export, console, and chooser cancellation
+        shell: pwsh
+        timeout-minutes: 25
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          $env:GHIDRA_GUI_NATIVE_ATTACHMENT = '1'
+          $env:FORGE_GUI_CHECKER_BUNDLE = (Resolve-Path 'validation-tool-windows').Path
+          .\src\test\integration\windows-gui-script-manager.ps1 `
+            -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+            -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
+            -Fixture (Resolve-Path 'linux-reference\semantic.exec.stripped').Path `
+            -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
+          Remove-Item Env:\GHIDRA_GUI_NATIVE_ATTACHMENT
+          $env:GHIDRA_GUI_GDB_LOADER = '1'
+          .\src\test\integration\windows-gui-script-manager.ps1 `
+            -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+            -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
+            -Fixture (Resolve-Path 'linux-reference\semantic.exec.stripped').Path `
+            -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
+          Remove-Item Env:\GHIDRA_GUI_GDB_LOADER
+          $env:GHIDRA_GUI_COMPRESSION = '1'
+          .\src\test\integration\windows-gui-script-manager.ps1 `
+            -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
+            -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
+            -Fixture (Resolve-Path 'linux-reference\semantic.exec.stripped').Path `
+            -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
+          Remove-Item Env:\GHIDRA_GUI_COMPRESSION
+
+      - name: Native PowerShell normal unwind exports and preserved generations
         shell: pwsh
         timeout-minutes: 15
         env:
@@ -2024,11 +3537,46 @@ jobs:
         run: |
           $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
           $env:PATH = "$mingwBin;$env:PATH"
+          python src/test/integration/powershell-unwind-export.py `
+            linux-unwind-reference build/test-results/windows-host/powershell-unwind `
+            --ghidra $env:GHIDRA_INSTALL_DIR --powershell (Get-Command pwsh).Source `
+            --readelf (Join-Path $mingwBin 'readelf.exe') --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe')
+          if ($LASTEXITCODE -ne 0) { throw 'Native PowerShell unwind generation failed' }
+
+      - name: Native Windows formatter generations, controls and cancellation
+        shell: pwsh
+        timeout-minutes: 15
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
+          python src/test/integration/formatter-windows.py `
+            linux-formatter-reference build/test-results/windows-host/formatters `
+            --ghidra $env:GHIDRA_INSTALL_DIR --powershell (Get-Command pwsh).Source `
+            --readelf (Join-Path $mingwBin 'readelf.exe') --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe')
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows formatter export failed' }
+          python src/test/integration/formatter-windows.py `
+            linux-formatter-reference build/test-results/windows-host/formatters-multifile `
+            --ghidra $env:GHIDRA_INSTALL_DIR --powershell (Get-Command pwsh).Source `
+            --readelf (Join-Path $mingwBin 'readelf.exe') --llvm (Join-Path $mingwBin 'llvm-dwarfdump.exe') `
+            --source-lines 8
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows multi-file formatter export failed' }
+
+      - name: Native Windows unwind chooser cancellation and exports
+        shell: pwsh
+        timeout-minutes: 15
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+          GHIDRA_GUI_UNWIND: '1'
+        run: |
+          $mingwBin = Join-Path $env:MSYS2_LOCATION 'mingw64\bin'
+          $env:PATH = "$mingwBin;$env:PATH"
           .\src\test\integration\windows-gui-script-manager.ps1 `
             -GhidraDirectory $env:GHIDRA_INSTALL_DIR `
             -ModuleDirectory (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions\GhidraDwarfForge') `
-            -Fixture (Resolve-Path 'linux-reference\semantic.exec.stripped').Path `
-            -Reference (Resolve-Path 'linux-reference\semantic.exec.reference').Path
+            -Fixture (Resolve-Path 'linux-unwind-reference\without-cfi').Path `
+            -Reference (Resolve-Path 'linux-unwind-reference\reference').Path
 
       - name: Clean Windows installed-release export without external natives
         shell: pwsh
@@ -2077,11 +3625,68 @@ jobs:
         if: always()
         with:
           name: windows-host-validation
+          include-hidden-files: true
           path: |
             build/test-results/windows-host/
             build/test-results/windows-desktop-acl/
           if-no-files-found: warn
           retention-days: 14
+
+  windows-attachment-gdb:
+    needs: [ windows-host ]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: windows-host-validation
+          path: windows-artifacts
+      - uses: actions/download-artifact@v8
+        with:
+          name: dwarfdump-linux-validation
+          path: validation-tool
+      - name: Install Linux target debugger and validators
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdb gdb-multiarch llvm binutils lldb-18=1:18.1.3-1ubuntu1 python3-lldb-18=1:18.1.3-1ubuntu1
+      - name: Validate Windows attachment, build-ID and GUI exports in GDB
+        run: |
+          (cd validation-tool && sha256sum -c SHA256SUMS)
+          chmod 755 validation-tool/bin/dwarfdump validation-tool/libexec/dwarfdump
+          export DWARFDUMP="$PWD/validation-tool/bin/dwarfdump"
+          python3 src/test/integration/windows-attachment-gdb.py \
+              --windows-results "$PWD/windows-artifacts/windows-host" \
+              --results "$PWD/build/test-results/windows-attachment-gdb"
+          python3 src/test/integration/windows-build-id-gdb.py \
+              --windows-results "$PWD/windows-artifacts/windows-host" \
+              --results "$PWD/build/test-results/windows-attachment-gdb/build-id-installation"
+          python3 src/test/integration/compressed-gui-gdb.py \
+              --incoming "$PWD/windows-artifacts/windows-host/gui-script-manager" \
+              --results "$PWD/build/test-results/windows-attachment-gdb/compression"
+          python3 src/test/integration/windows-unwind-gdb.py \
+              "$PWD/windows-artifacts/windows-host/gui-unwind" \
+              "$PWD/build/test-results/windows-attachment-gdb/unwind" \
+              --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/powershell-unwind-gdb.py \
+              "$PWD/windows-artifacts/windows-host/powershell-unwind" \
+              "$PWD/build/test-results/windows-attachment-gdb/powershell-unwind" \
+              --producer-host Windows --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/formatter-portable.py \
+              "$PWD/windows-artifacts/windows-host/formatters" \
+              "$PWD/build/test-results/windows-attachment-gdb/formatters" \
+              --producer-host Windows --lldb lldb-18 --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/formatter-portable.py \
+              "$PWD/windows-artifacts/windows-host/formatters-multifile" \
+              "$PWD/build/test-results/windows-attachment-gdb/formatters-multifile" \
+              --producer-host Windows --lldb lldb-18 --dwarfdump "$DWARFDUMP"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: windows-attachment-gdb-diagnostics
+          path: build/test-results/windows-attachment-gdb/
+          if-no-files-found: warn
+          retention-days: 14
+          include-hidden-files: true
 
   required-validation:
     if: always()
@@ -2092,7 +3697,11 @@ jobs:
       - extension-build
       - release-package
       - target-preflight
+      - linux-x86-export-reference
+      - perf-build-id
       - windows-host
+      - attachment-windows
+      - windows-attachment-gdb
     runs-on: ubuntu-24.04
     steps:
       - name: Require every supported validation path
@@ -2103,14 +3712,19 @@ jobs:
           EXTENSION_BUILD_RESULT: ${{ needs.extension-build.result }}
           RELEASE_PACKAGE_RESULT: ${{ needs.release-package.result }}
           TARGET_PREFLIGHT_RESULT: ${{ needs.target-preflight.result }}
+          LINUX_REFERENCE_RESULT: ${{ needs.linux-x86-export-reference.result }}
+          PERF_BUILD_ID_RESULT: ${{ needs.perf-build-id.result }}
           WINDOWS_HOST_RESULT: ${{ needs.windows-host.result }}
+          ATTACHMENT_WINDOWS_RESULT: ${{ needs.attachment-windows.result }}
+          WINDOWS_ATTACHMENT_GDB_RESULT: ${{ needs.windows-attachment-gdb.result }}
         run: |
           set -euo pipefail
           failed=0
           for result in "$WORKFLOW_LINT_RESULT" "$NATIVE_LINUX_RESULT" \
               "$NATIVE_WINDOWS_RESULT" "$EXTENSION_BUILD_RESULT" \
               "$RELEASE_PACKAGE_RESULT" "$TARGET_PREFLIGHT_RESULT" \
-              "$WINDOWS_HOST_RESULT"; do
+              "$LINUX_REFERENCE_RESULT" "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT" \
+              "$WINDOWS_ATTACHMENT_GDB_RESULT" "$PERF_BUILD_ID_RESULT"; do
             if [[ "$result" != success ]]; then
               failed=1
             fi

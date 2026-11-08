@@ -32,10 +32,15 @@ public final class VariableStorageSmoke {
 
     public static void main(String[] args) {
         TargetRegisterMap i386 = TargetRegisterMap.forTarget("x86");
-        if (!i386.dwarfNumbers().equals(java.util.Map.of("EAX", 0, "ECX", 1, "EDX", 2, "EBX", 3,
-                "ESP", 4, "EBP", 5, "ESI", 6, "EDI", 7, "EIP", 8, "eflags", 9)) ||
-                i386.register("ST0", 0, 80).available() || i386.register("XMM0", 0, 128).available()) {
-            throw new AssertionError("i386 general registers or unsupported FP boundaries changed");
+        var i386Expected = new java.util.LinkedHashMap<>(java.util.Map.of("EAX", 0, "ECX", 1, "EDX", 2, "EBX", 3,
+            "ESP", 4, "EBP", 5, "ESI", 6, "EDI", 7, "EIP", 8, "eflags", 9));
+        for (int index = 0; index < 8; index++) {
+            i386Expected.put("XMM" + index, 21 + index);
+            assertRegister(i386.register("XMM" + index, 0, 128), 21 + index);
+        }
+        if (!i386.dwarfNumbers().equals(i386Expected) || i386.register("ST0", 0, 80).available() ||
+                i386.register("XMM8", 0, 128).available() || i386.register("YMM0", 0, 256).available()) {
+            throw new AssertionError("i386 selected register boundary changed");
         }
         TargetRegisterMap x86 = TargetRegisterMap.forTarget("x86_64");
         TargetRegisterMap arm = TargetRegisterMap.forTarget("aarch64");
@@ -61,6 +66,15 @@ public final class VariableStorageSmoke {
         assertRegister(mipsBe.register("a0", 0, 32), 4);
         assertRegister(mipsBe.register("sp", 0, 32), 29);
         assertRegister(mipsLe.register("f31", 0, 32), 63);
+        for (String name : java.util.List.of("mips64", "mips64el")) {
+            var map = TargetRegisterMap.forTarget(name);
+            assertRegister(map.register("a0", 0, 64), 4);
+            assertRegister(map.register("sp", 0, 64), 29);
+            assertRegister(map.register("f31", 0, 64), 63);
+            if (!map.dwarfNumbers().equals(mipsBe.dwarfNumbers()) || !map.registerPairs().isEmpty()) {
+                throw new AssertionError("MIPS64 physical numbering or unexpected FP32 pair policy");
+            }
+        }
 
         Storage unknown = x86.register("NOT_A_GHIDRA_REGISTER", 0, 64);
         if (!(unknown instanceof UnavailableStorage unavailable) ||
@@ -128,14 +142,34 @@ public final class VariableStorageSmoke {
                 firstRegister.opcode() != DwarfLocationExpression.DW_OP_REGX ||
                 firstRegister.operand1() != 0 ||
                 !(pieceExpr.operations().get(1) instanceof GenericOperation firstPiece) ||
-                firstPiece.opcode() != DwarfLocationExpression.DW_OP_BIT_PIECE ||
-                firstPiece.operand1() != 32 || firstPiece.operand2() != 0 ||
+                firstPiece.opcode() != DwarfLocationExpression.DW_OP_PIECE ||
+                firstPiece.operand1() != 4 || firstPiece.operand2() != 0 ||
                 !(pieceExpr.operations().get(2) instanceof GenericOperation secondRegister) ||
                 secondRegister.operand1() != 1 ||
                 !(pieceExpr.operations().get(3) instanceof GenericOperation secondPiece) ||
-                secondPiece.opcode() != DwarfLocationExpression.DW_OP_BIT_PIECE ||
-                secondPiece.operand1() != 32 || secondPiece.operand2() != 0) {
+                secondPiece.opcode() != DwarfLocationExpression.DW_OP_PIECE ||
+                secondPiece.operand1() != 4 || secondPiece.operand2() != 0) {
             throw new AssertionError("composite register expression planning failed");
+        }
+        // Byte pieces are an explicit target/register contract. Nonzero bit
+        // offsets, unaligned pieces, wider registers and unknown maps retain
+        // bit pieces even if their physical storage happens to look similar.
+        for (Storage candidate : List.of(x86.register("RAX", 8, 32),
+                x86.register("RAX", 0, 31), x86.register("XMM0", 0, 32),
+                arm.register("q0", 0, 32), arm32.register("r0", 0, 32),
+                mipsBe.register("a0", 0, 32), new RegisterStorage(
+                    new VariableStorageModel.DwarfRegister("unclassified", 0), 0, 32))) {
+            RegisterStorage register = (RegisterStorage) candidate;
+            int missing = 64 - register.bitSize();
+            var location = new VariableLocation("function_a", 0x1000, "explicit-bits",
+                VariableKind.LOCAL, 8, List.of(new LocationRange(0x1000, 0x1010,
+                    new CompositeStorage(List.of(new Piece(register, register.bitSize()),
+                        new Piece(x86.register("RDX", 0, missing), missing))), analyst)));
+            var expression = (Expression) DwarfLocationExpression.planStable(location);
+            if (!expression.operations().get(1).equals(new GenericOperation(
+                    DwarfLocationExpression.DW_OP_BIT_PIECE, register.bitSize(), register.valueBitOffset()))) {
+                throw new AssertionError("unvalidated byte-piece placement was inferred");
+            }
         }
         var slice = DwarfLocationExpression.planStable(new VariableLocation("function_a",
             0x1000, "register-slice",
@@ -157,7 +191,7 @@ public final class VariableStorageSmoke {
                     new GenericOperation(DwarfLocationExpression.DW_OP_REGX, 3, 0),
                     new GenericOperation(DwarfLocationExpression.DW_OP_BIT_PIECE, 32, 0),
                     new GenericOperation(DwarfLocationExpression.DW_OP_BREGX, 13, 8),
-                    new GenericOperation(DwarfLocationExpression.DW_OP_BIT_PIECE, 32, 0)))) {
+                    new GenericOperation(DwarfLocationExpression.DW_OP_PIECE, 4, 0)))) {
             throw new AssertionError("resolved mixed register/memory expression lost size, order or offset");
         }
         assertOmitted(new VariableLocation("mixed", 0x1000, "unresolved", VariableKind.PARAMETER, 8,

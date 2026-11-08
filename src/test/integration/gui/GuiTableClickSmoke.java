@@ -31,6 +31,80 @@ public final class GuiTableClickSmoke {
     static void run(Path results) throws Exception {
         runFilterFocus(results);
         runModalDispatch(Files.createDirectory(results.resolve("modal-dispatch")));
+        runRepeatedDoubleClick(Files.createDirectory(results.resolve("repeated-double-click")), false);
+        runRepeatedDoubleClick(Files.createDirectory(results.resolve("primed-double-click")), true);
+        runTaskCancellation(Files.createDirectory(results.resolve("task-cancellation")));
+    }
+
+    private static void runTaskCancellation(Path results) throws Exception {
+        var monitor = GuiTestSupport.onSwing(() -> new ghidra.util.task.TaskMonitorComponent());
+        JFrame frame = GuiTestSupport.onSwing(() -> {
+            JFrame created = new JFrame("Owned task cancellation control");
+            monitor.setMessage("Owned cancellation task");
+            created.add(monitor);
+            created.setBounds(160, 160, 700, 180);
+            created.setVisible(true);
+            return created;
+        });
+        try {
+            GuiTestSupport.require(!monitor.isCancelled(), "new task is already cancelled");
+            GuiTaskCancellation.cancelTask(new Robot(), "Owned cancellation task", results.resolve("active-task.png"));
+            GuiTestSupport.await("task cancellation after real button/confirmation", () -> monitor.isCancelled() ? monitor : null);
+            Files.writeString(results.resolve("result.txt"), "real-task-cancel-button=PASS\nconfirmation-yes=PASS\nmonitor-cancelled=PASS\n");
+            System.out.println("real-task-cancellation=PASS");
+        }
+        finally { GuiTestSupport.onSwing(() -> { frame.dispose(); return null; }); }
+    }
+
+    private static void runRepeatedDoubleClick(Path results, boolean prime) throws Exception {
+        AtomicInteger launches = new AtomicInteger();
+        var counts = new java.util.concurrent.CopyOnWriteArrayList<Integer>();
+        JTable table = GuiTestSupport.onSwing(() -> new JTable(new Object[][] {
+            { "GhidraDwarfForge.java" }
+        }, new Object[] { "Name" }));
+        JFrame frame = GuiTestSupport.onSwing(() -> {
+            JFrame created = new JFrame("Repeated script double-click control");
+            table.setDefaultEditor(Object.class, null);
+            table.setRowSelectionInterval(0, 0);
+            table.addMouseListener(new MouseAdapter() {
+                @Override public void mouseClicked(MouseEvent event) { counts.add(event.getClickCount()); }
+            });
+            table.addMouseListener(new GMouseListenerAdapter() {
+                @Override public void doubleClickTriggered(MouseEvent event) { launches.incrementAndGet(); }
+            });
+            created.add(new JScrollPane(table));
+            created.setBounds(160, 160, 600, 260);
+            created.setVisible(true);
+            return created;
+        });
+        try {
+            Robot robot = new Robot();
+            GuiTestSupport.foregroundWindow(table);
+            if (prime) {
+                GuiTestSupport.doubleClickCell(robot, table, 0, 0, "GhidraDwarfForge.java");
+                GuiTestSupport.require(launches.get() == 1, "priming gesture did not launch exactly once");
+                Files.writeString(results.resolve("priming-counts.txt"), "counts=" + counts + "\n");
+                GuiTestSupport.onSwing(() -> { counts.clear(); launches.set(0); return null; });
+            }
+            // Same cell, within the desktop's multi-click interval: Ghidra
+            // launches on every positive even count. Windows can retain a
+            // prior window's click count, so the first count need not be 1.
+            GuiTestSupport.doubleClickCell(robot, table, 0, 0, "GhidraDwarfForge.java");
+            GuiTestSupport.doubleClickCell(robot, table, 0, 0, "GhidraDwarfForge.java");
+            int first = counts.isEmpty() ? 0 : counts.getFirst();
+            GuiTestSupport.require(first > 0 &&
+                counts.equals(List.of(first, first + 1, first + 2, first + 3)) && launches.get() == 2,
+                "repeated native gestures did not deliver two consecutive positive-even actions: " + counts);
+            Files.writeString(results.resolve("result.txt"),
+                "consecutive-real-click-counts=" + counts + "\nghidra-invocations=2\nexactly-one-observed-launch-per-gesture=PASS\n");
+            System.out.println("repeated-double-click-dispatch=PASS");
+        }
+        catch (Exception | Error failure) {
+            Files.writeString(results.resolve("failure-counts.txt"), "counts=" + counts + "\nlaunches=" + launches.get() + "\n");
+            GuiTestSupport.captureDesktop(results);
+            throw failure;
+        }
+        finally { GuiTestSupport.onSwing(() -> { frame.dispose(); return null; }); }
     }
 
     private static void runFilterFocus(Path results) throws Exception {

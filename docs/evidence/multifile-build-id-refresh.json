@@ -1,0 +1,165 @@
+{
+    "status": "LOCAL_BUILD_ID_MULTIFILE_REFRESH_RECOVERY_PASS_HOSTED_PENDING",
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/issue115-multifile/build-id-refresh-checkpoint-v1.tar.gz",
+        "sha256": "90e1051c0fe797aaf0c46e605501b6fad1b1cd3a0089ced934a33758fc8c8021",
+        "files": 5274,
+        "memberReadbackVerified": true
+    },
+    "records": [
+        {
+            "path": "/home/ziggy/.cache/forge-issue115-buildid-refresh-exec-03/result.json",
+            "sha256": "af37a152af1608adf52fd4f9aa069884b0ab6429d76215d913317cca5a44b177",
+            "role": "exec",
+            "sourceLines": 8,
+            "gdbCases": 10,
+            "recoveryChecks": [
+                {
+                    "fault": "crash",
+                    "boundary": "GENERATION_SEALED",
+                    "outcome": "UNCHANGED",
+                    "updated": false,
+                    "missingDependencyRefusals": 0
+                },
+                {
+                    "fault": "crash",
+                    "boundary": "PREPARED",
+                    "outcome": "RECOVERED_ABORT",
+                    "updated": false,
+                    "missingDependencyRefusals": 8
+                },
+                {
+                    "fault": "crash",
+                    "boundary": "BEFORE_PUBLICATION",
+                    "outcome": "RECOVERED_ABORT",
+                    "updated": false,
+                    "missingDependencyRefusals": 0
+                },
+                {
+                    "fault": "crash",
+                    "boundary": "PUBLISHED",
+                    "outcome": "RECOVERED_COMMIT",
+                    "updated": true,
+                    "missingDependencyRefusals": 8
+                },
+                {
+                    "fault": "crash",
+                    "boundary": "COMMITTED",
+                    "outcome": "UNCHANGED",
+                    "updated": true,
+                    "missingDependencyRefusals": 0
+                },
+                {
+                    "fault": "cancel",
+                    "boundary": "PREPARED",
+                    "outcome": "RECOVERED_ABORT",
+                    "updated": false,
+                    "missingDependencyRefusals": 0
+                },
+                {
+                    "fault": "cancel",
+                    "boundary": "PUBLISHED",
+                    "outcome": "UNCHANGED",
+                    "updated": true,
+                    "missingDependencyRefusals": 0
+                },
+                {
+                    "fault": "sync",
+                    "boundary": "PUBLISHED",
+                    "outcome": "RECOVERED_COMMIT",
+                    "updated": true,
+                    "missingDependencyRefusals": 0
+                }
+            ],
+            "initialSourceFiles": 18,
+            "updatedSourceFiles": 18
+        },
+        {
+            "path": "/home/ziggy/.cache/forge-issue115-buildid-refresh-pie-03/result.json",
+            "sha256": "806161c471b5892682c0d1ee9f40a7397dba8894c79c85f386a4b0ed90484603",
+            "role": "pie",
+            "sourceLines": 8,
+            "gdbCases": 10,
+            "recoveryChecks": [
+                {
+                    "fault": "crash",
+                    "boundary": "GENERATION_SEALED",
+                    "outcome": "UNCHANGED",
+                    "updated": false,
+                    "missingDependencyRefusals": 0
+                },
+                {
+                    "fault": "crash",
+                    "boundary": "PREPARED",
+                    "outcome": "RECOVERED_ABORT",
+                    "updated": false,
+                    "missingDependencyRefusals": 8
+                },
+                {
+                    "fault": "crash",
+                    "boundary": "BEFORE_PUBLICATION",
+                    "outcome": "RECOVERED_ABORT",
+                    "updated": false,
+                    "missingDependencyRefusals": 0
+                },
+                {
+                    "fault": "crash",
+                    "boundary": "PUBLISHED",
+                    "outcome": "RECOVERED_COMMIT",
+                    "updated": true,
+                    "missingDependencyRefusals": 8
+                },
+                {
+                    "fault": "crash",
+                    "boundary": "COMMITTED",
+                    "outcome": "UNCHANGED",
+                    "updated": true,
+                    "missingDependencyRefusals": 0
+                },
+                {
+                    "fault": "cancel",
+                    "boundary": "PREPARED",
+                    "outcome": "RECOVERED_ABORT",
+                    "updated": false,
+                    "missingDependencyRefusals": 0
+                },
+                {
+                    "fault": "cancel",
+                    "boundary": "PUBLISHED",
+                    "outcome": "UNCHANGED",
+                    "updated": true,
+                    "missingDependencyRefusals": 0
+                },
+                {
+                    "fault": "sync",
+                    "boundary": "PUBLISHED",
+                    "outcome": "RECOVERED_COMMIT",
+                    "updated": true,
+                    "missingDependencyRefusals": 0
+                }
+            ],
+            "initialSourceFiles": 17,
+            "updatedSourceFiles": 17
+        },
+        {
+            "path": "/home/ziggy/.cache/forge-issue115-buildid-refresh-default-01/result.json",
+            "sha256": "6b413b4282124b697a145dd0baf138a87f03e5d97213d2f26eb69810411f33d3",
+            "role": "exec",
+            "sourceLines": 0,
+            "gdbCases": 2,
+            "recoveryChecks": [],
+            "initialSourceFiles": 1,
+            "updatedSourceFiles": 1
+        }
+    ],
+    "testedSourceSha256": {
+        "src/test/integration/build-id-curated-refresh.py": "4d1bb39fc04f4b17c7d5dd1bfc433b542c766473ff0de220c255cb370e4d5df9",
+        ".github/workflows/ci.yml": "39d7975c34d1b368f2ae2a150e5a64a4d015ae8a00ce0c2f0561fd2526c9e508",
+        "src/test/java/ghidradwarfforge/output/BuildIdInstallationProbe.java": "8fe84622527005ec90b5875d11097fe9b6082aedc25cc923e57ecc1e885f4e75"
+    },
+    "scope": "Linux ext4 production build-ID launcher/host/live GNU-LLVM-pinned-libdwarf validation; fault injection uses a standalone test probe; Ghidra 12.0.3 and explicit Java 21. Does not prove attachment recovery, Windows, power-loss durability or final hosted acceptance.",
+    "initialFailures": [
+        "exec-01: retained CI fixture had no executable mode; copied test original now gains owner execute without changing ELF bytes or the retained input.",
+        "pie-01: test incorrectly compared manifest link-time function address with rebased Ghidra address; now compares independent compiler symbol address. Both initial failures are archived; no production source change."
+    ]
+}

@@ -1,0 +1,64 @@
+{
+    "issue": 108,
+    "status": "CONFIRMED local corrections; corrected hosted acceptance pending",
+    "hostedFailures": {
+        "run": 42080744656,
+        "head": "f5797132415103a8aeec66c2a8959466e32264b5",
+        "terminalFixture": "x86-64, AArch64, ARM32 and MIPS32LE logs reject fabricated terminal reports retaining completed coverage. This is an invalid test fixture, not failed terminal dispatch.",
+        "windowsGui": {
+            "job": 127439854130,
+            "artifact": 13443310605,
+            "desktop": [
+                1024,
+                768
+            ],
+            "coverageDialog": [
+                0,
+                18,
+                1150,
+                750
+            ],
+            "observation": "Failure desktop and window dump show Save/Compare/Close below the usable desktop; a real user-facing layout defect."
+        }
+    },
+    "changes": [
+        "Terminal fixtures now clear schema-two coverage; an explicit negative fixture still rejects terminal reports carrying completed coverage. Legacy schema-one controls remain.",
+        "Coverage and comparison dialogs fit their graphics configuration usable bounds, excluding desktop insets. Shared GUI driver asserts complete window containment before actual Robot clicks.",
+        "JFR accepts the exact complete current phase set including coverage-type-evidence, while retaining historical complete sets and rejecting every other subset, duplicate, incomplete, cross-thread, overlapping or out-of-export phase."
+    ],
+    "localEvidence": {
+        "buildAndReleaseAssembly": "PASS Java 21 / Ghidra 12.0.3",
+        "gui": "PASS real 1024x768 Xvfb/Openbox full Script Manager export/save/compare/error/retry/preparation/cancel journey; GNU/LLVM/pinned strict validators, GDB and packaged CLI pass. Screenshot reviewed: all four controls visible.",
+        "binder": "PASS actual producer artifacts with schema-one/two reports; report failure precedence and missing selected paths preserved.",
+        "jfr": "PASS three complete sets, 509 disallowed subsets and eight invalid-event/timing controls. Synthetic timelines test parser semantics, not actual runtime profiling.",
+        "workflowLint": "PASS actionlint"
+    },
+    "commands": [
+        "JAVA_HOME=<Java21> GHIDRA_INSTALL_DIR=<Ghidra12.0.3> ./gradlew buildExtension",
+        "support/assemble-release.sh <base ZIP> <accepted Linux natives> <accepted Windows natives> build/coverage-workload-package/coverage-screen.zip",
+        "GHIDRA_GUI_SCREEN=1024x768x24 src/test/integration/gui-script-manager.sh <private installation> <module> build/fixtures/x86_64/semantic.exec.stripped build/fixtures/x86_64/semantic.exec.reference",
+        "python3 src/test/performance/test-jfr-phases.py",
+        "actionlint .github/workflows/performance.yml"
+    ],
+    "retainedSetupFailure": "run.7R0R1vao stopped before GUI launch because the private Openbox theme directory was absent from XDG_DATA_DIRS; corrected environment run.BjMfjO4K passed.",
+    "remaining": [
+        "Native Windows GUI rerun and complete exact-head target gate.",
+        "Windows workload comparison currently fails an instrumentation-only class guard; replace it with an explicitly scoped coverage comparison and audited matched array correction, retaining exact artifact equality and compiler-drift checks."
+    ],
+    "files": {
+        "build/coverage-screen-build.log": "992593975398e4280d064ee419acb862420c2758d374eb6c1d633065eff747b3",
+        "build/coverage-screen-assemble.log": "59c5debff6ba620cfdb1bf17d0cc4db243d0dcadea7843d8821390c4dd66c799",
+        "build/coverage-screen-gui.log": "c3dcf7f2b16ec3faa26b27b2df0060969e152203d72a546999c7be4e00cfe5ff",
+        "build/coverage-screen-gui-2.log": "600598aabf59682fd9a33682cd9ca1f810a51bbe96dd4a7ccb4fd9e468552760",
+        "build/coverage-workload-package/screen-installation.json": "e2b61a242db59e391f7046cea02fcbf6e552f3d0cb69eb597ec263edc0988bb1",
+        "build/coverage-jfr-phase-controls.log": "869ea8047d0ae89dddb808470175fa3bdce5d6007a92e195f2d7e7e762e1f49f",
+        "build/coverage-followup-actionlint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "build/test-results/gui-script-manager/run.BjMfjO4K/result.txt": "c220bab44d6a14953d87ba552d9a07d992ee5179952b2f8cf491486bc414cc61",
+        "build/test-results/gui-script-manager/run.BjMfjO4K/select/coverage.png": "9978fd820c4bbc53f506a0ac6bd0a2fa24909539d655bbec634a800d39e53a79",
+        "build/test-results/gui-script-manager/run.BjMfjO4K/select/comparison-changed.txt.png": "e136b89bc701398317adefa7d9761033743060a7362e44e7d4d24ad5606fd00b",
+        "build/test-results/gui-script-manager/run.BjMfjO4K/dwarfdump.txt.check.json": "c2bcbbebda40e10e0d4dc0089a22395ccb81c338ef6f87d794f632b40ab7a2d7",
+        "build/test-results/gui-script-manager/run.BjMfjO4K/gdb.txt": "65b1e18f2d6a319c62590cb779b0493a5d44c2076d55665fcb3bb25e2f97fc1d",
+        "build/test-results/coverage-report-tool/run.4sv_56ed/result.json": "52879cf40500e8502648cd0868547fcbfdfa292ac8f27296573c92ecb1cca2c4",
+        "build/test-results/coverage-binding-controls/run.nrvckzxt/acceptance.json": "fd2bb15a34069e53003d986551d2efa09b8f708cc2dcd9110cb5f8bfeb5ea779"
+    }
+}

@@ -1,0 +1,148 @@
+{
+    "status": "CONFIRMED_CURRENT_WINDOWS_INSTALLER_AND_HOSTED_CONSUMER_FULL_TARGET_GATE_PENDING",
+    "utc": "2026-11-07T06:25:30.636738+00:00",
+    "issue": 109,
+    "testedHead": "d55842f4c6b02000515db0dfe152799771cd876a",
+    "run": 42344072547,
+    "nativeHostJob": 128320180989,
+    "nativeHostConclusion": "success",
+    "downstreamConsumerJob": 128326088683,
+    "downstreamConsumerConclusion": "success",
+    "artifacts": {
+        "windows-host-validation": {
+            "id": 13563882711,
+            "sha256": "sha256:175a1a914f410b12d8001e96d08c2c4e6a018035009bafd8a99eb501bd685414",
+            "bytes": 19020287
+        },
+        "windows-attachment-gdb-diagnostics": {
+            "id": 13563469387,
+            "sha256": "sha256:49a09afb1d8dfa6f0c1ab74f69fbcee6a8abd0f41b8344305e541c1f3ff19b71",
+            "bytes": 4739716
+        }
+    },
+    "reviews": {
+        "windows-installer-check-review.json": {
+            "status": "PASS_SCOPED_NATIVE_WINDOWS_INSTALLER_CHECK_REVIEW",
+            "sha256": "d5de7c211a782e4132b5048b2b7eb7e8a229e097bfeb45313feb8ac3c3189dae",
+            "scope": "73 raw command outcomes,14 interruptions/recovery results, metadata snapshot comparisons, retained source/input hashes and exact production/source/dependency bindings. Generation-manifest and GNU/LLVM/strict audit, downstream GDB and full host/target gate remain separate; no local Windows metadata replay."
+        },
+        "windows-generation-review.json": {
+            "status": "PASS_NATIVE_WINDOWS_GENERATION_VALIDATION_AUDIT",
+            "sha256": "f34f39454c1c0e641d2d2c514a42fe68b5a7a96af1b34fcb43d3f284a0795e63",
+            "scope": "All25 sealed generations including interrupted/cancelled cases:1050 manifest files,175 complete supervised checks with raw log hashes/statuses,50 strict original/sidecar reports reparsed, original frame-byte identity, source equality, GNU headers/build IDs and LLVM success. Windows filesystem metadata/transaction observations are reviewed separately; no local native-Windows replay."
+        },
+        "windows-consumer-review.json": {
+            "status": "PASS_CORRECTED_HOSTED_WINDOWS_CONSUMER_RAW_REVIEW",
+            "sha256": "f21a9767ae56599824fa1cfd727451f0fe684123283b24b84c28161abf348d34",
+            "scope": "Actual current native Windows artifacts and corrected hosted Linux consumer: exact input/source hashes, raw structural validators with inherited original-frame corroboration, fresh-session discovery without explicit loading, mapped source/types/arguments/normal exit, unmapped-source and absent/removed controls. No local rerun or native Windows Linux-ELF execution claimed."
+        },
+        "windows-regression-consumer-review.json": {
+            "status": "PASS_WINDOWS_DOWNSTREAM_REGRESSION_ARTIFACT_REVIEW",
+            "sha256": "3e715242fe4868a4d0ce47a5fb4a141e716e27d14cb36beaf16784723bf76ebf",
+            "scope": "Retained hosted consumer logs and transport/source hashes, thirteen positive strict reports including build-ID, actual compiler-versus-Forge boundary/caller/return arrays, and native-job completion markers. No new local runtime or Windows metadata replay."
+        }
+    },
+    "executedReviews": [
+        {
+            "label": "windows-extract",
+            "script": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-extract-d55842f.py",
+            "scriptSha256": "5dd4e48868a1c463feb36082113961bb29e5035707d4d64f3c1125281e7326c3",
+            "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/windows-extract-review-execution.log",
+            "logSha256": "0d3ef66af67fe4ae03b60e4c7d74fafb3b84c0cec2e55dcf09551b722772d389",
+            "exitCode": 0,
+            "successfulJobIds": [
+                128320180989
+            ]
+        },
+        {
+            "label": "windows-installer",
+            "script": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-review-windows-installer-checks-d55842f.py",
+            "scriptSha256": "823efb93ba1a4d70bccb7f6ef05259c022cfcd02e633dcb5575b0d65f47b5e31",
+            "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/windows-installer-review-execution.log",
+            "logSha256": "c7052db6d28fb9b88fff16ee09371a2e9957dd5963fc424f94fe1675021cd089",
+            "exitCode": 0,
+            "successfulJobIds": [
+                128320180989
+            ]
+        },
+        {
+            "label": "windows-generations",
+            "script": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-review-windows-generations-d55842f.py",
+            "scriptSha256": "421ddf3cd4e239428fd59245aa0f62909a4e3150f8fe08da0e3056ee42cef37c",
+            "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/windows-generations-review-execution.log",
+            "logSha256": "c4181748761ef79afe2430e2cca557d81d5b8ab42cfaeee0318dd416b1a1aad1",
+            "exitCode": 0,
+            "successfulJobIds": [
+                128320180989
+            ]
+        },
+        {
+            "label": "consumer-extract",
+            "script": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-extract-d55842f.py",
+            "scriptSha256": "5dd4e48868a1c463feb36082113961bb29e5035707d4d64f3c1125281e7326c3",
+            "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/consumer-extract-review-execution.log",
+            "logSha256": "457a9e39e520632a402822af2fe73e7522d82c9d6b14a48df16cf3a3473e677f",
+            "exitCode": 0,
+            "successfulJobIds": [
+                128326088683
+            ]
+        },
+        {
+            "label": "windows-consumer",
+            "script": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-audit-windows-consumer-d55842f.py",
+            "scriptSha256": "dc2c21e66affef74ca300e3edc43124e3896875eb595fbce05173dcf18ab50df",
+            "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/windows-consumer-review-execution.log",
+            "logSha256": "6d652d164692fb77726453ac4f69c4b7d3cafb3a721595a7259ad3db3a2b86a1",
+            "exitCode": 0,
+            "successfulJobIds": [
+                128326088683,
+                128320180989
+            ]
+        },
+        {
+            "label": "windows-regression",
+            "script": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-review-windows-regression-consumers-d55842f.py",
+            "scriptSha256": "d0bb0da594c062cd44c3164561bd1cc179ffc17b012def90ccf7544be0cea67d",
+            "log": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/pr186-final-review-d55842f/windows-regression-review-execution.log",
+            "logSha256": "70b129238391417de5c24bf4266b3eb07251c261401fdabef58ee8bd2b99a88b",
+            "exitCode": 0,
+            "successfulJobIds": [
+                128326088683
+            ]
+        }
+    ],
+    "nativeInstaller": {
+        "rawCommandChecks": 73,
+        "interruptionCases": 14,
+        "metadataComparisons": 2,
+        "protectedInputs": 22,
+        "retainedGenerations": 25,
+        "generationManifestFiles": 1050,
+        "supervisedValidatorExecutions": 175,
+        "strictOriginalAndSidecarReports": 50
+    },
+    "buildIdConsumer": {
+        "commands": 18,
+        "runtimeSessions": 2,
+        "controls": 4,
+        "protectedInputs": 8
+    },
+    "sharedRegressionReview": {
+        "verifiedHashBindings": 2959,
+        "ordinaryBoundaryComparisons": 4,
+        "instructionSnapshotsPerComparison": 90,
+        "recursiveReturnComparisons": 4,
+        "positiveStrictReports": 13
+    },
+    "productionJarSha256": "668745d239d243cebf59d58b68b619c987647ad9f0164f116443f526f953fef5",
+    "remaining": [
+        "Complete current five-target gate and its artifact review",
+        "Final documentation and normal protected PR186 integration",
+        "Original 44-requirement goal closure audit"
+    ],
+    "limits": [
+        "Native Windows runs installation and metadata/recovery checks; Linux executes the transferred Linux ELF.",
+        "Transferred Windows source paths require explicit GDB substitution.",
+        "Current native and consumer pass does not complete the enclosing run or publish a release."
+    ]
+}

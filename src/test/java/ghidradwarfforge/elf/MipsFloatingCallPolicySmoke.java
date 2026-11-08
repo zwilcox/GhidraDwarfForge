@@ -53,7 +53,7 @@ public final class MipsFloatingCallPolicySmoke {
                         require(after.debuggerCallRestriction().startsWith(selected.existing()), "prior restriction lost");
                         require(before.equals(new FunctionSignature(after.name(), after.address(), after.returnType(),
                             after.parameters(), after.locals(), after.variadic(), after.noReturn(), after.callingConvention(),
-                            after.signatureSource(), after.nonDefaultCallingConvention(), before.debuggerCallRestriction())),
+                            after.signatureSource(), after.nonDefaultCallingConvention(), before.debuggerCallRestriction(), after.effectiveCallingConvention())),
                             "signature changed");
                         var declaration = output.functionDeclarations().get(index);
                         var oldDeclaration = model.functionDeclarations().get(index);
@@ -62,7 +62,7 @@ public final class MipsFloatingCallPolicySmoke {
                         require(oldDeclaration.equals(new FunctionDeclaration(declaration.key(), declaration.name(),
                             declaration.returnType(), declaration.parameters(), declaration.variadic(), declaration.noReturn(),
                             declaration.callingConvention(), declaration.signatureSource(), declaration.nonDefaultCallingConvention(),
-                            oldDeclaration.debuggerCallRestriction())), "declaration changed");
+                            oldDeclaration.debuggerCallRestriction(), declaration.effectiveCallingConvention())), "declaration changed");
                         var oldType = (SubroutineType) model.types().byKey().get("subroutine" + index);
                         var newType = (SubroutineType) output.types().byKey().get(oldType.key());
                         require(newType.debuggerCallRestriction().equals(after.debuggerCallRestriction()),
@@ -130,9 +130,9 @@ public final class MipsFloatingCallPolicySmoke {
             var parameters = selected.parameter() ? List.of(new Parameter("argument", new TypeRef(selected.type()), false)) :
                 List.<Parameter>of();
             functions.add(new FunctionSignature("function" + index, 0x1000 + index * 16, result, parameters,
-                List.of(), selected.variadic(), false, "default", "USER_DEFINED", false, selected.existing()));
+                List.of(), selected.variadic(), false, "default", "USER_DEFINED", false, selected.existing(), "fixture-resolved-model"));
             declarations.add(new FunctionDeclaration("external:" + index, "external" + index, result, parameters,
-                selected.variadic(), false, "default", "USER_DEFINED", false, selected.existing()));
+                selected.variadic(), false, "default", "USER_DEFINED", false, selected.existing(), "fixture-resolved-model"));
         }
         var nodes = new ArrayList<TypeNode>(types.nodes());
         for (int index = 0; index < functions.size(); index++) {

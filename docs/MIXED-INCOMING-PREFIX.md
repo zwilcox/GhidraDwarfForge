@@ -1,6 +1,12 @@
 # Bounded incoming register/stack pieces
 
-**CONFIRMED locally; hosted acceptance pending (2026-10-25).** A computed ARM
+**CONFIRMED local current contract (2026-11-02):** the shared incoming-value
+analysis now preserves the low field through its exact stack spill and reload.
+The fixture is available through offset 20 and unavailable from offset 24.
+The updated raw/runtime oracle below replaces the historical first-store cutoff;
+production exporter code is unchanged. Hosted acceptance remains pending.
+
+**HISTORICAL initial profile (2026-10-25).** A computed ARM
 parameter containing two integers can straddle `r3` and the caller's stack.
 Previously the exporter retained its type but omitted its entire location.
 The bounded implementation now describes all pieces before the first possible
@@ -134,3 +140,73 @@ run `40244657118` remains pending. Earlier pending and failed component notes
 are historical, and the failed architecture guard is not retroactively
 accepted. This does not complete broader lifetimes, ABI modes, linkage/scopes
 or optional attachment. No release publication.
+
+
+## Current register/spill/reload oracle
+
+PR136's hosted run `41380112300`, ARM job `125070868433`, failed because the
+old oracle required `pair` to be unavailable immediately after `str r3,[sp,#4]`.
+The hosted sidecar instead retained a valid copy. A fresh reproduction with
+the current unchanged package failed at the same assertion. An independent
+instruction-by-instruction GDB observation then confirmed exact values in the
+new carriers, without changing the executable, registers or emitted DWARF.
+
+The source-built fixture has ten four-byte instructions. The oracle checks
+every opcode, including the executable's MOVW/MOVT global address or the PIE
+PC-relative literal-pool address. It requires this exact whole-object location
+contract, relative to the function entry:
+
+| PC interval | Low field | High field |
+| --- | --- | --- |
+| `[0,4)` | `r3` | `[sp]` |
+| `[4,12)` | `r3` | `[sp+8]` |
+| `[12,20)` | `[sp+4]` | `[sp+8]` |
+| `[20,24)` | `r2` | `[sp+8]` |
+| `[24,40)` | unavailable | unavailable |
+
+The first store is an exact stack spill. The later store through `r3` occurs
+at offset 20 and ends the proven location at offset 24; the test does not assume
+that generic analysis can prove this store disjoint from every argument byte.
+The physical source-known values remain independently checked even while Forge
+correctly reports unavailability. Stack restoration at offset 36 is checked
+with the original SP and adjusted physical memory addresses.
+
+The raw checker follows `mixed`'s `pair` formal-parameter DIE to its own location
+list and requires all four exact expressions and normalized endpoints. It
+requires the precise UNKNOWN_LIFETIME diagnostic at offset 24. It cannot pass
+by finding similar expressions belonging to another variable. Every GDB stop
+checks raw carriers against `{low=305419896, high=-1234567}`; all six proven
+stops must also have correct typed fields. Both fields must be unavailable at
+the four remaining stops. Compiler entry/pre-spill displays retain their known
+uninitialized-home limitation; the audited instruction prefix and actual raw
+arguments corroborate those two points. All eight later compiler displays must
+be correct.
+
+`mixed-incoming-prefix-controls.py` runs the actual GDB oracle with three
+independent errors for both executable forms. An early gap fails at offset 8,
+a late gap fails at offset 24, and substituting r1 for the reloaded low-field
+carrier fails at offset 20. Every control requires the exact assertion contents,
+nonzero GDB exit, the compiler-corroborated warning, bounded QEMU termination
+and private-socket cleanup. Original artifacts and oracle files remain unchanged.
+These controls run immediately after the positive fixture in CI.
+
+Local Java 21/Ghidra 12.0.3 validation passes twelve exports covering computed
+and explicit custom storage, exec/PIE, ordinary/rebased/repeat imports. GNU,
+LLVM and the pinned strict checker report zero errors for all twelve outputs.
+There are 140 compiler/Forge instruction observations, 48 required unavailable
+pairs, six rejected runtime corruptions, deterministic artifact pairs and
+unchanged input/package hashes. Python compilation, shell syntax, workflow lint
+and whitespace checks pass. No new production/native code requires rebuilding.
+
+Final case: `build/test-results/mixed-incoming-prefix/run.nK5O9mQM`.
+Acceptance receipt SHA-256:
+`d94ebca2d97340271380ef50f9f7526e0880d73f765b757e2e018addf2887247`.
+Negative receipt SHA-256:
+`7ffb20b8811c42ee83d989a2e95a47bd9f99f428086cbe5b03f03c350b432459`.
+Separate raw/hash review: `build/arm-mixed-incoming-oracle/review.json`, SHA-256
+`0b53ee9f75dbc1331d2cd99f3fd5750ea4306af50984e2b6125a0dcd3b43ac31`.
+All 103 production source hashes still match the previously tested JAR
+`c3eb4886ebb1d82e1d34131e27d323e80132b6e8c44a50ac4909e83e28650ade`.
+The original hosted failure, fresh failed `run.hFPQRvdU`, raw observations and
+initial passing `run.q9WrAtyJ` remain retained. Fresh hosted acceptance and
+normal protected integration are required; no umbrella issue is closed.

@@ -86,6 +86,12 @@ public final class RecoveredParameterSmoke {
                     VariableStorage.UNASSIGNED_STORAGE, program), SourceType.USER_DEFINED);
                 var varargs = create(program, target, 0x1800, "varargs");
                 varargs.setVarArgs(true);
+                var manager = program.getDataTypeManager();
+                for (String name : List.of("AnalystAliasA", "AnalystAliasB")) {
+                    var alias = manager.resolve(new TypedefDataType(name, IntegerDataType.dataType),
+                        DataTypeConflictHandler.DEFAULT_HANDLER);
+                    manager.setFavorite(alias, true);
+                }
                 observe(program, target);
             }
             finally {
@@ -231,6 +237,44 @@ public final class RecoveredParameterSmoke {
         catch (CancelledException expected) { checks++; }
         require(extract(program, target, Map.of(), TaskMonitor.DUMMY, new ArrayList<>()).equals(baseline),
             "recovery changed saved signature or variable data");
+        arrayIdentity(program, target);
+    }
+
+    private static void arrayIdentity(ProgramDB program, Target target) throws Exception {
+        var manager = program.getDataTypeManager();
+        var first = new ArrayDataType(Undefined1DataType.dataType, 16, 1, manager);
+        var second = new ArrayDataType(Undefined1DataType.dataType, 16, 1, manager);
+        require(first.getUniversalID() != null && second.getUniversalID() != null &&
+            !first.getUniversalID().equals(second.getUniversalID()), "fixture must exercise distinct transient array IDs");
+        ProgramTypeModel before = arrayModel(program, target, first);
+        for (String name : List.of("AnalystAliasA", "AnalystAliasB")) {
+            var alias = manager.getDataType(CategoryPath.ROOT, name);
+            String key = "uid:" + Long.toUnsignedString(alias.getUniversalID().getValue(), 16);
+            require(before.types().byKey().get(key) instanceof TypeGraph.TypedefType node && node.name().equals(name),
+                "named persistent type lost its distinct universal identity");
+        }
+        require(before.equals(arrayModel(program, target, second)),
+            "equivalent reconstructed decompiler arrays changed canonical graph keys");
+        require(!before.equals(arrayModel(program, target,
+            new ArrayDataType(Undefined1DataType.dataType, 17, 1, manager))),
+            "different array bounds merged into the same recovered model");
+        var array = before.types().nodes().stream().filter(type -> type instanceof TypeGraph.ArrayType)
+            .map(type -> (TypeGraph.ArrayType) type).findFirst().orElseThrow();
+        require(array.elementCount() == 16 && array.byteSize() == 16 &&
+            !array.key().startsWith("uid:"), "transient array key must not claim persisted identity");
+    }
+
+    private static ProgramTypeModel arrayModel(ProgramDB program, Target target, DataType array) throws Exception {
+        var pointer = new PointerDataType(array, program.getDataTypeManager());
+        var parameters = new ArrayList<RecoveredParameter>();
+        parameters.add(new RecoveredParameter("array_cursor", pointer));
+        for (String name : List.of("AnalystAliasA", "AnalystAliasB")) {
+            var alias = program.getDataTypeManager().getDataType(CategoryPath.ROOT, name);
+            parameters.add(new RecoveredParameter(name,
+                new PointerDataType(alias, program.getDataTypeManager())));
+        }
+        var recovery = new ParameterRecovery(parameters, null);
+        return extract(program, target, Map.of(0x800L, recovery), TaskMonitor.DUMMY, new ArrayList<>());
     }
 
     private static void require(boolean value, String message) {

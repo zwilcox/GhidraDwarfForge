@@ -1,7 +1,37 @@
 # Standalone DWARF validation corrections
 
+## Pinned target debugger profiles
+
+`build-mips-gdb.py` also builds an isolated, unmodified GDB 17.1 executable from
+a checksum-pinned GNU archive. Its default MIPS profile remains unchanged.
+`--target-profile arm32` selects `arm-linux-gnueabihf` for the BE8 floating
+register-piece tests; ordinary ARM tests continue using the system debugger.
+`--target-profile i386` selects a native Linux x86-64 build capable of running
+32-bit Linux inferiors; see `../../docs/I386-EXTENDED-RETURN.md` for retained
+compiler-reference limitations. Each build records source/executable hashes, command logs, a Python smoke check
+and its private data-directory path. It never installs over the system debugger.
+See `../../docs/ARM-BE8-PROFILE.md` for the GDB 15.1 failure and the paired 17.1
+reference. These debugger builds are validation tools, not shipped libraries.
+
+## Private ARM emulator reference
+
+`build-arm-qemu.py` is a separate, optional compiler-reference tool builder. It
+pins QEMU 8.2.2 and can apply only
+`qemu-8.2.2-arm-d-register-byte-order.patch` (SHA-256
+`e1b8d5a11ec610961c10bc2b6d2af9c65be86340bf1ecbadb837d98c26b07f2f`).
+The one-line correction makes ARM D-register remote writes use the same target
+byte order as reads. It does not change Q-register writes, shipped libraries or
+the system QEMU installation. See `../../docs/research/ARM-PCS-CALL-REFERENCE.md`
+for paired unmodified/corrected evidence and remaining per-function PCS limits.
+Build prerequisites are a C/C++ toolchain, Python 3.12, Ninja, pkg-config, GLib
+and zlib development files; an optional `--dependency-root` points to privately
+extracted Ubuntu development packages. A fresh private directory is required.
+
+## Standalone libdwarf patches
+
 These patches apply only to the independently built **validation executable**
-from libdwarf 2.3.2, including its statically linked ELF consumer. None may
+from libdwarf 2.3.2, including its private ELF consumer (static on Linux; a separate patched DLL
+on Windows). None may
 enter the shipped producer/consumer library builds, their source patch set,
 or release-native provenance manifests.
 
@@ -294,3 +324,196 @@ compiler fixture's LLVM check. The actual hosted originals now produce exactly
 the sidecars' three x86-64 and five AArch64 frame diagnostics. Neither original
 nor sidecar changed. Full rerun evidence and publication gates belong to the
 integrating change; this local result does not make the failed hosted run pass.
+
+
+## GNU frame terminators in big-endian ELF64
+
+The fifth patch, `0005-honor-eh-frame-zero-terminator.patch`, changes only the
+validation consumer's `src/lib/libdwarf/dwarf_frame2.c`. SHA-256:
+`d69033dbf8b67380c06b51932018c2c024e5610f3e5343cd75915e206ac16b08`.
+The GNU frame-list reader recognizes four zero bytes before invoking the
+historical IRIX length decoder. That decoder interprets a leading zero word
+in big-endian ELF64 as the first half of an unmarked eight-byte length, so a
+valid four-byte terminator previously caused an out-of-section read error.
+The correction applies only to GNU `.eh_frame` traversal. It does not alter
+`.debug_frame`, remove frame data, allow truncated prefixes or suppress a
+validator diagnostic. Unmarked eight-byte IRIX frame entries retain the
+existing parser and checks.
+
+`dwarfdump-eh-terminators.py` tests both ELF classes and byte orders, empty and
+populated terminated frame sections, padding and the end-of-list boundary.
+Truncated prefixes/tails, nonzero incomplete lengths and truncated extended
+lengths remain rejected. A valid IRIX `.debug_frame` still passes and a short
+one still fails. `--previous-tool` proves the prior big-endian ELF64 failures
+and verifies that the valid IRIX case passes both readers. The checker result,
+not just its process status, determines success. Fixture, checker executable,
+configuration and harness hashes are retained and rechecked.
+
+The initiating unmodified GCC 12.4 MIPS N64 executable has exactly four zero
+bytes in `.eh_frame`. GNU readelf and LLVM accept it; the previous strict
+consumer fails; the corrected consumer reports zero errors. N32's identical
+four-byte section already passed. These are compiler-reference observations,
+not claims of complete N32/N64 exporter support. See
+`../../docs/research/MIPS-ABI-COMPLETION.md` for the ongoing ABI investigation.
+
+## GNU location views are section offsets
+
+The sixth patch, `0006-locviews-are-not-die-references.patch`, changes only the
+validation executable's `dd_trace_abstract_origin_etc.c`. SHA-256:
+`54fce0dd7b7f19775cfb2bf95f610a4c3f4b96dd98d28ce99580d30c4e6aa879`.
+For `DW_AT_GNU_locviews` encoded as `DW_FORM_sec_offset`, it retains attribute
+reading/printing but does not traverse the numeric value as a `.debug_info`
+DIE reference. GCC documents this attribute as a location-view list offset in
+`.debug_loc` or `.debug_loclists`, not a DIE reference; see
+[the GCC extension discussion](https://gcc.gnu.org/legacy-ml/gcc-patches/2019-03/msg00542.html).
+Other attributes and forms keep the existing checks. This does not implement a
+new GNU view-pair evaluator; GNU readelf separately inspects the actual lists.
+
+**CONFIRMED locally:** a native debugger trace on the unmodified GCC 12.4 N32
+reference shows the old checker following attribute `0x2137` into
+`dwarf_offdie_b`, then rejecting bytes from the CU as abbreviation code 688.
+GNU and LLVM accept that reference. The corrected checker reports zero errors.
+`dwarfdump-locviews.py` constructs DWARF 4/5 fixtures in both ELF classes and
+byte orders. Eight positive cases pass GNU, LLVM and the complete strict report;
+sixteen malformed actual-type/reference-form cases remain rejected. With the
+previous tool, all 24 cases reject, reproducing its eight false positives.
+The checker is built afresh from the pinned archive and all six hashed patches.
+
+The local 48-case receipt is
+`build/test-results/dwarfdump-locviews/run.9w_ckkwp/result.json` in the active
+MIPS allocation worktree. Eighteen retained N32/N64 compiler/Forge artifacts
+also pass; `build/mips-wide-allocation/locviews-real-artifacts.json` records
+those paths. The existing GNU/IRIX frame regression passes at
+`build/test-results/dwarfdump-eh-terminators/run.xqd4ox09/`.
+Hosted validation remains pending. Shipped Ghidra native libraries are unchanged.
+
+The new bundle also passes the 97 evidence-capture/mutation controls at
+`build/mips-wide-allocation/locviews-evidence-controls/run.kuzv0m3b/` and
+extended-program-header controls at
+`build/test-results/dwarfdump-extended-programs/run.i7hc23r1/`. Evidence records
+now pin the sixth patch and use the explicit six-correction profile. The native
+Linux CI job installs LLVM for the new independent structural controls and
+retains their reports with its existing artifacts.
+
+
+## ELF address bounds
+
+The seventh validation-only patch,
+`0007-preserve-low-elf-address-bounds.patch`, SHA-256
+`f4a81a948702b20e105e2a646eb08e747264e9b028949da287580458fb29360d`,
+changes only `src/bin/dwarfdump/dwarfdump.c` in the standalone checker.
+The shipped libdwarf producer/consumer and Ghidra extension are unchanged.
+
+A freestanding ARM PIE has executable `.text` at `0x100`. Upstream creates a
+zero-filled range slot for every section it skips, sorts those slots ahead of
+real allocated sections, then substitutes `512` for the false zero minimum.
+The resulting interval both excludes valid low code and extends the upper
+bound by 512. The original compiler artifact reports 47 false diagnostics in
+each byte order. Both compiler and Forge artifacts pass unchanged with the
+corrected checker; GNU/LLVM also accept them.
+
+The correction compacts only named, nonempty allocated ELF section records
+before sorting and retains their actual address bounds, including zero. Empty
+low/high sections and nonallocated sections cannot create an address bound.
+The historical non-ELF behavior is untouched. This retains upstream's overall
+allocated-section envelope; it does not newly claim to detect gaps between
+allocated sections or replace LLVM's complementary range checks.
+
+`dwarfdump-elf-bounds.py` independently creates DWARF 5 CUs, subprograms,
+parameter location lists and standard line tables. The CU/function ranges
+agree even in negative cases, isolating the independent ELF bounds check.
+ELF32/64, both byte orders, addresses zero, `0x100`, `0x1fc`, `0x200` and
+`0x1000`, one-past sequence ends and empty/nonallocated distractors are tested.
+Twenty valid artifacts pass GNU/LLVM and strict validation; 36 out-of-range
+artifacts fail strict validation. The predecessor additionally reproduces eight
+false rejections of low code and eight false acceptances just outside high code.
+No original artifact is rewritten to make validation pass.
+
+Local receipt: `build/test-results/dwarfdump-elf-bounds/run.hrxw09w9/result.json`
+in the `arm-stack-pie` worktree. All prior line, extended-header, convention,
+location-view, frame, configuration, strict-helper and diagnostic-capacity
+suites pass, including 65,536-message completion and allocation controls.
+The updated evidence profile pins all seven patches; its 97 controls pass at
+`build/arm-stack-pie/evidence-controls/run.6k2l44t0/`.
+The fresh checker bundle's full checksum manifest passes. CI builds this
+checker from the pinned archive and retains the new test/build diagnostics.
+Hosted exact-head acceptance remains required.
+
+## GNU vector flag form class
+
+The eighth validation-only patch,
+`0008-recognize-gnu-vector-flag.patch`, SHA-256
+`9b5879be2736ec13d0ed19661a5cf4e27f27220b2f3c02148b5a26fc0f65104a`,
+adds `DW_FORM_CLASS_FLAG` for `DW_AT_GNU_vector` to the extension source table
+and its generated counterpart. The tag/attribute policy already admits this
+attribute on arrays. No other form classes, tags or checks are changed.
+The pinned producer and shipped native libraries remain unchanged.
+
+GCC 13.3.0's [`gen_array_type_die`](https://github.com/gcc-mirror/gcc/blob/releases/gcc-13.3.0/gcc/dwarf2out.cc#L22537)
+emits this attribute with `add_AT_flag` on vector array types. The original
+standalone libdwarf 2.3.2 reader recognizes the name but has an empty allowed
+form-class entry, causing a false strict rejection of the libc-backed i386
+compiler reference. This is a validation-only vendor extension, not a claim
+that Forge exports native vector types or that GDB can automatically return
+all i386 vector/SSE signatures correctly.
+
+`dwarfdump-gnu-vector.py` builds independent DWARF4/5 ELF32/64 fixtures in both
+byte orders. Sixteen positive cases cover both flag and flag-present forms;
+GNU readelf, LLVM and the corrected strict reader must accept them. Forty-eight
+negative cases retain rejection of string/constant/reference/expression forms,
+incorrect tags and invalid type references. An optional previous-tool comparison
+reproduces all sixteen false positive-fixture rejections and checks all negative
+fixtures against the old reader too (128 checker observations in total).
+Every artifact is hashed before and after validation. CI runs the complete
+64-case corrected-reader matrix and retains its evidence.
+
+The evidence profile pins this patch as `gnuVectorPatchSha256` and identifies
+`libdwarf-2.3.2-eight-corrections-and-llvm-verify`. Older receipts retain their
+historical profile; new receipts require the complete eight-patch bundle.
+
+## Native Windows strict consumer
+
+**PRESENT, UNVERIFIED:** `build-validation-dwarfdump.sh` also admits native
+MSYS2 MINGW64. It builds the same pinned consumer and eight validation patches
+with a private patched libdwarf DLL, retains zlib/zstd support and audits every
+PE dependency. Pinned configure.ac rejects static libdwarf on Windows; the
+first attempted static build failed in41641903394 before compilation. See
+`../../docs/evidence/windows-checker-static-41641903394.json`. Linux remains static.
+Only reviewed system imports and copied compression DLLs are accepted; runtime
+package versions and notices accompany the bundle. This validation artifact is
+separate from production/release native inputs.
+
+The raw executable is `libexec/dwarfdump.exe`. Native callers pass the pinned
+`share/dwarfdump/dwarfdump.conf` explicitly via `--file-name`; the attachment
+validator already verifies that configuration's hash. The optional Bash launcher
+continues to work under MSYS2. `native-dwarfdump.py` compiles a tiny ELF/DWARF5
+object (native Windows Clang targets x86_64-linux-gnu), relocates the checker into
+directories with spaces and Unicode characters, removes MSYS2 from the checker
+PATH and parses complete strict results. A DWARF-version corruption must produce the intended diagnostic
+and fail the strict parser. Inputs and tool/configuration hashes stay unchanged.
+This establishes checker execution only; full Windows exporter/attachment remains a separate requirement. Linux `cc` runtime and the
+existing configuration regression pass locally; native Windows CI is pending.
+
+### Windows process encoding
+
+Run41645197563 passes raw native strict validation with ASCII/space paths, but
+replaces λ/字 with question marks in the explicit configuration/input paths.
+The Unicode fixture bytes equal the successful ASCII fixture; the checker
+fails to open the intended files. See
+`../../docs/evidence/windows-checker-unicode-41645197563.json`.
+
+**PRESENT, UNVERIFIED correction:** the private Windows executable embeds
+`dwarfdump-windows.manifest` through its resource object. It requests the
+[documented per-process UTF-8 code page](https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page).
+A separate startup object checks `GetACP() == CP_UTF8` before the checker main
+function and refuses execution otherwise. The manifest works from Windows10
+version1903; older systems need an already-active UTF-8 process code page or
+receive a clear failure. No legacy best-fit path conversion is accepted.
+This is the private validation-tool runtime contract; it does not silently
+change the Ghidra/Java release baseline or ship a patched producer library.
+
+Manifest/resource/guard sources are checksum-pinned, included in corresponding
+source and recorded in build metadata. Only the checker link receives those
+objects; its private consumer DLL and release natives do not. Local MinGW64
+compilation, linking and PE-resource/import inspection pass. Native Windows
+Unicode execution and the remaining malformed-input case are still required.

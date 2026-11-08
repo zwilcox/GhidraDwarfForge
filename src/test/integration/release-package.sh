@@ -28,7 +28,18 @@ printf 'corresponding source instructions\n' \
     > "$work/base/GhidraDwarfForge/third_party/CORRESPONDING_SOURCE.md"
 printf '#!/usr/bin/env bash\n' > "$work/base/GhidraDwarfForge/support/wrapper"
 chmod 755 "$work/base/GhidraDwarfForge/support/wrapper"
-for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
+cp "$repository_dir/support/ghidra-dwarf-forge-attach" "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
+chmod 644 "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach"
+cp "$repository_dir/support/ghidra-dwarf-forge-attach.ps1" "$work/base/GhidraDwarfForge/support/ghidra-dwarf-forge-attach.ps1"
+for report_launcher in ghidra-dwarf-forge-report ghidra-dwarf-forge-report.ps1; do
+    cp "$repository_dir/support/$report_launcher" "$work/base/GhidraDwarfForge/support/$report_launcher"
+    chmod 644 "$work/base/GhidraDwarfForge/support/$report_launcher"
+done
+for build_id_launcher in ghidra-dwarf-forge-build-id ghidra-dwarf-forge-build-id.ps1; do
+    cp "$repository_dir/support/$build_id_launcher" "$work/base/GhidraDwarfForge/support/$build_id_launcher"
+    chmod 644 "$work/base/GhidraDwarfForge/support/$build_id_launcher"
+done
+for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java ExportGhidraDwarfForgeMultiFile.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
     printf '// fixture %s\n' "$entry_point" \
         > "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point"
 done
@@ -39,12 +50,30 @@ done
 printf consumer > "$work/linux/libdwarf.so.2.3.2"
 printf dependency > "$work/linux/libdwarf.so.2"
 printf producer > "$work/linux/libdwarfp.so.2.3.2"
+printf supervisor > "$work/linux/forge-validator-supervisor"
 patch_hash=$(sha256sum < "$repository_dir/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch")
 patch_hash=${patch_hash%% *}
 printf 'source patch SHA-256:\n%s  /fixture/patch.patch\n' "$patch_hash" \
     > "$work/linux/BUILD-METADATA.txt"
 printf consumer > "$work/windows/libdwarf-2.dll"
 printf producer > "$work/windows/libdwarfp-2.dll"
+printf supervisor > "$work/windows/forge-validator-supervisor.exe"
+for platform in linux windows; do
+    supervisor_name=forge-validator-supervisor
+    if [[ "$platform" == windows ]]; then supervisor_name=forge-validator-supervisor.exe; fi
+    {
+        printf 'source SHA-256:\n'
+        sha256sum "$repository_dir/native/supervisor/forge-supervisor-$platform.c"
+        printf 'binary SHA-256:\n'
+        sha256sum "$work/$platform/$supervisor_name"
+    } > "$work/$platform/SUPERVISOR-BUILD-METADATA.txt"
+    if [[ "$platform" == windows ]]; then
+        source_hash=$(sha256sum < "$repository_dir/native/supervisor/forge-supervisor-windows.c")
+        binary_hash=$(sha256sum < "$work/windows/forge-validator-supervisor.exe")
+        printf 'source SHA-256:\r\n\\%s *D:\\fixture\\source.c\r\nbinary SHA-256:\r\n\\%s *D:\\fixture\\supervisor.exe\r\n' \
+            "${source_hash%% *}" "${binary_hash%% *}" > "$work/windows/SUPERVISOR-BUILD-METADATA.txt"
+    fi
+done
 printf compression > "$work/windows/zlib1.dll"
 printf compression > "$work/windows/libzstd.dll"
 # GNU sha256sum escapes Windows backslashes and prefixes such records with '\'.
@@ -68,15 +97,16 @@ printf 'source archive\n' \
         > SOURCE-SHA256SUMS
 )
 
-cp "$work/base.zip" "$work/no-launcher.zip"
-zip -dq "$work/no-launcher.zip" 'GhidraDwarfForge/ghidra_scripts/ExportGhidraDwarfForge.java'
-if "$assembler" "$work/no-launcher.zip" "$work/linux" "$work/windows" \
-        "$work/no-launcher-release.zip" > "$work/no-launcher.log" 2>&1; then
-    echo "release assembly accepted a missing GUI export launcher" >&2
-    exit 1
-fi
-grep -Fq 'base ZIP is missing required script: ExportGhidraDwarfForge.java' \
-    "$work/no-launcher.log"
+for launcher in ExportGhidraDwarfForge.java ExportGhidraDwarfForgeMultiFile.java; do
+    cp "$work/base.zip" "$work/no-launcher.zip"
+    zip -dq "$work/no-launcher.zip" "GhidraDwarfForge/ghidra_scripts/$launcher"
+    if "$assembler" "$work/no-launcher.zip" "$work/linux" "$work/windows" \
+            "$work/no-launcher-release.zip" > "$work/no-launcher.log" 2>&1; then
+        echo "release assembly accepted a missing GUI export launcher: $launcher" >&2
+        exit 1
+    fi
+    grep -Fq "base ZIP is missing required script: $launcher" "$work/no-launcher.log"
+done
 printf 'mingw-w64-x86_64-zlib 1.3.1-1\nmingw-w64-x86_64-zstd 1.5.7-1\n' \
     > "$work/windows/compliance/windows-runtime/PACKAGE-VERSIONS.txt"
 printf 'zlib license\n' \
@@ -92,6 +122,7 @@ printf 'zstd license\n' \
 
 mkdir -p "$work/windows-without-notices"
 cp "$work/windows"/*.dll "$work/windows/BUILD-METADATA.txt" \
+    "$work/windows/forge-validator-supervisor.exe" "$work/windows/SUPERVISOR-BUILD-METADATA.txt" \
     "$work/windows-without-notices/"
 if "$assembler" "$work/base.zip" "$work/linux" \
         "$work/windows-without-notices" "$work/incomplete.zip" \
@@ -124,6 +155,24 @@ reject_patch_metadata() {
     grep -Fq "$diagnostic" "$work/$name.log"
     cmp "$work/previous-release.zip" "$work/$name.zip"
 }
+
+for invalid in absent empty symlink; do
+    candidate="$work/linux-$invalid-supervisor"
+    cp -R "$work/linux" "$candidate"
+    rm "$candidate/forge-validator-supervisor"
+    case "$invalid" in
+        empty) : > "$candidate/forge-validator-supervisor" ;;
+        symlink) ln -s "$work/linux/forge-validator-supervisor" "$candidate/forge-validator-supervisor" ;;
+    esac
+    reject_patch_metadata "supervisor-$invalid" "$candidate" "$work/windows" \
+        'required validator supervisor/provenance is missing'
+done
+
+cp -R "$work/linux" "$work/linux-wrong-supervisor-source"
+sed -i 's/^[0-9a-f]\{64\}/0000000000000000000000000000000000000000000000000000000000000000/' \
+    "$work/linux-wrong-supervisor-source/SUPERVISOR-BUILD-METADATA.txt"
+reject_patch_metadata supervisor-wrong-source "$work/linux-wrong-supervisor-source" "$work/windows" \
+    'validator supervisor source provenance mismatch'
 
 cp -R "$work/windows" "$work/windows-crlf-patch"
 printf 'source patch SHA-256:\n%s  /fixture/patch.patch\n' \
@@ -204,11 +253,18 @@ for inherited in os third_party/libdwarf third_party/windows-runtime; do
         "base ZIP already contains $inherited" "$work/base-with-$name.zip"
 done
 
+# Match downloaded native artifacts, whose Unix executable bit is not retained.
+chmod 644 "$work/linux/forge-validator-supervisor"
 "$assembler" "$work/base.zip" "$work/linux" "$work/windows" "$work/first.zip"
 "$assembler" "$work/base.zip" "$work/linux" "$work/windows" "$work/second.zip"
 cmp "$work/first.zip" "$work/second.zip"
 unzip -q "$work/first.zip" -d "$work/unpacked"
 module="$work/unpacked/GhidraDwarfForge"
+test ! -x "$work/linux/forge-validator-supervisor"
+test -x "$module/os/linux_x86_64/forge-validator-supervisor"
+cmp "$work/linux/forge-validator-supervisor" "$module/os/linux_x86_64/forge-validator-supervisor"
+zipinfo -l "$work/first.zip" | grep -Eq \
+    '^-rwxr-xr-x.*GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor$'
 (
     cd "$module"
     sha256sum -c RELEASE-SHA256SUMS
@@ -222,7 +278,17 @@ grep -Fxq 'consumer=libdwarf.so.2.3.2' \
 grep -Fxq 'producer=libdwarfp-2.dll' \
     "$module/os/win_x86_64/NATIVE-PAIR.properties"
 test -s "$module/THIRD_PARTY_NOTICES.md"
-for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java; do
+test -x "$module/support/ghidra-dwarf-forge-report"
+for report_launcher in ghidra-dwarf-forge-report ghidra-dwarf-forge-report.ps1; do
+    cmp "$repository_dir/support/$report_launcher" "$module/support/$report_launcher"
+done
+test -x "$module/support/ghidra-dwarf-forge-attach"
+cmp "$repository_dir/support/ghidra-dwarf-forge-attach" "$module/support/ghidra-dwarf-forge-attach"
+test -x "$module/support/ghidra-dwarf-forge-build-id"
+for build_id_launcher in ghidra-dwarf-forge-build-id ghidra-dwarf-forge-build-id.ps1; do
+    cmp "$repository_dir/support/$build_id_launcher" "$module/support/$build_id_launcher"
+done
+for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java ExportGhidraDwarfForgeMultiFile.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
     cmp "$work/base/GhidraDwarfForge/ghidra_scripts/$entry_point" \
         "$module/ghidra_scripts/$entry_point"
 done
@@ -242,5 +308,38 @@ else
     echo "release ZIP contains a non-normalized timestamp" >&2
     exit 1
 fi
+
+# MSYS2 zlib 1.4 changed the DLL selected by libz.dll.a. Preserve the
+# imported basename, package notices and hashes for either reviewed runtime.
+cp -R "$work/windows" "$work/windows-zlib14"
+mv "$work/windows-zlib14/zlib1.dll" "$work/windows-zlib14/libz-1.dll"
+sed -i 's/zlib 1.3.1-1/zlib 1.4-2/' \
+    "$work/windows-zlib14/compliance/windows-runtime/PACKAGE-VERSIONS.txt"
+(
+    cd "$work/windows-zlib14/compliance/windows-runtime"
+    find . -type f ! -name RUNTIME-SHA256SUMS -print0 |
+        LC_ALL=C sort -z | xargs -0 sha256sum > RUNTIME-SHA256SUMS
+)
+"$assembler" "$work/base.zip" "$work/linux" "$work/windows-zlib14" "$work/zlib14.zip"
+unzip -q "$work/zlib14.zip" -d "$work/zlib14-unpacked"
+module="$work/zlib14-unpacked/GhidraDwarfForge"
+test ! -e "$module/os/win_x86_64/zlib1.dll"
+cmp "$work/windows-zlib14/libz-1.dll" "$module/os/win_x86_64/libz-1.dll"
+grep -Fxq 'mingw-w64-x86_64-zlib 1.4-2' \
+    "$module/third_party/windows-runtime/PACKAGE-VERSIONS.txt"
+(
+    cd "$module"
+    sha256sum -c RELEASE-SHA256SUMS
+    cd os/win_x86_64
+    sha256sum -c SHA256SUMS
+)
+# A similar future filename still needs its own review.
+mv "$work/windows-zlib14/libz-1.dll" "$work/windows-zlib14/libz-2.dll"
+if "$assembler" "$work/base.zip" "$work/linux" "$work/windows-zlib14" \
+        "$work/unreviewed-zlib.zip" > "$work/unreviewed-zlib.log" 2>&1; then
+    echo "release assembly accepted an unreviewed zlib runtime name" >&2
+    exit 1
+fi
+grep -Fq 'bundled DLL has no reviewed notice policy: libz-2.dll' "$work/unreviewed-zlib.log"
 
 echo release-package=PASS

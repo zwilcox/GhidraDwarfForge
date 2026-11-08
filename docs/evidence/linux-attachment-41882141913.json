@@ -1,0 +1,286 @@
+{
+    "head": "be2e806c31e7f60fee101a926e5d8b39c792888d",
+    "run": 41882141913,
+    "status": "CONFIRMED fifteen attachment cases across five targets, two saved-curation refreshes and eight abrupt recoveries",
+    "reviews": {
+        "x86_64": {
+            "head": "be2e806c31e7f60fee101a926e5d8b39c792888d",
+            "run": 41882141913,
+            "jarSha256": "80d57bb096febc46b8699d4205481a4c1219c7f59d9070880f72454d67e40b96",
+            "cases": [
+                {
+                    "case": "x86_64.exec",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 16,
+                    "runtime": "native"
+                },
+                {
+                    "case": "x86_64.exec.no-build-id",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 7,
+                    "runtime": "native"
+                },
+                {
+                    "case": "x86_64.pie",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 7,
+                    "runtime": "native"
+                }
+            ],
+            "refresh": [],
+            "releaseSourcesCompared": 146,
+            "nativeRecovery": {
+                "cases": 8,
+                "abruptExit": 89,
+                "initialAndRefresh": true,
+                "immutableInterruptedReceipts": true,
+                "retainedCrashCanaries": 8
+            },
+            "status": "PASS scoped production Linux x86-64 Host artifact review",
+            "limits": "Three x86-64 exec/PIE/no-build-ID initial/rollback/GDB cases, eight abrupt recoveries; saved-curation refresh, remaining targets and Windows acceptance are pending. Remote metadata is represented by native recorded claims."
+        },
+        "aarch64": {
+            "head": "be2e806c31e7f60fee101a926e5d8b39c792888d",
+            "run": 41882141913,
+            "jarSha256": "80d57bb096febc46b8699d4205481a4c1219c7f59d9070880f72454d67e40b96",
+            "cases": [
+                {
+                    "case": "aarch64.exec",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 7,
+                    "runtime": "QEMU"
+                },
+                {
+                    "case": "aarch64.exec.no-build-id",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 7,
+                    "runtime": "QEMU"
+                },
+                {
+                    "case": "aarch64.pie",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 7,
+                    "runtime": "QEMU"
+                }
+            ],
+            "refresh": [],
+            "releaseSourcesCompared": 146,
+            "status": "PASS scoped production Linux AArch64 Host artifact review",
+            "limits": "Three AArch64 exec/PIE/no-build-ID initial/rollback/QEMU/GDB cases atbe2e806; remaining target and full Windows acceptance remain pending."
+        },
+        "refresh": {
+            "head": "be2e806c31e7f60fee101a926e5d8b39c792888d",
+            "run": 41882141913,
+            "jarSha256": "80d57bb096febc46b8699d4205481a4c1219c7f59d9070880f72454d67e40b96",
+            "cases": [],
+            "refresh": [
+                {
+                    "role": "exec",
+                    "provenance": {
+                        "retainedOrigins": 17,
+                        "externalProtectedInputs": [
+                            "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.stripped",
+                            "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.exec.reference",
+                            "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/validation-tool/bin/dwarfdump"
+                        ]
+                    },
+                    "changedCrc": true,
+                    "savedCuration": true
+                },
+                {
+                    "role": "pie",
+                    "provenance": {
+                        "retainedOrigins": 17,
+                        "externalProtectedInputs": [
+                            "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.pie.stripped",
+                            "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/fixtures/x86_64/semantic.pie.reference",
+                            "/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/validation-tool/bin/dwarfdump"
+                        ]
+                    },
+                    "changedCrc": true,
+                    "savedCuration": true
+                }
+            ],
+            "releaseSourcesCompared": 146,
+            "status": "PASS scoped production Linux x86-64 Host artifact review",
+            "limits": "Two x86-64 exec/PIE saved-curation refreshes; not all targets or Windows acceptance. Remote metadata is represented by native recorded claims."
+        },
+        "arm32": {
+            "head": "be2e806c31e7f60fee101a926e5d8b39c792888d",
+            "run": 41882141913,
+            "jarSha256": "80d57bb096febc46b8699d4205481a4c1219c7f59d9070880f72454d67e40b96",
+            "cases": [
+                {
+                    "case": "arm32.exec",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 6,
+                    "runtime": "QEMU"
+                },
+                {
+                    "case": "arm32.exec.no-build-id",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 6,
+                    "runtime": "QEMU"
+                },
+                {
+                    "case": "arm32.pie",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 6,
+                    "runtime": "QEMU"
+                }
+            ],
+            "refresh": [],
+            "releaseSourcesCompared": 146,
+            "status": "PASS scoped production Linux ARM32 Host artifact review",
+            "limits": "Three ARM32 exec/PIE/no-build-ID initial/rollback/QEMU/GDB cases atbe2e806; remaining target and full Windows acceptance remain pending."
+        },
+        "mips32le": {
+            "head": "be2e806c31e7f60fee101a926e5d8b39c792888d",
+            "run": 41882141913,
+            "jarSha256": "80d57bb096febc46b8699d4205481a4c1219c7f59d9070880f72454d67e40b96",
+            "cases": [
+                {
+                    "case": "mips32le.exec",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 6,
+                    "runtime": "QEMU"
+                },
+                {
+                    "case": "mips32le.exec.no-build-id",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 6,
+                    "runtime": "QEMU"
+                },
+                {
+                    "case": "mips32le.pie",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 6,
+                    "runtime": "QEMU"
+                }
+            ],
+            "refresh": [],
+            "releaseSourcesCompared": 146,
+            "status": "PASS scoped production Linux MIPS32LE Host artifact review",
+            "limits": "Three MIPS32LE exec/PIE/no-build-ID initial/rollback/QEMU/GDB cases atbe2e806; remaining target and full Windows acceptance remain pending."
+        },
+        "mips32be": {
+            "head": "be2e806c31e7f60fee101a926e5d8b39c792888d",
+            "run": 41882141913,
+            "jarSha256": "80d57bb096febc46b8699d4205481a4c1219c7f59d9070880f72454d67e40b96",
+            "cases": [
+                {
+                    "case": "mips32be.exec",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 6,
+                    "runtime": "QEMU"
+                },
+                {
+                    "case": "mips32be.exec.no-build-id",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 6,
+                    "runtime": "QEMU"
+                },
+                {
+                    "case": "mips32be.pie",
+                    "provenance": {
+                        "retainedOrigins": 13,
+                        "externalProtectedInputs": []
+                    },
+                    "negativeControls": 6,
+                    "runtime": "QEMU"
+                }
+            ],
+            "refresh": [],
+            "releaseSourcesCompared": 146,
+            "status": "PASS scoped production Linux MIPS32BE Host artifact review",
+            "limits": "Three MIPS32BE exec/PIE/no-build-ID initial/rollback/QEMU/GDB cases atbe2e806; Full target gate and protected integration remain pending; Windows acceptance is reviewed separately."
+        }
+    },
+    "reviewerSha256": {
+        "x86_64": "6d1ad34291de0e59cdd24d4db42a503ea968bb4e563994bda963bac31b81b13a",
+        "aarch64": "e077ef9d7196e59522ae6eefdda199899a9db1fc397740e0c94272817fad4baa",
+        "refresh": "d6b27f3f99aa281a55b35fc6b3879a404e0bc3e0a10ef642f45692b076312be8",
+        "arm32": "bb229babc42eb93915332b5caff45adde68daa52c330f971fbd3217b7e8e79e3",
+        "mips32le": "bf8788fe344b79b377849179b096db73f14c7627cdbafce36b3f5c675bfd3cbc",
+        "mips32be": "855a7a2ef3d02c908092fef18720c330fb517deea9140699f03dad9f00fff687"
+    },
+    "artifacts": [
+        {
+            "id": 13349939760,
+            "file": "linux-attachment-x86_64.zip",
+            "sha256": "3b4c5dd43a923bc3b4b00ce6b9b8d44c7a978705145e921e0f9da07d67e85368"
+        },
+        {
+            "id": 13351750300,
+            "file": "linux-attachment-aarch64.zip",
+            "sha256": "2777c0d6f5db7b5d23101a8bb400ccb27b837edbf99084d3e74b95e87e97f3f0"
+        },
+        {
+            "id": 13350838236,
+            "file": "linux-refresh.zip",
+            "sha256": "c5cdd865cdcdaa2b939212c2dd4a0d1e7f66784ca84629b7ab81e8f267fa97f8"
+        },
+        {
+            "id": 13350693619,
+            "file": "linux-attachment-arm32.zip",
+            "sha256": "842fccb0d7ad33562547ee6ab617d535a5ae48ddfe4b0acf908d047eb230a609"
+        },
+        {
+            "id": 13350942717,
+            "file": "linux-attachment-mips32le.zip",
+            "sha256": "8851de1095aef3905d79d97536ddf028d3f1d1ae505705de13fb3a1c1b367e79"
+        },
+        {
+            "id": 13352338152,
+            "file": "linux-attachment-mips32be.zip",
+            "sha256": "44510b98547e137e35907e0a27ef2f448188d93fe2f183fd56f6e5b367f14b89"
+        }
+    ],
+    "limits": [
+        "Nested review limits describe each individual review; combined coverage is stated above",
+        "Full target regression lanes and final required-validation remain pending",
+        "Protected integration and final C1 remain pending"
+    ]
+}

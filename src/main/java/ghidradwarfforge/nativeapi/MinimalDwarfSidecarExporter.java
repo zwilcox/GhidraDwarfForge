@@ -93,6 +93,16 @@ import com.sun.jna.ptr.LongByReference;
 import com.sun.jna.ptr.PointerByReference;
 
 import ghidradwarfforge.elf.ElfImage;
+import ghidradwarfforge.annotations.SyntheticConstant;
+import ghidradwarfforge.annotations.SyntheticConstants;
+import ghidradwarfforge.coverage.ExportEmission;
+import ghidradwarfforge.coverage.ExportEmission.ExpressionLocation;
+import ghidradwarfforge.coverage.ExportEmission.FunctionEmission;
+import ghidradwarfforge.coverage.ExportEmission.Kind;
+import ghidradwarfforge.coverage.ExportEmission.ListLocation;
+import ghidradwarfforge.coverage.ExportEmission.Location;
+import ghidradwarfforge.coverage.ExportEmission.NoLocation;
+import ghidradwarfforge.coverage.ExportEmission.VariableEmission;
 import ghidradwarfforge.elf.MatchedElfSidecarWriter;
 import ghidradwarfforge.elf.ElfFunctionModeCue;
 import ghidradwarfforge.elf.ElfLocalFunctionSymbol;
@@ -114,6 +124,7 @@ import ghidradwarfforge.nativeapi.DwarfNativeTypes.Die;
 import ghidradwarfforge.nativeapi.DwarfNativeTypes.Error;
 import ghidradwarfforge.nativeapi.DwarfNativeTypes.Expr;
 import ghidradwarfforge.output.FileSystemPaths;
+import ghidradwarfforge.performance.ExportPhase;
 import ghidradwarfforge.source.SyntheticSourceFile;
 import ghidradwarfforge.source.FunctionStaticPolicy;
 import ghidradwarfforge.source.SyntheticSourceFile.FunctionLines;
@@ -252,7 +263,12 @@ public final class MinimalDwarfSidecarExporter {
     }
 
     public record ExportResult(DwarfTarget target, int functionCount,
-            List<String> sectionNames, String libdwarfVersion) {
+            List<String> sectionNames, String libdwarfVersion,
+            ExportEmission emission) {
+    }
+
+    private record ProductionResult(Map<String, byte[]> sections,
+            ExportEmission emission) {
     }
 
     private record SectionRecord(String name, long symbolIndex) {
@@ -277,6 +293,35 @@ public final class MinimalDwarfSidecarExporter {
         public RelocationData(Pointer pointer) {
             super(pointer);
             read();
+        }
+    }
+
+    private final ghidradwarfforge.elf.DebugSectionCompression compression;
+    private final Map<String, String> formatterAliases;
+    private final Dwarf5LineTable.FileLayout sourceFiles;
+
+    public MinimalDwarfSidecarExporter() {
+        this(ghidradwarfforge.elf.DebugSectionCompression.NONE);
+    }
+
+    public MinimalDwarfSidecarExporter(ghidradwarfforge.elf.DebugSectionCompression compression) {
+        this(compression, Map.of());
+    }
+
+    public MinimalDwarfSidecarExporter(ghidradwarfforge.elf.DebugSectionCompression compression,
+            Map<String, String> formatterAliases) {
+        this(compression, formatterAliases, null);
+    }
+
+    /** Optional file presentation; all type and address evidence retains its original identity. */
+    public MinimalDwarfSidecarExporter(ghidradwarfforge.elf.DebugSectionCompression compression,
+            Map<String, String> formatterAliases, Dwarf5LineTable.FileLayout sourceFiles) {
+        this.compression = Objects.requireNonNull(compression, "compression");
+        this.sourceFiles = sourceFiles;
+        this.formatterAliases = java.util.Collections.unmodifiableMap(new java.util.TreeMap<>(formatterAliases));
+        if (formatterAliases.values().stream().anyMatch(name -> !name.matches("__forge_formatter_[0-9a-f]{64}")) ||
+                new java.util.HashSet<>(formatterAliases.values()).size() != formatterAliases.size()) {
+            throw new IllegalArgumentException("invalid formatter type witness names");
         }
     }
 
@@ -341,6 +386,93 @@ public final class MinimalDwarfSidecarExporter {
             String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
             List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
             java.util.function.Consumer<String> diagnostic) throws IOException {
+        return export(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, List.of(), diagnostic);
+    }
+
+    public ExportResult export(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            java.util.function.Consumer<String> diagnostic) throws IOException {
+        return export(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
+            List.of(), diagnostic);
+    }
+
+    public ExportResult export(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            List<SyntheticConstant> constants, java.util.function.Consumer<String> diagnostic) throws IOException {
+        return export(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
+            new SyntheticConstants(constants, Set.of()), diagnostic);
+    }
+
+    public ExportResult export(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            SyntheticConstants syntheticConstants, java.util.function.Consumer<String> diagnostic) throws IOException {
+        return exportInternal(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
+            syntheticConstants, diagnostic, null);
+    }
+
+    /**
+     * Explicit internal integration path for already proved frame rules. The caller
+     * must bind the plan to its Ghidra/input evidence and guard staged publication.
+     * Standard script/GUI exports do not select this path or infer any frame rules.
+     */
+    public ExportResult exportWithFrames(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            java.util.function.Consumer<String> diagnostic, ghidradwarfforge.unwind.CallFramePlan framePlan) throws IOException {
+        return exportWithFrames(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
+            new SyntheticConstants(List.of(), Set.of()), diagnostic, framePlan);
+    }
+
+    /** Retains analyst constants when adding independently recovered frame rules. */
+    public ExportResult exportWithFrames(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            SyntheticConstants syntheticConstants, java.util.function.Consumer<String> diagnostic,
+            ghidradwarfforge.unwind.CallFramePlan framePlan) throws IOException {
+        Objects.requireNonNull(framePlan, "proved frame plan");
+        return exportInternal(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
+            typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
+            syntheticConstants, diagnostic, framePlan);
+    }
+
+    private ExportResult exportInternal(Path input, Path output, Path consumerLibrary,
+            Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            SyntheticConstants syntheticConstants, java.util.function.Consumer<String> diagnostic,
+            ghidradwarfforge.unwind.CallFramePlan framePlan) throws IOException {
+        var constants = syntheticConstants.values();
+        var constantNames = new java.util.HashSet<String>();
+        for (var constant : constants) {
+            checkCancelled(cancelled);
+            if (!constantNames.add(constant.name())) throw new IllegalArgumentException("duplicate synthetic constant name");
+        }
+        Objects.requireNonNull(sectionModes, "sectionModes");
         Objects.requireNonNull(cancelled, "cancelled");
         Objects.requireNonNull(modeCues, "modeCues");
         Objects.requireNonNull(aliases, "aliases");
@@ -363,13 +495,44 @@ public final class MinimalDwarfSidecarExporter {
 
         ElfImage elf = ElfImage.read(source);
         DwarfTarget target = DwarfTarget.fromElf(elf);
+        if (framePlan != null && (framePlan.addressBytes() != target.addressBytes() || framePlan.order() != elf.byteOrder())) {
+            throw new IllegalArgumentException("frame plan target layout differs from original ELF");
+        }
         typeModel = target.applyCallRestrictions(elf, typeModel, cancelled, diagnostic);
+        Map<Integer, String> constantTypeNames = new java.util.TreeMap<>();
+        if (!constants.isEmpty()) {
+            var namesModel = typeModel == null ? new ProgramTypeModel(new TypeGraph(List.of()), List.of(), List.of()) : typeModel;
+            var reserved = ghidradwarfforge.elf.EquateNameReservations.read(elf, namesModel, ordered, aliases,
+                cancelled, diagnostic).withNames(syntheticConstants.reservedNames(), cancelled);
+            for (var constant : constants) {
+                checkCancelled(cancelled);
+                if (reserved.test(constant.name())) throw new IllegalArgumentException("synthetic constant shadows a real name");
+                constantTypeNames.put(constant.bits() * 2 + (constant.signed() ? 1 : 0), "");
+            }
+            for (int key : constantTypeNames.keySet()) {
+                String base = "forge_equate_type_" + (key % 2 == 1 ? "s" : "u") + key / 2;
+                String name = base;
+                long suffix = 0;
+                long bound = Math.addExact(reserved.size(), constantNames.size());
+                while (reserved.test(name) || constantNames.contains(name)) {
+                    checkCancelled(cancelled);
+                    if (++suffix > bound) throw new IllegalArgumentException("incomplete constant type name bound");
+                    name = base + "_" + suffix;
+                }
+                constantNames.add(name);
+                constantTypeNames.put(key, name);
+            }
+        }
         List<ElfLocalFunctionSymbol> modeSymbols = target.planFunctionModeSymbols(
-            elf, modeCues, cancelled, diagnostic);
-        List<ElfLocalFunctionSymbol> supplemental = new ArrayList<>(modeSymbols);
+            elf, modeCues, ordered, cancelled, diagnostic);
+        List<ghidradwarfforge.elf.ElfLocalSymbol> supplemental = new ArrayList<>(modeSymbols);
         var plannedAliases = target.planFunctionAliases(elf, aliases, ordered, modeSymbols,
             aliasModeCues, cancelled, diagnostic);
         supplemental.addAll(plannedAliases);
+        var reservedFunctions = new ArrayList<>(modeSymbols);
+        reservedFunctions.addAll(plannedAliases);
+        supplemental.addAll(ghidradwarfforge.elf.Arm32SectionModes.plan(
+            elf, sectionModes, reservedFunctions, cancelled, diagnostic));
         var acceptedAliasNames = plannedAliases.stream().map(ElfLocalFunctionSymbol::name)
             .collect(java.util.stream.Collectors.toSet());
         var relatedAliases = aliases.stream().filter(alias -> acceptedAliasNames.contains(alias.name()))
@@ -381,6 +544,15 @@ public final class MinimalDwarfSidecarExporter {
             for (var declaration : typeModel.functionDeclarations()) globalReservedNames.add(declaration.name());
             for (var alias : ghidradwarfforge.types.ClassScopeNames.build(typeModel.types(), typeModel.classScopes()).aliases()) {
                 globalReservedNames.add(alias.name());
+            }
+        }
+        for (var witness : formatterAliases.entrySet()) {
+            checkCancelled(cancelled);
+            if (typeModel == null || !typeModel.types().byKey().containsKey(witness.getKey()) ||
+                    constantNames.contains(witness.getValue()) || globalReservedNames.contains(witness.getValue()) ||
+                    typeModel.types().nodes().stream().anyMatch(node -> node.name().equals(witness.getValue())) ||
+                    typeModel.globals().stream().anyMatch(value -> value.name().equals(witness.getValue()))) {
+                throw new IllegalArgumentException("missing or conflicting formatter canonical type witness");
             }
         }
         var globalNames = typeModel == null ? new GlobalScopeNames.Plan(Set.of(), Set.of(), List.of()) :
@@ -411,9 +583,15 @@ public final class MinimalDwarfSidecarExporter {
         if (sourceDirectory.getFileSystem().getSeparator().equals("\\")) {
             directoryName = directoryName.replace('\\', '/');
         }
-        byte[] lineTable = syntheticSource == null ? new byte[0] : Dwarf5LineTable.build(
-            unitName, directoryName, target.addressBytes(), elf.byteOrder(), ordered,
-            syntheticSource.mappedLines());
+        var fileLayout = sourceFiles == null ? Dwarf5LineTable.FileLayout.single(unitName) : sourceFiles;
+        if (!fileLayout.names().getFirst().equals(unitName)) {
+            throw new IllegalArgumentException("source index filename differs from compilation unit");
+        }
+        fileLayout.requireSource(syntheticSource);
+        Dwarf5LineTable.Result linePlan = Dwarf5LineTable.buildWithPlan(
+            fileLayout, directoryName, target.addressBytes(), elf.byteOrder(), ordered,
+            syntheticSource == null ? List.of() : syntheticSource.mappedLines(), syntheticSource != null);
+        byte[] lineTable = linePlan.section();
         // Failed source functions remain symbol-only. Do not serialize orphan
         // scope/location lists for declarations that produce() will not emit.
         var emittedSignatures = emittedFunctionSignatures(ordered, typeModel, syntheticSource);
@@ -427,24 +605,38 @@ public final class MinimalDwarfSidecarExporter {
             typeModel == null ? List.of() : typeModel.variableStorage().variables().stream()
                 .filter(variable -> emittedSignatures.containsKey(new FunctionKey(
                     variable.functionName(), variable.functionAddress()))).toList(),
-            target.addressBytes(), elf.byteOrder());
-        Map<String, byte[]> sections = produce(producer, consumer, target, ordered,
-            unitName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
-            elf.byteOrder(), relatedAliases, globalNames);
+            target.addressBytes(), elf.byteOrder(), cancelled);
+        ProductionResult production;
+        try (var phase = ExportPhase.start("native-production")) {
+            production = produce(producer, consumer, target, ordered,
+                unitName, directoryName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
+                elf.byteOrder(), relatedAliases, globalNames, linePlan, constants, constantTypeNames, formatterAliases, cancelled);
+            phase.completed = true;
+        }
+        Map<String, byte[]> sections = production.sections();
         if (sections.putIfAbsent(".debug_aranges", addressRanges) != null) {
             throw new IllegalStateException("producer supplied an unexpected address lookup");
         }
-        new MatchedElfSidecarWriter().write(elf, destination, sections, supplemental, cancelled, diagnostic);
-        return new ExportResult(target, ordered.size(), List.copyOf(sections.keySet()),
-            version);
+        try (var phase = ExportPhase.start("elf-packaging")) {
+            var writer = new MatchedElfSidecarWriter(compression);
+            if (framePlan == null) writer.write(elf, destination, sections, supplemental, cancelled, diagnostic);
+            else writer.writeWithFrames(elf, destination, sections, supplemental, framePlan, cancelled, diagnostic);
+            phase.completed = true;
+        }
+        var emittedSections = new ArrayList<>(sections.keySet());
+        if (framePlan != null && !framePlan.frames().isEmpty()) emittedSections.add(".debug_frame");
+        return new ExportResult(target, ordered.size(), List.copyOf(emittedSections),
+            version, production.emission());
     }
 
-    private static Map<String, byte[]> produce(LibDwarfProducer producer,
+    private static ProductionResult produce(LibDwarfProducer producer,
             LibDwarfConsumer consumer, DwarfTarget target, List<FunctionSymbol> functions,
-            String unitName, SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String unitName, String directoryName, SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
             byte[] lineTable, Dwarf5RangeLists.Result rangeLists,
             Dwarf5LocationLists.Result locationLists,
-            ByteOrder byteOrder, List<ElfFunctionAlias> aliases, GlobalScopeNames.Plan globalNames) {
+            ByteOrder byteOrder, List<ElfFunctionAlias> aliases, GlobalScopeNames.Plan globalNames,
+            Dwarf5LineTable.Result linePlan, List<SyntheticConstant> constants,
+            Map<Integer, String> constantTypeNames, Map<String, String> formatterAliases, BooleanSupplier cancelled) {
         Map<Long, SectionRecord> sections = new LinkedHashMap<>();
         long[] nextSection = { 1 };
         long[] nextSymbol = { 1 };
@@ -469,17 +661,31 @@ public final class MinimalDwarfSidecarExporter {
                 "dwarf_pro_set_default_string_form", errorOut, consumer);
             Die unit = newDie(producer, consumer, debug, DW_TAG_COMPILE_UNIT, null, errorOut);
             addName(producer, consumer, unit, unitName, errorOut);
+            // This is the generated source's directory, not an inferred original
+            // compiler working directory. Keep CU and line-table lookup aligned.
+            addCompilationDirectory(producer, consumer, unit, directoryName, errorOut);
             addProducer(producer, consumer, unit, errorOut);
             addUnsigned(producer, consumer, debug, unit, DW_AT_LANGUAGE, DW_LANG_C11,
                 errorOut);
+            emitSyntheticConstants(producer, consumer, debug, unit, constants, constantTypeNames, byteOrder, errorOut, cancelled);
             Map<List<String>, Die> namespaceDies = allocateNamespaces(producer, consumer,
                 debug, unit, typeModel, errorOut);
             ClassAllocation classes = allocateClassScopes(producer, consumer, debug, unit,
                 typeModel, namespaceDies, errorOut);
             Map<String, AllocatedType> allocatedTypes = allocateTypes(producer, consumer,
                 debug, unit, typeModel, classes.types(), errorOut);
-            populateTypes(producer, consumer, debug, typeModel, allocatedTypes, byteOrder,
-                errorOut);
+            var typeReferences = populateTypes(producer, consumer, debug, typeModel, allocatedTypes, byteOrder,
+                errorOut, cancelled);
+            for (var witness : formatterAliases.entrySet()) {
+                checkCancelled(cancelled);
+                var canonical = allocatedTypes.get(witness.getKey());
+                if (canonical == null) {
+                    throw new IllegalArgumentException("missing or conflicting formatter canonical type witness");
+                }
+                Die alias = newDie(producer, consumer, debug, DW_TAG_TYPEDEF, unit, errorOut);
+                addName(producer, consumer, alias, witness.getValue(), errorOut);
+                addReference(producer, consumer, debug, alias, DW_AT_TYPE, canonical.primary(), errorOut);
+            }
             Map<FunctionKey, FunctionLines> sourceFunctions = sourceFunctions(syntheticSource);
             Map<FunctionKey, ProgramTypeModel.FunctionSignature> signatures =
                 emittedFunctionSignatures(functions, typeModel, syntheticSource);
@@ -488,12 +694,13 @@ public final class MinimalDwarfSidecarExporter {
             Map<VariableKey, VariableLocation> variableLocations =
                 variableLocations(typeModel);
             Map<Long, Die> functionDies = new HashMap<>();
+            Map<FunctionKey, List<VariableEmission>> emittedVariables = new LinkedHashMap<>();
+            Map<Long, FunctionKey> emittedOwners = new HashMap<>();
             Map<ClassScopeModel.FunctionReference, Die> relatedFunctions = new HashMap<>();
             Map<ghidradwarfforge.types.LexicalScopeModel.Key, Die> lexicalOwners = new HashMap<>();
             Set<Long> lexicalAddresses = new java.util.HashSet<>();
             var functionStatics = FunctionStaticPolicy.select(typeModel, syntheticSource)
                 .exported();
-            long fileIndex = 0;
             if (lineTable.length != 0) {
                 addSectionOffset(producer, consumer, debug, unit, DW_AT_STMT_LIST, 0,
                     errorOut);
@@ -503,6 +710,10 @@ public final class MinimalDwarfSidecarExporter {
                     rangeLists.compilationUnitOffset(), errorOut);
             }
             for (FunctionSymbol function : functions) {
+                checkCancelled(cancelled);
+                List<VariableEmission> declarations = new ArrayList<>();
+                emittedVariables.put(FunctionKey.of(function), declarations);
+                emittedOwners.put(function.address(), FunctionKey.of(function));
                 Die die = newDie(producer, consumer, debug, DW_TAG_SUBPROGRAM, unit, errorOut);
                 functionDies.put(function.address(), die);
                 relatedFunctions.put(ClassScopeModel.FunctionReference.definition(function.name(), function.address()), die);
@@ -534,10 +745,11 @@ public final class MinimalDwarfSidecarExporter {
                 FunctionLines sourceFunction = sourceFunctions.get(FunctionKey.of(function));
                 boolean sourceFailed = sourceFunction != null && sourceFunction.failureDiagnostic() != null;
                 if (sourceFunction != null && sourceFunction.decompiled()) {
-                    addUnsigned(producer, consumer, debug, die, DW_AT_DECL_FILE, fileIndex,
+                    var declarationPosition = linePlan.files().locate(declarationLine(sourceFunction, syntheticSource));
+                    addUnsigned(producer, consumer, debug, die, DW_AT_DECL_FILE, declarationPosition.file(),
                         errorOut);
                     addUnsigned(producer, consumer, debug, die, DW_AT_DECL_LINE,
-                        declarationLine(sourceFunction, syntheticSource), errorOut);
+                        declarationPosition.line(), errorOut);
                 }
                 ProgramTypeModel.FunctionSignature signature = sourceFailed ? null :
                     signatures.get(FunctionKey.of(function));
@@ -564,7 +776,9 @@ public final class MinimalDwarfSidecarExporter {
                         addFlag(producer, consumer, debug, die, DW_AT_NORETURN, true,
                             errorOut);
                     }
-                    for (TypeGraph.Parameter parameter : signature.parameters()) {
+                    for (int ordinal = 0; ordinal < signature.parameters().size(); ordinal++) {
+                        checkCancelled(cancelled);
+                        TypeGraph.Parameter parameter = signature.parameters().get(ordinal);
                         // GDB derives return-buffer transport from the formal return
                         // type. Listing it as another argument shifts injected calls.
                         // Preserve the known carrier as an artificial scoped variable.
@@ -580,7 +794,7 @@ public final class MinimalDwarfSidecarExporter {
                             addFlag(producer, consumer, debug, parameterDie,
                                 DW_AT_ARTIFICIAL, true, errorOut);
                         }
-                        addVariableLocation(producer, consumer, debug, parameterDie,
+                        Location location = addVariableLocation(producer, consumer, debug, parameterDie,
                             variableLocations.get(new VariableKey(function.address(),
                                 VariableKind.PARAMETER, parameter.name())), locationLists,
                             errorOut);
@@ -588,6 +802,9 @@ public final class MinimalDwarfSidecarExporter {
                             addReference(producer, consumer, debug, die,
                                 DW_AT_OBJECT_POINTER, parameterDie, errorOut);
                         }
+                        declarations.add(new VariableEmission(Kind.PARAMETER, ordinal,
+                            parameter.name(), parameter.name(), "", parameter.type(),
+                            parameter.artificial(), parameter.returnStorage(), location));
                     }
                     if (signature.variadic()) {
                         newDie(producer, consumer, debug, DW_TAG_UNSPECIFIED_PARAMETERS,
@@ -618,15 +835,19 @@ public final class MinimalDwarfSidecarExporter {
                         }
                     }
                     for (ProgramTypeModel.LocalVariable local : signature.locals()) {
+                        checkCancelled(cancelled);
                         var binding = scopes == null ? null : scopes.local(local.name());
                         Die parent = binding == null ? die : Objects.requireNonNull(lexicalDies.get(binding.block()));
                         Die localDie = newDie(producer, consumer, debug, DW_TAG_VARIABLE, parent, errorOut);
                         addName(producer, consumer, localDie, binding == null ? local.name() : binding.displayName(), errorOut);
                         addTypeReference(producer, consumer, debug, localDie, local.type(),
                             typeModel.types(), allocatedTypes, errorOut);
-                        addVariableLocation(producer, consumer, debug, localDie,
+                        Location location = addVariableLocation(producer, consumer, debug, localDie,
                             variableLocations.get(new VariableKey(function.address(),
                                 VariableKind.LOCAL, local.name())), locationLists, errorOut);
+                        declarations.add(new VariableEmission(Kind.LOCAL, -1, local.name(),
+                            binding == null ? local.name() : binding.displayName(),
+                            binding == null ? "" : binding.block(), local.type(), false, false, location));
                     }
                 }
             }
@@ -679,6 +900,7 @@ public final class MinimalDwarfSidecarExporter {
                 }
                 for (ProgramTypeModel.FunctionStaticVariable variable :
                         functionStatics) {
+                    checkCancelled(cancelled);
                     Die owner = variable.block().isEmpty() ? functionDies.get(variable.ownerAddress()) :
                         lexicalOwners.get(new ghidradwarfforge.types.LexicalScopeModel.Key(variable.ownerAddress(), variable.block()));
                     if (owner == null) {
@@ -691,6 +913,10 @@ public final class MinimalDwarfSidecarExporter {
                         typeModel.types(), allocatedTypes, errorOut);
                     addAddressLocation(producer, consumer, debug, die, variable.address(),
                         errorOut);
+                    emittedVariables.get(Objects.requireNonNull(emittedOwners.get(variable.ownerAddress())))
+                        .add(new VariableEmission(Kind.FUNCTION_STATIC, -1, variable.name(),
+                            variable.name(), variable.block(), variable.type(), false, false,
+                            new ExpressionLocation(new Expression(List.of(new AddressOperation(variable.address()))))));
                 }
                 for (var thunk : typeModel.functionRelations().thunks()) {
                     Die origin = relatedFunctions.get(thunk.function());
@@ -777,7 +1003,15 @@ public final class MinimalDwarfSidecarExporter {
             check(producer.dwarf_producer_finish_a(debug, errorOut),
                 "dwarf_producer_finish_a", errorOut, consumer);
             finished = true;
-            return result;
+            List<FunctionEmission> emittedFunctions = new ArrayList<>();
+            for (FunctionSymbol function : functions) {
+                checkCancelled(cancelled);
+                emittedFunctions.add(new FunctionEmission(function, signatures.get(FunctionKey.of(function)),
+                    emittedVariables.get(FunctionKey.of(function))));
+            }
+            return new ProductionResult(result, new ExportEmission(
+                typeModel == null ? new TypeGraph(List.of()) : typeModel.types(), typeReferences,
+                linePlan, emittedFunctions));
         }
         finally {
             if (!finished) {
@@ -1041,15 +1275,19 @@ public final class MinimalDwarfSidecarExporter {
         return result;
     }
 
-    private static void populateTypes(LibDwarfProducer producer,
+    private static Map<String, List<TypeGraph.TypeRef>> populateTypes(LibDwarfProducer producer,
             LibDwarfConsumer consumer, Debug debug, ProgramTypeModel model,
             Map<String, AllocatedType> allocated, ByteOrder byteOrder,
-            PointerByReference errorOut) {
+            PointerByReference errorOut, BooleanSupplier cancelled) {
         if (model == null) {
-            return;
+            return Map.of();
         }
+        Map<String, List<TypeGraph.TypeRef>> represented = new LinkedHashMap<>();
         for (TypeNode node : model.types().nodes()) {
+            checkCancelled(cancelled);
             if (node instanceof VoidType) {
+                // Void is represented by deliberately absent DW_AT_type, never a DIE.
+                represented.put(node.key(), List.of());
                 continue;
             }
             AllocatedType allocation = Objects.requireNonNull(allocated.get(node.key()),
@@ -1162,7 +1400,11 @@ public final class MinimalDwarfSidecarExporter {
             else if (node instanceof OpaqueType opaque) {
                 addName(producer, consumer, die, opaque.name(), errorOut);
             }
+            // All semantic edges in this node's branch have succeeded, including
+            // implicit void edges. Preserve repeated member/parameter references.
+            represented.put(node.key(), node.references());
         }
+        return represented;
     }
 
     private static long typeTag(TypeNode node) {
@@ -1423,30 +1665,42 @@ public final class MinimalDwarfSidecarExporter {
         pointer(attributeOut, "location attribute");
     }
 
-    private static void addStableLocation(LibDwarfProducer producer,
+    private static Location addStableLocation(LibDwarfProducer producer,
             LibDwarfConsumer consumer, Debug debug, Die die, VariableLocation variable,
             PointerByReference errorOut) {
-        if (variable == null ||
-                !(DwarfLocationExpression.planStable(variable) instanceof Expression plan)) {
-            return;
+        if (variable == null) {
+            return new NoLocation("NO_STORAGE_EVIDENCE", "No variable storage record was supplied");
         }
+        var planned = DwarfLocationExpression.planStable(variable);
+        if (planned instanceof DwarfLocationExpression.Omitted omitted) {
+            return new NoLocation(omitted.reason().name(), omitted.diagnostic());
+        }
+        Expression plan = (Expression) planned;
         addExpressionAttribute(producer, consumer, debug, die, DW_AT_LOCATION, plan,
             errorOut);
+        return new ExpressionLocation(plan);
     }
 
-    private static void addVariableLocation(LibDwarfProducer producer,
+    private static Location addVariableLocation(LibDwarfProducer producer,
             LibDwarfConsumer consumer, Debug debug, Die die, VariableLocation variable,
             Dwarf5LocationLists.Result locationLists, PointerByReference errorOut) {
         if (variable == null) {
-            return;
+            return new NoLocation("NO_STORAGE_EVIDENCE", "No variable storage record was supplied");
         }
         Long offset = locationLists.offsets().get(variable);
         if (offset != null) {
             addSectionOffset(producer, consumer, debug, die, DW_AT_LOCATION, offset,
                 errorOut);
-            return;
+            return new ListLocation(offset, Objects.requireNonNull(locationLists.plans().get(variable),
+                "emitted location-list plan"));
         }
-        addStableLocation(producer, consumer, debug, die, variable, errorOut);
+        return addStableLocation(producer, consumer, debug, die, variable, errorOut);
+    }
+
+    private static void checkCancelled(BooleanSupplier cancelled) {
+        if (cancelled.getAsBoolean()) {
+            throw new CancellationException("DWARF emission cancelled");
+        }
     }
 
     private static void addExpressionAttribute(LibDwarfProducer producer,
@@ -1489,6 +1743,43 @@ public final class MinimalDwarfSidecarExporter {
         return width == 8 ? buffer.getLong() : Integer.toUnsignedLong(buffer.getInt());
     }
 
+    private static void emitSyntheticConstants(LibDwarfProducer producer, LibDwarfConsumer consumer,
+            Debug debug, Die unit, List<SyntheticConstant> constants, Map<Integer, String> typeNames,
+            ByteOrder byteOrder, PointerByReference errorOut,
+            BooleanSupplier cancelled) {
+        Map<Integer, Die> types = new HashMap<>();
+        for (var constant : constants) {
+            checkCancelled(cancelled);
+            int key = constant.bits() * 2 + (constant.signed() ? 1 : 0);
+            Die type = types.get(key);
+            if (type == null) {
+                Die base = newDie(producer, consumer, debug, DW_TAG_BASE_TYPE, unit, errorOut);
+                addName(producer, consumer, base, typeNames.get(key), errorOut);
+                addUnsigned(producer, consumer, debug, base, DW_AT_BYTE_SIZE, (constant.bits() + 7) / 8, errorOut);
+                if (constant.bits() % 8 != 0) {
+                    addUnsigned(producer, consumer, debug, base, DW_AT_BIT_SIZE, constant.bits(), errorOut);
+                    // DWARF 5 section 5.1 counts from the beginning of storage.
+                    // Integer constants occupy its low bits in either byte order.
+                    addUleb(producer, consumer, base, DW_AT_DATA_BIT_OFFSET,
+                        byteOrder == ByteOrder.BIG_ENDIAN ? 8 - constant.bits() % 8 : 0, errorOut);
+                }
+                addUnsigned(producer, consumer, debug, base, DW_AT_ENCODING,
+                    constant.signed() ? DW_ATE_SIGNED : DW_ATE_UNSIGNED, errorOut);
+                type = newDie(producer, consumer, debug, DW_TAG_CONST_TYPE, unit, errorOut);
+                addReference(producer, consumer, debug, type, DW_AT_TYPE, base, errorOut);
+                types.put(key, type);
+            }
+            Die die = newDie(producer, consumer, debug, DW_TAG_VARIABLE, unit, errorOut);
+            addName(producer, consumer, die, constant.name(), errorOut);
+            addReference(producer, consumer, debug, die, DW_AT_TYPE, type, errorOut);
+            addFlag(producer, consumer, debug, die, DW_AT_ARTIFICIAL, true, errorOut);
+            addFlag(producer, consumer, debug, die, DW_AT_EXTERNAL, true, errorOut);
+            if (constant.signed()) addSigned(producer, consumer, debug, die, DW_AT_CONST_VALUE, constant.value(), errorOut);
+            else addUleb(producer, consumer, die, DW_AT_CONST_VALUE, constant.value(), errorOut);
+            // Deliberately no location, lifetime, source row or recovered-variable coverage entry.
+        }
+    }
+
     private static Die newDie(LibDwarfProducer producer, LibDwarfConsumer consumer,
             Debug debug, long tag, Die parent, PointerByReference errorOut) {
         PointerByReference result = new PointerByReference();
@@ -1503,6 +1794,15 @@ public final class MinimalDwarfSidecarExporter {
         check(producer.dwarf_add_AT_name_a(die, name, result, errorOut),
             "dwarf_add_AT_name_a", errorOut, consumer);
         pointer(result, "name attribute");
+    }
+
+    private static void addCompilationDirectory(LibDwarfProducer producer,
+            LibDwarfConsumer consumer, Die die, String directoryName,
+            PointerByReference errorOut) {
+        PointerByReference result = new PointerByReference();
+        check(producer.dwarf_add_AT_comp_dir_a(die, directoryName, result, errorOut),
+            "dwarf_add_AT_comp_dir_a", errorOut, consumer);
+        pointer(result, "compilation-directory attribute");
     }
 
     private static void addProducer(LibDwarfProducer producer, LibDwarfConsumer consumer,

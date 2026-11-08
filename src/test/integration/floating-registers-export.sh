@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export LC_ALL=C
+# Keep stable English diagnostics while Java's native filesystem paths remain
+# UTF-8 for the audited Linux directory and derived-artifact validation hosts.
+export LC_ALL=C.UTF-8
 if [[ $# -lt 3 ]]; then
     echo "usage: $0 <ghidra-dir> <libdwarf> <libdwarfp> [target ...]" >&2
     exit 64
@@ -28,6 +30,13 @@ if [[ "$elf_layout" != sections && "$elf_layout" != sectionless ]] ||
     echo 'FORGE_FP_ELF_LAYOUT must be sections, or sectionless with mips-fp32' >&2
     exit 64
 fi
+compression=${GHIDRA_DEBUG_COMPRESSION:-none}
+case "$compression" in
+    none|zlib) ;;
+    *) echo 'GHIDRA_DEBUG_COMPRESSION must be none or zlib' >&2; exit 64 ;;
+esac
+export_options=()
+if [[ "$compression" != none ]]; then export_options+=("--compress-debug-sections=$compression"); fi
 targets=("$@")
 if [[ ${#targets[@]} -eq 0 ]]; then
     if [[ "$abi_profile" == mips-fp32 ]]; then targets=(mips32be mips32le)
@@ -50,7 +59,7 @@ if [[ "$storage_form" == explicit-pieces ]]; then root+="-pieces"; fi
 if [[ "$elf_layout" == sectionless ]]; then root+="-sectionless"; fi
 mkdir -p "$root"
 results=$(mktemp -d "$root/run.XXXXXXXX")
-projects=$(mktemp -d /tmp/forge-floating-registers.XXXXXXXX)
+projects=$(mktemp -d "${TMPDIR:-/tmp}/forge-floating-registers.XXXXXXXX")
 cleanup() {
     qemu_socket_cleanup
     rm -rf -- "$projects"
@@ -126,9 +135,9 @@ run_gdb() {
     grep -Fxq "floating-registers-gdb=$mode PASS" "$log"
 }
 for target in "${targets[@]}"; do
-    emulator= sysroot= extra=()
+    emulator='' sysroot='' extra=()
     case "$target" in
-        x86_64) cc=gcc; strip_tool=strip; extra=(-fcf-protection=none) ;;
+        x86_64) cc=gcc; strip_tool='strip'; extra=(-fcf-protection=none) ;;
         aarch64) cc=aarch64-linux-gnu-gcc; strip_tool=aarch64-linux-gnu-strip
             emulator=qemu-aarch64-static; sysroot=/usr/aarch64-linux-gnu ;;
         arm32) cc=arm-linux-gnueabihf-gcc; strip_tool=arm-linux-gnueabihf-strip
@@ -194,7 +203,7 @@ for target in "${targets[@]}"; do
                 -scriptPath "$repository/src/test/integration/ghidra_scripts" "${rebase[@]}" \
                 -postScript PrepareFloatingRegisters.java "$target" "$case_root/labels.txt" \
                 -postScript GhidraDwarfForge.java "--libdwarf=$consumer" "--libdwarfp=$producer" \
-                "--output=$output" >"$case_dir/headless.txt" 2>&1
+                "--output=$output" "${export_options[@]}" >"$case_dir/headless.txt" 2>&1
             grep -Fq 'floating-register-preparation=PASS' "$case_dir/headless.txt"
             if [[ "$abi_profile" == mips-fp32 ]]; then
                 grep -Fq 'floating-fp32-abi=PASS pairs=16' "$case_dir/headless.txt"
@@ -264,13 +273,48 @@ PY
             sha256sum -c "$case_root/input.sha256" >"$case_dir/input-preservation.txt"
             cp "$output" "$case_dir/floating.dbg"
             cp "$output.c" "$case_dir/floating.dbg.c"
+            if [[ -n ${FORGE_LLDB:-} && ( "$target" == x86_64 || "$target" == aarch64 ) ]]; then
+                python3 "$repository/src/test/integration/floating-registers-lldb.py" \
+                    "$case_root" "$case_dir/lldb" --target "$target" --lldb "$FORGE_LLDB"
+            fi
             echo "floating-register-case=$target/$role/$sample PASS" | tee "$case_dir/result.txt"
         done
         if [[ ${FORGE_FP_BASELINE:-0} != 1 ]]; then
             cmp "$case_root/baseline/floating.dbg" "$case_root/repeat/floating.dbg"
             cmp "$case_root/baseline/floating.dbg.c" "$case_root/repeat/floating.dbg.c"
         fi
+        if [[ -n ${FORGE_PERF:-} && ( "$target" == x86_64 || "$target" == aarch64 ) ]]; then
+            python3 "$repository/src/test/integration/perf-source-lookup.py" \
+                "$case_root" "$case_root/perf-source" --perf "$FORGE_PERF"
+        fi
+        if [[ -n ${FORGE_SOURCE_RELOCATION_JAR:-} ]]; then
+            relocation_options=()
+            if [[ -n ${FORGE_LLDB:-} ]]; then relocation_options+=(--lldb "$FORGE_LLDB"); fi
+            if [[ -n ${FORGE_PERF:-} ]]; then relocation_options+=(--perf "$FORGE_PERF"); fi
+            python3 "$repository/src/test/integration/source-relocation.py" \
+                "$case_root" "$case_root/source-relocation" --target "$target" \
+                --jar "$FORGE_SOURCE_RELOCATION_JAR" "${relocation_options[@]}"
+        fi
+        if [[ -n ${FORGE_DERIVED_TEST_CLASSES:-} ]]; then
+            if [[ -z ${FORGE_SOURCE_RELOCATION_JAR:-} || -z ${DWARFDUMP:-} ]]; then
+                echo 'derived validation requires source relocation and the pinned strict bundle' >&2
+                exit 64
+            fi
+            strict_bundle=$(dirname "$(dirname "$(realpath "$DWARFDUMP")")")
+            python3 "$repository/src/test/integration/derived-artifact-validation.py" \
+                "$case_root" "$case_root/source-relocation" "$case_root/derived-validation" \
+                --jar "$FORGE_SOURCE_RELOCATION_JAR" --test-classes "$FORGE_DERIVED_TEST_CLASSES" \
+                --ghidra "$ghidra" --strict-bundle "$strict_bundle"
+        fi
     done
+    if [[ -n ${FORGE_LLDB:-} && ${FORGE_FP_BASELINE:-0} != 1 &&
+            ( "$target" == x86_64 || "$target" == aarch64 ) ]]; then
+        for role in "${roles[@]}"; do
+            python3 "$repository/src/test/integration/automatic-discovery-lldb.py" \
+                "$results/$target/$role" "$results/$target/$role/lldb-discovery" \
+                --target "$target" --lldb "$FORGE_LLDB"
+        done
+    fi
 done
 if [[ "$abi_profile" == mips-fp32 ]]; then snapshot_fp32_inputs after; fi
 echo 'floating-registers-export=PASS'

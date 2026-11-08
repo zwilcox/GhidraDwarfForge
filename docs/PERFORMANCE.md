@@ -1,5 +1,26 @@
 # Export performance measurements
 
+Measurement PR159 is integrated as `762dbbd`; compression PR160 is integrated
+as `5d81e4f`. Their merge trees match tested `3276396` and `6281660`, respectively.
+Measurement CI `41989520429`, performance workflow `41989520582`, and all 15
+combined CI jobs in `42010699187` pass. See the requirement-by-requirement
+[acceptance record](PERFORMANCE-ACCEPTANCE.md) and
+[combined artifact review](evidence/compression-integrated-42010699187.json).
+Earlier pending checkpoints retain their historical scope. Final documentation
+is reconciled here; issue closure follows protected integration of this record.
+
+
+Current broader-workload measurements and optimization decisions are in
+[PERFORMANCE-WORKPLAN.md](PERFORMANCE-WORKPLAN.md); production opt-in size
+measurements are in [ELF-COMPRESSION.md](ELF-COMPRESSION.md). The corrected native
+Windows workload/consumer workflow `41989520582` passes. Implementation gates
+and normal merges are complete; the acceptance record reconciles final documentation.
+
+The dated observations below are **HISTORICAL** populations. Their old runtime,
+partial-recovery findings and then-planned work do not describe current coverage
+or reopen fixes already accepted elsewhere. Preserve each measurement's exact
+scope; do not combine populations or generalize one result to every target.
+
 ## Representative SQLite workload
 
 **CONFIRMED locally (2026-10-25):** a source-built SQLite 3.46.1 workload
@@ -397,3 +418,180 @@ support and fixture bytes match the successful local `run.zf2690wu` protected
 source hashes. Hosted jobs validate the integration matrix; they do not claim
 hosted benchmark timings. Component code is retained by the combined integration
 branch, whose distinct full gate remains mandatory before merging.
+
+
+## Optional multi-file source comparison (#115)
+
+**CONFIRMED locally:** `multifile-benchmark.py` compares the same saved Ghidra
+program as single-file and optional multi-file exports. The source-built fixture
+has 1,000 or 10,000 generated functions; the target is Linux x86-64 non-PIE,
+Ghidra 12.0.3 and Java 21.0.12.1. Each count retains one warm-up per layout,
+then three alternating AB/BA pairs, each with a fresh JVM and GDB. The warm-ups
+include first publication and script-cache initialization; reported export
+medians measure subsequent reuse of the same generation. First-publication
+costs remain in the raw samples. Import and validation are outside export time;
+JVM startup, saved-program loading, decompilation, production and publication
+are inside it. OS caches and other host activity are not controlled.
+
+| Measurement | 1,000 single | 1,000 multi | 10,000 single | 10,000 multi |
+| --- | ---: | ---: | ---: | ---: |
+| Median whole export (seconds) | 3.33 | 3.42 | 10.96 | 11.20 |
+| Total artifact bytes, including manifest | 884,803 | 991,995 | 8,598,863 | 9,654,995 |
+| Output files | 2 | 13 | 2 | 85 |
+| Median symbol load (milliseconds) | 2.008 | 1.838 | 13.158 | 14.581 |
+| Median all-function lookup (milliseconds) | 12.094 | 15.872 | 116.286 | 153.718 |
+| Median 200 scattered listings (milliseconds) | 8.447 | 5.546 | 60.872 | 25.961 |
+| Median 200 file-qualified breakpoints (milliseconds) | 2.040 | 2.163 | 3.454 | 3.317 |
+
+All paired listing measurements decrease; all-function lookup increases in all
+pairs at both sizes. Breakpoint timing increases at 1,000 and decreases at
+10,000. Export time, symbol-load time and RSS comparisons have mixed directions.
+These are small-sample observations, not statistical significance or a general
+performance guarantee. Source partitioning costs space and does not uniformly
+improve debugger operations. The fixture is not representative firmware and
+these results say nothing about IDE navigation latency or Windows performance.
+The JSON `medians` object retains `peakResidentKiB` as the maximum observed
+process-family high-water mark across measured runs, not a memory median or
+aggregate simultaneous memory usage.
+
+The requested 1,000-line target is not a hard file-size cap. Whole units remain
+indivisible, including the listing-annotation catalog following the last
+function. The largest multi-file source parts are 557,007 and 5,451,311 bytes,
+respectively. This limitation is retained rather than changing the production
+partitioner to improve the benchmark after seeing its results.
+
+All 16 exports decompile every generated function without a decompilation
+failure. Their `PARTIAL` reports retain unsupported/unlocated information;
+no variable-location success is inferred from timing. Each fresh GDB verifies
+full DWARF symbols, names, addresses and source paths for all generated functions,
+performs the timed navigation, and separately executes first/last-function
+breakpoints, source `next`, expected global values and normal exit. Complete
+single/multi decoded-DWARF comparison, GNU/LLVM/pinned checks, unchanged input
+and saved-program data (apart from documented Ghidra backups), protected source
+hashes and byte-identical reruns pass.
+
+The first full attempt failed on its final 10,000-function export when private
+Ghidra application logs exhausted tmpfs. It is retained as a failed run. Its
+272,976,436 bytes of application logs were compressed and read-back verified
+before deleting only those task-owned originals. The corrected driver keeps
+private application logs with the evidence directory; a fresh complete run
+passes. This is not an exporter correctness fix or a passing interrupted sample.
+
+Reproduce on a host with the installed production extension and pinned checker:
+
+```sh
+DWARFDUMP=/path/to/pinned/dwarfdump \
+python3 src/test/performance/multifile-benchmark.py "$GHIDRA_INSTALL_DIR" \
+    --work /path/to/new-evidence-directory --counts 1000 10000 \
+    --pairs 3 --source-lines 1000
+```
+
+Optional `--artifacts` selects a new hard-link-capable filesystem separately
+from evidence/projects. Optional `--java` selects the runtime explicitly through
+Ghidra's production headless entry point. Local raw evidence is retained under
+`issue115-multifile/benchmark-final-02`; the failed attempt is
+`benchmark-final-01`. [Machine-readable measurements](evidence/multifile-benchmark.json)
+bind the summary, environment and installed module hashes. Hosted execution was
+unverified at that local checkpoint; the final hosted results follow.
+
+### Hosted multi-file observations at d701e2b
+
+**CONFIRMED:** final full run `42432375106`, artifact `13603625596`, passes the
+1,000/10,000-function benchmark and its independent raw artifact audit. Each size
+has one warmup plus three measured exports per layout. Source semantics,
+validators, native GDB navigation/runtime checks and deterministic reruns pass.
+The [retained measurements](evidence/multifile-hosted-benchmark.json) include
+medians, every paired ratio and artifact sizes. These results supplement the
+local samples above.
+
+| Functions | Metric | Single median | Multi median | Paired observation |
+| --- | --- | ---: | ---: | --- |
+| 1,000 | Export (s) | 6.800000 | 7.130000 | observed regression |
+| 1,000 | Peak RSS (KiB) | 407556 | 423720 | observed regression |
+| 1,000 | Symbol load (s) | 0.001839 | 0.001851 | observed regression |
+| 1,000 | All-function lookup (s) | 0.023650 | 0.032105 | observed regression |
+| 1,000 | Scattered listing (s) | 0.014466 | 0.014827 | observed regression |
+| 1,000 | File-qualified breakpoints (s) | 0.006278 | 0.006680 | observed regression |
+| 10,000 | Export (s) | 23.390000 | 23.290000 | mixed/inconclusive |
+| 10,000 | Peak RSS (KiB) | 1084852 | 1310852 | mixed/inconclusive |
+| 10,000 | Symbol load (s) | 0.016436 | 0.016507 | mixed/inconclusive |
+| 10,000 | All-function lookup (s) | 0.247076 | 0.322826 | observed regression |
+| 10,000 | Scattered listing (s) | 0.114439 | 0.066825 | observed reduction |
+| 10,000 | File-qualified breakpoints (s) | 0.009319 | 0.009219 | mixed/inconclusive |
+
+All six paired directions worsen at 1,000 functions. At 10,000, scattered listing
+improves while all-function lookup worsens; export, RSS, symbol-load and
+file-qualified-breakpoint directions are mixed. Total artifact bytes grow from
+884,923 to 992,107 and from 8,598,975 to 9,655,115. The largest multi-file source
+part remains 557,007 and 5,451,311 bytes because the declaration catalog is
+indivisible. No statistical significance, hard file-size bound or general
+navigation speedup is claimed.
+
+## Historical performance baseline directory compatibility
+
+**CONFIRMED hosted correction:** run `42432375119` at `d701e2b` passes Windows
+workloads and Linux validators/GDB. The retained raw review checks twenty
+measured reports plus two profiles, actual artifact hashes and the bounded
+DWARF exception below. SQLite baseline/candidate median times are 78.41/80.96
+seconds; U-Boot times are 183.82/194.82 seconds, retaining its same one-function
+timeout. No speedup or complete-recovery claim follows. See the
+[hosted acceptance audit](MULTIFILE-ACCEPTANCE.md).
+
+**HISTORICAL diagnosis:** the optional
+performance workflow still measures against pinned `1bb4c14`, with its separately
+audited array correction. That baseline predates `75860c6`, which adds the
+synthetic source directory as `DW_AT_comp_dir` to prevent a perf source-lookup
+crash. The first SQLite pair in Windows runs `42425532257` and `42426100636`
+therefore fails the old byte-equality assertion. This is separate from the
+Windows source-store race-hook failure and does not establish a production
+multi-file defect.
+
+`dwarf-revision-equivalence.py` allows only that documented semantic difference.
+Both first sidecars are retained before comparison. LLVM must validate each;
+all decoded DIE depths, tags, forms, values and references match after resolving
+reference offsets by DIE position and checking/removing exactly the candidate
+CU directory attribute. The directory must equal the actual output directory.
+The first CU abbreviation must gain only `DW_AT_comp_dir / DW_FORM_strp`; all
+remaining abbreviation bytes match. The string table must gain exactly one
+matching directory string, with every other byte preserved. ELF identity,
+section metadata and every other section, including `.debug_line`, ranges and
+locations, remain equal. This comparator is explicitly bounded to the ELF64
+little-endian DWARF 5 corpus and refuses a baseline that already has the field.
+
+The existing per-variant/profile byte equality, report equality, source-catalog
+comparison, project/input preservation, timings and consumer checks remain.
+Comparison runs outside measured export intervals. GNU and strict validation
+now additionally run on the retained baseline; the Linux consumer checks that
+the comparison receipt binds the candidate and baseline hashes. No production
+module, baseline revision, native pin or required-validation gate is changed.
+
+A local Java 21 replay uses a private copy of the failed Windows SQLite project
+and the three corrected baseline class files from that run's audited control.
+It retains the original release separately. The 12,338 decoded records match;
+GNU, LLVM and the pinned checker accept both sidecars. GDB passes compiler and
+both exporter function/source/value/step/return/exit checks. Negative controls
+reject changed types/references, addresses, source coordinates, locations,
+whitespace inside names, forms, CU address size, directory values, section
+bytes/metadata, target identity and extra abbreviation/string data.
+
+The initial replay encountered the saved project's Windows owner; the isolated
+JVM now uses that recorded owner identity. The original saved project is retained;
+Linux changes only CRLF to LF in four index/backup files of the private copy,
+with every other copied file byte-identical. That transport difference is
+recorded explicitly, not treated as a change to the analyzed program.
+Validation rehearsals also exposed a missing stderr capture and a stale private
+source timestamp relative to the baseline sidecar. Those attempts are retained;
+the final debugger checks select each matching source and its sidecar timestamp,
+without changing target or sidecar bytes. Native Windows and full repeated
+performance acceptance were still pending at that diagnostic checkpoint; the
+hosted run recorded above subsequently passed.
+
+A fresh Linux import of the same pinned U-Boot corpus also passes one
+baseline/candidate pair: 6,375 functions and 43,408 DIE records. The exact
+abbreviation/string exception and all remaining section comparisons pass;
+source differences are solely the previously accepted appended listing catalog,
+and report semantics match for both workloads. Both U-Boot sidecars pass
+GNU/LLVM/pinned checks and compiler/baseline/candidate GDB runtime checks.
+These diagnostic pairs are correctness evidence, not repeated performance
+measurements. The [receipt](evidence/multifile-performance-control.json) binds
+raw evidence, tested comparator sources and the retained failed attempts.

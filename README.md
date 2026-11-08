@@ -101,10 +101,11 @@ Stable register locations also require [contained control flow](docs/REGISTER-BO
 An excluded branch block cannot silently clobber an allegedly stable register;
 unproven lifetimes retain names and types without locations.
 
-A bounded [i386 integer/stack profile](docs/I386-INTEGER-PROFILE.md) passes
-stripped exec, sectionless, PIE and rebase tests, including PR63's full hosted gate
-and independent package/runtime review;
-this adds no libc/shared or floating/vector support claim.
+The [i386 integer/stack profile](docs/I386-INTEGER-PROFILE.md) retains its
+stripped exec, sectionless, PIE and rebase coverage. The accepted expansion adds
+shared-library loading and selected libc-backed x87/SSE/vector/aggregate cases;
+see the [ABI matrix and consumer limits](docs/I386-ABI-MATRIX.md) and the
+[combined acceptance audit](docs/TARGET-ABI-ACCEPTANCE.md).
 
 The exporter replaces existing compiler DWARF rather than merging
 it with the recovered view. Old compressed debug sections, indexes, and debug
@@ -138,6 +139,23 @@ publication remains a separate step.
 
 ## Headless entry point
 
+Opt-in executable attachment has passed native Linux/Windows CLI and GUI
+acceptance; final protected integration is tracked in PR158 and
+[the acceptance record](docs/DEBUGLINK-ATTACHMENT-ACCEPTANCE.md). The Linux
+`support/ghidra-dwarf-forge-attach` and PowerShell7
+`support/ghidra-dwarf-forge-attach.ps1` launchers provide read-only preview and
+explicit attachment/recovery commands; see [the invocation guide](docs/ATTACHMENT-HELPER.md).
+Script Manager provides `ExportAndAttachGhidraDwarfForge.java` to export the
+current program to a fresh pair and prepare the request/report. Use
+`AttachGhidraDwarfForge.java` for an existing request and
+`RecoverGhidraDwarfForgeAttachment.java` for saved recovery selections. Each
+reviews the selected files and requires confirmation before launching the
+modifying helper. Cancel is the default.
+Attachment requires a supported local ext4 or NTFS metadata profile, live
+validators and a sidecar beside the target or in its `.debug` directory. It
+retains verified backups and previous generations for recovery. Ordinary export
+continues to leave the executable unchanged.
+
 The extension packages Bash and PowerShell headless wrappers under `support/`.
 For a fresh temporary import on Linux:
 
@@ -163,13 +181,50 @@ The PowerShell equivalent is `support/ghidra-dwarf-forge-headless.ps1` with
 `-Input`, `-Output`, and `-Log` parameters. `-Libdwarf` and `-Libdwarfp` are
 optional paired overrides for development builds.
 
+Development builds offer optional multi-file synthetic source with
+`--source-lines=1000` (PowerShell `-SourceLines 1000`). The value is a positive
+line target; whole functions and the declaration preamble stay together, so a
+large function can exceed it. Without this option, export still writes one
+synthetic source file. In multi-file mode, `<sidecar>.c` becomes an index beside
+the `forge-src-*.c` parts and a `forge-src-*.json` manifest. Keep the index,
+manifest and all referenced parts together when moving an export. Explicit logs
+cannot use those generated filenames in the output directory or alias existing
+parts, including parts from an earlier export. See
+[multi-file source design and validation status](docs/MULTIFILE-SOURCE.md).
+
+Development builds offer opt-in ELF debug-section compression with
+`--compress-debug-sections=zlib` (PowerShell `-CompressDebugSections zlib`).
+The default is `none`. The source file and recovered DWARF content are unchanged;
+sections stay plain when compression would increase their size. See
+[compression usage and validation status](docs/ELF-COMPRESSION.md).
+
+Development builds can include diagnostic instruction context with
+`--source-context=off|assembly|pcode|both` (PowerShell `-SourceContext`). The
+default is `off`. Context explains native warnings, intrinsic operations and
+decompilation failures using bounded observations of existing instructions.
+It does not create executable source lines. The opt-in Script Manager launcher
+`ExportGhidraDwarfForgeWithContext.java` offers the same four choices; its GUI
+interaction and Windows acceptance remain under validation. See
+[annotation and context limits](docs/ANALYST-ANNOTATIONS.md#optional-instruction-context-checkpoint-114).
+
+Development builds can additionally generate an explicitly invoked GDB loader
+with `--gdb-loader` (PowerShell `-GdbLoader`). It produces `<sidecar>.gdb.py`
+alongside the sidecar/source pair. See [GDB companion usage and current
+validation limits](docs/GDB-LOADER.md).
+
+Formatter development adds `--formatters=<selection.json>` (PowerShell
+`-Formatters`) for explicitly selected flag enums and aggregate summaries in GDB
+and LLDB. It is disabled by default. The companion preserves raw values and
+native fields, rejects stale sidecars, and never interprets analyst labels as
+Python. See [formatter choices, loading and acceptance status](docs/DEBUGGER-FORMATTERS.md).
+
 Exit `0` means the export completed as either `SUCCESS` or `PARTIAL`; inspect
 the schema-versioned JSON report for semantic omissions. Exit `10` means
 `FATAL`, `11` means `CANCELLED`, `12` means Ghidra failed or omitted a valid
 report, and `64` means invalid wrapper arguments. Existing-project mode always
 uses `-readOnly -noanalysis` and never deletes or saves the project.
 
-Explicit log paths must not alias the input, either output artifact, native
+Explicit log paths must not alias the input, any output artifact or companion, native
 libraries, or project data (including symlinks and hard links). In existing-
 project mode, `--log` additionally requires `--input` (`-Log` requires
 `-OriginalElf`/`-Input` in PowerShell), because the wrapper cannot discover the
@@ -183,9 +238,27 @@ Under **DWARF**, run **ExportGhidraDwarfForge.java** to export the current progr
 using the verified packaged native libraries. Open **Window → Console** for
 the output paths, coverage diagnostics, hashes, and final JSON report. If the
 original directory is unwritable, choose a writable directory when prompted;
-Cancel leaves no output pair. Linux Script Manager selection/cancellation is
-tested. Native Windows GUI interaction remains under validation; the Windows
-headless wrapper is already covered by CI.
+Cancel leaves no output pair. The current development build's Linux and Windows
+Script Manager selection, export and cancellation journeys are covered by CI.
+The coverage window shows per-function static source, variable and type evidence,
+with complete report saving and comparison. The read-only CLI supports the same
+reports; see [coverage scorecards](docs/COVERAGE-SCORECARDS.md) and their
+[acceptance record](docs/COVERAGE-ACCEPTANCE.md). These percentages describe
+exported knowledge, not execution coverage or confidence in correctness.
+
+The separate **ExportGhidraDwarfForgeWithGdbLoader.java** launcher opts into the
+companion as well. Its current Linux and Windows GUI journeys pass the same
+validated export and report workflow.
+
+**ExportCompressedGhidraDwarfForge.java** selects zlib compression from Script
+Manager. Its current Linux and Windows GUI journeys pass. It uses the same
+output chooser and artifact-pair publication.
+
+**ExportGhidraDwarfForgeMultiFile.java** asks for a source-line target (initially
+1000) and exports the same current program into deterministic source parts.
+Cancel stops before export. The ordinary **ExportGhidraDwarfForge.java** launcher
+keeps its single-file behavior. This feature's broader host/target acceptance is
+still in progress; see the multi-file validation record linked above.
 
 The underlying `GhidraDwarfForge.java` script remains available from Script
 Manager for native-free metadata preflight, or directly through
@@ -199,6 +272,9 @@ for GUI export. The underlying script's opt-in export accepts:
 --packaged-natives
 --input=/optional/path/to/original-when-Ghidra-path-is-stale
 --output=/optional/path/to/binary.dbg
+--compress-debug-sections=none|zlib
+--source-context=off|assembly|pcode|both
+--source-lines=<positive-integer>
 ```
 
 Choose either `--packaged-natives` or the two explicit native paths. The
@@ -222,9 +298,14 @@ changing the destination changes the recorded source directory.
 For automatic GDB association without modifying the executable, a sidecar may
 be installed under the standard `.build-id/xx/rest.debug` tree for its copied
 build ID. Local integration proves discovery and rejects a sidecar carrying a
-different image's build ID. The exporter does not yet install this layout
-automatically. Inputs without build IDs make no identity claim and remain
-supported through explicit `symbol-file` loading.
+different image's build ID. The development
+[`ghidra-dwarf-forge-build-id` command](docs/BUILD-ID-INSTALLATION.md) explicitly
+installs, updates or removes a verified export while retaining its source.
+See the [build-ID acceptance map](docs/BUILD-ID-ACCEPTANCE.md) for validated
+host/consumer profiles, evidence and integration status. Ordinary export does
+not install automatically.
+Inputs without build IDs make no identity claim and remain supported through
+explicit `symbol-file` loading.
 
 ## Required integration matrix
 
@@ -238,12 +319,18 @@ The architecture is intentionally broader than those first release gates.
 ARM32/AArch32 now has a hosted end-to-end ARMv7 hard-float, little-endian
 ARM-state lane. MIPS is explicitly in scope as the first ELF32/big-endian
 target. Architecture-specific ABI and register mappings remain isolated and
-table-driven so additional Ghidra-supported ELF processors can follow. Thumb,
-big-endian ARM, and other ARM ABI profiles are not yet claimed.
+table-driven so additional Ghidra-supported ELF processors can follow.
+The selected ARM/Thumb, BE8 and base/VFP profiles now have separate runtime
+validation; this does not imply arbitrary ARM ABI or BE32 support.
 
-[The target-profile contract](docs/TARGET-PROFILES.md) records the exact tested
-ABIs and storage cases, the difference between accepted ELF metadata and
-validated behavior, and the next bounded coverage additions.
+[The target-profile contract](docs/TARGET-PROFILES.md) records the accepted
+P2.3–P2.3c expansion: AArch64 ABI/SIMD selection; distinct MIPS O32/N32/N64
+profiles in both byte orders; ARM/Thumb, BE8 and per-function base/VFP behavior;
+and libc-backed i386 x87/SSE/vector/aggregate/convention cases. It identifies
+each tested layout and the limits of the debugger and recovered storage.
+[The ABI acceptance audit](docs/TARGET-ABI-ACCEPTANCE.md) links the complete
+requirements, combined hosted checks and independent artifact review. These
+development-branch additions are separate from the published alpha.2 release.
 
 CI has Linux lanes for x86-64, AArch64, ARM32, and both MIPS byte orders, plus
 a Windows-hosted x86-64 ELF export lane. Linux runs real headless export,

@@ -21,6 +21,13 @@ public final class RegisterAliasSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        for (int index = 0; index < 8; index++) {
+            for (int bytes : new int[]{4, 8, 16}) {
+                check("x86:LE:32:default", "x86", "XMM" + index, bytes, "XMM" + index, 21 + index, 0);
+            }
+        }
+        unavailable("x86:LE:32:default", "x86", "YMM0", 32);
+        unavailable("x86:LE:32:default", "x86", "ST0", 10);
         check("x86:LE:64:default", "x86_64", "XMM0", 4, "XMM0", 17, 0);
         check("x86:LE:64:default", "x86_64", "XMM1", 8, "XMM1", 18, 0);
         check("x86:LE:64:default", "x86_64", "EDI", 4, "RDI", 5, 0);

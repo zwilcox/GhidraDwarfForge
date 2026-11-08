@@ -1,0 +1,844 @@
+{
+    "issue": 112,
+    "status": "CONFIRMED local original source inventory; runtime relocation qualification and production precedence PLANNED",
+    "sources": {
+        "src/main/java/ghidradwarfforge/elf/OriginalFrameSources.java": "86cc00ac71115eeac031d73e88e16d9975b6b554204da9329a3cada055743d30",
+        "src/main/java/ghidradwarfforge/elf/SectionlessUnwind.java": "994bf4ca8dc41aaffcc3c5a49f3703527d19915089306807cf5d49d3434d4ff2",
+        "src/test/java/ghidradwarfforge/elf/OriginalFrameSourcesSmoke.java": "56f29ee17621b741feeb847add7422b18c22d3ab67b9b9723aefdf8c5adf250f",
+        "src/test/java/ghidradwarfforge/elf/SectionlessUnwindSmoke.java": "667eb66a0a4ccf6ecff9d7ab8411ac2b3ab605747355c14c34a42d37550364c3",
+        "src/test/integration/original-frame-ranges.py": "b031a6b4ba59ccffd73475d3b06d74810790960c8196491b57b0e4c5430bcf98",
+        ".github/workflows/ci.yml": "8d578b6f7d3da940d7ac9ae698a385528d19945aebd0cc756431e33d0ceecb98",
+        "build.gradle": "614367004fe36e24323b83aff0449279738c181906348f8df7b1700dc56d3906"
+    },
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/original-frame-sources.tar.gz",
+        "sha256": "4162bd7352578a9a0ca23f36469489a8555c47ab017387a2672dfa6ff285a695",
+        "bytes": 421609
+    },
+    "validation": {
+        "sourceChecks": 1158,
+        "rangeChecks": 4275,
+        "sectionlessChecks": 9172,
+        "encoderChecks": 158,
+        "buildExtension": "PASS",
+        "architectureGuard": "PASS",
+        "workflowLint": "PASS",
+        "compilerCases": 12,
+        "sourceVariants": 36,
+        "plainAndCompressedValidatorCases": 24,
+        "gnuLlvmRangeAgreement": "PASS",
+        "independentInflationHashes": "PASS",
+        "strict": "PASS under existing exact original/rebuild EH alignment diagnostic corroboration",
+        "inputAndSourcesUnchanged": true,
+        "independentCompilerBuildsIdentical": true,
+        "gdb": "NOT RERUN: read-only inventory; no synthesis or emitted file behavior changed"
+    },
+    "commands": [
+        "./gradlew --init-script build/flow-gradle/init.gradle --project-cache-dir build/flow-gradle/cache originalFrameSourcesSmoke originalFrameRangesSmoke sectionlessUnwindSmoke callFrameEncoderSmoke buildExtension",
+        "python3 src/test/integration/original-frame-ranges.py build/flow-gradle/output/classes/java build/original-frame-sources-final --java <Java21>/bin/java --dwarfdump <pinned-validation-bundle>/bin/dwarfdump",
+        "./gradlew --init-script build/flow-gradle/init.gradle --project-cache-dir build/flow-gradle/cache originalFrameSourcesSmoke (expanded header-discovery cancellation controls)",
+        "bash src/test/integration/architecture-neutrality.sh",
+        "actionlint .github/workflows/ci.yml"
+    ],
+    "retainedFailure": "Initial collector accepted valid EH table record pointers with a wrong advertised initial location; four width/order negative controls fail before correction and pass after",
+    "cases": [
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "section": "debug_frame",
+            "originalSha256": "0abcca41e6fb61e4ab6f870e68f1372fd42aefdf9c5084302cbe5e40269d1b17",
+            "frames": 4,
+            "strictReportedErrors": 0,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "0abcca41e6fb61e4ab6f870e68f1372fd42aefdf9c5084302cbe5e40269d1b17",
+                    "sources": [
+                        {
+                            "name": ".debug_frame",
+                            "offset": 5392,
+                            "stored": 176,
+                            "decoded": 176,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "a1eb6241cdbecc905fc3cd88e4f22448a61f8dfdb756d6f513b3a5781cc97282",
+                            "decodedSha256": "a1eb6241cdbecc905fc3cd88e4f22448a61f8dfdb756d6f513b3a5781cc97282"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gabi",
+                    "sha256": "fb3b007cd451aa088fcb83991cbe0adb11bcfe163c5d2830f7e319d42e0e6679",
+                    "sources": [
+                        {
+                            "name": ".debug_frame",
+                            "offset": 5088,
+                            "stored": 123,
+                            "decoded": 176,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "b718ad8592d2a32767000469f8c5ede83745bc14bbb21e83df457031c2bb37be",
+                            "decodedSha256": "a1eb6241cdbecc905fc3cd88e4f22448a61f8dfdb756d6f513b3a5781cc97282"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gnu",
+                    "sha256": "4884c3bc6c15f0ee6d87488b9be52a356e08eaa7590f3bb5fd2e304458778466",
+                    "sources": [
+                        {
+                            "name": ".zdebug_frame",
+                            "offset": 5022,
+                            "stored": 111,
+                            "decoded": 176,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "59c1a24204b09b63039d7270967777b0ed319510a3957f2728e25f9a998ad3e8",
+                            "decodedSha256": "a1eb6241cdbecc905fc3cd88e4f22448a61f8dfdb756d6f513b3a5781cc97282"
+                        }
+                    ],
+                    "frames": 4
+                }
+            ]
+        },
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "section": "eh_frame",
+            "originalSha256": "71eb21ee487dcd8aeca432eac4f6fef33136c3ff94cfb6081f8848e49ccf6a80",
+            "frames": 4,
+            "strictReportedErrors": 4,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "71eb21ee487dcd8aeca432eac4f6fef33136c3ff94cfb6081f8848e49ccf6a80",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8240,
+                            "stored": 144,
+                            "decoded": 144,
+                            "address": 4202544,
+                            "programHeaders": true,
+                            "storedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed",
+                            "decodedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "sectionless",
+                    "sha256": "80079b4841ba10f05911ffa4bfd0c5c20dee85b5d7d44b1553595187409870c3",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8240,
+                            "stored": 144,
+                            "decoded": 144,
+                            "address": 4202544,
+                            "programHeaders": true,
+                            "storedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed",
+                            "decodedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "unnamed",
+                    "sha256": "9a9708690a1fe82ea3730ee570c5977cfaec8ade51dfc7c6efdb0df60a31227a",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8240,
+                            "stored": 144,
+                            "decoded": 144,
+                            "address": 4202544,
+                            "programHeaders": true,
+                            "storedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed",
+                            "decodedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed"
+                        }
+                    ],
+                    "frames": 4
+                }
+            ]
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "section": "debug_frame",
+            "originalSha256": "9105b5b39bba0a639c013b979918266d97fefa489aa79e71cb30ba4789ef8514",
+            "frames": 4,
+            "strictReportedErrors": 0,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "9105b5b39bba0a639c013b979918266d97fefa489aa79e71cb30ba4789ef8514",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8192,
+                            "stored": 0,
+                            "decoded": 0,
+                            "address": 8192,
+                            "programHeaders": false,
+                            "storedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                            "decodedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                        },
+                        {
+                            "name": ".debug_frame",
+                            "offset": 13408,
+                            "stored": 176,
+                            "decoded": 176,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "03fd9ee37dfd5dab8b0444656375a007084137c3c50372b8e5b15a0ace2c3c8a",
+                            "decodedSha256": "03fd9ee37dfd5dab8b0444656375a007084137c3c50372b8e5b15a0ace2c3c8a"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gabi",
+                    "sha256": "468bc4f133eda5fab23e62afb3a30cdef6ca4de36637b4910eddf44b9788afec",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8192,
+                            "stored": 0,
+                            "decoded": 0,
+                            "address": 8192,
+                            "programHeaders": false,
+                            "storedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                            "decodedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                        },
+                        {
+                            "name": ".debug_frame",
+                            "offset": 13096,
+                            "stored": 122,
+                            "decoded": 176,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "de8d17119b41cd375a41b4e0553c1ba272ac3fac469a9a57c62df70b2c67162d",
+                            "decodedSha256": "03fd9ee37dfd5dab8b0444656375a007084137c3c50372b8e5b15a0ace2c3c8a"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gnu",
+                    "sha256": "8bb6714c402cfdcfa65c932bd10eab00f11a1e1bfb62cb0b897db5c24760765c",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8192,
+                            "stored": 0,
+                            "decoded": 0,
+                            "address": 8192,
+                            "programHeaders": false,
+                            "storedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                            "decodedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                        },
+                        {
+                            "name": ".zdebug_frame",
+                            "offset": 13030,
+                            "stored": 110,
+                            "decoded": 176,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "4b5daf719b7adc3fceccab71b6182511b3400f85d5bbb8b3033f12bd38bcd32d",
+                            "decodedSha256": "03fd9ee37dfd5dab8b0444656375a007084137c3c50372b8e5b15a0ace2c3c8a"
+                        }
+                    ],
+                    "frames": 4
+                }
+            ]
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "section": "eh_frame",
+            "originalSha256": "25f2a0823a9a01c75ebeb8b2f0d12e7f6f05f88d71d684caf237390112e88e45",
+            "frames": 4,
+            "strictReportedErrors": 4,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "25f2a0823a9a01c75ebeb8b2f0d12e7f6f05f88d71d684caf237390112e88e45",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8240,
+                            "stored": 144,
+                            "decoded": 144,
+                            "address": 8240,
+                            "programHeaders": true,
+                            "storedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed",
+                            "decodedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "sectionless",
+                    "sha256": "8d4b8f86a9296639b7fcca09f247aee509e3474f42448e20d50860935a0406c2",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8240,
+                            "stored": 144,
+                            "decoded": 144,
+                            "address": 8240,
+                            "programHeaders": true,
+                            "storedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed",
+                            "decodedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "unnamed",
+                    "sha256": "f94e64a9c57ca29a4010ce3a5ced827901d538cfa84e30f6c1fc96ffd7bbea78",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8240,
+                            "stored": 144,
+                            "decoded": 144,
+                            "address": 8240,
+                            "programHeaders": true,
+                            "storedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed",
+                            "decodedSha256": "41102cbb4617b129126e3156b7485098daf022ed9975162b2739525447e637ed"
+                        }
+                    ],
+                    "frames": 4
+                }
+            ]
+        },
+        {
+            "target": "x86_64",
+            "role": "shared",
+            "section": "debug_frame",
+            "originalSha256": "ba4ea95137c8cc8dce3ffc4fa3c6606b39f3f65a8d6d95770ccca9382b5de713",
+            "frames": 4,
+            "strictReportedErrors": 0,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "ba4ea95137c8cc8dce3ffc4fa3c6606b39f3f65a8d6d95770ccca9382b5de713",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8224,
+                            "stored": 0,
+                            "decoded": 0,
+                            "address": 8224,
+                            "programHeaders": false,
+                            "storedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                            "decodedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                        },
+                        {
+                            "name": ".debug_frame",
+                            "offset": 13208,
+                            "stored": 176,
+                            "decoded": 176,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "c6421ae12bbcc45527ac8ac2c2583d6c152d43beb0ffca5dd9c13b65c8b3430f",
+                            "decodedSha256": "c6421ae12bbcc45527ac8ac2c2583d6c152d43beb0ffca5dd9c13b65c8b3430f"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gabi",
+                    "sha256": "8dfac2d95e0221406d5a6fc66168b4d57a378d89dc475d4fa4eb20810170b3de",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8224,
+                            "stored": 0,
+                            "decoded": 0,
+                            "address": 8224,
+                            "programHeaders": false,
+                            "storedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                            "decodedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                        },
+                        {
+                            "name": ".debug_frame",
+                            "offset": 13016,
+                            "stored": 121,
+                            "decoded": 176,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "12a1af0331d983a51c6770f8dc42b56af6de38b25ab0f94cea9fc757218a25a1",
+                            "decodedSha256": "c6421ae12bbcc45527ac8ac2c2583d6c152d43beb0ffca5dd9c13b65c8b3430f"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gnu",
+                    "sha256": "39522548b7916a803b33d2179caaa0a379b3826316e761e63af16182af36df68",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8224,
+                            "stored": 0,
+                            "decoded": 0,
+                            "address": 8224,
+                            "programHeaders": false,
+                            "storedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                            "decodedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                        },
+                        {
+                            "name": ".zdebug_frame",
+                            "offset": 12955,
+                            "stored": 109,
+                            "decoded": 176,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "82b5568350707eb915340b6f7609f382333e59af0735a2050030c89e63676f30",
+                            "decodedSha256": "c6421ae12bbcc45527ac8ac2c2583d6c152d43beb0ffca5dd9c13b65c8b3430f"
+                        }
+                    ],
+                    "frames": 4
+                }
+            ]
+        },
+        {
+            "target": "x86_64",
+            "role": "shared",
+            "section": "eh_frame",
+            "originalSha256": "98b135048e170ffa33c51a5bf4d2f3e51d89b7175af3fc6f542f1f5437c4d2ff",
+            "frames": 6,
+            "strictReportedErrors": 5,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "98b135048e170ffa33c51a5bf4d2f3e51d89b7175af3fc6f542f1f5437c4d2ff",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8288,
+                            "stored": 204,
+                            "decoded": 204,
+                            "address": 8288,
+                            "programHeaders": true,
+                            "storedSha256": "a6cf18b8251acf8c411f217824bf60c17b6218ab4ad89f195d21785e160a0a29",
+                            "decodedSha256": "a6cf18b8251acf8c411f217824bf60c17b6218ab4ad89f195d21785e160a0a29"
+                        }
+                    ],
+                    "frames": 6
+                },
+                {
+                    "mode": "sectionless",
+                    "sha256": "8ab5530c276dadc8e65e49a0abc8a4297fa06dabea5a46c29863d60b93b62d28",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8288,
+                            "stored": 204,
+                            "decoded": 204,
+                            "address": 8288,
+                            "programHeaders": true,
+                            "storedSha256": "a6cf18b8251acf8c411f217824bf60c17b6218ab4ad89f195d21785e160a0a29",
+                            "decodedSha256": "a6cf18b8251acf8c411f217824bf60c17b6218ab4ad89f195d21785e160a0a29"
+                        }
+                    ],
+                    "frames": 6
+                },
+                {
+                    "mode": "unnamed",
+                    "sha256": "afb50fbaa53b7b5d4767a8616d2ccb3f58da590fb28582d9b42625eb5fa7863d",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 8288,
+                            "stored": 204,
+                            "decoded": 204,
+                            "address": 8288,
+                            "programHeaders": true,
+                            "storedSha256": "a6cf18b8251acf8c411f217824bf60c17b6218ab4ad89f195d21785e160a0a29",
+                            "decodedSha256": "a6cf18b8251acf8c411f217824bf60c17b6218ab4ad89f195d21785e160a0a29"
+                        }
+                    ],
+                    "frames": 6
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "section": "debug_frame",
+            "originalSha256": "4d2cbef7a47f3f1514cabb602b8ec2aab1c9202765e3904280764cc6859c89ae",
+            "frames": 4,
+            "strictReportedErrors": 0,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "4d2cbef7a47f3f1514cabb602b8ec2aab1c9202765e3904280764cc6859c89ae",
+                    "sources": [
+                        {
+                            "name": ".debug_frame",
+                            "offset": 1528,
+                            "stored": 168,
+                            "decoded": 168,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "6d4936d5679e3289c4ccb2566fc565d37b885c7c666cafaeb47802b3537ae669",
+                            "decodedSha256": "6d4936d5679e3289c4ccb2566fc565d37b885c7c666cafaeb47802b3537ae669"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gabi",
+                    "sha256": "487623963e366f6c532785b2d98bc99ac15b13d90eefb9f4673eb543dc884d7c",
+                    "sources": [
+                        {
+                            "name": ".debug_frame",
+                            "offset": 1224,
+                            "stored": 119,
+                            "decoded": 168,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "fbf9c92420f84f1aec3d854b9a561c1b2e8955b366e9bf883e6902d02dbea175",
+                            "decodedSha256": "6d4936d5679e3289c4ccb2566fc565d37b885c7c666cafaeb47802b3537ae669"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gnu",
+                    "sha256": "c6d8323830ba86b8937d1920279b4f0b4573c04e22b8404224ffb7d92b41b6ce",
+                    "sources": [
+                        {
+                            "name": ".zdebug_frame",
+                            "offset": 1157,
+                            "stored": 107,
+                            "decoded": 168,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "9f4980081627121d60954048c4f4f3a35dd0301b662e70bf962540cdfb11ac4f",
+                            "decodedSha256": "6d4936d5679e3289c4ccb2566fc565d37b885c7c666cafaeb47802b3537ae669"
+                        }
+                    ],
+                    "frames": 4
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "section": "eh_frame",
+            "originalSha256": "74e201cfa064ee185e1d3fc946dc13a5a407abdc2cda5186b556815c8b75890d",
+            "frames": 4,
+            "strictReportedErrors": 3,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "74e201cfa064ee185e1d3fc946dc13a5a407abdc2cda5186b556815c8b75890d",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 520,
+                            "stored": 140,
+                            "decoded": 140,
+                            "address": 4194824,
+                            "programHeaders": true,
+                            "storedSha256": "e171c7745529145d6089882d526e3fc5b899b8cc1c0ee422404a3465f233ef93",
+                            "decodedSha256": "e171c7745529145d6089882d526e3fc5b899b8cc1c0ee422404a3465f233ef93"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "sectionless",
+                    "sha256": "957aefd40be83e04fd677944a3f145c109d73355a16cbcba4db686d1d4bf07db",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 520,
+                            "stored": 140,
+                            "decoded": 140,
+                            "address": 4194824,
+                            "programHeaders": true,
+                            "storedSha256": "e171c7745529145d6089882d526e3fc5b899b8cc1c0ee422404a3465f233ef93",
+                            "decodedSha256": "e171c7745529145d6089882d526e3fc5b899b8cc1c0ee422404a3465f233ef93"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "unnamed",
+                    "sha256": "71c681de67efb0b233d2b34ea7188779c4bda632af13315b346c39c76e5fe050",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 520,
+                            "stored": 140,
+                            "decoded": 140,
+                            "address": 4194824,
+                            "programHeaders": true,
+                            "storedSha256": "e171c7745529145d6089882d526e3fc5b899b8cc1c0ee422404a3465f233ef93",
+                            "decodedSha256": "e171c7745529145d6089882d526e3fc5b899b8cc1c0ee422404a3465f233ef93"
+                        }
+                    ],
+                    "frames": 4
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "section": "debug_frame",
+            "originalSha256": "82bf5ed7442b6c88d4554aa9a1bceb9f965a24c06ab08d9d48da6a9e9f657a3f",
+            "frames": 4,
+            "strictReportedErrors": 0,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "82bf5ed7442b6c88d4554aa9a1bceb9f965a24c06ab08d9d48da6a9e9f657a3f",
+                    "sources": [
+                        {
+                            "name": ".debug_frame",
+                            "offset": 66648,
+                            "stored": 168,
+                            "decoded": 168,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "1dc49b96ca75d2f60858434eebdb737ae3a7c9d506a6be74251d91613103123c",
+                            "decodedSha256": "1dc49b96ca75d2f60858434eebdb737ae3a7c9d506a6be74251d91613103123c"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gabi",
+                    "sha256": "44ced9e21e31ee0d9626113a849e4bcb90fa45e686ad33a2b89c7b39b463f3dc",
+                    "sources": [
+                        {
+                            "name": ".debug_frame",
+                            "offset": 66344,
+                            "stored": 118,
+                            "decoded": 168,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "5cb1b6f9552bb5cc5591db8b7d2b8bed51df1d382440b4e8b9f4d4b7542d9a48",
+                            "decodedSha256": "1dc49b96ca75d2f60858434eebdb737ae3a7c9d506a6be74251d91613103123c"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gnu",
+                    "sha256": "183b97ab4eadf91a935d3d72fcbdc74200ba12ed3b5f427727e1a14a16c4d573",
+                    "sources": [
+                        {
+                            "name": ".zdebug_frame",
+                            "offset": 66273,
+                            "stored": 106,
+                            "decoded": 168,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "7038ab5381eec76cc463c558fbafac0c869e6e0a71aeff2cf8cdf702f802d59f",
+                            "decodedSha256": "1dc49b96ca75d2f60858434eebdb737ae3a7c9d506a6be74251d91613103123c"
+                        }
+                    ],
+                    "frames": 4
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "section": "eh_frame",
+            "originalSha256": "c19d0c3f45c1d38ce20f2da5b3385f3337060825e8f4d3950f85e9a3d65032b2",
+            "frames": 4,
+            "strictReportedErrors": 3,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "c19d0c3f45c1d38ce20f2da5b3385f3337060825e8f4d3950f85e9a3d65032b2",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 688,
+                            "stored": 140,
+                            "decoded": 140,
+                            "address": 688,
+                            "programHeaders": true,
+                            "storedSha256": "22f50280c8cc3e2e1b03da51a3f8c519eb6854ee8a0c4f42288c984ec156a8f7",
+                            "decodedSha256": "22f50280c8cc3e2e1b03da51a3f8c519eb6854ee8a0c4f42288c984ec156a8f7"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "sectionless",
+                    "sha256": "b9894594fcb8676e632592bc53d6373a02596de3207da19aca6639dae4d7b7e8",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 688,
+                            "stored": 140,
+                            "decoded": 140,
+                            "address": 688,
+                            "programHeaders": true,
+                            "storedSha256": "22f50280c8cc3e2e1b03da51a3f8c519eb6854ee8a0c4f42288c984ec156a8f7",
+                            "decodedSha256": "22f50280c8cc3e2e1b03da51a3f8c519eb6854ee8a0c4f42288c984ec156a8f7"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "unnamed",
+                    "sha256": "d3ac817551c3ed9e29fe0810f5bd95d7f22982e26dccbd68e35b7bafc7f392d7",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 688,
+                            "stored": 140,
+                            "decoded": 140,
+                            "address": 688,
+                            "programHeaders": true,
+                            "storedSha256": "22f50280c8cc3e2e1b03da51a3f8c519eb6854ee8a0c4f42288c984ec156a8f7",
+                            "decodedSha256": "22f50280c8cc3e2e1b03da51a3f8c519eb6854ee8a0c4f42288c984ec156a8f7"
+                        }
+                    ],
+                    "frames": 4
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "shared",
+            "section": "debug_frame",
+            "originalSha256": "410d8714acf7e5ddd24f05cb92fcd5ce87cc2b7299abe505f3e1c03c220ad01c",
+            "frames": 4,
+            "strictReportedErrors": 0,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "410d8714acf7e5ddd24f05cb92fcd5ce87cc2b7299abe505f3e1c03c220ad01c",
+                    "sources": [
+                        {
+                            "name": ".debug_frame",
+                            "offset": 66448,
+                            "stored": 168,
+                            "decoded": 168,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "be3da91b313f13ef8a83b68f877ce27f5eebef6e542e69fa6bfceb109e861c7c",
+                            "decodedSha256": "be3da91b313f13ef8a83b68f877ce27f5eebef6e542e69fa6bfceb109e861c7c"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gabi",
+                    "sha256": "9e4a43e3c7d992cfbc0ecabdc472f6f0c5911d49eb70dd1e49f1203798d2e4f3",
+                    "sources": [
+                        {
+                            "name": ".debug_frame",
+                            "offset": 66256,
+                            "stored": 117,
+                            "decoded": 168,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "5a9be456163f3365d2fca88111f0a933d9b930f6366c5c87c3638e5bc40ec1c9",
+                            "decodedSha256": "be3da91b313f13ef8a83b68f877ce27f5eebef6e542e69fa6bfceb109e861c7c"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "zlib-gnu",
+                    "sha256": "9dfdc5dbda570672622d4c5e0c4e0bdbefdfea06be5f01f85ffa5386447b4f38",
+                    "sources": [
+                        {
+                            "name": ".zdebug_frame",
+                            "offset": 66193,
+                            "stored": 105,
+                            "decoded": 168,
+                            "address": 0,
+                            "programHeaders": false,
+                            "storedSha256": "69c72f125d1e357ca2648eaf228dbc9fb2ce112047a6760501401f8fd012ba44",
+                            "decodedSha256": "be3da91b313f13ef8a83b68f877ce27f5eebef6e542e69fa6bfceb109e861c7c"
+                        }
+                    ],
+                    "frames": 4
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "shared",
+            "section": "eh_frame",
+            "originalSha256": "9c90a2ae182c7b2181f744549b63a0fc37da4bf95d05c666a19d13e03ab48259",
+            "frames": 4,
+            "strictReportedErrors": 3,
+            "variants": [
+                {
+                    "mode": "plain",
+                    "sha256": "9c90a2ae182c7b2181f744549b63a0fc37da4bf95d05c666a19d13e03ab48259",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 1112,
+                            "stored": 140,
+                            "decoded": 140,
+                            "address": 1112,
+                            "programHeaders": true,
+                            "storedSha256": "191ed04192c48b67273d0c52d9b7250ad4773b80e99076f7f7f72f22e0464432",
+                            "decodedSha256": "191ed04192c48b67273d0c52d9b7250ad4773b80e99076f7f7f72f22e0464432"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "sectionless",
+                    "sha256": "74c2c4aa4a75bd64b457a74927b8dc4c5b3c185814c00f5d2362cdfdc19f43cb",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 1112,
+                            "stored": 140,
+                            "decoded": 140,
+                            "address": 1112,
+                            "programHeaders": true,
+                            "storedSha256": "191ed04192c48b67273d0c52d9b7250ad4773b80e99076f7f7f72f22e0464432",
+                            "decodedSha256": "191ed04192c48b67273d0c52d9b7250ad4773b80e99076f7f7f72f22e0464432"
+                        }
+                    ],
+                    "frames": 4
+                },
+                {
+                    "mode": "unnamed",
+                    "sha256": "d1acda2891d4369343ec67e65115e3f7f7c013529d24325f6696df3b3325bc5b",
+                    "sources": [
+                        {
+                            "name": ".eh_frame",
+                            "offset": 1112,
+                            "stored": 140,
+                            "decoded": 140,
+                            "address": 1112,
+                            "programHeaders": true,
+                            "storedSha256": "191ed04192c48b67273d0c52d9b7250ad4773b80e99076f7f7f72f22e0464432",
+                            "decodedSha256": "191ed04192c48b67273d0c52d9b7250ad4773b80e99076f7f7f72f22e0464432"
+                        }
+                    ],
+                    "frames": 4
+                }
+            ]
+        }
+    ],
+    "remaining": [
+        "Runtime relocation and final input-identity qualification",
+        "Original/generated range precedence and record reconciliation",
+        "Unchanged global-writing compiler fixture call proof and full production runtime/failure matrix",
+        "PR166 exact-head integration/workload acceptance; full #112/#110/#109 goal"
+    ]
+}

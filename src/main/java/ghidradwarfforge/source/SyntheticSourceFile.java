@@ -16,7 +16,24 @@ import ghidradwarfforge.output.FileSystemPaths;
 
 /** Deterministic UTF-8/LF synthetic source and its function line boundaries. */
 public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
-        List<SourceLine> mappedLines) {
+        List<SourceLine> mappedLines, List<FunctionTokens> functionTokens) {
+    /** Legacy manually assembled sources have unavailable token provenance. */
+    public SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
+            List<SourceLine> mappedLines) {
+        this(utf8, functions, mappedLines, List.of());
+    }
+
+    /** Per-function token rows before synthetic declaration rows are merged. */
+    public record FunctionTokens(String name, long address, List<SourceLine> lines) {
+        public FunctionTokens {
+            if (name == null || name.isBlank() || address < 0 || lines == null) {
+                throw new IllegalArgumentException("invalid function token evidence");
+            }
+            lines = lines.stream().map(line -> new SourceLine(line.line(),
+                List.copyOf(line.addresses()))).toList();
+        }
+    }
+
     public record FunctionText(String name, long address, String c,
             String failureDiagnostic, List<RelativeLine> mappedLines, String omissionDiagnostic) {
         public FunctionText(String name, long address, String c, String failureDiagnostic) {
@@ -85,6 +102,7 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
         utf8 = utf8.clone();
         functions = List.copyOf(functions);
         mappedLines = List.copyOf(mappedLines);
+        functionTokens = List.copyOf(functionTokens);
     }
 
     @Override
@@ -107,8 +125,10 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
         int line = 8;
         List<FunctionLines> boundaries = new ArrayList<>();
         List<SourceLine> sourceLines = new ArrayList<>();
+        List<FunctionTokens> tokens = new ArrayList<>();
         for (FunctionText function : ordered) {
             int startLine = line;
+            List<SourceLine> tokenLines = new ArrayList<>();
             boolean decompiled = function.c() != null;
             String text;
             if (decompiled) {
@@ -137,16 +157,19 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
                 }
                 for (RelativeLine mapping : function.mappedLines()) {
                     if (mapping.line() <= textLines) {
-                        sourceLines.add(new SourceLine(startLine + mapping.line() - 1,
-                            mapping.addresses()));
+                        SourceLine token = new SourceLine(startLine + mapping.line() - 1,
+                            mapping.addresses());
+                        sourceLines.add(token);
+                        tokenLines.add(token);
                     }
                 }
             }
+            tokens.add(new FunctionTokens(function.name(), function.address(), tokenLines));
             source.append('\n');
             line++;
         }
         return new SyntheticSourceFile(source.toString().getBytes(StandardCharsets.UTF_8),
-            boundaries, mergeSourceLines(sourceLines));
+            boundaries, mergeSourceLines(sourceLines), tokens);
     }
 
     private static int declarationLine(String text, String functionName) {

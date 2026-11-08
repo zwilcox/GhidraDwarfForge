@@ -1,0 +1,28 @@
+{
+    "commit": "2f767671802301cf043c717d66bf004ed7863487",
+    "files": {
+        "fileapi.h": {
+            "url": "https://raw.githubusercontent.com/microsoft/win32metadata/2f767671802301cf043c717d66bf004ed7863487/generation/WinSDK/RecompiledIdlHeaders/um/fileapi.h",
+            "sha256": "db5daf52bf5517858d6f68165b2a9ab86e84b4675aac38d6b09a334c88bf56d0",
+            "bytes": 38835
+        },
+        "WinBase.h": {
+            "url": "https://raw.githubusercontent.com/microsoft/win32metadata/2f767671802301cf043c717d66bf004ed7863487/generation/WinSDK/RecompiledIdlHeaders/um/WinBase.h",
+            "sha256": "c0ac06ea6b2335bd085af0e3071f9dd099bf9bd4c2f79ba2034b4813636cd7c1",
+            "bytes": 262806
+        },
+        "winnt.h": {
+            "url": "https://raw.githubusercontent.com/microsoft/win32metadata/2f767671802301cf043c717d66bf004ed7863487/generation/WinSDK/RecompiledIdlHeaders/um/winnt.h",
+            "sha256": "d66df443218279ed2ffe7718b5347e64bf712dbfa5d25a3b0692787169405c69",
+            "bytes": 876163
+        }
+    },
+    "scope": "Windows64 BackupRead/BackupSeek declarations and stream wire layout. Native C contract must run before isolated Java. No protected security metadata or durability claim. NtSetEaFile/NtQueryEaFile are test-only independent EA fixtures.",
+    "documentation": [
+        "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-backupread",
+        "https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-backupseek",
+        "https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-win32_stream_id",
+        "https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/nf-ntifs-zwqueryeafile",
+        "https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/nf-ntifs-zwseteafile"
+    ]
+}

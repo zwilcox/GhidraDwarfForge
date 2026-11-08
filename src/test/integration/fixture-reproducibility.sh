@@ -40,16 +40,34 @@ expected_sources=(
     aarch64-abi.h
     aarch64-vector.c
     aggregate-return-calls.c
+    analyst-annotations.c
+    arm-aggregate-pcs.c
     arm-dynamic-pcs.c
+    arm-hfa-controls.S
+    arm-hfa-controls.c
+    arm-hfa-lifetimes.c
+    arm-mixed-body-driver.c
+    arm-mixed-body.S
     arm-mixed-function-aliases.cpp
+    arm-pcs-call-reference.c
+    arm-pcs-profile.c
+    arm-pcs-start.S
+    arm-stack-aggregates.c
+    arm-stack-shared-before.c
+    arm-stack-shared-driver.c
     arm-symbol-boundary.S
     arm-symbol-boundary.ld
     arm-thumb-after.c
     arm-thumb-caller.c
     arm-thumb-leaf.c
+    arm-thumb-shared-driver.c
     bitfield-values.c
     call-memory-boundaries.c
     calling-convention.c
+    cfi-encoder-aarch64.S
+    cfi-encoder-x86_64.S
+    cfi-shrinkwrap-aarch64.S
+    cfi-shrinkwrap-x86_64.S
     composite-register-prefix.c
     composite-value-flow.c
     curated-thunk.c
@@ -61,17 +79,26 @@ expected_sources=(
     dynamic-composite-caller.c
     dynamic-composite-scalar.c
     dynamic-parameter-storage.c
+    emission-evidence-x86_64.S
+    emission-evidence.c
+    equate-retained-names.cpp
     external-function-declarations.c
     formal-function-return.c
+    formatter-values.c
     fp_register_aliases.c
     function-pointer-conventions.c
     function-static-scopes.c
     function-type-flags.c
     function_entry_ranges.S
     function_entry_ranges.c
+    gdb-loader-lifecycle.c
+    gdb-loader-shared-driver.c
+    i386-abi-matrix.c
     i386-alias-entry.cpp
+    i386-extended-return.c
     i386-profile.c
     inspected-call-callees.c
+    intrinsic-context-x86_64.c
     later-register-local.c
     lexical-shadow.c
     lexical-statics.c
@@ -79,9 +106,14 @@ expected_sources=(
     local-definition-flow.c
     merged-local-mappings.c
     minimal.c
+    mips-delay-context.S
+    mips-delay-context.c
     mips-floating-call.c
+    mips-fpr-system-start.S
     mips-truncated-space-start.S
     mips-truncated-space.c
+    mips_layout_arguments.c
+    mips_wide_arguments.c
     mixed-incoming-prefix.c
     mutable-stack-mappings.c
     nonzero_load_offset.c
@@ -92,11 +124,16 @@ expected_sources=(
     opaque-register-effects.c
     outside-body-flow.c
     overloaded-signatures.cpp
+    perf-build-id.c
     recovered-default-returns.c
     recovered-parameter-types.c
     register-copy.c
     register_prefix.c
+    relocation-effects-consumer.c
+    relocation-effects-main.c
+    relocation-effects-provider.c
     retained-function-aliases.cpp
+    runtime-relocations.c
     same-name-types.cpp
     second-register-copy.c
     semantic.c
@@ -109,6 +146,10 @@ expected_sources=(
     stack-local-effects.c
     stack-spill.c
     stack-value-transitions.c
+    synthetic-cfi-shared-driver.c
+    synthetic-cfi-start-aarch64.S
+    synthetic-cfi-start-x86_64.S
+    synthetic-cfi.c
     terminal-composite.c
 )
 mapfile -t actual_sources < <(

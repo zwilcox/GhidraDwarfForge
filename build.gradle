@@ -21,6 +21,15 @@ task distributeExtension {
     dependsOn ":buildExtension"
 }
 
+// The GDB companion is shipped as source. Local Python/GDB imports must not
+// leak host-version bytecode into either the resource JAR or source archive.
+tasks.named("processResources") {
+    exclude "**/__pycache__/**", "**/*.pyc"
+}
+tasks.named("zipSource") {
+    exclude "**/__pycache__/**", "**/*.pyc"
+}
+
 tasks.register("nativeProducerSmoke", JavaExec) {
     group = "verification"
     description = "Runs the libdwarf producer ABI smoke test in an isolated JVM"
@@ -54,6 +63,231 @@ tasks.register("nativeProducerSmoke", JavaExec) {
             args sidecarProperties.collect { project.property(it) }
         }
     }
+}
+
+tasks.register("exportPhaseSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks real JFR phase observations and failure/cancellation propagation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.performance.ExportPhaseSmoke"
+}
+
+tasks.register("formatterPlanSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit formatter selections, canonical witnesses, encoding and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.formatters.FormatterPlanSmoke"
+}
+
+tasks.register("sourcePartitionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks lossless source partitioning, logical line lookup and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.source.SourcePartitionSmoke"
+}
+
+tasks.register("sourceBundleSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks source generation identity, strict manifests and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.SourceBundleSmoke"
+}
+
+tasks.register("sourceBundleStoreSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks immutable source installation, conflicts, cancellation and pair rollback"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.SourceBundleStoreSmoke"
+}
+
+tasks.register("sourceBundleFilesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete source bundle reads, moved trees, conflicts and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.SourceBundleFilesSmoke"
+}
+
+tasks.register("debugCompressionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks ELF32/64 endian compression headers, fallback, determinism and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.DebugCompressionSmoke"
+}
+
+tasks.register("callFrameEncoderSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit call-frame plan rejection, determinism and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.CallFrameEncoderSmoke"
+}
+
+tasks.register("unwindFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks caller-identity flow through joins, calls, saves and restores"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindFlowSmoke"
+}
+
+tasks.register("unwindCallsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks closed direct and recursive callee restoration and write obligations"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindCallsSmoke"
+}
+
+tasks.register("unwindFrameRowsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks identity-backed frame rule projection and explicit omissions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindFrameRowsSmoke"
+}
+
+tasks.register("elfRelocationEffectsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks declared loader write footprints and protected unwind/code intervals"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ElfRelocationEffectsSmoke"
+}
+
+tasks.register("elfRuntimeRelocationsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded gABI runtime relocation inventories and retained-table distinction"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ElfRuntimeRelocationsSmoke"
+}
+
+tasks.register("unwindOptionsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit unwind policies, address ranges and condition normalization"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindOptionsSmoke"
+}
+
+tasks.register("elfRelocatedPointersSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks qualified relative pointer candidates and rejection/cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ElfRelocatedPointersSmoke"
+}
+
+tasks.register("unwindStackSeparationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit conditional stack separation and summary isolation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindStackSeparationSmoke"
+}
+
+tasks.register("unwindEvidenceJsonSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded unwind descriptions, evidence consistency and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.UnwindEvidenceJsonSmoke"
+}
+
+tasks.register("originalFrameSourcesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded original frame source discovery, compression and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.OriginalFrameSourcesSmoke"
+}
+
+tasks.register("originalFrameRangesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded original CIE/FDE range inventory and unknown-coverage failures"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.OriginalFrameRangesSmoke"
+}
+
+tasks.register("elfCodeBytesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks original ELF instruction agreement, load ambiguity and bounded reads"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.ElfCodeBytesSmoke"
+}
+
+tasks.register("unwindFrameRecoveryProbe", JavaExec) {
+    group = "verification"
+    description = "Recovers CFI plans from native runtime-fixture instructions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindFrameRecoveryProbe"
+    if (project.hasProperty("frameInput")) {
+        args ghidraInstallDir, project.property("frameInput"), project.property("frameFunctions"),
+            project.property("framePlan"), project.findProperty("frameRebase") ?: "0",
+            project.findProperty("frameRoot") ?: "cf_recurse", project.findProperty("frameInspect") ?: "false",
+            project.findProperty("frameExpectedFailure") ?: "", project.findProperty("frameSeparation") ?: ""
+    }
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/unwind-frame-probe/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/unwind-frame-probe/cache").absolutePath
+}
+
+tasks.register("exportConsistencySmoke", JavaExec) {
+    group = "verification"
+    description = "Rejects changed program/input evidence and honors consistency-check cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraExportConsistencySmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/export-consistency").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/export-consistency/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/export-consistency/cache").absolutePath
+}
+
+tasks.register("ghidraUnwindCallsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks native direct and recursive callee proofs and rejected effects"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.GhidraUnwindCallsSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/unwind-calls").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/unwind-calls/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/unwind-calls/cache").absolutePath
+}
+
+tasks.register("ghidraUnwindInstructionsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks native p-code caller identity flow and incomplete graph rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.GhidraUnwindInstructionsSmoke"
+    args ghidraInstallDir, layout.buildDirectory.file("test-results/unwind-instructions/native.txt").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/unwind-instructions/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/unwind-instructions/cache").absolutePath
+}
+
+tasks.register("unwindAbiProfileSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks unwind ABI selection, hidden authentication and register-mode exclusions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.unwind.UnwindAbiProfileSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/unwind-profiles").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/unwind-profiles/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/unwind-profiles/cache").absolutePath
 }
 
 tasks.register("packagedNativeProducerSmoke", JavaExec) {
@@ -96,6 +330,180 @@ tasks.register("existingDebugSidecarSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.ExistingDebugSidecarSmoke"
+}
+
+tasks.register("companionArtifactPublisherSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete companion generations, rollback and alias/concurrent-change rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CompanionArtifactPublisherSmoke"
+}
+
+tasks.register("buildIdRecordsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete large source inventories and separate command record bounds"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.BuildIdRecordsSmoke"
+}
+
+tasks.register("buildIdFileLockSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises real host build-ID lease exclusion across metadata reads and competing processes"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.BuildIdFileLockSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        if (!project.hasProperty("buildIdLockFile")) throw new GradleException("Missing -PbuildIdLockFile")
+        args "exercise", project.property("buildIdLockFile")
+    }
+}
+
+tasks.register("attachmentProtocolSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks attachment receipt parsing/transitions and all-role path preflight"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentProtocolSmoke"
+}
+
+tasks.register("windowsAttachmentHostSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises native Windows attachment host with backup, replacement and restore stores"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.WindowsAttachmentHostSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED", "-Xint", "-XX:+UseSerialGC"
+    doFirst {
+        if (!project.hasProperty("attachmentHostResults")) throw new GradleException("Missing -PattachmentHostResults")
+        args project.property("attachmentHostResults")
+    }
+}
+
+tasks.register("validatorSupervisorSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks native validator ownership, bounded output and actual JVM cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ValidatorSupervisorSmoke"
+    doFirst {
+        ["supervisorPath", "supervisorPython", "supervisorResults"].each { name ->
+            if (!project.hasProperty(name)) throw new GradleException("Missing -P" + name)
+        }
+        args project.property("supervisorPath"), project.property("supervisorPython"), project.property("supervisorResults")
+    }
+}
+
+tasks.register("strictDwarfReportSmoke", JavaExec) {
+    group = "verification"
+    description = "Rejects incomplete/error-bearing pinned checker reports using real retained output"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.StrictDwarfReportSmoke"
+    args file("src/test/fixtures/dwarfdump").absolutePath
+}
+
+tasks.register("attachmentReceiptStoreSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises receipt publication and failure recovery on an owned Linux filesystem"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentReceiptStoreSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
+tasks.register("attachmentFileStoreSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises independently verified backups and interruption handling on Linux"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentFileStoreSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
+tasks.register("attachmentTargetStoreSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises conditional target replacement and independent-backup recovery on Linux"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentTargetStoreSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
+tasks.register("attachmentTransactionSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises initial/refresh receipt coordination and rollback on owned Linux files"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentTransactionSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
+tasks.register("attachmentExportBindingSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks actual ELF/report binding and rejection before attachment preparation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentExportBindingSmoke"
+}
+
+tasks.register("debuglinkBasenameSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit native and portable debuglink filename policies"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.DebuglinkBasenameSmoke"
+}
+
+tasks.register("attachmentOperationSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises complete attachment preparation ordering, refresh, failure and commit"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentOperationSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+}
+
+tasks.register("attachmentRecoveryInvocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit recovery selections, receipt pins and interruption-state admission"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentRecoveryInvocationSmoke"
+}
+
+tasks.register("attachmentHelperSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit helper consent, pinned request admission and no-write refusals"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentHelperSmoke"
+}
+
+tasks.register("attachmentGuiProcessSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks GUI helper cancellation waits for child cleanup and drains both output streams"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentGuiProcessSmoke"
+}
+
+tasks.register("attachmentPreparationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks fresh GUI request/report preparation and unchanged inputs on failure"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentPreparationSmoke"
+}
+
+tasks.register("attachmentInvocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded helper selections and all-role transport/tool path preflight"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.AttachmentInvocationSmoke"
 }
 
 tasks.register("extendedSectionNumberingSmoke", JavaExec) {
@@ -153,6 +561,22 @@ tasks.register("syntheticSourceSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.source.SyntheticSourceSmoke"
+}
+
+tasks.register("annotationTextSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks reversible bounded annotation text and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.source.AnnotationTextSmoke"
+}
+
+tasks.register("annotatedSourceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks annotation insertion and executable source-line preservation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.source.AnnotatedSourceSmoke"
 }
 
 tasks.register("functionEntrySmoke", JavaExec) {
@@ -214,6 +638,50 @@ tasks.register("ghidraTargetAgreementSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.GhidraTargetAgreementSmoke"
 }
 
+tasks.register("armHfaParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks computed ARM floating aggregate register members"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.ArmHfaParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/arm-hfa-allocation/settings").absolutePath
+}
+
+tasks.register("upperAliasValueFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks full logical values in upper register aliases"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.UpperAliasValueFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/upper-alias-value/settings").absolutePath
+}
+
+tasks.register("terminalStackValueSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks stack value states before opaque terminal effects"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.TerminalStackValueSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/terminal-stack/settings").absolutePath
+}
+
+tasks.register("ghidraArmBe8ProfileSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks BE8 ELF encoding against real data/instruction endian language descriptions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraArmBe8ProfileSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/be8-profile/settings").absolutePath
+}
+
 tasks.register("typeGraphSmoke", JavaExec) {
     group = "verification"
     description = "Checks deterministic canonical and recursive type modeling"
@@ -260,6 +728,206 @@ tasks.register("dwarfLineTableSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.dwarf.Dwarf5LineTableSmoke"
+}
+
+tasks.register("ghidraVariableIdentitySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks database variable identity stability and unsafe undo/fork correspondence"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraVariableIdentitySmoke"
+    args ghidraInstallDir, file("build/test-results/variable-identity").absolutePath
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/variable-identity/settings").absolutePath
+}
+
+tasks.register("ghidraInstructionEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks real decoded instruction inventories, rebasing and unavailable evidence"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraInstructionEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/instruction-evidence/settings").absolutePath
+}
+
+tasks.register("sourceCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks static source coverage against independently decoded line bytes"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.SourceCoverageSmoke"
+}
+
+tasks.register("sourceCoverageInventorySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks unknown source evidence and unique instruction unions across functions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.SourceCoverageInventorySmoke"
+}
+
+tasks.register("coverageComparisonPresentationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks bounded GUI comparison display, admission and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageComparisonPresentationSmoke"
+}
+
+tasks.register("coverageVariableComparisonSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks reported variable binding/range differences and identity ambiguity"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageVariableComparisonSmoke"
+}
+
+tasks.register("coverageTypeEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks versioned individual type evidence and comparison"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageTypeEvidenceSmoke"
+}
+
+tasks.register("typeGraphEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks individual type states, repeated references, cycles and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.TypeGraphEvidenceSmoke"
+}
+
+tasks.register("typeCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks canonical type coverage, omitted edges, cycles and implicit void"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.TypeCoverageSmoke"
+}
+
+tasks.register("locationEmissionPlanSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks retained location plans against raw DWARF list bytes and omission controls"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.LocationEmissionPlanSmoke"
+}
+
+tasks.register("locationCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks independently evidenced scope denominators and static location extent"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.LocationCoverageSmoke"
+}
+
+tasks.register("variableCoverageInventorySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks recovered declarations, actual emission and independent scope provenance"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.VariableCoverageInventorySmoke"
+}
+
+tasks.register("exportCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks assembled per-function scorecards, unknown populations and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.ExportCoverageSmoke"
+}
+
+tasks.register("coverageComparisonSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks CLI coverage, matching identities, exact point changes and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageComparisonSmoke"
+}
+
+tasks.register("coveragePresentationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks honest coverage presentation and non-overwriting full report saves"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoveragePresentationSmoke"
+}
+
+tasks.register("coverageReportJsonSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks exact coverage JSON counters, Unicode budgets and cancellation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageReportJsonSmoke"
+}
+
+tasks.register("reportValueReaderSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks shared streaming report budgets across child decoders"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ReportValueReaderSmoke"
+}
+
+tasks.register("coverageReportClaimsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks strict coverage field/metric/ownership validation and shared limits"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageReportClaimsSmoke"
+}
+
+tasks.register("exportReportCoverageSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks schema-two coverage readers and schema-one receipt compatibility"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.ExportReportCoverageSmoke"
+}
+
+tasks.register("coverageReportWorkload", JavaExec) {
+    group = "verification"
+    description = "Measures synthetic coverage report size and bounded reader behavior (exploratory)"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageReportWorkload"
+    maxHeapSize = "768m"
+    args providers.gradleProperty("coverageWorkloads").getOrElse("100,1000,10000").split(",")
+    doFirst {
+        layout.buildDirectory.file("coverage-report-workload-classpath.txt").get().asFile.text = classpath.asPath
+    }
+}
+
+tasks.register("coverageReportFileProbe", JavaExec) {
+    group = "verification"
+    description = "Measures strict decoding and payload roundtrip for one retained coverage report"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CoverageReportFileProbe"
+    maxHeapSize = "512m"
+    doFirst {
+        args providers.gradleProperty("coverageReport").get()
+    }
+}
+
+tasks.register("emissionEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Retains actual producer emission evidence for independent DWARF/GDB inspection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.coverage.EmissionEvidenceSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    doFirst {
+        setArgs(["libdwarfPath", "libdwarfpPath", "sidecarInput", "sidecarOutput", "fixtureSymbols"].collect {
+            project.property(it)
+        })
+        if (project.findProperty("emissionAnnotations") == "true") {
+            args "--annotations"
+        }
+    }
 }
 
 tasks.register("dwarfLocationListsSmoke", JavaExec) {
@@ -404,6 +1072,42 @@ tasks.register("stackValueFlowSmoke", JavaExec) {
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/stack-value-flow/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/stack-value-flow/cache").absolutePath
+}
+
+tasks.register("intraInstructionFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks must-path incoming values across internal predicated execution"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.IntraInstructionFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/intra-instruction-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/intra-instruction-flow/cache").absolutePath
+}
+
+tasks.register("registerByteSliceFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks partial object bytes across wider register and memory transfers"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.RegisterByteSliceFlowSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/register-byte-slice-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/register-byte-slice-flow/cache").absolutePath
+}
+
+tasks.register("armCompositeParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks partial aggregate padding in computed core and stack arguments"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.ArmCompositeParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/arm-composite-allocation/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/arm-composite-allocation/cache").absolutePath
 }
 
 tasks.register("localMappingsSmoke", JavaExec) {
@@ -686,6 +1390,26 @@ tasks.register("arm32ModeSymbolsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.Arm32ModeSymbolsSmoke"
 }
 
+tasks.register("arm32SectionModesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete ARM mapping records and original ELF binding"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.Arm32SectionModesSmoke"
+}
+
+tasks.register("ghidraArm32SectionModesSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks complete mixed-mode listing evidence and honest gap rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraArm32SectionModesSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/section-modes/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/section-modes/cache").absolutePath
+}
+
 tasks.register("ghidraArm32FunctionModesSmoke", JavaExec) {
     group = "verification"
     description = "Checks evidence-backed instruction-mode extraction from Ghidra programs"
@@ -758,12 +1482,44 @@ tasks.register("aarch64ParameterAllocationSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/aarch64-allocation/cache").absolutePath
 }
 
+tasks.register("mipsN32ParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks isolated N32 positional aggregate allocation and preserved analyst storage"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.MipsN32ParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mips-n32-allocation/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/mips-n32-allocation/cache").absolutePath
+}
+
+tasks.register("delayedReturnPrefixSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks incoming value prefixes with actual delayed returns and malformed controls"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.DelayedReturnPrefixSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/delayed-return-prefix/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/delayed-return-prefix/cache").absolutePath
+}
+
 tasks.register("aarch64AbiSelectionSmoke", JavaExec) {
     group = "verification"
     description = "Checks actual ELF metadata against bounded debugger call profiles"
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.nativeapi.Aarch64AbiSelectionSmoke"
+}
+
+tasks.register("i386AbiSelectionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks actual ELF metadata against bounded debugger call profiles"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.I386AbiSelectionSmoke"
 }
 
 tasks.register("compilerCallPolicySmoke", JavaExec) {
@@ -915,6 +1671,14 @@ tasks.register("exportReportDetailsSmoke", JavaExec) {
     maxHeapSize = "64m"
 }
 
+tasks.register("arm32CallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks ARM PCS metadata, malformed attributes and all callable signature forms"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.Arm32CallPolicySmoke"
+}
+
 tasks.register("mipsAbiFlagsSmoke", JavaExec) {
     group = "verification"
     description = "Checks explicit MIPS ABI records and conservative FP32 profile selection"
@@ -1016,7 +1780,9 @@ tasks.register("packagedNativeLibrariesSmoke", JavaExec) {
 // Keep repository-only development inputs out of releases.
 buildExtension {
     eachFile { details ->
-        if (details.path == "GhidraDwarfForge/support/ghidra-dwarf-forge-headless") {
+        if (details.path in ["GhidraDwarfForge/support/ghidra-dwarf-forge-headless",
+                "GhidraDwarfForge/support/ghidra-dwarf-forge-attach",
+                "GhidraDwarfForge/support/ghidra-dwarf-forge-build-id"]) {
             details.permissions { permissions ->
                 permissions.unix("rwxr-xr-x")
             }
@@ -1281,4 +2047,64 @@ tasks.register("globalScopeNamesSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.types.GlobalScopeNamesSmoke"
+}
+
+tasks.register("truncatedStackDepthSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks stack depth across narrow operations in declared truncated memory"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.TruncatedStackDepthSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/truncated-stack-depth/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/truncated-stack-depth/cache").absolutePath
+}
+
+tasks.register("mipsWideCallPolicySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks N32/N64 ELF, Ghidra compiler and typed debugger call contracts"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.MipsWideCallPolicySmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mips-wide-calls/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/mips-wide-calls/cache").absolutePath
+}
+
+tasks.register("i386ParameterAllocationSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks isolated i386 computed extended floating-return allocation and preserved analyst storage"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.I386ParameterAllocationSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/i386-allocation/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/i386-allocation/cache").absolutePath
+}
+
+tasks.register("floatingTypeLayoutSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks floating object sizes and meaningful storage widths across actual Ghidra models"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.FloatingTypeLayoutSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/floating-layout/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/floating-layout/cache").absolutePath
+}
+
+tasks.register("allocationDecompilerSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks typed decompiler encoding, bounds and preserved analyst call overrides"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.AllocationDecompilerSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/allocation-decompiler/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/allocation-decompiler/cache").absolutePath
 }

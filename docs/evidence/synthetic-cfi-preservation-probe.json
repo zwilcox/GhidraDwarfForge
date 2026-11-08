@@ -1,0 +1,100 @@
+{
+    "issue": 112,
+    "status": "CONFIRMED original debug_frame retirement breaks this x86-64 compiler-CFI backtrace; diagnostic restoration fixes it; production not fixed",
+    "testedExporter": "f64a00fa34498ab027d3a2b032f91f9d03bafb36",
+    "experiment": "Real Ghidra import/export, then file original and symbol-file sidecar. Test-only objcopy rename of .forge.stale.debug_frame to .debug_frame restores the unchanged original frame payload. No executable mutation.",
+    "frames": {
+        "forge": [
+            {
+                "name": "cfi_checkpoint",
+                "pc": 4198400,
+                "witness": 20736
+            },
+            {
+                "name": "cfi_recursive",
+                "pc": 4198478,
+                "witness": 20736
+            },
+            {
+                "name": null,
+                "pc": 0,
+                "witness": 20736
+            }
+        ],
+        "restored": [
+            {
+                "name": "cfi_checkpoint",
+                "pc": 4198400,
+                "witness": 20736
+            },
+            {
+                "name": "cfi_recursive",
+                "pc": 4198478,
+                "witness": 20736
+            },
+            {
+                "name": "cfi_recursive",
+                "pc": 4198458,
+                "witness": 20737
+            },
+            {
+                "name": "cfi_recursive",
+                "pc": 4198458,
+                "witness": 20738
+            },
+            {
+                "name": "cfi_recursive",
+                "pc": 4198458,
+                "witness": 20739
+            },
+            {
+                "name": "cfi_outer",
+                "pc": 4198502,
+                "witness": 24946
+            },
+            {
+                "name": "cfi_main",
+                "pc": 4198521,
+                "witness": 0
+            },
+            {
+                "name": "_start",
+                "pc": 4198569,
+                "witness": 0
+            }
+        ]
+    },
+    "payloads": {
+        "original": {
+            "sha256": "a1eb6241cdbecc905fc3cd88e4f22448a61f8dfdb756d6f513b3a5781cc97282",
+            "size": 176,
+            "section": ".debug_frame",
+            "artifactSha256": "1eca8471307cdd75497047030ebe29ed5a1ce46d042a7d543a09a64847d2b1fc"
+        },
+        "forge": {
+            "sha256": "a1eb6241cdbecc905fc3cd88e4f22448a61f8dfdb756d6f513b3a5781cc97282",
+            "size": 176,
+            "section": ".forge.stale.debug_frame",
+            "artifactSha256": "d69cb998043fa2f93139a01c3cdd39ee3930a77b21967574a67f600557520f14"
+        },
+        "restored": {
+            "sha256": "a1eb6241cdbecc905fc3cd88e4f22448a61f8dfdb756d6f513b3a5781cc97282",
+            "size": 176,
+            "section": ".debug_frame",
+            "artifactSha256": "7d6624d5dfdea574c8df55ecd0ab1b627afa502c8ffbcb4235c7a82022b8e2de"
+        }
+    },
+    "validation": "GNU no stderr; LLVM verify and pinned strict libdwarf pass for both artifacts",
+    "originalUnchanged": true,
+    "limitations": [
+        "x86-64 ET_EXEC only",
+        "No preservation implementation yet",
+        "Compression, relocations, PIE/shared and rebase remain untested",
+        "First export failed because this research installation lacked native metadata; retry used the explicit pinned native paths"
+    ],
+    "archive": {
+        "path": "/home/ziggy/GhidraDwarfForge-worktrees/analyst-annotations/build/test-results/synthetic-cfi-preservation-probe.tar.gz",
+        "sha256": "ab20b28e3fd6fcb34f9e88a1eaa761a275c70b93000b0f643879e9dc8737d02b",
+        "bytes": 29619
+    }
+}

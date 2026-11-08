@@ -1,0 +1,68 @@
+{
+    "status": "PASS_EXACT_JAVA_STARTUP_NOTICE_REVIEW_CONTROLS",
+    "head": "d55842f4c6b02000515db0dfe152799771cd876a",
+    "controls": [
+        {
+            "name": "preview",
+            "result": "ACCEPTED_EXACT_NOTICE"
+        },
+        {
+            "name": "execute",
+            "result": "ACCEPTED_EXACT_NOTICE"
+        },
+        {
+            "name": "direct",
+            "result": "ACCEPTED_EXACT_NOTICE"
+        },
+        {
+            "name": "missing-notice",
+            "result": "REFUSED"
+        },
+        {
+            "name": "extra-diagnostic",
+            "result": "REFUSED"
+        },
+        {
+            "name": "extra-blank-line",
+            "result": "REFUSED"
+        },
+        {
+            "name": "changed-property",
+            "result": "REFUSED"
+        },
+        {
+            "name": "changed-directory",
+            "result": "REFUSED"
+        },
+        {
+            "name": "preview-extra-launch",
+            "result": "REFUSED"
+        },
+        {
+            "name": "execution-missing-launch",
+            "result": "REFUSED"
+        },
+        {
+            "name": "direct-extra-launch",
+            "result": "REFUSED"
+        },
+        {
+            "name": "unknown-executable",
+            "result": "REFUSED"
+        }
+    ],
+    "localJavaReproduction": {
+        "exitCode": 0,
+        "stderr": "Picked up JAVA_TOOL_OPTIONS: -Djna.tmpdir=/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/test-results/build-id/installation/command -Djava.io.tmpdir=/home/runner/work/GhidraDwarfForge/GhidraDwarfForge/build/test-results/build-id/installation/command\nWARNING: java.io.tmpdir directory does not exist\nopenjdk version \"21.0.12.1\" 2026-08-18\nOpenJDK Runtime Environment (build 21.0.12.1+1-1-24.04.4-Ubuntu)\nOpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-24.04.4-Ubuntu, mixed mode, sharing)\n",
+        "java": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/workloads/tools/root/usr/lib/jvm/java-21-openjdk-amd64/bin/java"
+    },
+    "sourceBindings": {
+        "src/test/integration/build-id-command.py": "9b5d7dcb2a1f3d2387ad1542ee102cf8090361b9b0a20c0ae788acebaaee0be9",
+        "support/ghidra-dwarf-forge-build-id": "3bfa349cc0b9b37d188a1671df8a012958633175a36059dca39c499b73de8c17"
+    },
+    "reviewerSha256": "626c17db2255a69e6a79eec3c86659fd1ba9b46dffb870675aaec7bdb6620cba",
+    "originalReviewerSha256": "f17c08dd4390be5d38aa2968c0e3a75573582baff20b1e86628884e300ed0bb2",
+    "testSha256": "7c28dcb9ac3d927bf1a27d4e9b73bbe2c78fcb75e514055380f15456edb01c25",
+    "failedReviewLogSha256": "95aa4f817d28048dab44bf3a68dbe197c1d1aad03f52d222ca3028a27125f0a6",
+    "scope": "Review-tool correction only. Exact test-configured JVM notice and launch count accepted; any extra or changed stderr refused. Does not replace current raw artifact reviews or product tests."
+}

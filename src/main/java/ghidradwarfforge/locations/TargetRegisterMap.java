@@ -26,7 +26,8 @@ import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
  * infers a DWARF number from a register name or ordinal.
  */
 public record TargetRegisterMap(String target, String provenance,
-        Map<String, Integer> dwarfNumbers, Map<String, List<PairPiece>> registerPairs) {
+        Map<String, Integer> dwarfNumbers, Map<String, List<PairPiece>> registerPairs,
+        Map<String, RegisterSlice> registerSlices, ByteOrder registerStorageByteOrder) {
     private static final String GHIDRA_MAPPING_ROOT =
         "Ghidra 12.0.3 processor DWARF register mapping: ";
 
@@ -40,13 +41,30 @@ public record TargetRegisterMap(String target, String provenance,
         }
     }
 
+    /** Logical ABI bits and their independently checked physical language placement. */
+    public record RegisterSlice(String parent, int parentBits, int byteOffset, int bitSize, int valueBitOffset) {
+        public RegisterSlice {
+            if (parent == null || parent.isBlank() || parentBits <= 0 || byteOffset < 0 ||
+                    bitSize <= 0 || valueBitOffset < 0 || (long) byteOffset * 8 + bitSize > parentBits ||
+                    (long) valueBitOffset + bitSize > parentBits) {
+                throw new IllegalArgumentException("invalid logical register slice");
+            }
+        }
+    }
+
     public TargetRegisterMap(String target, String provenance, Map<String, Integer> dwarfNumbers) {
         this(target, provenance, dwarfNumbers, Map.of());
     }
 
+    public TargetRegisterMap(String target, String provenance, Map<String, Integer> dwarfNumbers,
+            Map<String, List<PairPiece>> registerPairs) {
+        this(target, provenance, dwarfNumbers, registerPairs, Map.of(), null);
+    }
+
     public TargetRegisterMap {
         if (target == null || target.isBlank() || provenance == null ||
-                provenance.isBlank() || dwarfNumbers == null || dwarfNumbers.isEmpty() || registerPairs == null) {
+                provenance.isBlank() || dwarfNumbers == null || dwarfNumbers.isEmpty() || registerPairs == null ||
+                registerSlices == null) {
             throw new IllegalArgumentException("invalid target register map");
         }
         Map<String, Integer> sorted = new TreeMap<>();
@@ -78,12 +96,34 @@ public record TargetRegisterMap(String target, String provenance,
             pairs.put(entry.getKey(), pieces);
         }
         registerPairs = Collections.unmodifiableMap(pairs);
+        var slices = new TreeMap<String, RegisterSlice>();
+        for (var entry : registerSlices.entrySet()) {
+            if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null ||
+                    !dwarfNumbers.containsKey(entry.getValue().parent())) {
+                throw new IllegalArgumentException("unmapped logical register slice");
+            }
+            slices.put(entry.getKey(), entry.getValue());
+        }
+        registerSlices = Collections.unmodifiableMap(slices);
     }
 
     /** Additional pair semantics require explicit original-ELF ABI evidence. */
     public static TargetRegisterMap forElf(String target, ElfImage elf, BooleanSupplier cancelled)
             throws IOException {
         TargetRegisterMap ordinary = forTarget(target);
+        if ((target.equals("arm") || target.equals("arm32")) && elf.machine() == 40 && !elf.is64Bit() &&
+                elf.byteOrder() == ByteOrder.BIG_ENDIAN && (elf.flags() & 0xffc00000L) == 0x05800000L) {
+            // Pinned LEBE languages reuse ARM*_le.sla physical register layout,
+            // despite their big-endian data override. Numeric S-register halves
+            // still have the AADWARF32 meaning: even low, odd high in Dn.
+            var slices = new LinkedHashMap<String, RegisterSlice>();
+            for (int index = 0; index < 32; index++) {
+                slices.put("s" + index, new RegisterSlice("d" + index / 2, 64, (index % 2) * 4,
+                    32, (index % 2) * 32));
+            }
+            return new TargetRegisterMap(target, ordinary.provenance() + "; EABI5 BE8 LEBE physical slices",
+                ordinary.dwarfNumbers(), ordinary.registerPairs(), slices, ByteOrder.LITTLE_ENDIAN);
+        }
         if (!target.equals("mips") && !target.equals("mipsel")) {
             return ordinary;
         }
@@ -109,7 +149,7 @@ public record TargetRegisterMap(String target, String provenance,
             case "x86_64" -> x86_64();
             case "aarch64" -> aarch64();
             case "arm", "arm32" -> arm32();
-            case "mips", "mipsel" -> mips(target);
+            case "mips", "mipsel", "mips64", "mips64el" -> mips(target);
             default -> throw new IllegalArgumentException(
                 "no audited DWARF register map for target " + target);
         };
@@ -120,8 +160,22 @@ public record TargetRegisterMap(String target, String provenance,
         if (dwarfNumber == null) {
             return unavailable(ghidraName);
         }
-        return new RegisterStorage(new DwarfRegister(ghidraName, dwarfNumber),
+        return new RegisterStorage(new DwarfRegister(ghidraName, dwarfNumber,
+            lowBytePieceBits(dwarfNumber)),
             valueBitOffset, bitSize);
+    }
+
+    /**
+     * DW_OP_piece leaves partial-register placement to the ABI. Only the
+     * validated AMD64/AAPCS64 general-register profiles opt into low-bit byte
+     * pieces; other mappings retain explicit DW_OP_bit_piece offsets.
+     */
+    private int lowBytePieceBits(int dwarfNumber) {
+        return switch (target) {
+            case "x86_64" -> dwarfNumber <= 15 ? 64 : 0;
+            case "aarch64" -> dwarfNumber <= 31 ? 64 : 0;
+            default -> 0;
+        };
     }
 
     public Storage registerRelative(String ghidraName, long byteOffset) {
@@ -130,7 +184,7 @@ public record TargetRegisterMap(String target, String provenance,
             return unavailable(ghidraName);
         }
         return new RegisterRelativeStorage(
-            new DwarfRegister(ghidraName, dwarfNumber), byteOffset);
+            new DwarfRegister(ghidraName, dwarfNumber, lowBytePieceBits(dwarfNumber)), byteOffset);
     }
 
     private UnavailableStorage unavailable(String ghidraName) {
@@ -146,8 +200,9 @@ public record TargetRegisterMap(String target, String provenance,
         for (int index = 0; index < general.length; index++) {
             put(result, index, general[index]);
         }
+        putRange(result, 21, 8, "XMM", 0);
         return new TargetRegisterMap("x86",
-            GHIDRA_MAPPING_ROOT + "Processors/x86/data/languages/x86.dwarf; general-register subset", result);
+            GHIDRA_MAPPING_ROOT + "Processors/x86/data/languages/x86.dwarf; general and XMM registers", result);
     }
 
     private static TargetRegisterMap x86_64() {

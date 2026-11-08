@@ -1,5 +1,74 @@
 # Tested ELF and ABI profiles
 
+**CONFIRMED combined ABI acceptance:** P2.3, P2.3a, P2.3b and P2.3c
+retain all twenty original requirements. Production head `2a74d001e04eeab456b80a5c24063a399b540aa5`
+passed [run 41516782822](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41516782822)
+and independent artifact review, then integrated through the normal protected
+merge `0447ba02e420118662eadf6d64495bdab40fb5bf`. Ghidra 12.0.3, Java 21-compatible bytecode and the
+pinned libdwarf 2.3.2 producer remain the baseline. This is development-branch
+acceptance; it does not publish a release or change alpha.2.
+
+## Accepted expanded profiles
+
+| Profile | Validated behavior and layouts | Limits |
+| --- | --- | --- |
+| AArch64 LP64/AAPCS64, little endian | Selected ELF/language/compiler ABI; register exhaustion, stack and direct/indirect aggregate arguments and returns, HFA, and SIMD storage. ABI fixtures cover exec, PIE, shared objects and Ghidra rebases; SIMD has its separately recorded layouts. | No ILP32, big-endian AArch64 or SVE claim. Unproven locations and incompatible injected calls remain unavailable. |
+| MIPS O32, big and little endian | Wide integer, stack, aggregate and mixed arguments; natural hidden-buffer returns; exec, PIE, shared and rebased cases; retained sectionless regressions. | Mixed register/stack objects have proven prefixes and explicit gaps. FPXX/FP64A FR=1 compiler references do not establish production whole-pair double locations. |
+| MIPS N32 and N64, big and little endian | Distinct pointer/address models with 64-bit GPR/FPR slots; scalar, mixed, aggregate, nested, array, aligned and 128-bit cases; exec, PIE, shared, rebased and live-session exports. | Only matching selected ABI/ISA/FPU profiles enable the additional allocation and call semantics. |
+| ARM32 little endian, ARM/Thumb and base/VFP PCS | Stripped and sectionless mode cues, interworking, mixed bodies, PIE/shared loading, per-function conventions, exhausted stack arguments, HFA and composite storage. | Proven lifetime prefixes and unsupported-call guards remain explicit. |
+| ARM32 BE8 | Big-endian data with little-endian instructions; scalar, base/VFP PCS, HFA and aggregate cases in exec/PIE and rebased layouts with matching tools. | Requires the documented QEMU register-transport correction and pinned GDB. BE32 and BE8 shared-library loading are not advertised. |
+| Linux i386 | Accepted integer/shared-library profile, plus libc-backed x87/SSE/vector/aggregate and additional-convention cases in exec, sectionless, PIE and rebased PIE. | GDB vector/SSE automatic-return limitations are checked with raw returns and call guards; x87 returns remain typed checks. No `compat32` stack-profile claim. |
+
+[The complete acceptance audit](TARGET-ABI-ACCEPTANCE.md) maps every original
+requirement to its tests and records exact positive and unavailable behavior.
+Windows is a supported Ghidra host; it does not imply Windows target-ABI support.
+The original executable remains unchanged, and `.dbg.c` remains synthetic
+decompiler output. A table entry does not establish every ABI or lifetime for
+the processor.
+
+## Historical profile checkpoints
+
+The following notes preserve earlier evidence and limitations. Their pending
+statements do not supersede the accepted profiles above.
+
+**CONFIRMED local ARM incoming-oracle correction:** the PR136 hosted failure
+was an obsolete first-store unavailability expectation. Twelve fresh exports
+pass the independently audited register/spill/reload contract at all ten
+instructions: 140 compiler/Forge observations and 48 required unavailable
+pairs. Six early-gap, late-gap and wrong-carrier controls reject at exact PCs.
+See `MIXED-INCOMING-PREFIX.md`. Production sources are unchanged;
+fresh hosted acceptance, protected integration and the complete original
+P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local ARM context/conflict controls:** twenty controls across ten
+exec/PIE/shared, ordinary/rebased and sectionless layouts pass eighty
+deterministic exports and 390 exact GDB instruction observations. Ten baseline
+runs add 980 observations; two failure/cancellation/live/omission compositions
+add 274. Tests prove Ghidra context-write rejection, conservative omission
+during supported edits, byte-identical restoration and inherited-conflict
+preservation. See `ARM-MIXED-MODE-MAPPINGS.md`. Production code is
+unchanged. Exact-head hosted acceptance, protected integration and the full
+original P2.3–P2.3c requirements remain open.
+
+**CONFIRMED local ARM shared aggregate composition:** a real libc-backed
+loader/driver executes the fourteen-function LE DSO in ordinary/rebased forms.
+Exact GOT relocation, raw carrier and typed checks pass 660 stops per variant,
+16 deterministic failure exports and two cancellations; sixteen deliberate
+shared corruptions reject. Three exec/PIE regressions and twelve PIE corruption
+controls pass with the unchanged production package. See
+`ARM-SHARED-AGGREGATES.md`. Hosted acceptance, protected integration and all remaining original ABI rows
+remain open; the full P2.3–P2.3c goal is unchanged.
+
+**CONFIRMED local exhausted-stack aggregate composition:** eight LE/BE8
+exec/PIE ordinary/rebased cases pass 2,032 instruction observations per
+compiler/Forge variant, raw location/carrier checks, 64 failure exports and
+eight cancellations. Twelve PIE mutation controls fail at the required check.
+The exact prefix contract includes conservative gaps; full-availability
+research failures remain retained. Low-address PIE also requires the pinned
+seventh validation-only libdwarf checker correction. See
+`ARM-STACK-AGGREGATES.md`. Hosted acceptance, shared aggregate composition,
+protected integration and the full P2.3–P2.3c audit remain required.
+
 **CONFIRMED local AArch64 selection candidate (2026-11-01), integration pending:**
 `AARCH64-ABI-SELECTION.md` records explicit language/compiler and ELF call-profile
 checks, twelve packaged runtime cases and six x86-64/MIPS regressions. Earlier

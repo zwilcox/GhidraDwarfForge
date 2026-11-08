@@ -1,0 +1,40 @@
+{
+    "head": "188d41397428ba2b8c2223cb08b04a5ba4ac1e3e",
+    "run": 41697807284,
+    "job": 126139026490,
+    "status": "CONFIRMED complete current-head Linux GUI job and retained artifact checks",
+    "artifactId": 13261089263,
+    "artifactSha256": "0922f1755b4b6164a0b94c2ebf9601a8a5578aab3b8bc3b6d940377538e892e6",
+    "runDirectory": "build/test-results/attachment-review-41697807284/linux-gui/gui/run.scWyg7Id",
+    "commandsChecked": 10,
+    "checks": [
+        "actual consecutive count4 GUI control",
+        "select/cancel full GUI cases",
+        "production initial/curated-refresh/recovery",
+        "GNU/LLVM/pinned-strict with automatic runtime GDB and CRC rejection",
+        "retained receipt hashes and prior-image restoration"
+    ],
+    "notProven": [
+        "Windows real operations/GUI",
+        "complete required-validation gate",
+        "Cancellation of a running modifying helper from the GUI",
+        "Interactive standard-user Windows UAC"
+    ],
+    "retainedFiles": [
+        {
+            "path": "build/test-results/attachment-review-41697807284/linux-gui-review.json",
+            "sha256": "ac54977299eee88841d9230181aae1801be261fb125f8af0bafd7bad7e321825",
+            "bytes": 864
+        },
+        {
+            "path": "build/test-results/attachment-review-41697807284/package-review.json",
+            "sha256": "368d5736a9fb06514e2456c253b8bbe39a4e1d34dc1d866936c4eaef3fbb45f1",
+            "bytes": 1167
+        },
+        {
+            "path": "build/linux-gui-126139026490.log",
+            "sha256": "793c66c81e8550cbdb198e9d37fcc466babd9c21c44a1315fa86a5b64ddaa613",
+            "bytes": 258187
+        }
+    ]
+}

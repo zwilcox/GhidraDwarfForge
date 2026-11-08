@@ -113,7 +113,7 @@ def main():
         for view in ['abbrev', 'aranges', 'decodedline']:
             run(variant + '-' + view, ['readelf', '--debug-dump=' + view, artifact])
         assert 'No errors.' in run(variant + '-llvm', ['llvm-dwarfdump', '--verify', artifact])
-        run(variant + '-strict', ['python3', harness / 'check-dwarfdump.py', artifact,
+        run(variant + '-strict-driver', ['python3', harness / 'check-dwarfdump.py', artifact,
             case / (variant + '-strict.log'), '--original', case / 'input'])
         # Each query starts a fresh debugger; preceding expansion cannot hide lookup defects.
         queries = [("print /x &'right::item'", hex(symbols['right::item'])),

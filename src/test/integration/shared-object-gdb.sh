@@ -2,8 +2,13 @@
 set -euo pipefail
 
 repository_dir=$(realpath "$(dirname "$0")/../../..")
-fixture_dir="$repository_dir/build/fixtures"
-result_dir="$repository_dir/build/test-results/shared-object-gdb"
+fixture_dir=${FORGE_SYMBOL_FIXTURES:-"$repository_dir/build/fixtures"}
+result_dir=${FORGE_GDB_SYMBOL_RESULTS:-"$repository_dir/build/test-results/shared-object-gdb"}
+artifact_suffix=${FORGE_SYMBOL_SUFFIX:-ghidra-forge.dbg}
+[[ "$artifact_suffix" =~ ^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*[.]dbg$ ]] || {
+    echo 'invalid symbol export artifact suffix' >&2
+    exit 64
+}
 source "$repository_dir/src/test/integration/qemu-socket.sh"
 if [[ $# -eq 0 ]]; then
     targets=(x86_64 aarch64 arm32 mips32be mips32le)
@@ -150,7 +155,7 @@ EOF
 
 run_native() {
     local target=x86_64
-    local sidecar="$fixture_dir/$target/libsemantic.so.ghidra-forge.dbg"
+    local sidecar="$fixture_dir/$target/libsemantic.so.$artifact_suffix"
     local main_address text_link_address transcript command_file
     local main_load_start main_load_end
     main_address=$(symbol_address "$target" semantic.shared-driver.reference main)
@@ -165,7 +170,7 @@ run_native() {
 
 run_emulated() {
     local target=$1 emulator=$2 sysroot=$3
-    local sidecar="$fixture_dir/$target/libsemantic.so.ghidra-forge.dbg"
+    local sidecar="$fixture_dir/$target/libsemantic.so.$artifact_suffix"
     local main_address text_link_address transcript command_file
     local main_load_start main_load_end
     main_address=$(symbol_address "$target" semantic.shared-driver.reference main)

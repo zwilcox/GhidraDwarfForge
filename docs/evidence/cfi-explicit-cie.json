@@ -1,0 +1,47 @@
+{
+    "issue": 112,
+    "status": "CONFIRMED local explicit CIE initialization follow-up; hosted pending; no production synthesis",
+    "reason": "Pinned AADWARF64 requires defined CIE initialization for a used callee-saved register. Hard-coded undefined initial rules are not an adequate ABI-neutral API even when FDE overrides make GDB work.",
+    "source": "https://github.com/ARM-software/abi-aa/blob/daa7a94ca55973736c0e434a67a6e4bbcd35d7fa/aadwarf64/aadwarf64.rst#common-information-entries",
+    "change": "CallFramePlan requires immutable explicit initialRules for the full declared universe. Encoder serializes those exact rules. Independent decoder checks CIE state, not only effective FDE rows. Runtime fixtures supply their known entry rules.",
+    "sources": {
+        "src/main/java/ghidradwarfforge/unwind/CallFramePlan.java": "31110a0873983653a0aa229148658850319a1c773b5e08dac8cf0558e3c9c9a0",
+        "src/main/java/ghidradwarfforge/dwarf/DwarfDebugFrame.java": "9453817a5770fe5e2c40c70aa4b667cecb862416bb081d8f8111cf11bc74dcab",
+        "src/test/java/ghidradwarfforge/unwind/CallFrameEncoderSmoke.java": "6f24eccf8c81f7780e3d22a1b5741d21f8a70f697680f1cd017aa2ca3cab97b1",
+        "src/test/java/ghidradwarfforge/unwind/CallFrameEncoderProbe.java": "18031ad9bd21d697aa053e4906205f51b1184a32b272e0387d7d5a5c4a07db8a",
+        "src/test/integration/cfi-encoder.py": "01a10f4485a58b2365952c284ddc8bc96cffa14b07649e7747a77db651c21861"
+    },
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/cfi-explicit-cie.tar.gz",
+        "sha256": "4a87406eaefece15823ba61d6e9f135b061cec8c2feb789b824dee174cdad6fe",
+        "bytes": 224259
+    },
+    "validation": {
+        "componentChecks": 158,
+        "buildExtension": "PASS",
+        "beforeControl": "Prior AArch64 raw CIE fails new explicit-initialization assertion",
+        "targets": {
+            "x86": {
+                "status": "PASS_FRAME_ENCODER",
+                "cases": 8,
+                "runtimeCases": [
+                    "x86_64-exec",
+                    "x86_64-pie"
+                ]
+            },
+            "aarch64": {
+                "status": "PASS_FRAME_ENCODER",
+                "cases": 8,
+                "runtimeCases": [
+                    "aarch64-exec",
+                    "aarch64-pie"
+                ]
+            }
+        }
+    },
+    "limits": [
+        "Explicit fixture rules are not recovered Ghidra evidence",
+        "Native runtime/ABI support still requires complete production recovery acceptance",
+        "Prior cfi-rule-encoder.json remains historical evidence for its exact source hashes"
+    ]
+}

@@ -97,14 +97,19 @@ exit /b %FAKE_HEADLESS_EXIT%
     $inputElf = Join-Path $work 'fixture input.elf'
     $override = Join-Path $work 'override.elf'
     $output = Join-Path $work 'explicit.dbg'
+    $selection = Join-Path $work 'formatter selection λ.json'
+    $formatterHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData(
+        [Text.Encoding]::UTF8.GetBytes([IO.Path]::GetFileName($output)))).ToLowerInvariant()
+    $formatterOutput = Join-Path $work "forge_formatters_$formatterHash.py"
     $project = Join-Path $work 'projects'
     $databaseDirectory = Join-Path $project 'Existing.rep'
     $database = Join-Path $databaseDirectory 'db.1'
     $packagedDirectory = Join-Path $fakeGhidra 'Ghidra\Extensions\GhidraDwarfForge\os\win_x86_64'
     $packagedLibrary = Join-Path $packagedDirectory 'libdwarf.dll'
     New-Item -ItemType Directory -Path $databaseDirectory, $packagedDirectory -Force | Out-Null
-    foreach ($path in @($consumer, $producer, $inputElf, $override, $output, "$output.c",
-            "$inputElf.dbg", "$inputElf.dbg.c", "$override.dbg", "$override.dbg.c",
+    foreach ($path in @($consumer, $producer, $inputElf, $override, $output, $selection, $formatterOutput, "$output.c", "$output.gdb.py", "$output.unwind.json",
+            "$inputElf.dbg", "$inputElf.dbg.c", "$inputElf.dbg.gdb.py", "$inputElf.dbg.unwind.json",
+            "$override.dbg", "$override.dbg.c", "$override.dbg.gdb.py", "$override.dbg.unwind.json",
             (Join-Path $project 'Existing.gpr'), (Join-Path $project 'Existing.lock'),
             $database, $packagedLibrary)) {
         Preserve-File $path
@@ -120,6 +125,27 @@ exit /b %FAKE_HEADLESS_EXIT%
     Assert-Condition ($launchedArguments -match '(?:^|\s)"?-loader"?\s+"?ElfLoader"?(?:\s|$)') `
         'import wrapper did not select the ELF loader'
     $null = Invoke-Wrapper 0 $importOptions
+    Assert-Condition (-not (Get-Content -LiteralPath $argumentLog -Raw).Contains('--source-lines=')) 'default selected multiple sources'
+    foreach ($target in @('1', '8', '1000', '2147483647')) {
+        $null = Invoke-Wrapper 0 ($importOptions + @('-SourceLines', $target))
+        Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains("--source-lines=$target")) 'source line target not forwarded'
+    }
+    foreach ($target in @('', '0', '-1', '+1', '01', ' 8', '1.5', '2147483648', '999999999999999999999999')) {
+        Remove-Item -LiteralPath $argumentLog -Force -ErrorAction SilentlyContinue
+        $transcript = Invoke-Wrapper 64 ($importOptions + @('-SourceLines', $target, '-Log', $inputElf))
+        Assert-Condition (-not (Test-Path -LiteralPath $argumentLog)) 'invalid source target launched Ghidra'
+        Assert-Condition (($transcript -join ' ') -match 'SourceLines must be') 'missing source target diagnostic'
+        Assert-Preserved
+    }
+    $null = Invoke-Wrapper 0 ($importOptions + @('-Formatters', $selection))
+    $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
+    Assert-Condition ($launchedArguments.Contains("--formatters=$selection")) 'formatter selection was not forwarded'
+    $null = Invoke-Wrapper 0 ($importOptions + @('-AnnotationRecordLimit', '123',
+        '-AnnotationTextLimit', '456', '-AnnotationSourceLimit', '789'))
+    $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
+    foreach ($option in @('--annotation-record-limit=123', '--annotation-text-limit=456', '--annotation-source-limit=789')) {
+        Assert-Condition ($launchedArguments.Contains($option)) "missing annotation option: $option"
+    }
     $null = Invoke-Wrapper 0 $projectOptions
     $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
     Assert-Condition ($launchedArguments -notmatch '(?:^|\s)"?-loader"?(?:\s|$)') `
@@ -135,6 +161,26 @@ exit /b %FAKE_HEADLESS_EXIT%
     $null = Invoke-Wrapper 0 $unknownProjectOptions
 
     Assert-RejectedLog $inputElf $importOptions
+    $sourceNames = @("forge-src-000001-$('0' * 64).c", "forge-src-$('0' * 64).json")
+    foreach ($name in $sourceNames) {
+        $part = Join-Path $work $name
+        Preserve-File $part
+        Assert-RejectedLog $part $importOptions
+        $hard = Join-Path $work "$name-hard.log"
+        New-Item -ItemType HardLink -Path $hard -Target $part | Out-Null
+        Assert-RejectedLog $hard ($importOptions + @('-SourceLines', '8'))
+    }
+    $futureManifest = Join-Path $work "forge-src-$('1' * 64).json"
+    Assert-RejectedLog $futureManifest ($importOptions + @('-SourceLines', '8'))
+    Assert-Condition (-not (Test-Path -LiteralPath $futureManifest)) 'reserved future manifest became a log'
+    $independentSources = Join-Path $work 'independent-sources'
+    New-Item -ItemType Directory -Path $independentSources | Out-Null
+    $null = Invoke-Wrapper 0 ($importOptions + @('-Log', (Join-Path $independentSources $sourceNames[0])))
+    Assert-RejectedLog $selection ($importOptions + @('-Formatters', $selection))
+    Assert-RejectedLog $formatterOutput ($importOptions + @('-Output', $output, '-Formatters', $selection))
+    $selectionHardlink = Join-Path $work 'selection-hardlink.log'
+    New-Item -ItemType HardLink -Path $selectionHardlink -Target $selection | Out-Null
+    Assert-RejectedLog $selectionHardlink ($importOptions + @('-Formatters', $selection))
     Assert-RejectedLog (Join-Path $work './fixture input.elf') $importOptions
     $relativeInput = [IO.Path]::GetFileName($inputElf)
     Assert-RejectedLog $relativeInput $importOptions $work
@@ -162,13 +208,38 @@ exit /b %FAKE_HEADLESS_EXIT%
     }
     Assert-RejectedLog $inputElf ($importOptions + @('-OriginalElf', $override))
     Assert-RejectedLog $override ($importOptions + @('-OriginalElf', $override))
-    foreach ($log in @($output, "$output.c")) {
+    $null = Invoke-Wrapper 0 ($importOptions + @('-GdbLoader'))
+    Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw) -match '--gdb-loader') 'loader flag was not forwarded'
+    $null = Invoke-Wrapper 0 ($importOptions + @('-CompressDebugSections', 'zlib'))
+    if ((Get-Content -LiteralPath $argumentLog -Raw) -notmatch
+            '(?:^|\s)"?--compress-debug-sections=zlib"?(?:\s|$)') {
+        throw 'compression option was not passed to the exporter'
+    }
+    $null = Invoke-Wrapper 0 ($importOptions + @('-CompressDebugSections', 'none'))
+    if ((Get-Content -LiteralPath $argumentLog -Raw) -match '--compress-debug-sections=') {
+        throw 'explicit none unexpectedly changed default exporter arguments'
+    }
+    $null = Invoke-Wrapper 64 ($importOptions + @('-CompressDebugSections', 'zstd'))
+    Invoke-Wrapper 0 @('-Import', $inputElf, '-SynthesizeUnwind', 'conditioned',
+        '-UnwindStackSeparation', '100:107', '-UnwindRelocatedPointers', 'fixed') | Out-Null
+    foreach ($option in @('--synthesize-unwind=conditioned', '--unwind-stack-separation=100:107', '--unwind-relocated-pointers=fixed')) {
+        Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains($option)) 'unwind option was not forwarded'
+    }
+    foreach ($mode in @('assembly', 'pcode', 'both')) {
+        $null = Invoke-Wrapper 0 ($importOptions + @('-SourceContext', $mode))
+        Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains("--source-context=$mode")) 'context option was not forwarded'
+    }
+    $null = Invoke-Wrapper 0 ($importOptions + @('-SourceContext', 'off'))
+    Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw) -notmatch '--source-context=') 'off changed exporter arguments'
+    $null = Invoke-Wrapper 64 ($importOptions + @('-SourceContext', 'invalid'))
+    $null = Invoke-Wrapper 64 ($importOptions + @('-SourceContext', 'BOTH'))
+    foreach ($log in @($output, "$output.c", "$output.gdb.py", "$output.unwind.json")) {
         Assert-RejectedLog $log ($importOptions + @('-Output', $output))
     }
-    foreach ($log in @("$inputElf.dbg", "$inputElf.dbg.c")) {
+    foreach ($log in @("$inputElf.dbg", "$inputElf.dbg.c", "$inputElf.dbg.gdb.py", "$inputElf.dbg.unwind.json")) {
         Assert-RejectedLog $log $importOptions
     }
-    foreach ($log in @("$override.dbg", "$override.dbg.c")) {
+    foreach ($log in @("$override.dbg", "$override.dbg.c", "$override.dbg.gdb.py", "$override.dbg.unwind.json")) {
         Assert-RejectedLog $log ($importOptions + @('-OriginalElf', $override))
     }
     $newOutput = Join-Path $work 'new.dbg'
@@ -205,6 +276,23 @@ exit /b %FAKE_HEADLESS_EXIT%
     }
     if ($canSymlink) {
         Assert-RejectedLog $symlink $importOptions
+        foreach ($name in $sourceNames) {
+            $alias = Join-Path $work "$name-symbolic.log"
+            New-Item -ItemType SymbolicLink -Path $alias -Target (Join-Path $work $name) | Out-Null
+            Assert-RejectedLog $alias $importOptions
+        }
+        $futureAlias = Join-Path $work 'future-source.log'
+        New-Item -ItemType SymbolicLink -Path $futureAlias -Target $futureManifest | Out-Null
+        Assert-RejectedLog $futureAlias $importOptions
+        Assert-Condition (-not (Test-Path -LiteralPath $futureManifest)) 'dangling source log created manifest'
+        $reverseLog = Join-Path $independentSources 'preserved.log'
+        Preserve-File $reverseLog
+        New-Item -ItemType SymbolicLink -Path (Join-Path $work "forge-src-000002-$('0' * 64).c") -Target $reverseLog | Out-Null
+        Assert-RejectedLog $reverseLog $importOptions
+        $reverseFuture = Join-Path $independentSources 'not-created.log'
+        New-Item -ItemType SymbolicLink -Path (Join-Path $work "forge-src-000003-$('0' * 64).c") -Target $reverseFuture | Out-Null
+        Assert-RejectedLog $reverseFuture $importOptions
+        Assert-Condition (-not (Test-Path -LiteralPath $reverseFuture)) 'dangling source alias created log'
         $dangling = Join-Path $work 'dangling-output.log'
         New-Item -ItemType SymbolicLink -Path $dangling -Target $newOutput | Out-Null
         Assert-RejectedLog $dangling ($importOptions + @('-Output', $newOutput))
@@ -229,6 +317,19 @@ exit /b %FAKE_HEADLESS_EXIT%
         Assert-RejectedLog "$lexicalInput.dbg.c" ($importOptions + @('-OriginalElf', $ambiguousInput))
         # Tee-Object and the Java exporter both normalize '..' lexically.
         Assert-RejectedLog $ambiguousInput @('-Import', $lexicalInput)
+    }
+    if ($env:OS -ne 'Windows_NT') {
+        $specialDirectory = Join-Path $work "source-directory`n"
+        New-Item -ItemType Directory -Path $specialDirectory | Out-Null
+        foreach ($name in $sourceNames) {
+            $part = Join-Path $specialDirectory $name
+            Preserve-File $part
+            foreach ($kind in @('HardLink', 'SymbolicLink')) {
+                $alias = Join-Path $work "$name-newline-$kind.log"
+                New-Item -ItemType $kind -Path $alias -Target $part | Out-Null
+                Assert-RejectedLog $alias ($importOptions + @('-Output', (Join-Path $specialDirectory 'fixture.dbg')))
+            }
+        }
     }
     $independent = Join-Path $work 'independent.log'
     [IO.File]::WriteAllText($independent, 'independent log')

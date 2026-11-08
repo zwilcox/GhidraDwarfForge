@@ -1,0 +1,552 @@
+{
+    "issue": 112,
+    "status": "CONFIRMED local native recovered CFI/GDB component; real exporter synthesis PLANNED",
+    "sources": {
+        "src/main/java/ghidradwarfforge/unwind/UnwindFrameRows.java": "159855e648a01afcded8be70b89d9b453a54eafae80c77c7495a00281baae935",
+        "src/main/java/ghidradwarfforge/unwind/GhidraUnwindFrames.java": "84a3042bfa58be5878c543e555968310c0259fedac5628482363b6e659af32dc",
+        "src/main/java/ghidradwarfforge/unwind/GhidraUnwindCalls.java": "7bc73ffdf64c9cf89f1621cba40ab4e9c5c1ebfb9e1925100a40d17b8656c962",
+        "src/test/java/ghidradwarfforge/unwind/UnwindFrameRowsSmoke.java": "c5ea6b033bbeea07041283ee4b03b850a0a54792039fff161bae23ce7ed5cf42",
+        "src/test/java/ghidradwarfforge/unwind/UnwindFrameRecoveryProbe.java": "d8db5b3e7cbee60b83f988eb6264a3acec5acb91c391be4fd82585e851168e42",
+        "src/test/java/ghidradwarfforge/unwind/GhidraUnwindCallsSmoke.java": "805fe04c422e62a64ad5406a7f9f6c942ae74ca1453a1a7020e7e8bb77c13f33",
+        "src/test/integration/unwind-frame-recovery.py": "d0005091bfba4ee40d84a7ce89e333f307bb65c1552a238304fdc641cc4c7bb4",
+        "src/test/fixtures/cfi-encoder-x86_64.S": "3cb8bccb6687902cd55a4c4a6fce7d4ee54204b6baa7af3e1e3d938ccf03c16b",
+        "src/test/fixtures/cfi-encoder-aarch64.S": "e69ddbf056c73498c972e5e8225e4129ac928a691cf1b94f86ac84d306864d81",
+        "src/test/fixtures/synthetic-cfi.c": "82cc164cd030be86b50b0affa496c4b617ed183c35a5d6c82a6460c1aacf9145",
+        "build.gradle": "bd5f3be821700cdf9f52916a3b9df42aecf338e81ec12aadc5db10aa3f285d26",
+        ".github/workflows/ci.yml": "27cbf4dbbec64ce479e05c40f52250a94cb967441d37634144be309855aad581"
+    },
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/unwind-frame-recovery.tar.gz",
+        "sha256": "dd5f9d8c3252be508648674b24d94dc21b3f9e5de7139515e6f4d0ebaae01f6f",
+        "bytes": 269955
+    },
+    "observations": {
+        "build/flow-gradle/projection-initial.log": "160dc185ed259fde75e12e2ec189ad3d9e434d2f0b3e53b9dfbd0e433f9c474e",
+        "build/flow-gradle/projection-final.log": "44ecd2ffc6df3969fc1eb35b6d0548315964dfdaeaa5e236e995f9500507b2b9",
+        "build/flow-gradle/recovered-runtime-first.log": "6a45a1bc269c843e1d3f1f4bb7f1be379161a1201eb6b03939783f774d2fbd47",
+        "build/flow-gradle/recovered-runtime.log": "f3be1d554c3b843a24ae503ae9a1e38c8ebc2ffff6c464590d4a66520379f4a9",
+        "build/flow-gradle/recovered-runtime-call-bias.log": "04d35df0be01ed969d01a96014e3020b962f2d94bbb423541d072ad0ea7196d2",
+        "build/flow-gradle/gdb-15.1-dwarf2-frame.c": "de498a8bc417f1c9f2a4979e4358b03b4655663fa70f2faaf76ef0ad75ee689b",
+        "build/flow-gradle/ci-projection-checkpoint.json": "750306a9849856d779c667c37f9e9ea87c5e0eada76fdd4049835c9c12a05efe",
+        "build/flow-gradle/output/test-results/unwind-calls/native.txt": "dec630858af9a7fc7151d20cc8618254bbb55c1d48f4b63ed471bd9f4d80b42f"
+    },
+    "commands": [
+        "./gradlew --init-script build/flow-gradle/init.gradle --project-cache-dir build/flow-gradle/cache unwindFrameRowsSmoke ghidraUnwindCallsSmoke unwindCallsSmoke unwindFlowSmoke unwindAbiProfileSmoke ghidraUnwindInstructionsSmoke callFrameEncoderSmoke buildExtension",
+        "python3 src/test/integration/unwind-frame-recovery.py build/flow-gradle/output/classes/java build/frame-recovery-call-bias --java <Java21>/bin/java --dwarfdump <pinned-checker> --gradle-init build/flow-gradle/init.gradle --gradle-cache build/flow-gradle/cache",
+        "readelf -h -S --debug-dump=frames,info,abbrev,aranges,decodedline <each of eight generated sidecars> (additional full GNU dumps after the runtime run; added to the harness)",
+        "src/test/integration/architecture-neutrality.sh",
+        "actionlint"
+    ],
+    "validation": {
+        "projectionChecks": 77,
+        "nativeCallPlanningFixtures": 24,
+        "nativeCallPlanningChecks": 4020,
+        "planningCancellationPolls": {
+            "x86_64": 771,
+            "aarch64": 2480
+        },
+        "callChecks": 182,
+        "flowChecks": 102,
+        "profileChecks": 235,
+        "rawCaptureChecks": 653,
+        "encoderChecks": 158,
+        "buildExtension": "PASS",
+        "architectureGuard": "PASS",
+        "workflowLint": "PASS",
+        "runtimeCases": 4,
+        "sidecars": 8,
+        "gdbRuns": 16,
+        "gnu": "PASS",
+        "llvmVerifyAndFrame": "PASS",
+        "pinnedStrict": "PASS"
+    },
+    "runtime": [
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/fixtures/cfi-encoder-x86_64.S": "3cb8bccb6687902cd55a4c4a6fce7d4ee54204b6baa7af3e1e3d938ccf03c16b",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-call-bias/x86_64-exec/reference": "cce05cb2747938c44a2cd726147641ba92609a9da80cef45fbf40124ca2994be",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-call-bias/x86_64-exec/original": "f6be2fbdd00853b9cec6ce41656416aa8a336f65e5404aa27e6635dee3100674"
+            },
+            "planSha256": "285a0101c3ed014beebc5d4a2c48bf0cb5410ce588bc5e439c0ddbc27ad7be9e",
+            "frameSha256": "96d768e73589890d080f2a330e3736ab2da86f28dceef2a1208485cab525c230",
+            "warnings": {
+                "reference": [],
+                "absent": [],
+                "none": [],
+                "zlib": []
+            },
+            "runtimeSummary": {
+                "reference": {
+                    "traceStops": 40,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/x86_64-exec/gdb-reference.json",
+                    "sha256": "1873dda05f97818179f62cd7b3efba4e5d8e5471c146aa163aa0977d57237a7b"
+                },
+                "absent": {
+                    "traceStops": 40,
+                    "complete": false,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        null,
+                        "cf_recurse",
+                        null,
+                        "cf_recurse",
+                        null,
+                        "cf_recurse"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/x86_64-exec/gdb-absent.json",
+                    "sha256": "0d4a0f85985d030d4df3ad52d294ea7d42ddb8f852869a1ed9a896fc6b899344"
+                },
+                "none": {
+                    "traceStops": 40,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/x86_64-exec/gdb-none.json",
+                    "sha256": "1873dda05f97818179f62cd7b3efba4e5d8e5471c146aa163aa0977d57237a7b"
+                },
+                "zlib": {
+                    "traceStops": 40,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/x86_64-exec/gdb-zlib.json",
+                    "sha256": "1873dda05f97818179f62cd7b3efba4e5d8e5471c146aa163aa0977d57237a7b"
+                }
+            }
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/fixtures/cfi-encoder-x86_64.S": "3cb8bccb6687902cd55a4c4a6fce7d4ee54204b6baa7af3e1e3d938ccf03c16b",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-call-bias/x86_64-pie/reference": "4fa615a4f6067d38a198bda99ee07499f0065e61b36032fc70b54b2abc582a74",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-call-bias/x86_64-pie/original": "e108cfb677661a89af0a19ffc87e52e9301cbc0e46beb50f2b1838f950ff6a43"
+            },
+            "planSha256": "07e63299db6ac45ac43ef485e28c8aa454108c85675a6f4b9632bf78e73cfaad",
+            "frameSha256": "7180c068a467033ad5178afa198b148f735e57b2839697ded1616f951a392f79",
+            "warnings": {
+                "reference": [],
+                "absent": [],
+                "none": [],
+                "zlib": []
+            },
+            "runtimeSummary": {
+                "reference": {
+                    "traceStops": 40,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/x86_64-pie/gdb-reference.json",
+                    "sha256": "435c8d7ac777bfa75364bdcde8e5f43129b310302c39e0ae119b0a6da2010d89"
+                },
+                "absent": {
+                    "traceStops": 40,
+                    "complete": false,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        null,
+                        "cf_recurse",
+                        null,
+                        "cf_recurse",
+                        null,
+                        "cf_recurse"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/x86_64-pie/gdb-absent.json",
+                    "sha256": "c3d0f5ba26b54c2057967c00ef9bfa081cfb8b1ed91fe7be4cc083824aa6d873"
+                },
+                "none": {
+                    "traceStops": 40,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/x86_64-pie/gdb-none.json",
+                    "sha256": "1eee1646ce570f9e4c306203ac6f02afacaf053a9b4b1e8391d20259b030c566"
+                },
+                "zlib": {
+                    "traceStops": 40,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/x86_64-pie/gdb-zlib.json",
+                    "sha256": "872a00c8dd34f242a4e213856944a4e7786c61113511df08704e24a3376dd701"
+                }
+            }
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/fixtures/cfi-encoder-aarch64.S": "e69ddbf056c73498c972e5e8225e4129ac928a691cf1b94f86ac84d306864d81",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-call-bias/aarch64-exec/reference": "ed570315e030a761525ff94de5f5ae29c5159cfd37d78a172e522dead01d116c",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-call-bias/aarch64-exec/original": "6dcc4915bb6975114d7ddd84e387e2912ec844d822146a06392a87b999f7055e"
+            },
+            "planSha256": "a6cd5d39b190ce693017afaf34f64c6a6bebe24b2569f3d7651bd5d38a0185b8",
+            "frameSha256": "a550f2ff866990938b9961766fb532c34c51450f4d227dfb5e97fde7964473f1",
+            "warnings": {
+                "reference": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "absent": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ]
+            },
+            "runtimeSummary": {
+                "reference": {
+                    "traceStops": 36,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/aarch64-exec/gdb-reference.json",
+                    "sha256": "b54f2ff703b48bd49883c46daceea7478848f8ad3c0cec3c96156e732af02f8a"
+                },
+                "absent": {
+                    "traceStops": 36,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/aarch64-exec/gdb-absent.json",
+                    "sha256": "b54f2ff703b48bd49883c46daceea7478848f8ad3c0cec3c96156e732af02f8a"
+                },
+                "none": {
+                    "traceStops": 36,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/aarch64-exec/gdb-none.json",
+                    "sha256": "b54f2ff703b48bd49883c46daceea7478848f8ad3c0cec3c96156e732af02f8a"
+                },
+                "zlib": {
+                    "traceStops": 36,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/aarch64-exec/gdb-zlib.json",
+                    "sha256": "b54f2ff703b48bd49883c46daceea7478848f8ad3c0cec3c96156e732af02f8a"
+                }
+            }
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "inputHashes": {
+                "/dev/shm/forge-cfi-recovery-worktree/src/test/fixtures/cfi-encoder-aarch64.S": "e69ddbf056c73498c972e5e8225e4129ac928a691cf1b94f86ac84d306864d81",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-call-bias/aarch64-pie/reference": "2e622bda76566343f5ab5617ae2baf4bbff055d9bc7828e703b8c067c3d08ac7",
+                "/dev/shm/forge-cfi-recovery-worktree/build/frame-recovery-call-bias/aarch64-pie/original": "702d1a33ec5656e350b3605ac2b27a8a7f9282d9133da5c4d1d47307c6664c47"
+            },
+            "planSha256": "e3f1eb32643011200addaf2627437aacf4005ff1170de7afee4d273a789733c6",
+            "frameSha256": "4ed2dff827c7fae7d97bfe3102ceacd5453f275ab02a96fa5dc2f8a65da62697",
+            "warnings": {
+                "reference": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "absent": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "none": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ],
+                "zlib": [
+                    "warning: BFD: warning: system-supplied DSO at 0x400000810000 has a corrupt string table index"
+                ]
+            },
+            "runtimeSummary": {
+                "reference": {
+                    "traceStops": 36,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/aarch64-pie/gdb-reference.json",
+                    "sha256": "a1ce668947b190df243ca30b48e9bc9cf67ded965579efb3762d11687ca26593"
+                },
+                "absent": {
+                    "traceStops": 36,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/aarch64-pie/gdb-absent.json",
+                    "sha256": "4992f44ba77d942bafed647fe0ea001f606aa1819e927669e4086645a6d8fa9d"
+                },
+                "none": {
+                    "traceStops": 36,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/aarch64-pie/gdb-none.json",
+                    "sha256": "494541d73f99fd28341514bb9c2fd88c6cf4ade25f18a4ed7d88976fca9ffd39"
+                },
+                "zlib": {
+                    "traceStops": 36,
+                    "complete": true,
+                    "exitcode": 0,
+                    "checkpointNames": [
+                        "cf_checkpoint",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "cf_recurse",
+                        "_start"
+                    ],
+                    "checkpointWitnesses": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                    ],
+                    "path": "build/frame-recovery-call-bias/aarch64-pie/gdb-zlib.json",
+                    "sha256": "589b688ebe6912e1af8a1ecb8db5cb5bf2dc68476cbe2c380ecc94b7fe0d018f"
+                }
+            }
+        }
+    ],
+    "findings": [
+        "Initial fixture no-section assertion rejected linker-created zero-length .eh_frame in PIE; retain empty section and assert no records, with explicit original frame dump.",
+        "Actual AArch64 recursive GDB lookup failed despite GNU/LLVM/strict success: pre-call X30 rule was wrong for biased caller lookup. Intersect before/after call evidence; failing original artifacts and passing same-case traces retained.",
+        "Primary GDB 15.1 frame consumer confirms use of get_frame_address_in_block for CFI lookup; file captured with hash."
+    ],
+    "gdbSource": {
+        "url": "https://gnu.googlesource.com/binutils-gdb/+/refs/tags/gdb-15.1-release/gdb/dwarf2/frame.c",
+        "path": "build/flow-gradle/gdb-15.1-dwarf2-frame.c",
+        "sha256": "de498a8bc417f1c9f2a4979e4358b03b4655663fa70f2faaf76ef0ad75ee689b",
+        "observedLocalVersion": "Ubuntu GDB/GDB-multiarch 15.1-1ubuntu1~24.04.1"
+    },
+    "limits": [
+        "Actual source-owned runtime bytes decoded by Sleigh, but test-only ProgramDB importer and explicit CU; not production exporter acceptance",
+        "Global cfi_sink write in unchanged C compiler reference still needs defensible alias proof; no unsupported absolute-store contract added",
+        "Original-byte agreement, trusted original coverage/precedence, full compiler/shared/failure/cancellation matrix and exporter integration remain required",
+        "No new support claim or production synthesis enabled; PR166 hosted/workload priority, #110 and #109 remain open",
+        "Current hosted execution of this branch not observed"
+    ],
+    "rawRuntimeEvidence": "Full per-instruction traces are retained in the archive result.json and per-mode GDB JSON/logs; hashes above bind the summarized observations."
+}

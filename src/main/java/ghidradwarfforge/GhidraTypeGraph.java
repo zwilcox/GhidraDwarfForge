@@ -193,8 +193,13 @@ public final class GhidraTypeGraph {
             }
             TypeRef returnType = extractor.reserve(formalReturn);
             List<TypeGraph.Parameter> parameters = new ArrayList<>();
-            var correctedStorage = allocation.corrections(function, monitor, diagnostic);
+            var allocationResult = allocation.resolve(function, monitor, diagnostic);
+            var correctedStorage = allocationResult.storage();
             for (Parameter parameter : function.getParameters()) {
+                if (allocationResult.omittedAutomaticParameters().contains(parameter.getOrdinal())) {
+                    if (!parameter.isAutoParameter()) throw new IllegalStateException("Cannot omit an explicit parameter");
+                    continue;
+                }
                 DataType formalType = parameter.getFormalDataType();
                 int logicalLength = formalType == null ? parameter.getLength()
                     : formalType.getLength();
@@ -205,22 +210,19 @@ public final class GhidraTypeGraph {
                     parameter.getAutoParameterType() == AutoParameterType.THIS));
                 if (!parameterName.isBlank() && logicalLength > 0) {
                     var physical = correctedStorage.getOrDefault(parameter.getOrdinal(), parameter.getVariableStorage());
-                    boolean corrected = correctedStorage.containsKey(parameter.getOrdinal());
                     Storage storage = GhidraVariableStorage.stableParameter(program, function,
                         parameter, physical, registerMap, monitor);
                     boolean indirect = parameter.getVariableStorage() != null &&
                         parameter.getVariableStorage().isForcedIndirect();
                     var prefix = indirect
                         ? StackValueFlow.proveIndirect(program, function, parameter, physical, registerMap, monitor)
-                        : corrected ? List.<GhidraVariableStorage.StorageInterval>of()
                         : GhidraVariableStorage.parameterPrefix(program, function,
-                            parameter, registerMap, storage, monitor);
-                    if (!corrected && prefix.isEmpty() && storage instanceof UnavailableStorage) {
-                        prefix = StackValueFlow.prove(program, function, parameter, registerMap, monitor);
+                            parameter, physical, registerMap, storage, monitor);
+                    if (prefix.isEmpty() && storage instanceof UnavailableStorage) {
+                        prefix = StackValueFlow.prove(program, function, parameter, physical, registerMap, monitor);
                     }
-                    if (!corrected && storage instanceof UnavailableStorage && parameter.getVariableStorage() != null &&
-                            parameter.getVariableStorage().getVarnodeCount() > 1) {
-                        var pieces = CompositeValueFlow.prove(program, function, parameter, registerMap, monitor);
+                    if (storage instanceof UnavailableStorage && physical != null && physical.getVarnodeCount() > 1) {
+                        var pieces = CompositeValueFlow.prove(program, function, parameter, physical, registerMap, monitor);
                         prefix = prefix.isEmpty() ? pieces : StackValueFlow.extendUnavailable(prefix, pieces);
                     }
                     if (prefix.isEmpty() && storage instanceof StackStorage && stackDepths == null) {
@@ -446,7 +448,7 @@ public final class GhidraTypeGraph {
             boolean nonDefaultConvention = nonDefaultCallingConvention(program, function);
             String callRestriction = GhidraCustomCallStorage.restriction(program, function, monitor);
             if (nonDefaultConvention) {
-                diagnostic.accept("Debugger-injected calls disabled for " + symbol.name() +
+                diagnostic.accept("Calling convention requires target ABI classification for " + symbol.name() +
                     ": selected Ghidra calling convention " + function.getCallingConventionName() +
                     " differs from the program default; no debugger ABI mapping is established");
             }
@@ -458,7 +460,8 @@ public final class GhidraTypeGraph {
             signatures.add(new ProgramTypeModel.FunctionSignature(symbol.name(), address,
                 returnType, parameters, locals, function.hasVarArgs(), function.hasNoReturn(),
                 nonNull(function.getCallingConventionName()),
-                function.getSignatureSource().name(), nonDefaultConvention, callRestriction));
+                function.getSignatureSource().name(), nonDefaultConvention, callRestriction,
+                effectiveCallingConvention(function)));
         }
         for (FunctionSymbol missing : selected.values()) {
             diagnostic.accept("No Ghidra signature found for exported function " +
@@ -600,7 +603,12 @@ public final class GhidraTypeGraph {
                 continue;
             }
             List<TypeGraph.Parameter> parameters = new ArrayList<>();
+            var allocationResult = allocation.resolveDeclaration(external, monitor, diagnostic);
             for (Parameter parameter : external.getParameters()) {
+                if (allocationResult.omittedAutomaticParameters().contains(parameter.getOrdinal())) {
+                    if (!parameter.isAutoParameter()) throw new IllegalStateException("Cannot omit an explicit parameter");
+                    continue;
+                }
                 monitor.checkCancelled();
                 parameters.add(new TypeGraph.Parameter(safeParameterName(parameter),
                     extractor.reserve(parameter.getFormalDataType()), parameter.isAutoParameter(),
@@ -612,7 +620,7 @@ public final class GhidraTypeGraph {
             boolean nonDefaultConvention = nonDefaultCallingConvention(program, external);
             String callRestriction = GhidraCustomCallStorage.restriction(program, external, monitor);
             if (nonDefaultConvention) {
-                diagnostic.accept("Debugger-injected calls disabled for " + external.getName(true) +
+                diagnostic.accept("Calling convention requires target ABI classification for " + external.getName(true) +
                     ": selected Ghidra calling convention " + external.getCallingConventionName() +
                     " differs from the program default; no debugger ABI mapping is established");
             }
@@ -627,7 +635,7 @@ public final class GhidraTypeGraph {
                 extractor.reserve(external.getReturn().getFormalDataType()), parameters,
                 external.hasVarArgs(), external.hasNoReturn(),
                 external.getCallingConventionName(), external.getSignatureSource().name(),
-                nonDefaultConvention, callRestriction));
+                nonDefaultConvention, callRestriction, effectiveCallingConvention(external)));
         }
         classScopes.prepare(extractor::reserve);
         extractor.drain(monitor);
@@ -667,6 +675,19 @@ public final class GhidraTypeGraph {
         var fallback = program.getCompilerSpec().getDefaultCallingConvention();
         return selected != null && fallback != null &&
             !selected.getName().equals(fallback.getName());
+    }
+
+    /**
+     * FunctionDB.updateParametersAndReturn uses this fallback for dynamic storage.
+     * Keep it distinct from the recorded name; unresolved custom storage has no fallback proof.
+     */
+    static String effectiveCallingConvention(Function function) {
+        var selected = function.getCallingConvention();
+        if (selected != null) return selected.getName();
+        if (function.hasCustomVariableStorage() ||
+                !Function.UNKNOWN_CALLING_CONVENTION_STRING.equals(function.getCallingConventionName())) return "";
+        var fallback = function.getProgram().getFunctionManager().getDefaultCallingConvention();
+        return fallback == null ? "" : fallback.getName();
     }
 
     private static List<String> namespacePath(Namespace namespace) {
@@ -746,8 +767,8 @@ public final class GhidraTypeGraph {
             var confidence = evidence(source, interval.storage()).confidence();
             Evidence evidence = new Evidence(confidence,
                 "Ghidra listing parameter storage (" + source + "); fully decoded " +
-                    (mixed ? "straight-line leaf with exact register/stack pieces and analyzed " +
-                        "stack-pointer depth; bounded by the first possible memory or register write" :
+                    (mixed ? "instruction paths with exact register/stack pieces and proven " +
+                        "stack-pointer coordinates; each piece must survive every incoming path" :
                         "instruction path with incoming bits and completed exact-bit register " +
                         "copies, stack stores/reloads or inspected direct-leaf preservation, as applicable") + "; unproven intervals are unavailable");
             return new LocationRange(AddressNormalizer.toElfAddress(interval.start(), rebaseDelta),
@@ -845,7 +866,9 @@ public final class GhidraTypeGraph {
                     ? BaseEncoding.SIGNED : BaseEncoding.UNSIGNED);
             }
             if (type instanceof AbstractFloatDataType) {
-                return new BaseType(key, name, positiveSize(type), BaseEncoding.FLOAT);
+                // Ghidra distinguishes encoded floating payload from compiler
+                // sizeof/array stride. DW_AT_byte_size describes the latter.
+                return new BaseType(key, name, Math.max(1, type.getAlignedLength()), BaseEncoding.FLOAT, positiveSize(type));
             }
             if (type instanceof Pointer pointer) {
                 return new IndirectionType(key, name, positiveSize(type),
@@ -890,16 +913,20 @@ public final class GhidraTypeGraph {
                 String convention = function.getCallingConventionName();
                 var selected = function.getCallingConvention();
                 var fallback = program.getCompilerSpec().getDefaultCallingConvention();
+                boolean nonDefaultConvention = selected != null && fallback != null &&
+                    !selected.getName().equals(fallback.getName());
                 String restriction = selected == null || fallback == null ?
-                    "function type has no resolved calling convention" :
-                    selected.getName().equals(fallback.getName()) ? "" :
-                    "function type calling convention " + selected.getName() +
-                        " differs from the program default; no debugger ABI mapping";
+                    "function type has no resolved calling convention" : "";
+                if (nonDefaultConvention) {
+                    diagnostic.accept("Calling convention requires target ABI classification for function type " + name +
+                        ": selected Ghidra calling convention " + selected.getName() +
+                        " differs from the program default; no debugger ABI mapping is established");
+                }
                 if (!restriction.isEmpty()) {
                     diagnostic.accept("Debugger-injected calls disabled for function type " + name + ": " + restriction);
                 }
                 return new SubroutineType(key, name, 0, reserve(function.getReturnType()),
-                    parameters, function.hasVarArgs(), convention == null ? "" : convention, restriction);
+                    parameters, function.hasVarArgs(), convention == null ? "" : convention, restriction, nonDefaultConvention);
             }
             String reason = type instanceof Dynamic ? "dynamic-size Ghidra type" :
                 Undefined.isUndefined(type) ? "undefined Ghidra type" :
@@ -939,10 +966,11 @@ public final class GhidraTypeGraph {
         }
 
         private static String stableKey(DataType type) {
-            // Ghidra's generic undefined singleton inherits a process-local ID,
-            // unlike persisted analyst/imported types. Use its existing built-in
-            // fallback identity so saving and reopening cannot reorder the graph.
-            UniversalID id = type.getClass() == DefaultDataType.class ? null :
+            // Generic undefined and transient ArrayDataType objects inherit IDs
+            // generated by DataTypeImpl in this process. ArrayDB deliberately has
+            // no universal ID. Use the structural fallback for both array forms;
+            // retain the persistent IDs of named analyst/imported types.
+            UniversalID id = type.getClass() == DefaultDataType.class || type instanceof Array ? null :
                 type.getUniversalID();
             if (id != null) {
                 return "uid:" + Long.toUnsignedString(id.getValue(), 16);
@@ -965,7 +993,12 @@ public final class GhidraTypeGraph {
         }
 
         private static long nonNegativeSize(DataType type) {
-            return Math.max(0, type.getLength());
+            DataType base = type;
+            var seen = java.util.Collections.newSetFromMap(new IdentityHashMap<DataType, Boolean>());
+            while (base instanceof TypeDef alias && seen.add(base) && seen.size() <= 64) {
+                base = alias.getBaseDataType();
+            }
+            return Math.max(0, base instanceof AbstractFloatDataType ? type.getAlignedLength() : type.getLength());
         }
     }
 }

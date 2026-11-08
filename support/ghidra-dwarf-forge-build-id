@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: ghidra-dwarf-forge-build-id --request=<absolute-json> --request-sha256=<sha256>
+       --ghidra-dir=<installation> [--extension-dir=<installed-extension>]
+       [--java=<java-executable>] [--preview] [--cancel-file=<absolute-empty-file>]
+       [--cancel-on-stdin]
+
+The request selects install, update, remove or recover and an existing debug root.
+The original executable is never modified. A read-only preview precedes execution.
+--preview only displays selections; it does not run validators or install files.
+No elevation is requested. Retain installation state and source generations.
+See docs/BUILD-ID-INSTALLATION.md for request examples and consumer setup.
+EOF
+}
+
+fail() { echo "ghidra-dwarf-forge-build-id: $1" >&2; exit 64; }
+ghidra_dir=${GHIDRA_INSTALL_DIR:-}
+extension_dir=
+java_path=
+request=
+request_sha=
+cancel_file=
+preview=0
+cancel_stdin=0
+declare -A seen=()
+for argument in "$@"; do
+    key=${argument%%=*}
+    [[ -z ${seen[$key]:-} ]] || fail "duplicate option: $key"
+    seen[$key]=1
+    case "$argument" in
+        --help) usage; exit 0 ;;
+        --ghidra-dir=*) ghidra_dir=${argument#*=} ;;
+        --extension-dir=*) extension_dir=${argument#*=} ;;
+        --java=*) java_path=${argument#*=} ;;
+        --request=*) request=${argument#*=} ;;
+        --request-sha256=*) request_sha=${argument#*=} ;;
+        --cancel-file=*) cancel_file=${argument#*=} ;;
+        --preview) preview=1 ;;
+        --cancel-on-stdin) cancel_stdin=1 ;;
+        *) fail "unknown option: $key" ;;
+    esac
+done
+[[ $request == /* && $request_sha =~ ^[0-9a-f]{64}$ ]] || fail 'select an absolute request and lowercase SHA-256'
+[[ -n $ghidra_dir ]] || fail '--ghidra-dir or GHIDRA_INSTALL_DIR is required'
+ghidra_dir=$(realpath -e -- "$ghidra_dir") || fail 'Ghidra installation is missing'
+if [[ -z $extension_dir ]]; then
+    extension_dir=$(cd -- "$(dirname -- "$0")/.." && pwd -P)
+else
+    extension_dir=$(realpath -e -- "$extension_dir") || fail 'extension directory is missing'
+fi
+if [[ -z $java_path ]]; then
+    if [[ -n ${JAVA_HOME:-} ]]; then java_path="$JAVA_HOME/bin/java"
+    else java_path=$(command -v java) || fail 'Java 21 or later is required'; fi
+fi
+java_path=$(realpath -e -- "$java_path") || fail 'Java executable is missing'
+[[ -x $java_path ]] || fail 'Java selection is not executable'
+jar="$extension_dir/lib/GhidraDwarfForge.jar"
+jna="$ghidra_dir/Ghidra/Framework/Pty/lib/jna-5.14.0.jar"
+gson="$ghidra_dir/Ghidra/Framework/Generic/lib/gson-2.9.0.jar"
+for dependency in "$jar" "$jna" "$gson"; do
+    [[ -f $dependency ]] || fail "required installed dependency is missing: $dependency"
+    [[ $dependency != *:* ]] || fail 'Java classpath installation paths cannot contain a colon'
+done
+command=("$java_path" --enable-native-access=ALL-UNNAMED -cp "$jar:$jna:$gson"
+    ghidradwarfforge.output.BuildIdHelper --request "$request" --request-sha256 "$request_sha")
+if [[ -n $cancel_file ]]; then
+    [[ $cancel_file == /* ]] || fail '--cancel-file must be absolute'
+    command+=(--cancel-file "$cancel_file")
+fi
+"${command[@]}" --preview
+if ((preview)); then exit 0; fi
+if ((cancel_stdin)); then command+=(--cancel-on-stdin); fi
+exec "${command[@]}"

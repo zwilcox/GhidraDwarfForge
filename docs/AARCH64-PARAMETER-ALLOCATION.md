@@ -158,8 +158,22 @@ the existing independent architecture policy. The fixture inventory/reproducibil
 guard, four exact-reference-window tests, architecture isolation, actionlint,
 Python compilation, shell syntax and whitespace checks also pass.
 
-**PRESENT, UNVERIFIED as a finished component:** final CI and protected
-integration still require reconciliation.
+**CONFIRMED exact-head hosted acceptance and protected integration:** PR #124
+head `035b9ebcb69d3badded6c7875ea089e8c1708086` passed all twelve jobs in
+[run 41371608332](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/41371608332),
+including all five target lanes, Windows-host and enforced `required-validation`
+(check `125092500701`). Independent review verified all 167 release manifest
+entries and the same local validated JAR, repeated LLVM/pinned strict and raw
+allocation checks for all five hosted ABI layouts, and replayed 4,076 baseline
+plus 1,753 failed-decompilation GDB observations. Protected package/source/input
+hashes (188/189 per role) matched. ZIP executable modes and runner source paths
+were restored for replay; the original ELF/DWARF bytes were unchanged. The review
+receipt SHA-256 is
+`858e4cf03a056c8fe4277a74ff68923d40965b63fe256462bbc2f3d1757dace5`.
+
+Normal protected merge `453a7e9be61f1e34f3bae79f43f7ead2192bfcc2` has two parents
+and exactly the tested tree `759d185e0774d81dcd25514b95ad1fc89feedf99`.
+This accepts the allocation component, not the full #68–#71 objective.
 Earlier candidate results are historical and do not replace this matrix.
 The source inventory includes the new shared fixture header. Both host smoke
 lists and the AArch64 runtime lane include the new checks. P2.3/#68 and all

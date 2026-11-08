@@ -55,6 +55,10 @@ public interface LibDwarfProducer extends Library {
     int dwarf_add_AT_name_a(Die die, String name, PointerByReference attributeOut,
             PointerByReference errorOut);
 
+    // libdwarfp.h 2.3.2 lines 429-432.
+    int dwarf_add_AT_comp_dir_a(Die die, String directory, PointerByReference attributeOut,
+            PointerByReference errorOut);
+
     // libdwarfp.h 2.3.2 lines 378-381.
     int dwarf_add_AT_producer_a(Die die, String producer, PointerByReference attributeOut,
             PointerByReference errorOut);

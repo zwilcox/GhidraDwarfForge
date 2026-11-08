@@ -50,8 +50,12 @@ int main(void)
 EOF
 cc -O0 -g -gdwarf-5 -fno-pie -no-pie "$work/fixture.c" -o "$work/fixture.elf"
 mkdir "$work/classes"
-javac -d "$work/classes" \
+# Resolve the writer's pure-Java dependency closure from this checkout.
+# Keep the isolated compiler/runtime classpath free of Ghidra and native libraries.
+javac -sourcepath "$repository_dir/src/main/java" -d "$work/classes" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfImage.java" \
+    "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLocalSymbol.java" \
+    "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLocalMappingSymbol.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLocalFunctionSymbol.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/DynamicSymbolMirror.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/ElfLoadAllocations.java" \
@@ -59,6 +63,7 @@ javac -d "$work/classes" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/MipsDynamicSymbols.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/SectionlessDynamicSymbols.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/SectionlessUnwind.java" \
+    "$repository_dir/src/main/java/ghidradwarfforge/elf/DebugSectionCompression.java" \
     "$repository_dir/src/main/java/ghidradwarfforge/elf/MatchedElfSidecarWriter.java" \
     "$repository_dir/src/test/java/ghidradwarfforge/elf/LargeElfSidecarSmoke.java"
 java -Xmx64m -cp "$work/classes" ghidradwarfforge.elf.LargeElfSidecarSmoke \

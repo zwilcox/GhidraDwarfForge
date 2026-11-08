@@ -42,7 +42,8 @@ public final class Aarch64AbiSelectionSmoke {
                                 require(after.debuggerCallsDisabled() == (restricted || index == 1), "function call bypass");
                                 require(before.equals(new FunctionSignature(after.name(), after.address(), after.returnType(),
                                     after.parameters(), after.locals(), after.variadic(), after.noReturn(), after.callingConvention(),
-                                    after.signatureSource(), after.nonDefaultCallingConvention(), before.debuggerCallRestriction())),
+                                    after.signatureSource(), after.nonDefaultCallingConvention(), before.debuggerCallRestriction(),
+                                    after.effectiveCallingConvention())),
                                     "curated function knowledge changed");
                                 var oldDeclaration = input.functionDeclarations().get(index);
                                 var declaration = output.functionDeclarations().get(index);
@@ -50,7 +51,8 @@ public final class Aarch64AbiSelectionSmoke {
                                 require(oldDeclaration.equals(new FunctionDeclaration(declaration.key(), declaration.name(),
                                     declaration.returnType(), declaration.parameters(), declaration.variadic(), declaration.noReturn(),
                                     declaration.callingConvention(), declaration.signatureSource(), declaration.nonDefaultCallingConvention(),
-                                    oldDeclaration.debuggerCallRestriction())), "external declaration changed");
+                                    oldDeclaration.debuggerCallRestriction(), declaration.effectiveCallingConvention())),
+                                    "external declaration changed");
                                 var oldType = (SubroutineType) input.types().byKey().get("callback" + index);
                                 var newType = (SubroutineType) output.types().byKey().get(oldType.key());
                                 require(newType.debuggerCallsDisabled() == (restricted || index == 1), "callback bypass");

@@ -1,0 +1,284 @@
+package ghidradwarfforge.output;
+
+import com.google.gson.JsonParser;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HexFormat;
+import java.util.Map;
+
+/** Admission is read-only. Native helper/validator/GDB acceptance runs in CI. */
+public final class AttachmentHelperSmoke {
+    private static int checks;
+
+    public static void main(String[] args) throws Exception {
+        pathArguments();
+        Path root = Files.createTempDirectory("forge-helper-λ ");
+        try {
+            for (String role : new String[] {"target", "sidecar", "source", "report", "helper", "readelf", "llvm", "strict", "configuration"}) {
+                Files.writeString(root.resolve(role), "owned input " + role);
+            }
+            var request = new AttachmentOperation.Request(root.resolve("target"), root.resolve("sidecar"), root.resolve("source"),
+                root.resolve("report"), root.resolve("original.backup"), root.resolve("validation.json"),
+                root.resolve("receipt.json"), root.resolve("recovery.json"), root.resolve("restore"), null);
+            var tools = new HashMap<String, Path>();
+            for (String role : new String[] {"helper", "readelf", "llvm", "strict", "configuration"}) tools.put(role, root.resolve(role));
+            var invocation = new AttachmentInvocation(request, tools, root.resolve("saved-recovery.json"));
+            Path selection = root.resolve("request.json");
+            Files.writeString(selection, invocation.toJson());
+            String[] command = {"--request", selection.toString(), "--request-sha256", digest(selection), "--confirm-target-change"};
+            var before = snapshot(root);
+            var admitted = AttachmentHelper.admit(command, () -> false);
+            equal(invocation, admitted.invocation());
+            admitted.plan().recheck();
+            String[] encodedCommand = command.clone();
+            encodedCommand[0] = "--request-utf8-base64";
+            encodedCommand[1] = AttachmentPathArgument.encode(selection.toString());
+            equal(invocation, AttachmentHelper.admit(encodedCommand, () -> false).invocation());
+            var encodedOutput = new ByteArrayOutputStream();
+            equal(0, AttachmentHelper.run(append(Arrays.copyOf(encodedCommand, 4), "--preview"),
+                () -> false, new PrintStream(encodedOutput)));
+            equal("PREVIEW", JsonParser.parseString(encodedOutput.toString(StandardCharsets.UTF_8))
+                .getAsJsonObject().get("outcome").getAsString());
+            equal(before, snapshot(root));
+            var previewOutput = new ByteArrayOutputStream();
+            equal(0, AttachmentHelper.run(append(Arrays.copyOf(command, 4), "--preview"), () -> false, new PrintStream(previewOutput)));
+            var preview = JsonParser.parseString(previewOutput.toString(StandardCharsets.UTF_8)).getAsJsonObject();
+            equal("PREVIEW", preview.get("outcome").getAsString());
+            equal(JsonParser.parseString(invocation.toJson()), preview.get("selection"));
+            equal(false, preview.has("recoverySelection"));
+            previewOutput.reset();
+            equal(0, AttachmentHelper.run(append(Arrays.copyOf(command, 4), "--preview", "--enable-security-privilege"),
+                () -> false, new PrintStream(previewOutput)));
+            equal("PREVIEW", JsonParser.parseString(previewOutput.toString(StandardCharsets.UTF_8)).getAsJsonObject().get("outcome").getAsString());
+            equal(before, snapshot(root));
+            for (String[] rejected : new String[][] {
+                    {}, {"--confirm-target-change"}, Arrays.copyOf(command, 4),
+                    {"--request", selection.toString(), "--confirm-target-change"},
+                    {"--request", "relative", "--request-sha256", digest(selection), "--confirm-target-change"},
+                    {"--request", selection.toString(), "--request-sha256", "0".repeat(64), "--confirm-target-change"},
+                    {"--request", selection.toString(), "--request-sha256", "invalid", "--confirm-target-change"},
+                    append(command, "--confirm-target-change"), append(command, "--elevate"),
+                    append(command, "--request", selection.toString()), append(command, "--request"),
+                    append(command, "--request-utf8-base64", AttachmentPathArgument.encode(selection.toString())),
+                    append(encodedCommand, "--request", selection.toString()),
+                    {"--request-utf8-base64", "%%%", "--request-sha256", digest(selection), "--preview"},
+                    {"--request-utf8-base64", AttachmentPathArgument.encode("relative"),
+                        "--request-sha256", digest(selection), "--preview"},
+                    append(command, "--request-sha256", digest(selection)),
+                    append(command, "--recover"), append(command, "--recover", "--recover"),
+                    append(command, "--preview", "--preview"),
+                    append(command, "--enable-security-privilege", "--enable-security-privilege"),
+                    append(command, "--cancel-on-stdin", "--cancel-on-stdin") }) {
+                failure(rejected, false, "FAILED", 1);
+                equal(before, snapshot(root));
+            }
+            failure(command, true, "CANCELLED", 130);
+            equal(before, snapshot(root));
+            equal(true, AttachmentHelper.command(append(command, "--cancel-on-stdin")).cancelOnStdin());
+            cancellationFile(root, command);
+            equal(before, snapshot(root));
+
+            // A changed request of the same size and mtime must fail its content pin.
+            var mtime = Files.getLastModifiedTime(selection);
+            String initial = Files.readString(selection);
+            Files.writeString(selection, initial.replace("restore", "changed"));
+            Files.setLastModifiedTime(selection, mtime);
+            failure(command, false, "FAILED", 1);
+            Files.writeString(selection, initial);
+            Files.setLastModifiedTime(selection, mtime);
+            admitted.plan().recheck();
+            // Changing only a selected tool is detected by the retained path plan.
+            Files.writeString(root.resolve("helper"), "different validator helper contents");
+            try { admitted.plan().recheck(); throw new AssertionError("changed helper admitted"); }
+            catch (IOException expected) { checks++; }
+
+            // A transport that aliases a target cannot be used even with a fresh digest.
+            Files.writeString(root.resolve("target"), initial);
+            String[] alias = {"--request", root.resolve("target").toString(), "--request-sha256",
+                digest(root.resolve("target")), "--confirm-target-change"};
+            failure(alias, false, "FAILED", 1);
+            // A large request is bounded before JSON parsing and before native work.
+            Files.writeString(selection, " ".repeat(256 * 1024 + 1));
+            command[3] = digest(selection);
+            failure(command, false, "FAILED", 1);
+            var help = new ByteArrayOutputStream();
+            equal(0, AttachmentHelper.run(new String[] {"--help"}, () -> false, new PrintStream(help)));
+            equal(true, help.toString(StandardCharsets.UTF_8).contains("changes the selected executable"));
+            validatorInputs(root);
+            System.out.println("attachment-helper-smoke=PASS checks=" + checks +
+                " admission-only=true native-attachment=false cancellation-native-identity=" + com.sun.jna.Platform.isWindows());
+        }
+        finally {
+            try (var paths = Files.walk(root)) {
+                for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
+            }
+        }
+    }
+
+    private static void validatorInputs(Path root) throws Exception {
+        Path directory = Files.createDirectory(root.resolve("validator-input-controls"));
+        Path tool = Files.writeString(directory.resolve("tool λ"), "original");
+        Path alias = Files.createLink(directory.resolve("tool-hardlink"), tool);
+        var original = ValidatorInput.observe(tool, () -> false);
+        equal(2L, original.observation().links());
+        equal(original.observation(), ValidatorInput.observe(alias, () -> false).observation());
+        ValidatorInput.unchanged(original, () -> false);
+        var modified = Files.getLastModifiedTime(tool);
+        Files.writeString(alias, "modified");
+        Files.setLastModifiedTime(alias, modified);
+        try { ValidatorInput.unchanged(original, () -> false); throw new AssertionError("aliased tool edit accepted"); }
+        catch (IOException expected) { checks++; }
+        Files.writeString(tool, "original");
+        Files.setLastModifiedTime(tool, modified);
+        var restored = ValidatorInput.observe(tool, () -> false);
+        // Replace one link with equal bytes/mtime while keeping the old inode
+        // alive through the other link. Identity must detect the substitution.
+        Files.delete(tool);
+        Files.writeString(tool, "original");
+        Files.setLastModifiedTime(tool, modified);
+        equal(restored.digest(), ValidatorInput.observe(tool, () -> false).digest());
+        try { ValidatorInput.unchanged(restored, () -> false); throw new AssertionError("same-content replacement accepted"); }
+        catch (IOException expected) { checks++; }
+        var beforeLink = ValidatorInput.observe(tool, () -> false);
+        Path another = Files.createLink(directory.resolve("another-link"), tool);
+        try { ValidatorInput.unchanged(beforeLink, () -> false); throw new AssertionError("link-count change accepted"); }
+        catch (IOException expected) { checks++; }
+        // Tool hardlinks remain subject to all-role preflight: selecting the
+        // same underlying file as a protected target is never allowed.
+        try {
+            AttachmentPaths.preflight(java.util.List.of(
+                new AttachmentPaths.Selection("target", tool, AttachmentPaths.Kind.TARGET),
+                new AttachmentPaths.Selection("toolReadelf", another, AttachmentPaths.Kind.INPUT)));
+            throw new AssertionError("tool/target hardlink alias accepted");
+        }
+        catch (IOException expected) { checks++; }
+        for (Path bad : java.util.List.of(directory, directory.resolve("missing"))) {
+            try { ValidatorInput.observe(bad, () -> false); throw new AssertionError("invalid validator input accepted"); }
+            catch (IOException expected) { checks++; }
+        }
+        try { ValidatorInput.observe(tool, () -> true); throw new AssertionError("cancelled input observation succeeded"); }
+        catch (java.util.concurrent.CancellationException expected) { checks++; }
+        System.out.println("validator-input-controls=PASS hardlink=true native-windows-identity=" + com.sun.jna.Platform.isWindows());
+    }
+
+    private static void pathArguments() throws Exception {
+        for (String literal : new String[] {"/tmp/λ 空 😀 [literal] $() ` ;.json", "C:\\path with spaces\\λ.json",
+                "a".repeat(16384), "空".repeat(16384)}) {
+            String encoded = AttachmentPathArgument.encode(literal);
+            equal(true, encoded.chars().allMatch(value -> value < 128));
+            equal(literal, AttachmentPathArgument.decode(encoded));
+        }
+        // Fixed external UTF-8/Base64 vector, also consumed by the PowerShell test.
+        equal("L3RtcC/OuyDnqbog8J+YgC5qc29u", AttachmentPathArgument.encode("/tmp/λ 空 😀.json"));
+        for (String invalid : new String[] {null, "", "bad\0path", "a".repeat(16385), "\uD800"}) {
+            try { AttachmentPathArgument.encode(invalid); throw new AssertionError("invalid literal admitted"); }
+            catch (IOException expected) { checks++; }
+        }
+        for (String invalid : new String[] {null, "", "%%%", "YQ", "YR==", "YQ==\n", "AA==", "/w==",
+                "7aCA", "QQ==".repeat(16385), java.util.Base64.getEncoder().encodeToString(
+                    "a".repeat(16385).getBytes(StandardCharsets.UTF_8))}) {
+            try { AttachmentPathArgument.decode(invalid); throw new AssertionError("invalid transport admitted"); }
+            catch (IOException expected) { checks++; }
+        }
+    }
+
+    private static void failure(String[] args, boolean cancelled, String outcome, int status) {
+        var output = new ByteArrayOutputStream();
+        equal(status, AttachmentHelper.run(args, () -> cancelled, new PrintStream(output)));
+        var result = JsonParser.parseString(output.toString(StandardCharsets.UTF_8)).getAsJsonObject();
+        equal(outcome, result.get("outcome").getAsString());
+        equal(status, result.get("exitCode").getAsInt());
+        equal(false, result.has("recoverySelection"));
+    }
+
+    private static void cancellationFile(Path root, String[] command) throws Exception {
+        Path file = root.resolve("cancel λ [literal]");
+        Files.createFile(file);
+        try {
+            var channel = new AttachmentCancellationFile(file);
+            equal(false, channel.getAsBoolean());
+            var arguments = append(command, "--cancel-file", file.toString());
+            var encodedArguments = append(command, "--cancel-file-utf8-base64", AttachmentPathArgument.encode(file.toString()));
+            equal(file, AttachmentHelper.command(encodedArguments).cancelFile());
+            AttachmentHelper.admit(encodedArguments, () -> false).plan().recheck();
+            var output = new ByteArrayOutputStream();
+            equal(0, AttachmentHelper.run(append(encodedArguments, "--preview"), () -> false, new PrintStream(output)));
+            output.reset();
+            equal(0, AttachmentHelper.run(append(arguments, "--preview"), () -> false, new PrintStream(output)));
+            equal(0L, Files.size(file));
+            AttachmentHelper.admit(arguments, () -> false).plan().recheck();
+            Files.writeString(file, "cancel");
+            equal(true, channel.getAsBoolean());
+            failure(arguments, false, "CANCELLED", 130);
+            failure(encodedArguments, false, "CANCELLED", 130);
+            Files.writeString(file, "");
+            equal(true, channel.getAsBoolean()); // A request cannot be withdrawn.
+            var removed = new AttachmentCancellationFile(file);
+            Files.delete(file);
+            equal(true, removed.getAsBoolean());
+            Files.createFile(file);
+            equal(true, removed.getAsBoolean());
+            var replaced = new AttachmentCancellationFile(file);
+            Path retained = root.resolve("retained-cancel");
+            Files.move(file, retained);
+            try {
+                Files.createFile(file);
+                Files.setLastModifiedTime(file, Files.getLastModifiedTime(retained));
+                equal(true, replaced.getAsBoolean());
+            }
+            finally { Files.delete(retained); }
+            for (String[] invalid : new String[][] {
+                    append(arguments, "--cancel-file", file.toString()),
+                    append(arguments, "--cancel-file-utf8-base64", AttachmentPathArgument.encode(file.toString())),
+                    append(encodedArguments, "--cancel-file", file.toString()),
+                    append(command, "--cancel-file-utf8-base64", "%%%"),
+                    append(command, "--cancel-file-utf8-base64", AttachmentPathArgument.encode("relative")),
+                    append(command, "--cancel-file"), append(command, "--cancel-file", "relative"),
+                    append(command, "--cancel-file", root.toString()),
+                    append(command, "--cancel-file", root.resolve("absent").toString()) }) {
+                failure(invalid, false, "FAILED", 1);
+            }
+            // All-role admission rejects the control path aliasing any artifact,
+            // independently of whether its bytes would also request cancellation.
+            try {
+                AttachmentHelper.admit(append(command, "--cancel-file", root.resolve("target").toString()), () -> false);
+                throw new AssertionError("accepted target as cancellation channel");
+            }
+            catch (IOException expected) { checks++; }
+        }
+        finally { Files.deleteIfExists(file); }
+    }
+
+    private static String[] append(String[] args, String... additional) {
+        var result = new ArrayList<>(Arrays.asList(args));
+        result.addAll(Arrays.asList(additional));
+        return result.toArray(String[]::new);
+    }
+
+    private static String digest(Path path) throws Exception {
+        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)));
+    }
+
+    private static Map<String, String> snapshot(Path root) throws Exception {
+        var result = new HashMap<String, String>();
+        try (var paths = Files.list(root)) {
+            for (var path : paths.toList()) result.put(path.toString(), digest(path));
+        }
+        return result;
+    }
+
+    private static void equal(Object expected, Object actual) {
+        if (!expected.equals(actual)) throw new AssertionError("expected " + expected + " but got " + actual);
+        checks++;
+    }
+}

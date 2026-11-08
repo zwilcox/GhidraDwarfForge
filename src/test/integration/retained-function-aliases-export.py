@@ -35,9 +35,10 @@ def elf(path):
 def arm_mode_inventory(original, emitted, compiler_symbols, functions):
     """Independently check primary mode cues, not analyst alias insertion."""
     table, records = emitted['.symtab']
-    dynamic, old_records = original['.dynsym']
+    retained = '.symtab' in original
+    dynamic, old_records = original['.symtab' if retained else '.dynsym']
     names = emitted['.strtab'][1]
-    old_names = original['.dynstr'][1]
+    old_names = original['.strtab' if retained else '.dynstr'][1]
     assert table[9] == dynamic[9] == 16 and names.startswith(old_names)
     added = table[7] - dynamic[7]
     split = dynamic[7] * 16
@@ -278,12 +279,17 @@ def main():
     assert os['.note.gnu.build-id'][1] == ds['.note.gnu.build-id'][1]
     for name in ('.symtab', '.strtab'):
         assert (name in os) == (args.symbols == 'retained')
-        if not (args.target == 'arm32' and args.symbols == 'stripped' and args.role == 'exec'):
+        if args.target != 'arm32':
             assert (name in ds) == (args.symbols == 'retained')
-        if name in os:
+        if name in os and args.target != 'arm32':
             assert os[name][1] == ds[name][1]
-    if args.target == 'arm32' and args.symbols == 'stripped' and '.symtab' in ds:
-        arm_mode_inventory(os, ds, (case / 'symbols.log').read_text(), rows)
+    if args.target == 'arm32':
+        if args.symbols == 'retained':
+            assert '.symtab' in ds and '.strtab' in ds
+        changed = '.symtab' in ds and ('.symtab' not in os or
+            ds['.symtab'][1] != os['.symtab'][1] or ds['.strtab'][1] != os['.strtab'][1])
+        if changed:
+            arm_mode_inventory(os, ds, (case / 'symbols.log').read_text(), rows)
     for variant, artifact in [('compiler', reference), ('forge', case / 'aliases.dbg')]:
         for view in ('info', 'abbrev', 'aranges', 'decodedline', 'loc', 'Ranges'):
             run(variant + '-' + view, ['readelf', '--debug-dump=' + view, artifact])

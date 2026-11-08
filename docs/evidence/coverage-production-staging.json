@@ -1,0 +1,422 @@
+{
+    "status": "LOCAL_PRODUCTION_STAGING_PASS",
+    "scope": "Production schema-two staging; not full #108 acceptance or hosted validation",
+    "installation": {
+        "installation": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-staging-java21",
+        "packageSha256": "35b08752ee0d7072038070fd2944316dd0d176b3c91b40c2d137fab7f5a04df7",
+        "jarSha256": "aeeacfd496c1b6f549981552963afad301bbd36e9cfd576146af3a72a9f4dd48",
+        "scriptSha256": "34f9d40925de6b65089127a065eb4d5469449fe5d65ab9375cf54b0de974f190",
+        "protectedBase": {
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-admission-java21/support/launch.properties": "5b587322dde4544aa2a3901cbbc3cb05fc97160e70e30b79c8599e7f475d3c9d",
+            "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-admission-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "aeeacfd496c1b6f549981552963afad301bbd36e9cfd576146af3a72a9f4dd48"
+        }
+    },
+    "lexical": [
+        {
+            "path": "build/test-results/lexical-shadow/x86_64-exec-wo5mmgfy/acceptance.json",
+            "sha256": "cbded8fba58966f3fc28f814ff114507a58d7f88fed77085030dfddd74a52856",
+            "evidence": {
+                "status": "LEXICAL_SHADOW_PASS",
+                "target": "x86_64",
+                "role": "exec",
+                "discontiguous": true,
+                "calls": false,
+                "javaRuntime": 21,
+                "protected": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/fixtures/lexical-shadow.c": "30b12762a20270e838d0c72051bd567fc0460cb317646a589a61a75bbf2b111e",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-staging-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "aeeacfd496c1b6f549981552963afad301bbd36e9cfd576146af3a72a9f4dd48",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-export.py": "a2b1b57b3a6bdc44ccfc659d4331126d223073d2f6559a9abbb586a50e7db46f",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-gdb.sh": "4f3a04efc1107eb486b612cc12e6e22f96a388112e56f520ca1b9ffb08453c21",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-previous.py": "41d29fdf8fa723a263cb0f1330f256fe48eca94fdf26453e7802d42a8a25af93",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-gdb.py": "789570e5b1d3639925771801708aca007c099c2a8e4a13ec8af4f17e12388cd9",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-failure.py": "4ce7572e56c1b3630550401fc6bd69928aafb38ffce5b83a4b7fde3da6af065e",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-controls.py": "276dde90d32247e0813685ba397014492726b9d22ad162df5659fd415c02149e",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/check-lexical-shadow.py": "890965c7c815f57b670500d8e972be2f1f5b7d03d0f0dc3b8f198c798f11ea19",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/PrepareLexicalShadow.java": "eacf97cff4d49348ba934a792b3417ab5ececab1450756aa644f69b07ea66a49",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/LexicalDecompilerFailureExport.java": "d0a99e7ad59e256a4ce387ca7d2a48f4b9d129ac6d1d424295721b8e0a1fe381",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/CancelDuringElfCopy.java": "d1d7e6a33da3124219af3a2fbd208aab9bcbac7301c2ba85d68e518fac2acceb",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-wo5mmgfy/reference": "b32fc371cf4ffe3bb1de4c386da47a0e7b9012b13d08f5ed50940b6f99ed7c5d",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-wo5mmgfy/stripped": "cd59d579fa66f5b3f2815ccd5c4f087c60ef4a2f2df4ab7e340d22821fb9830e"
+                },
+                "outputPair": [
+                    "35c0a6d291e78be5524fe4b8f34fb84b2ed816b93b48858237d3918ff32f61e6",
+                    "5cfd67deaef8774ae844b0d29e055be458bf2ded93bbfd61afb53e307afdf31a"
+                ],
+                "observations": 23,
+                "scope": "explicit analyst block visibility, shadow lookup, initialization gaps; full goal remains open"
+            }
+        },
+        {
+            "path": "build/test-results/lexical-shadow/aarch64-pie-rebased-sj3iptj8/acceptance.json",
+            "sha256": "39e222d78ca42065a6130d2076e94baaceb4f03f10098d12817be8187515780c",
+            "evidence": {
+                "status": "LEXICAL_SHADOW_PASS",
+                "target": "aarch64",
+                "role": "pie-rebased",
+                "discontiguous": true,
+                "calls": false,
+                "javaRuntime": 21,
+                "protected": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/fixtures/lexical-shadow.c": "30b12762a20270e838d0c72051bd567fc0460cb317646a589a61a75bbf2b111e",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-staging-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "aeeacfd496c1b6f549981552963afad301bbd36e9cfd576146af3a72a9f4dd48",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-export.py": "a2b1b57b3a6bdc44ccfc659d4331126d223073d2f6559a9abbb586a50e7db46f",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-gdb.sh": "4f3a04efc1107eb486b612cc12e6e22f96a388112e56f520ca1b9ffb08453c21",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-previous.py": "41d29fdf8fa723a263cb0f1330f256fe48eca94fdf26453e7802d42a8a25af93",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-gdb.py": "789570e5b1d3639925771801708aca007c099c2a8e4a13ec8af4f17e12388cd9",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-failure.py": "4ce7572e56c1b3630550401fc6bd69928aafb38ffce5b83a4b7fde3da6af065e",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/lexical-shadow-controls.py": "276dde90d32247e0813685ba397014492726b9d22ad162df5659fd415c02149e",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/check-lexical-shadow.py": "890965c7c815f57b670500d8e972be2f1f5b7d03d0f0dc3b8f198c798f11ea19",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/PrepareLexicalShadow.java": "eacf97cff4d49348ba934a792b3417ab5ececab1450756aa644f69b07ea66a49",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/LexicalDecompilerFailureExport.java": "d0a99e7ad59e256a4ce387ca7d2a48f4b9d129ac6d1d424295721b8e0a1fe381",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/CancelDuringElfCopy.java": "d1d7e6a33da3124219af3a2fbd208aab9bcbac7301c2ba85d68e518fac2acceb",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-sj3iptj8/reference": "fb104834f91118e038998d2689290fbb879d052916d861c0f282b9f415c7ba5f",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-sj3iptj8/stripped": "a3931e19871ddd634cc52525461c132dfd2112d42487dcf7006578ab626556c5"
+                },
+                "outputPair": [
+                    "75b9f3dc1f79f43bb3aff3ec80eb47b6d49e3af5963b96a176ec3db6fc39edc8",
+                    "109126d39ad70b43b798b702c35ae8732d0d9e1611a8b317a406a0eaeff6a70c"
+                ],
+                "observations": 27,
+                "scope": "explicit analyst block visibility, shadow lookup, initialization gaps; full goal remains open"
+            }
+        }
+    ],
+    "controls": [
+        {
+            "path": "build/test-results/lexical-shadow/x86_64-exec-wo5mmgfy/coverage-staging-x3din0ct/acceptance.json",
+            "sha256": "dcb9fa38ba3fd1b82957c69c70ca9991fd266fc24d719634cafe608abdfe3bf3",
+            "evidence": {
+                "status": "COVERAGE_STAGING_PASS",
+                "target": "x86_64",
+                "controls": [
+                    "mode=pair phase=capture outcome=CANCELLED polls=5 staged=0",
+                    "mode=pair phase=capture outcome=FATAL polls=5 staged=0",
+                    "mode=pair phase=assembly outcome=CANCELLED polls=5 staged=2",
+                    "mode=pair phase=assembly outcome=FATAL polls=5 staged=2",
+                    "mode=pair phase=writer outcome=CANCELLED polls=5 staged=2",
+                    "mode=pair phase=writer outcome=FATAL polls=5 staged=2",
+                    "mode=pair phase=reader outcome=CANCELLED polls=5 staged=2",
+                    "mode=pair phase=reader outcome=FATAL polls=5 staged=2",
+                    "mode=companion phase=capture outcome=CANCELLED polls=5 staged=0",
+                    "mode=companion phase=capture outcome=FATAL polls=5 staged=0",
+                    "mode=companion phase=assembly outcome=CANCELLED polls=5 staged=3",
+                    "mode=companion phase=assembly outcome=FATAL polls=5 staged=3",
+                    "mode=companion phase=writer outcome=CANCELLED polls=5 staged=3",
+                    "mode=companion phase=writer outcome=FATAL polls=5 staged=3",
+                    "mode=companion phase=reader outcome=CANCELLED polls=5 staged=3",
+                    "mode=companion phase=reader outcome=FATAL polls=5 staged=3"
+                ],
+                "reportStatuses": {
+                    "PARTIAL": 4,
+                    "CANCELLED": 8,
+                    "FATAL": 8
+                },
+                "protected": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-wo5mmgfy/stripped": "cd59d579fa66f5b3f2815ccd5c4f087c60ef4a2f2df4ab7e340d22821fb9830e",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-wo5mmgfy/reference": "b32fc371cf4ffe3bb1de4c386da47a0e7b9012b13d08f5ed50940b6f99ed7c5d",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-wo5mmgfy/forge.dbg": "35c0a6d291e78be5524fe4b8f34fb84b2ed816b93b48858237d3918ff32f61e6",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-wo5mmgfy/forge.dbg.c": "5cfd67deaef8774ae844b0d29e055be458bf2ded93bbfd61afb53e307afdf31a",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/x86_64-exec-wo5mmgfy/compiler-gdb.log": "f63f7f868543eaeb5e3627f3b2e6914ce4b52ecd5482b35326cf398f0bc30574",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-staging-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "aeeacfd496c1b6f549981552963afad301bbd36e9cfd576146af3a72a9f4dd48",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-staging-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java": "34f9d40925de6b65089127a065eb4d5469449fe5d65ab9375cf54b0de974f190",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/CoverageStagingControls.java": "bc4247b4d20fc3092181d346766c9a579e5856a4d6ff0da0cdf1ee326709c68d",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/coverage-staging.py": "0ca6a954268d8524d412e4271e5941d3b33cee95a74139db9ceb361a688bb2de"
+                },
+                "projectBackupChanges": [],
+                "scope": "real production capture/assembly/write/read cancellation and injected failures; pair and companion preservation/retry; validators and GDB"
+            }
+        },
+        {
+            "path": "build/test-results/lexical-shadow/aarch64-pie-rebased-sj3iptj8/coverage-staging-cb_x95qi/acceptance.json",
+            "sha256": "ad5f6b53afc6d52f0934f6b86e034fa3f089e1ee2d02c99cb1257e42ff2847fc",
+            "evidence": {
+                "status": "COVERAGE_STAGING_PASS",
+                "target": "aarch64",
+                "controls": [
+                    "mode=pair phase=capture outcome=CANCELLED polls=5 staged=0",
+                    "mode=pair phase=capture outcome=FATAL polls=5 staged=0",
+                    "mode=pair phase=assembly outcome=CANCELLED polls=5 staged=2",
+                    "mode=pair phase=assembly outcome=FATAL polls=5 staged=2",
+                    "mode=pair phase=writer outcome=CANCELLED polls=5 staged=2",
+                    "mode=pair phase=writer outcome=FATAL polls=5 staged=2",
+                    "mode=pair phase=reader outcome=CANCELLED polls=5 staged=2",
+                    "mode=pair phase=reader outcome=FATAL polls=5 staged=2",
+                    "mode=companion phase=capture outcome=CANCELLED polls=5 staged=0",
+                    "mode=companion phase=capture outcome=FATAL polls=5 staged=0",
+                    "mode=companion phase=assembly outcome=CANCELLED polls=5 staged=3",
+                    "mode=companion phase=assembly outcome=FATAL polls=5 staged=3",
+                    "mode=companion phase=writer outcome=CANCELLED polls=5 staged=3",
+                    "mode=companion phase=writer outcome=FATAL polls=5 staged=3",
+                    "mode=companion phase=reader outcome=CANCELLED polls=5 staged=3",
+                    "mode=companion phase=reader outcome=FATAL polls=5 staged=3"
+                ],
+                "reportStatuses": {
+                    "PARTIAL": 4,
+                    "CANCELLED": 8,
+                    "FATAL": 8
+                },
+                "protected": {
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-sj3iptj8/stripped": "a3931e19871ddd634cc52525461c132dfd2112d42487dcf7006578ab626556c5",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-sj3iptj8/reference": "fb104834f91118e038998d2689290fbb879d052916d861c0f282b9f415c7ba5f",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-sj3iptj8/forge.dbg": "75b9f3dc1f79f43bb3aff3ec80eb47b6d49e3af5963b96a176ec3db6fc39edc8",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-sj3iptj8/forge.dbg.c": "109126d39ad70b43b798b702c35ae8732d0d9e1611a8b317a406a0eaeff6a70c",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/test-results/lexical-shadow/aarch64-pie-rebased-sj3iptj8/compiler-gdb.log": "bb3583324cd18c51762258145f2d3678df74fd4d79073de6cd287b989a55fe55",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-staging-java21/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar": "aeeacfd496c1b6f549981552963afad301bbd36e9cfd576146af3a72a9f4dd48",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-staging-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java": "34f9d40925de6b65089127a065eb4d5469449fe5d65ab9375cf54b0de974f190",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/ghidra_scripts/CoverageStagingControls.java": "bc4247b4d20fc3092181d346766c9a579e5856a4d6ff0da0cdf1ee326709c68d",
+                    "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/src/test/integration/coverage-staging.py": "0ca6a954268d8524d412e4271e5941d3b33cee95a74139db9ceb361a688bb2de"
+                },
+                "projectBackupChanges": [],
+                "scope": "real production capture/assembly/write/read cancellation and injected failures; pair and companion preservation/retry; validators and GDB"
+            }
+        }
+    ],
+    "workloads": [
+        {
+            "path": "build/test-results/coverage-workload/sqlite.s44kdg98/observation.json",
+            "sha256": "ce3105322d34aa3b13983d42c6812bd44f7efce855deecff8f93920d2330ead3",
+            "evidence": {
+                "probeStatus": "OBSERVED",
+                "kind": "sqlite",
+                "observation": {
+                    "status": "ACCEPTED",
+                    "scope": "ordinary installed production exporter, report preflight before publication",
+                    "functions": 1539,
+                    "summary": {
+                        "functions": "1539",
+                        "unknownSignatureFunctions": "0",
+                        "recoveredGlobalsKnown": "YES",
+                        "recoveredGlobals": "1774",
+                        "source": {
+                            "functions": "1539",
+                            "unavailableInstructionFunctions": "0",
+                            "unavailableTokenFunctions": "0",
+                            "decodedInstructions": "199606",
+                            "anchoredInstructions": "115020",
+                            "lineVisibleInstructions": "194379"
+                        },
+                        "variables": {
+                            "recoveredVariables": "7064",
+                            "emittedVariables": "7064",
+                            "variablesWithLocation": "4870",
+                            "knownScopeVariables": "2194",
+                            "unknownScopeVariables": "4870",
+                            "knownScopeBytes": "1624207",
+                            "coveredScopeBytes": "0",
+                            "extentUnavailableReason": ""
+                        },
+                        "variablesByKind": {
+                            "PARAMETER": {
+                                "recoveredVariables": "2194",
+                                "emittedVariables": "2194",
+                                "variablesWithLocation": "0",
+                                "knownScopeVariables": "2194",
+                                "unknownScopeVariables": "0",
+                                "knownScopeBytes": "1624207",
+                                "coveredScopeBytes": "0",
+                                "extentUnavailableReason": ""
+                            },
+                            "LOCAL": {
+                                "recoveredVariables": "4870",
+                                "emittedVariables": "4870",
+                                "variablesWithLocation": "4870",
+                                "knownScopeVariables": "0",
+                                "unknownScopeVariables": "4870",
+                                "knownScopeBytes": "0",
+                                "coveredScopeBytes": "0",
+                                "extentUnavailableReason": ""
+                            },
+                            "FUNCTION_STATIC": {
+                                "recoveredVariables": "0",
+                                "emittedVariables": "0",
+                                "variablesWithLocation": "0",
+                                "knownScopeVariables": "0",
+                                "unknownScopeVariables": "0",
+                                "knownScopeBytes": "0",
+                                "coveredScopeBytes": "0",
+                                "extentUnavailableReason": ""
+                            }
+                        },
+                        "functionTypes": {
+                            "recoveredRoots": "39",
+                            "emittedRoots": "39",
+                            "opaqueFreeEmittedRoots": "22",
+                            "recoveredNodes": "43",
+                            "resolvedEmittedNodes": "38",
+                            "opaqueEmittedNodes": "5",
+                            "notEmittedNodes": "0",
+                            "implicitVoidNodes": "1",
+                            "emittedImplicitVoidNodes": "1"
+                        }
+                    },
+                    "reportUtf8Bytes": 23061568,
+                    "reportSha256": "10a98460ab4f83145f8fd2729c1caa18b660dc2490bca7fb19eb5db7240fcfb3",
+                    "exportStatus": "PARTIAL",
+                    "functionsFailed": 0
+                },
+                "processMetrics": {
+                    "elapsedSeconds": 36.15,
+                    "userSeconds": 49.76,
+                    "systemSeconds": 1.15,
+                    "maximumResidentKiB": 973108
+                },
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-staging-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "referenceCase": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/test-results/sqlite-benchmark/run.fml1pwam",
+                "originalSha256": "d93b0fb555c1c5c3bbdb20ba9635ed809b1800b4cd7190a1db7b33c65ac28067",
+                "installedScriptSha256": "34f9d40925de6b65089127a065eb4d5469449fe5d65ab9375cf54b0de974f190",
+                "probeScriptSha256": null,
+                "jarSha256": "aeeacfd496c1b6f549981552963afad301bbd36e9cfd576146af3a72a9f4dd48",
+                "protectedFiles": 344,
+                "gdbBehavior": "PASS",
+                "limits": "Single observation; no repeated performance medians or full coverage acceptance."
+            },
+            "sameCoverageAsInstrumented": {
+                "path": "build/test-results/coverage-workload/sqlite.hmsrvqq6/sqlite-workload.dbg.coverage.json",
+                "sha256": "4bc7fbb38546f344d57dca38a02827c87e9fc0e7606faecdf6972f7f802a58bf",
+                "comparison": "all decoded JSON fields equal; final artifact paths differ between runs"
+            }
+        },
+        {
+            "path": "build/test-results/coverage-workload/uboot.ot188k2b/observation.json",
+            "sha256": "56c8341f084e06f183174f2b24d6b291d97cc14fafa8df103133ecdf635010fa",
+            "evidence": {
+                "probeStatus": "OBSERVED",
+                "kind": "uboot",
+                "observation": {
+                    "status": "ACCEPTED",
+                    "scope": "ordinary installed production exporter, report preflight before publication",
+                    "functions": 6375,
+                    "summary": {
+                        "functions": "6375",
+                        "unknownSignatureFunctions": "0",
+                        "recoveredGlobalsKnown": "YES",
+                        "recoveredGlobals": "11677",
+                        "source": {
+                            "functions": "6375",
+                            "unavailableInstructionFunctions": "0",
+                            "unavailableTokenFunctions": "0",
+                            "decodedInstructions": "544845",
+                            "anchoredInstructions": "276275",
+                            "lineVisibleInstructions": "537128"
+                        },
+                        "variables": {
+                            "recoveredVariables": "19781",
+                            "emittedVariables": "19778",
+                            "variablesWithLocation": "15900",
+                            "knownScopeVariables": "3935",
+                            "unknownScopeVariables": "15846",
+                            "knownScopeBytes": "1594034",
+                            "coveredScopeBytes": "2412",
+                            "extentUnavailableReason": ""
+                        },
+                        "variablesByKind": {
+                            "PARAMETER": {
+                                "recoveredVariables": "3935",
+                                "emittedVariables": "3935",
+                                "variablesWithLocation": "57",
+                                "knownScopeVariables": "3935",
+                                "unknownScopeVariables": "0",
+                                "knownScopeBytes": "1594034",
+                                "coveredScopeBytes": "2412",
+                                "extentUnavailableReason": ""
+                            },
+                            "LOCAL": {
+                                "recoveredVariables": "15846",
+                                "emittedVariables": "15843",
+                                "variablesWithLocation": "15843",
+                                "knownScopeVariables": "0",
+                                "unknownScopeVariables": "15846",
+                                "knownScopeBytes": "0",
+                                "coveredScopeBytes": "0",
+                                "extentUnavailableReason": ""
+                            },
+                            "FUNCTION_STATIC": {
+                                "recoveredVariables": "0",
+                                "emittedVariables": "0",
+                                "variablesWithLocation": "0",
+                                "knownScopeVariables": "0",
+                                "unknownScopeVariables": "0",
+                                "knownScopeBytes": "0",
+                                "coveredScopeBytes": "0",
+                                "extentUnavailableReason": ""
+                            }
+                        },
+                        "functionTypes": {
+                            "recoveredRoots": "61",
+                            "emittedRoots": "61",
+                            "opaqueFreeEmittedRoots": "42",
+                            "recoveredNodes": "89",
+                            "resolvedEmittedNodes": "84",
+                            "opaqueEmittedNodes": "5",
+                            "notEmittedNodes": "0",
+                            "implicitVoidNodes": "2",
+                            "emittedImplicitVoidNodes": "2"
+                        }
+                    },
+                    "reportUtf8Bytes": 56530307,
+                    "reportSha256": "b8754e6b766c47d09700876fadfd4c9fa761d747d40ae1283c3c19709e799447",
+                    "exportStatus": "PARTIAL",
+                    "functionsFailed": 1
+                },
+                "processMetrics": {
+                    "elapsedSeconds": 117.84,
+                    "userSeconds": 136.92,
+                    "systemSeconds": 2.7,
+                    "maximumResidentKiB": 2022028
+                },
+                "runtime": {
+                    "javaVersions": [
+                        "21.0.12.1"
+                    ],
+                    "packagedScript": "/home/ziggy/GhidraDwarfForge-worktrees/coverage-scorecards/build/installations/coverage-staging-java21/Ghidra/Extensions/GhidraDwarfForge/ghidra_scripts/GhidraDwarfForge.java"
+                },
+                "referenceCase": "/home/ziggy/GhidraDwarfForge-worktrees/performance-workloads/build/test-results/uboot-benchmark/run.1mhp4wmk",
+                "originalSha256": "5a833b91a3a1f79177e22a86d8d4161a5bb6058d366bd235a89667c25c99c9b7",
+                "installedScriptSha256": "34f9d40925de6b65089127a065eb4d5469449fe5d65ab9375cf54b0de974f190",
+                "probeScriptSha256": null,
+                "jarSha256": "aeeacfd496c1b6f549981552963afad301bbd36e9cfd576146af3a72a9f4dd48",
+                "protectedFiles": 347,
+                "gdbBehavior": "PASS",
+                "limits": "Single observation; no repeated performance medians or full coverage acceptance."
+            },
+            "sameCoverageAsInstrumented": {
+                "path": "build/test-results/coverage-workload/uboot._z9mrjwh/u-boot.workload.dbg.coverage.json",
+                "sha256": "c95ca44a1dfab1da0d92cda93c5752e1882f155e609cff1500933713f0c10219",
+                "comparison": "all decoded JSON fields equal; final artifact paths differ between runs"
+            }
+        }
+    ],
+    "remaining": [
+        "Fresh GUI attachment and real oversized-report preservation",
+        "Repeated production overhead and large-workload cancellation",
+        "Comparison/CLI/GUI and list-specific omission diagnostics",
+        "Full hosted architecture/host matrix and independent review",
+        "Protected integration after #74 final acceptance"
+    ],
+    "installedReader": {
+        "path": "build/test-results/export-report-claims/x86_64.w3w9ixxt/result.json",
+        "sha256": "44d0ba8f57dbb88e02549e79cd9a70b2135e998fd433854de04c7091eb930be4",
+        "roles": [
+            "exec",
+            "pie",
+            "exec.no-build-id"
+        ],
+        "positiveCases": 3,
+        "rejections": 28,
+        "sameInstallation": true,
+        "scope": "three real x86-64 reports, bounded64MiB Java21 reader, compatible legacy shape and coverage/terminal negatives; no artifact attachment authorization"
+    },
+    "finalBuild": {
+        "log": "build/coverage-staging-final-build.log",
+        "logSha256": "7c3bad88cd669c053ffd512b699acaa0d4b8167586ad6b95c12d07f94a615176",
+        "compiledJarEntriesEqualTestedInstallation": true,
+        "productionScriptEqualTestedInstallation": true,
+        "focusedValidationLog": "build/coverage-staging-final-validation.log",
+        "focusedValidationLogSha256": "cec29331fff06690067c1f389f10b20778240a804b896a9d3e282f9240af1f6f"
+    }
+}

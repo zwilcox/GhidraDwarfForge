@@ -1,0 +1,48 @@
+{
+    "status": "CONFIRMED pre-compilation hash failure; checkout correction tested locally",
+    "head": "2bf0eb4543f668e36465b2b33c836ab2b4fd0a4a",
+    "run": 41647056047,
+    "job": 125955043400,
+    "artifactId": 13234849995,
+    "artifactSha256": "02ac44ab86bc5b07baa01422c8eb5dd06c2f04d63681c94b42763c8c52353c7f",
+    "failure": "Pinned source archive and eight patches pass; Windows UTF-8 manifest checksum fails before build workspace creation. Compiler and runtime tests not reached.",
+    "correction": "Add explicit text eol=lf attributes for pinned manifest, resource and guard C source. Digests unchanged.",
+    "checkoutExperiment": {
+        "before": {
+            "dwarfdump-windows.manifest": {
+                "sha256": "704d50e101f12a2d4ebabdbba80cd5f11bfbfeb8733a300fda77e83646d98bfc",
+                "crlf": true,
+                "matchesSource": false
+            },
+            "dwarfdump-windows.rc": {
+                "sha256": "cc2eac3bbd9bdb0651d8f673a33badd3a728afc9d1f6c436216f97a740f4eb2f",
+                "crlf": true,
+                "matchesSource": false
+            },
+            "dwarfdump-windows-utf8.c": {
+                "sha256": "cdecb383649ae00a69ce4156a3931dc4b0826e17d862c4b9f2866df0417d69b0",
+                "crlf": true,
+                "matchesSource": false
+            }
+        },
+        "after": {
+            "dwarfdump-windows.manifest": {
+                "sha256": "62a8a314f215788727cbe5a6659c16ed5dbd54eaada758e69aceb484096d63a1",
+                "crlf": false,
+                "matchesSource": true
+            },
+            "dwarfdump-windows.rc": {
+                "sha256": "60f94332b0833ca6564b170c59b70612e1e12bf89a3d61cbc2e90dd821ddcaeb",
+                "crlf": false,
+                "matchesSource": true
+            },
+            "dwarfdump-windows-utf8.c": {
+                "sha256": "5cc6dcb08c290555eaf8b0d8f9b162a4beec5e314c140fd9b00d14ad6a81142d",
+                "crlf": false,
+                "matchesSource": true
+            }
+        }
+    },
+    "validation": "Two fresh temporary Git repositories with core.autocrlf=true; remove indexed inputs and checkout-index --all --force. Old attributes convert all three to CRLF; corrected attributes retain exact source bytes and pinned hashes. actionlint with ShellCheck and git diff --check pass.",
+    "limits": "Hosted corrected build and Unicode/malformed runtime still required; no full gate pass."
+}

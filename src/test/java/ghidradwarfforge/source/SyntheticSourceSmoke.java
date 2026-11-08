@@ -1,6 +1,11 @@
 package ghidradwarfforge.source;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.ByteOrder;
+import ghidradwarfforge.coverage.SourceCoverage;
+import ghidradwarfforge.coverage.SourceCoverageIndex;
+import ghidradwarfforge.dwarf.Dwarf5LineTable;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import java.util.Arrays;
 import java.util.List;
 
@@ -44,6 +49,31 @@ public final class SyntheticSourceSmoke {
                 first.mappedLines().get(1).line() != 12 ||
                 !first.mappedLines().get(1).addresses().equals(List.of(0x2000L))) {
             throw new AssertionError("address-to-line normalization is incorrect");
+        }
+        if (first.functionTokens().size() != 3 ||
+                first.functionTokens().get(0).lines().size() != 1 ||
+                first.functionTokens().get(0).lines().get(0).line() != 8 ||
+                !first.functionTokens().get(0).lines().get(0).addresses().equals(List.of(0x1000L, 0x1004L)) ||
+                !first.functionTokens().get(1).lines().isEmpty() ||
+                !first.functionTokens().get(2).lines().isEmpty()) {
+            throw new AssertionError("token provenance includes declaration-only or failed rows");
+        }
+        var legacy = new SyntheticSourceFile(first.utf8(), first.functions(), first.mappedLines());
+        if (!legacy.functionTokens().isEmpty()) {
+            throw new AssertionError("manual source acquired invented token evidence");
+        }
+        var symbols = first.functions().stream().map(function ->
+            new FunctionSymbol(function.name(), function.address(), 8)).toList();
+        var emission = Dwarf5LineTable.buildWithPlan("fixture.dbg.c", "/fixture", 8,
+            ByteOrder.LITTLE_ENDIAN, symbols, first.mappedLines());
+        var coverage = new SourceCoverageIndex(emission, () -> false);
+        if (!coverage.measure(symbols.get(0), List.of(0x1000L, 0x1004L),
+                first.functionTokens().get(0).lines(), () -> false).equals(new SourceCoverage(2, 2, 2)) ||
+                !coverage.measure(symbols.get(1), List.of(0x1800L, 0x1804L),
+                    first.functionTokens().get(1).lines(), () -> false).equals(new SourceCoverage(2, 0, 0)) ||
+                !coverage.measure(symbols.get(2), List.of(0x2000L, 0x2004L),
+                    first.functionTokens().get(2).lines(), () -> false).equals(new SourceCoverage(2, 0, 2))) {
+            throw new AssertionError("actual source evidence does not distinguish failure, tokens and declarations");
         }
         System.out.println("synthetic-source-smoke=PASS");
     }

@@ -12,8 +12,9 @@ of #117. Storage controls remain mandatory throughout implementation.
 `bbe18cff2f5cbbfe9ace47608324f7a1c66fb5c4` equals the locally retained
 `work/multifile-source` tree. Full run `42446082844` passed all sixteen jobs;
 performance run `42446082851` passed all five. The source observations below
-refer to that tree, not the older main checkout currently carrying the new
-storage-policy edits. Preserve those edits before synchronizing the checkout.
+refer to that tree. The storage-policy edits were preserved in commit
+`e1ccbc6`; the existing working branch now incorporates the merged baseline.
+No additional checkout was created for this synchronization.
 
 `MinimalDwarfSidecarExporter` currently emits function/parameter DIEs but has no
 call-site emission path. `DirectLeafCalls.directCall` already compares listing

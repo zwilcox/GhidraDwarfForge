@@ -261,12 +261,18 @@ def controls(base_group, work, jar, gson, classes):
             terminal = copy.deepcopy(base)
             terminal.update(status=status, target=None, artifacts=None, counts=None,
                             native={"libdwarfVersion": None}, failure={"type": "fixture", "message": "fixture"})
+            if terminal["schemaVersion"] == 2:
+                terminal["coverage"] = None
             for key in ("sections", *READER.CARDINALITIES.values()):
                 terminal[key] = []
             terminal_groups.append([report_copy(work, status.lower() + "-before-missing", terminal), *missing])
         malformed = work / "malformed-before-missing.json"
         malformed.write_bytes(b"{broken json}")
         terminal_groups.append([malformed, *missing])
+        if base["schemaVersion"] == 2:
+            invalid_terminal = copy.deepcopy(terminal)
+            invalid_terminal["coverage"] = copy.deepcopy(base["coverage"])
+            terminal_groups.append([report_copy(work, "terminal-with-completed-coverage", invalid_terminal), *missing])
         report_failures = probe(terminal_groups, jar, gson, classes, work / "report-first-rejections", reject=True)
         require(report_failures[0]["exception"] == "ghidradwarfforge.output.ExportReportClaims$UnsupportedReportShapeException" and
                 report_failures[0]["terminal_status"] == "-", "historical report did not fail before selected paths")
@@ -275,6 +281,10 @@ def controls(base_group, work, jar, gson, classes):
                     record["terminal_status"] == status, "terminal report was replaced by selected-file failure")
         require(report_failures[3]["exception"] == "java.io.IOException" and
                 report_failures[3]["terminal_status"] == "-", "malformed report did not fail as parser IOException")
+        if base["schemaVersion"] == 2:
+            require(report_failures[4]["exception"] == "java.io.IOException" and
+                    report_failures[4]["terminal_status"] == "-",
+                    "terminal report carrying completed coverage was accepted as a valid terminal report")
         require(all(not path.exists() for path in missing), "report-first control created selected files")
         directory = work / "selected-directory"
         directory.mkdir()

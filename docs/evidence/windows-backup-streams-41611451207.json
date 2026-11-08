@@ -1,0 +1,115 @@
+{
+    "backupStreams": {
+        "ordinary": {
+            "facts": {
+                "identity": "f4a299cca2999428:f7d40000000001000000000000000000",
+                "links": 1,
+                "bytes": 28,
+                "attributes": 32,
+                "created": 134381719749014583,
+                "modified": 134381719749014583,
+                "changed": 134381719749014583
+            },
+            "streams": [
+                {
+                    "kind": 1,
+                    "attributes": 0,
+                    "bytes": 28,
+                    "name": ""
+                }
+            ]
+        },
+        "extendedAttributes": {
+            "facts": {
+                "identity": "f4a299cca2999428:f7d40000000001000000000000000000",
+                "links": 1,
+                "bytes": 28,
+                "attributes": 32,
+                "created": 134381719749014583,
+                "modified": 134381719749014583,
+                "changed": 134381719756592985
+            },
+            "streams": [
+                {
+                    "kind": 1,
+                    "attributes": 0,
+                    "bytes": 28,
+                    "name": ""
+                },
+                {
+                    "kind": 2,
+                    "attributes": 0,
+                    "bytes": 24,
+                    "name": ""
+                }
+            ]
+        },
+        "independentEaBytes": "00000000000a0500464f5247455f544553540000ff420a19",
+        "alternateStreams": {
+            "facts": {
+                "identity": "f4a299cca2999428:29d50000000001000000000000000000",
+                "links": 1,
+                "bytes": 14,
+                "attributes": 32,
+                "created": 134381719804421095,
+                "modified": 134381719804424700,
+                "changed": 134381719804424700
+            },
+            "streams": [
+                {
+                    "kind": 1,
+                    "attributes": 0,
+                    "bytes": 14,
+                    "name": ""
+                },
+                {
+                    "kind": 4,
+                    "attributes": 0,
+                    "bytes": 15,
+                    "name": ":extra \u03bb:$DATA"
+                }
+            ]
+        },
+        "cancellationAfterHeader": true,
+        "handleCycles": 128
+    },
+    "nativeHandleBaseline": 57,
+    "serialJavaHandleBaseline": 296,
+    "backupHandleCycles": 128,
+    "crossVolume": {
+        "tested": true,
+        "stageVolume": "f4a299cca2999428",
+        "destinationVolume": "8854cbb354cba274"
+    },
+    "run": 41611451207,
+    "head": "440df66fb9c5101299b7597c13bb7f2c6da79793",
+    "artifactId": 13219487652,
+    "artifactSha256": "7de46c839fa2fea46f5d6717dd712a5bcb74f1151c1f088a8cd17d3adeee2b6e",
+    "status": "PASS",
+    "sourceFilesVerified": 16,
+    "sourceComparison": "Raw origin hashes verified; Windows CRLF normalized only for Git source comparison",
+    "metadataObservations": 15,
+    "renameObservations": 10,
+    "handleCycles": 128,
+    "renameCases": [
+        "publish-new",
+        "replace-existing",
+        "existing-refusal",
+        "stale-stage",
+        "stale-target",
+        "late-stage",
+        "late-target",
+        "collision-at-native-call",
+        "cancel-before-rename",
+        "cancel-open-rename"
+    ],
+    "additionalRejections": [
+        "alias",
+        "hardlink",
+        "dangling",
+        "alternate stream path",
+        "sharing lock",
+        "readonly target"
+    ],
+    "scope": "Opened Windows identity, accessible metadata and verified-stage rename; unsupported backup-stream rejection; not complete host admission, SACL preservation or durability"
+}

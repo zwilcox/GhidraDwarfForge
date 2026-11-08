@@ -67,8 +67,11 @@ public final class DwarfProducerSmoke {
         X86_64("x86_64", 8, true, 0x1_0000_1234L),
         ARM64("arm64", 8, true, 0x1_0000_1234L),
         ARM32("arm", 4, true, 0x0010_1234L),
+        ARM32BE8("arm", 4, false, 0x0010_1234L),
         MIPS32BE("mips", 4, false, 0x0040_1234L),
-        MIPS32LE("mips", 4, true, 0x0040_1234L);
+        MIPS32LE("mips", 4, true, 0x0040_1234L),
+        MIPS64BE("mips", 8, false, 0x1_2000_1234L),
+        MIPS64LE("mips", 8, true, 0x1_2000_1234L);
 
         private final String isaName;
         private final int addressBytes;
@@ -89,11 +92,14 @@ public final class DwarfProducerSmoke {
                 case "x86_64" -> X86_64;
                 case "arm64", "aarch64" -> ARM64;
                 case "arm", "arm32" -> ARM32;
+                case "arm32be8" -> ARM32BE8;
                 case "mips", "mips32be" -> MIPS32BE;
                 case "mipsel", "mips32le" -> MIPS32LE;
+                case "mips64", "mips64be" -> MIPS64BE;
+                case "mips64el", "mips64le" -> MIPS64LE;
                 default -> throw new IllegalArgumentException(
                     "unknown target profile " + value +
-                        " (expected i386, x86_64, arm64, arm32, mips32be, or mips32le)");
+                        " (expected i386, x86_64, arm64, arm32, arm32be8, mips32be, mips32le, mips64be, or mips64le)");
             };
         }
 
@@ -135,7 +141,7 @@ public final class DwarfProducerSmoke {
         if (args.length != 3 && args.length != 6) {
             throw new IllegalArgumentException(
                 "usage: DwarfProducerSmoke <absolute-libdwarf> <absolute-libdwarfp> " +
-                    "<i386|x86_64|arm64|arm32|mips32be|mips32le> [<input-elf> <output-dbg> " +
+                    "<i386|x86_64|arm64|arm32|arm32be8|mips32be|mips32le|mips64be|mips64le> [<input-elf> <output-dbg> " +
                     "<function-address>]");
         }
 
@@ -276,6 +282,7 @@ public final class DwarfProducerSmoke {
                     ? target.functionAddress : sidecar.functionAddress();
             Die compileUnit = newDie(producer, consumer, debug, DW_TAG_COMPILE_UNIT, errorOut);
             addName(producer, consumer, compileUnit, "ghidra-dwarf-forge-smoke.c", errorOut);
+            addCompilationDirectory(producer, consumer, compileUnit, errorOut);
             addProducer(producer, consumer, compileUnit, errorOut);
             addUnsigned(producer, consumer, debug, compileUnit, DW_AT_LANGUAGE, DW_LANG_C11,
                 errorOut);
@@ -394,6 +401,15 @@ public final class DwarfProducerSmoke {
         checkCall(producer.dwarf_add_AT_name_a(die, name, attributeOut, errorOut),
             "dwarf_add_AT_name_a", errorOut, consumer);
         requirePointer(attributeOut, "name attribute");
+    }
+
+    private static void addCompilationDirectory(LibDwarfProducer producer,
+            LibDwarfConsumer consumer, Die die, PointerByReference errorOut) {
+        PointerByReference attributeOut = new PointerByReference();
+        checkCall(producer.dwarf_add_AT_comp_dir_a(die,
+            "/synthetic source/producer smoke", attributeOut, errorOut),
+            "dwarf_add_AT_comp_dir_a", errorOut, consumer);
+        requirePointer(attributeOut, "compilation-directory attribute");
     }
 
     private static void addProducer(LibDwarfProducer producer, LibDwarfConsumer consumer,

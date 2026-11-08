@@ -16,22 +16,30 @@ public class CancelDuringElfCopy extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 2) {
-            throw new IllegalArgumentException("usage: <original ELF> <sidecar output>");
+        if (args.length < 2 || args.length > 3 ||
+                (args.length == 3 && !args[2].equals("--gdb-loader"))) {
+            throw new IllegalArgumentException("usage: <original ELF> <sidecar output> [--gdb-loader]");
         }
         Path input = Path.of(args[0]);
         Path artifact = Path.of(args[1]);
         Path source = Path.of(args[1] + ".c");
         byte[] oldArtifact = Files.readAllBytes(artifact);
         byte[] oldSource = Files.readAllBytes(source);
+        boolean loader = args.length == 3;
+        Path companion = Path.of(args[1] + ".gdb.py");
+        byte[] oldCompanion = loader ? Files.readAllBytes(companion) : null;
         TaskMonitor originalMonitor = monitor;
         CopyMonitor copyMonitor = new CopyMonitor(originalMonitor, artifact.getParent());
         boolean cancelled = false;
         try {
             monitor = copyMonitor;
             // runScript passes this monitor to the real installed entry point.
-            runScript("GhidraDwarfForge.java", new String[] { "--packaged-natives",
-                "--input", input.toString(), "--output", artifact.toString() });
+            var options = new java.util.ArrayList<>(java.util.List.of("--packaged-natives",
+                "--input", input.toString(), "--output", artifact.toString()));
+            if (loader) {
+                options.add("--gdb-loader");
+            }
+            runScript("GhidraDwarfForge.java", options.toArray(String[]::new));
         }
         catch (CancellationException expected) {
             cancelled = true;
@@ -45,8 +53,9 @@ public class CancelDuringElfCopy extends GhidraScript {
             throw new AssertionError("production export did not cancel during bounded copying");
         }
         if (!Arrays.equals(oldArtifact, Files.readAllBytes(artifact)) ||
-                !Arrays.equals(oldSource, Files.readAllBytes(source))) {
-            throw new AssertionError("cancelled export modified the existing artifact pair");
+                !Arrays.equals(oldSource, Files.readAllBytes(source)) ||
+                (loader && !Arrays.equals(oldCompanion, Files.readAllBytes(companion)))) {
+            throw new AssertionError("cancelled export modified the existing artifact generation");
         }
         try (var files = Files.list(artifact.getParent())) {
             if (files.anyMatch(path -> path.getFileName().toString().startsWith("."))) {

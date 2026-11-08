@@ -1,0 +1,40 @@
+{
+    "status": "PRESENT_UNVERIFIED_WINDOWS_INSTALLED_CONSUMER",
+    "nativeWindowsInstallerAcceptance": false,
+    "downstreamInstallerAcceptance": false,
+    "independentControl": {
+        "scope": "Compiler DWARF with mapped Windows compilation directory; tests GDB source substitution only. No simulated native installer receipt.",
+        "directory": "/dev/shm/forge-lldb-worktree/build/windows-build-id-source-control",
+        "gdbVersion": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1",
+        "missingSource": "inspect-unmapped.stdout retains expected No such file or directory warning; GDB list can return success while reporting missing source.",
+        "mappedSource": "mapped.stdout shows actual compiler source; GDB Python requires the exact local fullname.",
+        "files": {
+            "commands.json": "683c27051e85be18c7c11657843e5b8d6d002cf86fbbabd6068bb8a892a3ca65",
+            "compile.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "compile.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "copy-debug.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "copy-debug.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "debug/.build-id/ae/57f770a483becb3cb70a9fb3ec65c1738ac713.debug": "3611b12728abe8b558030eda93c73670fcf28f47d9bc5410740dcb67f2a88779",
+            "inspect-unmapped.command.json": "cfaad0040977992def0f2fc75cc9e636617efbcfd693c3635cabb2ae92fcedef",
+            "inspect-unmapped.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "inspect-unmapped.stdout": "8047de74d6293c31df4f1e7140a04d1bb8080c0a7b868ab5b7e34b18bfb603ff",
+            "mapped.command.json": "98eeaeac71a7a06342836f0be077175dce3d71fa92b40adac214702d6cf5c33a",
+            "mapped.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "mapped.stdout": "7a272448657eef44b777b0c9595d3efba7b91248b90674eb74d8061f4b641386",
+            "notes.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "notes.stdout": "b8013be88d223076d0fb2d624018b46e268cb6b80341e431e87e647a53b86602",
+            "original": "7a64f0064a5c55cc4fbeebf26f1eac0e778480daf6576f5decac92971ae8ca2b",
+            "reference": "a6c2805cf02b72c8c4e387e9cbc52dd673779f74bacfe0cca418970365affc57",
+            "retained-source/retained.c": "163b3f39693555edb102541277ed1e20d1cf009e5e8c404b6a73f0e6f3dfa6e0",
+            "sidecar": "3611b12728abe8b558030eda93c73670fcf28f47d9bc5410740dcb67f2a88779",
+            "strip.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "strip.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "unmapped.stderr": "51f0373853e0fd4cc7049d2c9d8c574ffd8ece41b3e24af798be28b0ffaeaf39",
+            "unmapped.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+    },
+    "pending": [
+        "Actual native Windows installer run42303689282; Windows job128200325292 is running focused checks.",
+        "Run windows-build-id-gdb.py on retained initial/curated native artifacts; then replace this preflight status with observed acceptance or fix failures."
+    ]
+}

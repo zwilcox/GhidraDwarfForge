@@ -4,6 +4,17 @@ param(
     [string] $Libdwarfp,
     [Alias('Input')] [string] $OriginalElf,
     [string] $Output,
+    [switch] $GdbLoader,
+    [string] $Formatters,
+    [string] $CompressDebugSections = 'none',
+    [string] $SourceContext = 'off',
+    [string] $SourceLines,
+    [ValidateSet('off', 'strict', 'conditioned')] [string] $SynthesizeUnwind = 'off',
+    [string] $UnwindStackSeparation,
+    [ValidateSet('off', 'fixed')] [string] $UnwindRelocatedPointers = 'off',
+    [string] $AnnotationRecordLimit,
+    [string] $AnnotationTextLimit,
+    [string] $AnnotationSourceLimit,
     [string] $Import,
     [string] $ProjectDirectory,
     [string] $ProjectName,
@@ -17,6 +28,20 @@ $ErrorActionPreference = 'Stop'
 function Exit-Usage([string] $Message) {
     [Console]::Error.WriteLine("ghidra-dwarf-forge-headless: $Message")
     exit 64
+}
+
+if ($CompressDebugSections -notin @('none', 'zlib')) {
+    Exit-Usage '-CompressDebugSections must be none or zlib'
+}
+if ($SourceContext -cnotin @('off', 'assembly', 'pcode', 'both')) {
+    Exit-Usage '-SourceContext must be off, assembly, pcode or both'
+}
+if ($PSBoundParameters.ContainsKey('SourceLines')) {
+    $sourceLineValue = 0
+    if ($SourceLines -cnotmatch '^[1-9][0-9]{0,9}$' -or
+            -not [int]::TryParse($SourceLines, [ref] $sourceLineValue)) {
+        Exit-Usage '-SourceLines must be an integer from 1 to 2147483647'
+    }
 }
 
 function Get-AbsoluteFilesystemPath([string] $Path) {
@@ -97,6 +122,25 @@ function Assert-LogNotInTree([string] $ProtectedDirectory) {
     }
 }
 
+function Test-SourceBundleName([string] $Name) {
+    $pattern = '^forge-src-([0-9]{6}-[0-9a-f]{64}\.c|[0-9a-f]{64}\.json)$'
+    if ($env:OS -eq 'Windows_NT') { return $Name -match $pattern }
+    return $Name -cmatch $pattern
+}
+
+function Assert-LogNotSourceBundle([string] $Directory) {
+    $canonical = Get-CanonicalPath $Directory
+    if ([string]::Equals([IO.Path]::GetDirectoryName($script:canonicalLog), $canonical,
+            $script:pathComparison) -and (Test-SourceBundleName ([IO.Path]::GetFileName($script:canonicalLog)))) {
+        Exit-Usage "log path aliases the reserved source bundle namespace: $Log"
+    }
+    if (Test-Path -LiteralPath $canonical -PathType Container) {
+        foreach ($file in Get-ChildItem -LiteralPath $canonical -Force) {
+            if (Test-SourceBundleName $file.Name) { Assert-LogNotAlias $file.FullName }
+        }
+    }
+}
+
 function Assert-SafeLogPath {
     if ($projectMode -and [string]::IsNullOrWhiteSpace($OriginalElf)) {
         Exit-Usage '-Log in existing-project mode requires -OriginalElf so the original and default outputs can be protected; otherwise omit -Log to use a private temporary log'
@@ -162,11 +206,22 @@ namespace GhidraDwarfForge {
         $selectedOutput = "$selectedInput.dbg"
     }
     foreach ($protected in @($Import, $OriginalElf, $selectedOutput,
-            $Libdwarf, $Libdwarfp, $headless, $PSCommandPath)) {
+            $Libdwarf, $Libdwarfp, $Formatters, $headless, $PSCommandPath)) {
         Assert-LogNotAlias $protected
     }
     if (-not [string]::IsNullOrWhiteSpace($selectedOutput)) {
         Assert-LogNotAlias "$selectedOutput.c"
+        Assert-LogNotAlias "$selectedOutput.gdb.py"
+        Assert-LogNotAlias "$selectedOutput.unwind.json"
+        $formatterHasher = [Security.Cryptography.SHA256]::Create()
+        try {
+            $formatterHash = [BitConverter]::ToString($formatterHasher.ComputeHash(
+                [Text.Encoding]::UTF8.GetBytes([IO.Path]::GetFileName($selectedOutput)))).Replace('-', '').ToLowerInvariant()
+        }
+        finally { $formatterHasher.Dispose() }
+        $formatterDirectory = [IO.Path]::GetDirectoryName((Get-AbsoluteFilesystemPath $selectedOutput))
+        Assert-LogNotAlias (Join-Path $formatterDirectory "forge_formatters_$formatterHash.py")
+        Assert-LogNotSourceBundle $formatterDirectory
     }
     if ($projectMode) {
         Assert-LogNotAlias (Join-Path $ProjectDirectory "$ProjectName.gpr")
@@ -247,6 +302,39 @@ try {
     }
     if (-not [string]::IsNullOrWhiteSpace($Output)) {
         $exportOptions += @('--output', $Output)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($Formatters)) {
+        $exportOptions += @("--formatters=$Formatters")
+    }
+    if ($GdbLoader) {
+        $exportOptions += @('--gdb-loader')
+    }
+    if ($CompressDebugSections -eq 'zlib') {
+        $exportOptions += @('--compress-debug-sections=zlib')
+    }
+    if ($SynthesizeUnwind -cne 'off') {
+        $exportOptions += @("--synthesize-unwind=$SynthesizeUnwind")
+    }
+    if ($PSBoundParameters.ContainsKey('UnwindStackSeparation')) {
+        $exportOptions += @("--unwind-stack-separation=$UnwindStackSeparation")
+    }
+    if ($UnwindRelocatedPointers -cne 'off') {
+        $exportOptions += @("--unwind-relocated-pointers=$UnwindRelocatedPointers")
+    }
+    if ($SourceContext -cne 'off') {
+        $exportOptions += @("--source-context=$SourceContext")
+    }
+    if ($PSBoundParameters.ContainsKey('SourceLines')) {
+        $exportOptions += @("--source-lines=$SourceLines")
+    }
+    foreach ($entry in @(
+        @('AnnotationRecordLimit', 'annotation-record-limit'),
+        @('AnnotationTextLimit', 'annotation-text-limit'),
+        @('AnnotationSourceLimit', 'annotation-source-limit')
+    )) {
+        if ($PSBoundParameters.ContainsKey($entry[0])) {
+            $exportOptions += @("--$($entry[1])=$($PSBoundParameters[$entry[0]])")
+        }
     }
 
     if ($importMode) {

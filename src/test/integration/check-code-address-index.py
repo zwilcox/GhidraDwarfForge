@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import struct
 import subprocess
+import zlib
 
 
 def require(condition, message):
@@ -90,9 +91,10 @@ def declaration_controls():
 def payload(path):
     sections = command("readelf", "-SW", str(path))
     rows = re.findall(r"^\s*\[\s*\d+\]\s+\.debug_aranges\s+PROGBITS\s+"
-        r"[0-9a-f]+\s+([0-9a-f]+)\s+([0-9a-f]+)\b", sections, re.M)
+        r"[0-9a-f]+\s+([0-9a-f]+)\s+([0-9a-f]+)\s+[0-9a-f]+\s*([A-Za-z]*)"
+        r"\s+\d+\s+\d+\s+\d+\s*$", sections, re.M)
     require(len(rows) == 1, "expected exactly one PROGBITS .debug_aranges")
-    offset, length = (int(item, 16) for item in rows[0])
+    offset, length = (int(item, 16) for item in rows[0][:2])
     require(0 < length <= 64 * 1024 * 1024, "invalid or oversized address index")
     with path.open("rb") as stream:
         header = stream.read(16)
@@ -101,7 +103,22 @@ def payload(path):
         stream.seek(offset)
         data = stream.read(length)
     require(len(data) == length, "truncated address index")
-    return data, 4 if header[4] == 1 else 8, "<" if header[5] == 1 else ">"
+    order = "<" if header[5] == 1 else ">"
+    if "C" in rows[0][2]:
+        wide = header[4] == 2
+        size = 24 if wide else 12
+        require(len(data) >= size, "truncated compression header")
+        values = struct.unpack_from(order + ("IIQQ" if wide else "III"), data)
+        require(values[0] == 1 and (not wide or values[1] == 0), "invalid zlib header")
+        expected, alignment = values[-2:]
+        require(0 < expected <= 64 * 1024 * 1024 and alignment == 1,
+            "invalid uncompressed address index size/alignment")
+        inflater = zlib.decompressobj()
+        plain = inflater.decompress(data[size:], expected + 1)
+        require(len(plain) == expected and inflater.eof and not inflater.unused_data
+            and not inflater.unconsumed_tail, "invalid compressed address index")
+        data = plain
+    return data, 4 if header[4] == 1 else 8, order
 
 
 def verify(data, width, order, expected):

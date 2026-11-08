@@ -1,0 +1,227 @@
+{
+    "utc": "2026-11-06T16:34:56.734086+00:00",
+    "status": "CONFIRMED scoped local production/LLDB CFI compatibility; hosted and full110 acceptance pending",
+    "parent": "06348e1ab923e37ab86ed5f08f86003e40af6d48",
+    "sourceSha256": {
+        "src/main/java/ghidradwarfforge/dwarf/DwarfDebugFrame.java": "07c4aab57aed4c0de16d38d35c39bed9e36f21194dca082ca19596e7a10f180a",
+        "src/test/integration/cfi-encoder.py": "7a41232664ce6176e822ac420787df5fbfd565f6fdbf2d9bf6f64cd1049851bc",
+        "src/test/integration/cfi-boundaries-lldb.py": "21a87a01d0e4547f45d3e3673d6499db895bb37f0e356a1329b46cb9509d642d",
+        "src/test/integration/cfi-unwind-lldb.py": "29e49e70f1ddfded47f3b7bdfeaf755294d0311e3f5ee9690e115d482d7ff2d9",
+        ".github/workflows/ci.yml": "efc79135e1a488213a2aa887506c0e9d25b07e709de3672f3b27c9d641d5e32f",
+        "docs/LLDB-CFI-COMPATIBILITY.md": "bf9ec370914aa666e4f49d2d640876eca242b76acde7cdb0e194f7fd92ed3c54",
+        "PROJECT_CONTEXT.md": "96e77e94c8caa56eef5510a69354e295a4671f6476d07a5d59cf9d14fbcdaf74",
+        "TODO.md": "586ddc19d31e230dfe6b1ad551c5427b6751c2599e387349d5cf3b429fb58c18"
+    },
+    "productionCases": [
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "exports": 5,
+            "invalidOptionControls": 1,
+            "gdbSessions": 5,
+            "boundarySnapshots": 90,
+            "artifacts": [
+                {
+                    "mode": "off",
+                    "sha256": "94cddec75d08538b79824699815546ade09297e65150cefe9c6e22ea550a2030"
+                },
+                {
+                    "mode": "strict",
+                    "sha256": "4b61b4ba4dc2b994b401a342f20b413bbb5f335b059886a95df73fade13b5e91"
+                },
+                {
+                    "mode": "conditioned",
+                    "sha256": "88029d77ef08543a63b3f5937b2f78aff38749442cf0f267dfbb95f55e6e3ce9"
+                },
+                {
+                    "mode": "compressed",
+                    "sha256": "68382ea4ef39d600b3f6d2bf3f9ad65a334235e913dd8325bb33f6b415871b11"
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "exports": 5,
+            "invalidOptionControls": 1,
+            "gdbSessions": 5,
+            "boundarySnapshots": 77,
+            "artifacts": [
+                {
+                    "mode": "off",
+                    "sha256": "4f1bdb01091e22466300b29089ffea89c37e013c0e05dcfc69b670346ed7e721"
+                },
+                {
+                    "mode": "strict",
+                    "sha256": "f332396c5cb0c27fb0a2a4ee2d1ea1b266413bfafcba800e636904bb217ebfb2"
+                },
+                {
+                    "mode": "conditioned",
+                    "sha256": "ba19a578f1bbfe0cef3f57ae2371ab4eae000a619dc2e6229a6dbd9946a8b681"
+                },
+                {
+                    "mode": "compressed",
+                    "sha256": "ab414e69120d2bb4fdf940fe20ee343587cd4d2b58531ef4617e8cffe685867b"
+                }
+            ]
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "exports": 5,
+            "invalidOptionControls": 1,
+            "gdbSessions": 5,
+            "boundarySnapshots": 90,
+            "artifacts": [
+                {
+                    "mode": "off",
+                    "sha256": "1ad8b65764a7557e2991de750735f77b936d864beb9ed9fb6d4893fb8454fbdf"
+                },
+                {
+                    "mode": "strict",
+                    "sha256": "e3635b52834d4cff8f46f05608c1400f35a91aa4fca79d7519a24b6978ffcdd4"
+                },
+                {
+                    "mode": "conditioned",
+                    "sha256": "45cbd0dce5fb91baf53a66c5faf49c5a32bf1f6e392d5c88ef480576433e690a"
+                },
+                {
+                    "mode": "compressed",
+                    "sha256": "4f92245b6041024073a7203857ffb198551969edb2bc2ae1fd08d2b57217332f"
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "exports": 5,
+            "invalidOptionControls": 1,
+            "gdbSessions": 5,
+            "boundarySnapshots": 77,
+            "artifacts": [
+                {
+                    "mode": "off",
+                    "sha256": "b754f0ed40ef9a2b8254936b7ba9ca136e071a28a11f47891b40b40fbd89fa5d"
+                },
+                {
+                    "mode": "strict",
+                    "sha256": "d569fade8beb4b3e8008f0551d90d09561c6b8792e3657a521de6d40a217c107"
+                },
+                {
+                    "mode": "conditioned",
+                    "sha256": "66355851676ca0571709e273e85111ab1de390a4e3d5c2fc7ae6aff158c24794"
+                },
+                {
+                    "mode": "compressed",
+                    "sha256": "e2bb70719a3a947c88a95d9a7fa44776a939050a1cb80e1ab23cf0341352926f"
+                }
+            ]
+        },
+        {
+            "target": "x86_64",
+            "role": "shared",
+            "exports": 5,
+            "invalidOptionControls": 1,
+            "gdbSessions": 5,
+            "boundarySnapshots": 92,
+            "artifacts": [
+                {
+                    "mode": "off",
+                    "sha256": "32b3d33a54f2467ebcaac73b49fb48755f0627bde78f73add6c23f7c07901247"
+                },
+                {
+                    "mode": "strict",
+                    "sha256": "a5bbb22859a45220ea8f1dc6715f7f23bfc9177224f64c76b80128aad125cabd"
+                },
+                {
+                    "mode": "conditioned",
+                    "sha256": "b1617756a78ae39c1e46339cdc7fdece9f5e079a57d938216b5c4b235ad99c67"
+                },
+                {
+                    "mode": "compressed",
+                    "sha256": "ff418e62a7760eb2e6505c6901a234440753f75ab3043ae973b298e7dbaf1f34"
+                }
+            ]
+        },
+        {
+            "target": "aarch64",
+            "role": "shared",
+            "exports": 5,
+            "invalidOptionControls": 1,
+            "gdbSessions": 5,
+            "boundarySnapshots": 79,
+            "artifacts": [
+                {
+                    "mode": "off",
+                    "sha256": "cadf4be0189ce8fa0963ed95e2d4150f7b2ad889b6c956d31c2507bbdfff5f1a"
+                },
+                {
+                    "mode": "strict",
+                    "sha256": "b926e6d9135a702361158d26d3d9dafb3d3c2715a845180f287c4624796c3e57"
+                },
+                {
+                    "mode": "conditioned",
+                    "sha256": "b6701c87b95cecf79c66d4760684a0c43a21211934a1e45559f49fb50fe3b45f"
+                },
+                {
+                    "mode": "compressed",
+                    "sha256": "90bda3a5d6304f58b458877366d1f204a4d89aedca18536da2ad520429edf231"
+                }
+            ]
+        }
+    ],
+    "lldb": {
+        "status": "PASS_LLDB_CFI_BOUNDARIES",
+        "lldb": "lldb version 18.1.3",
+        "transport": "qemu-aarch64 version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)",
+        "cases": [
+            {
+                "target": "x86_64",
+                "role": "exec",
+                "boundaries": 90,
+                "sessions": 3,
+                "protectedSha256": {
+                    "/dev/shm/forge-cfi-recovery-worktree/build/relocated-pointer-exact-exec/x86_64-exec/compiler/without-cfi": "efe86a35c5aa518d184cfe3fd75fb7cc13864eabbf6cdf968ac7766fffad1029",
+                    "/dev/shm/forge-cfi-recovery-worktree/build/relocated-pointer-exact-exec/x86_64-exec/compiler/reference": "0abcca41e6fb61e4ab6f870e68f1372fd42aefdf9c5084302cbe5e40269d1b17",
+                    "/dev/shm/forge-lldb-worktree/build/lldb-production-exec-isolated/x86_64-exec/conditioned.dbg": "88029d77ef08543a63b3f5937b2f78aff38749442cf0f267dfbb95f55e6e3ce9",
+                    "/dev/shm/forge-lldb-worktree/build/lldb-production-exec-isolated/x86_64-exec/compressed.dbg": "68382ea4ef39d600b3f6d2bf3f9ad65a334235e913dd8325bb33f6b415871b11"
+                }
+            },
+            {
+                "target": "aarch64",
+                "role": "exec",
+                "boundaries": 77,
+                "sessions": 3,
+                "protectedSha256": {
+                    "/dev/shm/forge-cfi-recovery-worktree/build/relocated-pointer-exact-exec/aarch64-exec/compiler/without-cfi": "cc9091116c2a9cf95c29d99c1e112190c9fc4aeb7d6670625d27c0149cb4bfd8",
+                    "/dev/shm/forge-cfi-recovery-worktree/build/relocated-pointer-exact-exec/aarch64-exec/compiler/reference": "4d2cbef7a47f3f1514cabb602b8ec2aab1c9202765e3904280764cc6859c89ae",
+                    "/dev/shm/forge-lldb-worktree/build/lldb-production-exec-isolated/aarch64-exec/conditioned.dbg": "ba19a578f1bbfe0cef3f57ae2371ab4eae000a619dc2e6229a6dbd9946a8b681",
+                    "/dev/shm/forge-lldb-worktree/build/lldb-production-exec-isolated/aarch64-exec/compressed.dbg": "ab414e69120d2bb4fdf940fe20ee343587cd4d2b58531ef4617e8cffe685867b"
+                }
+            }
+        ],
+        "scope": "Ordinary compiler CFI traces versus plain/compressed production sidecars; non-PIE only. Does not complete the source/type/location/PIE/shared/sectionless LLDB matrix."
+    },
+    "strictValidatedArtifacts": 44,
+    "package": {
+        "path": "/dev/shm/forge-lldb-worktree/build/lldb-gradle/dist/ghidra_12.0.3_PUBLIC_20261106_GhidraDwarfForge.zip",
+        "sha256": "9a6ffc516a7a85cdc168fbd894b8e0aa77c65f7850c241890e4d85ce384c11b7",
+        "jarSha256": "54d95f0ac8cac0bdf15c4b3d5ed68a3af2acb3cb57b7659044b91818f2bfb3d5"
+    },
+    "normativeSource": "https://dwarfstd.org/doc/DWARF5.pdf sections6.4.2 and6.4.2.3",
+    "limitations": [
+        "Non-PIE LLDB CFI lane only; full110 remains open",
+        "Hosted new workflow not yet run",
+        "112 integration comes first"
+    ],
+    "earlierExperimentArchive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/lldb-forge-cfi-compatibility-preflight.tar.gz",
+        "sha256": "31647e171a8ac61c53f8422a34936da787f29f82769e47ebd4e0532369a366f1"
+    },
+    "archive": {
+        "path": "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/lldb-cfi-compatibility.tar.gz",
+        "sha256": "15c56255ccbb9cdc48a2dff17616dce6376d0d1dcb991d45e021d16d8c0b3876",
+        "bytes": 8551591,
+        "regularFilesVerified": 1227
+    }
+}

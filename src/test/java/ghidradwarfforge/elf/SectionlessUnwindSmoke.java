@@ -30,6 +30,7 @@ public final class SectionlessUnwindSmoke {
                 }
                 byte[] valid = fixture(wide, order, 0x3b);
                 allocationObservation(root, valid, wide, order);
+                originalFrameView(root, valid, wide, order);
                 for (String mutation : List.of("version", "pointer-form", "table-form", "count-relative",
                         "count-zero", "count-large", "header-short", "header-mapping", "frame-outside",
                         "frame-bss", "length-zero", "length-extended", "length-excessive", "cie-pointer",
@@ -44,6 +45,11 @@ public final class SectionlessUnwindSmoke {
                         "accepted " + mutation);
                     require(messages.size() == 1 && messages.getFirst().startsWith("Omitted original .eh_frame:"),
                         "missing diagnostic " + mutation);
+                    try {
+                        OriginalFrameView.create(path, root, () -> false);
+                        throw new AssertionError("frame view accepted " + mutation);
+                    }
+                    catch (IOException expected) { checks++; }
                     Path output = root.resolve("omitted.dbg");
                     if (mutation.equals("overflow-load")) {
                         Files.writeString(output, "previous");
@@ -81,6 +87,46 @@ public final class SectionlessUnwindSmoke {
             }
         }
         System.out.println("sectionless-unwind-smoke=PASS checks=" + checks);
+    }
+
+    private static void originalFrameView(Path root, byte[] original, boolean wide, ByteOrder order)
+            throws Exception {
+        Path input = root.resolve("frame-view-input");
+        Files.write(input, original);
+        Path view = OriginalFrameView.create(input, root, () -> false);
+        byte[] bytes = Files.readAllBytes(view);
+        var fields = ByteBuffer.wrap(bytes).order(order);
+        require((wide ? fields.getLong(32) : fields.getInt(28)) == 0 &&
+            fields.getShort(wide ? 54 : 42) == 0 && fields.getShort(wide ? 56 : 44) == 0,
+            "frame view retained active program headers");
+        require(fields.getShort(wide ? 60 : 48) == 3 && fields.getShort(wide ? 62 : 50) == 2,
+            "frame view has unexpected sections");
+        // Compare every original byte independently of the production prefix
+        // observer, except precisely the disabled table/new section fields.
+        int[] mutable = wide ? new int[] {32, 48, 54, 64} : new int[] {28, 36, 42, 52};
+        for (int at = 0; at < original.length; at++) {
+            if (at >= mutable[0] && at < mutable[1] || at >= mutable[2] && at < mutable[3]) continue;
+            require(bytes[at] == original[at], "frame view changed copied byte " + at);
+        }
+        var image = ElfImage.read(view);
+        require(image.sections().stream().map(section -> section.name).toList()
+            .equals(List.of("", ".eh_frame", ".shstrtab")), "unexpected frame view section names");
+        var proof = InheritedFrameBytes.compare(input, view, () -> false);
+        require(proof.fromProgramHeaders() && proof.originalOffset() == 0x300 && proof.address() == 0x4300 &&
+            proof.bytes() == 40, "frame proof does not describe the original search table");
+        bytes[0x327] ^= 1;
+        Files.write(view, bytes);
+        try {
+            InheritedFrameBytes.compare(input, view, () -> false);
+            throw new AssertionError("changed frame payload accepted");
+        }
+        catch (IOException expected) { checks++; }
+        try {
+            OriginalFrameView.create(input, root, () -> true);
+            throw new AssertionError("cancelled frame view accepted");
+        }
+        catch (CancellationException expected) { checks++; }
+        require(Arrays.equals(Files.readAllBytes(input), original), "frame view changed original");
     }
 
     private static void allocationObservation(Path root, byte[] bytes, boolean wide, ByteOrder order)
@@ -167,7 +213,7 @@ public final class SectionlessUnwindSmoke {
         }
     }
 
-    private static byte[] fixture(boolean wide, ByteOrder order, int encoding) {
+    static byte[] fixture(boolean wide, ByteOrder order, int encoding) {
         ByteBuffer b = ByteBuffer.allocate(0x800).order(order);
         b.put(new byte[] {0x7f, 'E', 'L', 'F', (byte) (wide ? 2 : 1), (byte) (order == ByteOrder.LITTLE_ENDIAN ? 1 : 2), 1});
         b.putShort(16, (short) 2).putShort(18, (short) (wide ? 62 : 3)).putInt(20, 1);

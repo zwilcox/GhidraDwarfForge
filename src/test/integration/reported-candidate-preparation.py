@@ -465,6 +465,7 @@ def controls(group, name, work, jar, gson, classes):
     empty.mkdir()
     stdout, stderr = owned.execute(["gdb-multiarch", "-q", "-nx", "-batch",
         "-ex", "set debuginfod enabled off", "-ex", "set auto-solib-add off",
+        "-ex", "set filename-display absolute",
         "-ex", f"set debug-file-directory {empty}", "-ex", f'file "{candidate}"', "-x", gdb_script],
         folder / "unresolved-source-gdb")
     require(not stderr and b"unresolved-source=PASS" in stdout, "missing recorded source was not proven by GDB")
@@ -499,10 +500,17 @@ def controls(group, name, work, jar, gson, classes):
         terminal = copy.deepcopy(original_report)
         terminal.update(status=status, target=None, artifacts=None, counts=None,
             native={"libdwarfVersion": None}, failure={"type": "fixture", "message": "fixture"})
+        if terminal["schemaVersion"] == 2:
+            terminal["coverage"] = None
         for key in ("sections", *INVENTORIES):
             terminal[key] = []
         check(status.lower() + "-before-missing", terminal, missing,
               ("ghidradwarfforge.output.ExportReportClaims$TerminalReportException", status, "NOT_CREATED"))
+        if terminal["schemaVersion"] == 2:
+            malformed = copy.deepcopy(terminal)
+            malformed["coverage"] = copy.deepcopy(original_report["coverage"])
+            check(status.lower() + "-with-completed-coverage", malformed, missing,
+                  ("java.io.IOException", "-", "NOT_CREATED"))
     check("late-malformed-before-missing", reader.encoded(original_report) + b" trailing", missing,
           ("java.io.IOException", "-", "NOT_CREATED"))
     check("missing-selected", original_report, missing, ("java.nio.file.NoSuchFileException", "-", "NOT_CREATED"))

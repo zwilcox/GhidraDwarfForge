@@ -21,15 +21,26 @@ trap qemu_socket_cleanup EXIT
 compiler=${ARM32_CC:-arm-linux-gnueabihf-gcc}
 objcopy=${ARM32_OBJCOPY:-arm-linux-gnueabihf-objcopy}
 sysroot=${FORGE_ARM32_SYSROOT:-/usr/arm-linux-gnueabihf}
+gdb=${FORGE_PCS_GDB:-gdb-multiarch}
+gdb_options=()
+if [[ -n ${FORGE_PCS_GDB_DATA:-} ]]; then gdb_options=("--data-directory=$FORGE_PCS_GDB_DATA"); fi
+emulator=qemu-arm-static
+compile_options=(-funwind-tables)
+if [[ ${FORGE_PCS_BE8:-0} == 1 ]]; then
+    emulator=qemu-armeb-static
+    sysroot=/
+    compile_options=(-mbig-endian -Wl,--be8 -nostdlib -nostartfiles -static -Wl,-e,_start
+        "$repository/src/test/fixtures/arm-pcs-start.S")
+fi
 "$compiler" -marm -march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard -O0 -g3 -gdwarf-5 \
-    -fno-omit-frame-pointer -funwind-tables -fno-pie -no-pie -Wl,--build-id=none \
+    -fno-omit-frame-pointer "${compile_options[@]}" -fno-pie -no-pie -Wl,--build-id=none \
     "$repository/src/test/fixtures/arm-dynamic-pcs.c" -o "$case_dir/pcs.reference" \
     >"$case_dir/compile.stdout" 2>"$case_dir/compile.stderr"
 test ! -s "$case_dir/compile.stderr"
 "$objcopy" --strip-all "$case_dir/pcs.reference" "$case_dir/pcs.stripped" \
     >"$case_dir/strip.stdout" 2>"$case_dir/strip.stderr"
 test ! -s "$case_dir/strip.stderr"
-for tool in "$compiler" "$objcopy" readelf llvm-dwarfdump gdb-multiarch qemu-arm-static; do
+for tool in "$compiler" "$objcopy" readelf llvm-dwarfdump "$gdb" "$emulator"; do
     "$tool" --version >"$case_dir/$(basename "$tool").version" 2>&1
 done
 for view in header sections attributes symbols info; do
@@ -48,9 +59,9 @@ run_gdb() {
     else
         input="$case_dir/pcs.stripped"; symbols="$case_dir/pcs.dbg"
     fi
-    qemu_socket_start "$case_dir/$variant.qemu" qemu-arm-static "$sysroot" "$input"
+    qemu_socket_start "$case_dir/$variant.qemu" "$emulator" "$sysroot" "$input"
     FORGE_PCS_CASE="$case_dir" FORGE_PCS_VARIANT="$variant" FORGE_PCS_REMOTE="$qemu_socket_path" \
-        timeout 60s gdb-multiarch -q -nx -batch \
+        timeout 60s "$gdb" "${gdb_options[@]}" -q -nx -batch \
         -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
         -ex 'set auto-solib-add off' -ex "set debug-file-directory $case_dir/empty-debug" \
         -ex "set sysroot $sysroot" -ex "file $input" -ex "symbol-file $symbols" \
@@ -61,7 +72,7 @@ run_gdb() {
 }
 run_gdb compiler
 "$ghidra/support/analyzeHeadless" "$case_dir/project" DynamicPcs \
-    -import "$case_dir/pcs.stripped" -analysisTimeoutPerFile 120 >"$case_dir/import.log" 2>&1
+    -import "$case_dir/pcs.stripped" -loader ElfLoader -analysisTimeoutPerFile 120 >"$case_dir/import.log" 2>&1
 grep -Fq 'REPORT: Import succeeded' "$case_dir/import.log"
 for phase in curate inspect; do
     mode=()
@@ -76,6 +87,16 @@ for phase in curate inspect; do
     if [[ "$phase" == curate ]]; then
         cp "$case_dir/pcs.dbg" "$case_dir/first.dbg"
         cp "$case_dir/pcs.dbg.c" "$case_dir/first.dbg.c"
+        python3 - "$case_dir" <<'PYTHON'
+from pathlib import Path
+import hashlib
+import json
+import sys
+case = Path(sys.argv[1])
+project = case / 'project'
+(case / 'program-before.json').write_text(json.dumps({str(p.relative_to(project)):
+    hashlib.sha256(p.read_bytes()).hexdigest() for p in project.rglob('*') if p.is_file()}, indent=4) + '\n')
+PYTHON
     fi
 done
 cmp "$case_dir/pcs.dbg" "$case_dir/first.dbg"

@@ -14,6 +14,23 @@ Common options:
   --libdwarfp=<path>      Override packaged libdwarfp (requires --libdwarf)
   --input=<elf>           Original ELF override (defaults to --import value)
   --output=<path>         Sidecar path (default: <input>.dbg)
+  --source-lines=<n>      Optional source lines per file; whole functions stay together
+                          Default: one synthetic source file
+  --formatters=<json>    Explicit canonical-type selections for GDB/LLDB formatters
+  --gdb-loader            Also generate <sidecar>.gdb.py for explicit GDB loading
+  --compress-debug-sections=none|zlib
+                          Optional ELF debug-section compression (default: none)
+  --annotation-record-limit=<n>  Stored comment/equate/reference limit (default: 1000000)
+  --annotation-text-limit=<n>    Stored UTF-16 text units (default: 16777216)
+  --annotation-source-limit=<n>  Complete source UTF-8 bytes (default: 134217728)
+  --source-context=off|assembly|pcode|both
+                          Instruction context for incomplete source (default: off)
+  --synthesize-unwind=off|strict|conditioned
+                          Recover ordinary call frames (default: off)
+  --unwind-stack-separation=<hex-first:hex-last,...>
+                          Explicit condition: ranges never overlap live caller/group stack
+  --unwind-relocated-pointers=off|fixed
+                          Explicit invariant relocated-pointer condition (default: off)
   --log=<path>            Preserve the complete headless transcript
   --analysis-timeout=<s> Import-mode analysis timeout (default: 120)
 
@@ -73,12 +90,42 @@ reject_log_in_tree() {
     done
 }
 
+source_bundle_name() {
+    [[ "$1" =~ ^forge-src-([0-9]{6}-[0-9a-f]{64}\.c|[0-9a-f]{64}\.json)$ ]]
+}
+
+reject_log_source_bundle() {
+    local directory=$1 lexical candidate canonical protected log_directory
+    log_directory=${canonical_log%/*}; log_directory=${log_directory:-/}
+    # NUL-delimited resolution retains directory names ending in a newline.
+    IFS= read -r -d '' lexical < <(realpath -m -s -z -- "$directory") ||
+        die_usage "cannot resolve source directory: $directory"
+    for candidate in "$directory" "$lexical"; do
+        IFS= read -r -d '' canonical < <(realpath -m -z -- "$candidate") ||
+            die_usage "cannot resolve source directory: $directory"
+        if [[ "$log_directory" == "$canonical" ]] && source_bundle_name "${canonical_log##*/}"; then
+            die_usage "log path aliases the reserved source bundle namespace: $log_path"
+        fi
+        [[ ! -d "$canonical" || ( -r "$canonical" && -x "$canonical" ) ]] ||
+            die_usage "cannot check log aliases in source directory: $directory"
+        for protected in "$canonical"/forge-src-*; do
+            source_bundle_name "${protected##*/}" || continue
+            # Regular files need only an inode comparison. Avoid spawning path
+            # resolvers for every part in a large source generation.
+            if [[ "$log_path" -ef "$protected" ]]; then
+                die_usage "log path aliases a protected source bundle file: $protected"
+            fi
+            [[ ! -L "$protected" ]] || reject_log_alias "$protected"
+        done
+    done
+}
+
 validate_log_path() {
-    local selected_input selected_output script_directory protected
+    local selected_input selected_output script_directory protected formatter_hash formatter_directory
     if ((project_mode)) && [[ -z "$input" ]]; then
         die_usage "--log in existing-project mode requires --input so the original and default outputs can be protected; otherwise omit --log to use a private temporary log"
     fi
-    canonical_log=$(realpath -m -- "$log_path") ||
+    IFS= read -r -d '' canonical_log < <(realpath -m -z -- "$log_path") ||
         die_usage "cannot resolve log path: $log_path"
     if [[ -e "$log_path" && ( ! -f "$log_path" || ! -w "$log_path" ) ]]; then
         die_usage "log path is not a writable regular file: $log_path"
@@ -89,11 +136,23 @@ validate_log_path() {
         selected_output="$selected_input.dbg"
     fi
     for protected in "$import_path" "$input" "$selected_output" \
-            "$consumer" "$producer" "$headless" "$0"; do
+            "$consumer" "$producer" "$formatter_selection" "$headless" "$0"; do
         reject_log_alias "$protected"
     done
     if [[ -n "$selected_output" ]]; then
         reject_log_alias "$selected_output.c"
+        reject_log_alias "$selected_output.gdb.py"
+        reject_log_alias "$selected_output.unwind.json"
+        formatter_hash=$(printf '%s' "${selected_output##*/}" | sha256sum) || die_usage "cannot derive formatter filename"
+        formatter_hash=${formatter_hash%% *}
+        # Command substitution strips trailing newlines from directory names.
+        # Preserve every byte so symlink/hard-link log aliases remain protected.
+        case "$selected_output" in
+            */*) formatter_directory=${selected_output%/*}; formatter_directory=${formatter_directory:-/} ;;
+            *) formatter_directory=. ;;
+        esac
+        reject_log_alias "$formatter_directory/forge_formatters_$formatter_hash.py"
+        reject_log_source_bundle "$formatter_directory"
     fi
     if ((project_mode)); then
         reject_log_alias "$project_dir/$project_name.gpr"
@@ -112,12 +171,19 @@ consumer=
 producer=
 input=
 output=
+gdb_loader=0
+formatter_selection=
+debug_compression=none
+source_context=off
+source_lines=
 import_path=
 project_dir=
 project_name=
 program=
 log_path=
 analysis_timeout=120
+annotation_options=()
+unwind_options=()
 
 for argument in "$@"; do
     case "$argument" in
@@ -126,6 +192,19 @@ for argument in "$@"; do
         --libdwarfp=*) producer=${argument#*=} ;;
         --input=*) input=${argument#*=} ;;
         --output=*) output=${argument#*=} ;;
+        --gdb-loader) gdb_loader=1 ;;
+        --formatters=*) formatter_selection=${argument#*=}; [[ -n "$formatter_selection" ]] || die_usage "--formatters requires a selection file" ;;
+        --compress-debug-sections=*) debug_compression=${argument#*=} ;;
+        --source-context=*) source_context=${argument#*=} ;;
+        --source-lines=*)
+            source_lines=${argument#*=}
+            [[ "$source_lines" =~ ^[1-9][0-9]{0,9}$ ]] && ((source_lines <= 2147483647)) ||
+                die_usage "--source-lines must be an integer from 1 to 2147483647"
+            ;;
+        --synthesize-unwind=*|--unwind-stack-separation=*|--unwind-relocated-pointers=*)
+            unwind_options+=("$argument") ;;
+        --annotation-record-limit=*|--annotation-text-limit=*|--annotation-source-limit=*)
+            annotation_options+=("$argument") ;;
         --import=*) import_path=${argument#*=} ;;
         --project-dir=*) project_dir=${argument#*=} ;;
         --project-name=*) project_name=${argument#*=} ;;
@@ -137,6 +216,12 @@ for argument in "$@"; do
     esac
 done
 
+[[ "$debug_compression" == none || "$debug_compression" == zlib ]] ||
+    die_usage "--compress-debug-sections must be none or zlib"
+case "$source_context" in
+    off|assembly|pcode|both) ;;
+    *) die_usage "--source-context must be off, assembly, pcode or both" ;;
+esac
 [[ -n "$ghidra_dir" ]] || die_usage "--ghidra-dir or GHIDRA_INSTALL_DIR is required"
 if [[ -n "$consumer" && -z "$producer" || -z "$consumer" && -n "$producer" ]]; then
     die_usage "--libdwarf and --libdwarfp must be supplied together"
@@ -206,6 +291,12 @@ else
 fi
 [[ -n "$input" ]] && export_options+=("--input=$input")
 [[ -n "$output" ]] && export_options+=("--output=$output")
+((gdb_loader)) && export_options+=("--gdb-loader")
+[[ -n "$formatter_selection" ]] && export_options+=("--formatters=$formatter_selection")
+[[ "$debug_compression" == zlib ]] && export_options+=("--compress-debug-sections=zlib")
+[[ "$source_context" != off ]] && export_options+=("--source-context=$source_context")
+[[ -n "$source_lines" ]] && export_options+=("--source-lines=$source_lines")
+export_options+=("${annotation_options[@]}" "${unwind_options[@]}")
 
 if ((import_mode)); then
     [[ -f "$import_path" ]] || die_usage "import ELF does not exist: $import_path"

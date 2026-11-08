@@ -92,7 +92,7 @@ finally {
 $logText = Get-Content -Raw $log
 foreach ($pattern in @(
         'GhidraDwarfForge symbol export PASS',
-        'GhidraDwarfForge report: {"schemaVersion":1,"status":"PARTIAL"',
+        'GhidraDwarfForge report: {"schemaVersion":2,"status":"PARTIAL"',
         '"validation":{"status":"NOT_RUN"}',
         '"native":{"libdwarfVersion":"2.3.2"}',
         'REPORT: Import succeeded',
@@ -194,7 +194,7 @@ $metadata = @(
     "windows_sidecar_sha256=$((Get-FileHash -Algorithm SHA256 $sidecar).Hash)",
     "linux_sidecar_sha256=$((Get-FileHash -Algorithm SHA256 $linuxSidecar).Hash)",
     "source_sha256=$windowsSourceHash",
-    'independent_dwarfdump=UNAVAILABLE_ON_WINDOWS_RUNNER',
+    'independent_dwarfdump=NOT_RUN_BY_THIS_HARNESS',
     'windows_headless_export=PASS'
 )
 $metadata | Set-Content -Path (Join-Path $resultDirectory 'result.txt') -Encoding utf8

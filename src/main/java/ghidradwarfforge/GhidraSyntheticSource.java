@@ -79,7 +79,7 @@ public final class GhidraSyntheticSource {
     @FunctionalInterface
     public interface DecompileOperation {
         DecompileResults decompile(DecompInterface decompiler, Function function,
-                int timeoutSeconds, TaskMonitor monitor);
+                int timeoutSeconds, TaskMonitor monitor) throws CancelledException;
     }
 
     private GhidraSyntheticSource() {
@@ -110,6 +110,23 @@ public final class GhidraSyntheticSource {
     public static Decompilation decompileDetailed(Program program,
             List<FunctionSymbol> exportedFunctions, long rebaseDelta, TaskMonitor monitor,
             DecompileOperation operation) throws CancelledException {
+        return decompileDetailed(program, exportedFunctions, rebaseDelta, monitor, operation,
+            GhidraParameterAllocation.UNCHANGED, ignored -> { });
+    }
+
+    public static Decompilation decompileDetailed(Program program,
+            List<FunctionSymbol> exportedFunctions, long rebaseDelta, TaskMonitor monitor,
+            GhidraParameterAllocation allocation, java.util.function.Consumer<String> diagnostic)
+            throws CancelledException {
+        return decompileDetailed(program, exportedFunctions, rebaseDelta, monitor,
+            (decompiler, function, timeoutSeconds, taskMonitor) ->
+                decompiler.decompileFunction(function, timeoutSeconds, taskMonitor), allocation, diagnostic);
+    }
+
+    public static Decompilation decompileDetailed(Program program,
+            List<FunctionSymbol> exportedFunctions, long rebaseDelta, TaskMonitor monitor,
+            DecompileOperation operation, GhidraParameterAllocation allocation,
+            java.util.function.Consumer<String> diagnostic) throws CancelledException {
         Objects.requireNonNull(operation, "decompile operation");
         Map<Long, DataType> recoveredReturns = new HashMap<>();
         Map<Long, ParameterRecovery> recoveredParameters = new HashMap<>();
@@ -119,9 +136,21 @@ public final class GhidraSyntheticSource {
             selected.put(symbol.address(), symbol);
         }
         List<FunctionText> texts = new ArrayList<>();
-        DecompInterface decompiler = new DecompInterface();
+        DecompInterface decompiler = allocation.hasReturnCorrections()
+            ? new GhidraAllocationDecompiler(allocation, monitor, diagnostic) : new DecompInterface();
         try {
-            decompiler.setOptions(new DecompileOptions());
+            var options = new DecompileOptions();
+            // Listing text is preserved separately with its exact category/address.
+            // Native warnings remain part of the decompiler's synthetic output.
+            options.setPRECommentIncluded(false);
+            options.setPLATECommentIncluded(false);
+            options.setPOSTCommentIncluded(false);
+            options.setEOLCommentIncluded(false);
+            options.setHeadCommentIncluded(false);
+            options.setWARNCommentIncluded(true);
+            if (!decompiler.setOptions(options)) {
+                throw new IllegalStateException("decompiler rejected source comment options");
+            }
             decompiler.toggleCCode(true);
             decompiler.toggleSyntaxTree(true);
             if (!decompiler.openProgram(program)) {
@@ -179,13 +208,16 @@ public final class GhidraSyntheticSource {
                         recoveredStatics.put(symbol.address(), statics);
                     }
                     else {
-                        String diagnostic = result == null ? "no decompiler result" :
+                        String failureDiagnostic = result == null ? "no decompiler result" :
                             result.getErrorMessage();
                         texts.add(new FunctionText(symbol.name(), symbol.address(), null,
-                            diagnostic == null || diagnostic.isBlank()
-                                    ? "decompilation did not complete" : diagnostic));
+                            failureDiagnostic == null || failureDiagnostic.isBlank()
+                                    ? "decompilation did not complete" : failureDiagnostic));
                         decompiler.resetDecompiler();
                     }
+                }
+                catch (java.util.concurrent.CancellationException cancelled) {
+                    throw new CancelledException();
                 }
                 catch (RuntimeException failure) {
                     texts.add(new FunctionText(symbol.name(), symbol.address(), null,

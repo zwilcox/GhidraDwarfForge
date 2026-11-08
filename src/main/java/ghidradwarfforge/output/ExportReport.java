@@ -1,9 +1,15 @@
 package ghidradwarfforge.output;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.BooleanSupplier;
+
+import com.google.gson.stream.JsonWriter;
 
 import ghidradwarfforge.GhidraFunctionSymbols.SkippedFunction;
 import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
@@ -16,6 +22,7 @@ import ghidradwarfforge.types.TypeGraph.OpaqueType;
 /** Deterministic, dependency-free JSON summary for one export attempt. */
 public final class ExportReport {
     public static final int SCHEMA_VERSION = 1;
+    public static final int COVERAGE_SCHEMA_VERSION = 2;
 
     public enum Status {
         SUCCESS, PARTIAL, CANCELLED, FATAL
@@ -235,6 +242,150 @@ public final class ExportReport {
     public Status status() {
         return status;
     }
+
+    /**
+     * Explicit schema-two writer. The legacy toJson() preserves schema-one bytes.
+     * Full reader preflight finishes before returning publishable text; callers
+     * must invoke this during staging, before replacing the final artifact pair.
+     * Coverage remains informational and validation status remains NOT_RUN.
+     */
+    public String toJsonWithCoverage(CoverageReportClaims coverage, BooleanSupplier cancelled) throws IOException {
+        return toJsonWithCoverage(coverage, cancelled, ReportJsonReader.DEFAULT_LIMITS);
+    }
+
+    String toJsonWithCoverage(CoverageReportClaims coverage, BooleanSupplier cancelled,
+            ReportJsonReader.Limits limits) throws IOException {
+        ReportJsonReader.checkCancelled(cancelled);
+        boolean terminal = status == Status.FATAL || status == Status.CANCELLED;
+        if (terminal != (coverage == null)) {
+            throw new IllegalArgumentException("completed schema-two report needs coverage; terminal report must omit its claims");
+        }
+        var output = new CoverageReportJson.BoundedWriter(limits.bytes(), cancelled);
+        try (var json = new JsonWriter(output)) {
+            json.setSerializeNulls(true);
+            json.beginObject();
+            json.name("schemaVersion").value(COVERAGE_SCHEMA_VERSION);
+            json.name("status").value(status.name());
+            json.name("target");
+            if (target == null) json.nullValue();
+            else {
+                json.beginObject();
+                json.name("architecture").value(target.architecture());
+                json.name("addressBits").value(target.addressBits());
+                json.name("byteOrder").value(target.byteOrder());
+                json.endObject();
+            }
+            json.name("artifacts");
+            if (artifacts == null) json.nullValue();
+            else {
+                json.beginObject();
+                json.name("inputPath").value(artifacts.inputPath());
+                json.name("inputSha256").value(artifacts.inputSha256());
+                json.name("outputPath").value(artifacts.outputPath());
+                json.name("outputSha256").value(artifacts.outputSha256());
+                json.name("sourcePath").value(artifacts.sourcePath());
+                json.name("sourceSha256").value(artifacts.sourceSha256());
+                json.endObject();
+            }
+            json.name("counts");
+            if (counts == null) json.nullValue();
+            else {
+                json.beginObject();
+                json.name("functionsExported").value(counts.functionsExported());
+                json.name("functionsDecompiled").value(counts.functionsDecompiled());
+                json.name("functionsFailed").value(counts.functionsFailed());
+                json.name("functionsSkipped").value(counts.functionsSkipped());
+                json.name("functionSignatures").value(counts.functionSignatures());
+                json.name("parameters").value(counts.parameters());
+                json.name("localVariables").value(counts.localVariables());
+                json.name("globalVariables").value(counts.globalVariables());
+                json.name("functionStaticVariables").value(counts.functionStaticVariables());
+                json.name("canonicalTypes").value(counts.canonicalTypes());
+                json.name("defensibleVariableLocations").value(counts.defensibleVariableLocations());
+                json.name("omittedLocationRanges").value(counts.omittedLocationRanges());
+                json.name("mappedSourceLines").value(counts.mappedSourceLines());
+                json.name("unsupportedConstructs").value(counts.unsupportedConstructs());
+                json.name("diagnostics").value(counts.diagnostics());
+                json.endObject();
+            }
+            json.name("sections");
+            strings(json, sections, cancelled);
+            json.name("failedFunctions");
+            objects(json, failedFunctions, cancelled, function -> {
+                json.name("name").value(function.name());
+                json.name("address").value(hex(function.address()));
+                json.name("diagnostic").value(function.diagnostic());
+            });
+            json.name("skippedFunctions");
+            objects(json, skippedFunctions, cancelled, function -> {
+                json.name("name").value(function.name());
+                json.name("reason").value(function.reason());
+            });
+            json.name("omittedLocations");
+            objects(json, omittedLocations, cancelled, location -> {
+                json.name("function").value(location.function());
+                json.name("variable").value(location.variable());
+                json.name("kind").value(location.kind());
+                json.name("startAddress").value(hex(location.startAddress()));
+                json.name("endAddress").value(hex(location.endAddress()));
+                json.name("reason").value(location.reason());
+                json.name("diagnostic").value(location.diagnostic());
+            });
+            json.name("unsupportedConstructs");
+            objects(json, unsupportedConstructs, cancelled, construct -> {
+                json.name("kind").value(construct.kind());
+                json.name("name").value(construct.name());
+                json.name("diagnostic").value(construct.diagnostic());
+            });
+            json.name("diagnostics");
+            strings(json, diagnostics, cancelled);
+            json.name("validation").beginObject().name("status").value(validationStatus.name()).endObject();
+            json.name("native").beginObject().name("libdwarfVersion").value(libdwarfVersion).endObject();
+            json.name("failure");
+            if (failure == null) json.nullValue();
+            else json.beginObject().name("type").value(failure.type()).name("message").value(failure.message()).endObject();
+            json.name("coverage");
+            if (coverage == null) json.nullValue();
+            else CoverageReportJson.writeTo(json, coverage, cancelled);
+            json.endObject();
+        }
+        String text = output.result();
+        ReportJsonReader.checkCancelled(cancelled);
+        byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+        try {
+            ExportReportClaims.readWithCoverage(Path.of("unopened-report-preflight"), cancelled,
+                ignored -> new ByteArrayInputStream(bytes), limits);
+        }
+        catch (ExportReportClaims.TerminalReportException expected) {
+            if (!terminal || expected.status() != status) throw expected;
+        }
+        ReportJsonReader.checkCancelled(cancelled);
+        return text;
+    }
+
+    private static void strings(JsonWriter json, List<String> values, BooleanSupplier cancelled) throws IOException {
+        json.beginArray();
+        for (String value : values) {
+            ReportJsonReader.checkCancelled(cancelled);
+            json.value(value);
+        }
+        json.endArray();
+    }
+
+    private static <T> void objects(JsonWriter json, List<T> values, BooleanSupplier cancelled,
+            JsonObjectWriter<T> writer) throws IOException {
+        json.beginArray();
+        for (T value : values) {
+            ReportJsonReader.checkCancelled(cancelled);
+            json.beginObject();
+            writer.write(value);
+            json.endObject();
+        }
+        json.endArray();
+    }
+
+    @FunctionalInterface
+    private interface JsonObjectWriter<T> { void write(T value) throws IOException; }
 
     public String toJson() {
         StringBuilder json = new StringBuilder(1024);

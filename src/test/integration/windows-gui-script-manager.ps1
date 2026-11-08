@@ -35,6 +35,9 @@ foreach ($entry in $manifest) {
     }
 }
 $root = Join-Path $repository 'build\test-results\windows-host\gui-script-manager'
+if ($env:GHIDRA_GUI_UNWIND -eq '1') {
+    $root = Join-Path $repository 'build\test-results\windows-host\gui-unwind'
+}
 $work = Join-Path $root ('run.' + [Guid]::NewGuid().ToString('N') + ' GUI paths')
 foreach ($directory in @('', 'classes', 'settings', 'cache', 'tmp', 'user')) {
     New-Item -ItemType Directory -Force (Join-Path $work $directory) | Out-Null
@@ -76,15 +79,42 @@ $gui = Join-Path $PSScriptRoot 'gui'
 $compileArgs = Join-Path $work 'javac.args'
 Write-JavaArguments $compileArgs @('--release', '21', '-cp', $classpath, '-d', $classes,
     (Join-Path $gui 'GuiTestSupport.java'), (Join-Path $gui 'GuiTableClickSmoke.java'),
+    (Join-Path $gui 'GuiFileChooserSmoke.java'),
+    (Join-Path $gui 'GuiTaskCancellation.java'),
     (Join-Path $gui 'GuiScriptManagerSmoke.java'))
 & javac "@$compileArgs" 2>&1 | Tee-Object -LiteralPath (Join-Path $work 'compile.log')
 if ($LASTEXITCODE -ne 0) { throw "GUI driver compilation failed: $LASTEXITCODE" }
 
 Invoke-Validator 'readelf.exe' @('-Ws', $referencePath) 'reference-symbols'
+$symbolName = if ($env:GHIDRA_GUI_UNWIND -eq '1') { 'cfi_sink' } else { 'recovered_add' }
 $symbol = Get-Content -LiteralPath (Join-Path $work 'reference-symbols.txt') |
-    Where-Object { $_ -match '\srecovered_add$' } | Select-Object -First 1
-if ($null -eq $symbol) { throw 'compiler reference has no recovered_add symbol' }
+    Where-Object { $_ -match ('\s' + [regex]::Escape($symbolName) + '$') } | Select-Object -First 1
+if ($null -eq $symbol) { throw "compiler reference has no $symbolName symbol" }
 $functionAddress = ($symbol.Trim() -split '\s+')[1]
+if ($env:GHIDRA_GUI_UNWIND -eq '1') {
+    $fields = $symbol.Trim() -split '\s+'
+    $first = [Convert]::ToUInt64($functionAddress, 16)
+    $last = $first + [UInt64]::Parse($fields[2]) - 1
+    $functionAddress = $first.ToString('x') + ':' + $last.ToString('x')
+}
+if ($env:GHIDRA_GUI_NATIVE_ATTACHMENT -eq '1') {
+    if ([string]::IsNullOrWhiteSpace($env:FORGE_GUI_CHECKER_BUNDLE)) {
+        throw 'Explicit pinned checker bundle required for native GUI attachment'
+    }
+    $checker = (Resolve-Path -LiteralPath $env:FORGE_GUI_CHECKER_BUNDLE).ProviderPath
+    $env:FORGE_GUI_READELF = (Get-Command readelf.exe).Source
+    $env:FORGE_GUI_LLVM = (Get-Command llvm-dwarfdump.exe).Source
+    $env:FORGE_GUI_STRICT = Join-Path $checker 'libexec/dwarfdump.exe'
+    $env:FORGE_GUI_CONFIGURATION = Join-Path $checker 'share/dwarfdump/dwarfdump.conf'
+    $env:FORGE_GUI_POWERSHELL = (Get-Command pwsh.exe).Source
+    $env:FORGE_GUI_CANCEL_VALIDATOR = Join-Path $work 'cancel-validator.exe'
+    & gcc -std=c11 -O2 -Wall -Wextra -Werror -municode -static-libgcc `
+        (Join-Path $repository 'src/test/native/attachment-cancel-validator.c') -o $env:FORGE_GUI_CANCEL_VALIDATOR
+    if ($LASTEXITCODE -ne 0) { throw 'Cancellation validator fixture compilation failed' }
+    foreach ($selected in @($env:FORGE_GUI_STRICT, $env:FORGE_GUI_CONFIGURATION)) {
+        if (-not (Test-Path -LiteralPath $selected -PathType Leaf)) { throw "Missing native GUI tool: $selected" }
+    }
+}
 $runArgs = Join-Path $work 'java.args'
 Write-JavaArguments $runArgs @('--enable-native-access=ALL-UNNAMED',
     '-Djava.awt.headless=false', '-Duser.language=en', '-Duser.country=US',
@@ -100,38 +130,81 @@ if ($LASTEXITCODE -ne 0) { throw "Windows Script Manager journey failed: $LASTEX
 if ((Get-FileHash -LiteralPath $fixturePath -Algorithm SHA256).Hash -ne $before) {
     throw 'Windows GUI journey modified the source fixture'
 }
+if ($env:GHIDRA_GUI_UNWIND -eq '1') {
+    foreach ($mode in @('off', 'strict', 'conditioned-no-pointers', 'conditioned-fixed')) {
+        $artifact = Join-Path $work "$mode/output/fixture.dbg"
+        Invoke-Validator 'readelf.exe' @('-h', '-S', '--debug-dump=frames,info,abbrev,aranges,decodedline', $artifact) "$mode-gnu"
+        Invoke-Validator 'llvm-dwarfdump.exe' @('--verify', $artifact) "$mode-llvm"
+    }
+    Copy-Item -LiteralPath $referencePath -Destination (Join-Path $work 'compiler-reference')
+    $referenceHash = (Get-FileHash -LiteralPath $referencePath -Algorithm SHA256).Hash
+    @('windows-unwind-structural-validation=PASS',
+        'gdb-linux-elf-runtime=NOT_RUN_ON_WINDOWS_HOST',
+        'pinned-strict-validation=DEFERRED_TO_LINUX_CONSUMER',
+        "source-fixture-sha256=$before",
+        "compiler-reference-sha256=$referenceHash") | Add-Content -LiteralPath (Join-Path $work 'result.txt')
+    Write-Output 'windows-gui-unwind-integration=PASS'
+    return
+}
 
-$inputElf = Join-Path $work 'select\readonly\fixture'
-$sidecar = Join-Path $work 'select\chosen\fixture.dbg'
-Invoke-Validator 'readelf.exe' @('-h', '-S', '-n', $inputElf) 'input-elf'
-Invoke-Validator 'readelf.exe' @('-h', '-S', '-n', $sidecar) 'sidecar-elf'
-Invoke-Validator 'readelf.exe' @('--debug-dump=info', '--debug-dump=abbrev',
-    '--debug-dump=aranges', '--debug-dump=decodedline', '--debug-dump=Ranges',
-    '--debug-dump=loc', $sidecar) 'readelf-dwarf'
-Invoke-Validator 'llvm-dwarfdump.exe' @('--verify', $sidecar) 'llvm-verify'
-$inputMetadata = Get-Content -LiteralPath (Join-Path $work 'input-elf.txt')
-$outputMetadata = Get-Content -LiteralPath (Join-Path $work 'sidecar-elf.txt')
-foreach ($field in @('Class', 'Data', 'OS/ABI', 'Machine', 'Flags', 'Build ID')) {
-    $pattern = '^\s*' + [regex]::Escape($field) + ':\s*(.+)$'
-    $inputValue = @($inputMetadata | Where-Object { $_ -match $pattern } |
-        ForEach-Object { $_.Trim() })
-    $outputValue = @($outputMetadata | Where-Object { $_ -match $pattern } |
-        ForEach-Object { $_.Trim() })
-    if ($inputValue.Count -ne 1 -or $outputValue.Count -ne 1 -or
-            $inputValue[0] -ne $outputValue[0]) {
-        throw "Windows GUI sidecar ELF identity mismatch: $field"
+function Test-ExportedPair {
+    param([string] $work, [string] $inputElf, [string] $sidecar)
+    Invoke-Validator 'readelf.exe' @('-h', '-S', '-n', $inputElf) 'input-elf'
+    Invoke-Validator 'readelf.exe' @('-h', '-S', '-n', $sidecar) 'sidecar-elf'
+    Invoke-Validator 'readelf.exe' @('--debug-dump=info', '--debug-dump=abbrev',
+        '--debug-dump=aranges', '--debug-dump=decodedline', '--debug-dump=Ranges',
+        '--debug-dump=loc', $sidecar) 'readelf-dwarf'
+    Invoke-Validator 'llvm-dwarfdump.exe' @('--verify', $sidecar) 'llvm-verify'
+    $inputMetadata = Get-Content -LiteralPath (Join-Path $work 'input-elf.txt')
+    $outputMetadata = Get-Content -LiteralPath (Join-Path $work 'sidecar-elf.txt')
+    foreach ($field in @('Class', 'Data', 'OS/ABI', 'Machine', 'Flags', 'Build ID')) {
+        $pattern = '^\s*' + [regex]::Escape($field) + ':\s*(.+)$'
+        $inputValue = @($inputMetadata | Where-Object { $_ -match $pattern } |
+            ForEach-Object { $_.Trim() })
+        $outputValue = @($outputMetadata | Where-Object { $_ -match $pattern } |
+            ForEach-Object { $_.Trim() })
+        if ($inputValue.Count -ne 1 -or $outputValue.Count -ne 1 -or
+                $inputValue[0] -ne $outputValue[0]) {
+            throw "Windows GUI sidecar ELF identity mismatch: $field"
+        }
+    }
+    $independent = Get-Command dwarfdump.exe -ErrorAction SilentlyContinue
+    if ($null -eq $independent) {
+        'independent-dwarfdump=UNAVAILABLE_ON_WINDOWS_RUNNER' |
+            Add-Content -LiteralPath (Join-Path $work 'result.txt')
+    }
+    else {
+        Invoke-Validator $independent.Source @($sidecar) 'dwarfdump'
+        'independent-dwarfdump=PASS' | Add-Content -LiteralPath (Join-Path $work 'result.txt')
+    }
+    @('windows-script-manager-structural-validation=PASS',
+        'gdb-linux-elf-runtime=NOT_RUN_ON_WINDOWS_HOST',
+        "source-fixture-sha256=$before") | Add-Content -LiteralPath (Join-Path $work 'result.txt')
+}
+Test-ExportedPair $work (Join-Path $work "select/readonly/fixture") (Join-Path $work "select/chosen/fixture.dbg")
+if ($env:GHIDRA_GUI_COMPRESSION -ne '1' -and $env:GHIDRA_GUI_GDB_LOADER -ne '1') {
+    foreach ($mode in @('off', 'assembly', 'p-code', 'both')) {
+        $contextCase = Join-Path $work "select/source-context/$mode"
+        Test-ExportedPair $contextCase (Join-Path $work 'select/readonly/fixture') (Join-Path $contextCase 'output/fixture.dbg')
+    }
+    & python (Join-Path $repository 'src/test/integration/gui-context-evidence.py') (Join-Path $work 'select/source-context') --readelf readelf.exe
+    if ($LASTEXITCODE -ne 0) { throw 'GUI context line evidence differs' }
+    foreach ($mode in @('split', 'repeat', 'default')) {
+        $sourceCase = Join-Path $work "select/source-files/$mode"
+        Test-ExportedPair $sourceCase (Join-Path $work 'select/readonly/fixture') (Join-Path $sourceCase 'output/fixture.dbg')
     }
 }
-$independent = Get-Command dwarfdump.exe -ErrorAction SilentlyContinue
-if ($null -eq $independent) {
-    'independent-dwarfdump=UNAVAILABLE_ON_WINDOWS_RUNNER' |
-        Add-Content -LiteralPath (Join-Path $work 'result.txt')
+if ($env:GHIDRA_GUI_COMPRESSION -eq '1') {
+    Invoke-Validator 'readelf.exe' @('-SW', (Join-Path $work 'select/chosen/fixture.dbg')) 'export-sections'
+    if ((Get-Content -Raw (Join-Path $work 'export-sections.txt')) -notmatch
+            '(?m)\.debug_info\s+PROGBITS.*\sC\s') {
+        throw 'Compressed GUI export did not store compressed debug info'
+    }
 }
-else {
-    Invoke-Validator $independent.Source @($sidecar) 'dwarfdump'
-    'independent-dwarfdump=PASS' | Add-Content -LiteralPath (Join-Path $work 'result.txt')
-}
-@('windows-script-manager-structural-validation=PASS',
-    'gdb-linux-elf-runtime=NOT_RUN_ON_WINDOWS_HOST',
-    "source-fixture-sha256=$before") | Add-Content -LiteralPath (Join-Path $work 'result.txt')
-Write-Output 'windows-gui-script-manager-integration=PASS'
+$prepared = Join-Path $work "select/attachment-prepare"
+$validation = Join-Path $prepared "validation"
+New-Item -ItemType Directory $validation | Out-Null
+Test-ExportedPair $validation (Join-Path $prepared "fixture") (Join-Path $prepared "prepared.dbg")
+& python (Join-Path $repository 'src/test/integration/coverage-report-tool.py') $ghidra $module (Join-Path $work 'select/coverage-report.json')
+if ($LASTEXITCODE -ne 0) { throw 'Packaged coverage CLI validation failed' }
+Write-Output "windows-gui-script-manager-integration=PASS"

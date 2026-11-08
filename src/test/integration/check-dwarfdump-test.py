@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import struct
+import runpy
 
 
 def main():
@@ -35,6 +36,18 @@ def main():
         "sys.stdout.flush()\n" +
         "sys.exit(int(os.environ.get('CHECK_EXIT', '0')))\n")
     fake.chmod(0o755)
+
+    # Explicit native-checker configuration cannot silently select a different
+    # register table or overwrite a log before its pinned bytes are checked.
+    bad_configuration = work / "modified dwarfdump.conf"
+    bad_configuration.write_bytes(b"untrusted configuration\n")
+    config_log = work / "rejected-configuration.log"
+    rejected = subprocess.run([sys.executable, str(helper), str(artifact), str(config_log),
+        "--tool", str(fake), "--configuration", str(bad_configuration)], text=True, capture_output=True)
+    assert rejected.returncode != 0 and "differs from pinned configuration" in rejected.stderr
+    assert not config_log.exists() and not config_log.with_name(config_log.name + ".check.json").exists()
+    assert bad_configuration.read_bytes() == b"untrusted configuration\n"
+    print("modified-explicit-configuration-rejected-before-launch=PASS", flush=True)
 
     def run_case(name, text, expected, exit_status=0, stderr=""):
         replay = work / (name + ".replay")
@@ -140,6 +153,66 @@ def main():
     strings = baseline[names[4]:names[4] + names[5]]
     frame_index = next(index for index, section in enumerate(sections)
         if strings[section[0]:].split(b"\0", 1)[0] == b".eh_frame")
+    # The processor-defined AMD64 frame type must preserve the same identity
+    # and payload proof. Never accept that numeric value on other processors.
+    checker = runpy.run_path(str(helper))
+    typed = work / "processor-typed.elf"
+    typed_bytes = bytearray(baseline)
+    struct.pack_into("<I", typed_bytes, section_offset + frame_index * entry_size + 4, 0x70000001)
+    typed.write_bytes(typed_bytes)
+    assert checker['elf_frame_identity'](typed) == checker['elf_frame_identity'](original)
+    subprocess.run([sys.executable, str(helper), str(artifact), str(work / "typed-original.txt"),
+        "--original", str(typed)], check=True)
+    for machine in (3, 8, 40, 183, 243):
+        other = bytearray(typed_bytes)
+        struct.pack_into("<H", other, 18, machine)
+        typed.write_bytes(other)
+        try:
+            checker['elf_frame_identity'](typed)
+            raise AssertionError("processor frame type accepted for another machine")
+        except checker['ValidationFailure']:
+            pass
+    unknown = bytearray(typed_bytes)
+    struct.pack_into("<I", unknown, section_offset + frame_index * entry_size + 4, 0x70000002)
+    typed.write_bytes(unknown)
+    try:
+        checker['elf_frame_identity'](typed)
+        raise AssertionError("unknown processor frame type accepted")
+    except checker['ValidationFailure']:
+        pass
+    typed.write_bytes(typed_bytes)
+    for wide, order in ((False, "<"), (False, ">"), (True, ">")):
+        # Metadata-only foreign layouts isolate class/endianness rejection
+        # with EM_X86_64 unchanged. The payload is never decoded by this helper.
+        data = bytearray(0x400)
+        data[:8] = bytes([0x7f, 69, 76, 70, 2 if wide else 1, 1 if order == "<" else 2, 1, 0])
+        struct.pack_into(order + "HHI", data, 16, 2, 62, 1)
+        sh = 0x100
+        if wide:
+            struct.pack_into(order + "Q", data, 40, sh)
+            struct.pack_into(order + "HHHH", data, 58, 64, 3, 1, 0)
+            fmt, size = order + "IIQQQQIIQQ", 64
+        else:
+            struct.pack_into(order + "I", data, 32, sh)
+            struct.pack_into(order + "HHH", data, 46, 40, 3, 1)
+            fmt, size = order + "IIIIIIIIII", 40
+        names = b"\0.shstrtab\0.eh_frame\0"
+        data[0x200:0x200 + len(names)] = names
+        struct.pack_into(fmt, data, sh + size, 1, 3, 0, 0, 0x200, len(names), 0, 0, 1, 0)
+        struct.pack_into(fmt, data, sh + 2 * size, 11, 0x70000001, 2, 0x1000, 0x300, 4, 0, 0, 4, 0)
+        typed.write_bytes(data)
+        try:
+            checker['elf_frame_identity'](typed)
+            raise AssertionError("processor frame type accepted for an unaudited class/byte order")
+        except checker['ValidationFailure']:
+            pass
+        # The same metadata layout still accepts ordinary PROGBITS.
+        struct.pack_into(order + "I", data, sh + 2 * size + 4, 1)
+        typed.write_bytes(data)
+        assert checker['elf_frame_identity'](typed)[1] == b"\0" * 4
+    typed.write_bytes(typed_bytes)
+    assert original.read_bytes() == baseline
+    print("processor-frame-type-and-target-controls=PASS", flush=True)
     sectionless = work / "sectionless.elf"
     erased = bytearray(baseline)
     struct.pack_into("<Q", erased, 40, 0)

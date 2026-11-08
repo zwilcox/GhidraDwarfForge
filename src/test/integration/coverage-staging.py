@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""Exercise the installed production report boundary using a validated lexical fixture."""
+import argparse
+from collections import Counter
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('ghidra', type=Path)
+    parser.add_argument('lexical_case', type=Path)
+    limits = parser.add_mutually_exclusive_group()
+    limits.add_argument('--real-limit', action='store_true', help='exercise the actual string limit using a derived Ghidra type')
+    limits.add_argument('--byte-limit', action='store_true', help='exceed the actual 64 MiB report budget using saved Ghidra locals')
+    args = parser.parse_args()
+    real_limit = args.real_limit or args.byte_limit
+    ghidra, case = args.ghidra.resolve(strict=True), args.lexical_case.resolve(strict=True)
+    harness = Path(__file__).resolve().parent
+    spec = importlib.util.spec_from_file_location('report_claims', harness / 'export-report-claims.py')
+    claims = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(claims)
+    baseline = json.loads((case / 'acceptance.json').read_text())
+    assert baseline['status'] == 'LEXICAL_SHADOW_PASS'
+    target = baseline['target']
+    work = Path(tempfile.mkdtemp(prefix='coverage-staging-', dir=case))
+    print('coverage-staging-results=' + str(work), flush=True)
+    module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+    protected_paths = [case / name for name in ('stripped', 'reference', 'forge.dbg', 'forge.dbg.c', 'compiler-gdb.log')]
+    driver = 'CoverageReportLimitControl.java' if real_limit else 'CoverageStagingControls.java'
+    protected_paths += [module / 'lib/GhidraDwarfForge.jar', module / 'ghidra_scripts/GhidraDwarfForge.java',
+        harness / 'ghidra_scripts' / driver, Path(__file__)]
+    protected = {str(p): digest(p) for p in protected_paths}
+    project = case / 'project'
+    before = {str(p): digest(p) for p in project.rglob('*') if p.is_file() and not p.name.endswith('.lock')}
+    commands = []
+
+    def run(label, command, timeout=240):
+        command = list(map(str, command))
+        commands.append({'label': label, 'argv': command})
+        (work / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
+        with (work / (label + '.log')).open('w') as log:
+            subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=timeout)
+
+    run('export', [ghidra / 'support/analyzeHeadless', project, 'Lexical', '-process', 'stripped',
+        '-readOnly', '-noanalysis', '-scriptPath', harness / 'ghidra_scripts',
+        '-postScript', driver, case / 'stripped', work / 'outputs',
+        *(['--bytes'] if args.byte_limit else [])], timeout=900 if args.byte_limit else 240)
+    log = (work / 'export.log').read_text()
+    if real_limit:
+        assert 'coverage-real-limit-controls=PASS controls=2' in log
+        marker_prefix = 'coverage-real-limit=PASS '
+        markers = [line.split(marker_prefix, 1)[1].split(' (GhidraScript)')[0]
+            for line in log.splitlines() if marker_prefix in line]
+        assert len(markers) == len(set(markers)) == 2
+        assert {marker.split(' staged=')[0] for marker in markers} == {'mode=pair', 'mode=companion'}
+    else:
+        assert 'coverage-staging-controls=PASS controls=20' in log
+        markers = [line.split('coverage-staging-control=PASS ', 1)[1].split(' (GhidraScript)')[0]
+            for line in log.splitlines() if 'coverage-staging-control=PASS ' in line]
+        assert len(markers) == len(set(markers)) == 20
+        expected = {f'mode={mode} phase={phase} outcome={outcome}'
+            for mode in ('pair', 'companion') for phase in ('capture', 'assembly', 'type-evidence', 'writer', 'reader')
+            for outcome in ('FATAL', 'CANCELLED')}
+        assert {marker.split(' polls=')[0] for marker in markers} == expected
+    reports = [claims.DECODER.raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
+        for line in log.splitlines() if 'GhidraDwarfForge report: ' in line]
+    statuses = Counter(report['status'] for report in reports)
+    if real_limit:
+        assert len(reports) == 6 and statuses['FATAL'] == 2 and statuses['CANCELLED'] == 0
+        expected_error = ('coverage exceeds UTF-8 byte budget 67108864' if args.byte_limit else
+            'coverage string exceeds UTF-16 unit budget')
+        assert all(report['failure']['message'] == expected_error
+            for report in reports if report['status'] == 'FATAL')
+    else:
+        assert len(reports) == 24 and statuses['FATAL'] == statuses['CANCELLED'] == 10
+    for index, report in enumerate(reports):
+        assert report['schemaVersion'] == 2 and report['validation'] == {'status': 'NOT_RUN'}
+        if report['status'] in ('FATAL', 'CANCELLED'):
+            assert report['coverage'] is None and report['artifacts'] is None and report['failure']
+        else:
+            claims.claims(report)
+            for kind in ('input', 'output', 'source'):
+                path = Path(report['artifacts'][kind + 'Path'])
+                assert path.is_absolute() and digest(path) == report['artifacts'][kind + 'Sha256']
+                assert not path.name.endswith('.staged')
+        (work / f'report-{index:02}.json').write_text(json.dumps(report, separators=(',', ':')) + '\n')
+    shutil.copyfile(case / 'compiler-gdb.log', work / 'compiler-gdb.log')
+    for mode in ('pair', 'companion'):
+        output = work / 'outputs' / mode / 'forge.dbg'
+        run(mode + '-elf', ['readelf', '-hSWn', output])
+        for view in ('info', 'abbrev', 'aranges', 'decodedline', 'Ranges', 'loc'):
+            run(mode + '-' + view, ['readelf', '--debug-dump=' + view, output])
+            assert 'Warning:' not in (work / (mode + '-' + view + '.log')).read_text()
+        run(mode + '-llvm', ['llvm-dwarfdump', '--verify', output])
+        assert 'No errors.' in (work / (mode + '-llvm.log')).read_text()
+        run(mode + '-strict', ['python3', harness / 'check-dwarfdump.py', output,
+            work / (mode + '-dwarfdump.log'), '--original', case / 'stripped'])
+        role = work.name + '-' + mode
+        run(mode + '-gdb', ['bash', harness / 'lexical-shadow-gdb.sh', case, target, role, output])
+        assert 'lexical-shadow-gdb=' + role + ' PASS' in (work / (mode + '-gdb.log')).read_text()
+        run(mode + '-gdb-diagnostics', ['python3', harness / 'check-lexical-gdb-log.py', work, mode, target])
+    assert protected == {p: digest(Path(p)) for p in protected}
+    after = {str(p): digest(p) for p in project.rglob('*') if p.is_file() and not p.name.endswith('.lock')}
+    changed = {p for p in before.keys() | after.keys() if before.get(p) != after.get(p)}
+    assert changed <= {str(project / 'Lexical.rep/idata' / name) for name in ('~index.bak', '~journal.bak')}
+    receipt = {'status': 'COVERAGE_STAGING_PASS', 'target': target, 'controls': markers,
+        'reportStatuses': dict(statuses), 'protected': protected, 'projectBackupChanges': sorted(changed),
+        'scope': ('actual saved locals exceed production 64 MiB whole-report byte budget' if args.byte_limit else
+            'actual captured type identifier exceeds production UTF-16 string limit' if args.real_limit else
+            'production capture/assembly/write/read cancellation and injected failures') +
+            '; pair and companion preservation/retry; validators and GDB'}
+    (work / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
+    print('coverage-staging=PASS', flush=True)
+
+
+if __name__ == '__main__':
+    main()

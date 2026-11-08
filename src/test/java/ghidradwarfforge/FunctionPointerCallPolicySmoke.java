@@ -157,7 +157,8 @@ public final class FunctionPointerCallPolicySmoke {
                 type.restrictDebuggerCalls("extra")), "duplicate restriction");
             require(type.restrictDebuggerCalls("") == type, "empty restriction changes type");
         }
-        require(diagnostics.stream().filter(s -> s.startsWith("Debugger-injected calls disabled for function type ")).count() ==
+        require(diagnostics.stream().filter(s -> s.startsWith("Debugger-injected calls disabled for function type ") ||
+            s.startsWith("Calling convention requires target ABI classification for function type ")).count() ==
             expected.stream().filter(Expected::blocked).count(), "diagnostic multiplicity differs");
         var repeatedDiagnostics = new ArrayList<String>();
         require(model.equals(GhidraTypeGraph.extract(program, List.of(), target.map(), 0, TaskMonitor.DUMMY,

@@ -10,6 +10,26 @@ target = os.environ['SAME_TYPE_TARGET']
 remote = os.environ.get('SAME_TYPE_REMOTE', '')
 labels = json.loads((case / 'labels.json').read_text())
 observations = []
+source_files = {}
+if mode == 'forge' and os.environ.get('SAME_TYPE_SYMBOLS'):
+    source = Path(os.environ['SAME_TYPE_SYMBOLS'] + '.c')
+    manifests = [line.removeprefix(' * Manifest: ') for line in source.read_text().splitlines()
+        if line.startswith(' * Manifest: ')]
+    if manifests:
+        assert len(manifests) == 1
+        manifest = json.loads((source.parent / manifests[0]).read_text())
+        for namespace in ('alpha', 'beta'):
+            spelling = namespace + '::Node::inspect'
+            # Manifest identities retain the original leaf spelling; both
+            # methods are named inspect. Bind by the independent ELF address.
+            function, = [f for f in manifest['functions']
+                if int(f['address'], 16) == labels[namespace + '.method']]
+            part = manifest['parts'][function['file'] - 1]
+            source_files[namespace] = source.parent / part['name']
+            breakpoint = gdb.Breakpoint(part['name'] + ':' + spelling)
+            assert not breakpoint.pending and breakpoint.locations
+            breakpoint.delete()
+        assert len(set(source_files.values())) == 2
 if remote:
     gdb.execute('target remote ' + remote)
 for index, (namespace, value, amount, returned, size) in enumerate([
@@ -21,6 +41,8 @@ for index, (namespace, value, amount, returned, size) in enumerate([
     assert int(gdb.parse_and_eval('&' + method)) == labels[namespace + '.method'] + bias
     gdb.Breakpoint('*' + hex(labels[namespace + '_live'] + bias), temporary=True)
     gdb.execute('continue')
+    if source_files:
+        assert Path(gdb.selected_frame().find_sal().symtab.fullname()) == source_files[namespace]
     assert int(gdb.parse_and_eval('this->value')) == value
     assert int(gdb.parse_and_eval('amount')) == amount
     assert int(gdb.parse_and_eval('sizeof(*this)')) == size

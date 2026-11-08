@@ -3,6 +3,7 @@
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -23,6 +24,14 @@ def digest(path):
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             result.update(block)
     return result.hexdigest()
+
+
+def verify_headless(output, module, exported=False):
+    helper = Path(__file__).with_name("headless-observations.py")
+    spec = importlib.util.spec_from_file_location("headless_observations", helper)
+    observations = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(observations)
+    return observations.verify(output, module, exported=exported)
 
 
 def run(command, output, timeout=1800, measured=False, cwd=None):
@@ -200,6 +209,7 @@ def main():
                         "-analysisTimeoutPerFile", "1200"], directory / "import.log", measured=True)
         if "REPORT: Analysis succeeded" not in (directory / "import.log").read_text():
             raise RuntimeError("Import did not report completed analysis")
+        imported["runtime"] = verify_headless(directory / "import.log", module)
         sidecar = directory / "benchmark.dbg"
         samples = []
         hashes = None
@@ -209,6 +219,7 @@ def main():
             sample = run([wrapper, f"--ghidra-dir={ghidra}", f"--project-dir={project}",
                           "--project-name=Benchmark", "--program=benchmark", f"--input={binary}",
                           f"--output={sidecar}"], output, measured=True)
+            sample["runtime"] = verify_headless(output, module, exported=True)
             reports = [line.split("GhidraDwarfForge report: ", 1)[1]
                        for line in output.read_text().splitlines() if "GhidraDwarfForge report: " in line]
             if len(reports) != 1:

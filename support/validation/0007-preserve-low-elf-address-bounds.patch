@@ -1,0 +1,39 @@
+--- a/src/bin/dwarfdump/dwarfdump.c
++++ b/src/bin/dwarfdump/dwarfdump.c
+@@ -1080,6 +1080,23 @@
+         ln = likely_names;
+     }
+ 
++    if (dw_ftype == DW_FTYPE_ELF) {
++        int validcount = 0;
++
++        /* Non-allocated and empty sections do not establish address
++           bounds. In particular, their zero-filled slots must not
++           manufacture a lower bound of zero. */
++        for (lnindex = 0; lnindex < lncount; ++lnindex) {
++            if (ln[lnindex].name && ln[lnindex].size) {
++                ln[validcount++] = ln[lnindex];
++            }
++        }
++        if (!validcount) {
++            free(ln);
++            return DW_DLV_NO_ENTRY;
++        }
++        lncount = validcount;
++    }
+     qsort(ln,lncount,sizeof(struct likely_names_s),
+         likelycmp);
+     baselow = ln->low;
+@@ -1095,8 +1112,10 @@
+     if (ln_is_malloc) {
+         free(ln);
+     }
+-    if (!baselow) {
+-        /*  Initial 'page' is certainly not a valid
++    if (!baselow && dw_ftype != DW_FTYPE_ELF) {
++        /*  ELF section addresses, including zero, are authoritative.
++            Retain the historical heuristic only for other formats.
++            Initial 'page' is certainly not a valid
+             address from dwarf. But ET_REL maybe. */
+         baselow = 512;
+     }

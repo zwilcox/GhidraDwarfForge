@@ -69,6 +69,7 @@ public final class CompilerCallPolicySmoke {
                             after.returnType().equals(before.returnType()) && after.parameters().equals(before.parameters()) &&
                             after.locals().equals(before.locals()) && after.variadic() == before.variadic() &&
                             after.noReturn() == before.noReturn() && after.callingConvention().equals(before.callingConvention()) &&
+                            after.effectiveCallingConvention().equals(before.effectiveCallingConvention()) &&
                             after.signatureSource().equals(before.signatureSource()) &&
                             after.nonDefaultCallingConvention() == before.nonDefaultCallingConvention(), "curated signature changed");
                         require(after.debuggerCallsDisabled() == (blocked || i == 1), "incorrect call restriction");
@@ -77,6 +78,7 @@ public final class CompilerCallPolicySmoke {
                         var decl = output.functionDeclarations().get(i);
                         require(decl.debuggerCallsDisabled() == (blocked || i == 1), "external declaration callable");
                         require(decl.key().equals(input.functionDeclarations().get(i).key()) &&
+                            decl.effectiveCallingConvention().equals(input.functionDeclarations().get(i).effectiveCallingConvention()) &&
                             decl.parameters().equals(input.functionDeclarations().get(i).parameters()), "external identity changed");
                     }
                     for (int i = 0; i < 2; i++) {
@@ -139,9 +141,10 @@ public final class CompilerCallPolicySmoke {
             String reason = index == 0 ? "" : "existing custom restriction";
             functions.add(new FunctionSignature("function" + index, 0x1000 + index * 16, integer,
                 parameters, List.of(new ProgramTypeModel.LocalVariable("local", 4, integer, 2, true, "USER_DEFINED")),
-                index != 0, index != 0, "default", "USER_DEFINED", index != 0, reason));
+                index != 0, index != 0, "default", "USER_DEFINED", index != 0, reason, "fixture-resolved-model"));
             declarations.add(new FunctionDeclaration("external:" + index, "library::function" + index,
-                integer, parameters, index != 0, index != 0, "default", "USER_DEFINED", index != 0, reason));
+                integer, parameters, index != 0, index != 0, "default", "USER_DEFINED", index != 0, reason,
+                "fixture-resolved-model"));
         }
         var nodes = new ArrayList<TypeGraph.TypeNode>(types.nodes());
         for (int i = 0; i < functions.size(); i++) {

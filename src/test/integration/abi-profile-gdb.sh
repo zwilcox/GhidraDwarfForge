@@ -11,6 +11,21 @@ for variant in compiler fixed; do
     input="$case_dir/call.input"
     symbols="$case_dir/$variant.dbg"
     if [[ "$variant" == compiler ]]; then symbols="$case_dir/call.reference"; fi
+    if [[ $(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("target", "aarch64"))' "$case_dir/metadata.json") == i386 ]]; then
+        ABI_PROFILE_CASE="$case_dir" ABI_PROFILE_VARIANT="$variant" timeout 60s gdb -q -nx -batch \
+            -ex 'set debuginfod enabled off' -ex 'set pagination off' -ex 'set confirm off' \
+            -ex 'set auto-solib-add off' -ex 'set python print-stack full' \
+            -ex "file $input" -ex "symbol-file $symbols" -ex starti \
+            -x "$repository/src/test/integration/abi-profile-gdb.py" \
+            > "$case_dir/$variant-gdb.log" 2>&1
+        python3 "$repository/src/test/integration/abi-profile-diagnostics.py" "$case_dir" "$variant"
+        if grep -Ei 'warning:|error:|Traceback' "$case_dir/$variant-gdb-accounted.log"; then
+            echo 'unexpected i386 debugger diagnostic' >&2
+            exit 1
+        fi
+        grep -Fxq "abi-profile-gdb=$variant PASS" "$case_dir/$variant-gdb.log"
+        continue
+    fi
     qemu_socket_start "$case_dir/$variant-qemu" qemu-aarch64-static /usr/aarch64-linux-gnu "$input"
     ABI_PROFILE_CASE="$case_dir" ABI_PROFILE_VARIANT="$variant" timeout 60s gdb-multiarch -q -nx -batch \
         -ex 'set debuginfod enabled off' -ex 'set pagination off' -ex 'set confirm off' \

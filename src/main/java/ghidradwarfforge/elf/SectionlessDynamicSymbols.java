@@ -25,6 +25,42 @@ final class SectionlessDynamicSymbols {
     private SectionlessDynamicSymbols() {
     }
 
+    record RawSymbol(long value, long size, int info, int other, int section) { }
+
+    /** Original records for relocation qualification; never remap symbol indices. */
+    static List<RawSymbol> originalRecords(ElfImage image, BooleanSupplier cancelled) throws IOException {
+        ElfImage.Segment dynamic = null;
+        for (var segment : image.segments()) {
+            checkCancelled(cancelled);
+            if (segment.type == 2) {
+                require(dynamic == null, "multiple PT_DYNAMIC inventories"); dynamic = segment;
+            }
+        }
+        require(dynamic != null, "symbolic relocation has no PT_DYNAMIC");
+        try (Reader reader = new Reader(image, cancelled)) {
+            var tags = tags(reader, dynamic);
+            int width = image.is64Bit() ? 24 : 16;
+            require(tags.containsKey(6L) && tags.containsKey(11L) && tags.get(11L) == width,
+                "invalid dynamic symbol record metadata");
+            int count = count(reader, tags, true);
+            var data = reader.buffer(tags.get(6L), (long) count * width);
+            var records = new ArrayList<RawSymbol>();
+            for (int index = 0; index < count; index++) {
+                checkCancelled(cancelled);
+                int at = index * width;
+                int info = Byte.toUnsignedInt(data.get(at + (image.is64Bit() ? 4 : 12)));
+                int other = Byte.toUnsignedInt(data.get(at + (image.is64Bit() ? 5 : 13)));
+                int section = Short.toUnsignedInt(data.getShort(at + (image.is64Bit() ? 6 : 14)));
+                long value = image.is64Bit() ? data.getLong(at + 8) : Integer.toUnsignedLong(data.getInt(at + 4));
+                long size = image.is64Bit() ? data.getLong(at + 16) : Integer.toUnsignedLong(data.getInt(at + 8));
+                require(value >= 0 && size >= 0, "dynamic symbol value/size exceeds signed domain");
+                records.add(new RawSymbol(value, size, info, other, section));
+            }
+            reader.verify();
+            return List.copyOf(records);
+        }
+    }
+
     static DynamicSymbolMirror.Input read(ElfImage image, BooleanSupplier cancelled) throws IOException {
         checkCancelled(cancelled);
         ElfImage.Segment dynamic = null;
@@ -125,7 +161,25 @@ final class SectionlessDynamicSymbols {
     }
 
     private static int count(Reader reader, Map<Long, Long> tags) throws IOException {
+        return count(reader, tags, false);
+    }
+
+    private static int count(Reader reader, Map<Long, Long> tags, boolean named) throws IOException {
         List<Long> counts = new ArrayList<>();
+        if (named) {
+            boolean seen = false;
+            for (var section : reader.image.sections()) {
+                checkCancelled(reader.cancelled);
+                if (section.type != 11) continue;
+                require(!seen, "multiple dynamic symbol sections"); seen = true;
+                long width = reader.image.is64Bit() ? 24 : 16;
+                require(section.address == tags.get(6L) && section.entrySize == width &&
+                    section.size > 0 && section.size % width == 0 && section.size / width <= MAX_SYMBOLS &&
+                    (section.flags & 0x802) == 2 && reader.locate(section.address, section.size) == section.offset,
+                    "dynamic symbol section and tags disagree");
+                counts.add(section.size / width);
+            }
+        }
         if (tags.containsKey(4L)) {
             long address = tags.get(4L);
             ByteBuffer header = reader.buffer(address, 8);
