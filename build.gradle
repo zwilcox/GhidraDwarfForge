@@ -1495,6 +1495,7 @@ tasks.register("localSymbolMergeSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.LocalSymbolMergeSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
 tasks.register("functionAliasSymbolsSmoke", JavaExec) {
@@ -1503,6 +1504,16 @@ tasks.register("functionAliasSymbolsSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.FunctionAliasSymbolsSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
+}
+
+tasks.register("callOriginSymbolsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks exact call-entry symbol ownership, identity and name collisions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.CallOriginSymbolsSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
 tasks.register("ghidraFunctionAliasesSmoke", JavaExec) {

@@ -551,6 +551,13 @@ public final class MinimalDwarfSidecarExporter {
         reservedFunctions.addAll(plannedAliases);
         supplemental.addAll(ghidradwarfforge.elf.Arm32SectionModes.plan(
             elf, sectionModes, reservedFunctions, cancelled, diagnostic));
+        callSites.validate(ordered, typeModel, target.addressBytes());
+        var originReserved = new java.util.HashSet<>(constantNames);
+        originReserved.addAll(formatterAliases.values());
+        for (var symbol : supplemental) originReserved.add(symbol.name());
+        var originSymbols = target.planCallOriginSymbols(elf, callSites, ordered, typeModel, aliases,
+            originReserved, cancelled, diagnostic);
+        supplemental.addAll(originSymbols);
         var acceptedAliasNames = plannedAliases.stream().map(ElfLocalFunctionSymbol::name)
             .collect(java.util.stream.Collectors.toSet());
         var relatedAliases = aliases.stream().filter(alias -> acceptedAliasNames.contains(alias.name()))
@@ -625,11 +632,11 @@ public final class MinimalDwarfSidecarExporter {
                     variable.functionName(), variable.functionAddress()))).toList(),
             target.addressBytes(), elf.byteOrder(), cancelled);
         ProductionResult production;
-        callSites.validate(ordered, typeModel, target.addressBytes());
         try (var phase = ExportPhase.start("native-production")) {
             production = produce(producer, consumer, target, ordered,
                 unitName, directoryName, syntheticSource, typeModel, lineTable, rangeLists, locationLists,
-                elf.byteOrder(), relatedAliases, globalNames, linePlan, constants, constantTypeNames, formatterAliases, callSites, cancelled);
+                elf.byteOrder(), relatedAliases, globalNames, linePlan, constants, constantTypeNames, formatterAliases,
+                callSites, originSymbols, cancelled);
             phase.completed = true;
         }
         Map<String, byte[]> sections = production.sections();
@@ -656,7 +663,8 @@ public final class MinimalDwarfSidecarExporter {
             ByteOrder byteOrder, List<ElfFunctionAlias> aliases, GlobalScopeNames.Plan globalNames,
             Dwarf5LineTable.Result linePlan, List<SyntheticConstant> constants,
             Map<Integer, String> constantTypeNames, Map<String, String> formatterAliases,
-            ghidradwarfforge.calls.CallSitePlan callSites, BooleanSupplier cancelled) {
+            ghidradwarfforge.calls.CallSitePlan callSites, List<ElfLocalFunctionSymbol> originSymbols,
+            BooleanSupplier cancelled) {
         Map<Long, SectionRecord> sections = new LinkedHashMap<>();
         long[] nextSection = { 1 };
         long[] nextSymbol = { 1 };
@@ -714,6 +722,24 @@ public final class MinimalDwarfSidecarExporter {
             Map<VariableKey, VariableLocation> variableLocations =
                 variableLocations(typeModel);
             Map<Long, Die> functionDies = new HashMap<>();
+            Map<Long, Die> callOrigins = new HashMap<>();
+            Map<Long, String> originNames = new HashMap<>();
+            for (var symbol : originSymbols) originNames.put(symbol.value(), symbol.name());
+            for (var function : functions) {
+                checkCancelled(cancelled);
+                String aliasName = originNames.get(function.address());
+                if (aliasName == null) continue;
+                // A generated declaration for a sidecar-local ELF alias. It is
+                // not the analyst's declaration and claims no original linkage,
+                // body, signature or source coordinates. Its ELF symbol names
+                // exactly the canonical function entry; its definition remains
+                // the existing function DIE with all original body ranges.
+                Die declaration = newDie(producer, consumer, debug, DW_TAG_SUBPROGRAM, unit, errorOut);
+                addName(producer, consumer, declaration, aliasName, errorOut);
+                addFlag(producer, consumer, debug, declaration, DW_AT_DECLARATION, true, errorOut);
+                addFlag(producer, consumer, debug, declaration, DW_AT_ARTIFICIAL, true, errorOut);
+                callOrigins.put(function.address(), declaration);
+            }
             Map<Long, Map<Integer, Die>> formalDies = new HashMap<>();
             Set<Long> sourceFailedFunctions = new java.util.HashSet<>();
             Map<FunctionKey, List<VariableEmission>> emittedVariables = new LinkedHashMap<>();
@@ -740,9 +766,9 @@ public final class MinimalDwarfSidecarExporter {
                 functionDies.put(function.address(), die);
                 relatedFunctions.put(ClassScopeModel.FunctionReference.definition(function.name(), function.address()), die);
                 // C11 stays truthful. Plain analyst scopes are a flat display
-                // name on the CU-owned definition, not guessed language scopes,
-                // linkage names or duplicate alias DIEs.
+                // name on the CU-owned definition, not guessed language scopes.
                 addName(producer, consumer, die, function.qualifiedDisplayName(), errorOut);
+                callOrigins.putIfAbsent(function.address(), die);
                 if (!function.usesRangeList()) {
                     addAddress(producer, consumer, debug, die, DW_AT_LOW_PC,
                         function.ranges().get(0).address(), errorOut);
@@ -985,7 +1011,7 @@ public final class MinimalDwarfSidecarExporter {
                 addName(producer, consumer, imported, alias.name(), errorOut);
                 addReference(producer, consumer, debug, imported, DW_AT_IMPORT, owner, errorOut);
             }
-            Set<Long> callAddresses = emitCallSites(producer, consumer, debug, callSites, functionDies,
+            Set<Long> callAddresses = emitCallSites(producer, consumer, debug, callSites, functionDies, callOrigins,
                 formalDies, sourceFailedFunctions, target.addressBytes(), byteOrder, cancelled, errorOut);
             check(producer.dwarf_add_die_to_debug_a(debug, unit, errorOut),
                 "dwarf_add_die_to_debug_a", errorOut, consumer);
@@ -1049,7 +1075,7 @@ public final class MinimalDwarfSidecarExporter {
     }
 
     private static Set<Long> emitCallSites(LibDwarfProducer producer, LibDwarfConsumer consumer,
-            Debug debug, ghidradwarfforge.calls.CallSitePlan plan, Map<Long, Die> functions,
+            Debug debug, ghidradwarfforge.calls.CallSitePlan plan, Map<Long, Die> functions, Map<Long, Die> origins,
             Map<Long, Map<Integer, Die>> formals, Set<Long> sourceFailures, int addressBytes,
             ByteOrder byteOrder, BooleanSupplier cancelled, PointerByReference errorOut) {
         var addresses = new java.util.HashSet<Long>();
@@ -1074,7 +1100,7 @@ public final class MinimalDwarfSidecarExporter {
                 if (site.tail()) addFlag(producer, consumer, debug, die, DW_AT_CALL_TAIL_CALL, true, errorOut);
                 if (site.callee() != null) {
                     addReference(producer, consumer, debug, die, DW_AT_CALL_ORIGIN,
-                        Objects.requireNonNull(functions.get(site.callee())), errorOut);
+                        Objects.requireNonNull(origins.get(site.callee())), errorOut);
                 }
                 for (var argument : site.arguments()) {
                     checkCancelled(cancelled);

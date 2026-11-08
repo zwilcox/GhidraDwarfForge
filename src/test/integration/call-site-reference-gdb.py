@@ -36,7 +36,7 @@ while frame is not None and len(frames) < 32:
     if frame.name() not in ("cs_checkpoint", "cs_driver", "main"):
         record["value"] = value("value")
         record["entryValue"] = value("value@entry")
-    if frame.name() in ("cs_recursive", "cs_tail_recursive"):
+    if frame.name() in (os.environ.get("FORGE_CALL_SITE_RECURSIVE_NAME", "cs_recursive"), "cs_tail_recursive"):
         record["depth"] = value("depth")
         record["entryDepth"] = value("depth@entry")
     frames.append(record)

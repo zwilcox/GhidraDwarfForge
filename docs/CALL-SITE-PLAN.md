@@ -1,10 +1,11 @@
 # Call-site and tail-call metadata — issue #117
 
-**CONFIRMED recovered-plan structural validation; full runtime acceptance incomplete:** this plan preserves all six acceptance items in
+**CONFIRMED recovered-plan structural and 64-case local runtime validation; packaged/hosted acceptance incomplete:** this plan preserves all six acceptance items in
 [issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117). The normal
 headless/UI script is now connected to call-site recovery and compiles, but its
 packaged end-to-end invocation remains **PRESENT, UNVERIFIED**. The saved-program
-producer probe establishes recovered plan emission with the debugger gaps below.
+producer probe now passes the debugger cases; the historical gaps and their
+resolution are recorded below.
 #120 follows completion
 of #117. Storage controls remain mandatory throughout implementation.
 
@@ -800,3 +801,58 @@ that validation order. Normal-script compilation and workflow lint pass.
 full export regressions, and hosted Linux/Windows acceptance. Resolve the four
 remaining consumer failures and these requirements before integrating #117 or
 starting #120. See [bounded-switch evidence](evidence/call-site-bounded-switch.json).
+
+## Exact discontiguous call origins — 2026-11-08
+
+**CONFIRMED locally:** all 64 recovered runtime cases now pass. The four x86
+recursion failures are resolved without changing the compiler fixture, Ghidra
+body ranges, argument evidence or runtime expectations. The existing explicit
+analyst correction of the x86 driver remains a prerequisite for that fixture;
+production still never silently repairs function bodies.
+
+[GDB 15.1's call-site reader](https://raw.githubusercontent.com/RTEMS/sourceware-mirror-binutils-gdb/gdb-15.1-release/gdb/dwarf2/read.c)
+uses every range start as a potential call target when an origin references a
+ranged definition. Referencing an addressless declaration instead selects
+minimal-symbol lookup. Ordinary fixture-name declarations restored recursion,
+but depended on retained original names. A candidate that attached private
+linkage names to the real definition passed structural checks but made GDB
+display private names. Neither experiment is the final implementation.
+
+The writer now supplies a private local ELF function alias for a referenced
+discontiguous callee whose entry range has unique executable, file-backed
+ownership. An artificial, addressless subprogram declaration names that alias;
+`DW_AT_call_origin` references it. The canonical definition keeps its recovered
+name, signature, locations, class relationships and all body ranges. No private
+linkage name or specification is attached to the canonical definition. The
+alias describes an actual entry already admitted by the recovered call plan,
+not an additional function body, original source declaration or execution path.
+This uses existing audited producer APIs, with no final JNA/native ABI change.
+
+Names contain the SHA-256 of the original ELF and its normalized entry address.
+They reserve existing ELF/analyst/generated names and choose deterministic
+suffixes for collisions. The local symbol covers only the suffix of the actual
+entry-containing range; it never fills gaps. The target policy currently admits
+the validated x86-64/AArch64 direct-address profiles. Unsupported targets retain
+canonical origin references. Other explicit bounds are a 1 GiB identity hash,
+65,536 candidates and 16,777,216 allocation/ownership comparisons. Admission
+failures retain the canonical origin and a diagnostic; they do not assert a
+working exact lookup. Duplicate mappings of an identical image in multiple
+runtime namespaces remain **UNCERTAIN** under GDB's global symbol lookup.
+
+Validation: 64 recovered runtime sessions; eight GNU/LLVM/pinned-validator-clean
+and deterministic native artifacts; 68 additional x86 ET_EXEC/PIE sessions on
+disposable copies with stripped executables, removed original routine symbols,
+renamed DWARF function names, and missing-alias negative controls. Missing the
+alias removes the virtual recursion frame, while positive cases retain recovered
+names and correct values/depths. These copy mutations test lookup independence;
+they do not claim a fresh stripped/renamed Ghidra extraction. Planner controls
+cover both ELF classes/byte orders, sectionless allocations, collisions,
+overlaps, cancellation, changed inputs and bounds. Serializer cancellation,
+failed-source, completeness and unavailable-value controls also pass.
+
+The artifact matrix preceded final cancellation/budget hardening; 228 planner,
+374 alias, 1,272 local-symbol, 371 switch and 963 entry checks plus the extension
+build subsequently passed. The exact evidence is in
+[call-origin evidence](evidence/call-site-call-origins.json).
+**PRESENT, UNVERIFIED:** normal packaged script execution, broader export and
+hosted acceptance. Do not integrate #117 or start #120 until those gates pass.

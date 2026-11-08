@@ -2,6 +2,21 @@
 
 ## Storage maintenance — 2026-11-08
 
+- **CONFIRMED #117 exact-entry checkpoint:** the four x86 recursion failures are
+  fixed locally. All 64 recovered runtime cases pass, plus 68 stripped/renamed
+  artifact-copy and missing-alias controls. Canonical function ranges, names,
+  signatures and variable evidence remain intact. See
+  [call-origin evidence](docs/evidence/call-site-call-origins.json).
+  Next: normal packaged invocation, full export regressions and hosted gates;
+  #120 remains after protected #117 integration.
+- **CONFIRMED storage refusal:** 165 pre-existing/current Java fixture temp
+  directories under `/tmp` are now accounted as scratch (21.42 GiB). Three
+  relevant JavaExec tasks now inherit guarded `TMPDIR`. Scratch is 21.54 GiB
+  against 20 GiB; files are retained and no limit changed. Await the requested
+  temporary 24 GiB allowance before further local heavy work, or a different
+  explicit user decision. This does not pause the feature goal or authorize
+  cleanup of the retained directories/archives.
+
 - **CONFIRMED:** the user reactivated feature goal #115 → #117 → #120 after
   storage maintenance. #115 is merged as `71352a3` with its final full/performance
   gates passing. #117 has a [complete acceptance plan](docs/CALL-SITE-PLAN.md),

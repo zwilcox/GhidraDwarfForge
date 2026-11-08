@@ -1,0 +1,236 @@
+{
+    "status": "CONFIRMED_LOCAL_CALL_ORIGIN_CHECKPOINT",
+    "baseCommit": "19a660b",
+    "scope": "Recovered probe plus production writer; packaged script and hosted acceptance remain unverified.",
+    "order": "64 native/runtime and 68 metamorphic sessions preceded final cancellation/budget hardening. Final planner/alias/local-symbol/switch/entry checks and extension build passed afterward, followed by 28 serializer control sessions. The three TMPDIR task settings were prepared after those runs; further heavy work is now refused by storage accounting.",
+    "implementation": "Artificial addressless declaration names a private local ELF entry alias; canonical definition unchanged. No new producer API or target-instruction mutation.",
+    "profiles": [
+        {
+            "profile": "x86_64-exec",
+            "structuralStatus": "PASS_RECOVERED_PLAN_STRUCTURAL",
+            "runtimeStatus": "PASS_RECOVERED_RUNTIME",
+            "runtimeSessions": 16,
+            "failures": [],
+            "inputSha256": "44ca7ac04166607e97c23621bb0d0b54c027e71537103aa39653a0eb49ac0761",
+            "savedProgramSha256": {
+                "00/00000000.prp": "38c9bfa2d9e78057e05a990880472900de86428ac8d9335d9d804abe12bf02f3",
+                "00/~00000000.db/db.1.gbf": "204d20179f52a389a70f1cf74c03dc722c7e276f77cf0bbf6dda45fa3ce894ad",
+                "~index.bak": "937592eda81c76c35c39a1f66fed44a2e018ffd122783da1230ec9196821d70b",
+                "~index.dat": "937592eda81c76c35c39a1f66fed44a2e018ffd122783da1230ec9196821d70b"
+            },
+            "reportSha256": "6ec313401ba47c2a679713719da5857715b5c605c3db4810473c8b459bfc1a19",
+            "runtimeSha256": "527f5db8fffc7d95428f112c905e1fb9b683f6f8626e93b7bc594999861d813c",
+            "artifacts": [
+                {
+                    "view": "original",
+                    "path": ".forge-work/scratch/call-site-capture/x86_64-exec/origin-alias/original.json.dbg",
+                    "sidecarSha256": "f3a0ea5babdc68b4857c281d9e7537e5ffcd3dc7880b1d55212428c356d4db3c",
+                    "sourceSha256": "750a4c56de7125ceaa6d7b9bade509f6b7f8c9e70a3981b064984fe04ffb9fb8",
+                    "strictStatus": "PASS",
+                    "rangeAndLocationSectionsUnchanged": true,
+                    "syntheticSourceUnchanged": true
+                },
+                {
+                    "view": "rebased",
+                    "path": ".forge-work/scratch/call-site-capture/x86_64-exec/origin-alias/rebased.json.dbg",
+                    "sidecarSha256": "dc49ad4cc8ffb2d29dd8b6bdf92f86ebaa9afacadfbdf0cc9d095412716a9f1f",
+                    "sourceSha256": "c250171ba0ea1fb4d317e68b6ddf4f4077a55596fceacadb85bb2df0519b0d84",
+                    "strictStatus": "PASS",
+                    "rangeAndLocationSectionsUnchanged": true,
+                    "syntheticSourceUnchanged": true
+                }
+            ]
+        },
+        {
+            "profile": "x86_64-pie",
+            "structuralStatus": "PASS_RECOVERED_PLAN_STRUCTURAL",
+            "runtimeStatus": "PASS_RECOVERED_RUNTIME",
+            "runtimeSessions": 16,
+            "failures": [],
+            "inputSha256": "b18b5d269edfec777f705b9c5e08d22f59f09243d788923c1323741e78e4c592",
+            "savedProgramSha256": {
+                "00/00000000.prp": "2f5bf1d02455efc2c4d4c80885a53823522028bcfb5774033d29b9096c79d8df",
+                "00/~00000000.db/db.1.gbf": "f8b55b3cb4d778d33b208e880477048b5a220c1aefe908a456774947a5b7a3fa",
+                "~index.bak": "c4819c307eefb274a3e6b11822789f3b0da6380457650a1d36939c2ba570e451",
+                "~index.dat": "c4819c307eefb274a3e6b11822789f3b0da6380457650a1d36939c2ba570e451"
+            },
+            "reportSha256": "40326c41ae0d2c4cc69e5b13f362ffed46375e6990864e2b9cd00509c7b6d484",
+            "runtimeSha256": "49a998a8d28d53d904af6198dd81ec39bdcfb3e554930689fb03704a3388a5ec",
+            "artifacts": [
+                {
+                    "view": "original",
+                    "path": ".forge-work/scratch/call-site-capture/x86_64-pie/origin-alias/original.json.dbg",
+                    "sidecarSha256": "f8b432388e883397d4d804ce16a20059b8ae530ac66bcd4e77e08a9f6d3f9af9",
+                    "sourceSha256": "4408ea1ee2f3356130cfed36824b3c75c759c896d38fb1f0ee08a8e6f67fedde",
+                    "strictStatus": "PASS",
+                    "rangeAndLocationSectionsUnchanged": true,
+                    "syntheticSourceUnchanged": true
+                },
+                {
+                    "view": "rebased",
+                    "path": ".forge-work/scratch/call-site-capture/x86_64-pie/origin-alias/rebased.json.dbg",
+                    "sidecarSha256": "201136f1a0c232233ac4faeb1ab5d4d11e206ab86f7749d30b2115fffd8afe86",
+                    "sourceSha256": "54d971a49f94c52c56773265d98dab74cb1465ae661625bf7c30f46ca8b7288e",
+                    "strictStatus": "PASS",
+                    "rangeAndLocationSectionsUnchanged": true,
+                    "syntheticSourceUnchanged": true
+                }
+            ]
+        },
+        {
+            "profile": "aarch64-exec",
+            "structuralStatus": "PASS_RECOVERED_PLAN_STRUCTURAL",
+            "runtimeStatus": "PASS_RECOVERED_RUNTIME",
+            "runtimeSessions": 16,
+            "failures": [],
+            "inputSha256": "4141f968b2b67a8d9215d50790a1599b59aff1a4e38377513b8fa5b491f732ef",
+            "savedProgramSha256": {
+                "00/00000000.prp": "85c0e0fca86f506adfe32f49ad2d4a6c492b2ba36ffad1a705c668562ced2420",
+                "00/~00000000.db/db.1.gbf": "486ebe9d0ba48371d70b744e7495b92fbdf6d3b70cce03075a172b12660b78d4",
+                "~index.bak": "4e663f36eedd65422e9e12427645ba2635ffe2af3c6eabc8d2f8204c96ce14e9",
+                "~index.dat": "4e663f36eedd65422e9e12427645ba2635ffe2af3c6eabc8d2f8204c96ce14e9"
+            },
+            "reportSha256": "c9be24fad004c110c625aa987289f3b16042ae4363ac3c21fae6631baa4e4616",
+            "runtimeSha256": "e8d491295e3709c4736b24603bf2dff40b62205c9ba14222bcaacae9f1348e78",
+            "artifacts": [
+                {
+                    "view": "original",
+                    "path": ".forge-work/scratch/call-site-capture/aarch64-exec/origin-alias/original.json.dbg",
+                    "sidecarSha256": "227313c05b2fef416c405d28ab48f5e9aaa1c2a8ee4b44979484f1afcf76cb36",
+                    "sourceSha256": "730d44f6699310b388b6754bc18c1fdbfaeecde11a058c58b6e7fe1101e98da7",
+                    "strictStatus": "PASS",
+                    "rangeAndLocationSectionsUnchanged": true,
+                    "syntheticSourceUnchanged": true
+                },
+                {
+                    "view": "rebased",
+                    "path": ".forge-work/scratch/call-site-capture/aarch64-exec/origin-alias/rebased.json.dbg",
+                    "sidecarSha256": "e362332f2a1551964072423eb72ba566c4c3f017d645f24f1505c01eae879eed",
+                    "sourceSha256": "730d44f6699310b388b6754bc18c1fdbfaeecde11a058c58b6e7fe1101e98da7",
+                    "strictStatus": "PASS",
+                    "rangeAndLocationSectionsUnchanged": true,
+                    "syntheticSourceUnchanged": true
+                }
+            ]
+        },
+        {
+            "profile": "aarch64-pie",
+            "structuralStatus": "PASS_RECOVERED_PLAN_STRUCTURAL",
+            "runtimeStatus": "PASS_RECOVERED_RUNTIME",
+            "runtimeSessions": 16,
+            "failures": [],
+            "inputSha256": "4e8dd09bdb50cfd86fd61bfd78d5651d7fa08ce1e49effa9db8fbc1a9c8b0258",
+            "savedProgramSha256": {
+                "00/00000000.prp": "aaeeca678bf36da1c92eeaa95768b1c03be56a78a1031bfae70a1e1834fb38fe",
+                "00/~00000000.db/db.1.gbf": "30945ca59b06600a99b352d74fe42f2c6f6e00441fd6fd764baef53230a3b9c4",
+                "~index.bak": "3dd57b63a69f5b35d2e4be92503b1720cadbb32490f7ac4e2c4ecf63c9b35823",
+                "~index.dat": "3dd57b63a69f5b35d2e4be92503b1720cadbb32490f7ac4e2c4ecf63c9b35823"
+            },
+            "reportSha256": "854980b7a3cbf0dd8e5c1f6f90b1553e59653227796027c541d32f6e21d22bd8",
+            "runtimeSha256": "59d000c3027f7254c2575a68334a2e370e9250f0f0dbfa64447984c028829373",
+            "artifacts": [
+                {
+                    "view": "original",
+                    "path": ".forge-work/scratch/call-site-capture/aarch64-pie/origin-alias/original.json.dbg",
+                    "sidecarSha256": "8c6538940e78afdb1c9c6f3ace37e6a2b51e6cd9f9e5c916173f64d789ec04f0",
+                    "sourceSha256": "a78524fdfb70da249928a0217e10bf6737b22fdcbfa4c1c9babe1eb2caef5f88",
+                    "strictStatus": "PASS",
+                    "rangeAndLocationSectionsUnchanged": true,
+                    "syntheticSourceUnchanged": true
+                },
+                {
+                    "view": "rebased",
+                    "path": ".forge-work/scratch/call-site-capture/aarch64-pie/origin-alias/rebased.json.dbg",
+                    "sidecarSha256": "13dd2358dd8c58329b518af1833a8e3de660b4099dcd618bcc1cfa725bab91cd",
+                    "sourceSha256": "a78524fdfb70da249928a0217e10bf6737b22fdcbfa4c1c9babe1eb2caef5f88",
+                    "strictStatus": "PASS",
+                    "rangeAndLocationSectionsUnchanged": true,
+                    "syntheticSourceUnchanged": true
+                }
+            ]
+        }
+    ],
+    "metamorphicControls": [
+        {
+            "path": ".forge-work/scratch/call-site-origin-controls-exec-llvm/result.json",
+            "sha256": "e53a5dec963a0b47d5eb54de4f21d0abbcb81f0b6e558e6a709906fb876cde09",
+            "status": "PASS_CALL_ORIGIN_CONTROLS",
+            "role": "exec",
+            "sessions": 34,
+            "negativeCases": 2
+        },
+        {
+            "path": ".forge-work/scratch/call-site-origin-controls-pie/result.json",
+            "sha256": "b9ea15b040b13d90485977cd13a528b23044bde252224a7a552c74a49b23024a",
+            "status": "PASS_CALL_ORIGIN_CONTROLS",
+            "role": "pie",
+            "sessions": 34,
+            "negativeCases": 2
+        }
+    ],
+    "unitChecks": {
+        "originPlanner": 228,
+        "functionAliasPlanner": 374,
+        "localSymbolMerge": 1272,
+        "boundedSwitch": 371,
+        "entryContract": 963,
+        "planRejectedControls": 12
+    },
+    "serializerRuntimeSessions": 28,
+    "logs": [
+        {
+            "path": ".forge-work/evidence/call-origin-alias-exec.log",
+            "sha256": "93452011bcd10c3286d1a4941a0a7baf1d4cae57ca29829d3f4aede9fcbf43d8"
+        },
+        {
+            "path": ".forge-work/evidence/call-origin-alias-matrix.log",
+            "sha256": "df67e501f9a36e1a79b87365ee59695114ae42898aca4cc78b5ce320a470eef3"
+        },
+        {
+            "path": ".forge-work/evidence/call-origin-controls-exec-llvm.log",
+            "sha256": "a3c98bd09386b597d5b237483a3ce264caae0152857cedab8aa96fac4bd44373"
+        },
+        {
+            "path": ".forge-work/evidence/call-origin-controls-pie.log",
+            "sha256": "5577b215b84c1eaf3645cfd8d2bf627e375dcf6f63fcc1f77bef466a30080993"
+        },
+        {
+            "path": ".forge-work/evidence/call-origin-final-build-corrected.log",
+            "sha256": "fef866fb3d80d759775d2b5fcd5d064d0f32b4377ed38ae0bb19fc227972e7b0"
+        },
+        {
+            "path": ".forge-work/evidence/call-origin-serialization-regression.log",
+            "sha256": "68fc7241c6d61001f76e410b6cc7e72e0fa9b0fbb8b6ddc77f12987c6dd9f486"
+        },
+        {
+            "path": ".forge-work/evidence/call-origin-temp-inventory.json",
+            "sha256": "62f9ab82217f2522a7dcd179d7e8468e4ba9c4457dc13e4c1dd9720171c522a7"
+        },
+        {
+            "path": ".forge-work/evidence/call-origin-storage.json",
+            "sha256": "934c6ddbda3a60834dd08387c39071a8d7d26559214f36c916063517d8f0dbdc"
+        }
+    ],
+    "storage": {
+        "status": "REFUSED",
+        "scratchGiB": 21.54,
+        "limitGiB": 20,
+        "legacyTempRoots": 165,
+        "legacyTempGiB": 21.42,
+        "pendingRequest": "Temporary 24 GiB scratch budget; no approval or limit change yet. No files deleted."
+    },
+    "failuresRetained": [
+        "origin-symbols: strict forward-declaration complaint; declarations moved before definitions",
+        "origin-bound: private linkage names replaced recovered frame names; canonical linkage/specification workaround removed",
+        "call-origin-planner.log: duplicate same-object entry accepted; explicit entry counts now reject",
+        "call-origin-controls-exec.log: GNU objcopy refused non-loadable sidecar; disposable-copy controls use llvm-objcopy",
+        "call-origin-final-build.log: misspelled entry task; corrected command passed"
+    ],
+    "sources": {
+        "src/main/java/ghidradwarfforge/elf/CallOriginSymbols.java": "6ccc8ad32c1b0c5a460862d36f9f2c04d993834857d74456ca7ecd31b6c23cfb",
+        "src/main/java/ghidradwarfforge/nativeapi/DwarfTarget.java": "7a8686c913111422ffab0a22360438b09d15dae622ca6e9db7c24bf04aae53c9",
+        "src/main/java/ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": "cd3ec49a46b99c960231d4177a4b7f35086ccc74e7f8e5ede94503ac8b0a5493",
+        "src/test/integration/call-origin-controls.py": "fa6a1e5734146f522056b835d0ec3084fc361be428cd38176918addd08ae0ecd",
+        "src/test/java/ghidradwarfforge/elf/CallOriginSymbolsSmoke.java": "81474ccf03991574a5440e106f5a22fd8bd8a509835117c2dcf9b2ac7cc91263"
+    }
+}

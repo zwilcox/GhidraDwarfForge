@@ -2,6 +2,29 @@
 
 ## Current call-site checkpoint — 2026-11-08
 
+**CONFIRMED exact-entry checkpoint:** private sidecar ELF aliases and artificial
+addressless declarations resolve the four discontiguous x86 recursion failures.
+All 64 recovered x86-64/AArch64 ET_EXEC/PIE/rebased runtime cases now pass, with
+recovered names and body ranges preserved. Eight native artifacts pass structural
+and deterministic checks; 68 additional stripped-symbol/renamed-copy/absent-alias
+runtime controls and 28 serializer control sessions pass. The final implementation
+adds no native API. See [call-origin evidence](docs/evidence/call-site-call-origins.json)
+and the final section of [CALL-SITE-PLAN.md](docs/CALL-SITE-PLAN.md).
+Normal packaged script invocation and full hosted acceptance still remain open;
+#120 has not started. The older failure counts below are historical checkpoints.
+
+**CONFIRMED new storage accounting gap:** three Java regression tasks did not
+inherit `TMPDIR` as `java.io.tmpdir`. Existing `/tmp/forge-symbol-merge-*` and
+`/tmp/forge-alias-planner-*` fixtures, plus the new planner's temporary files,
+total 21.42 GiB across 165 directories. Two regression runs in this checkpoint
+also wrote there before discovery. All identified directories are retained and
+registered as scratch; no cleanup or budget increase was performed. The three
+tasks now explicitly use the guard's temporary directory. Accounted scratch is
+21.54 GiB, so the unchanged 20 GiB guard refuses further local heavy work. A
+temporary 24 GiB scratch allowance was requested to honor deferred cleanup;
+no approval has been received at this checkpoint. Source/document review can
+continue. The six deferred evidence archives remain unchanged.
+
 **CONFIRMED:** #115 is merged; #117 now composes recovered Ghidra call/tail and
 parameter evidence into the production writer. Eight saved/rebased x86-64 and
 AArch64 sidecars pass structural validators and deterministic reruns. A strict
