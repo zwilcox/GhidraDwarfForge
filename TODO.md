@@ -178,6 +178,19 @@ The existing four-target annotation pipeline now runs these cases. Hosted
 execution remains pending; attachment/build-ID lifecycle combinations and the
 final exact-head gate remain. See [source-edge evidence](docs/evidence/multifile-source-edges.json).
 
+**CONFIRMED #115 build-ID refresh/recovery checkpoint:** actual saved analyst
+function/type/member edits pass with complete multi-file inventories for x86-64
+non-PIE and PIE on Linux ext4/Java 21. The launcher retains independent reported
+and relocated copies; fresh GDB finds source, types and live arguments with every
+original export dependency hidden. Sixteen update interruption/cancellation/sync
+failure cases retain both generations and recover the correct registration;
+32 missing-manifest/part controls refuse recovery without changing state or
+registration. Twenty multi-file GDB sessions plus two default single-file sessions
+pass. GNU/LLVM/pinned checks and original/source inventory preservation pass;
+[raw evidence](docs/evidence/multifile-build-id-refresh.json) is archived and
+read-back verified. Attachment lifecycle combinations and final hosted Windows,
+performance and exact-head acceptance remain; this does not complete #115.
+
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming
 available. Recheck that dependency when reaching #120; do not silently declare

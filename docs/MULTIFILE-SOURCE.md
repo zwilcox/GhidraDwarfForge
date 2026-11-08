@@ -770,3 +770,57 @@ cohorts and verifies all six case results. The
 failures, tested source hashes and a read-back-verified archive of 1,388 files.
 These source-edge checks do not replace remaining attachment/build-ID lifecycle
 or hosted Windows acceptance.
+
+## Build-ID saved edits and interrupted refresh
+
+**CONFIRMED locally:** the production Linux launcher installs initial and saved
+analyst-edited exports for x86-64 ET_EXEC and PIE. Both exported generations and
+both retained inventories (reported export and relocated consumer) have identical
+index/manifest/part bytes, valid logical hashes and independent file identities.
+The test hides the original sidecars, reports, indexes, manifests and all parts
+before fresh GDB processes check the actual installed source part, function/type/
+member edits, named breakpoints, live argument values and normal exit. Previous
+source generations remain complete after update.
+
+The standalone test probe uses the production Linux build-ID host and live
+validators. Update interruption is injected at `GENERATION_SEALED`, `PREPARED`,
+`BEFORE_PUBLICATION`, `PUBLISHED` and `COMMITTED`; cancellation at `PREPARED` and
+`PUBLISHED`, plus an injected publication-directory sync failure, cover the
+unapplied/applied recovery boundary. Both sealed generations are inventoried
+after each interruption. Recovery selects the old or new generation as
+appropriate, repeated recovery is unchanged, and GDB runs against the recovered
+registration with the original exports hidden.
+
+For prepared and already-published interrupted updates, temporarily removing a
+manifest or part from either copy of either generation refuses recovery and
+preserves the state record and registration. All 32 such controls pass across the
+two ELF roles. This is process interruption testing, not a claim of power-loss or
+hostile concurrency safety. Attachment recovery and native Windows combinations
+remain separate acceptance work.
+
+Reproduction uses existing source-built semantic fixtures and the same packaged
+production extension as other integration lanes:
+
+```sh
+python3 src/test/integration/build-id-curated-refresh.py \
+    --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$FIXTURES" --role exec \
+    --tools-configuration "$TOOLS_CONFIGURATION" --output "$FRESH_EXT4_OUTPUT" \
+    --scratch "$FRESH_SCRATCH" --java "$JAVA21" --source-lines 8 --recovery
+# Repeat with --role pie and fresh output/scratch paths.
+# Omit --source-lines/--recovery to exercise the existing single-file default.
+```
+
+The final paired runs pass four headless exports, sixteen interrupted updates,
+32 refusal controls and twenty GDB sessions. The default regression adds two
+exports and two GDB sessions. GNU/LLVM/pinned production validation, original
+ELF hashes and complete old/new source inventories pass. The first local trials
+exposed test setup errors: downloaded fixture mode lacked owner execution, and
+the PIE manifest's link-time address was compared to the Ghidra import address.
+The harness now sets execution on its private fixture copy and compares against
+the independent compiler symbol address. Those failed trials are retained.
+
+[Evidence receipt](evidence/multifile-build-id-refresh.json) identifies the
+5,274-file archive, tested source hashes and successful results. Every archived
+member was read back and hashed. The existing single-file CI invocation remains;
+non-PIE and PIE multi-file recovery invocations are added alongside it. Hosted
+execution and the final protected integration gate remain unverified.

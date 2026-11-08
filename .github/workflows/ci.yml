@@ -2729,6 +2729,12 @@ jobs:
                       --tools-configuration "$PWD/build/test-results/build-id/installation/none-exec.json" \
                       --output "$PWD/build/test-results/build-id/curated-$role" \
                       --scratch "$RUNNER_TEMP/build-id-curated-$role" --java "$(command -v java)"
+                  python3 src/test/integration/build-id-curated-refresh.py \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" --role "$role" \
+                      --tools-configuration "$PWD/build/test-results/build-id/installation/none-exec.json" \
+                      --output "$PWD/build/test-results/build-id/curated-multifile-$role" \
+                      --scratch "$RUNNER_TEMP/build-id-curated-multifile-$role" --java "$(command -v java)" \
+                      --source-lines 8 --recovery
               done
           fi
 
