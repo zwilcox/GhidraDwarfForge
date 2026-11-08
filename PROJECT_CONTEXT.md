@@ -39,8 +39,12 @@ The current downstream patch does not address those checks. A standalone public
 API admission probe now compiles with warnings treated as errors and runs in
 six isolated processes: the existing-attribute control serializes successfully;
 all five call-site modes fail with `DW_DLE_INPUT_ATTR_BAD (143)`. This is
-**CONFIRMED** producer rejection, not successful call-site export. The focused
-compatibility patch and emitted-artifact/debugger validation remain planned. The working branch incorporates `71352a3` through
+**CONFIRMED** producer rejection, not successful call-site export. A separate
+candidate patch 0002 now passes the Linux ABI probe and 15 API/form cases with
+readelf and LLVM verification, including nested entry-value blocks. Production
+patch integration, Windows/JNA and emitted-artifact/debugger validation remain
+planned. See the call-site plan and committed native-form evidence. The working
+branch incorporates `71352a3` through
 normal merge `6c0e949`; no new worktree was created. See the call-site plan for
 file hashes, expression limitations and the next native acceptance checkpoint.
 

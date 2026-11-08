@@ -6,32 +6,40 @@
 #include "libdwarf.h"
 #include "libdwarfp.h"
 
+struct section_state {
+    unsigned count;
+    char names[33][64];
+};
+
 static int create_section(const char *name, int size, Dwarf_Unsigned type,
     Dwarf_Unsigned flags, Dwarf_Unsigned link, Dwarf_Unsigned info,
     Dwarf_Unsigned *symbol, void *user, int *error)
 {
-    unsigned *count = user;
-    (void)name;
+    struct section_state *state = user;
     (void)size;
     (void)type;
     (void)flags;
     (void)link;
     (void)info;
-    if (*count >= 32) {
+    if (state->count >= 32 || strlen(name) >= sizeof(state->names[0])) {
         *error = 1;
         return -1;
     }
-    ++*count;
-    *symbol = 100 + *count;
-    return (int)*count;
+    ++state->count;
+    strcpy(state->names[state->count], name);
+    *symbol = 100 + state->count;
+    return (int)state->count;
 }
 
 int main(int argc, char **argv)
 {
     const char *modes[] = {"control", "call-pc", "return-pc", "origin",
-        "parameter", "value"};
+        "parameter", "value", "target", "target-clobbered", "data-location",
+        "data-value", "block-value", "block-target", "block-target-clobbered",
+        "block-data-location", "block-data-value"};
     unsigned mode = 0;
-    unsigned sections = 0;
+    struct section_state sections = {0};
+    unsigned char written[33] = {0};
     int failed = 0;
     Dwarf_P_Debug debug = NULL;
     Dwarf_Error error = NULL;
@@ -41,13 +49,13 @@ int main(int argc, char **argv)
     Dwarf_P_Expr expression = NULL;
     Dwarf_Unsigned count = 0, next = 0;
 
-    if (argc == 2) {
+    if (argc == 2 || argc == 3) {
         for (mode = 0; mode < sizeof(modes) / sizeof(modes[0]); ++mode) {
             if (!strcmp(argv[1], modes[mode])) break;
         }
     }
-    if (argc != 2 || mode == sizeof(modes) / sizeof(modes[0])) {
-        fprintf(stderr, "usage: %s control|call-pc|return-pc|origin|parameter|value\n",
+    if ((argc != 2 && argc != 3) || mode == sizeof(modes) / sizeof(modes[0])) {
+        fprintf(stderr, "usage: %s MODE [existing-empty-section-directory]\n",
             argv[0]);
         return 2;
     }
@@ -77,6 +85,10 @@ int main(int argc, char **argv)
         &attribute, &error));
     CHECK(dwarf_new_die_a(debug, DW_TAG_subprogram, unit, NULL, NULL, NULL,
         &caller, &error));
+    /* This synthetic fixture contains exactly one call. This flag is not an
+       assertion about recovered Ghidra control-flow completeness. */
+    CHECK(dwarf_add_AT_flag_a(debug, caller, DW_AT_call_all_calls, 1,
+        &attribute, &error));
     CHECK(dwarf_new_die_a(debug, DW_TAG_subprogram, unit, NULL, NULL, NULL,
         &callee, &error));
     CHECK(dwarf_new_die_a(debug, DW_TAG_formal_parameter, callee, NULL, NULL, NULL,
@@ -109,12 +121,25 @@ int main(int argc, char **argv)
             mode == 3 ? DW_AT_call_origin : DW_AT_call_parameter,
             mode == 3 ? callee : formal, &attribute, &error));
         break;
-    case 5:
+    default: {
+        const Dwarf_Half attributes[] = {DW_AT_call_value, DW_AT_call_target,
+            DW_AT_call_target_clobbered, DW_AT_call_data_location, DW_AT_call_data_value};
+        Dwarf_Half attr = attributes[(mode - 5) % 5];
+        Dwarf_P_Die owner = (mode == 6 || mode == 7 || mode == 11 || mode == 12)
+            ? site : parameter;
+        if (mode >= 10) {
+            /* A real nested block, not a pointer passed as a numeric operand. */
+            Dwarf_Small block[] = {DW_OP_entry_value, 1, DW_OP_reg0};
+            CHECK(dwarf_add_AT_block_a(debug, owner, attr, block, sizeof(block),
+                &attribute, &error));
+            break;
+        }
         CHECK(dwarf_new_expr_a(debug, &expression, &error));
         CHECK(dwarf_add_expr_gen_a(expression, DW_OP_lit5, 0, 0, &next, &error));
-        CHECK(dwarf_add_AT_location_expr_a(debug, parameter, DW_AT_call_value,
+        CHECK(dwarf_add_AT_location_expr_a(debug, owner, attr,
             expression, &attribute, &error));
         break;
+    }
     }
     CHECK(dwarf_add_die_to_debug_a(debug, unit, &error));
     CHECK(dwarf_transform_to_disk_form_a(debug, &count, &error));
@@ -128,10 +153,35 @@ int main(int argc, char **argv)
         Dwarf_Ptr bytes = NULL;
         CHECK(dwarf_get_section_bytes_a(debug, index, &section, &length, &bytes,
             &error));
-        if (!section || section > sections || !length || !bytes) {
+        if (!section || section > sections.count || !length || !bytes) {
             fprintf(stderr, "%s: invalid section buffer\n", modes[mode]);
             failed = 1;
             goto finish;
+        }
+        if (argc == 3 && !strncmp(sections.names[section], ".debug_", 7)) {
+            char path[4096];
+            int size = snprintf(path, sizeof(path), "%s/%s", argv[2],
+                sections.names[section]);
+            if (size < 0 || (size_t)size >= sizeof(path) ||
+                    strchr(sections.names[section], '/')) {
+                fprintf(stderr, "invalid section output path\n");
+                failed = 1;
+                goto finish;
+            }
+            FILE *out = fopen(path, written[section] ? "ab" : "wbx");
+            if (out == NULL) {
+                perror(path);
+                failed = 1;
+                goto finish;
+            }
+            int write_failed = fwrite(bytes, 1, (size_t)length, out) != (size_t)length;
+            int close_failed = fclose(out) != 0;
+            if (write_failed || close_failed) {
+                fprintf(stderr, "failed to write section %s\n", path);
+                failed = 1;
+                goto finish;
+            }
+            written[section] = 1;
         }
     }
 finish:

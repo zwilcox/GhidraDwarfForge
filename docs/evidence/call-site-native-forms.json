@@ -1,0 +1,131 @@
+{
+    "scope": "Producer attribute admission/forms only; no Forge/GDB runtime claim",
+    "results": [
+        {
+            "mode": "control",
+            "attribute": "DW_AT_low_pc",
+            "form": "DW_FORM_addr",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "call-pc",
+            "attribute": "DW_AT_call_pc",
+            "form": "DW_FORM_addr",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "return-pc",
+            "attribute": "DW_AT_call_return_pc",
+            "form": "DW_FORM_addr",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "origin",
+            "attribute": "DW_AT_call_origin",
+            "form": "DW_FORM_ref4",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "parameter",
+            "attribute": "DW_AT_call_parameter",
+            "form": "DW_FORM_ref4",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "value",
+            "attribute": "DW_AT_call_value",
+            "form": "DW_FORM_exprloc",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "target",
+            "attribute": "DW_AT_call_target",
+            "form": "DW_FORM_exprloc",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "target-clobbered",
+            "attribute": "DW_AT_call_target_clobbered",
+            "form": "DW_FORM_exprloc",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "data-location",
+            "attribute": "DW_AT_call_data_location",
+            "form": "DW_FORM_exprloc",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "data-value",
+            "attribute": "DW_AT_call_data_value",
+            "form": "DW_FORM_exprloc",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "block-value",
+            "attribute": "DW_AT_call_value",
+            "form": "DW_FORM_exprloc",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "block-target",
+            "attribute": "DW_AT_call_target",
+            "form": "DW_FORM_exprloc",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "block-target-clobbered",
+            "attribute": "DW_AT_call_target_clobbered",
+            "form": "DW_FORM_exprloc",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "block-data-location",
+            "attribute": "DW_AT_call_data_location",
+            "form": "DW_FORM_exprloc",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        },
+        {
+            "mode": "block-data-value",
+            "attribute": "DW_AT_call_data_value",
+            "form": "DW_FORM_exprloc",
+            "readelf": "PASS",
+            "llvmVerify": "PASS"
+        }
+    ],
+    "nativeSha256": {
+        "libdwarf.so.2.3.2": "9ab61d16977f4082899bb0f43ffbfcc258491f56ba81e9cba308178df5598ddf",
+        "libdwarfp.so.2.3.2": "1fc6be817614ac501a3184bd3684e717fee20d8145eb1af7b0bec48b4c3358f9"
+    },
+    "probeSourceSha256": "85fa4c71e752312fb7e0ddf8ef5e62c8ed0574cf291396059c0ebde3457ba7f6",
+    "harnessSha256": "55a47c6def1b6ac6e1fd35a28378f2f044d50fc8bbb5a332e79d86fbccce202d",
+    "versions": {
+        "cc": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+        "readelf": "GNU readelf (GNU Binutils for Ubuntu) 2.42",
+        "llvm-dwarfdump": "Ubuntu LLVM version 18.1.3"
+    },
+    "patchSha256": {
+        "0002-admit-dwarf5-call-site-attributes.patch": "0594de0f49bba5dcec9a37206bbca612bcc430740e87670264e1d3cef26a3714",
+        "0001-preserve-aarch64-relocation-type.patch": "b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696"
+    },
+    "abiProbe": "PASS; includes public dwarf_add_AT_block_a signature",
+    "limitations": [
+        "Linux x86-64 producer/form probe only",
+        "Not yet wired into production native build or Windows CI",
+        "No Ghidra extraction, GDB behavior, or full issue #117 acceptance"
+    ]
+}

@@ -15,6 +15,21 @@ src/lib/libdwarfp/libdwarfp.h
 No historical declaration under the repository's top-level `src/` directory
 is part of the supported binding.
 
+### Issue #117 standalone extension audit
+
+The native ABI probe additionally checks `dwarf_add_AT_block_a` against pinned
+`libdwarfp.h` lines 282–288. Its parameters are producer handle, owner DIE,
+16-bit attribute, pointer to bytes, 64-bit unsigned length, attribute output
+pointer and error output pointer. The Linux GCC 13.3.0 probe passes. This API is
+not yet added to the production Java binding. Any Java mapping must preserve
+the fixed-width length and keep the input buffer alive through the call.
+
+The isolated call-site probe uses this public API to submit an actual nested
+`DW_OP_entry_value` byte block. Patch 0002 makes the relevant DWARF 5 attributes
+select `DW_FORM_exprloc`; it does not extend `dwarf_add_expr_gen_a` to accept
+nested blocks or change the native ABI. Windows and standalone JNA validation
+remain required before production Java use.
+
 ## Fixed-width and pointer mappings
 
 | C type | Java/JNA mapping |

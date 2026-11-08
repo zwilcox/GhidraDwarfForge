@@ -2,6 +2,16 @@
 
 Production native builds are pinned to the official libdwarf 2.3.2 release.
 
+**PRESENT, not integrated into production native builds:**
+`patches/0002-admit-dwarf5-call-site-attributes.patch` is the issue #117 candidate
+for producer attribute admission. Its SHA-256 is
+`0594de0f49bba5dcec9a37206bbca612bcc430740e87670264e1d3cef26a3714`.
+Applied after patch 0001 to the verified release archive, it passes the Linux
+x86-64 ABI probe and 15 isolated admission/form cases, including independent
+readelf/LLVM checks. See `docs/CALL-SITE-PLAN.md` and its evidence record.
+The current CI/release contract still applies only patch 0001; integrating and
+pinning patch 0002 on both native hosts remains required before exporter use.
+
 | Field | Value |
 |---|---|
 | Upstream repository | `https://github.com/davea42/libdwarf-code` |

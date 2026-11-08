@@ -125,3 +125,40 @@ expectation derived from accepted call-site evidence; the existing validator
 currently accepts only function/scope/object addresses. Preserve its rejection
 of unexpected relocations. Add call-origin/reference tests through
 `Dwarf32InfoRepair`, whose section-offset repair shifts CU-relative references.
+
+## Candidate native patch checkpoint — 2026-11-08
+
+**CONFIRMED local Linux x86-64:** patch 0002 adds the missing address/reference
+attribute whitelist entries and selects `DW_FORM_exprloc` for the five call
+expression attributes in both public expression APIs. It applies with zero fuzz
+after patch 0001 to the checksum-verified v2.3.2 archive and builds with the
+production shared/producer/static configuration. No upstream checkout or
+previously retained native library was modified.
+
+`src/test/native/check-call-site-producer.py` compiles the standalone C probe
+with warnings as errors. Fifteen cases pass API admission and section retrieval,
+GNU readelf abbreviation-form checks, and LLVM verification of a tiny ELF
+envelope. Five raw-block cases also require LLVM to decode nested entry-value
+expressions. The [result and hashes](evidence/call-site-native-forms.json) identify
+GCC 13.3.0, binutils 2.42, LLVM 18.1.3, both native libraries, probe source,
+harness and both patches. The ABI probe passes, including the newly audited
+public block API signature.
+
+The first fixture revision failed LLVM verification because a synthetic caller
+with a call-site child lacked a completeness attribute. The fixture now declares
+its one artificial call explicitly; this is not a rule for asserting completeness
+on recovered programs. GNU readelf does not decode the nested expression for
+`DW_AT_call_data_location` here, so the independent nested-expression assertion
+uses LLVM. Expected attribute forms are still checked with readelf in every case.
+
+**PLANNED remaining:** integrate and pin the separate patch in production Linux
+and Windows builds and corresponding-source packaging; add the standalone JNA
+block-expression path; then implement evidence capture and exporter emission.
+These native probes do not prove Ghidra call classification, reference repair,
+call-point argument recovery, virtual tail frames, PIE/rebase behavior or Windows
+support. All original six issue acceptance items remain in scope.
+
+The reusable native install occupies approximately 7 MiB in the shared cache.
+The temporary source/build tree was retired after verification; scratch returned
+to approximately 23 MiB. Selected receipts and command results are retained,
+without a duplicate native/source artifact archive.

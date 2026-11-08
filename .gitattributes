@@ -1,5 +1,5 @@
 # Native patch bytes must match the pinned digest on every checkout host.
-/native/libdwarf/patches/*.patch text eol=lf
+/native/libdwarf/patches/*.patch text eol=lf whitespace=-blank-at-eol,-blank-at-eof
 /support/validation/*.patch text eol=lf whitespace=-blank-at-eol,-blank-at-eof
 # These validation-only Windows inputs also have pinned source digests.
 /support/validation/dwarfdump-windows.manifest text eol=lf

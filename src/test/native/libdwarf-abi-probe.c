@@ -41,6 +41,8 @@ typedef int (*AddExpressionAddress)(Dwarf_P_Expr, Dwarf_Unsigned,
     Dwarf_Unsigned, Dwarf_Unsigned *, Dwarf_Error *);
 typedef int (*AddLocationExpression)(Dwarf_P_Debug, Dwarf_P_Die, Dwarf_Half,
     Dwarf_P_Expr, Dwarf_P_Attribute *, Dwarf_Error *);
+typedef int (*AddBlock)(Dwarf_P_Debug, Dwarf_P_Die, Dwarf_Half, Dwarf_Small *,
+    Dwarf_Unsigned, Dwarf_P_Attribute *, Dwarf_Error *);
 typedef int (*Transform)(Dwarf_P_Debug, Dwarf_Unsigned *, Dwarf_Error *);
 typedef int (*GetSectionBytes)(Dwarf_P_Debug, Dwarf_Unsigned, Dwarf_Unsigned *,
     Dwarf_Unsigned *, Dwarf_Ptr *, Dwarf_Error *);
@@ -59,6 +61,7 @@ ASSERT_FUNCTION(dwarf_new_die_a, NewDie);
 ASSERT_FUNCTION(dwarf_add_die_to_debug_a, AddDie);
 ASSERT_FUNCTION(dwarf_die_link_a, LinkDie);
 ASSERT_FUNCTION(dwarf_add_AT_name_a, AddName);
+ASSERT_FUNCTION(dwarf_add_AT_block_a, AddBlock);
 ASSERT_FUNCTION(dwarf_add_AT_comp_dir_a, AddCompDir);
 ASSERT_FUNCTION(dwarf_add_AT_producer_a, AddProducer);
 ASSERT_FUNCTION(dwarf_add_AT_unsigned_const_a, AddUnsigned);
