@@ -63,6 +63,7 @@ expected_sources=(
     arm-thumb-shared-driver.c
     bitfield-values.c
     call-memory-boundaries.c
+    call-site-reference.c
     calling-convention.c
     cfi-encoder-aarch64.S
     cfi-encoder-x86_64.S

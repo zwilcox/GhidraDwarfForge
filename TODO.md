@@ -2,6 +2,12 @@
 
 ## Storage maintenance — 2026-11-08
 
+- **CONFIRMED #117 MIPS fixture setup failure:** both MIPS lanes in run
+  `42530193205` rejected the missing `call-site-reference.c` inventory entry.
+  The corrected explicit inventory matches all 118 source files; shell syntax
+  and whitespace checks pass. Re-run hosted reproducibility and exporter checks;
+  this static correction does not establish MIPS runtime acceptance.
+
 - **CONFIRMED #117 read-only fix:** run `42530193205` at `0f29bc0` passed both
   primary lanes' compiler/Forge comparisons, preservation and recovered runtime
   checks. Both packaged runs then reported an error in `original-headless`.

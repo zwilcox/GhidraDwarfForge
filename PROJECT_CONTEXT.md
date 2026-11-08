@@ -2,6 +2,13 @@
 
 ## Current call-site checkpoint — 2026-11-08
 
+**CONFIRMED fixture inventory failure:** run `42530193205` failed both MIPS
+lanes at fixture setup because `fixture-reproducibility.sh` omitted the new
+`call-site-reference.c` from its explicit source inventory. Add that reviewed
+fixture without relaxing the exact inventory comparison. The corrected list
+matches all 118 current fixture files and shell syntax/whitespace checks pass;
+full MIPS reproducibility and exporter validation still require hosted execution.
+
 **CONFIRMED read-only preservation fix, packaged failure still undiagnosed:**
 run `42530193205` at `0f29bc0` passed the complete compiler/Forge comparison step
 on both primary lanes, including fresh saved-project hashes, ET_EXEC/PIE and
