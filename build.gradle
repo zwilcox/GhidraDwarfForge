@@ -379,6 +379,21 @@ tasks.register("callArgumentFlowSmoke", JavaExec) {
     }
 }
 
+tasks.register("callEntryContractSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.CallEntryContractSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/call-entry-contract").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/call-entry-contract/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/call-entry-contract/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
+}
+
 tasks.register("ghidraUnwindInstructionsSmoke", JavaExec) {
     group = "verification"
     description = "Checks native p-code caller identity flow and incomplete graph rejection"

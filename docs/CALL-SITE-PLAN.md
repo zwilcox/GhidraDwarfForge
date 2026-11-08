@@ -563,3 +563,45 @@ Forge debugger comparison. Before integration, audit ordinary-call entry
 assumptions too: the current tail verifier checks incoming-edge dependencies for
 functions containing admitted tails, not every function used by argument flow.
 All six original acceptance items remain open until their full evidence is in.
+
+## Ordinary-entry regression and original incoming instructions — 2026-11-08
+
+**CONFIRMED reproduced and fixed on the work branch:** a split-frame function
+with an ordinary outgoing call could acquire incoming-register facts despite a
+known dirty incoming jump. The entry-dependency pass previously visited only
+functions with admitted outgoing tails. The new `CallEntryContractSmoke` first
+failed on the x86 dirty-jump case, showing the invalid entry facts in the
+ordinary call's argument state. This path is not enabled in the normal exporter.
+
+The pass now checks known incoming edges for every captured function that has
+not already failed its boundary proof. Rejection still propagates through
+dependent tail proofs. Original direct incoming calls must pass the same
+instruction-byte, loader-write, decoded-flow, override and return-PC checks as
+outgoing call capture. A patched Ghidra instruction cannot establish an original
+ELF call. An incoming jump still needs an admitted tail-boundary proof; a
+CALL_RETURN annotation or an unselected predecessor is not sufficient.
+
+**CONFIRMED locally:** 16 decoder cases across both selected architectures pass
+340 checks, including every observed cancellation poll of the ordinary incoming
+call path. Positive cases retain ordinary calls and proven clean tails; negative
+cases cover dirty/annotated/unselected jumps, interior entries, original-byte
+disagreement and actual external fallthrough. Every input ELF remains unchanged.
+The tail-state regression passes 611 checks and integer flow/binding still passes
+469 checks with 240 VM vectors. Eight saved/rebased fixture views retain 104
+capture comparisons, 72 selected tail proofs, 576 low-word evaluations and 712
+whole-register binding evaluations, with original/database hashes preserved.
+Raw capture checks, extension build and workflow lint also pass.
+
+The saved fixture now records one additional entry/argument omission for
+`cs_leaf`: Ghidra has a computed incoming reference from the unresolved
+`cs_indirect` tail. That edge cannot establish an ordinary entry contract, so
+the leaf's outgoing argument state is unavailable. Its checkpoint call has no
+parameters; the selected direct-tail and integer-binding comparisons are
+unchanged. The harness explicitly requires this extra omission rather than
+claiming the entire old observation is identical.
+
+This checks known incoming edges under the selected ordinary-entry ABI contract;
+it does not prove the absence of undiscovered computed entries or reconstruct
+actual execution history. The normal-script connection and justified call-site
+completeness remain pending, as do x86 driver coverage and the full Forge/hosted
+acceptance matrix. See [entry-contract evidence](evidence/call-site-entry-contract.json).

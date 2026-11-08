@@ -18,6 +18,8 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.calls.GhidraCallSiteEvidence.*;
 import ghidradwarfforge.elf.ElfImage;
+import ghidradwarfforge.elf.ElfCodeBytes;
+import ghidradwarfforge.elf.ElfRelocationEffects;
 import ghidradwarfforge.targets.UnwindAbiProfile;
 import ghidradwarfforge.unwind.GhidraUnwindInstructions;
 import ghidradwarfforge.unwind.UnwindFlow;
@@ -67,15 +69,22 @@ public final class GhidraTailStateProof {
             // the boundary proof. Iterate so a rejected predecessor invalidates
             // downstream proofs rather than leaving a self-supporting chain.
             var dependencies = new LinkedHashMap<Address, List<Address>>();
-            for (var capture : captures) {
-                monitor.checkCancelled();
-                if (tails.stream().noneMatch(tail -> tail.caller().equals(capture.function().entry()))) continue;
-                try {
-                    dependencies.put(capture.function().entry(), incomingBranches(program, capture, monitor));
-                }
-                catch (IllegalArgumentException unavailable) {
-                    omissions.put(capture.function().entry(), unavailable.getMessage());
-                    tails.removeIf(tail -> tail.caller().equals(capture.function().entry()));
+            try (var original = ElfCodeBytes.open(image, cancelled)) {
+                var effects = ElfRelocationEffects.inspect(image, cancelled);
+                for (var capture : captures) {
+                    monitor.checkCancelled();
+                    // Ordinary outgoing calls also consume entry-value facts.
+                    // A label reached with another function's active frame must
+                    // not gain such facts just because it has no outgoing tail.
+                    if (omissions.containsKey(capture.function().entry())) continue;
+                    try {
+                        dependencies.put(capture.function().entry(), incomingBranches(program, capture,
+                            original, effects, delta, monitor, cancelled));
+                    }
+                    catch (IllegalArgumentException unavailable) {
+                        omissions.put(capture.function().entry(), unavailable.getMessage());
+                        tails.removeIf(tail -> tail.caller().equals(capture.function().entry()));
+                    }
                 }
             }
             boolean changed;
@@ -107,8 +116,9 @@ public final class GhidraTailStateProof {
         return new Result(captures, tails, omissions);
     }
 
-    private static List<Address> incomingBranches(Program program, FunctionEvidence capture, TaskMonitor monitor)
-            throws CancelledException {
+    private static List<Address> incomingBranches(Program program, FunctionEvidence capture, ElfCodeBytes original,
+            ElfRelocationEffects effects, long delta, TaskMonitor monitor, BooleanSupplier cancelled)
+            throws IOException, CancelledException {
         var function = program.getFunctionManager().getFunctionAt(capture.function().entry());
         var body = function.getBody();
         var dependencies = new LinkedHashSet<Address>();
@@ -134,13 +144,10 @@ public final class GhidraTailStateProof {
                 require(destination.equals(function.getEntryPoint()), "body has an external interior control-flow entry");
                 var instruction = program.getListing().getInstructionAt(reference.getFromAddress());
                 require(instruction != null, "incoming flow lacks a decoded instruction: " + reference);
-                boolean ordinaryCall = false;
-                for (var operation : instruction.getPcode(false)) {
-                    monitor.checkCancelled();
-                    if (operation.getOpcode() == PcodeOp.CALL && operation.getInput(0).getAddress().equals(destination)) {
-                        ordinaryCall = true;
-                    }
-                }
+                var transfer = GhidraCallSiteEvidence.incomingTransfer(program, instruction, original,
+                    effects, delta, monitor, cancelled);
+                require(transfer.kind() != Kind.UNAVAILABLE, "incoming instruction lacks original transfer evidence: " + transfer.reason());
+                boolean ordinaryCall = transfer.kind() == Kind.DIRECT_CALL && destination.equals(transfer.target());
                 // In particular CALL_RETURN annotations on raw branches are not
                 // ordinary calls. Computed-reference hints cannot discharge this.
                 if (!ordinaryCall) dependencies.add(instruction.getAddress());

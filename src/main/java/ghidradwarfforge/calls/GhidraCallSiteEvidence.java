@@ -144,6 +144,15 @@ public final class GhidraCallSiteEvidence {
         return new FunctionEvidence(identity, ranges, instructions, omissions);
     }
 
+    /** Validate one incoming transfer without asserting an owning function/body inventory. */
+    static Transfer incomingTransfer(Program program, Instruction instruction, ElfCodeBytes original,
+            ElfRelocationEffects effects, long delta, TaskMonitor monitor, BooleanSupplier cancelled)
+            throws IOException, CancelledException {
+        return captureInstruction(program, null,
+            new AddressSet(instruction.getAddress(), instruction.getMaxAddress()), instruction,
+            original, effects, delta, monitor, cancelled).transfer();
+    }
+
     private static InstructionEvidence captureInstruction(Program program, Callee caller, AddressSet body,
             Instruction instruction, ElfCodeBytes original, ElfRelocationEffects effects, long delta,
             TaskMonitor monitor, BooleanSupplier cancelled) throws IOException, CancelledException {
@@ -217,6 +226,7 @@ public final class GhidraCallSiteEvidence {
 
     private static Transfer classify(Program program, Callee caller, AddressSet body, Instruction instruction,
             FlowType flow, List<Address> targets, List<Operation> operations) {
+        boolean thunk = caller != null && caller.thunk();
         var transfers = new ArrayList<Operation>();
         for (var operation : operations) {
             int opcode = operation.opcode();
@@ -264,14 +274,14 @@ public final class GhidraCallSiteEvidence {
         require(flow.isJump(), "non-call raw transfer lacks jump flow");
         if (opcode == PcodeOp.BRANCHIND) {
             require(flow.isComputed() && !flow.hasFallthrough() && targets.isEmpty(), "computed branch has unproved target references");
-            return new Transfer(caller.thunk() ? Kind.THUNK_TRANSFER : Kind.INDIRECT_TAIL_CANDIDATE,
+            return new Transfer(thunk ? Kind.THUNK_TRANSFER : Kind.INDIRECT_TAIL_CANDIDATE,
                 null, null, null, "indirect jump may be internal; target and tail semantics remain unproved");
         }
         require((opcode == PcodeOp.BRANCH || opcode == PcodeOp.CBRANCH) && !flow.isComputed(), "raw jump kind differs from listing");
         require((opcode == PcodeOp.CBRANCH) == flow.isConditional(), "branch condition differs from listing");
         Address target = directTarget(instruction, targets, transfer);
         Callee callee = callee(program, target);
-        Kind kind = body.contains(target) ? Kind.INTERNAL_BRANCH : caller.thunk() ? Kind.THUNK_TRANSFER : Kind.DIRECT_TAIL_CANDIDATE;
+        Kind kind = body.contains(target) ? Kind.INTERNAL_BRANCH : thunk ? Kind.THUNK_TRANSFER : Kind.DIRECT_TAIL_CANDIDATE;
         return new Transfer(kind, target, null, callee, kind == Kind.INTERNAL_BRANCH ? "" :
             "external branch requires exact callee and return/stack-state proofs");
     }

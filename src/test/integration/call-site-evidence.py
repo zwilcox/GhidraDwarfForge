@@ -63,6 +63,8 @@ def compare_tails(reference, captured):
         assert tail["originalSha256"] == instructions[int(tail["pc"], 16)]["original"]["sha256"]
     omissions = captured["tailOmissions"]
     assert "external branch lacks a decoded exact callee entry" in omissions["cs_indirect"]
+    indirect = next(call for call in reference["calls"] if call["caller"] == "cs_indirect")
+    assert omissions["cs_leaf"] == "entry has an unproved incoming non-call transfer at " + instructions[int(indirect["pc"], 16)]["address"]
     if reference["target"] == "x86_64":
         assert "incomplete instruction inventory" in omissions["cs_driver"]
         assert "unproved incoming non-call transfer" in omissions["cs_driver.cold"]
@@ -108,6 +110,7 @@ def compare_arguments(reference, captured):
             checks += 1
         observations.append(row)
     assert "cs_indirect" in captured["argumentOmissions"]
+    assert "cs_leaf" in captured["argumentOmissions"] and not any(row["caller"] == "cs_leaf" for row in expressions.values())
     if reference["target"] == "x86_64":
         assert "cs_driver.cold" in captured["argumentOmissions"] and "cs_driver" in captured["argumentOmissions"]
     return {"checks": checks, "transfers": observations}
@@ -178,7 +181,7 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--ghidra", required=True, type=Path)
     parser.add_argument("--reuse-project", action="store_true", help="read an existing capture project; write fresh tail-state reports")
-    parser.add_argument("--report-name", default="tail-state", choices=("tail-state", "argument-state", "parameter-binding"),
+    parser.add_argument("--report-name", default="tail-state", choices=("tail-state", "argument-state", "parameter-binding", "entry-contract"),
                         help="fresh report directory when reusing a saved project")
     parser.add_argument("--bind-parameters", action="store_true", help="temporarily curate fixture integer signatures and validate actual entry binding")
     args = parser.parse_args()

@@ -1,0 +1,205 @@
+{
+    "status": "CONFIRMED_LOCAL_ENTRY_GUARD_FIX",
+    "scope": "Known incoming contracts and original instruction checks; normal export/completeness remain unintegrated. No new runtime sidecar acceptance claim.",
+    "reproduction": "Before fix: x86 dirty incoming jump incorrectly seeded ordinary outgoing call argument facts.",
+    "decoder": {
+        "cases": 16,
+        "checks": 340,
+        "tailChecks": 611,
+        "argumentChecks": 469,
+        "independentVmVectors": 240,
+        "rawCaptureChecks": 457
+    },
+    "savedPrograms": [
+        {
+            "profile": "x86_64-exec",
+            "inputSha256": "44ca7ac04166607e97c23621bb0d0b54c027e71537103aa39653a0eb49ac0761",
+            "savedProgramSha256": {
+                "00/00000000.prp": "38c9bfa2d9e78057e05a990880472900de86428ac8d9335d9d804abe12bf02f3",
+                "00/~00000000.db/db.1.gbf": "204d20179f52a389a70f1cf74c03dc722c7e276f77cf0bbf6dda45fa3ce894ad",
+                "~index.bak": "937592eda81c76c35c39a1f66fed44a2e018ffd122783da1230ec9196821d70b",
+                "~index.dat": "937592eda81c76c35c39a1f66fed44a2e018ffd122783da1230ec9196821d70b"
+            },
+            "resultSha256": "2259facf32b4d6d9b0f67dcb0ea305c3b7735d9e3d4d38cacff40bf0305a7687",
+            "views": [
+                {
+                    "variant": "original",
+                    "delta": 0,
+                    "captureComparisons": 13,
+                    "tailProofs": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 84,
+                    "addedLeafOmissions": {
+                        "tailOmissions": "entry has an unproved incoming non-call transfer at 00401304",
+                        "argumentOmissions": "unproved tail boundary or entry contract"
+                    },
+                    "reportSha256": "2a90836dc6b6c5dbf001edbd8e72a750327b54049b8fac2942a1db11482c2199"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 4194304,
+                    "captureComparisons": 13,
+                    "tailProofs": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 84,
+                    "addedLeafOmissions": {
+                        "tailOmissions": "entry has an unproved incoming non-call transfer at 00801304",
+                        "argumentOmissions": "unproved tail boundary or entry contract"
+                    },
+                    "reportSha256": "76156cd0f19fe9b2290ec9718b4b96ad08b9c44e85a7947f0077e5ae1547d1fd"
+                }
+            ]
+        },
+        {
+            "profile": "x86_64-pie",
+            "inputSha256": "b18b5d269edfec777f705b9c5e08d22f59f09243d788923c1323741e78e4c592",
+            "savedProgramSha256": {
+                "00/00000000.prp": "2f5bf1d02455efc2c4d4c80885a53823522028bcfb5774033d29b9096c79d8df",
+                "00/~00000000.db/db.1.gbf": "f8b55b3cb4d778d33b208e880477048b5a220c1aefe908a456774947a5b7a3fa",
+                "~index.bak": "c4819c307eefb274a3e6b11822789f3b0da6380457650a1d36939c2ba570e451",
+                "~index.dat": "c4819c307eefb274a3e6b11822789f3b0da6380457650a1d36939c2ba570e451"
+            },
+            "resultSha256": "94bfd0a58e7c93db4fd837d577f015bce566c0b742e5d2ca2bb471ef34fb1733",
+            "views": [
+                {
+                    "variant": "original",
+                    "delta": 1048576,
+                    "captureComparisons": 13,
+                    "tailProofs": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 84,
+                    "addedLeafOmissions": {
+                        "tailOmissions": "entry has an unproved incoming non-call transfer at 00101314",
+                        "argumentOmissions": "unproved tail boundary or entry contract"
+                    },
+                    "reportSha256": "8bd447cc3f5f97c73cf0ba06b3e23f17edfe5e0146e609e51a31e25efc5387a8"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 5242880,
+                    "captureComparisons": 13,
+                    "tailProofs": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 84,
+                    "addedLeafOmissions": {
+                        "tailOmissions": "entry has an unproved incoming non-call transfer at 00501314",
+                        "argumentOmissions": "unproved tail boundary or entry contract"
+                    },
+                    "reportSha256": "83e0ca435af85f0732c52a39874eb5020c565dcee31eaaf66815535a7fdeec1f"
+                }
+            ]
+        },
+        {
+            "profile": "aarch64-exec",
+            "inputSha256": "4141f968b2b67a8d9215d50790a1599b59aff1a4e38377513b8fa5b491f732ef",
+            "savedProgramSha256": {
+                "00/00000000.prp": "85c0e0fca86f506adfe32f49ad2d4a6c492b2ba36ffad1a705c668562ced2420",
+                "00/~00000000.db/db.1.gbf": "486ebe9d0ba48371d70b744e7495b92fbdf6d3b70cce03075a172b12660b78d4",
+                "~index.bak": "4e663f36eedd65422e9e12427645ba2635ffe2af3c6eabc8d2f8204c96ce14e9",
+                "~index.dat": "4e663f36eedd65422e9e12427645ba2635ffe2af3c6eabc8d2f8204c96ce14e9"
+            },
+            "resultSha256": "0d08ef7b329bbc1ec64bfe0b6e1f0ad936bb300cf6ab7c47f21d456ed75c9564",
+            "views": [
+                {
+                    "variant": "original",
+                    "delta": 0,
+                    "captureComparisons": 13,
+                    "tailProofs": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 94,
+                    "addedLeafOmissions": {
+                        "tailOmissions": "entry has an unproved incoming non-call transfer at 0040090c",
+                        "argumentOmissions": "unproved tail boundary or entry contract"
+                    },
+                    "reportSha256": "ba8646b7af7bf40b4b2dba5e8df7b191d979cb5eeba04c8a54ebbe20b9646d8a"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 4194304,
+                    "captureComparisons": 13,
+                    "tailProofs": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 94,
+                    "addedLeafOmissions": {
+                        "tailOmissions": "entry has an unproved incoming non-call transfer at 0080090c",
+                        "argumentOmissions": "unproved tail boundary or entry contract"
+                    },
+                    "reportSha256": "e43e5e864c158e5da5c018e83ca23041e0b63ef82d8c375cd5099f11d062eaea"
+                }
+            ]
+        },
+        {
+            "profile": "aarch64-pie",
+            "inputSha256": "4e8dd09bdb50cfd86fd61bfd78d5651d7fa08ce1e49effa9db8fbc1a9c8b0258",
+            "savedProgramSha256": {
+                "00/00000000.prp": "aaeeca678bf36da1c92eeaa95768b1c03be56a78a1031bfae70a1e1834fb38fe",
+                "00/~00000000.db/db.1.gbf": "30945ca59b06600a99b352d74fe42f2c6f6e00441fd6fd764baef53230a3b9c4",
+                "~index.bak": "3dd57b63a69f5b35d2e4be92503b1720cadbb32490f7ac4e2c4ecf63c9b35823",
+                "~index.dat": "3dd57b63a69f5b35d2e4be92503b1720cadbb32490f7ac4e2c4ecf63c9b35823"
+            },
+            "resultSha256": "7d3042bb40d18bfbb442fd19c267c72173fde842ffbd22183f0dec3cf2578f98",
+            "views": [
+                {
+                    "variant": "original",
+                    "delta": 1048576,
+                    "captureComparisons": 13,
+                    "tailProofs": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 94,
+                    "addedLeafOmissions": {
+                        "tailOmissions": "entry has an unproved incoming non-call transfer at 001009fc",
+                        "argumentOmissions": "unproved tail boundary or entry contract"
+                    },
+                    "reportSha256": "fe051ac9ff894d4967e171f0704363e82f27150a7b62909348b4b9b8b8b6306d"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 5242880,
+                    "captureComparisons": 13,
+                    "tailProofs": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 94,
+                    "addedLeafOmissions": {
+                        "tailOmissions": "entry has an unproved incoming non-call transfer at 005009fc",
+                        "argumentOmissions": "unproved tail boundary or entry contract"
+                    },
+                    "reportSha256": "88a6ca5e8f798f31db267bb171fa97ef2373100ca6a645724045b72769c70cba"
+                }
+            ]
+        }
+    ],
+    "sourceSha256": {
+        "src/main/java/ghidradwarfforge/calls/GhidraCallSiteEvidence.java": "d786e895fd973456b9ecb979f8939d92bd706433c7488392f8cb840be06d2056",
+        "src/main/java/ghidradwarfforge/calls/GhidraTailStateProof.java": "029d605ece500bc001d9f874da22f5099b5bf31e9e28233c65500ad19987f325",
+        "src/main/java/ghidradwarfforge/calls/GhidraCallArgumentFlow.java": "f594f1bd0c3078d7f6b1ac12c90d85d22023346f12fd2691ecdd112d3e626711",
+        "src/test/java/ghidradwarfforge/calls/CallEntryContractSmoke.java": "78358cfddb30b5989a2125a913e48896fa46558104e594be5955b2914ffae850",
+        "src/test/integration/call-site-evidence.py": "695da5c19779b034778d91fd078477655e8fae618324008454b03af1468cf4ee",
+        "build.gradle": "7aaf8cf762f0fed929ac22166b7a64b763dcb213e8c2300a4045520b2030c42a",
+        ".github/workflows/ci.yml": "4a3503d2890da41c24c928b6c9d768df3d7099a050479870de95f4cc140cee4c"
+    },
+    "logSha256": {
+        "call-entry-before.log": "f24aa16481a41d7caf182323b25c796fcf5cfb32c1e0266500ba546e8e80929a",
+        "call-entry-after.log": "ab2733b5acffec91e2264012656bfe2e54af3e4b9d46f39f1ce9b1a8fc6fa63f",
+        "call-entry-final.log": "150afdef80e5089f808a0d09659cddb9f8d48adaa3dc6c4c438b6a37dd8e75cc",
+        "call-entry-saved.log": "0d499b2dc3b6c26b288149c0ddd2076deed91f7a141fa09ed43f4e62b0459341",
+        "call-entry-build.log": "bc67c6368d196e20c2999de11e64116a0af2ab8910e79f55484012f1d2f22f32",
+        "call-entry-vm.log": "205cd8628298b0d9817ac1e0609d3a0ee5bdddf4f627f751a516c8eb50fdef1e"
+    },
+    "build": {
+        "path": "dist/ghidra_12.0.3_PUBLIC_20261108_GhidraDwarfForge.zip",
+        "sha256": "2b8f205c2bdb0241b84b4e72d427be79b6c7e7fb79bb97ac62e28384fd9b857a",
+        "bytes": 5067353,
+        "excludesWorkspace": true
+    },
+    "validationCommands": [
+        "./gradlew --no-daemon callEntryContractSmoke tailStateProofSmoke callArgumentFlowSmoke",
+        "./gradlew --no-daemon callSiteEvidenceSmoke buildExtension",
+        "python3 -B src/test/integration/check-call-values.py build/test-results/call-argument-flow/vectors.json --min-count 240",
+        "call-site-evidence.py --reuse-project --report-name entry-contract --bind-parameters for four saved profiles",
+        "Replay updated comparison assertions against eight retained raw reports; require only the documented cs_leaf omission changes"
+    ],
+    "limitations": [
+        "Only known incoming edges under selected ordinary-entry ABI contract; no proof of absence of undiscovered computed entries.",
+        "Full Ghidra-emitted runtime matrix, hosted validation and x86 driver coverage remain pending."
+    ]
+}

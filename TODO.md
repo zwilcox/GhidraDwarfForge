@@ -71,6 +71,16 @@
   assumptions, completeness, x86 caller coverage and full hosted/runtime
   acceptance remain pending. See [binding evidence](docs/evidence/call-site-parameter-binding.json).
 
+- **CONFIRMED #117 entry-guard fix:** a regression reproduced incoming-register
+  facts at a split-frame label containing only ordinary outgoing calls. Entry
+  dependencies now cover every captured function, and incoming direct calls are
+  checked against original ELF bytes and decoded semantics. The new 16-case suite
+  passes 340 checks; tail and argument regressions plus all eight saved/rebased
+  comparisons pass. This resolves the identified ordinary-entry gap, without
+  claiming undiscovered incoming edges are absent. Next compose the call-site
+  plan, establish completeness and connect normal export; full runtime/hosted
+  acceptance and x86 driver coverage remain pending.
+
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 

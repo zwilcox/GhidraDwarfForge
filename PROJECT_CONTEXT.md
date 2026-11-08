@@ -135,6 +135,17 @@ extension build pass. Normal-script connection, complete call inventories and
 full debugger/hosted acceptance are still pending; see the call-site plan and
 [binding evidence](docs/evidence/call-site-parameter-binding.json).
 
+**CONFIRMED #117 ordinary-entry fix:** the new regression reproduced invalid
+entry-register facts at a split-frame label with only ordinary outgoing calls.
+The incoming-edge guard now covers every captured function, with original ELF
+byte/loader-write/decode checks for incoming direct calls and existing rejection
+propagation for tail dependencies. Sixteen cases pass 340 checks, including
+cancellation; the tail, argument and eight saved/rebased fixture regressions
+retain their expected results and hashes. These are known-edge checks under the
+ordinary ABI contract, not a proof that no undiscovered computed entry exists.
+Normal-script emission/completeness, x86 driver coverage and full hosted/runtime
+acceptance remain pending. See [entry evidence](docs/evidence/call-site-entry-contract.json).
+
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 
