@@ -1680,8 +1680,10 @@ jobs:
         if: matrix.target == 'x86_64'
         run: |
             set -euo pipefail
-            for role in exec pie; do
-                attachment_results="$RUNNER_TEMP/forge-attachment-refresh/$role"
+            for selection in exec:0 pie:0 exec:8 pie:8; do
+                role=${selection%:*}
+                source_lines=${selection#*:}
+                attachment_results="$RUNNER_TEMP/forge-attachment-refresh/$role-$source_lines"
                 attachment_status=0
                 sudo -n env JAVA_HOME="$JAVA_HOME" JAVA="$JAVA_HOME/bin/java" JAVAC="$JAVA_HOME/bin/javac" \
                     python3 src/test/integration/attachment-curated-refresh.py --production-linux-host \
@@ -1690,11 +1692,11 @@ jobs:
                     --fixture-dir "$PWD/build/fixtures" --role "$role" \
                     --strict-validator "$DWARFDUMP" \
                     --supervised-validator-helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor" \
-                    --result-dir "$attachment_results" || attachment_status=$?
+                    --result-dir "$attachment_results" --source-lines "$source_lines" || attachment_status=$?
                 mkdir -p "$PWD/build/test-results/attachment-curated-refresh"
                 if sudo -n test -d "$attachment_results"; then
                     sudo -n tar -czf - -C "$attachment_results" . |
-                        tee "$PWD/build/test-results/attachment-curated-refresh/$role.tar.gz" > /dev/null
+                        tee "$PWD/build/test-results/attachment-curated-refresh/$role-$source_lines.tar.gz" > /dev/null
                 fi
                 if [[ "$attachment_status" -ne 0 ]]; then exit "$attachment_status"; fi
             done

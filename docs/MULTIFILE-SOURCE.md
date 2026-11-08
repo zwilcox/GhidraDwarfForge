@@ -824,3 +824,57 @@ the independent compiler symbol address. Those failed trials are retained.
 member was read back and hashed. The existing single-file CI invocation remains;
 non-PIE and PIE multi-file recovery invocations are added alongside it. Hosted
 execution and the final protected integration gate remain unverified.
+
+## Attachment source dependencies through commit and rollback
+
+**CONFIRMED defect and local fix:** the export binding verified a complete bundle
+during preparation, but the prepared attachment transaction only protected its
+index. A regression against the unchanged production JAR demonstrates that a
+missing dependency could still be committed. The transaction now reads complete
+bundles from authenticated source indexes, snapshots each dependency with the
+selected host, and rechecks them before target replacement and commit. Refresh
+also refuses an incomplete previous bundle before validation evidence/backups are
+created. No receipt schema change or arbitrary receipt-supplied dependency path
+is introduced; names and hashes come from the strictly verified source manifest.
+
+Rollback requires the complete previous bundle. Missing new-generation files do
+not prevent restoration of an intact previous association. Missing previous
+files refuse explicit recovery or result in `RECOVERY_REQUIRED` during automatic
+rollback, preserving the target for reconciliation. The filesystem controller
+regression covers manifest/part loss before admission, after preparation and after
+replacement, plus explicit recovery with damaged new/previous dependencies. The
+592-check suite passes on Java 21, including its eight existing abrupt-process
+exits. These model fixtures are not ELF or production-host proof.
+
+Actual saved-curation tests now select `--source-lines 8` for both x86-64 non-PIE
+and PIE. The packaged exporter and real attachment coordinator/live validators
+produce and retain complete initial/refreshed bundles. Before refresh, missing
+current/previous manifests or parts refuse preparation without output or target
+changes. Removing a new manifest or changed function part at `PREPARED` or
+`TARGET_REPLACED` causes rollback; a fresh GDB process then resolves the previous
+function, source part, type and arguments and runs the original program to exit.
+The final successful refresh exposes the saved analyst function/type/member edits.
+All source files and prior generations are preserved; original backups and
+executable program-header/section mappings remain unchanged.
+
+Local evidence: eight preparation refusals, eight rollback cases and twelve GDB
+sessions across the two multi-file ELF roles; the unchanged single-file flow adds
+two GDB sessions. GNU/LLVM/pinned checks pass, as do extension build and operation,
+export-binding, recovery-invocation and helper regressions. The local integration
+host is the existing limited Linux test adapter; the production Linux host needs
+privileges unavailable in this local session. The existing privileged CI step now
+runs both default and multi-file layouts for both ELF roles and retains each raw
+result archive. Hosted production-host and native Windows acceptance are pending.
+
+Reproduce with `attachment-curated-refresh.py`'s existing explicit fixture, JAR,
+Ghidra, validator and result-directory arguments, adding `--source-lines 8`.
+`JAVA` must select Java 21. Optional `--scratch` moves Ghidra's private home,
+temporary directory and project out of the artifact filesystem; the result
+directory must still support hard links. `--production-linux-host` retains its
+existing explicit privileged-invocation requirement.
+
+[Evidence receipt](evidence/multifile-attachment-source.json) records tested hashes,
+results and the 1,582-file archive. All archive members were read back and hashed.
+The initial Java-version setup failure and pre-fix regression failure are retained.
+This checkpoint does not claim power-loss or hostile concurrency safety and does
+not substitute for final exact-head hosted acceptance.

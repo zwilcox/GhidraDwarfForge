@@ -11,6 +11,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import signal
@@ -48,20 +49,26 @@ def main():
     parser.add_argument('--consumer', type=Path)
     parser.add_argument('--producer', type=Path)
     parser.add_argument('--production-linux-host', action='store_true')
+    parser.add_argument('--source-lines', type=int, default=0)
+    parser.add_argument('--scratch', type=Path)
     args = parser.parse_args()
+    require(args.source_lines >= 0, "source lines must be nonnegative")
     require(not args.production_linux_host or os.geteuid() == 0,
             'production Linux host fixture requires explicit privileged invocation')
     require(bool(args.consumer) == bool(args.producer), 'select both native development paths or neither')
     work = args.result_dir.absolute()
     work.mkdir(parents=True, exist_ok=False)
+    scratch = args.scratch.absolute() if args.scratch else work / 'scratch'
+    scratch.mkdir(parents=True, exist_ok=False)
     ghidra = args.ghidra.resolve(strict=True)
     fixture = args.fixture_dir.resolve() / 'x86_64' / ('semantic.' + args.role + '.stripped')
     reference = fixture.with_suffix('.reference')
     original = work / 'original.elf'
     shutil.copy2(fixture, original)
+    original.chmod(original.stat().st_mode | 0o100)
     original_hash = digest(original)
     backup = work / 'original.backup'
-    project = work / 'project'
+    project = scratch / 'project'
     project.mkdir()
     provenance = work / 'provenance'
     provenance.mkdir()
@@ -95,7 +102,7 @@ def main():
     (provenance / 'origin.json').write_text(json.dumps(protected, indent=4) + '\n')
     commands = []
 
-    def run(label, argv, env=None, timeout=60):
+    def run(label, argv, env=None, timeout=60, expected=0):
         command = list(map(str, argv))
         # Own the entire Linux test process group so a headless shell timeout
         # cannot leave its Ghidra JVM running against the retained project.
@@ -113,7 +120,7 @@ def main():
         (work / (label + '.stderr')).write_bytes(result.stderr)
         commands.append({'label': label, 'argv': command, 'exit': result.returncode, 'timedOut': timed_out})
         (work / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        require(result.returncode == 0, label + ' failed; inspect retained stdout/stderr')
+        require(result.returncode == expected, label + ' unexpected exit; inspect retained stdout/stderr')
         return result
 
     java = os.environ.get('JAVA', 'java')
@@ -145,15 +152,45 @@ def main():
                hex(address('recovered_composite') + delta), hex(address('scoped_counter') + delta)]
     native = ['--packaged-natives'] if args.consumer is None else [
         '--libdwarf=' + str(args.consumer.resolve()), '--libdwarfp=' + str(args.producer.resolve())]
-    headless = [ghidra / 'support/analyzeHeadless', project, 'AttachmentRefresh', '-scriptPath', scripts]
+    for name in ['home', 'tmp']:
+        (scratch / name).mkdir()
+    vmargs = run('launch-options', [java, '-cp', ghidra / 'support/LaunchSupport.jar',
+        'LaunchSupport', ghidra, '-vmargs']).stdout.decode().splitlines()
+    headless = [java, *vmargs, '-Duser.home=' + str(scratch / 'home'), '-Djava.io.tmpdir=' + str(scratch / 'tmp'),
+        '-Djna.tmpdir=' + str(scratch / 'tmp'), '-Xmx2G', '-XX:ParallelGCThreads=2', '-XX:CICompilerCount=2',
+        '-Djava.awt.headless=true', '-cp', ghidra / 'Ghidra/Framework/Utility/lib/Utility.jar', 'ghidra.Ghidra',
+        'ghidra.app.util.headless.AnalyzeHeadless', project, 'AttachmentRefresh', '-scriptPath', scripts]
+    source_options = ['--source-lines=' + str(args.source_lines)] if args.source_lines else []
     initial = work / 'initial.dbg'
     refreshed = work / 'refreshed.dbg'
     anchor = ['-postScript', 'CurateAttachmentRefresh.java', 'anchor', function_address, str(original), original_hash]
     initial_export = run('initial-export', headless + ['-import', original, '-analysisTimeoutPerFile', '120',
-        *prepare, *anchor, '-postScript', 'GhidraDwarfForge.java', *native, '--output=' + str(initial)], timeout=240)
+        *prepare, *anchor, '-postScript', 'GhidraDwarfForge.java', *native, '--output=' + str(initial), *source_options], timeout=240)
     require(b'GhidraDwarfForge symbol export PASS' in initial_export.stdout, 'initial export did not complete')
     require(digest(original) == original_hash, 'default export changed original')
     generations = {}
+    source_controls = []
+
+    def source_inventory(source):
+        paths = [source]
+        manifest = None
+        if args.source_lines:
+            names = re.findall(r'^ \* Manifest: (forge-src-[0-9a-f]{64}\.json)$', source.read_text(), re.M)
+            require(len(names) == 1, 'missing unique source manifest')
+            path = source.parent / names[0]
+            require(path.name == 'forge-src-' + digest(path) + '.json', 'manifest hash mismatch')
+            manifest = json.loads(path.read_text())
+            require(manifest['inputSha256'] == original_hash and manifest['indexName'] == source.name,
+                'manifest input/index mismatch')
+            require(len(manifest['parts']) > 1, 'fixture must contain multiple source parts')
+            paths.append(path)
+            for index, part in enumerate(manifest['parts'], 1):
+                require(part['file'] == index and part['name'] == 'forge-src-%06d-%s.c' % (index, part['sha256']),
+                    'incorrect source part identity')
+                path = source.parent / part['name']
+                require(digest(path) == part['sha256'] and path.stat().st_size == part['bytes'], 'source part differs')
+                paths.append(path)
+        return paths, manifest
 
     def attach(phase, sidecar, export_result, refresh=False):
         selected_original = backup if refresh else original
@@ -202,6 +239,48 @@ def main():
         bound_inputs = {role: {'path': str(path), 'sha256': digest(path)} for role, path in
                         [('exportOriginal', selected_original), ('sidecar', sidecar), ('source', source), ('exportReport', report)]}
         host_option = ['-Dforge.test.attachment.productionLinuxHost=true'] if args.production_linux_host else []
+        if refresh and args.source_lines:
+            base_command = [java, *host_option, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
+                'ghidradwarfforge.output.AttachmentCuratedRefreshProbe']
+            for role in ['source', 'previousSource']:
+                paths, _ = source_inventory(Path(request[role]))
+                for kind, dependency in [('manifest', paths[1]), ('part', paths[2])]:
+                    label = 'missing-' + role + '-' + kind
+                    hidden = dependency.with_name(dependency.name + '.preflight-hidden')
+                    require(not hidden.exists(), 'refusal control destination exists')
+                    before = state(original)
+                    dependency.rename(hidden)
+                    try:
+                        run(label, [*base_command, config], timeout=300, expected=1)
+                        require(state(original) == before, 'incomplete source preparation changed target')
+                        require(all(not Path(request[key]).exists() for key in
+                            ['validationEvidence', 'receipt', 'recoveryReceipt', 'restoreImage', 'priorTargetBackup']),
+                            'incomplete source preparation published output')
+                    finally:
+                        require(not dependency.exists(), 'missing dependency was unexpectedly recreated')
+                        hidden.rename(dependency)
+                    source_controls.append({'kind': 'preflight-refusal', 'role': role, 'dependency': str(dependency)})
+            paths, manifest = source_inventory(source)
+            function, = [entry for entry in manifest['functions'] if entry['name'] == 'curated_refresh_add'
+                and int(entry['address'], 16) == address('recovered_add')]
+            changed_part = source.parent / manifest['parts'][function['file'] - 1]['name']
+            require(changed_part not in source_inventory(Path(request['previousSource']))[0], 'fault must not damage old generation')
+            for boundary in ['PREPARED', 'TARGET_REPLACED']:
+                for kind, dependency in [('manifest', paths[1]), ('part', changed_part)]:
+                    label = 'rollback-' + boundary.lower() + '-' + kind
+                    selected = dict(request, missingDependency=str(dependency), faultBoundary=boundary)
+                    for key in ['validationEvidence', 'receipt', 'recoveryReceipt', 'restoreImage', 'priorTargetBackup']:
+                        selected[key] = str(work / (label + '-' + key))
+                    fault_config = work / (label + '.request.json')
+                    fault_config.write_text(json.dumps(selected, indent=4) + '\n')
+                    before = state(original)
+                    result = run(label, [*base_command, fault_config], timeout=300)
+                    require(b'attachment-curated-refresh=ROLLED_BACK' in result.stdout, 'fault did not roll back')
+                    after = state(original)
+                    require(after[0] == before[0] and after[3:] == before[3:], 'rollback changed old image or metadata')
+                    require(source_inventory(source)[1] == manifest, 'rollback changed selected source inventory')
+                    debug(label, initial)
+                    source_controls.append({'kind': 'rollback', 'boundary': boundary, 'dependency': str(dependency)})
         committed = run(phase + '-attach', [java, *host_option, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
             'ghidradwarfforge.output.AttachmentCuratedRefreshProbe', config], timeout=300)
         require(b'attachment-curated-refresh=COMMITTED' in committed.stdout, 'attachment did not commit')
@@ -242,14 +321,22 @@ def main():
                 require(text.count('No errors.') == 1, 'live refresh LLVM check incomplete')
         for tool in validation['tools'].values():
             require(digest(Path(tool['path'])) == tool['sha256'], 'live refresh tool provenance changed')
-        for path in [sidecar, source, report, captured, Path(request['receipt']), Path(request['validationEvidence']), backup]:
+        for path in [sidecar, *source_inventory(source)[0], report, captured, Path(request['receipt']), Path(request['validationEvidence']), backup]:
             generations.setdefault(str(path), state(path))
         return receipt
 
     def debug(phase, sidecar, updated=False):
+        source = Path(str(sidecar) + '.c')
+        _, manifest = source_inventory(source)
+        if manifest:
+            function = 'curated_refresh_add' if updated else 'recovered_add'
+            selected = [entry for entry in manifest['functions']
+                if entry['name'] == function and int(entry['address'], 16) == address('recovered_add')]
+            require(len(selected) == 1 and selected[0]['disposition'] == 'decompiled', 'missing function source part')
+            source = source.parent / manifest['parts'][selected[0]['file'] - 1]['name']
         env = {**os.environ, 'DEBUGINFOD_URLS': '', 'FORGE_ASSOCIATION_MODE': 'present',
                'FORGE_ASSOCIATION_ADDRESS': hex(address('recovered_add')),
-               'FORGE_ASSOCIATION_DEBUG_FILE': str(sidecar), 'FORGE_ASSOCIATION_SOURCE': str(sidecar) + '.c',
+               'FORGE_ASSOCIATION_DEBUG_FILE': str(sidecar), 'FORGE_ASSOCIATION_SOURCE': str(source),
                'FORGE_ASSOCIATION_RUNTIME': '1'}
         if updated:
             env.update({'FORGE_ASSOCIATION_FUNCTION': 'curated_refresh_add',
@@ -283,7 +370,7 @@ def main():
             not Path(str(rejected_path) + '.c').exists(), 'modified target bypassed the import hash contract')
     fresh_export = run('refresh-export', headless + ['-process', original.name, '-noanalysis', '-readOnly',
         *verify, '-postScript', 'GhidraDwarfForge.java', *native, '--input=' + str(backup),
-        '--output=' + str(refreshed), *verify], timeout=180)
+        '--output=' + str(refreshed), *source_options, *verify], timeout=180)
     require(fresh_export.stdout.count(b'curated-refresh-program=PASS mode=verify') == 2 and
             b'GhidraDwarfForge symbol export PASS' in fresh_export.stdout, 'saved analyst refresh export failed')
     require(state(original) == first_target, 're-export modified attached target')
@@ -304,9 +391,9 @@ def main():
         require(state(Path(path)) == expected, 'retained generation changed: ' + path)
     for path, expected in protected.items():
         require(digest(Path(path)) == expected, 'fixture/tool/source input changed: ' + path)
-    (work / 'result.json').write_text(json.dumps({'status': 'PASS', 'role': args.role,
+    (work / 'result.json').write_text(json.dumps({'status': 'PASS', 'role': args.role, 'sourceLines': args.source_lines,
         'originalSha256': original_hash, 'initialReceipt': first_receipt, 'refreshReceipt': second_receipt,
-        'preservedGenerations': generations, 'preservedInputs': protected,
+        'preservedGenerations': generations, 'preservedInputs': protected, 'sourceControls': source_controls,
         'host': 'production Linux ext4 host' if args.production_linux_host else 'limited Linux test host',
         'scope': 'saved Ghidra edit/reopen and backup-based re-export; real coordinator/live validator initial/changed-CRC refresh; native GDB source/type/member/arguments'}, indent=4) + '\n')
     print('attachment-curated-refresh=PASS role=' + args.role)

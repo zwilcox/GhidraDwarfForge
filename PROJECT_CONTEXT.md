@@ -191,6 +191,21 @@ pass. GNU/LLVM/pinned checks and original/source inventory preservation pass;
 read-back verified. Attachment lifecycle combinations and final hosted Windows,
 performance and exact-head acceptance remain; this does not complete #115.
 
+**CONFIRMED #115 attachment source guard fix:** the regression reproduced a
+prepared transaction committing after a source dependency disappeared. Complete
+index-authenticated dependencies now receive host identity/metadata checks through
+commit; refresh/rollback require the previous source bundle. Explicit recovery
+still permits damaged new-generation dependencies when restoring an intact prior
+association. Java 21 controller tests pass 592 checks; the extension builds and
+operation/binding/recovery/helper regressions pass. Real non-PIE/PIE Ghidra exports,
+live GNU/LLVM/pinned validators and twelve native GDB sessions pass through saved
+analyst refresh, eight missing-dependency preparation refusals and eight rollbacks.
+The default adds two GDB sessions. These local integration runs use the limited
+Linux test host; CI now runs both layouts under the privileged production host.
+[Archived evidence](docs/evidence/multifile-attachment-source.json) is read-back
+verified. Hosted production-host/Windows/performance and final exact-head acceptance
+remain unverified; #115 is not yet complete.
+
 **PLANNED #117/#120:** not started. #120's standalone ELF profile comes first;
 its raw counterpart is explicitly conditional on raw-input support becoming
 available. Recheck that dependency when reaching #120; do not silently declare

@@ -40,6 +40,7 @@ public final class AttachmentTransactionSmoke {
                 conflicts(root, refresh);
                 crashes(root, refresh);
             }
+            sourceBundles(root);
             preflight(root);
             failedPreparation(root);
             missingTarget(root);
@@ -143,25 +144,79 @@ public final class AttachmentTransactionSmoke {
         retained(second);
     }
 
+    private static void sourceBundles(Path root) throws Exception {
+        for (boolean refresh : new boolean[] { false, true }) {
+            for (String role : refresh ? java.util.List.of("source", "previousSource") : java.util.List.of("source")) {
+                for (int dependency : new int[] { 1, 2 }) {
+                    String label = "bundle-" + refresh + "-" + role + "-" + dependency;
+                    var missing = fixture(root, label + "-preflight", refresh, true);
+                    Path part = SourceBundleFiles.open(missing.request().files().get(role), () -> false).orElseThrow().files().get(dependency);
+                    Files.move(part, part.resolveSibling(part.getFileName() + ".hidden"));
+                    reject(() -> AttachmentTransaction.commit(missing.request(), HOST, () -> false));
+                    equal(false, Files.exists(missing.request().receipt()));
+                    equal(missing.snapshots().get("targetBefore"), AttachmentFileStore.observe(missing.request().files().get("targetBefore"), HOST, () -> false));
+                    for (var boundary : new AttachmentTransaction.Boundary[] {
+                            AttachmentTransaction.Boundary.PREPARED, AttachmentTransaction.Boundary.TARGET_REPLACED }) {
+                        var changed = fixture(root, label + "-" + boundary, refresh, true);
+                        Path selected = SourceBundleFiles.open(changed.request().files().get(role), () -> false).orElseThrow().files().get(dependency);
+                        var result = AttachmentTransaction.commit(changed.request(), HOST, () -> false, point -> {
+                            if (point == boundary) Files.move(selected, selected.resolveSibling(selected.getFileName() + ".hidden"));
+                        }, AttachmentTransaction.RECEIPTS);
+                        equal(role.equals("previousSource") ? AttachmentReceipt.Phase.RECOVERY_REQUIRED :
+                            AttachmentReceipt.Phase.ROLLED_BACK, result.outcome());
+                    }
+                    var interrupted = fixture(root, label + "-recover", refresh, true);
+                    equal(AttachmentReceipt.Phase.COMMITTED, AttachmentTransaction.commit(interrupted.request(), HOST, () -> false).outcome());
+                    Path absent = SourceBundleFiles.open(interrupted.request().files().get(role), () -> false).orElseThrow().files().get(dependency);
+                    Path hidden = absent.resolveSibling(absent.getFileName() + ".hidden");
+                    Files.move(absent, hidden);
+                    if (role.equals("previousSource")) {
+                        reject(() -> AttachmentTransaction.recoverInterrupted(interrupted.request(), HOST));
+                        Files.move(hidden, absent);
+                    }
+                    // Damaged new-generation dependencies must not prevent restoring an intact prior image.
+                    equal(AttachmentReceipt.Phase.ROLLED_BACK,
+                        AttachmentTransaction.recoverInterrupted(interrupted.request(), HOST).outcome());
+                }
+            }
+        }
+    }
+
     private static Fixture fixture(Path root, String name, boolean refresh) throws Exception {
+        return fixture(root, name, refresh, false);
+    }
+
+    private static Fixture fixture(Path root, String name, boolean refresh, boolean bundle) throws Exception {
         Path directory = Files.createDirectory(root.resolve(name));
         Path target = Files.writeString(directory.resolve("target"), "original executable bytes");
         var before = AttachmentFileStore.observe(target, HOST, () -> false);
         var original = AttachmentFileStore.backup(before, directory.resolve("original-backup"), HOST, () -> false);
-        Fixture first = generation(directory, "first", before, original, null);
+        Fixture first = generation(directory, "first", before, original, null, bundle);
         if (!refresh) return first;
         var committed = AttachmentTransaction.commit(first.request(), HOST, () -> false);
         equal(AttachmentReceipt.Phase.COMMITTED, committed.outcome());
-        return generation(directory, "second", committed.observedTarget(), original, first);
+        return generation(directory, "second", committed.observedTarget(), original, first, bundle);
     }
 
     private static Fixture generation(Path directory, String prefix, AttachmentFileStore.Snapshot before,
             AttachmentFileStore.Snapshot original, Fixture previous) throws Exception {
+        return generation(directory, prefix, before, original, previous, false);
+    }
+
+    private static Fixture generation(Path directory, String prefix, AttachmentFileStore.Snapshot before,
+            AttachmentFileStore.Snapshot original, Fixture previous, boolean bundle) throws Exception {
         var files = new HashMap<String, Path>();
         files.put("targetBefore", before.path());
         files.put("originalBackup", original.path());
         for (String role : new String[] { "sidecar", "source", "exportReport", "validationEvidence" }) {
             files.put(role, Files.writeString(directory.resolve(prefix + "-" + role), prefix + ":filesystem-only:" + role));
+        }
+        if (bundle) {
+            Path source = Files.createDirectory(directory.resolve(prefix + "-sources")).resolve("source.c");
+            var plan = SourceBundle.prepare(original.digest().sha256(), "source.c", SourceBundleSmoke.fixture(), 3, () -> false);
+            SourceBundleStore.install(source, plan, java.util.List.of(), () -> false);
+            Files.write(source, plan.indexBytes(() -> false));
+            files.put("source", source);
         }
         Path stage = directory.resolve(prefix + "-candidate");
         try (var output = FileChannel.open(stage, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {

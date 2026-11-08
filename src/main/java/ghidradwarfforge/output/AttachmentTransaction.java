@@ -64,7 +64,8 @@ public final class AttachmentTransaction {
 
     private record Plan(Request request, Map<String, AttachmentFileStore.Snapshot> snapshots,
             Path receipt, Path recovery, Path restore, String targetParentIdentity,
-            Map<Path, String> outputParents) { }
+            Map<Path, String> outputParents,
+            Map<String, java.util.List<AttachmentFileStore.Snapshot>> sourceDependencies) { }
 
     private AttachmentTransaction() { }
 
@@ -153,7 +154,8 @@ public final class AttachmentTransaction {
         var outputs = outputParents(paths.paths(), host);
         var plan = new Plan(request, Map.copyOf(snapshots), paths.paths().get("receipt"),
             paths.paths().get("recoveryReceipt"), paths.paths().get("restoreImage"),
-            host.directoryIdentity(before.path().getParent()), outputs);
+            host.directoryIdentity(before.path().getParent()), outputs,
+            sourceDependencies(snapshots, host, () -> false, true));
         return recover(plan, host, RECEIPTS, new IOException("explicit recovery of interrupted attachment"), true, true);
     }
 
@@ -186,6 +188,7 @@ public final class AttachmentTransaction {
                     AttachmentFileStore.unchanged(entry.getValue(), host, cancelled);
                 }
             }
+            recheckSources(plan, host, cancelled, false);
             check(cancelled);
             AttachmentFileStore.unchanged(installed, host, cancelled);
             requireReceipt(record, host, cancelled);
@@ -243,7 +246,7 @@ public final class AttachmentTransaction {
         String parent = host.directoryIdentity(snapshots.get("targetBefore").path().getParent());
         return new Plan(request, Map.copyOf(snapshots), paths.paths().get("receipt"),
             paths.paths().get("recoveryReceipt"), paths.paths().get("restoreImage"), parent,
-            outputParents(paths.paths(), host));
+            outputParents(paths.paths(), host), sourceDependencies(snapshots, host, cancelled, false));
     }
 
     private static void verifyRefresh(Request request, Map<String, AttachmentFileStore.Snapshot> snapshots,
@@ -261,9 +264,42 @@ public final class AttachmentTransaction {
         }
     }
 
+    /** The authenticated index binds dependency names/content; keep host identities for this operation. */
+    private static Map<String, java.util.List<AttachmentFileStore.Snapshot>> sourceDependencies(
+            Map<String, AttachmentFileStore.Snapshot> snapshots, AttachmentTargetStore.Host host,
+            BooleanSupplier cancelled, boolean previousOnly) throws IOException {
+        var result = new HashMap<String, java.util.List<AttachmentFileStore.Snapshot>>();
+        for (String role : previousOnly ? java.util.List.of("previousSource") : java.util.List.of("source", "previousSource")) {
+            var index = snapshots.get(role);
+            if (index == null) continue;
+            AttachmentFileStore.unchanged(index, host, cancelled);
+            var bundle = SourceBundleFiles.open(index.path(), cancelled).orElse(null);
+            if (bundle != null) {
+                var dependencies = new ArrayList<AttachmentFileStore.Snapshot>();
+                for (Path file : bundle.files().subList(1, bundle.files().size())) {
+                    dependencies.add(AttachmentFileStore.observe(file, host, cancelled));
+                }
+                bundle.verify(cancelled);
+                result.put(role, java.util.List.copyOf(dependencies));
+            }
+            AttachmentFileStore.unchanged(index, host, cancelled);
+        }
+        return Map.copyOf(result);
+    }
+
+    private static void recheckSources(Plan plan, AttachmentTargetStore.Host host,
+            BooleanSupplier cancelled, boolean previousOnly) throws IOException {
+        for (var entry : plan.sourceDependencies().entrySet()) {
+            if (previousOnly && !entry.getKey().equals("previousSource")) continue;
+            AttachmentFileStore.unchanged(plan.snapshots().get(entry.getKey()), host, cancelled);
+            for (var dependency : entry.getValue()) AttachmentFileStore.unchanged(dependency, host, cancelled);
+        }
+    }
+
     private static void recheckAll(Plan plan, AttachmentTargetStore.Host host,
             BooleanSupplier cancelled) throws IOException {
         for (var snapshot : plan.snapshots().values()) AttachmentFileStore.unchanged(snapshot, host, cancelled);
+        recheckSources(plan, host, cancelled, false);
         if (!plan.targetParentIdentity().equals(host.directoryIdentity(plan.snapshots().get("targetBefore").path().getParent()))) {
             throw new IOException("attachment target parent changed");
         }
@@ -282,6 +318,9 @@ public final class AttachmentTransaction {
         var before = plan.snapshots().get("targetBefore");
         var after = plan.snapshots().get("targetAfter");
         try {
+            // Restoration must not bless an incomplete previous debug association.
+            // New-generation damage is intentionally irrelevant to rollback.
+            recheckSources(plan, host, () -> false, true);
             if (!plan.targetParentIdentity().equals(host.directoryIdentity(before.path().getParent()))) {
                 throw new IOException("target parent changed; recovery will not write through it");
             }
