@@ -2,6 +2,13 @@
 
 ## Storage maintenance — 2026-11-08
 
+- **PRESENT, UNVERIFIED #117 packaged harness:** the real installed script is
+  wired into both required call-site CI lanes with package provenance, fixture
+  curation, preservation, deterministic reruns, structural validators and all
+  64 runtime cases. Python syntax/workflow lint pass; execution is pending.
+  Submit the draft through normal hosted CI while local heavy work remains
+  refused. Do not close #117 or start #120 from the earlier probe results.
+
 - **CONFIRMED #117 exact-entry checkpoint:** the four x86 recursion failures are
   fixed locally. All 64 recovered runtime cases pass, plus 68 stripped/renamed
   artifact-copy and missing-alias controls. Canonical function ranges, names,

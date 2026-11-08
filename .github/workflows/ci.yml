@@ -1074,6 +1074,25 @@ jobs:
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
 
+      - name: Packaged call-site and tail-call runtime checks
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          extension_archives=(dist/*.zip)
+          [[ ${#extension_archives[@]} == 1 && -f "${extension_archives[0]}" ]]
+          probe_report=forge-plan
+          if [[ "$TARGET" == x86_64 ]]; then probe_report=switch-plan; fi
+          for role in exec pie; do
+              python3 -B src/test/integration/call-site-packaged.py \
+                  "build/test-results/call-site-reference/$TARGET-$role" \
+                  "build/test-results/call-site-capture/$TARGET-$role" \
+                  "build/test-results/call-site-packaged/$TARGET-$role" \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --package "${extension_archives[0]}" \
+                  --probe-report "$probe_report" --dwarfdump "$DWARFDUMP"
+          done
+
       - name: Check packaged GDB companion with live compiler references
         if: matrix.target == 'x86_64'
         run: |

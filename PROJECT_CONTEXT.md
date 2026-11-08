@@ -2,6 +2,17 @@
 
 ## Current call-site checkpoint — 2026-11-08
 
+**PRESENT, UNVERIFIED packaged harness:** the installed normal script now has a
+dedicated x86-64/AArch64 ET_EXEC/PIE/original/rebased CI harness. It checks the
+installed release inventory and native/JAR provenance, explicitly adopts the
+two fixture thunk names as analyst-defined, applies the documented x86 driver
+body correction, and runs deterministic normal exports plus the unchanged
+64-case runtime oracle. Curation is rolled back and saved inputs are hashed.
+Python syntax, workflow lint and whitespace checks pass; no packaged execution
+or local build was launched because the storage guard remains REFUSED. Normal
+hosted CI is the next validation stage; no local artifacts are moved or
+downloaded to work around the refusal. #117 remains incomplete.
+
 **CONFIRMED exact-entry checkpoint:** private sidecar ELF aliases and artificial
 addressless declarations resolve the four discontiguous x86 recursion failures.
 All 64 recovered x86-64/AArch64 ET_EXEC/PIE/rebased runtime cases now pass, with

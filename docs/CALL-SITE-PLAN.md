@@ -856,3 +856,32 @@ build subsequently passed. The exact evidence is in
 [call-origin evidence](evidence/call-site-call-origins.json).
 **PRESENT, UNVERIFIED:** normal packaged script execution, broader export and
 hosted acceptance. Do not integrate #117 or start #120 until those gates pass.
+
+## Installed-package harness prepared — 2026-11-08
+
+**PRESENT, UNVERIFIED:** `call-site-packaged.py` and
+`CheckCallSitePackagedExport.java` invoke the installed `GhidraDwarfForge.java`
+with the actual packaged native pair. The harness requires every release ZIP
+member to match the installation and records the script, JAR, native and input
+hashes. It exports the whole program twice for each original/rebased view,
+requires byte-identical outputs, verifies the saved database/input are unchanged,
+and runs GNU/LLVM/pinned validation plus the existing eight strict debugger
+scenarios. Both x86-64/AArch64 ET_EXEC/PIE lanes are wired after package installation.
+
+Fixture-only curation uses the same known formal signatures and x86 driver body
+correction as the recovered-plan probe. In addition, it explicitly adopts the
+existing `cs_forward` and `cs_indirect` names as USER_DEFINED: normal extraction
+intentionally omits inferred thunks without analyst names. No thunk target or
+body is rewritten by this adoption. The fixture records this distinction and
+compares its function entries/body ranges against the independent probe.
+Ghidra 12.0.3 returns early from an unchanged-name `setName` call, so the fixture
+uses `Symbol.setSource` to record that analyst choice. All curation is rolled
+back in a transaction; this is not a change to normal exporter selection policy.
+
+Preparation checks passed: `git diff --check`, Python `ast.parse` without bytecode
+output, and `/usr/local/bin/actionlint`. These are static checks, not a Java
+compile or packaged integration run. Local builds/integration remain stopped
+at 21.54 GiB charged scratch against the unchanged 20 GiB budget. The next step
+is the already-required hosted pipeline on a draft PR; no retained local files
+are relocated or deleted, and no artifacts are downloaded while the local guard
+refuses them. Hosted outcomes and exact-head acceptance remain pending.
