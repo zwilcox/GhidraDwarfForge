@@ -364,3 +364,27 @@ The production exporter still does not invoke this path. **PLANNED next:**
 actual argument expressions, defensible call completeness, producer emission
 and the original compiler/Forge debugger acceptance requirements. This
 checkpoint does not complete issue #117 or start #120.
+
+### Consumer constraints checked before emission
+
+**CONFIRMED by source inspection; emission policy still requires runtime tests:**
+[LLVM 18.1.8's `verifyDebugInfoCallSite`](https://github.com/llvm/llvm-project/blob/llvmorg-18.1.8/llvm/lib/DebugInfo/DWARF/DWARFVerifier.cpp#L256)
+checks for a parent completeness attribute's existence, not its flag value.
+That does not justify claiming completeness. DWARF 5 section 7.5.4 says a zero
+flag represents an absent attribute; section 3.3.1.3 defines the distinct
+completeness claims. A false flag might represent partial normal-call records
+without a false claim, but passing LLVM alone would not establish consumer
+behavior or standards acceptance. Test this explicitly before selecting it.
+
+[GDB 15.1's `read_call_site_scope`](https://github.com/RTEMS/sourceware-mirror-binutils-gdb/blob/gdb-15.1-release/gdb/dwarf2/read.c#L9467)
+requires a return-PC attribute (or its legacy low-PC alias), including for tails.
+It retains ordinary call-site lookup separately from the complete tail list;
+only a true all-calls or all-tail-calls flag enables that list for intermediate
+virtual frames. Therefore incomplete initial callers need separate tests from
+intermediate tail callees. The compiler references already record GCC's
+post-jump keys for tails. The raw capture correctly leaves a tail's actual
+return PC absent: any later GDB-compatible post-jump serialization must remain
+an explicit consumer convention, tested against GCC, rather than being
+misrepresented as a preserved machine return address. Also retain
+`DW_AT_call_pc` identifying the actual transfer instruction. These source
+observations are not production export acceptance.
