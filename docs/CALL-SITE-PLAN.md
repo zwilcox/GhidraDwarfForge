@@ -956,3 +956,15 @@ The packaged harness now includes bounded stdout/stderr tails for nonzero exit,
 reported script errors, unexpected validator stderr and missing success markers.
 All original acceptance checks remain. Static Python syntax/whitespace checks
 pass; a fresh hosted run is needed to expose and then fix the installed failure.
+
+**CONFIRMED diagnostic follow-up:** run `42531765255` at `200ad8d` passed both
+native builds, extension regressions and reproducible package assembly (ZIP
+SHA-256 `414d76ff12da938e4f797da24d768dea2527bb0d3eb53a49404aac21d8eebb55`).
+Both primary comparison steps passed. Both packaged runs printed the controller's
+export-success marker, then failed the transcript error assertion. The large
+coverage report displaced the error from the last 12,000 stdout characters;
+the root cause is still **UNCERTAIN**, and the remaining structural/runtime
+checks did not run. Diagnostics now retain bounded context around the first
+four error matches per stream plus bounded tails. Isolated in-memory controls
+cover early errors followed by large output, stderr tracebacks, repeated-match
+size bounds and ordinary output. The error assertion remains unchanged.

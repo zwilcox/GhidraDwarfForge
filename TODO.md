@@ -2,6 +2,12 @@
 
 ## Storage maintenance — 2026-11-08
 
+- **CONFIRMED #117 diagnostic gap:** `42531765255` passed both primary lanes'
+  comparison step and reached the packaged export marker, but the transcript
+  assertion still failed. Coverage JSON hid the earlier error from the printed
+  tail. Add bounded error-match context, retain strict failure detection, and
+  diagnose from the next hosted run. No packaged runtime acceptance yet.
+
 - **CONFIRMED #117 MIPS fixture setup failure:** both MIPS lanes in run
   `42530193205` rejected the missing `call-site-reference.c` inventory entry.
   The corrected explicit inventory matches all 118 source files; shell syntax

@@ -2,6 +2,17 @@
 
 ## Current call-site checkpoint — 2026-11-08
 
+**CONFIRMED diagnostic follow-up:** run `42531765255` at `200ad8d` passed
+native builds, extension regressions and reproducible release assembly. Both
+primary lanes again passed their compiler/Forge comparisons. Packaged runs
+printed `packaged-call-site-export=PASS functions=13`, but failed the transcript
+error assertion. Large coverage JSON displaced the earlier error from the
+bounded stdout tail, so its cause remains **UNCERTAIN**. Print bounded context
+around the first error matches as well as transcript tails; keep the error
+assertion unchanged. Isolated in-memory diagnostic controls pass for early
+errors, stderr tracebacks, repeated-match bounds and ordinary output. Full
+packaged structural/runtime acceptance remains unproven.
+
 **CONFIRMED fixture inventory failure:** run `42530193205` failed both MIPS
 lanes at fixture setup because `fixture-reproducibility.sh` omitted the new
 `call-site-reference.c` from its explicit source inventory. Add that reviewed

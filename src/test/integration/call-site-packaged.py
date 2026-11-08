@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import re
 import runpy
 import shlex
 import subprocess
@@ -17,6 +18,21 @@ reference = runpy.run_path(str(SCRIPTS / "call-site-reference.py"))
 capture = runpy.run_path(str(SCRIPTS / "call-site-evidence.py"))
 recovered = runpy.run_path(str(SCRIPTS / "call-site-recovered.py"))
 digest = reference["digest"]
+
+
+def failure_diagnostic(label, returncode, stdout, stderr):
+    """Keep early error context visible even after a large coverage report."""
+    sections = [f"{label}: exit={returncode}"]
+    for name, transcript in (("stdout", stdout), ("stderr", stderr)):
+        for index, match in enumerate(re.finditer(r"ERROR |Traceback", transcript)):
+            if index == 4:
+                sections.append(f"{name}: further error matches omitted; full transcript retained")
+                break
+            start = max(0, match.start() - 160)
+            sections.append(f"{name} error context at character {match.start()}:\n"
+                            + transcript[start:match.end() + 1800])
+        sections.append(f"{name} (last 4000 characters):\n{transcript[-4000:]}")
+    return "\n".join(sections)
 
 
 def installed_package(archive_path, module):
@@ -86,9 +102,7 @@ def main():
         stderr = (work / (label + ".stderr")).read_text()
         # Headless can report script errors yet return zero. Keep those errors
         # fatal and expose a bounded transcript in CI instead of only a label.
-        diagnostic = (f"{label}: exit={result.returncode}\n"
-                      f"stdout (last 12000 characters):\n{stdout[-12000:]}\n"
-                      f"stderr (last 8000 characters):\n{stderr[-8000:]}")
+        diagnostic = failure_diagnostic(label, result.returncode, stdout, stderr)
         assert result.returncode == 0, diagnostic
         assert "Traceback" not in stdout + stderr and "ERROR " not in stdout + stderr, diagnostic
         if not headless:
