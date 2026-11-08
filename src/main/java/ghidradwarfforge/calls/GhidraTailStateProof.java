@@ -1,0 +1,217 @@
+package ghidradwarfforge.calls;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
+
+import ghidra.program.model.address.Address;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Program;
+import ghidra.program.model.pcode.PcodeOp;
+import ghidra.util.exception.CancelledException;
+import ghidra.util.task.TaskMonitor;
+import ghidradwarfforge.calls.GhidraCallSiteEvidence.*;
+import ghidradwarfforge.elf.ElfImage;
+import ghidradwarfforge.targets.UnwindAbiProfile;
+import ghidradwarfforge.unwind.GhidraUnwindInstructions;
+import ghidradwarfforge.unwind.UnwindFlow;
+import ghidradwarfforge.unwind.UnwindFlow.*;
+
+/**
+ * Proves entry-compatible state at direct tail transfers. No caller history,
+ * actual argument, all-call-sites flag or callee preservation summary is inferred.
+ * Unresolved graph edges reject the function rather than disappearing at a cut.
+ */
+public final class GhidraTailStateProof {
+    public record Tail(Address caller, Address instruction, Address callee, String profile,
+            State state, String originalInstructionSha256) { }
+    public record Result(List<FunctionEvidence> captures, List<Tail> tails, Map<Address, String> omissions) {
+        public Result {
+            captures = List.copyOf(captures);
+            tails = List.copyOf(tails);
+            omissions = Collections.unmodifiableMap(new LinkedHashMap<>(omissions));
+        }
+    }
+    private GhidraTailStateProof() { }
+
+    /** Caller holds a consistent Program view and preserves original identity through publication. */
+    public static Result verify(Program program, List<Function> functions, ElfImage image, long delta,
+            TaskMonitor monitor) throws IOException, CancelledException {
+        var captures = GhidraCallSiteEvidence.capture(program, functions, image, delta, monitor);
+        var tails = new ArrayList<Tail>();
+        var omissions = new LinkedHashMap<Address, String>();
+        BooleanSupplier cancelled = () -> {
+            try { monitor.checkCancelled(); return false; }
+            catch (CancelledException cancellation) { return true; }
+        };
+        try {
+            for (var capture : captures) {
+                monitor.checkCancelled();
+                if (capture.instructions().stream().noneMatch(item -> candidate(item.transfer().kind()))) continue;
+                try {
+                    tails.addAll(verifyFunction(program, capture, image, delta, monitor, cancelled));
+                }
+                catch (IllegalArgumentException unavailable) {
+                    omissions.put(capture.function().entry(), unavailable.getMessage());
+                }
+            }
+            // A split cold block can have a Function label yet inherit another
+            // function's active frame. Do not seed an ordinary entry contract
+            // across a known non-call edge unless that edge has itself passed
+            // the boundary proof. Iterate so a rejected predecessor invalidates
+            // downstream proofs rather than leaving a self-supporting chain.
+            var dependencies = new LinkedHashMap<Address, List<Address>>();
+            for (var capture : captures) {
+                monitor.checkCancelled();
+                if (tails.stream().noneMatch(tail -> tail.caller().equals(capture.function().entry()))) continue;
+                try {
+                    dependencies.put(capture.function().entry(), incomingBranches(program, capture, monitor));
+                }
+                catch (IllegalArgumentException unavailable) {
+                    omissions.put(capture.function().entry(), unavailable.getMessage());
+                    tails.removeIf(tail -> tail.caller().equals(capture.function().entry()));
+                }
+            }
+            boolean changed;
+            do {
+                monitor.checkCancelled();
+                changed = false;
+                var admitted = new LinkedHashMap<Address, Address>();
+                for (var tail : tails) admitted.put(tail.instruction(), tail.callee());
+                var rejected = new LinkedHashSet<Address>();
+                for (var entry : dependencies.entrySet()) {
+                    monitor.checkCancelled();
+                    for (Address incoming : entry.getValue()) {
+                        monitor.checkCancelled();
+                        if (!entry.getKey().equals(admitted.get(incoming))) {
+                            rejected.add(entry.getKey());
+                            omissions.put(entry.getKey(), "entry has an unproved incoming non-call transfer at " + incoming);
+                            break;
+                        }
+                    }
+                }
+                if (!rejected.isEmpty()) {
+                    changed = tails.removeIf(tail -> rejected.contains(tail.caller()));
+                    rejected.forEach(dependencies::remove);
+                }
+            } while (changed);
+        }
+        catch (CancellationException cancellation) { throw new CancelledException(); }
+        monitor.checkCancelled();
+        return new Result(captures, tails, omissions);
+    }
+
+    private static List<Address> incomingBranches(Program program, FunctionEvidence capture, TaskMonitor monitor)
+            throws CancelledException {
+        var function = program.getFunctionManager().getFunctionAt(capture.function().entry());
+        var body = function.getBody();
+        var dependencies = new LinkedHashSet<Address>();
+        for (var range : body) {
+            monitor.checkCancelled();
+            var previous = program.getListing().getInstructionBefore(range.getMinAddress());
+            require(previous == null || body.contains(previous.getAddress()) ||
+                !range.getMinAddress().equals(previous.getDefaultFallThrough()), "body has an external fallthrough entry");
+        }
+        var destinations = program.getReferenceManager().getReferenceDestinationIterator(body, true);
+        int references = 0;
+        while (destinations.hasNext()) {
+            monitor.checkCancelled();
+            Address destination = destinations.next();
+            for (var reference : program.getReferenceManager().getReferencesTo(destination)) {
+                monitor.checkCancelled();
+                require(++references <= 65_536, "incoming-reference budget exceeded");
+                // Symbol entry markers and pointer-data indirections are not
+                // executable incoming edges (nor evidence that an edge is safe).
+                if (reference.isEntryPointReference() || reference.getReferenceType().isIndirect() ||
+                        !reference.getReferenceType().isFlow() ||
+                        body.contains(reference.getFromAddress())) continue;
+                require(destination.equals(function.getEntryPoint()), "body has an external interior control-flow entry");
+                var instruction = program.getListing().getInstructionAt(reference.getFromAddress());
+                require(instruction != null, "incoming flow lacks a decoded instruction: " + reference);
+                boolean ordinaryCall = false;
+                for (var operation : instruction.getPcode(false)) {
+                    monitor.checkCancelled();
+                    if (operation.getOpcode() == PcodeOp.CALL && operation.getInput(0).getAddress().equals(destination)) {
+                        ordinaryCall = true;
+                    }
+                }
+                // In particular CALL_RETURN annotations on raw branches are not
+                // ordinary calls. Computed-reference hints cannot discharge this.
+                if (!ordinaryCall) dependencies.add(instruction.getAddress());
+            }
+        }
+        return List.copyOf(dependencies);
+    }
+
+    private static List<Tail> verifyFunction(Program program, FunctionEvidence capture, ElfImage image, long delta,
+            TaskMonitor monitor, BooleanSupplier cancelled) throws CancelledException {
+        require(capture.captureComplete(), "incomplete instruction inventory: " + String.join("; ", capture.omissions()));
+        Function function = program.getFunctionManager().getFunctionAt(capture.function().entry());
+        require(function != null, "caller identity disappeared");
+        var profile = UnwindAbiProfile.selectForCallSites(program, function, image, delta, monitor);
+        var graph = new LinkedHashMap<Address, Node<Address>>();
+        var candidates = new ArrayList<InstructionEvidence>();
+        for (var instruction : capture.instructions()) {
+            monitor.checkCancelled();
+            var transfer = instruction.transfer();
+            require(transfer.kind() != Kind.UNAVAILABLE, "unavailable instruction semantics");
+            var nativeInstruction = program.getListing().getInstructionAt(instruction.address());
+            require(nativeInstruction != null, "captured instruction disappeared");
+            profile.requireInstruction(nativeInstruction, monitor);
+            if (candidate(transfer.kind())) {
+                // A computed jump may re-enter any body node. Never model an
+                // unresolved branch as a terminal merely to make a proof pass.
+                require(transfer.target() != null && transfer.callee() != null && !transfer.callee().external(),
+                    "external branch lacks a decoded exact callee entry");
+                var callee = program.getFunctionManager().getFunctionAt(transfer.target());
+                require(callee != null, "callee identity disappeared");
+                var targetProfile = UnwindAbiProfile.selectForCallSites(program, callee, image, delta, monitor);
+                require(profile.description().equals(targetProfile.description()), "tail transfer changes the admitted ABI");
+                var last = instruction.operations().getLast();
+                require((last.opcode() == PcodeOp.BRANCH || last.opcode() == PcodeOp.CBRANCH) &&
+                    last.inputs().getFirst().address().equals(transfer.target()), "tail transfer has trailing or unproved effects");
+                candidates.add(instruction);
+            }
+            var successors = new ArrayList<Address>();
+            if (instruction.fallThrough() != null) successors.add(instruction.fallThrough());
+            if (transfer.kind() == Kind.INTERNAL_BRANCH && !successors.contains(transfer.target())) successors.add(transfer.target());
+            graph.put(instruction.address(), new Node<>(
+                GhidraUnwindInstructions.callSiteEffects(program, nativeInstruction, monitor), successors));
+        }
+        var flow = UnwindFlow.analyze(graph, capture.function().entry(), profile.entry(), profile.stackPointer(), cancelled);
+        var result = new ArrayList<Tail>();
+        // Every external branch must establish the boundary state. Otherwise an
+        // unproved outgoing edge could be a non-call continuation back into the body.
+        for (var instruction : candidates) {
+            monitor.checkCancelled();
+            State state = flow.after().get(instruction.address());
+            require(state != null, "tail candidate has no proved reachable state");
+            require(new StackAddress(0, profile.stackPointer().bytes()).equals(state.values().get(profile.stackPointer())),
+                "tail transfer does not restore the entry stack pointer at " + instruction.address());
+            Value returned = profile.description().stackReturn() ?
+                state.memory().get(new Slot(0, profile.stackPointer().bytes())) :
+                state.values().get(profile.registers().get(profile.description().returnNumber()));
+            require(new ReturnAddress(profile.stackPointer().bytes()).equals(returned),
+                "tail transfer loses the original return destination at " + instruction.address());
+            for (Cell preserved : profile.calleeSavedCells()) {
+                monitor.checkCancelled();
+                require(profile.entry().values().get(preserved).equals(state.values().get(preserved)),
+                    "tail transfer does not restore a callee-saved register at " + instruction.address());
+            }
+            result.add(new Tail(capture.function().entry(), instruction.address(), instruction.transfer().target(),
+                profile.description().id(), state, instruction.original().sha256()));
+        }
+        return List.copyOf(result);
+    }
+
+    private static boolean candidate(Kind kind) {
+        return kind == Kind.DIRECT_TAIL_CANDIDATE || kind == Kind.INDIRECT_TAIL_CANDIDATE || kind == Kind.THUNK_TRANSFER;
+    }
+    private static void require(boolean value, String reason) { if (!value) throw new IllegalArgumentException(reason); }
+}

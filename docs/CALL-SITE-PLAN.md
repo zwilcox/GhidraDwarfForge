@@ -309,3 +309,58 @@ The current production exporter does not invoke this new evidence path yet.
 value analysis, justified completeness, and the later DIE emission pass. All
 six original issue acceptance items remain open until the real exporter and
 debugger comparisons satisfy them.
+
+## Direct-tail boundary-state checkpoint — 2026-11-08
+
+**CONFIRMED locally:** `GhidraTailStateProof` uses the captured raw transfer
+graph and original-byte checks to prove an entry-compatible stack pointer,
+original return destination and restored callee-saved registers at each direct
+external branch. Every external branch in a function must pass before any of
+that function's tails are admitted. An unresolved computed jump is not cut out
+of the graph to make the other paths pass. Ordinary calls erase state unless
+a separate preservation proof is available; this checkpoint does not supply
+one. Conditional moves/selects conservatively kill their possible outputs.
+The existing unwind lowering and ABI selection behavior remain unchanged.
+
+The initial saved x86-64 run found a real false positive: `cs_driver.cold`
+inherits the driver's active stack frame, but Ghidra labels it as a separate
+function. Its jump to the separately labeled epilogue initially passed when
+seeded with an ordinary entry state. The corrected verifier checks known
+external incoming control-flow edges. Non-call entries require admitted tail
+boundary proofs from their predecessors; a failed predecessor invalidates
+dependent proofs to a fixed point. External interior entries and fallthrough
+entries are rejected. Ghidra's pointer-data `INDIRECTION` references and symbol
+entry markers are metadata, not executed incoming edges. CALL_RETURN does not
+turn a raw branch into an ordinary call. The cold block is now omitted with its
+specific unproved incoming jump, and the incomplete driver remains omitted.
+
+This proof is conditional on the selected ordinary function-entry contract;
+it does not establish the absence of arbitrary undiscovered computed entries
+or reconstruct dynamic caller history. Cycles of individually valid tail
+boundaries may retain that same contract, without a termination claim. No
+completeness flag follows merely from a successful inventory or boundary proof.
+
+The real-decoder suite passes **570 checks across 47 cases**, covering balanced
+and dirty stacks, lost return destinations, changed preserved registers,
+unknown stores/calls, conflicting joins, one bad exit among two, argument and
+preserved-register conditional selects, raw/annotated incoming jumps, dependent
+rejection, an unselected predecessor, external interior entries, ordinary calls,
+rebase, ABI mismatch, hidden PAC, repeatability and cancellation at each observed
+poll of both direct controls. All four affected unwind regression suites pass.
+
+The saved-project harness additionally proves all **nine** compiler-selected
+direct tails for x86-64/AArch64 ET_EXEC and PIE, both original and rebased:
+**72 tail proofs** and the previous **104 raw-transfer comparisons**. The
+volatile indirect target remains unresolved. Normalized identities and original
+instruction hashes are identical across rebasing; repeated in-memory proofs,
+original executable hashes and saved `idata` database hashes are unchanged.
+`--reuse-project` permits this comparison without repeating the headless import
+or accumulating project copies. It creates a fresh bounded report directory.
+
+See [tail-state evidence](evidence/call-site-tail-state.json) for commands,
+source/report hashes and scoped results. CI includes the decoder suite and the
+expanded saved-project comparison; **hosted execution remains unverified**.
+The production exporter still does not invoke this path. **PLANNED next:**
+actual argument expressions, defensible call completeness, producer emission
+and the original compiler/Forge debugger acceptance requirements. This
+checkpoint does not complete issue #117 or start #120.

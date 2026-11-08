@@ -322,6 +322,22 @@ tasks.register("callSiteEvidenceProbe", JavaExec) {
     }
 }
 
+tasks.register("tailStateProofSmoke", JavaExec) {
+    group = "verification"
+    description = "Proves direct tail entry state and rejects unproved stack, return and preserved-register effects"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.GhidraTailStateProofSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/tail-state-proof").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/tail-state-proof/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/tail-state-proof/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
+}
+
 tasks.register("ghidraUnwindInstructionsSmoke", JavaExec) {
     group = "verification"
     description = "Checks native p-code caller identity flow and incomplete graph rejection"

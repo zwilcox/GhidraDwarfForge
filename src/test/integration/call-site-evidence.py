@@ -51,11 +51,36 @@ def compare(reference, captured):
     return rows
 
 
+def compare_tails(reference, captured):
+    expected = {(call["caller"], call["callee"], int(call["pc"], 16))
+                for call in reference["calls"] if call["tail"] and call["callee"] is not None}
+    actual = {(tail["caller"], tail["callee"], int(tail["pc"], 16)) for tail in captured["tails"]}
+    assert len(actual) == len(captured["tails"]) and actual == expected, (expected, actual)
+    instructions = {int(row["elfAddress"], 16): row for function in captured["functions"]
+                    for row in function["instructions"]}
+    for tail in captured["tails"]:
+        assert tail["originalSha256"] == instructions[int(tail["pc"], 16)]["original"]["sha256"]
+    omissions = captured["tailOmissions"]
+    assert "external branch lacks a decoded exact callee entry" in omissions["cs_indirect"]
+    if reference["target"] == "x86_64":
+        assert "incomplete instruction inventory" in omissions["cs_driver"]
+        assert "unproved incoming non-call transfer" in omissions["cs_driver.cold"]
+    return captured["tails"]
+
+
+def program_hashes(project):
+    data = project / "Calls.rep/idata"
+    result = {str(path.relative_to(data)): digest(path) for path in sorted(data.rglob("*")) if path.is_file()}
+    assert result, "missing saved program database"
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("reference", type=Path, help="completed call-site-reference.py output")
     parser.add_argument("output", type=Path)
     parser.add_argument("--ghidra", required=True, type=Path)
+    parser.add_argument("--reuse-project", action="store_true", help="read an existing capture project; write fresh tail-state reports")
     args = parser.parse_args()
     reference = args.reference.resolve()
     compiler = json.loads((reference / "result.json").read_text())
@@ -63,13 +88,15 @@ def main():
     original = reference / "input"
     protected = digest(original)
     work = args.output.resolve()
-    work.mkdir(parents=True, exist_ok=False)
+    if not args.reuse_project:
+        work.mkdir(parents=True, exist_ok=False)
     scripts = work / "scripts"
-    scripts.mkdir()
     observer = ROOT / "src/test/integration/ghidra_scripts/ObserveCallSiteEvidence.java"
-    shutil.copyfile(observer, scripts / observer.name)
     project = work / "project"
-    project.mkdir()
+    if not args.reuse_project:
+        scripts.mkdir()
+        shutil.copyfile(observer, scripts / observer.name)
+        project.mkdir()
     # Reuse only accounted tool/cache paths locally. CI can use its job temp.
     cache = Path(os.environ.get("FORGE_CACHE_DIR", work / "cache")) / "ghidra-user"
     cache.mkdir(parents=True, exist_ok=True)
@@ -77,30 +104,38 @@ def main():
     Path(temporary).mkdir(parents=True, exist_ok=True)
     env = {**os.environ, "GHIDRA_INSTALL_DIR": str(args.ghidra.resolve()),
            "JAVA_TOOL_OPTIONS": f"-Duser.home={cache} -Djava.io.tmpdir={temporary}"}
-    text = run([args.ghidra.resolve() / "support/analyzeHeadless", project, "Calls", "-import", original,
-                "-scriptPath", scripts, "-postScript", observer.name, work / "observations.json",
-                "-max-cpu", "2", "-log", work / "headless.log", "-scriptlog", work / "script.log"], work / "import", env)
-    assert "call-site-observations=PASS functions=" in text
+    if not args.reuse_project:
+        text = run([args.ghidra.resolve() / "support/analyzeHeadless", project, "Calls", "-import", original,
+                    "-scriptPath", scripts, "-postScript", observer.name, work / "observations.json",
+                    "-max-cpu", "2", "-log", work / "headless.log", "-scriptlog", work / "script.log"], work / "import", env)
+        assert "call-site-observations=PASS functions=" in text
+    saved = program_hashes(project)
+    reports_root = work / "tail-state" if args.reuse_project else work
+    if args.reuse_project:
+        reports_root.mkdir(exist_ok=False)
     # Read-only reopen through the current source runtime; do not overwrite a
     # user's installed extension or build another Ghidra installation.
     reports = []
     for variant, shift in (("original", 0), ("rebased", 0x400000)):
-        output = work / (variant + ".json")
+        output = reports_root / (variant + ".json")
         text = run([ROOT / "gradlew", "--no-daemon", "callSiteEvidenceProbe",
                     "-PcallSiteProject=" + str(project), "-PcallSiteInput=" + str(original),
-                    "-PcallSiteReport=" + str(output), "-PcallSiteRebase=" + str(shift)], work / (variant + "-capture"), env)
+                    "-PcallSiteReport=" + str(output), "-PcallSiteRebase=" + str(shift)], reports_root / (variant + "-capture"), env)
         assert "call-site-evidence-probe=PASS" in text
         captured = json.loads(output.read_text())
         assert "/build/classes/java/main/" in captured["classOrigin"], captured["classOrigin"]
         reports.append({"variant": variant, "delta": captured["rebaseDelta"], "calls": compare(compiler, captured),
+                        "tails": compare_tails(compiler, captured), "tailOmissions": captured["tailOmissions"],
                         "omissions": {f["name"]: f["omissions"] for f in captured["functions"] if f["omissions"]}})
     assert reports[0]["calls"] == reports[1]["calls"], "rebase changed transfer identities or original bytes"
+    assert reports[0]["tails"] == reports[1]["tails"], "rebase changed proved tail identities or original bytes"
     assert reports[1]["delta"] - reports[0]["delta"] == 0x400000
     assert digest(original) == protected, "capture changed the original executable"
-    (work / "result.json").write_text(json.dumps({
-        "status": "PASS_CAPTURE_REFERENCE", "target": compiler["target"], "role": compiler["role"],
-        "scope": "Raw transfers and branch candidates only; tail-state proofs and DWARF emission remain incomplete",
-        "inputSha256": protected, "reports": reports,
+    assert program_hashes(project) == saved, "capture changed the saved program database"
+    (reports_root / "result.json").write_text(json.dumps({
+        "status": "PASS_CAPTURE_TAIL_STATE_REFERENCE", "target": compiler["target"], "role": compiler["role"],
+        "scope": "Raw transfers and direct tail boundary states; actual arguments and DWARF emission remain incomplete",
+        "inputSha256": protected, "savedProgramSha256": saved, "reports": reports,
     }, indent=4) + "\n")
     print(f"call-site-evidence-reference=PASS target={compiler['target']} role={compiler['role']}")
 

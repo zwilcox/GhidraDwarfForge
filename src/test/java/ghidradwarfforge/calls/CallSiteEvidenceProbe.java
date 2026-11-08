@@ -41,6 +41,24 @@ public final class CallSiteEvidenceProbe {
                 if (!captured.equals(GhidraCallSiteEvidence.capture(program, selected, image, delta, TaskMonitor.DUMMY))) {
                     throw new AssertionError("saved-program capture was not deterministic");
                 }
+                var proof = GhidraTailStateProof.verify(program, selected, image, delta, TaskMonitor.DUMMY);
+                if (!proof.captures().equals(captured) ||
+                        !proof.equals(GhidraTailStateProof.verify(program, selected, image, delta, TaskMonitor.DUMMY))) {
+                    throw new AssertionError("saved-program tail-state proof was not deterministic");
+                }
+                var tails = new ArrayList<Object>();
+                for (var tail : proof.tails()) {
+                    var item = new LinkedHashMap<String, Object>();
+                    item.put("caller", program.getFunctionManager().getFunctionAt(tail.caller()).getName());
+                    item.put("callee", program.getFunctionManager().getFunctionAt(tail.callee()).getName());
+                    item.put("pc", Long.toHexString(AddressNormalizer.toElfAddress(tail.instruction().getOffset(), delta)));
+                    item.put("profile", tail.profile());
+                    item.put("originalSha256", tail.originalInstructionSha256());
+                    tails.add(item);
+                }
+                var tailOmissions = new LinkedHashMap<String, String>();
+                proof.omissions().forEach((entry, reason) ->
+                    tailOmissions.put(program.getFunctionManager().getFunctionAt(entry).getName(), reason));
                 var rows = new ArrayList<Object>();
                 for (var function : captured) {
                     var row = new LinkedHashMap<String, Object>();
@@ -71,10 +89,12 @@ public final class CallSiteEvidenceProbe {
                     rows.add(row);
                 }
                 var result = new LinkedHashMap<String, Object>();
-                result.put("scope", "Captured transfers and branch candidates only; no tail-state, argument or DWARF emission proof");
+                result.put("scope", "Captured transfers and direct tail boundary-state proofs; no argument or DWARF emission proof");
                 result.put("rebaseDelta", delta);
                 result.put("classOrigin", GhidraCallSiteEvidence.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm());
                 result.put("functions", rows);
+                result.put("tails", tails);
+                result.put("tailOmissions", tailOmissions);
                 Path output = Path.of(args[3]);
                 Files.createDirectories(output.getParent());
                 Files.writeString(output, new GsonBuilder().serializeNulls().setPrettyPrinting().create().toJson(result) + "\n",

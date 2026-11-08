@@ -74,6 +74,23 @@ argument values, justified completeness, emission and Forge runtime acceptance
 remain incomplete. The call-site plan records the exact local checks and CI
 wiring; hosted execution remains unverified.
 
+**CONFIRMED #117 tail boundary checks:** the direct-tail verifier now proves
+entry stack restoration, the original return destination and callee-saved
+register identities, under the selected ordinary-entry contract. Unknown
+ordinary calls erase facts; conditional selects kill their possible outputs.
+A saved-project test exposed a false positive at x86's split `cs_driver.cold`
+block. Known external incoming jumps now require an independently admitted
+boundary proof, with rejection propagated through dependent functions; external
+interior entries and fallthrough entries are refused. Pointer-data references
+and exported-symbol markers do not count as executed edges. The corrected
+local suite passes 570 checks in 47 decoder cases and proves all nine selected
+direct tails in each of eight saved/rebased ET_EXEC/PIE program views on x86-64
+and AArch64. Original ELF and saved database hashes remain unchanged.
+These are boundary-state proofs, not evidence of actual caller history or
+complete call-site emission. Actual argument recovery, justified completeness,
+production emission, Forge GDB behavior and hosted acceptance remain incomplete.
+See the call-site plan and its tail-state receipt.
+
 
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 

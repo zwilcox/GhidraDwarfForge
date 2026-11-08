@@ -35,8 +35,12 @@
   ambiguity/recursion/indirect controls, plus independent structural checks.
   Raw Ghidra capture now passes 457 real-decoder checks and 104 saved/rebased
   compiler-reference comparisons; annotations and incomplete bodies remain
-  explicit. Next prove return/stack state, actual arguments and completeness,
-  then integrate emission. Hosted native/JNA/reference/capture jobs, Windows
+  explicit. Direct-tail boundary-state checks now pass 570 checks in 47 decoder
+  cases and 72 selected saved/rebased tail proofs, with original/database hashes
+  preserved. The split cold-block false positive is fixed by checking known
+  incoming non-call edges and propagating rejected entry assumptions. Next
+  prove actual arguments and completeness, then integrate emission.
+  Hosted native/JNA/reference/capture/tail jobs, Windows
   runtime and Forge debugger behavior remain incomplete; these prerequisites
   do not complete #117.
 
