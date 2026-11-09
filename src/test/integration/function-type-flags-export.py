@@ -45,7 +45,7 @@ def main():
             support.require_clean(case / (name + '.log'))
 
     fixture = source.parent / 'fixtures/function-type-flags.c'
-    protected = [fixture, Path(__file__), source / 'function-type-flags-gdb.py',
+    protected = [fixture, Path(__file__), source / 'function-type-flags-gdb.py', source / 'curated-thunk-export.py',
         source / 'function-type-flags-gdb.sh', source / 'ghidra_scripts/PrepareFunctionTypeFlags.java',
         source / 'ghidra_scripts/RebaseFixtureProgram.java', source / 'check-dwarfdump.py',
         source / 'elf-layout-gdb-oracle.sh', source / 'dynamic-composite-storage-check.py',
@@ -113,6 +113,11 @@ def main():
         function, = [die for die in dies if die['tag'] == 'DW_TAG_subprogram' and facts.facts.die_name(die) == row['name']]
         assert ('DW_AT_noreturn' in function['attrs']) == row['noReturn']
         assert int(function['attrs']['DW_AT_low_pc'], 16) == row['entry']
+        if row['noReturn']:
+            parameter, = [die for die in facts.children(dies, dies.index(function))
+                if die['tag'] == 'DW_TAG_formal_parameter' and facts.facts.die_name(die) == 'code']
+            entry_locations = load('entry_locations', source / 'curated-thunk-export.py')
+            entry_locations.check_entry_location(parameter, (case / 'forge-loc.log').read_text(), row['entry'], 'x86_64')
         callback, = [die for die in dies if die['tag'] == 'DW_TAG_subroutine_type' and
             facts.facts.die_name(die) == row['type'].removeprefix('/')]
         assert 'DW_AT_noreturn' not in callback['attrs']

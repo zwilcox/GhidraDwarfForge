@@ -1,17 +1,15 @@
 # Call sites, tail frames and entry values
 
 **CONFIRMED component checks; full acceptance pending:** issue #117 remains
-under validation. Both selected packaged call-site steps and both MIPS FPXX/FP64A
-steps pass at `a5e04953` in
-[run 42542348245](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42542348245).
-The predecessor AArch64 run exposed an outdated curated-thunk assertion that
-forbade every parameter location. The entry-storage feature now describes the
-thunk's exact first PC; it does not copy the destination's location lifetime.
-The corrected regression passes six local compiler/Forge cases (x86-64/AArch64,
-ET_EXEC/PIE/rebased PIE), requiring the correct value at entry and unavailability
-after the first instruction. Full corrected-head hosted validation and final
-review remain required. These are development results, not a released support
-claim. The [acceptance plan](CALL-SITE-PLAN.md) records the remaining work.
+under validation. The current regression tests distinguish recorded parameter
+storage at the first PC from inferred caller history. All 64 local packaged
+GDB cases and nine adjacent no-return/outside-body cases pass, with structural
+validation, deterministic exports and preservation checks. The typed model also
+verifies that recorded storage does not authorize unproved call values or
+completeness. The full corrected-head hosted gate and final review remain
+required. These are development results, not a released support claim. See the
+[acceptance plan](CALL-SITE-PLAN.md) and
+[entry-storage receipt](evidence/call-site-entry-storage-distinction.json).
 
 ## What the metadata provides
 
@@ -53,7 +51,11 @@ and a proven whole-register actual value. Stack arguments, composite storage,
 floating-point arguments, pointer formals, forced-indirect arguments and custom
 storage do not acquire call-site value expressions through this profile. For an admitted formal register, the entry-storage refinement can supply a
 location only at `[entry, entry + 1)`, including a curated thunk with no synthetic
-source body. It does not extend a register lifetime after the first instruction
+source body. This describes recorded current storage at that PC; it does not
+prove the caller, a tail boundary or a historical argument value. Call-value
+inference and completeness still require their independent incoming-flow proofs.
+See [DWARF 5 sections 2.6 and 4.1](https://dwarfstd.org/doc/DWARF5.pdf) for the
+location-description semantics. It does not extend a register lifetime after the first instruction
 or borrow a destination's location ranges. Existing variable-location support
 is otherwise a separate feature.
 

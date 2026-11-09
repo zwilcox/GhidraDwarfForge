@@ -6,6 +6,7 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import ghidra.GhidraApplicationLayout;
@@ -17,6 +18,9 @@ import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.lang.CompilerSpecID;
 import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.listing.FlowOverride;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.ParameterImpl;
+import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.util.DefaultLanguageService;
 import ghidra.util.task.TaskMonitor;
@@ -24,6 +28,10 @@ import ghidra.util.task.TaskMonitorAdapter;
 import ghidra.util.exception.CancelledException;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.locations.TargetRegisterMap;
+import ghidradwarfforge.GhidraCallParameters;
+import ghidradwarfforge.GhidraTypeGraph;
+import ghidradwarfforge.GhidraParameterAllocation;
+import ghidradwarfforge.locations.VariableStorageModel.VariableKind;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 
@@ -120,6 +128,37 @@ public final class CallEntryContractSmoke {
                     callerPlan.sites().getFirst().instructionAddress() == entry.add(4).getOffset(), "lost independently verified ordinary call");
                 require(callerPlan.sites().getFirst().callee() == null && callerPlan.sites().getFirst().arguments().isEmpty(),
                     "invented unexported callee/formals");
+                function.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_FORMAL_PARAMS, true,
+                    SourceType.USER_DEFINED, new ParameterImpl("incoming", IntegerDataType.dataType, program));
+                var leafFunction = program.getFunctionManager().getFunctionAt(leaf);
+                leafFunction.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_FORMAL_PARAMS, true,
+                    SourceType.USER_DEFINED, new ParameterImpl("received", IntegerDataType.dataType, program));
+                var typedSymbols = new ArrayList<>(symbols);
+                typedSymbols.add(new FunctionSymbol("leaf", leaf.getOffset(), List.of(new FunctionRange(leaf.getOffset(), leafBody.getNumAddresses()))));
+                var entryRegisters = TargetRegisterMap.forElf(arm ? "aarch64" : "x86_64", image, () -> false);
+                var entries = new ArrayList<GhidraCallParameters.Entry>();
+                var types = GhidraTypeGraph.extract(program, typedSymbols, entryRegisters, 0, TaskMonitor.DUMMY, ignored -> { },
+                    java.util.Map.of(), java.util.Map.of(), java.util.Map.of(), GhidraParameterAllocation.UNCHANGED, entries::add);
+                var typed = GhidraCallSitePlan.recover(program, typedSymbols, types, entries, entryRegisters, image, 0, TaskMonitor.DUMMY);
+                var parameter = typed.types().variableStorage().variables().stream().filter(v ->
+                    v.functionAddress() == entry.getOffset() && v.kind() == VariableKind.PARAMETER && v.name().equals("incoming"))
+                    .findFirst().orElseThrow();
+                boolean availableEntry = parameter.locations().stream().anyMatch(r ->
+                    r.start() <= entry.getOffset() && entry.getOffset() < r.end() && r.storage().available());
+                // A recorded register location at the entry PC describes current
+                // storage, not an inferred incoming call or historical value.
+                // Rejected incoming paths must still suppress call-value facts.
+                require(availableEntry, "lost recorded formal register storage at entry: " + mode);
+                require(parameter.locations().stream().filter(r -> r.storage().available()).allMatch(r ->
+                    r.start() == entry.getOffset() && r.end() == entry.getOffset() + 1),
+                    "extended recorded storage into an unproved body lifetime: " + mode);
+                var typedCaller = typed.plan().functions().stream().filter(f -> f.caller() == entry.getOffset()).findFirst().orElseThrow();
+                require((typedCaller.completeness() == CallSitePlan.Completeness.ALL_CALLS) == accepted,
+                    "formal register location invented a caller entry contract: " + mode);
+                require(typedCaller.sites().size() == 1 && typedCaller.sites().getFirst().callee() == leaf.getOffset(),
+                    "lost independently known ordinary callee identity: " + mode);
+                require(typedCaller.sites().getFirst().arguments().size() == (accepted ? 1 : 0),
+                    "formal register location changed justified call-value inference: " + mode);
                 if (mode.equals("ordinary")) {
                     var registers = TargetRegisterMap.forElf(arm ? "aarch64" : "x86_64", image, () -> false);
                     int[] planPolls = {0};

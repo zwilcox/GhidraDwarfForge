@@ -1,5 +1,30 @@
 # TODO.md — GhidraDwarfForge
 
+## Current entry-storage regression checkpoint — 2026-11-08
+
+**CONFIRMED:** all 64 fresh packaged GDB cases pass on x86-64 and AArch64,
+ET_EXEC/PIE and original/rebased analysis. All nine adjacent no-return and
+outside-body cases pass, including rebased PIE. Tests independently compare
+first-PC parameter values with physical registers and require unavailable later
+values when lifetime proof is absent. GNU/LLVM/pinned validators, deterministic
+reruns and original/package/saved-program preservation pass.
+
+The typed entry-contract regression passes 16 cases/1,043 checks. Recorded
+first-PC storage must not enable rejected call-site completeness or actual-value
+inference; exported callee bindings are checked positively for valid entry paths
+and absent for invalid ones. Argument 576, tail 613, capture 457, bounded switch
+371 and plan controls pass with the Java21 extension build.
+
+Exporter/native sources remain identical to 5b9466b6. The proposed incoming gate
+was withdrawn: it confused recorded current storage with caller history and
+removed valid entry values. The failed experiment remains recorded, not claimed
+as a production fix. The old AArch64 comparison reports were regenerated from
+preserved projects. The full corrected-head hosted gate and protected #117
+integration remain required; #120 implementation has not begun.
+
+See [the bounded evidence receipt](docs/evidence/call-site-entry-storage-distinction.json).
+
+
 ## Storage maintenance — 2026-11-08
 
 - **CONFIRMED #117 current hosted checkpoint:** run `42536372353` at
