@@ -1,5 +1,12 @@
 # Integration fixtures
 
+`cortex-m-profile.c`, `cortex-m-start.S` and `cortex-m.ld` form the standalone
+Cortex-M3/lm3s6965evb compiler reference for #120. The system-QEMU/GDB harness
+checks reset, flash/RAM placement, Thumb pointers, source stepping and SVC
+exceptions from MSP/PSP thread stacks. See `docs/CORTEX-M.md` for the measured
+reference and remaining production-export acceptance; this is independent of
+raw-firmware input support.
+
 `call-site-reference.c` is the compiler reference for #117. Its harness
 `src/test/integration/call-site-reference.py TARGET OUTPUT --role exec|pie
 --dwarfdump TOOL` validates compiler DWARF and stripped-debug controls on native
