@@ -12,6 +12,8 @@ import subprocess
 import tempfile
 from urllib.parse import unquote, urlsplit
 
+from alias_relationships import read_dies
+
 source = Path(__file__).resolve().parent
 repository = source.parents[2]
 spec = importlib.util.spec_from_file_location('elf_support', source / 'retained-function-aliases-export.py')
@@ -197,6 +199,15 @@ def main():
             symbol_values = ({aliases[row['name']]['alias']: row['elfSymbolValue'] for row in metadata['functions']}
                              if args.target == 'arm32' else None)
             expected_aliases = list(aliases.values())
+            if args.target == 'x86_64':
+                # Recover expected support aliases from raw range/origin DIEs
+                # and independently decoded calls in the section-backed input.
+                # The inventory oracle below verifies their actual load mapping.
+                origins = elf_support.call_origin_expectations(elf_support.elf(base / 'aliases.input')[2],
+                    emitted, digest(binary), read_dies(case / 'aliases.dbg', case / 'call-origins-info.log'))
+                expected_aliases += [{'alias': row['name'], 'entry': row['address'], 'size': row['size']}
+                    for row in origins]
+                (case / 'call-origins.json').write_text(json.dumps(origins, indent=4) + '\n')
             if args.target == 'arm32':
                 cues, cue_values = arm_mode_aliases(base)
                 expected_aliases += cues

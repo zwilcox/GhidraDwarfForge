@@ -77,7 +77,9 @@ for expected in (19, -19):
             if available:
                 assert value == expected
         else:
-            assert not available, (target, link, value)
+            assert available == (link == labels['boundary']), (target, link, value)
+            if available:
+                assert value == raw == expected
         if link != labels['boundary'] and link >= labels['probe_copy_done']:
             assert backup == (expected + 7 if link == lost else expected)
         if link == labels['boundary']:

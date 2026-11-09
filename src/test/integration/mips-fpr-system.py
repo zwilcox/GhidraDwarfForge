@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Use the actual 64-bit system-emulator transport for O32 FPXX/FP64A FR=1."""
 import argparse
+from collections import Counter
 import importlib.util
 import json
 import os
@@ -18,6 +19,19 @@ REPOSITORY = HERE.parents[2]
 spec = importlib.util.spec_from_file_location('support', HERE.parent / 'performance/export-benchmark.py')
 support = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(support)
+
+
+def check_diagnostics(diagnostics, labels):
+    """Account for exact unsupported call-site messages without hiding new errors."""
+    assert isinstance(diagnostics, list) and all(isinstance(message, str) for message in diagnostics)
+    prefix = 'Call-site metadata at ELF address '
+    expected = Counter(
+        prefix + hex(labels[name]) + ': ELF or program is outside the selected ordinary unwind ABIs'
+        for name in ('_start', 'main', 'fp_float', 'fp_double'))
+    call_sites = [message for message in diagnostics if message.startswith(prefix)]
+    assert Counter(call_sites) == expected, ('unexpected call-site diagnostics', diagnostics)
+    remaining = [message for message in diagnostics if not message.startswith(prefix)]
+    assert len(remaining) == 8, ('unexpected original diagnostic count', remaining)
 
 
 def main():
@@ -75,10 +89,10 @@ def main():
     labels = {}
     for line in symbols.splitlines():
         fields = line.split()
-        if len(fields) == 3 and (fields[2].startswith('fp_') or fields[2] == 'reference_done'):
+        if len(fields) == 3 and (fields[2].startswith('fp_') or fields[2] in ('_start', 'main', 'reference_done')):
             assert fields[2] not in labels
             labels[fields[2]] = int(fields[0], 16)
-    assert {'fp_float', 'fp_double', 'reference_done'} <= labels.keys()
+    assert {'_start', 'main', 'fp_float', 'fp_double', 'reference_done'} <= labels.keys()
     write('labels.json', labels)
     (case / 'labels.txt').write_text(''.join(name + ' ' + hex(address) + '\n' for name, address in labels.items()))
     write('metadata.json', {'endian': args.endian, 'profile': args.profile, 'cpu': 'MIPS64R2-generic',
@@ -154,6 +168,7 @@ def main():
         assert 'native policy: verified packaged libraries in ' + str(module / 'os/linux_x86_64') in text
         report, = [json.JSONDecoder().raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
             for line in text.splitlines() if 'GhidraDwarfForge report: {' in line]
+        write(phase + '-report.json', report)
         assert report['status'] == 'PARTIAL' and report['failure'] is None
         assert not report['failedFunctions'] and not report['skippedFunctions']
         assert report['counts']['functionsExported'] == report['counts']['functionsDecompiled'] == 4
@@ -165,13 +180,15 @@ def main():
         unsupported = report['unsupportedConstructs']
         assert len(unsupported) == 3 and {(row['kind'], row['name']) for row in unsupported} == {
             ('OPAQUE_TYPE', 'undefined'), ('OPAQUE_TYPE', 'undefined4'), ('OPAQUE_TYPE', 'undefined8')}
-        assert len(report['diagnostics']) == 8
-        write(phase + '-report.json', report)
+        check_diagnostics(report['diagnostics'], labels)
         current = [support.digest(case / n) for n in ('floating.dbg', 'floating.dbg.c')]
         assert hashes is None or hashes == current
         hashes = current
     for variant, artifact in [('compiler', reference), ('forge', case / 'floating.dbg')]:
-        run(variant + '-gnu', ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline,loc', artifact])
+        dwarf = run(variant + '-gnu', ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline,loc', artifact])
+        if variant == 'forge':
+            assert 'DW_TAG_call_site' not in dwarf and 'DW_AT_call_all' not in dwarf, \
+                'unsupported MIPS profile emitted call-site metadata'
         llvm = run(variant + '-llvm', ['llvm-dwarfdump', '--verify', artifact])
         assert 'No errors.' in llvm
         run(variant + '-strict', ['python3', HERE / 'check-dwarfdump.py', artifact,

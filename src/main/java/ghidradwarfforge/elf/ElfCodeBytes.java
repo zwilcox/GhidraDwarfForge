@@ -117,6 +117,39 @@ public final class ElfCodeBytes implements AutoCloseable {
         catch (NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); }
     }
 
+    /**
+     * Read one bounded scalar from a unique, non-writable original load mapping.
+     * The caller must separately reject loader writes; this does not evaluate
+     * relocations or assert that a runtime process cannot change protections.
+     */
+    public byte[] readReadOnlyData(long address, int bytes, BooleanSupplier cancelled) throws IOException {
+        check(cancelled);
+        if (address < 0 || bytes < 1 || bytes > 8) throw new IllegalArgumentException("invalid scalar table read");
+        long end = Math.addExact(address, bytes - 1);
+        Load selected = null;
+        for (var load : loads) {
+            check(cancelled);
+            if (load.start() > end || load.end() < address) continue;
+            if (selected != null || load.start() > address || load.end() < end ||
+                    (load.flags() & 2) != 0 || address - load.start() > load.fileSize() ||
+                    bytes > load.fileSize() - (address - load.start())) {
+                throw new IllegalArgumentException("table lacks a unique non-writable file-backed load mapping");
+            }
+            selected = load;
+        }
+        if (selected == null) throw new IllegalArgumentException("table is outside original load mappings");
+        long offset = Math.addExact(selected.offset(), address - selected.start());
+        image.requireUnchanged(input);
+        var buffer = ByteBuffer.allocate(bytes);
+        while (buffer.hasRemaining()) {
+            check(cancelled);
+            if (input.read(buffer, offset + buffer.position()) <= 0) throw new IOException("short original table read");
+        }
+        check(cancelled);
+        image.requireUnchanged(input);
+        return buffer.array();
+    }
+
     @Override public void close() throws IOException { input.close(); }
     private static void check(BooleanSupplier cancelled) {
         if (cancelled.getAsBoolean()) throw new CancellationException("ELF instruction agreement cancelled");

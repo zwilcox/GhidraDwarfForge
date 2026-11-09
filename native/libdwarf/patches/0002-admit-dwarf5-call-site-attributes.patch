@@ -1,0 +1,52 @@
+From: GhidraDwarfForge maintainers
+Subject: [PATCH] Admit DWARF 5 call-site attribute classes in the producer
+
+Permit call and return PCs through the target-address API, origins and
+parameter references through the CU-reference API, and call-value/target/data
+expressions through the expression APIs. For DWARF 5, both expression paths
+must select DW_FORM_exprloc. No ABI change or new expression opcode is added.
+
+--- a/src/lib/libdwarfp/dwarf_pro_forms.c
++++ b/src/lib/libdwarfp/dwarf_pro_forms.c
+@@ -90,6 +90,8 @@
+     switch (attr) {
+     case DW_AT_low_pc:
+     case DW_AT_high_pc:
++    case DW_AT_call_pc:
++    case DW_AT_call_return_pc:
+ 
+     /* added to support location lists */
+     /* no way to check that this is a loclist-style address though */
+@@ -363,6 +365,11 @@
+     case DW_AT_lower_bound:
+     case DW_AT_upper_bound:
+     case DW_AT_data_location:
++    case DW_AT_call_value:
++    case DW_AT_call_target:
++    case DW_AT_call_target_clobbered:
++    case DW_AT_call_data_location:
++    case DW_AT_call_data_value:
+         is_exprloc_related = TRUE;
+     }
+     if (ownerdie == NULL) {
+@@ -678,6 +685,11 @@
+     case DW_AT_lower_bound:
+     case DW_AT_upper_bound:
+     case DW_AT_data_location:
++    case DW_AT_call_value:
++    case DW_AT_call_target:
++    case DW_AT_call_target_clobbered:
++    case DW_AT_call_data_location:
++    case DW_AT_call_data_value:
+         is_exprloc_related = TRUE;
+         break;
+ 
+@@ -937,6 +949,8 @@
+     case DW_AT_small:
+     case DW_AT_object_pointer:
+     case DW_AT_signature:
++    case DW_AT_call_origin:
++    case DW_AT_call_parameter:
+         break;
+ 
+     default:

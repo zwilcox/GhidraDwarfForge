@@ -11,6 +11,9 @@ source = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('facts', source / 'dynamic-composite-storage-check.py')
 facts = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(facts)
+spec = importlib.util.spec_from_file_location('elf_support', source / 'retained-function-aliases-export.py')
+elf_support = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(elf_support)
 stage, directory, repository_arg, module_arg = sys.argv[1:]
 assert stage in ('labels', 'observations', 'finish')
 case, repository, module = Path(directory), Path(repository_arg), Path(module_arg)
@@ -38,7 +41,8 @@ if stage == 'labels':
         module / 'ghidra_scripts/GhidraDwarfForge.java']
     paths += [source / name for name in ('external-function-declarations-check.py', 'external-function-declarations-export.sh',
         'external-function-declarations-gdb.py', 'ghidra_scripts/PrepareExternalDeclarations.java',
-        'dynamic-composite-storage-check.py', 'dynamic-parameter-storage-check.py', 'check-dwarfdump.py')]
+        'dynamic-composite-storage-check.py', 'dynamic-parameter-storage-check.py', 'check-dwarfdump.py',
+        'retained-function-aliases-export.py')]
     write('protected-before.json', {str(path): facts.facts.snapshot(path) for path in paths})
     sys.exit(0)
 labels = read('labels.json')
@@ -70,6 +74,14 @@ assert output['sections']['.text'][1] == original['sections']['.text'][1]
 dies = facts.die_records((case / 'forge-info.stdout').read_text())
 by_offset = {row['offset']: row for row in dies}
 declarations = [row for row in dies if row['tag'] == 'DW_TAG_subprogram' and row['attrs'].get('DW_AT_declaration') == '1']
+# Call-origin declarations describe independently proved internal entry aliases;
+# they are not curated external declarations. Validate their complete inventory
+# before separating them from the exact external-declaration comparison.
+call_origins = elf_support.call_origin_inventory(
+    elf_support.elf(case / 'decl.stripped')[2], elf_support.elf(case / 'decl.dbg')[2],
+    facts.facts.snapshot(case / 'decl.stripped')['sha256'], dies)
+call_origin_names = {row['name'] for row in call_origins}
+declarations = [row for row in declarations if facts.facts.die_name(row) not in call_origin_names]
 assert Counter(facts.facts.die_name(row) for row in declarations) == Counter(row['name'] for row in model_declarations)
 for row in declarations:
     assert row['attrs']['DW_AT_external'] == row['attrs']['DW_AT_prototyped'] == '1'
@@ -130,7 +142,8 @@ write('protected-after.json', after)
 assert protected == after
 for role, name in [('input', 'decl.stripped'), ('output', 'decl.dbg'), ('source', 'decl.dbg.c')]:
     assert reports[0]['artifacts'][role + 'Sha256'] == facts.facts.snapshot(case / name)['sha256']
-write('result.json', {'status': 'PASS', 'declarations': model_declarations, 'gdb': runs, 'strict': strict,
+write('result.json', {'status': 'PASS', 'declarations': model_declarations, 'callOrigins': call_origins,
+    'gdb': runs, 'strict': strict,
     'javaVersion': current['javaVersion'], 'protectedUnchanged': True,
     'scope': 'Declaration metadata only. GDB ignores unlocated declarations in compiler and Forge artifacts; real definition and runtime remain usable.'})
 print('external-function-declarations=PASS ' + str(case))

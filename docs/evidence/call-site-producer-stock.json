@@ -1,0 +1,65 @@
+{
+    "purpose": "Stock producer admission reproduction only; not ELF/DWARF/GDB acceptance",
+    "sourceRevision": "af7b278c6aa2ae9daad94fb7f8bffdc0e9980993",
+    "compileCommand": [
+        "cc",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/mnt/external_drive/GhidraDwarfForge-agent-artifacts/libdwarf-upstream-repro/unpatched/libdwarf-2.3.2/src/lib/libdwarfp",
+        "-I/mnt/external_drive/GhidraDwarfForge-agent-artifacts/libdwarf-upstream-repro/unpatched/libdwarf-2.3.2/src/lib/libdwarf",
+        "/home/ziggy/GhidraDwarfForge/src/test/native/call-site-producer-probe.c",
+        "-L/mnt/external_drive/GhidraDwarfForge-agent-artifacts/libdwarf-upstream-repro/unpatched/libdwarf-2.3.2/src/lib/libdwarfp/.libs",
+        "-L/mnt/external_drive/GhidraDwarfForge-agent-artifacts/libdwarf-upstream-repro/unpatched/libdwarf-2.3.2/src/lib/libdwarf/.libs",
+        "-Wl,-rpath,/mnt/external_drive/GhidraDwarfForge-agent-artifacts/libdwarf-upstream-repro/unpatched/libdwarf-2.3.2/src/lib/libdwarfp/.libs:/mnt/external_drive/GhidraDwarfForge-agent-artifacts/libdwarf-upstream-repro/unpatched/libdwarf-2.3.2/src/lib/libdwarf/.libs",
+        "-ldwarfp",
+        "-ldwarf",
+        "-o",
+        "/home/ziggy/GhidraDwarfForge/.forge-work/scratch/call-site-producer/stock-probe"
+    ],
+    "compiler": "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "nativeSha256": {
+        "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/libdwarf-upstream-repro/unpatched/libdwarf-2.3.2/src/lib/libdwarfp/.libs/libdwarfp.so": "bd45f5cb3b5a45c445f5546c18b4091c482a06283ec8030057896d09bfdd07ac",
+        "/mnt/external_drive/GhidraDwarfForge-agent-artifacts/libdwarf-upstream-repro/unpatched/libdwarf-2.3.2/src/lib/libdwarf/.libs/libdwarf.so": "6c2a884093237248ab2d36c75c89003696ce54dc3d513d5b858e30c9f1104fcb"
+    },
+    "results": [
+        {
+            "mode": "control",
+            "returncode": 0,
+            "stdout": "control: API admission and serialization passed\n",
+            "stderr": ""
+        },
+        {
+            "mode": "call-pc",
+            "returncode": 1,
+            "stdout": "",
+            "stderr": "call-pc: dwarf_add_AT_targ_address_c(debug, site, mode == 1 ? DW_AT_call_pc : DW_AT_call_return_pc, 0x1000, 1, &attribute, &error): return=1 error=DW_DLE_INPUT_ATTR_BAD (143)\n"
+        },
+        {
+            "mode": "return-pc",
+            "returncode": 1,
+            "stdout": "",
+            "stderr": "return-pc: dwarf_add_AT_targ_address_c(debug, site, mode == 1 ? DW_AT_call_pc : DW_AT_call_return_pc, 0x1000, 1, &attribute, &error): return=1 error=DW_DLE_INPUT_ATTR_BAD (143)\n"
+        },
+        {
+            "mode": "origin",
+            "returncode": 1,
+            "stdout": "",
+            "stderr": "origin: dwarf_add_AT_reference_c(debug, mode == 3 ? site : parameter, mode == 3 ? DW_AT_call_origin : DW_AT_call_parameter, mode == 3 ? callee : formal, &attribute, &error): return=1 error=DW_DLE_INPUT_ATTR_BAD (143)\n"
+        },
+        {
+            "mode": "parameter",
+            "returncode": 1,
+            "stdout": "",
+            "stderr": "parameter: dwarf_add_AT_reference_c(debug, mode == 3 ? site : parameter, mode == 3 ? DW_AT_call_origin : DW_AT_call_parameter, mode == 3 ? callee : formal, &attribute, &error): return=1 error=DW_DLE_INPUT_ATTR_BAD (143)\n"
+        },
+        {
+            "mode": "value",
+            "returncode": 1,
+            "stdout": "",
+            "stderr": "value: dwarf_add_AT_location_expr_a(debug, parameter, DW_AT_call_value, expression, &attribute, &error): return=1 error=DW_DLE_INPUT_ATTR_BAD (143)\n"
+        }
+    ],
+    "expectedStockRejectionsConfirmed": true
+}

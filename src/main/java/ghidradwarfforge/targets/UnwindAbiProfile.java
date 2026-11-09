@@ -88,6 +88,30 @@ public final class UnwindAbiProfile {
     /** Metadata selection is not proof of byte agreement or of a callee's behavior. */
     public static Bound select(Program program, Function function, ElfImage image, long rebaseDelta,
             TaskMonitor monitor) throws CancelledException {
+        return select(program, function, image, rebaseDelta, monitor, false);
+    }
+
+    /**
+     * Same entry contract for a call-site proof, including a curated thunk body.
+     * Thunk annotations do not establish the target or any preserved state.
+     * Conditional selects are admitted only for conservative output killing by
+     * GhidraUnwindInstructions.callSiteEffects; the unwind selector is unchanged.
+     */
+    public static Bound selectForCallSites(Program program, Function function, ElfImage image, long rebaseDelta,
+            TaskMonitor monitor) throws CancelledException {
+        Bound base = select(program, function, image, rebaseDelta, monitor, true);
+        Description source = base.description();
+        var mnemonics = new LinkedHashSet<>(source.mnemonics());
+        mnemonics.addAll(source.machine() == 62 ? Set.of("cmovz") : Set.of("csel"));
+        var description = new Description(source.id(), source.machine(), source.language(), source.compiler(),
+            source.convention(), source.stackNumber(), source.returnNumber(), source.counterNumber(),
+            source.entryCfaOffset(), source.returnStackAdjustment(), source.stackReturn(), source.registers(),
+            source.calleeSaved(), source.flags(), mnemonics, source.modeRegister(), source.modeValue(), source.provenance());
+        return new Bound(description, base.registers(), base.permittedCells(), base.stackPointer(), base.programCounter(), base.entry());
+    }
+
+    private static Bound select(Program program, Function function, ElfImage image, long rebaseDelta,
+            TaskMonitor monitor, boolean allowThunk) throws CancelledException {
         monitor.checkCancelled();
         byte[] header = image.headerBytes();
         int osAbi = Byte.toUnsignedInt(header[7]);
@@ -108,7 +132,7 @@ public final class UnwindAbiProfile {
         var fallback = program.getCompilerSpec().getDefaultCallingConvention();
         var convention = function.getCallingConvention();
         if (convention == null && function.hasUnknownCallingConventionName()) convention = fallback;
-        if (function.isExternal() || function.isThunk() || function.hasCustomVariableStorage() ||
+        if (function.isExternal() || (function.isThunk() && !allowThunk) || function.hasCustomVariableStorage() ||
                 function.getCallFixup() != null || convention == null || convention.isErrorPlaceholder() ||
                 !selected.convention().equals(convention.getName()) || fallback == null ||
                 !selected.convention().equals(fallback.getName()) ||

@@ -1,0 +1,192 @@
+{
+    "scope": "Conditional direct-tail boundary-state proofs only; actual arguments, completeness, production emission and Forge GDB acceptance remain incomplete",
+    "ghidra": "12.0.3",
+    "java": "OpenJDK 25.0.4.1; Java 21 bytecode target",
+    "standalone": {
+        "status": "PASS",
+        "decodedCases": 47,
+        "checks": 570,
+        "cancellation": "Every observed poll of the x86-64 and AArch64 direct controls"
+    },
+    "regressions": {
+        "callSiteEvidenceSmoke": 457,
+        "ghidraUnwindInstructionsSmoke": 1849,
+        "unwindAbiProfileSmoke": 775,
+        "ghidraUnwindCallsSmoke": 13770,
+        "unwindFlowSmoke": 102
+    },
+    "extensionBuild": {
+        "status": "PASS",
+        "name": "ghidra_12.0.3_PUBLIC_20261108_GhidraDwarfForge.zip",
+        "bytes": 4985026,
+        "sha256": "1a36403298a564ea185f142b07134ffd10554ddb2b6769f9a781394ff5ce3acb",
+        "managedWorkspaceEntries": 0
+    },
+    "commands": [
+        "GHIDRA_INSTALL_DIR=/home/ziggy/ghidra_12.0.3_PUBLIC python3 support/storage-guard.py run --cwd /home/ziggy/GhidraDwarfForge -- ./gradlew --no-daemon tailStateProofSmoke callSiteEvidenceSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke ghidraUnwindCallsSmoke unwindFlowSmoke buildExtension",
+        "Under one guarded launcher, for each profile: python3 -B src/test/integration/call-site-evidence.py .forge-work/scratch/call-site-references/PROFILE .forge-work/scratch/call-site-capture/PROFILE --ghidra /home/ziggy/ghidra_12.0.3_PUBLIC --reuse-project",
+        "actionlint .github/workflows/ci.yml"
+    ],
+    "workflowLint": "PASS",
+    "hosted": "PRESENT, UNVERIFIED",
+    "retainedFailures": [
+        "Initial saved x86-64 proof admitted cs_driver.cold from an invalid ordinary-entry assumption; fixed by incoming-edge dependencies.",
+        "First incoming-edge implementation treated pointer-data INDIRECTION references as executed edges and rejected all selected tails; corrected after inspecting Ghidra reference API semantics."
+    ],
+    "sourceSha256": {
+        "src/main/java/ghidradwarfforge/calls/GhidraTailStateProof.java": "afda501270359e2f47797802f8432d1eab3d1512fe2d118b843d28441c74ff8d",
+        "src/main/java/ghidradwarfforge/targets/UnwindAbiProfile.java": "d593a5f2b084be37d573416b226191c30c338bbbdcd65a49307ccb958deb24bd",
+        "src/main/java/ghidradwarfforge/unwind/GhidraUnwindInstructions.java": "4250371d1475ea0814b2ff6c93bb0e3e357214e0e39767fccde7856cb82b32f2",
+        "src/test/java/ghidradwarfforge/calls/GhidraTailStateProofSmoke.java": "73024c90d17db00a50593de855f3cd0f10b6ae9cdd8fd4c444ffaf364fdb30ef",
+        "src/test/java/ghidradwarfforge/calls/CallSiteEvidenceProbe.java": "7a2cb6af11c7905b56b41b20c998eaac4813a6bd0b23e6aba2223175491d9129",
+        "src/test/integration/call-site-evidence.py": "50209d543fa203d158bdee7fb0af277ee0cad0e24e84dbd0357d45640a91b57e",
+        "build.gradle": "fd296a056e2a0ea4716c80af57eab8a578e2fa5b3f9966de2cc5f9abbad18403",
+        ".github/workflows/ci.yml": "9e08a96067dd431055f4d8a308ece59f27b0f6b0dd8caa0a83c4f47ade1534a5"
+    },
+    "profiles": [
+        {
+            "target": "x86_64",
+            "role": "exec",
+            "inputSha256": "44ca7ac04166607e97c23621bb0d0b54c027e71537103aa39653a0eb49ac0761",
+            "savedProgramSha256": {
+                "00/00000000.prp": "38c9bfa2d9e78057e05a990880472900de86428ac8d9335d9d804abe12bf02f3",
+                "00/~00000000.db/db.1.gbf": "204d20179f52a389a70f1cf74c03dc722c7e276f77cf0bbf6dda45fa3ce894ad",
+                "~index.bak": "937592eda81c76c35c39a1f66fed44a2e018ffd122783da1230ec9196821d70b",
+                "~index.dat": "937592eda81c76c35c39a1f66fed44a2e018ffd122783da1230ec9196821d70b"
+            },
+            "reports": [
+                {
+                    "variant": "original",
+                    "delta": 0,
+                    "matchedTransfers": 13,
+                    "provedDirectTails": 9,
+                    "omissions": {
+                        "cs_indirect": "external branch lacks a decoded exact callee entry",
+                        "cs_driver": "incomplete instruction inventory: 00401350: fallthrough escapes the decoded body",
+                        "cs_driver.cold": "entry has an unproved incoming non-call transfer at 0040132b"
+                    },
+                    "captureSha256": "e3dbd235b3053c745a8acd647fb1d814a3be2fafb0ffc396ea924591d947501f"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 4194304,
+                    "matchedTransfers": 13,
+                    "provedDirectTails": 9,
+                    "omissions": {
+                        "cs_indirect": "external branch lacks a decoded exact callee entry",
+                        "cs_driver": "incomplete instruction inventory: 00801350: fallthrough escapes the decoded body",
+                        "cs_driver.cold": "entry has an unproved incoming non-call transfer at 0080132b"
+                    },
+                    "captureSha256": "0f838a68cf52e04b397b496ade5ec7e0db0b9f25c6cd664dcf68540c1ffd3737"
+                }
+            ],
+            "resultSha256": "f0269019dc8afcfb87e6b2c6ddccfef7a5f034a46a9a1c6ef243bb262049035f"
+        },
+        {
+            "target": "x86_64",
+            "role": "pie",
+            "inputSha256": "b18b5d269edfec777f705b9c5e08d22f59f09243d788923c1323741e78e4c592",
+            "savedProgramSha256": {
+                "00/00000000.prp": "2f5bf1d02455efc2c4d4c80885a53823522028bcfb5774033d29b9096c79d8df",
+                "00/~00000000.db/db.1.gbf": "f8b55b3cb4d778d33b208e880477048b5a220c1aefe908a456774947a5b7a3fa",
+                "~index.bak": "c4819c307eefb274a3e6b11822789f3b0da6380457650a1d36939c2ba570e451",
+                "~index.dat": "c4819c307eefb274a3e6b11822789f3b0da6380457650a1d36939c2ba570e451"
+            },
+            "reports": [
+                {
+                    "variant": "original",
+                    "delta": 1048576,
+                    "matchedTransfers": 13,
+                    "provedDirectTails": 9,
+                    "omissions": {
+                        "cs_indirect": "external branch lacks a decoded exact callee entry",
+                        "cs_driver": "incomplete instruction inventory: 00101368: fallthrough escapes the decoded body",
+                        "cs_driver.cold": "entry has an unproved incoming non-call transfer at 0010133b"
+                    },
+                    "captureSha256": "4f93e1fffeb3df9a16c64352c67bd25b3f2ca5b3913b9fd5821427cf2831b860"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 5242880,
+                    "matchedTransfers": 13,
+                    "provedDirectTails": 9,
+                    "omissions": {
+                        "cs_indirect": "external branch lacks a decoded exact callee entry",
+                        "cs_driver": "incomplete instruction inventory: 00501368: fallthrough escapes the decoded body",
+                        "cs_driver.cold": "entry has an unproved incoming non-call transfer at 0050133b"
+                    },
+                    "captureSha256": "9add88bd52a8801d451c81e879cbb1605084b7d9f7eb49bfe1bf3252891224a7"
+                }
+            ],
+            "resultSha256": "ea279cf5b2018fcc1ce4c1cc5c49dfa1bdc6e75d53c845c2bd883638b1fda42c"
+        },
+        {
+            "target": "aarch64",
+            "role": "exec",
+            "inputSha256": "4141f968b2b67a8d9215d50790a1599b59aff1a4e38377513b8fa5b491f732ef",
+            "savedProgramSha256": {
+                "00/00000000.prp": "85c0e0fca86f506adfe32f49ad2d4a6c492b2ba36ffad1a705c668562ced2420",
+                "00/~00000000.db/db.1.gbf": "486ebe9d0ba48371d70b744e7495b92fbdf6d3b70cce03075a172b12660b78d4",
+                "~index.bak": "4e663f36eedd65422e9e12427645ba2635ffe2af3c6eabc8d2f8204c96ce14e9",
+                "~index.dat": "4e663f36eedd65422e9e12427645ba2635ffe2af3c6eabc8d2f8204c96ce14e9"
+            },
+            "reports": [
+                {
+                    "variant": "original",
+                    "delta": 0,
+                    "matchedTransfers": 13,
+                    "provedDirectTails": 9,
+                    "omissions": {
+                        "cs_indirect": "external branch lacks a decoded exact callee entry"
+                    },
+                    "captureSha256": "73f4c01e71c87216ade618dc53bcb9536067345511669b7d84803490ae277ccd"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 4194304,
+                    "matchedTransfers": 13,
+                    "provedDirectTails": 9,
+                    "omissions": {
+                        "cs_indirect": "external branch lacks a decoded exact callee entry"
+                    },
+                    "captureSha256": "297b4aa337869677f1278e133d2601e5acfd73d1628288e819396a0aed49905c"
+                }
+            ],
+            "resultSha256": "01ecc878d8e3456b8f01e97e1a52e0c49c87e68a196ce7af8bacda7f48395003"
+        },
+        {
+            "target": "aarch64",
+            "role": "pie",
+            "inputSha256": "4e8dd09bdb50cfd86fd61bfd78d5651d7fa08ce1e49effa9db8fbc1a9c8b0258",
+            "savedProgramSha256": {
+                "00/00000000.prp": "aaeeca678bf36da1c92eeaa95768b1c03be56a78a1031bfae70a1e1834fb38fe",
+                "00/~00000000.db/db.1.gbf": "30945ca59b06600a99b352d74fe42f2c6f6e00441fd6fd764baef53230a3b9c4",
+                "~index.bak": "3dd57b63a69f5b35d2e4be92503b1720cadbb32490f7ac4e2c4ecf63c9b35823",
+                "~index.dat": "3dd57b63a69f5b35d2e4be92503b1720cadbb32490f7ac4e2c4ecf63c9b35823"
+            },
+            "reports": [
+                {
+                    "variant": "original",
+                    "delta": 1048576,
+                    "matchedTransfers": 13,
+                    "provedDirectTails": 9,
+                    "omissions": {
+                        "cs_indirect": "external branch lacks a decoded exact callee entry"
+                    },
+                    "captureSha256": "5efffa75b675d148b803ab00e5b54e631c0f77e71e30c25b64903d5665fb260e"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 5242880,
+                    "matchedTransfers": 13,
+                    "provedDirectTails": 9,
+                    "omissions": {
+                        "cs_indirect": "external branch lacks a decoded exact callee entry"
+                    },
+                    "captureSha256": "fa3d41fba16fb2a754ce7397a450ff295248c7194c32cb5dae1e34ab2d05d089"
+                }
+            ],
+            "resultSha256": "b20366b90ae9ffbc673a165ca2720597f30ed64f347d43c70488de2cf14d7917"
+        }
+    ]
+}

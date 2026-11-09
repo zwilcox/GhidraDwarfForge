@@ -3,11 +3,12 @@ set -euo pipefail
 
 repository_dir=$(realpath "$(dirname "$0")/../../..")
 assembler="$repository_dir/support/assemble-release.sh"
-work=$(mktemp -d -t ghidra-dwarf-forge-release-test.XXXXXXXX)
+temporary_parent=$(realpath "${TMPDIR:-/tmp}")
+work=$(mktemp -d -p "$temporary_parent" ghidra-dwarf-forge-release-test.XXXXXXXX)
 
 cleanup() {
     case "$work" in
-        /tmp/ghidra-dwarf-forge-release-test.*) rm -rf -- "$work" ;;
+        "$temporary_parent"/ghidra-dwarf-forge-release-test.*) rm -rf -- "$work" ;;
         *) echo "refusing to remove unexpected test path: $work" >&2 ;;
     esac
 }
@@ -53,8 +54,12 @@ printf producer > "$work/linux/libdwarfp.so.2.3.2"
 printf supervisor > "$work/linux/forge-validator-supervisor"
 patch_hash=$(sha256sum < "$repository_dir/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch")
 patch_hash=${patch_hash%% *}
+call_site_patch_hash=$(sha256sum < "$repository_dir/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch")
+call_site_patch_hash=${call_site_patch_hash%% *}
 printf 'source patch SHA-256:\n%s  /fixture/patch.patch\n' "$patch_hash" \
     > "$work/linux/BUILD-METADATA.txt"
+printf 'call-site source patch SHA-256:\n%s  /fixture/call-site.patch\n' "$call_site_patch_hash" \
+    >> "$work/linux/BUILD-METADATA.txt"
 printf consumer > "$work/windows/libdwarf-2.dll"
 printf producer > "$work/windows/libdwarfp-2.dll"
 printf supervisor > "$work/windows/forge-validator-supervisor.exe"
@@ -79,6 +84,8 @@ printf compression > "$work/windows/libzstd.dll"
 # GNU sha256sum escapes Windows backslashes and prefixes such records with '\'.
 printf 'source patch SHA-256:\r\n\\%s *D:\\\\fixture\\\\patch.patch\r\n' "$patch_hash" \
     > "$work/windows/BUILD-METADATA.txt"
+printf 'call-site source patch SHA-256:\r\n\\%s *D:\\fixture\\call-site.patch\r\n' "$call_site_patch_hash" \
+    >> "$work/windows/BUILD-METADATA.txt"
 printf 'upstream copying\n' \
     > "$work/linux/compliance/libdwarf/licenses/UPSTREAM-COPYING"
 printf 'lgpl text\n' > "$work/linux/compliance/libdwarf/licenses/LGPL-2.1.txt"
@@ -88,6 +95,8 @@ printf 'producer copying\n' \
     > "$work/linux/compliance/libdwarf/licenses/LIBDWARFP-COPYING"
 cp "$repository_dir/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch" \
     "$work/linux/compliance/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch"
+cp "$repository_dir/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch" \
+    "$work/linux/compliance/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch"
 printf 'source archive\n' \
     > "$work/linux/compliance/libdwarf/source/libdwarf-2.3.2.tar.xz"
 (
@@ -210,6 +219,61 @@ printf '\n' >> "$work/linux-unpinned-patch/compliance/libdwarf/patches/0001-pres
 reject_patch_metadata unpinned-patch "$work/linux-unpinned-patch" "$work/windows" \
     'bundled corresponding-source patch does not match the pinned SHA-256'
 
+# Keep the first patch valid while independently rejecting the new patch's
+# metadata and bundled source. Every rejection must preserve an existing ZIP.
+for platform in linux windows; do
+    for invalid in missing malformed duplicate mismatch; do
+        candidate="$work/$platform-$invalid-call-site-patch"
+        cp -R "$work/$platform" "$candidate"
+        printf 'source patch SHA-256:\n%s  /fixture/patch.patch\n' "$patch_hash" \
+            > "$candidate/BUILD-METADATA.txt"
+        case "$invalid" in
+            missing) ;;
+            malformed)
+                printf 'call-site source patch SHA-256:\nnot-a-checksum\n' \
+                    >> "$candidate/BUILD-METADATA.txt"
+                ;;
+            duplicate)
+                for occurrence in 1 2; do
+                    printf 'call-site source patch SHA-256:\n%s  /fixture/call-site.patch\n' \
+                        "$call_site_patch_hash" >> "$candidate/BUILD-METADATA.txt"
+                done
+                ;;
+            mismatch)
+                printf 'call-site source patch SHA-256:\n%064d  /fixture/call-site.patch\n' \
+                    0 >> "$candidate/BUILD-METADATA.txt"
+                ;;
+        esac
+        linux="$work/linux"
+        windows="$work/windows"
+        if [[ $platform == linux ]]; then linux="$candidate"; else windows="$candidate"; fi
+        diagnostic='invalid source patch SHA-256 record'
+        if [[ $invalid == mismatch ]]; then
+            diagnostic='patch SHA-256 does not match bundled corresponding source'
+        fi
+        reject_patch_metadata "$platform-$invalid-call-site-patch" "$linux" "$windows" "$diagnostic"
+    done
+done
+
+for invalid in missing changed; do
+    candidate="$work/linux-$invalid-call-site-source"
+    cp -R "$work/linux" "$candidate"
+    patch_file="$candidate/compliance/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch"
+    if [[ $invalid == missing ]]; then
+        rm "$patch_file"
+        diagnostic='required third-party compliance file is missing'
+    else
+        printf '\n' >> "$patch_file"
+        diagnostic='bundled corresponding-source patch does not match the pinned SHA-256'
+    fi
+    (
+        cd "$candidate/compliance/libdwarf"
+        find . -type f ! -name SOURCE-SHA256SUMS -print0 |
+            LC_ALL=C sort -z | xargs -0 sha256sum > SOURCE-SHA256SUMS
+    )
+    reject_patch_metadata "linux-$invalid-call-site-source" "$candidate" "$work/windows" "$diagnostic"
+done
+
 for invalid in absent empty symlink; do
     candidate="$work/linux-$invalid-file"
     cp -R "$work/linux" "$candidate"
@@ -301,13 +365,18 @@ test ! -e "$module/os/linux_x86_64/compliance"
 test ! -e "$module/os/win_x86_64/compliance"
 zipinfo -l "$work/first.zip" | grep -Eq \
     '^-rwxr-xr-x.*GhidraDwarfForge/support/wrapper$'
-if zipinfo -T "$work/first.zip" | awk \
-        '/GhidraDwarfForge/ && $0 !~ /19800201[.]000000/ { failed = 1 } END { exit failed }'; then
-    :
-else
-    echo "release ZIP contains a non-normalized timestamp" >&2
-    exit 1
-fi
+# Inspect ZIP entries, not zipinfo's archive-path header. A managed TMPDIR
+# inside the repository legitimately contains "GhidraDwarfForge" in that header.
+python3 - "$work/first.zip" <<'PY_ZIP_TIMESTAMPS'
+import sys
+import zipfile
+
+with zipfile.ZipFile(sys.argv[1]) as archive:
+    invalid = [entry.filename for entry in archive.infolist()
+               if entry.date_time != (1980, 2, 1, 0, 0, 0)]
+if invalid:
+    raise SystemExit("release ZIP contains non-normalized timestamps: " + repr(invalid))
+PY_ZIP_TIMESTAMPS
 
 # MSYS2 zlib 1.4 changed the DLL selected by libz.dll.a. Preserve the
 # imported basename, package notices and hashes for either reviewed runtime.
@@ -323,6 +392,9 @@ sed -i 's/zlib 1.3.1-1/zlib 1.4-2/' \
 "$assembler" "$work/base.zip" "$work/linux" "$work/windows-zlib14" "$work/zlib14.zip"
 unzip -q "$work/zlib14.zip" -d "$work/zlib14-unpacked"
 module="$work/zlib14-unpacked/GhidraDwarfForge"
+cmp "$repository_dir/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch" \
+    "$module/third_party/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch"
+grep -Fxq "libdwarf-call-site-patch-sha256=$call_site_patch_hash" "$module/RELEASE-MANIFEST.txt"
 test ! -e "$module/os/win_x86_64/zlib1.dll"
 cmp "$work/windows-zlib14/libz-1.dll" "$module/os/win_x86_64/libz-1.dll"
 grep -Fxq 'mingw-w64-x86_64-zlib 1.4-2' \

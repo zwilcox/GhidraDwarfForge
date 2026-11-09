@@ -50,10 +50,11 @@ The extension root contains `RELEASE-MANIFEST.txt` and
 every packaged file before native code is loaded. CI also checks all manifests
 after assembly.
 
-The pinned native patch uses LF checkout bytes on both hosts and is checked
+Both pinned native patches use LF checkout bytes on both hosts and are checked
 before every primary/comparison build. Assembly rejects missing, ambiguous or
 mismatched platform patch metadata and a bundled patch that differs from the
-pin. The release manifest and corresponding-source patch therefore identify
+pin. Each patch has a distinct metadata record. The release manifest and
+corresponding-source patches therefore identify
 the same bytes used by both native builds.
 
 Assembly takes the unbundled ZIP produced by `buildExtension`, plus separate
@@ -65,7 +66,7 @@ not supported. Each native input must provide its own regular, nonempty
 The release root also contains `THIRD_PARTY_NOTICES.md`. The
 `third_party/libdwarf/` directory contains the complete LGPL 2.1 text,
 upstream copyright/copying notices, the exact checksummed libdwarf 2.3.2 source
-archive, and the patch applied by CI. `third_party/CORRESPONDING_SOURCE.md`
+archive, and both patches applied by CI. `third_party/CORRESPONDING_SOURCE.md`
 records the exact reconstruction commands and modified-library override path.
 Windows zlib and Zstandard package versions and license files are retained
 under `third_party/windows-runtime/`. All of these files are covered by

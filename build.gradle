@@ -65,6 +65,42 @@ tasks.register("nativeProducerSmoke", JavaExec) {
     }
 }
 
+tasks.register("callSiteProducerSmoke", JavaExec) {
+    group = "verification"
+    description = "Exercises call-site producer bindings and block ownership in an isolated JVM"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.nativeapi.CallSiteProducerSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    if (System.env.TMPDIR) {
+        systemProperty "java.io.tmpdir", System.env.TMPDIR
+        systemProperty "jna.tmpdir", System.env.TMPDIR
+    }
+    doFirst {
+        if (!project.hasProperty("libdwarfPath") || !project.hasProperty("libdwarfpPath") ||
+                !project.hasProperty("callSiteOutput")) {
+            throw new GradleException("Set libdwarfPath, libdwarfpPath and an empty callSiteOutput")
+        }
+        args project.property("libdwarfPath"), project.property("libdwarfpPath"),
+            project.findProperty("targetProfile") ?: "x86_64", project.property("callSiteOutput")
+    }
+}
+
+tasks.register("prepareCallSiteSerializationHarness") {
+    group = "verification"
+    dependsOn testClasses
+    doLast {
+        layout.buildDirectory.file("call-site-serialization-classpath.txt").get().asFile.text = sourceSets.test.runtimeClasspath.asPath
+    }
+}
+
+tasks.register("callSitePlanSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.CallSitePlanSmoke"
+}
+
 tasks.register("exportPhaseSmoke", JavaExec) {
     group = "verification"
     description = "Checks real JFR phase observations and failure/cancellation propagation"
@@ -264,6 +300,121 @@ tasks.register("ghidraUnwindCallsSmoke", JavaExec) {
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/unwind-calls/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/unwind-calls/cache").absolutePath
+}
+
+tasks.register("callSiteEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks raw call/branch evidence, original bytes, overrides, thunks and incomplete bodies"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.GhidraCallSiteEvidenceSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/call-site-evidence").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/call-site-evidence/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/call-site-evidence/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
+}
+
+tasks.register("callSiteEvidenceProbe", JavaExec) {
+    group = "verification"
+    description = "Captures call-site evidence from a saved compiler-reference Ghidra project"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.CallSiteEvidenceProbe"
+    if (project.hasProperty("callSiteCorrectDriverBody")) {
+        systemProperty "ghidradwarfforge.tests.curatedDriverBody", "true"
+    }
+    if (project.hasProperty("callSiteProject")) {
+        args ghidraInstallDir, project.property("callSiteProject"), project.property("callSiteInput"),
+            project.property("callSiteReport"), project.findProperty("callSiteRebase") ?: "0"
+        if (project.hasProperty("callSiteBindings")) args "curated-bind"
+        if (project.hasProperty("callSiteConsumer")) {
+            if (!project.hasProperty("callSiteBindings")) throw new GradleException("callSiteConsumer requires callSiteBindings")
+            args project.property("callSiteConsumer"), project.property("callSiteProducer")
+        }
+    }
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/call-site-evidence/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/call-site-evidence/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
+}
+
+tasks.register("tailStateProofSmoke", JavaExec) {
+    group = "verification"
+    description = "Proves direct tail entry state and rejects unproved stack, return and preserved-register effects"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.GhidraTailStateProofSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/tail-state-proof").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/tail-state-proof/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/tail-state-proof/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
+}
+
+tasks.register("callValueSmoke", JavaExec) {
+    group = "verification"
+    description = "Encodes bounded integer call values for independent DWARF VM validation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.CallValueSmoke"
+    args layout.buildDirectory.file("test-results/call-values/vectors.json").get().asFile
+}
+
+tasks.register("callArgumentFlowSmoke", JavaExec) {
+    group = "verification"
+    description = "Recovers actual integer arguments from decoded Ghidra instructions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.GhidraCallArgumentFlowSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/call-argument-flow").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/call-argument-flow/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/call-argument-flow/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
+}
+
+tasks.register("callEntryContractSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.CallEntryContractSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/call-entry-contract").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/call-entry-contract/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/call-entry-contract/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
+}
+
+tasks.register("boundedSwitchProofSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.calls.BoundedSwitchProofSmoke"
+    args ghidraInstallDir, layout.buildDirectory.dir("test-results/bounded-switch").get().asFile
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/bounded-switch/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/bounded-switch/cache").absolutePath
+    if (System.getenv("TMPDIR")) {
+        systemProperty "java.io.tmpdir", System.getenv("TMPDIR")
+        systemProperty "jna.tmpdir", System.getenv("TMPDIR")
+    }
 }
 
 tasks.register("ghidraUnwindInstructionsSmoke", JavaExec) {
@@ -1344,6 +1495,7 @@ tasks.register("localSymbolMergeSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.LocalSymbolMergeSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
 tasks.register("functionAliasSymbolsSmoke", JavaExec) {
@@ -1352,6 +1504,16 @@ tasks.register("functionAliasSymbolsSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.FunctionAliasSymbolsSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
+}
+
+tasks.register("callOriginSymbolsSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks exact call-entry symbol ownership, identity and name collisions"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.CallOriginSymbolsSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
 tasks.register("ghidraFunctionAliasesSmoke", JavaExec) {
@@ -1789,6 +1951,7 @@ buildExtension {
         }
     }
     exclude ".github/**"
+    exclude ".forge-work/**"
     exclude ".ghidra-test/**"
     exclude ".gitignore"
     exclude "AGENTS.md"

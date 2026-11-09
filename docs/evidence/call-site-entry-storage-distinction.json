@@ -1,0 +1,235 @@
+{
+    "status": "PASS_LOCAL_ENTRY_STORAGE_DISTINCTION",
+    "productionSourceHead": "5b9466b621b1a033db9f956360aacc9ee8b07e26",
+    "scope": "Test corrections only; original exporter/native sources unchanged. Full exact-head hosted gate remains required.",
+    "semantics": "Recorded register location at the first PC is separate from incoming caller-history and call-value proofs. No later location, caller history or completeness is inferred from that location.",
+    "standard": "https://dwarfstd.org/doc/DWARF5.pdf#page=56",
+    "rejectedExperiment": {
+        "description": "Gate all formal entry locations on incoming-call proof",
+        "reason": "Conflated current register storage with inferred history; removed valid GDB entry values",
+        "x86Scenarios": 32,
+        "x86PositiveFailures": 20,
+        "aarch64": "Stopped at stale comparison report lacking body ranges; regenerated from unchanged saved projects for final run",
+        "productionGatePublished": false
+    },
+    "model": {
+        "entryCases": 16,
+        "entryChecks": 1043,
+        "argumentCases": 25,
+        "argumentChecks": 576,
+        "argumentVectors": 240,
+        "tailChecks": 613,
+        "captureChecks": 457,
+        "switchCases": 42,
+        "switchChecks": 371,
+        "callSitePlan": "PASS"
+    },
+    "packageSha256": "0c4997cc2057a80d97da9f6e2c7231233eeb39f5bc23df86bb6498a1f07f580b",
+    "jarSha256": "1da6a6600de3e93a8a366df62f69a8798af1b0d3e2a4b8b1f9ed619b1d1250c0",
+    "baseline": {
+        "ghidra": "12.0.3",
+        "java": "21.0.12.1",
+        "compiledScriptMajor": 65
+    },
+    "tests": {
+        "src/test/java/ghidradwarfforge/calls/CallEntryContractSmoke.java": "f50bad6fb7a0df58a1e38babab134ca1919c7944fe49874a7b87c70ebd033e0a",
+        "src/test/integration/function-type-flags-export.py": "5726b7bf18ac56f824e74775ca4661d3ba46100714615d37a73db2a93433b136",
+        "src/test/integration/function-type-flags-gdb.py": "d26e22852a6980c8ae3231c38314fa317e5a6b15bdd333fda30e3ed141dd4448",
+        "src/test/integration/outside-body-flow-export.py": "99bcdd611232ab9a4e00ef06cd752cff32ca5e1da23c3e42933c33bb826d400a",
+        "src/test/integration/outside-body-flow-gdb.py": "50d62d6ef4b97b4789be64a29591d51a10649cd5fcb853e6334968513eaaa1cc"
+    },
+    "packaged": [
+        {
+            "case": "x86_64-exec",
+            "status": "PASS_PACKAGED_CALL_SITES",
+            "sessions": 16,
+            "failures": [],
+            "inputSha256": "44ca7ac04166607e97c23621bb0d0b54c027e71537103aa39653a0eb49ac0761",
+            "resultSha256": "f5c7c355dccd9508e22a06f9bed67dde3aa41519d22c10971d1a977686cff51b",
+            "artifacts": [
+                {
+                    "sidecarSha256": "74045ccc16e190f9b808aaeb35e63794b3d6bac1ecbce9f763b6c498b776f4da",
+                    "sourceSha256": "8967d9152d0a866f841d0383e5259eea13adb716b7d5638fcdc184e31ce50ca7",
+                    "rebaseDelta": 0
+                },
+                {
+                    "sidecarSha256": "d439427f29bc9cce9842cbe09fe581c5037698bb6be096a9dc7cf02c1ce4e747",
+                    "sourceSha256": "2dae7ce0fa24f7c801f1cd6b6e5f432a9e17d5c21f24ef65a88ada0e4baa4d16",
+                    "rebaseDelta": 4194304
+                }
+            ]
+        },
+        {
+            "case": "x86_64-pie",
+            "status": "PASS_PACKAGED_CALL_SITES",
+            "sessions": 16,
+            "failures": [],
+            "inputSha256": "b18b5d269edfec777f705b9c5e08d22f59f09243d788923c1323741e78e4c592",
+            "resultSha256": "5dddc395d2879402bedc8604c6f0551a9321d72fe168b5471af9a9e22aef1b7e",
+            "artifacts": [
+                {
+                    "sidecarSha256": "04a8e94dd0be39cc274680c534052d3fb1880b9a3c57ac1f425fe9a9860dedca",
+                    "sourceSha256": "5938342b51afc7dd46c6e573764d83b6346f23560a16932ed9453d1ce40a5561",
+                    "rebaseDelta": 1048576
+                },
+                {
+                    "sidecarSha256": "ce6df8b4ea1452bd1956e3f8bf722d682cee9187f531ae4fe08da1ddfb8dc9cf",
+                    "sourceSha256": "4a7aebc84719845eec3bd00970ac6e850783deb52b726b577f96c3490e41a4b5",
+                    "rebaseDelta": 5242880
+                }
+            ]
+        },
+        {
+            "case": "aarch64-exec",
+            "status": "PASS_PACKAGED_CALL_SITES",
+            "sessions": 16,
+            "failures": [],
+            "inputSha256": "4141f968b2b67a8d9215d50790a1599b59aff1a4e38377513b8fa5b491f732ef",
+            "resultSha256": "854d5b4bd1f76765aa23e9106c96f3da444914c3a4c133311759851930edad69",
+            "artifacts": [
+                {
+                    "sidecarSha256": "701fd9932dcd9feaf2c79a768ebcfded865f119d00fe472e6a8f45e8bed4ef60",
+                    "sourceSha256": "9cb2671982e5415ee7d0b4570f94e0fe28e7a0113c78b103dd1f03980c2f55ab",
+                    "rebaseDelta": 0
+                },
+                {
+                    "sidecarSha256": "0df15b8bf8e6fe734a82f8aea99453eb5c35e763c915c8771020cfe9682dbddd",
+                    "sourceSha256": "74a4ddafa8cfcd5ce6b1429942e8c16fd66c9b915014ea64439c84de5bd7735b",
+                    "rebaseDelta": 4194304
+                }
+            ]
+        },
+        {
+            "case": "aarch64-pie",
+            "status": "PASS_PACKAGED_CALL_SITES",
+            "sessions": 16,
+            "failures": [],
+            "inputSha256": "4e8dd09bdb50cfd86fd61bfd78d5651d7fa08ce1e49effa9db8fbc1a9c8b0258",
+            "resultSha256": "0e563ec4f27a34e9473e50639b507629030ef9a0d9a65e86835b9e373f0ebde3",
+            "artifacts": [
+                {
+                    "sidecarSha256": "4b04d775a7ded877a73cdec46cc3b951320bee87da37e44dbfe30c01036d099f",
+                    "sourceSha256": "007265e609cc1d03f78a7fa6d9316e6af56f9a00ff4ad40a8afa7aea37ed2b83",
+                    "rebaseDelta": 1048576
+                },
+                {
+                    "sidecarSha256": "4cfaa46788a5503759bb11ea8c69837e5b62c449cd077263442acda3ba45b2df",
+                    "sourceSha256": "9f972d9fcbae7f86a6eafb9411106258a0a5b7225c2bac9e85b11d6a007aaf72",
+                    "rebaseDelta": 5242880
+                }
+            ]
+        }
+    ],
+    "neighbors": [
+        {
+            "case": "entry-storage-noreturn-exec",
+            "status": "PASS",
+            "resultSha256": "fe17ee2b85dfa33d52e680e761218ebee5cbebb6197310fb09b2456bbc91629a",
+            "protectedFiles": 580,
+            "protectedUnchanged": true,
+            "debuggerResults": {
+                "compiler-gdb.json": "5f0681b9d53dafe4880cf385d8a989fd1fb5f7379dee6f20879532e1ac628761",
+                "fixed-gdb.json": "dd9072c73914cb4209bf1e124ef64f6ee6cf8a5f9b985b4bee0e64db45ae4ccb"
+            }
+        },
+        {
+            "case": "entry-storage-noreturn-pie",
+            "status": "PASS",
+            "resultSha256": "8220589bd1072fd5e920c722957110562486e7d06761b6d90b0d340aaa64ecf8",
+            "protectedFiles": 580,
+            "protectedUnchanged": true,
+            "debuggerResults": {
+                "compiler-gdb.json": "5f0681b9d53dafe4880cf385d8a989fd1fb5f7379dee6f20879532e1ac628761",
+                "fixed-gdb.json": "dd9072c73914cb4209bf1e124ef64f6ee6cf8a5f9b985b4bee0e64db45ae4ccb"
+            }
+        },
+        {
+            "case": "entry-storage-noreturn-pie-rebased",
+            "status": "PASS",
+            "resultSha256": "f029ebcc0759c7be3a5fc88c50a865eeaebecff2740e2029c43f56ca8cc57d57",
+            "protectedFiles": 580,
+            "protectedUnchanged": true,
+            "debuggerResults": {
+                "compiler-gdb.json": "5f0681b9d53dafe4880cf385d8a989fd1fb5f7379dee6f20879532e1ac628761",
+                "fixed-gdb.json": "dd9072c73914cb4209bf1e124ef64f6ee6cf8a5f9b985b4bee0e64db45ae4ccb"
+            }
+        },
+        {
+            "case": "entry-storage-outside-x86_64-exec",
+            "status": "PASS",
+            "resultSha256": "39ddd7bf2acb1e1171b4dbc55d261e5f4b14e0ddc235d076b578688b5aaaf484",
+            "protectedFiles": 574,
+            "protectedUnchanged": true,
+            "debuggerResults": {
+                "compiler-gdb.json": "34f5bbb119c29b98d0b2f68f3d8047e98adfdb91adb5c3bdb88ba95089a467d8",
+                "complete-gdb.json": "c7a54c3188a16ac556380b944c843aa04644ee90913197c027f3c6e52e4aeef3",
+                "excluded-gdb.json": "f017b11f09bf4a978daab101ce07c94fd02de3649eb66dccce5701b86a19faa7"
+            }
+        },
+        {
+            "case": "entry-storage-outside-x86_64-pie",
+            "status": "PASS",
+            "resultSha256": "783f90508ef1fae2676a609b5a5199177d0410d8bc82eb0981cb01d4c2bd17da",
+            "protectedFiles": 574,
+            "protectedUnchanged": true,
+            "debuggerResults": {
+                "compiler-gdb.json": "679c44f8d66c1041acf65c88fe0c2ef907687256753a0e28438526a3b80a4b71",
+                "complete-gdb.json": "5afd563487a6061dec8e82a03ecacf92bbdfe70dce3c0ce55ec1061500cda185",
+                "excluded-gdb.json": "9da3ec81fee2de363237a2cd1655b65ab68fb0704352130bd579b12ac18ef0c5"
+            }
+        },
+        {
+            "case": "entry-storage-outside-x86_64-pie-rebased",
+            "status": "PASS",
+            "resultSha256": "771cef4318e0cb7c5da00d4670e9df672c6d4774f258c124f50b9307db953454",
+            "protectedFiles": 574,
+            "protectedUnchanged": true,
+            "debuggerResults": {
+                "compiler-gdb.json": "83c3a8a5cb3a2c5936b0366588b290b13f7239999f86dcd72ae1df2ed0b6bd9f",
+                "complete-gdb.json": "8e28da02ad23da9e43b80780e505965ded939bebc5d637dc41818815e36cc38e",
+                "excluded-gdb.json": "f849242c9be37926103de4c8da6766a061e61c93d9c09bfbebf816e12c2c0c7e"
+            }
+        },
+        {
+            "case": "entry-storage-outside-aarch64-exec",
+            "status": "PASS",
+            "resultSha256": "88ac255a225e665abc22f9e734f5e504886d179c327d23ff8168d41d8de2c2de",
+            "protectedFiles": 574,
+            "protectedUnchanged": true,
+            "debuggerResults": {
+                "compiler-gdb.json": "9832e04f9bf1575b9c5c48618fb3b0912ff1248e1d534a551716597e62fdc99f",
+                "complete-gdb.json": "11b4a65239b4c916cf122c73a1261731bc54ef7eb28eaa7591b46ff682e99bb3",
+                "excluded-gdb.json": "e9f995a6be9f95ccd782782c4e34c9dded2edea20474a55385cf2cce15f4e789"
+            }
+        },
+        {
+            "case": "entry-storage-outside-aarch64-pie",
+            "status": "PASS",
+            "resultSha256": "5e1f64cd00b8015b3896035bef653b638220601961c747b2f6b4baa9719aff90",
+            "protectedFiles": 574,
+            "protectedUnchanged": true,
+            "debuggerResults": {
+                "compiler-gdb.json": "ad684388ec73cced030037dbfcbc998f0c9fc8caf97d093902b9d22cae51ad07",
+                "complete-gdb.json": "50a3ee6d3ae0437326b9c6bd336379511e2f6b8752d9e01bd04fb25174d66609",
+                "excluded-gdb.json": "eea7a5a1e102305ac140cffeb91c6071cbfd43ca74ba440d458c773a3b3ff08a"
+            }
+        },
+        {
+            "case": "entry-storage-outside-aarch64-pie-rebased",
+            "status": "PASS",
+            "resultSha256": "d8cffd71471854d24d770d12d7105827a733e6a66d0015a1de2d70b45b648e55",
+            "protectedFiles": 574,
+            "protectedUnchanged": true,
+            "debuggerResults": {
+                "compiler-gdb.json": "57541ff32a4cd0ac4ef7a030e5c381926c772c73149789d316c6292e243f9641",
+                "complete-gdb.json": "4682cfb9bb0748573cf1e2d4f6d1a0def6a4d9c87a50fe6e1f9da41d5fbf4615",
+                "excluded-gdb.json": "66dc3d8d5ccb2a3159a70a051a402abefd2f901ac13c12be4a8284dd38c22421"
+            }
+        }
+    ],
+    "validation": "GNU readelf, LLVM --verify, pinned dwarfdump, actual GDB/QEMU behavior, deterministic repeat exports and original/package/saved-program preservation",
+    "logs": {
+        "build": "f5931ca571233aa32e431ddc0360686eab355c1800cfc7fa5936f5c44da139a9",
+        "typedRegression": "88512b45776c0be188916c40e1bceaf43db2a4b58c52ee23f4c54b1c39325809"
+    }
+}

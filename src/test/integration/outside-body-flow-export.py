@@ -122,7 +122,7 @@ def main():
                 assert (int(omitted[0]['startAddress'], 0), int(omitted[0]['endAddress'], 0)) == (arithmetic['next'], symbols['end'])
             else:
                 intervals = [(int(r['startAddress'], 0), int(r['endAddress'], 0)) for r in omitted]
-                assert intervals == [(symbols['boundary'], symbols['probe_hidden']), (symbols['probe_after'], symbols['end'])]
+                assert intervals == [(symbols['boundary'] + 1, symbols['probe_hidden']), (symbols['probe_after'], symbols['end'])]
             write(name + '-report.json', report)
         project_after = {str(p.relative_to(project)): support.digest(p) for p in project.rglob('*') if p.is_file()}
         write(mode + '-project-after.json', project_after)
@@ -139,7 +139,8 @@ def main():
         run(variant + '-strict', ['python3', source / 'check-dwarfdump.py', artifact,
             case / (variant + '-strict-checks.log'), '--original', binary])
         if variant != 'compiler':
-            # Keep excluded-flow name/type only; the complete CFG now proves a backup.
+            # The excluded body retains only recorded first-PC storage; the
+            # complete CFG independently proves its longer register backup.
             records = []
             for line in (case / (variant + '-info.log')).read_text().splitlines():
                 header = re.match(r'^\s*<(\d+)><[0-9a-f]+>: Abbrev Number: \d+(?: \((DW_TAG_\w+)\))?', line)
@@ -160,14 +161,12 @@ def main():
             parameter, = children
             assert parameter['tag'] == 'DW_TAG_formal_parameter'
             assert 'DW_AT_type' in parameter['attrs']
-            if variant == 'excluded':
-                assert 'DW_AT_location' not in parameter['attrs']
-            else:
+            if variant in ('excluded', 'complete'):
                 location = parameter['attrs']['DW_AT_location']
                 match = re.fullmatch(r'(0x[0-9a-f]+) \(location list\)', location)
                 assert match, location
                 # Independently read the exact fixed-form DWARF 5 loclist bytes.
-                section, = re.findall(r'^\s*\[\s*\d+\]\s+\.debug_loclists\s+PROGBITS\s+[0-9a-f]+\s+([0-9a-f]+)\s+([0-9a-f]+)\b', (case / 'complete-sections.log').read_text(), re.M)
+                section, = re.findall(r'^\s*\[\s*\d+\]\s+\.debug_loclists\s+PROGBITS\s+[0-9a-f]+\s+([0-9a-f]+)\s+([0-9a-f]+)\b', (case / (variant + '-sections.log')).read_text(), re.M)
                 offset, size = [int(v, 16) for v in section]
                 import struct
                 data = artifact.read_bytes()[offset:offset + size]
@@ -181,9 +180,11 @@ def main():
                     intervals.append([start, end, data[cursor + 19]])
                     cursor += 20
                 arithmetic, = [row for row in evidence['complete']['model']['instructions'] if row['address'] == symbols['probe_after']]
-                assert intervals == [[symbols['boundary'], symbols['probe_copy_done'], 4 if args.target == 'x86_64' else 1],
-                    [symbols['probe_copy_done'], arithmetic['next'], 0]], intervals
-                write('complete-raw-intervals.json', intervals)
+                expected = [[symbols['boundary'], symbols['boundary'] + 1, 4 if args.target == 'x86_64' else 1]] if variant == 'excluded' else [
+                    [symbols['boundary'], symbols['probe_copy_done'], 4 if args.target == 'x86_64' else 1],
+                    [symbols['probe_copy_done'], arithmetic['next'], 0]]
+                assert intervals == expected, intervals
+                write(variant + '-raw-intervals.json', intervals)
             write(variant + '-raw-location.json', parameter)
     os.environ['FLOW_PREVIOUS'] = 'previous' if args.previous_ghidra else ''
     write('model.json', {'role': args.role, 'target': args.target, 'cases': evidence})

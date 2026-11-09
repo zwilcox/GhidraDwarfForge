@@ -43,6 +43,16 @@ public final class UnwindFlowSmoke {
     }
 
     public static void main(String[] args) {
+        var dispatch = new LinkedHashMap<Integer, Node<Integer>>();
+        var destinations = java.util.stream.IntStream.rangeClosed(1, 256).boxed().toList();
+        dispatch.put(0, new Node<>(List.of(new Opaque("bounded dispatch loses incoming facts")), destinations));
+        for (int destination : destinations) dispatch.put(destination, node(List.of(new Copy(SAVED, new Constant(destination, 8))), 257));
+        dispatch.put(257, node(List.of()));
+        var dispatched = UnwindFlow.analyze(dispatch, 0, seed(), SP, () -> false);
+        require(dispatched.before().size() == 258 && dispatched.before().get(257).values().isEmpty() &&
+            dispatched.before().get(257).memory().isEmpty(), "multiway dispatch invented common facts or lost a successor");
+        rejected(() -> new Node<>(List.of(), java.util.stream.IntStream.rangeClosed(1, 257).boxed().toList()));
+        rejected(() -> new Node<>(List.of(), List.of(1, 1)));
         var graph = new LinkedHashMap<Integer, Node<Integer>>();
         graph.put(0, node(List.of(add(SP, SP, -16), add(TEMP, SP, 8), new Store(TEMP, SAVED, 8)), 1));
         graph.put(1, node(List.of(new Copy(FP, SP), new Copy(SAVED, new Constant(77, 8))), 2));

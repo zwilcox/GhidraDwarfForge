@@ -15,6 +15,28 @@ src/lib/libdwarfp/libdwarfp.h
 No historical declaration under the repository's top-level `src/` directory
 is part of the supported binding.
 
+### Issue #117 standalone extension audit
+
+The native ABI probe additionally checks `dwarf_add_AT_block_a` against pinned
+`libdwarfp.h` lines 282–288. Its parameters are producer handle, owner DIE,
+16-bit attribute, pointer to bytes, 64-bit unsigned length, attribute output
+pointer and error output pointer. The Linux GCC 13.3.0 probe passes. The Java
+binding maps the bytes as `byte[]` and the length as `long`; JNA keeps the array
+alive through the call. The native producer copies it before returning.
+
+The isolated call-site probe uses this public API to submit an actual nested
+`DW_OP_entry_value` byte block. Patch 0002 makes the relevant DWARF 5 attributes
+select `DW_FORM_exprloc`; it does not extend `dwarf_add_expr_gen_a` to accept
+nested blocks or change the native ABI. Standalone Linux JNA tests pass for five
+target profiles: x86-64, AArch64, ARM32 and MIPS32 in both byte orders. Each runs
+eight successful and eight error/cleanup producer lifetimes. After mutating the
+Java input array, independently decoded output retains the original expression;
+repeat exports are byte-identical. Reference targets and high 64-bit addresses
+are checked, and emitted sections pass LLVM verification. The local JVM is
+OpenJDK 25.0.4.1 with JNA 5.14.0; Gradle output is Java 21 bytecode. Native Windows
+and the hosted Java 21 runtime remain unverified. See the
+[JNA receipt](evidence/call-site-jna.json); this is not Ghidra/GDB runtime proof.
+
 ## Fixed-width and pointer mappings
 
 | C type | Java/JNA mapping |
@@ -48,7 +70,7 @@ Linux and Windows native builds.
 |---|---|
 | Initialization and policy | `dwarf_producer_init`, `dwarf_pro_set_default_string_form` |
 | DIE construction | `dwarf_new_die_a`, `dwarf_add_die_to_debug_a`, `dwarf_die_link_a` |
-| Attributes | `dwarf_add_AT_name_a`, `dwarf_add_AT_comp_dir_a`, `dwarf_add_AT_producer_a`, `dwarf_add_AT_unsigned_const_a`, `dwarf_add_AT_reference_c`, `dwarf_add_AT_any_value_sleb_a`, `dwarf_add_AT_any_value_uleb_a`, `dwarf_add_AT_dataref_a`, `dwarf_add_AT_targ_address_c`, `dwarf_add_AT_flag_a`, `dwarf_add_AT_location_expr_a` |
+| Attributes | `dwarf_add_AT_name_a`, `dwarf_add_AT_comp_dir_a`, `dwarf_add_AT_producer_a`, `dwarf_add_AT_unsigned_const_a`, `dwarf_add_AT_reference_c`, `dwarf_add_AT_any_value_sleb_a`, `dwarf_add_AT_any_value_uleb_a`, `dwarf_add_AT_dataref_a`, `dwarf_add_AT_targ_address_c`, `dwarf_add_AT_flag_a`, `dwarf_add_AT_location_expr_a`, `dwarf_add_AT_block_a` |
 | Expressions | `dwarf_new_expr_a`, `dwarf_add_expr_gen_a`, `dwarf_add_expr_addr_c` |
 | Serialization and relocation | `dwarf_transform_to_disk_form_a`, `dwarf_get_section_bytes_a`, `dwarf_get_relocation_info_count`, `dwarf_get_relocation_info` |
 | Cleanup | `dwarf_producer_finish_a` |

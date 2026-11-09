@@ -43,6 +43,55 @@ public final class GhidraUnwindInstructions {
 
     private GhidraUnwindInstructions() { }
 
+    /**
+     * Conservative effects for separately captured call-site graphs. Unlike the
+     * unwind closure, this path grants no ordinary-callee summary. A call loses
+     * all facts. Conditional intra-instruction effects kill every possible output
+     * instead of pretending that the selected arm ran unconditionally.
+     * The caller must separately verify the bytes, control flow and ABI profile.
+     */
+    public static List<Effect> callSiteEffects(Program program, Instruction instruction, TaskMonitor monitor)
+            throws CancelledException {
+        monitor.checkCancelled();
+        PcodeOp[] operations = instruction.getPcode(false);
+        if (operations == null || operations.length > 4096) return List.of(new Opaque("missing or unbounded raw p-code"));
+        boolean conditional = false;
+        for (int index = 0; index < operations.length; index++) {
+            monitor.checkCancelled();
+            var operation = operations[index];
+            int opcode = operation.getOpcode();
+            if (opcode == PcodeOp.BRANCH || opcode == PcodeOp.CBRANCH) {
+                var target = operation.getInput(0);
+                conditional |= target.isConstant() || target.getAddress().equals(instruction.getDefaultFallThrough());
+                if (!conditional && index != operations.length - 1) {
+                    return List.of(new Opaque("machine branch has trailing effects"));
+                }
+            }
+        }
+        var effects = new ArrayList<Effect>();
+        if (conditional) {
+            for (var operation : operations) {
+                monitor.checkCancelled();
+                int opcode = operation.getOpcode();
+                if (opcode == PcodeOp.BRANCH || opcode == PcodeOp.CBRANCH) continue;
+                if (opcode != PcodeOp.COPY && opcode != PcodeOp.LOAD && !pure(opcode) ||
+                        operation.getOutput() == null || operation.getOutput().isAddress()) {
+                    return List.of(new Opaque("conditional instruction has unproved memory/control effects"));
+                }
+                try { effects.add(new Kill(cell(operation.getOutput()))); }
+                catch (IllegalArgumentException unsupported) { return List.of(new Opaque(unsupported.getMessage())); }
+            }
+            return List.copyOf(effects);
+        }
+        var temporaries = new Temporaries(operations, monitor);
+        for (var operation : operations) {
+            monitor.checkCancelled();
+            try { lower(program, instruction, operation, ignored -> null, effects, temporaries); }
+            catch (IllegalArgumentException unsupported) { return List.of(new Opaque(unsupported.getMessage())); }
+        }
+        return List.copyOf(effects);
+    }
+
     public static Captured capture(Program program, Function function, InstructionPolicy policy,
             CallProof calls, TaskMonitor monitor)
             throws CancelledException {

@@ -1,5 +1,292 @@
 # TODO.md — GhidraDwarfForge
 
+## Below-entry alias oracle correction — 2026-11-09
+
+**CONFIRMED:** local review of the remaining x86 steps reproduced a second
+obsolete inventory assertion: exactly two analyst aliases excluded three proved
+private call-origin symbols. The oracle now verifies both inventories against
+assembler labels, original direct-call bytes and actual entry-to-range-end extents.
+Six ET_EXEC/PIE original/rebased/repeat cases pass validators and GDB; repeats
+are deterministic and original/package files are preserved. Eight unit tests,
+21 negative mutations and six actual-fixture corruption controls pass, as does
+a fresh external-declaration regression. Production/native code is unchanged.
+Full corrected-head CI and protected #117 integration remain required before
+#120. See the [entry-alias receipt](docs/evidence/function-entry-call-origin-inventory.json).
+
+## External declaration oracle correction — 2026-11-09
+
+**CONFIRMED:** run `42575663188` failed its x86 external-declaration check
+because it counted an internal call-origin declaration as an external function.
+The corrected oracle independently proves internal origins and preserves the
+exact addressless external inventory. A fresh packaged export passes GNU/LLVM/
+pinned validation, compiler/Forge GDB, deterministic reopen and preservation.
+Seven fixture mutation controls, six inventory tests and three adjacent signature
+fixtures pass. Exporter/native code is unchanged. Fourteen other hosted jobs
+passed, but the full corrected-head gate and protected #117 integration remain
+required before #120. See the [declaration receipt](docs/evidence/external-call-origin-declarations.json).
+
+## Versioned symbol inventory correction — 2026-11-09
+
+**CONFIRMED:** run42563112803 x86 job128986248749 failed because the
+versioned-symbol independent writer omitted a proven private call-origin alias.
+Four corrected packaged cases pass locally: both default symbol versions with
+and without section headers, exact writer equality, GDB/loader behavior,
+validators, determinism and preservation. Six negative-control tests pass.
+Production/native code is unchanged. Full corrected-head CI and protected
+#117 integration remain required before #120. See the
+[versioned-symbol receipt](docs/evidence/versioned-call-origin-symbols.json).
+
+## Call-origin symbol inventory regression — 2026-11-08
+
+**CONFIRMED:** hosted x86 job `128942413613` rejected exact symbol-table
+equality after a justified private call-origin alias was added. The corrected
+oracles preserve every original symbol/string byte and verify each added
+alias against discontiguous ranges and original direct-call instructions.
+Nine section-backed fixtures, six independent-writer comparisons, three
+sectionless exports and the incomplete-count omission control pass locally;
+six unit tests reject 17 malformed inventories or call proofs. Exporter/native
+code is unchanged. The full corrected-head gate and protected #117 integration
+remain required before #120. See the [inventory receipt](docs/evidence/call-origin-symbol-inventory.json).
+
+## Current entry-storage regression checkpoint — 2026-11-08
+
+**CONFIRMED:** all 64 fresh packaged GDB cases pass on x86-64 and AArch64,
+ET_EXEC/PIE and original/rebased analysis. All nine adjacent no-return and
+outside-body cases pass, including rebased PIE. Tests independently compare
+first-PC parameter values with physical registers and require unavailable later
+values when lifetime proof is absent. GNU/LLVM/pinned validators, deterministic
+reruns and original/package/saved-program preservation pass.
+
+The typed entry-contract regression passes 16 cases/1,043 checks. Recorded
+first-PC storage must not enable rejected call-site completeness or actual-value
+inference; exported callee bindings are checked positively for valid entry paths
+and absent for invalid ones. Argument 576, tail 613, capture 457, bounded switch
+371 and plan controls pass with the Java21 extension build.
+
+Exporter/native sources remain identical to 5b9466b6. The proposed incoming gate
+was withdrawn: it confused recorded current storage with caller history and
+removed valid entry values. The failed experiment remains recorded, not claimed
+as a production fix. The old AArch64 comparison reports were regenerated from
+preserved projects. The full corrected-head hosted gate and protected #117
+integration remain required; #120 implementation has not begun.
+
+See [the bounded evidence receipt](docs/evidence/call-site-entry-storage-distinction.json).
+
+
+## Storage maintenance — 2026-11-08
+
+- **CONFIRMED #117 current hosted checkpoint:** run `42536372353` at
+  `cd3817ce` passes both primary packaged call-site steps (64 runtime cases),
+  native builds, extension/package checks, Linux GUI, Windows host and the
+  transported Windows/GDB consumer. The Windows chooser correction passed the
+  final default-directory export and all three Script Manager journeys.
+
+- **CONFIRMED MIPS diagnostic assertion failure:** little-endian job
+  `128904296904` fails `mips-fpr-system.py` at the old exact eight-diagnostic
+  assertion, before the Forge structural/runtime checks. Source inspection
+  shows the new recovery pass reports one unsupported ABI omission for each
+  of the four fixture functions. Require those four exact address/reason messages
+  separately and retain the original eight-diagnostic count. Save the report
+  before assertions and require no call-site DIEs/completeness on this unsupported
+  profile. Five pure diagnostic tests and workflow lint pass; corrected hosted
+  MIPS execution and the full gate remain required. No production change.
+
+The earlier checkpoints below are historical; their pending lists are superseded
+by the current checkpoint above.
+
+- **CONFIRMED #117 packaged diagnosis:** AArch64 job `128894411072` rejected
+  normal omission messages because Ghidra logs `printerr` as ERROR. Require
+  two completed structured reports and account for each omission against its
+  own report; reject other errors, failed fixture decompilations and terminal
+  reports, and bind report paths/hashes to actual outputs. Six pure parser
+  tests and workflow lint pass. Re-run packaged validators and GDB acceptance.
+
+- **CONFIRMED Windows follow-up:** run `42530193205` passed Windows headless,
+  cancellation, attachment and build-ID checks, then timed out navigating the
+  multi-file Script Manager output chooser. Record the requested/observed path,
+  filename, visibility and screenshot on failure; retain the existing timeout
+  and selection assertions. Root cause and later skipped checks remain open.
+
+- **CONFIRMED #117 diagnostic gap:** `42531765255` passed both primary lanes'
+  comparison step and reached the packaged export marker, but the transcript
+  assertion still failed. Coverage JSON hid the earlier error from the printed
+  tail. Add bounded error-match context, retain strict failure detection, and
+  diagnose from the next hosted run. No packaged runtime acceptance yet.
+
+- **CONFIRMED #117 MIPS fixture setup failure:** both MIPS lanes in run
+  `42530193205` rejected the missing `call-site-reference.c` inventory entry.
+  The corrected explicit inventory matches all 118 source files; shell syntax
+  and whitespace checks pass. Re-run hosted reproducibility and exporter checks;
+  this static correction does not establish MIPS runtime acceptance.
+
+- **CONFIRMED #117 read-only fix:** run `42530193205` at `0f29bc0` passed both
+  primary lanes' compiler/Forge comparisons, preservation and recovered runtime
+  checks. Both packaged runs then reported an error in `original-headless`.
+  Surface bounded transcript tails in the CI assertion and diagnose that error;
+  do not treat the successful probe as packaged acceptance.
+
+- **CONFIRMED #117 preservation gate failure:** `c6dd2f9` passed Linux/Windows
+  native builds, the full extension suite and release assembly. Both primary
+  lanes then failed the fresh saved-project hash check after passing JNA,
+  compiler-reference and serializer controls. Correct the harness's writable
+  project container using a read-only saved view; retain all `idata` hashes and
+  add per-view differences. Packaged checks remain unexecuted. Validate this
+  correction on a fresh hosted run before proceeding with #117 acceptance.
+
+- **CONFIRMED hosted follow-up:** draft [PR190](https://github.com/zwilcox/GhidraDwarfForge/pull/190)
+  is open. First run `42528603640` stopped before compilation because generic
+  `pc` identifiers/comments matched the architecture scan. Renamed those to
+  instruction/entry addresses; the unchanged static scan now passes locally.
+  Full validation must run on the corrected head; #117 is still open.
+  Run `42528777328` passed the architecture checks but failed compilation on a
+  duplicate local introduced by the rename. Distinguish `elfEntryAddress` from
+  Ghidra's `entryAddress`; re-run the full hosted gate after that correction.
+
+- **PRESENT, UNVERIFIED #117 packaged harness:** the real installed script is
+  wired into both required call-site CI lanes with package provenance, fixture
+  curation, preservation, deterministic reruns, structural validators and all
+  64 runtime cases. Python syntax/workflow lint pass; execution is pending.
+  Submit the draft through normal hosted CI while local heavy work remains
+  refused. Do not close #117 or start #120 from the earlier probe results.
+
+- **CONFIRMED #117 exact-entry checkpoint:** the four x86 recursion failures are
+  fixed locally. All 64 recovered runtime cases pass, plus 68 stripped/renamed
+  artifact-copy and missing-alias controls. Canonical function ranges, names,
+  signatures and variable evidence remain intact. See
+  [call-origin evidence](docs/evidence/call-site-call-origins.json).
+  Next: normal packaged invocation, full export regressions and hosted gates;
+  #120 remains after protected #117 integration.
+- **CONFIRMED storage refusal:** 165 pre-existing/current Java fixture temp
+  directories under `/tmp` are now accounted as scratch (21.42 GiB). Three
+  relevant JavaExec tasks now inherit guarded `TMPDIR`. Scratch is 21.54 GiB
+  against 20 GiB; files are retained and no limit changed. Await the requested
+  temporary 24 GiB allowance before further local heavy work, or a different
+  explicit user decision. This does not pause the feature goal or authorize
+  cleanup of the retained directories/archives.
+
+- **CONFIRMED:** the user reactivated feature goal #115 → #117 → #120 after
+  storage maintenance. #115 is merged as `71352a3` with its final full/performance
+  gates passing. #117 has a [complete acceptance plan](docs/CALL-SITE-PLAN.md),
+  and recovered-plan structural checks pass. The normal script is connected and
+  compiles, but packaged invocation and full debugger acceptance remain open;
+  #120 follows it.
+- **CONFIRMED:** local storage policy and monitored launcher are implemented;
+  see [STORAGE.md](docs/STORAGE.md) and AGENTS.md section 6.2. Tiny isolated tests
+  cover launch refusal, live growth, process-group stopping, cleanup and accounting.
+  No exporter build, hosted CI run, download or feature work is part of this change.
+- **CONFIRMED cleanup:** 21 approved old artifact directories were removed,
+  reclaiming 109.16 GiB after verifying a 13.09 MiB archive of 1,019 retained
+  records. The libdwarf directory and external-root files remain intact.
+- **CONFIRMED user-directed deferral:** skip additional cleanup for this goal.
+  Six fixed root archives (2.30 GiB) remain visible under a scoped exception;
+  physical evidence is 6.69 GiB, budget-charged evidence is 4.39 GiB. All new work
+  keeps the original budgets; the guard is READY and all 16 controls pass.
+  Retire this exception after #115 → #117 → #120; do not delete the archives
+  automatically. Keep the legacy registration.
+- **PLANNED, not configured:** a filesystem quota for a hard ceiling. The
+  implemented monitoring can overshoot and does not contain arbitrary writes.
+- **CONFIRMED #117 prerequisite:** the pinned producer's attribute whitelists
+  exclude required DWARF 5 call-site attributes. The source audit and isolated
+  admission probe are recorded in [CALL-SITE-PLAN.md](docs/CALL-SITE-PLAN.md).
+  **CONFIRMED stock reproduction:** the compiled probe's control passes, and
+  all five call-site attribute modes fail with `DW_DLE_INPUT_ATTR_BAD (143)`.
+  **CONFIRMED local candidate:** patch 0002 passes the Linux ABI probe and 15
+  admission/form cases with readelf/LLVM checks. Production build/packaging pins
+  are wired; local packaging controls and workflow lint pass. Standalone JNA and
+  independent serialized-form checks pass for five profiles, plus the Gradle smoke
+  and extension build. Compiler references now pass 64 GDB sessions across
+  native x86-64/QEMU AArch64 ET_EXEC/PIE, including positive tail frames and
+  ambiguity/recursion/indirect controls, plus independent structural checks.
+  Raw Ghidra capture now passes 457 real-decoder checks and 104 saved/rebased
+  compiler-reference comparisons; annotations and incomplete bodies remain
+  explicit. Direct-tail boundary-state checks now pass 570 checks in 47 decoder
+  cases and 72 selected saved/rebased tail proofs, with original/database hashes
+  preserved. The split cold-block false positive is fixed by checking known
+  incoming non-call edges and propagating rejected entry assumptions. Integer
+  value expressions now pass 7,980 independent encoder vectors, 293 decoded
+  checks/120 value evaluations, 576 saved/rebased comparisons and five native
+  serialization profiles. Next bind expressions to actual parameter storage,
+  address incomplete caller coverage, justify completeness and integrate emission.
+  Hosted native/JNA/reference/capture/tail jobs, Windows
+  runtime and Forge debugger behavior remain incomplete; these prerequisites
+  do not complete #117.
+
+- **CONFIRMED #117 serializer checkpoint:** an explicit immutable plan now emits
+  call-site records through the production writer. Compiler-derived controls pass
+  56 native x86-64/QEMU AArch64 ET_EXEC/PIE debugger sessions, including true/false
+  completeness, tail frames, entry values, failed-source and missing-value cases.
+  GDB rejected simultaneous argument location/formal-reference attributes despite
+  LLVM passing; register arguments now emit location alone. Structural checks,
+  deterministic reruns, original preservation, cancellation, plan admission,
+  extension build and workflow lint pass locally. The normal script still supplies
+  no plan. Next bind real callee entry storage, address incomplete caller coverage,
+  establish completeness and run the full Ghidra/hosted acceptance matrix.
+  See [scoped evidence](docs/evidence/call-site-serialization.json).
+
+- **CONFIRMED #117 entry-binding component:** type extraction can now snapshot
+  actual parameter entry storage alongside canonical formal identities and reuse
+  allocation corrections/automatic omissions. Whole-register integer binding
+  passes 469 decoder/binding checks, 240 independent VM evaluations and 712
+  saved/rebased evaluations. Original ELF and saved program hashes are unchanged.
+  AArch64's eight driver calls have proven constants; the incomplete-driver
+  limitation is x86-specific. The five-target parameter regression passes 610
+  checks, and the extension builds. Normal-script integration, ordinary-entry
+  assumptions, completeness, x86 caller coverage and full hosted/runtime
+  acceptance remain pending. See [binding evidence](docs/evidence/call-site-parameter-binding.json).
+
+- **CONFIRMED #117 entry-guard fix:** a regression reproduced incoming-register
+  facts at a split-frame label containing only ordinary outgoing calls. Entry
+  dependencies now cover every captured function, and incoming direct calls are
+  checked against original ELF bytes and decoded semantics. The new 16-case suite
+  passes 340 checks; tail and argument regressions plus all eight saved/rebased
+  comparisons pass. This resolves the identified ordinary-entry gap, without
+  claiming undiscovered incoming edges are absent. Next compose the call-site
+  plan, establish completeness and connect normal export; full runtime/hosted
+  acceptance and x86 driver coverage remain pending.
+
+
+- **CONFIRMED #117 composition checkpoint:** eight recovered saved/rebased
+  sidecars pass structural validators and deterministic reruns. Conditional
+  expression joins now target an explicit `DW_OP_nop`, fixing the strict
+  consumer failure. All 64 debugger scenarios ran; 60 frame comparisons match,
+  while x86 recursion loses one virtual frame in four views. Positive entry
+  values also remain unavailable because formal parameters lack entry locations.
+  Fix these gaps and x86 driver coverage before full hosted integration. The
+  normal script connection compiles but packaged execution is **PRESENT,
+  UNVERIFIED**. See [evidence](docs/evidence/call-site-composition.json).
+
+- **CONFIRMED #117 entry-location checkpoint:** actual formal register storage
+  now survives at the first instruction PC without inventing a later lifetime.
+  All 32 AArch64 runtime scenarios pass; x86 still has 20 failures in 32 cases
+  from driver argument coverage and recursive discontiguous origin lookup.
+  The runtime harness is wired as a strict gate for both targets, without
+  expected-failure exemptions. Eight artifacts pass structural/determinism
+  checks; 576 argument checks, 963 entry-contract checks, 240 VM vectors,
+  extension build, normal-script compilation and workflow lint pass. Fix the
+  x86 gaps, then complete packaged export and hosted acceptance before #120.
+  See [evidence](docs/evidence/call-site-entry-locations.json).
+
+- **CONFIRMED x86 driver diagnosis:** both original x86 fixtures assign switch
+  case zero to `caseD_0`, the shared epilogue to a separate `FUN_*`, and the
+  default block to `cs_driver.cold`. The `cs_*` probe misses that ordinary call;
+  the driver body has an escaping fallthrough. Independent inspection matches
+  all eight table targets per layout (absolute ET_EXEC, signed-relative PIE).
+  Guarded table/entry/ownership proofs remain **PLANNED**; references alone do
+  not admit targets or new frame assumptions. See
+  [audit](docs/evidence/call-site-driver-audit.json).
+
+- **CONFIRMED bounded-switch recovery:** guards and original non-writable table
+  bytes now prove computed successors independently of reference hints, including
+  absolute and relative x86 tables after rebasing. Dispatch loses all incoming
+  state; later constants are recoverable. Explicit fixture-only analyst body
+  correction gives 28/32 passing x86 runtime cases; four discontiguous-recursion
+  failures remain. AArch64 remains 32/32. The original split-body views are retained
+  as negative controls. There are 42 switch cases/371 checks, eight structurally
+  valid deterministic artifacts, and passing entry/flow/tail/build/lint checks.
+  Next resolve the consumer recursion failure and run packaged normal-script
+  export with body curation, then full hosted acceptance. Production does not
+  silently repair analyst bodies. See [evidence](docs/evidence/call-site-bounded-switch.json).
+
 ## Documentation and follow-up queue — 2026-11-08
 
 **CONFIRMED user requests:** remove superseded historical planning notes, retain
@@ -44,18 +331,18 @@ regressions: at 1,000 functions all measured paired directions worsen; at
 with other timing/memory results mixed. Artifact size grows at both sizes.
 
 **CONFIRMED #115 integrated:** [PR189](https://github.com/zwilcox/GhidraDwarfForge/pull/189)
-merged as `71352a398bc71e4c9bfbae8a53e98d7b16f18636`. This is feature acceptance,
-not a release announcement.
+merged as `71352a398bc71e4c9bfbae8a53e98d7b16f18636`; issue #115 is closed.
+Final full run `42446082844` and performance run `42446082851` passed.
+This is feature acceptance, not a release announcement.
 
-**PRESENT, UNVERIFIED full #117 acceptance:** the implementation is in
-[PR190](https://github.com/zwilcox/GhidraDwarfForge/pull/190), head
-`cd3817ce762b79e3da84b482440438132160ffe2`. In
-[run 42536372353](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42536372353),
-both primary installed-package call-site steps pass all 64 native/QEMU GDB
-cases with structural, determinism and preservation checks. Native builds,
-extension/package checks, Linux GUI, Windows host and transported Windows/GDB
-checks pass. The five target jobs and aggregate required gate remain pending.
-#120 has not started and follows protected #117 integration.
+**PRESENT, UNVERIFIED full #117 acceptance:** [PR190](https://github.com/zwilcox/GhidraDwarfForge/pull/190)
+contains the call-site implementation. Its latest correction `147dda06`
+accounts for private call-origin symbols in preservation oracles. Run
+`42548491469` failed the earlier exact-table-equality assertion on x86-64;
+AArch64, both MIPS targets and Windows jobs passed. The corrected local
+inventories and GDB workflows pass as recorded above. A new full hosted gate
+on the merged documentation baseline remains required. #120 has not started
+and follows protected #117 integration.
 
 Earlier checkpoint notes below are historical; their pending lists do not
 supersede the current goal status above or the feature acceptance maps.

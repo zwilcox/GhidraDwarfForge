@@ -26,9 +26,15 @@ stop = gdb.Breakpoint('*known_noreturn', internal=True)
 gdb.execute('continue')
 stop.delete()
 assert int(gdb.parse_and_eval('$pc')) == int(gdb.parse_and_eval('&known_noreturn'))
-# The existing lifetime policy omits this register-modified parameter. The
-# entry register is an independent ABI oracle, not an invented DWARF location.
+# Recorded entry storage remains valid at the first PC even when the body's
+# parameter lifetime is unavailable. Compare with the physical ABI carrier.
 assert int(gdb.parse_and_eval('$edi')) == 0
+parameter = gdb.parse_and_eval('code')
+assert not parameter.is_optimized_out and int(parameter) == 0
+entry = int(gdb.parse_and_eval('$pc'))
+instruction, = gdb.selected_frame().architecture().disassemble(entry, count=1)
+gdb.execute('stepi')
+assert int(gdb.parse_and_eval('$pc')) == entry + instruction['length']
 parameter = gdb.parse_and_eval('code')
 if variant == 'compiler':
     assert int(parameter) == 0
@@ -38,6 +44,9 @@ else:
     omission, = [row for row in report['omittedLocations']
         if row['function'] == 'known_noreturn' and row['variable'] == 'code']
     assert omission['reason'] == 'REGISTER_MODIFIED'
+    definition, = [row for row in json.loads((case / 'curated.json').read_text())['records']
+        if row['name'] == 'known_noreturn']
+    assert int(omission['startAddress'], 0) == definition['entry'] + 1
 
 assert int(gdb.parse_and_eval('*(int *)&variadic_calls')) == 5
 prototype = gdb.execute('ptype noreturn_pointer', to_string=True)
@@ -48,5 +57,6 @@ gdb.events.exited.connect(lambda event: exits.append(getattr(event, 'exit_code',
 gdb.execute('continue')
 assert exits == [0]
 (case / (variant + '-gdb.json')).write_text(json.dumps({'status': 'PASS', 'calls': rows,
-    'noreturnPointerPrototype': prototype, 'ordinaryNoreturnArgumentRegister': 0, 'parameterUnavailable': variant != 'compiler', 'exitCodes': exits}, indent=4) + '\n')
+    'noreturnPointerPrototype': prototype, 'ordinaryNoreturnArgumentRegister': 0,
+    'parameterAtEntry': 0, 'parameterUnavailableAfterEntry': variant != 'compiler', 'exitCodes': exits}, indent=4) + '\n')
 print('function-type-flags-gdb=' + variant + ' PASS')

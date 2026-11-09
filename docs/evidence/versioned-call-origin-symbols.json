@@ -1,0 +1,151 @@
+{
+    "status": "PASS_LOCAL_VERSIONED_CALL_ORIGIN_INVENTORY",
+    "scope": "Test expectation correction only; production exporter/native code unchanged. Full corrected-head hosted validation remains required.",
+    "failedRun": 42563112803,
+    "failedJob": 128986248749,
+    "failedHead": "0b7ae101955766bfa818072ffc601ded71100e4e",
+    "failedLogSha256": "eb549c2c89be41831e51edaf6276b241c50e238e374c4f506b58411df97d64b5",
+    "diagnosis": "Independent writer omitted a private call-origin alias. Original x86 E8 instruction, artificial declaration and exact entry span of a discontiguous function independently justify it; expected aliases are not copied from the emitted symbol table.",
+    "testSha256": "46a714a4ad8ec491adde02605cbf04d8db5045085e29cd95164aec43cf2a71cc",
+    "jarSha256": "1da6a6600de3e93a8a366df62f69a8798af1b0d3e2a4b8b1f9ed619b1d1250c0",
+    "commands": [
+        "python3 src/test/integration/versioned-dynamic-symbols.py <owned-ghidra-12.0.3>",
+        "python3 src/test/integration/versioned-dynamic-symbols.py <owned-ghidra-12.0.3> --sectionless",
+        "python3 -m unittest discover -s src/test/python -p test_call_origin_inventory.py -v"
+    ],
+    "environment": "Linux x86-64, Ghidra 12.0.3, Java 21.0.12.1; all commands through storage guard; packaged exporter runtime identical to failed CI package.",
+    "checks": [
+        "Complete automatic/independent/repeat sidecar byte equality",
+        "Deterministic automatic sidecar and synthetic source after read-only reopen",
+        "Original dynamic symbols, version tables, hashes, dynamic metadata and build ID preserved",
+        "Qualified and unqualified GDB lookup plus analyst types and source",
+        "Native dlvsym V1/V2 and default loader calls",
+        "GNU DWARF dumps and LLVM verify; pinned strict validator with independently corroborated inherited frame diagnostics only",
+        "Sectionless raw inventory, PT_LOAD remapping and corruption controls",
+        "Original inputs and installed JAR preserved"
+    ],
+    "unitTests": 6,
+    "negativeMutations": 17,
+    "cases": [
+        {
+            "sectionless": false,
+            "defaultVersion": "V1",
+            "resultSha256": "6c5355a704e640deb947f02a944981851c40ea311254c385b9eff55313ab2e84",
+            "inputSha256": "22fa8ddaa419acd44d395e70f8cf24c343daec7aa98d0ab0b0e1d1882abf18a3",
+            "sidecarSha256": "c9a5170ea70f8d7486f9a4a280a2ad86bd691c4fae4b5ec5ee96a916e37e07ad",
+            "sourceSha256": "078125a5df579bcf9485290e868dfa1365282503e83fd71777a7e75f26ae9f39",
+            "callOriginAliases": [
+                {
+                    "name": "forge_call_entry_22fa8ddaa419acd44d395e70f8cf24c343daec7aa98d0ab0b0e1d1882abf18a3_1040",
+                    "address": 4160,
+                    "size": 33,
+                    "section": 12,
+                    "ownerDie": 919,
+                    "calls": 1
+                }
+            ],
+            "qualifiedLookups": 8,
+            "nativeVersionedCalls": {
+                "V1": {
+                    "address": 4345,
+                    "result": 20
+                },
+                "V2": {
+                    "address": 4353,
+                    "result": 21
+                }
+            },
+            "inheritedFrameDiagnostics": 2
+        },
+        {
+            "sectionless": false,
+            "defaultVersion": "V2",
+            "resultSha256": "6c5355a704e640deb947f02a944981851c40ea311254c385b9eff55313ab2e84",
+            "inputSha256": "463e759df1a3cbb656ae2987e6fd30b82d631f04554e509f44de48643c0f96d8",
+            "sidecarSha256": "e1fc5fbf32062dd4741ae076738f434310e89144970fec4dea30f780d4bb46dc",
+            "sourceSha256": "078125a5df579bcf9485290e868dfa1365282503e83fd71777a7e75f26ae9f39",
+            "callOriginAliases": [
+                {
+                    "name": "forge_call_entry_463e759df1a3cbb656ae2987e6fd30b82d631f04554e509f44de48643c0f96d8_1040",
+                    "address": 4160,
+                    "size": 33,
+                    "section": 12,
+                    "ownerDie": 919,
+                    "calls": 1
+                }
+            ],
+            "qualifiedLookups": 8,
+            "nativeVersionedCalls": {
+                "V1": {
+                    "address": 4345,
+                    "result": 20
+                },
+                "V2": {
+                    "address": 4353,
+                    "result": 21
+                }
+            },
+            "inheritedFrameDiagnostics": 2
+        },
+        {
+            "sectionless": true,
+            "defaultVersion": "V1",
+            "resultSha256": "3a5f151c3cee4f9337ceaafa0220ad3628f468320b2db1819bd2c299cf21e501",
+            "inputSha256": "d3d6d7cf298570e52467ac6c02eb548b2e2520911907c61b8da64ebdba6300c0",
+            "sidecarSha256": "5c9344783420cfbc902a41401dfcca6450bdaf79546411bb1320ae095d9babff",
+            "sourceSha256": "35505cf5bbc1b763d8eedfc29a98e0d34713f7ac495d71b69cd8f5b9b813bf61",
+            "callOriginAliases": [
+                {
+                    "name": "forge_call_entry_d3d6d7cf298570e52467ac6c02eb548b2e2520911907c61b8da64ebdba6300c0_1040",
+                    "address": 4160,
+                    "size": 33,
+                    "section": 12,
+                    "ownerDie": 898,
+                    "calls": 1
+                }
+            ],
+            "qualifiedLookups": 8,
+            "nativeVersionedCalls": {
+                "V1": {
+                    "address": 4345,
+                    "result": 20
+                },
+                "V2": {
+                    "address": 4353,
+                    "result": 21
+                }
+            },
+            "inheritedFrameDiagnostics": 2
+        },
+        {
+            "sectionless": true,
+            "defaultVersion": "V2",
+            "resultSha256": "3a5f151c3cee4f9337ceaafa0220ad3628f468320b2db1819bd2c299cf21e501",
+            "inputSha256": "0379d25a4a731205f62437e30386888ef02653a1154f47251a35e4d7c4a9d0a3",
+            "sidecarSha256": "fe32816aed7dea8b336226ea10a907b72e7814864d8d855b384ba0567d0370ae",
+            "sourceSha256": "35505cf5bbc1b763d8eedfc29a98e0d34713f7ac495d71b69cd8f5b9b813bf61",
+            "callOriginAliases": [
+                {
+                    "name": "forge_call_entry_0379d25a4a731205f62437e30386888ef02653a1154f47251a35e4d7c4a9d0a3_1040",
+                    "address": 4160,
+                    "size": 33,
+                    "section": 12,
+                    "ownerDie": 898,
+                    "calls": 1
+                }
+            ],
+            "qualifiedLookups": 8,
+            "nativeVersionedCalls": {
+                "V1": {
+                    "address": 4345,
+                    "result": 20
+                },
+                "V2": {
+                    "address": 4353,
+                    "result": 21
+                }
+            },
+            "inheritedFrameDiagnostics": 2
+        }
+    ]
+}

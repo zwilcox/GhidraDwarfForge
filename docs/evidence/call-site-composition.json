@@ -1,0 +1,521 @@
+{
+    "status": "CONFIRMED_RECOVERED_PLAN_STRUCTURE_RUNTIME_ACCEPTANCE_INCOMPLETE",
+    "scope": "Saved curated Ghidra program -> recovered plan -> native writer and actual decompiler source. Normal script compiles but packaged invocation remains unverified. No issue completion claim.",
+    "decoder": {
+        "entryCases": 16,
+        "entryChecks": 961,
+        "argumentChecks": 469,
+        "argumentVmVectors": 240,
+        "encoderVmVectors": 7980,
+        "encoderRejected": 10
+    },
+    "profiles": [
+        {
+            "profile": "x86_64-exec",
+            "inputSha256": "44ca7ac04166607e97c23621bb0d0b54c027e71537103aa39653a0eb49ac0761",
+            "savedProgramSha256": {
+                "00/00000000.prp": "38c9bfa2d9e78057e05a990880472900de86428ac8d9335d9d804abe12bf02f3",
+                "00/~00000000.db/db.1.gbf": "204d20179f52a389a70f1cf74c03dc722c7e276f77cf0bbf6dda45fa3ce894ad",
+                "~index.bak": "937592eda81c76c35c39a1f66fed44a2e018ffd122783da1230ec9196821d70b",
+                "~index.dat": "937592eda81c76c35c39a1f66fed44a2e018ffd122783da1230ec9196821d70b"
+            },
+            "views": [
+                {
+                    "variant": "original",
+                    "delta": 0,
+                    "calls": 13,
+                    "tails": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 84,
+                    "planCompilerComparisons": 12,
+                    "emittedSites": 19,
+                    "artifact": {
+                        "sidecarSha256": "5f4b517d067153cb515c65d6828bdec198ae98f04c8acce26664fd7745c26d68",
+                        "sourceSha256": "5199bc628c6cbbd2365debef4e0c9aa58d664d1baa191b25cbf6d1f385e4b085"
+                    },
+                    "rawReportSha256": "b5aeaa61b7ba3de99cc32fd3fa9093364748a38bf546588806727ec62adf97b2",
+                    "strictMetadataSha256": "62ec87ed8bc0751ff921ac3f012c5803adb381fa16280b13bf2ac2ee36518c6a"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 4194304,
+                    "calls": 13,
+                    "tails": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 84,
+                    "planCompilerComparisons": 12,
+                    "emittedSites": 19,
+                    "artifact": {
+                        "sidecarSha256": "28327c095cb15d268999c5d76cdd9a448acbe760270a91281866f9aa82244886",
+                        "sourceSha256": "d214f25e5245723dd2539e5c7565319d18c88484c7d1216793255b5d4b277b5e"
+                    },
+                    "rawReportSha256": "da1998dd0fc4930369f6b840acfeaecf2857fbe6cbd8a46f2e3827915a914470",
+                    "strictMetadataSha256": "0893bb7b490f069812376907a79f949a2e8224200628b306b47ee50ddc54dcdc"
+                }
+            ]
+        },
+        {
+            "profile": "x86_64-pie",
+            "inputSha256": "b18b5d269edfec777f705b9c5e08d22f59f09243d788923c1323741e78e4c592",
+            "savedProgramSha256": {
+                "00/00000000.prp": "2f5bf1d02455efc2c4d4c80885a53823522028bcfb5774033d29b9096c79d8df",
+                "00/~00000000.db/db.1.gbf": "f8b55b3cb4d778d33b208e880477048b5a220c1aefe908a456774947a5b7a3fa",
+                "~index.bak": "c4819c307eefb274a3e6b11822789f3b0da6380457650a1d36939c2ba570e451",
+                "~index.dat": "c4819c307eefb274a3e6b11822789f3b0da6380457650a1d36939c2ba570e451"
+            },
+            "views": [
+                {
+                    "variant": "original",
+                    "delta": 1048576,
+                    "calls": 13,
+                    "tails": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 84,
+                    "planCompilerComparisons": 12,
+                    "emittedSites": 19,
+                    "artifact": {
+                        "sidecarSha256": "b70a4ef46aed70070f5bb59dcb5f7ad68718d97a7b5b38f881432af650b6a5cb",
+                        "sourceSha256": "efe05668bc5c804506a64d0e68a0412160b07ca4d559235bbcc114e7b9c3d93d"
+                    },
+                    "rawReportSha256": "32afe5e8b38a1df5de52be22c5f9767cd14139c4fd6c5b73919672e50a906d0e",
+                    "strictMetadataSha256": "a94ad648768dd8dbe8c996648e8709b528e1fa78618b769901ee060f93fdb82a"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 5242880,
+                    "calls": 13,
+                    "tails": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 84,
+                    "planCompilerComparisons": 12,
+                    "emittedSites": 19,
+                    "artifact": {
+                        "sidecarSha256": "9b629527b8dd1ee6ad3d358ca878000e40b573114599728bd0ed2e4705fe204d",
+                        "sourceSha256": "72a036316c57c8460859176bae06c24c4cda79642db3c2dee8aab63fc2287dde"
+                    },
+                    "rawReportSha256": "e2641df719b0865238d7e90fad02e8789e61d999b30ac9fcbc589f8d5e6103c5",
+                    "strictMetadataSha256": "a5e8ab62dee5c872d08a61568efb3ff49c8d4c54d3f9e48f05b76ef8d68ee10c"
+                }
+            ]
+        },
+        {
+            "profile": "aarch64-exec",
+            "inputSha256": "4141f968b2b67a8d9215d50790a1599b59aff1a4e38377513b8fa5b491f732ef",
+            "savedProgramSha256": {
+                "00/00000000.prp": "85c0e0fca86f506adfe32f49ad2d4a6c492b2ba36ffad1a705c668562ced2420",
+                "00/~00000000.db/db.1.gbf": "486ebe9d0ba48371d70b744e7495b92fbdf6d3b70cce03075a172b12660b78d4",
+                "~index.bak": "4e663f36eedd65422e9e12427645ba2635ffe2af3c6eabc8d2f8204c96ce14e9",
+                "~index.dat": "4e663f36eedd65422e9e12427645ba2635ffe2af3c6eabc8d2f8204c96ce14e9"
+            },
+            "views": [
+                {
+                    "variant": "original",
+                    "delta": 0,
+                    "calls": 13,
+                    "tails": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 94,
+                    "planCompilerComparisons": 12,
+                    "emittedSites": 20,
+                    "artifact": {
+                        "sidecarSha256": "15cb3d382eaa785d2bbc01df1462b165287bbb3641d76b59bb82aebd4374b9cd",
+                        "sourceSha256": "730d44f6699310b388b6754bc18c1fdbfaeecde11a058c58b6e7fe1101e98da7"
+                    },
+                    "rawReportSha256": "8b7143c834d0d9c2043848c9b04a1692d3df6fabff557008595b218c0200bfcb",
+                    "strictMetadataSha256": "2a64140cf196b61137142241db5b8467b6c61e879f122ae75bea7d33c78ca534"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 4194304,
+                    "calls": 13,
+                    "tails": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 94,
+                    "planCompilerComparisons": 12,
+                    "emittedSites": 20,
+                    "artifact": {
+                        "sidecarSha256": "56ce0f32081e8be5861bed9e5c4160c834aef4030af4a24cc6a1a0581ac7bb49",
+                        "sourceSha256": "730d44f6699310b388b6754bc18c1fdbfaeecde11a058c58b6e7fe1101e98da7"
+                    },
+                    "rawReportSha256": "da98244ca854f1909b1db0b233ee8055f52c39be5dbb8625675f20e9ff68a969",
+                    "strictMetadataSha256": "b35077cbfcd10a93a06083662435a6c3804a07383a2c10adcda960ce58444fdf"
+                }
+            ]
+        },
+        {
+            "profile": "aarch64-pie",
+            "inputSha256": "4e8dd09bdb50cfd86fd61bfd78d5651d7fa08ce1e49effa9db8fbc1a9c8b0258",
+            "savedProgramSha256": {
+                "00/00000000.prp": "aaeeca678bf36da1c92eeaa95768b1c03be56a78a1031bfae70a1e1834fb38fe",
+                "00/~00000000.db/db.1.gbf": "30945ca59b06600a99b352d74fe42f2c6f6e00441fd6fd764baef53230a3b9c4",
+                "~index.bak": "3dd57b63a69f5b35d2e4be92503b1720cadbb32490f7ac4e2c4ecf63c9b35823",
+                "~index.dat": "3dd57b63a69f5b35d2e4be92503b1720cadbb32490f7ac4e2c4ecf63c9b35823"
+            },
+            "views": [
+                {
+                    "variant": "original",
+                    "delta": 1048576,
+                    "calls": 13,
+                    "tails": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 94,
+                    "planCompilerComparisons": 12,
+                    "emittedSites": 20,
+                    "artifact": {
+                        "sidecarSha256": "ab02599ce4526e7bd433a5ec8ecb00836ed3e3507fb2b08cc2a12fcf7ffff64f",
+                        "sourceSha256": "a78524fdfb70da249928a0217e10bf6737b22fdcbfa4c1c9babe1eb2caef5f88"
+                    },
+                    "rawReportSha256": "8ad4eec7787e8ae4ee371b3896c255eef24408c8aca7bf4b97bc59a60748f29d",
+                    "strictMetadataSha256": "7bbcc2a931bf15aeb7eef80ce32e3aa998b26493ddd5a94cdb81fc81fb6ccbce"
+                },
+                {
+                    "variant": "rebased",
+                    "delta": 5242880,
+                    "calls": 13,
+                    "tails": 9,
+                    "lowWordChecks": 72,
+                    "bindingChecks": 94,
+                    "planCompilerComparisons": 12,
+                    "emittedSites": 20,
+                    "artifact": {
+                        "sidecarSha256": "9f21b1dc480b6ddb3af3a27c97670c9ee2ad538f480bc9781753d5bba696d394",
+                        "sourceSha256": "a78524fdfb70da249928a0217e10bf6737b22fdcbfa4c1c9babe1eb2caef5f88"
+                    },
+                    "rawReportSha256": "63044730a8419c4c97f5ff2dde39a90fb298d761f1c4784307ffaa0acdb1ed7c",
+                    "strictMetadataSha256": "e99d5de401de79421552efb3239d985bc7020d13836e6c758fa14a0fc069814d"
+                }
+            ]
+        }
+    ],
+    "runtime": {
+        "sessions": 64,
+        "matchingFrameStructures": 60,
+        "frameFailures": [
+            {
+                "profile": "x86_64-exec",
+                "variant": "original",
+                "scenario": 4,
+                "actual": [
+                    [
+                        "cs_checkpoint",
+                        false
+                    ],
+                    [
+                        "cs_leaf",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_driver",
+                        false
+                    ],
+                    [
+                        "main",
+                        false
+                    ]
+                ],
+                "expected": [
+                    [
+                        "cs_checkpoint",
+                        false
+                    ],
+                    [
+                        "cs_leaf",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        true
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_driver",
+                        false
+                    ],
+                    [
+                        "main",
+                        false
+                    ]
+                ]
+            },
+            {
+                "profile": "x86_64-exec",
+                "variant": "rebased",
+                "scenario": 4,
+                "actual": [
+                    [
+                        "cs_checkpoint",
+                        false
+                    ],
+                    [
+                        "cs_leaf",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_driver",
+                        false
+                    ],
+                    [
+                        "main",
+                        false
+                    ]
+                ],
+                "expected": [
+                    [
+                        "cs_checkpoint",
+                        false
+                    ],
+                    [
+                        "cs_leaf",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        true
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_driver",
+                        false
+                    ],
+                    [
+                        "main",
+                        false
+                    ]
+                ]
+            },
+            {
+                "profile": "x86_64-pie",
+                "variant": "original",
+                "scenario": 4,
+                "actual": [
+                    [
+                        "cs_checkpoint",
+                        false
+                    ],
+                    [
+                        "cs_leaf",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_driver",
+                        false
+                    ],
+                    [
+                        "main",
+                        false
+                    ]
+                ],
+                "expected": [
+                    [
+                        "cs_checkpoint",
+                        false
+                    ],
+                    [
+                        "cs_leaf",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        true
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_driver",
+                        false
+                    ],
+                    [
+                        "main",
+                        false
+                    ]
+                ]
+            },
+            {
+                "profile": "x86_64-pie",
+                "variant": "rebased",
+                "scenario": 4,
+                "actual": [
+                    [
+                        "cs_checkpoint",
+                        false
+                    ],
+                    [
+                        "cs_leaf",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_driver",
+                        false
+                    ],
+                    [
+                        "main",
+                        false
+                    ]
+                ],
+                "expected": [
+                    [
+                        "cs_checkpoint",
+                        false
+                    ],
+                    [
+                        "cs_leaf",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        true
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_recursive",
+                        false
+                    ],
+                    [
+                        "cs_driver",
+                        false
+                    ],
+                    [
+                        "main",
+                        false
+                    ]
+                ]
+            }
+        ],
+        "positiveEntryValuesAvailable": 0,
+        "observationsSha256": "9c758283361daf58b4d671ca08e6394b406a799c6b39ee015a2dd40984bed7b2"
+    },
+    "fixedBug": "Full-width Select jump targeted expression end; strict libdwarf counter watchpoint located check_skip_branch_offsets. Explicit DW_OP_nop join passes unchanged strict validator.",
+    "remaining": [
+        "Evidence-backed formal entry locations for GDB entry-value lookup",
+        "x86-64 recursion virtual frame mismatch",
+        "x86 driver/split-body actual-value coverage",
+        "Packaged normal-script execution and existing export regressions",
+        "Full hosted protected acceptance"
+    ],
+    "commands": [
+        "./gradlew --no-daemon callValueSmoke callArgumentFlowSmoke callEntryContractSmoke buildExtension",
+        "check-call-values.py on 7980 encoder and 240 decoded vectors",
+        "call-site-evidence.py --reuse-project --report-name forge-plan --bind-parameters --consumer CACHE/libdwarf.so.2.3.2 --producer CACHE/libdwarfp.so.2.3.2 --dwarfdump CACHE/validation-tool/bin/dwarfdump for four profiles",
+        "readelf/llvm-dwarfdump --verify/check-dwarfdump.py --original on eight sidecars",
+        "call-site-reference.py debugger on four profiles x two views x eight scenarios; compare frame structure to compiler reference",
+        "javac --release 21 against Ghidra test classpath for ghidra_scripts/GhidraDwarfForge.java",
+        "./gradlew --no-daemon callEntryContractSmoke buildExtension after adding initial cancellation poll"
+    ],
+    "artifactSourceNote": "Eight native artifacts precede the final initial monitor.checkCancelled() addition to recover(). The final cancellation/build suite tests that addition (961 vs 959 checks); no artifact-producing semantics changed.",
+    "sourceSha256": {
+        "src/main/java/ghidradwarfforge/calls/GhidraCallSitePlan.java": "a7ac67e8db8462feb653e195ce1aea0596ac191130f6a94027ec4bc09258c094",
+        "src/main/java/ghidradwarfforge/calls/CallValue.java": "2183de39616826679d8ec6f170ac546bcdcbf10461f572166b8344502ac0d9e6",
+        "ghidra_scripts/GhidraDwarfForge.java": "efd308709cf55a9ee3e168cd98eaaa9202cfd00a788bf440028f92bb49abe573",
+        "src/test/java/ghidradwarfforge/calls/CallEntryContractSmoke.java": "d87336ee8440c76cfdef12d4ecfd40818ec9ea5009fe93b23cc306920178e390",
+        "src/test/java/ghidradwarfforge/calls/CallSiteEvidenceProbe.java": "07cdb37d17e0dee65b5412d2ae9c214773f5d14549059d2d6a2d90a3db7939a7",
+        "src/test/integration/call-site-evidence.py": "78265d72d63e0f2f9a65b142beadb5789e52fe9f1b058be4e510fc669e33e876",
+        "src/test/integration/check-call-values.py": "d1be14890b740e39e3c2867cf55b0407c133f2e02e2a5708694e9c1a930b23fc",
+        "build.gradle": "b2d9ddedd19090456054fdf8a39b5e030b0115877409f052afa5baf61112f251",
+        ".github/workflows/ci.yml": "4cfd4b3edda2b91a2d783c48c173af083dcd8863cb5d03c9c0dd1ba644bd8e5f"
+    },
+    "logSha256": {
+        "call-plan-decoder.log": "d53747c19ecc644e786c86c3fe43a786408a0c8e11d56acb8c6fd1d25948aaf6",
+        "call-plan-final.log": "4c79a0bf5861dec772144db31953a6c8b2ad5d88ffda1d4d5fab1b4f16ed33c4",
+        "call-plan-saved.log": "182cd6903bcffd08afe11ef2a777ed2cb063afa0b830fd28410f1751b4ab0b47",
+        "call-plan-emission-initial.log": "0873bc0df57f60ccea45a421267d0dd94a422aedfeab14e1713364129311d330",
+        "call-plan-runtime-initial.log": "a62849d538165f5d868c1d6771a0ab18f19badc2cd1336af6481a056806f4c27",
+        "call-plan-checker-watch-native.log": "f05b1433fe6c191a5947d29109c2fa6531d5f353a10ab6c9a15a6db7d09e339e",
+        "call-plan-expression-fix.log": "c31161b94b6d78118cf0c87dde8d3bfd0a904dfe2fd01119e88141e463586f30",
+        "call-plan-forge-validation.log": "24498c156081bf792266ac7fa92a326f0e1507670675873c22ccca5d2250158e",
+        "call-plan-runtime.log": "6c3ce01f2e2e6db9b43758b3dfedcf4e64a04854265ad4211a15cc71e78db070",
+        "call-plan-runtime-observations.log": "3851fe43a0037ac1f450363fb7e69baac0c5fe0886ac23b70c832e17abdc6f25",
+        "call-plan-final-build.log": "dc5e60ad7e69c52631697b35f1e8a8d9766c78ca3bfd27487f2a99d90a057223"
+    },
+    "build": {
+        "sha256": "0ba413ce4287ebd7ba19bad56f720f4737d5776ddf66a7569c39b6340c77977b",
+        "bytes": 5082256,
+        "workspaceExcluded": true
+    }
+}

@@ -180,6 +180,17 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
             elfAbiCallRestriction(image), cancelled, diagnostic);
     }
 
+    /** Exact call-origin symbols currently share the audited integer call-site targets. */
+    public List<ElfLocalFunctionSymbol> planCallOriginSymbols(ElfImage image,
+            ghidradwarfforge.calls.CallSitePlan calls, List<FunctionSymbol> functions,
+            ProgramTypeModel model, List<ElfFunctionAlias> aliases, java.util.Set<String> reserved,
+            BooleanSupplier cancelled, Consumer<String> diagnostic) throws IOException {
+        if (!equals(fromElf(image))) throw new IllegalArgumentException("call-origin target disagrees with ELF");
+        if (!List.of("x86_64", "aarch64").contains(name)) return List.of();
+        return ghidradwarfforge.elf.CallOriginSymbols.plan(image, calls, functions, model, aliases,
+            reserved, cancelled, diagnostic);
+    }
+
     /** Direct code-address values only; tagged/descriptor ABIs need their own binding proof. */
     public List<ElfLocalFunctionSymbol> planFunctionAliases(ElfImage image,
             List<ElfFunctionAlias> aliases, List<FunctionSymbol> functions,

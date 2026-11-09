@@ -1,0 +1,168 @@
+# Local development storage
+
+The user approved these limits after unbounded worktree and validation retention
+exhausted storage. They apply to local agent work; they do not change the exporter
+or the hosted CI acceptance matrix.
+
+| Category | Limit | Accounted paths |
+| --- | --- | --- |
+| Scratch/build | 20 GiB | `.forge-work/scratch`, repository `build`, `dist`, `.gradle`, `.ghidra-test`, `jna-wrapper/target`, `src/temp`, and existing extra registered worktrees |
+| Shared cache/tools | 10 GiB | `.forge-work/cache` and configured legacy caches |
+| Retained evidence | 5 GiB | `.forge-work/evidence` and configured legacy evidence |
+| Filesystem reserve | 50 GiB free | Each filesystem containing an accounted root |
+
+Use the main checkout plus at most one extra worktree. Its new designated path
+is `.forge-work/scratch/worktree`. All linked worktrees resolve the primary
+checkout and use the same workspace and caches. An existing extra checkout
+outside this location is counted, not deleted or duplicated. Missing/stale
+registrations are not counted as live checkouts.
+
+## Commands
+
+From the repository:
+
+```bash
+python3 support/storage-guard.py status
+python3 support/storage-guard.py run --cwd "$PWD" -- ./gradlew --no-daemon buildExtension
+python3 support/storage-guard.py run -- python3 -c 'print("scratch command")'
+python3 -B support/test-storage-guard.py
+```
+
+Without `--cwd`, commands run in `.forge-work/scratch`. Build output in the main
+repository and the extra worktree is also accounted. `TMPDIR`, `TMP`, and `TEMP`
+point to a unique per-run directory removed on completion, refusal during a run,
+or handled interruption, after stopping the process group. Deliberate durable
+outputs must go to scratch or evidence instead of that temporary directory.
+
+The launcher supplies shared `GRADLE_USER_HOME`, `XDG_CACHE_HOME`, `PIP_CACHE_DIR`,
+`npm_config_cache`, and `CCACHE_DIR`. It also supplies `FORGE_SCRATCH_DIR`,
+`FORGE_CACHE_DIR`, and `FORGE_EVIDENCE_DIR`. Use the cache for reusable toolchains.
+It does not change `HOME` or relocate existing user caches. Gradle daemons are
+disabled in its environment; use the explicit `--no-daemon` option too.
+
+Only one guarded command may run at a time. The guard checks before launch,
+every five seconds while running, and after exit. A budget or reserve violation
+returns exit 75 and stops the launched process group. Other command exit codes
+are preserved. Ctrl-C/SIGTERM stops the process group and returns 130. Measurement
+errors fail closed. One `last-storage-report.json` is overwritten in the
+workspace; status checks do not accumulate logs or downloads.
+
+## Existing data must remain visible
+
+Machine-local `.forge-work/config.json` registers existing roots without moving
+or deleting them. For example:
+
+```json
+{
+    "legacy_roots": {
+        "evidence": ["/mnt/external_drive/GhidraDwarfForge-agent-artifacts"]
+    }
+}
+```
+
+Roots must be absolute paths. They count against the same category budgets;
+configuration cannot raise those limits. Keep this file until the corresponding
+legacy data has actually been retired or deliberately reclassified with the
+user. Do not erase the registration to make a refusal disappear. A large legacy
+archive can therefore block all heavy commands even with an empty new workspace.
+The status command remains usable to explain that refusal.
+Missing registered legacy paths fail closed: verify that data was retired before
+removing its registration, or restore an unavailable external mount.
+
+## Cleanup and limits of enforcement
+
+This is a **monitored soft guard**, not a filesystem quota or sandbox. Fast writes
+can exceed a budget before the next completed scan. Commands can ignore cache
+variables, follow symlinks or write outside accounted roots; those actions are
+forbidden by the operating policy but are not contained by this launcher. Do not
+run detached processes or daemons that escape its process group. A forced kill,
+power loss, or uninterruptible process can prevent automatic cleanup. A hard
+ceiling needs a separately provisioned filesystem quota; none is configured here.
+
+Usage counts allocated blocks, deduplicates hardlinks within a category, and does
+not traverse nested symlinks. Root symlinks and `/dev/shm` storage are refused.
+Known external data must be registered explicitly; this does not inventory every
+file on the machine or automatically discover old unregistered scratch data.
+
+Before each download, account for the archive and extracted peak size. After each
+task, discard owned intermediates and superseded downloads. Keep concise summaries,
+hashes and CI links; retain only selected failure/acceptance artifacts within the
+evidence budget. Remote artifacts can expire, so a link is not a perpetual backup.
+
+Before removing the extra worktree, inspect `git status --untracked-files=all`,
+review ignored files for anything unique, and verify commits are preserved in the
+main repository. Remove only identified owned disposable outputs. Do not blindly
+run `git clean`, delete branches or erase analyst projects. No bulk cleanup is
+performed automatically by this tool.
+
+## Local validation — 2026-11-08
+
+`python3 -B support/test-storage-guard.py` passes 13 isolated tests in approximately
+two seconds. They use tiny temporary Git repositories and at most a 1 MiB test
+payload per case, then remove their own fixtures. Coverage includes pre-launch
+budget/reserve refusal, legacy evidence accounting, missing/invalid configuration,
+live growth and short-command overflow, termination of a SIGTERM-ignoring
+grandchild, interrupted cleanup, concurrent-launch refusal, failed measurement,
+hardlink accounting, shared environment paths and the worktree count limit.
+
+The actual machine's `status` command returns exit 75 with 115.84 GiB of registered
+external evidence against the 5 GiB limit. This is an intentional refusal, not a
+passing-capacity claim. These checks do not prove a hard quota, containment of
+escaped processes/writes, Windows support, or exporter behavior. No production
+build, native test matrix, artifact download or hosted workflow was started.
+
+## Approved legacy cleanup result — 2026-11-08
+
+**CONFIRMED:** the user's explicit cleanup instruction authorized removal of the
+21 directories in the prepared local plan. The operation reclaimed 109.16 GiB.
+Before deleting any directory, all 1,019 selected records (131,949,234 source
+bytes) were copied into one 13.09 MiB gzip tar archive; every archived file was
+read back and SHA-256 checked, and the originals were rechecked before deletion.
+The archive SHA-256 is
+`6c60a091151baf7342e8fb36a5b9beb3b7abeb14083ea1a8b4de288075021980`.
+
+The receipt and per-file hash manifest are in `.forge-work/evidence` beside
+`legacy-retained-reports.tar.gz`. The entire libdwarf reproducer directory and
+external-root files were preserved; metadata inventories were compared after
+cleanup. The source checkout was not a deletion target.
+
+**CONFIRMED remaining refusal:** evidence is 6.69 GiB; scratch is approximately
+22 MiB and the shared cache is empty. The original estimate understated the
+root-level archives that were explicitly preserved. A separate local plan,
+`root-archive-cleanup-plan.json`, identifies six PR166/PR167 archives totaling
+2.30 GiB. That additional deletion is awaiting authorization and would reduce
+evidence to approximately 4.39 GiB. The 5 GiB limit and legacy registration remain
+unchanged. No build or integration run has bypassed the refusal.
+
+## User-directed cleanup deferral for the active goal
+
+After the cleanup above, the user instructed: “skip the cl.ean up for this goal.”
+The six identified root archives stay intact. A temporary `deferred_evidence`
+entry in local configuration records that authorization, the #115 → #117 → #120
+scope, and each exact file's device/inode, size, mtime and allocated bytes. Their
+SHA-256 hashes were checked against the prepared plan before enabling it.
+Only direct regular files in a registered legacy evidence root qualify; changes,
+missing files, duplicate inodes, hardlinks and symlinks fail closed.
+
+`usageBytes` continues to show total physical usage. `budgetUsageBytes` subtracts
+only those fixed 2.30 GiB from evidence; `deferredEvidenceBytes` and
+`deferredEvidence` show the exception explicitly. New files and growth receive
+no exemption, all original category limits remain, and filesystem free-space
+checks still include the external disk. This is an operating-policy exception,
+not filesystem immutability or an automatic goal-status integration. Remove it
+when the goal ends and review the retained archives; do not delete them as an
+automatic consequence of completion.
+
+**CONFIRMED:** all 16 storage controls pass under the guarded launcher, including
+physical-versus-charged accounting, new-growth refusal, changed/missing deferred
+files and duplicate/unauthorized exception records. The real guard is READY at
+6.69 GiB physical evidence and 4.39 GiB charged evidence. The standalone stock
+producer admission probe now compiles/runs through this guard; no additional
+legacy artifacts were deleted.
+
+The extension build explicitly excludes `.forge-work/**`. An initial local build
+after adding the workspace exposed that Ghidra's default extension task includes
+unrecognized root directories. The local ZIP was replaced after adding this
+exclusion, and the rebuilt archive was inspected to confirm zero workspace
+entries. Cache, retained evidence and local configuration must never ship in an
+extension archive.

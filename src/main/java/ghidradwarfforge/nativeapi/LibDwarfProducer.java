@@ -109,6 +109,11 @@ public interface LibDwarfProducer extends Library {
             Expr expression, PointerByReference attributeOut,
             PointerByReference errorOut);
 
+    // libdwarfp.h 2.3.2 lines 282-288. The producer copies the bytes during
+    // the call. blockLength is Dwarf_Unsigned (64-bit on both native hosts).
+    int dwarf_add_AT_block_a(Debug debug, Die die, short attribute, byte[] blockData,
+            long blockLength, PointerByReference attributeOut, PointerByReference errorOut);
+
     // libdwarfp.h 2.3.2 lines 202-204.
     int dwarf_transform_to_disk_form_a(Debug debug, LongByReference bufferCountOut,
             PointerByReference errorOut);

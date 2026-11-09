@@ -49,6 +49,8 @@ public final class DwarfConstants {
     public static final long DW_TAG_RVALUE_REFERENCE_TYPE = 0x42L;
     public static final long DW_TAG_ATOMIC_TYPE = 0x47L;
     public static final long DW_TAG_VARIABLE = 0x34L;
+    public static final long DW_TAG_CALL_SITE = 0x48L;
+    public static final long DW_TAG_CALL_SITE_PARAMETER = 0x49L;
 
     public static final short DW_AT_BYTE_SIZE = 0x0b;
     public static final short DW_AT_LOCATION = 0x02;
@@ -77,6 +79,14 @@ public final class DwarfConstants {
     public static final short DW_AT_TYPE = 0x49;
     public static final short DW_AT_DATA_BIT_OFFSET = 0x6b;
     public static final short DW_AT_NORETURN = (short) 0x87;
+    public static final short DW_AT_CALL_ALL_CALLS = 0x7a;
+    public static final short DW_AT_CALL_ALL_TAIL_CALLS = 0x7c;
+    public static final short DW_AT_CALL_RETURN_PC = 0x7d;
+    public static final short DW_AT_CALL_VALUE = 0x7e;
+    public static final short DW_AT_CALL_ORIGIN = 0x7f;
+    public static final short DW_AT_CALL_PARAMETER = 0x80;
+    public static final short DW_AT_CALL_PC = 0x81;
+    public static final short DW_AT_CALL_TAIL_CALL = 0x82;
 
     public static final long DW_ATE_ADDRESS = 0x01L;
     public static final long DW_ATE_BOOLEAN = 0x02L;

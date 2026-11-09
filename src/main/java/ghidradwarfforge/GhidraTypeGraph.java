@@ -144,6 +144,19 @@ public final class GhidraTypeGraph {
             Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters,
             Map<Long, GhidraStaticRecovery.Result> recoveredStatics,
             GhidraParameterAllocation allocation) throws CancelledException {
+        return extract(program, exportedFunctions, registerMap, rebaseDelta, monitor, diagnostic,
+            recoveredReturns, recoveredParameters, recoveredStatics, allocation, null);
+    }
+
+    /** Optional entry-storage snapshots share this extraction's canonical formal identities and allocation. */
+    public static ProgramTypeModel extract(Program program,
+            List<FunctionSymbol> exportedFunctions, TargetRegisterMap registerMap, long rebaseDelta,
+            TaskMonitor monitor, Consumer<String> diagnostic,
+            Map<Long, DataType> recoveredReturns,
+            Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters,
+            Map<Long, GhidraStaticRecovery.Result> recoveredStatics,
+            GhidraParameterAllocation allocation,
+            Consumer<GhidraCallParameters.Entry> parameterEntries) throws CancelledException {
         Extractor extractor = new Extractor(program, diagnostic);
         var classScopes = new GhidraClassScopes(program, monitor, diagnostic);
         List<DataType> favoriteTypes = new ArrayList<>(
@@ -208,6 +221,11 @@ public final class GhidraTypeGraph {
                     extractor.reserve(formalType), parameter.isAutoParameter(),
                     parameter.getAutoParameterType() == AutoParameterType.RETURN_STORAGE_PTR,
                     parameter.getAutoParameterType() == AutoParameterType.THIS));
+                if (parameterEntries != null) {
+                    parameterEntries.accept(GhidraCallParameters.snapshot(function, parameters.size() - 1,
+                        parameters.getLast(), correctedStorage.getOrDefault(parameter.getOrdinal(), parameter.getVariableStorage()),
+                        parameter.getVariableStorage() != null && parameter.getVariableStorage().isForcedIndirect()));
+                }
                 if (!parameterName.isBlank() && logicalLength > 0) {
                     var physical = correctedStorage.getOrDefault(parameter.getOrdinal(), parameter.getVariableStorage());
                     Storage storage = GhidraVariableStorage.stableParameter(program, function,

@@ -6,6 +6,7 @@ inputs used to build its bundled LGPL libdwarf and libdwarfp libraries:
 ```text
 third_party/libdwarf/source/libdwarf-2.3.2.tar.xz
 third_party/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch
+third_party/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch
 ```
 
 The source archive is the official libdwarf v2.3.2 release archive. Its
@@ -17,7 +18,7 @@ SHA-256 is:
 
 It corresponds to source commit
 `af7b278c6aa2ae9daad94fb7f8bffdc0e9980993`. The release's
-`RELEASE-SHA256SUMS` also covers the archive, patch, notices, and every bundled
+`RELEASE-SHA256SUMS` also covers the archive, patches, notices, and every bundled
 native library.
 
 ## Reconstructing the libraries
@@ -28,6 +29,7 @@ Extract and patch the included source:
 tar -xf libdwarf-2.3.2.tar.xz
 cd libdwarf-2.3.2
 patch -p1 < ../0001-preserve-aarch64-relocation-type.patch
+patch -p1 --fuzz=0 < ../0002-admit-dwarf5-call-site-attributes.patch
 ```
 
 The production configuration is:
@@ -44,7 +46,7 @@ the built `libdwarf-2.dll` and `libdwarfp-2.dll` together with their non-system
 runtime dependencies. Exact compilers, package versions, native hashes, and
 dependency names are recorded in each platform's `BUILD-METADATA.txt`.
 
-The included patch is also maintained in the GhidraDwarfForge source
+The included patches are also maintained in the GhidraDwarfForge source
 repository at `native/libdwarf/patches/`. No generated or undisclosed source
 changes are applied by the release workflow.
 

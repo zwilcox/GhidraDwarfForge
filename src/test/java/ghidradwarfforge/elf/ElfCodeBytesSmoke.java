@@ -63,6 +63,12 @@ public final class ElfCodeBytesSmoke {
         byte[] before = Files.readAllBytes(path);
         require(image.sections().isEmpty(), "sectionless fixture has sections");
         try (var bytes = ElfCodeBytes.open(image, () -> false)) {
+            require(Arrays.equals(bytes.readReadOnlyData(0x401000, 4, () -> false), CODE), "wrong table byte order/content");
+            reject(() -> bytes.readReadOnlyData(0x401003, 2, () -> false));
+            reject(() -> bytes.readReadOnlyData(0x401004, 1, () -> false));
+            reject(() -> bytes.readReadOnlyData(0x400fff, 1, () -> false));
+            reject(() -> bytes.readReadOnlyData(0x401000, 0, () -> false));
+            reject(() -> bytes.readReadOnlyData(0x401000, 9, () -> false));
             var first = bytes.requireMatches(0x401000, CODE, () -> false);
             require(first.fileOffset() == 0x200 && first.bytes() == 4 && first.sha256().length() == 64, "wrong first mapping");
             require(bytes.requireMatches(0x401003, new byte[] {4}, () -> false).fileOffset() == 0x203, "file end byte mapping");
@@ -79,14 +85,17 @@ public final class ElfCodeBytesSmoke {
         require(Arrays.equals(before, Files.readAllBytes(path)), "code comparison changed original");
         var closed = ElfCodeBytes.open(image, () -> false); closed.close();
         changed(() -> closed.requireMatches(0x401000, CODE, () -> false));
+        changed(() -> closed.readReadOnlyData(0x401000, 4, () -> false));
         int[] polls = {0};
         try (var bytes = ElfCodeBytes.open(image, () -> { polls[0]++; return false; })) {
             bytes.requireMatches(0x401000, CODE, () -> { polls[0]++; return false; });
+            bytes.readReadOnlyData(0x401000, 4, () -> { polls[0]++; return false; });
         }
         for (int limit = 1; limit <= polls[0]; limit++) {
             int stop = limit; int[] seen = {0};
             try (var bytes = ElfCodeBytes.open(image, () -> ++seen[0] == stop)) {
                 bytes.requireMatches(0x401000, CODE, () -> ++seen[0] == stop);
+                bytes.readReadOnlyData(0x401000, 4, () -> ++seen[0] == stop);
                 throw new AssertionError("code agreement ignored cancellation");
             }
             catch (CancellationException expected) { checks++; }
@@ -117,6 +126,7 @@ public final class ElfCodeBytesSmoke {
             FileTime old = Files.getLastModifiedTime(path);
             Files.setLastModifiedTime(path, FileTime.fromMillis(old.toMillis() + 10_000));
             changed(() -> bytes.requireMatches(0x401000, CODE, () -> false));
+            changed(() -> bytes.readReadOnlyData(0x401000, 4, () -> false));
         }
         var overflowing = fixture(path, wide, order,
             List.of(new Segment(wide ? Long.MAX_VALUE - 1 : 0xffff_fffeL, 0x200, 4, 4, 5)));
