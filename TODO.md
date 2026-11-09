@@ -2,19 +2,24 @@
 
 ## Storage maintenance — 2026-11-08
 
-- **PRESENT, UNVERIFIED Windows chooser candidate:** focus the filename input
-  before replacing remembered directory text, retain readiness/navigation checks
-  and require exact accepted-directory identity. Add two real remembered-directory
-  controls and retain the complete Script Manager sequence. This is not a proven
-  root-cause fix; compile/run on hosted Windows and inspect the diagnostics if
-  it fails. Local heavy work remains refused.
+- **CONFIRMED #117 current hosted checkpoint:** run `42536372353` at
+  `cd3817ce` passes both primary packaged call-site steps (64 runtime cases),
+  native builds, extension/package checks, Linux GUI, Windows host and the
+  transported Windows/GDB consumer. The Windows chooser correction passed the
+  final default-directory export and all three Script Manager journeys.
 
-- **CONFIRMED #117 packaged checkpoint:** both primary packaged steps pass at
-  `9f2d52c` in run `42534617028`, covering 64 runtime scenarios plus validators,
-  determinism, provenance and preservation. Complete the remaining target and
-  Windows gates and final review before closing #117. The older Windows run
-  repeated the directory timeout; the final ordinary export reused the repeat
-  output directory. Current-head chooser diagnostics are still needed.
+- **CONFIRMED MIPS diagnostic assertion failure:** little-endian job
+  `128904296904` fails `mips-fpr-system.py` at the old exact eight-diagnostic
+  assertion, before the Forge structural/runtime checks. Source inspection
+  shows the new recovery pass reports one unsupported ABI omission for each
+  of the four fixture functions. Require those four exact address/reason messages
+  separately and retain the original eight-diagnostic count. Save the report
+  before assertions and require no call-site DIEs/completeness on this unsupported
+  profile. Five pure diagnostic tests and workflow lint pass; corrected hosted
+  MIPS execution and the full gate remain required. No production change.
+
+The earlier checkpoints below are historical; their pending lists are superseded
+by the current checkpoint above.
 
 - **CONFIRMED #117 packaged diagnosis:** AArch64 job `128894411072` rejected
   normal omission messages because Ghidra logs `printerr` as ERROR. Require

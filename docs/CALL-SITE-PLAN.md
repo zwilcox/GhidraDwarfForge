@@ -4,16 +4,29 @@ See [the development usage and scope notes](CALL-SITES.md) for debugger commands
 current proof bounds and unavailable-value behavior. Full acceptance is still
 pending; those notes are not a released support claim.
 
-**CONFIRMED recovered-plan and packaged call-site checkpoints; full hosted acceptance incomplete:**
+**CONFIRMED packaged and Windows checkpoints; full acceptance incomplete:**
 this plan preserves all six acceptance items in
 [issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117). Run
-`42534617028` at `9f2d52c` passed both primary packaged call-site steps
-(jobs `128898929091` and `128898929089`), including all 64 runtime cases,
+[42536372353](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42536372353)
+at `cd3817ce` passed both primary packaged call-site steps, all 64 runtime cases,
 structural validation, provenance, deterministic exports and original/saved
-database preservation. Remaining target/Windows gates and final review are
-pending. Historical gaps and their resolution are recorded below.
-#120 follows completion
-of #117. Storage controls remain mandatory throughout implementation.
+program preservation. Native builds, extension/package checks, Linux GUI,
+Windows host and transported Windows/GDB checks also passed.
+
+The MIPS little-endian job `128904296904` failed the existing system-emulator
+harness's exact eight-diagnostic assertion before Forge validation/runtime.
+The call-site recovery selector now adds unsupported-profile diagnostics for
+all four fixture functions. The corrected harness requires those four exact
+messages using independently read compiler symbol addresses and retains the
+original eight-message check. It saves the report before assertions and checks
+that unsupported MIPS output has no call-site DIEs or completeness attributes.
+Five pure diagnostic controls reject missing/duplicate messages, wrong addresses
+or reasons, unrelated additions and malformed collections. These and workflow
+lint pass; the corrected hosted MIPS matrix and full gate remain unverified.
+No producer/exporter behavior or debugger-value assertion changes.
+
+#120 follows completion and protected integration of #117. Storage controls
+remain mandatory. Earlier checkpoint details below are historical.
 
 ## Verified starting point
 

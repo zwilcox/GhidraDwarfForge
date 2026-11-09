@@ -2,9 +2,10 @@
 
 **CONFIRMED packaged checks; full acceptance pending:** issue #117 is still under
 validation. Both selected profiles pass the installed-package call-site step in
-[run 42534617028](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42534617028)
-at `9f2d52c`, including all 64 runtime cases and structural/preservation checks.
-The complete hosted gate and final review have not passed. This document describes
+[run 42536372353](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42536372353)
+at `cd3817ce`, including all 64 runtime cases and structural/preservation checks.
+Windows host checks pass, but a MIPS diagnostic-count assertion failed; the
+complete hosted gate and final review have not passed. This document describes
 the development implementation, not a released support claim. The
 [acceptance plan](CALL-SITE-PLAN.md) records the remaining work and historical
 failures.

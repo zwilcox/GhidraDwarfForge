@@ -660,6 +660,7 @@ jobs:
             python3 -B -m unittest discover -s src/test/python -p test_gdb_loader.py -v
             python3 -B -m unittest discover -s src/test/python -p test_jfr_phases.py -v
             python3 -B -m unittest discover -s src/test/python -p test_headless_observations.py -v
+            python3 -B src/test/integration/mips-fpr-system-diagnostics-test.py
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
             build/linux-rename-contract
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-build-id-lock-contract.c -o build/linux-build-id-lock-contract
