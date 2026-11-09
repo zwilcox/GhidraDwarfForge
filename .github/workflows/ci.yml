@@ -1075,6 +1075,17 @@ jobs:
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
 
+      - name: MIPS O32 FPXX and FP64A system-emulator references
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          for profile in fpxx fp64a; do
+              python3 src/test/integration/mips-fpr-system.py "$GHIDRA_INSTALL_DIR" \
+                  --endian "${TARGET#mips32}" --profile "$profile"
+          done
+
       - name: Packaged call-site and tail-call runtime checks
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -2593,17 +2604,6 @@ jobs:
                   python3 src/test/integration/mips-wide-abi.py "$GHIDRA_INSTALL_DIR" \
                       --abi "$abi" --endian "$endian" --role "$role" --with-controls
               done
-          done
-
-      - name: MIPS O32 FPXX and FP64A system-emulator references
-        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
-        env:
-          TARGET: ${{ matrix.target }}
-        run: |
-          set -euo pipefail
-          for profile in fpxx fp64a; do
-              python3 src/test/integration/mips-fpr-system.py "$GHIDRA_INSTALL_DIR" \
-                  --endian "${TARGET#mips32}" --profile "$profile"
           done
 
       - name: MIPS O32 mixed and wide arguments in both byte orders
