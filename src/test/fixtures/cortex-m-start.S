@@ -81,4 +81,18 @@ Default_Handler:
     b Default_Handler
 .size Default_Handler, .-Default_Handler
 
+/* Adjacent byte objects prove that odd DATA addresses must never be Thumb-normalized. */
+.section .data.bytes,"aw",%progbits
+.balign 4
+.global cortex_byte_pad
+.type cortex_byte_pad,%object
+cortex_byte_pad:
+    .byte 0x11
+.size cortex_byte_pad,1
+.global cortex_odd_byte
+.type cortex_odd_byte,%object
+cortex_odd_byte:
+    .byte 0x7b
+.size cortex_odd_byte,1
+
 .section .note.GNU-stack,"",%progbits

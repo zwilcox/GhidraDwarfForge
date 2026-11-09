@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import runpy
 from pathlib import Path
 import subprocess
 import tempfile
@@ -98,6 +99,8 @@ def main():
         assert 'cortex-m-read-only-export=PASS' in controlled
         assert inventory(project) == saved, 'failure controls changed saved project'
         assert [digest(sidecar), digest(Path(str(sidecar) + '.c'))] == previous
+        artifact_checks = runpy.run_path(str(HERE / 'cortex-m-artifact.py'))
+        _, _, addresses = artifact_checks['inspect'](case, sidecar, root / 'addresses')
         run('gnu', ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline,loc', sidecar])
         assert 'No errors.' in run('llvm', ['llvm-dwarfdump', '--verify', sidecar])
         run('pinned', ['python3', HERE / 'check-dwarfdump.py', sidecar, root / 'pinned.txt', '--original', original])
@@ -111,6 +114,7 @@ def main():
         result = {'status': 'PASS_CURATED_CORTEX_EXPORT_RUNTIME', 'reference': str(case),
             'originalSha256': digest(original), 'sidecarSha256': previous[0], 'sourceSha256': previous[1],
             'counts': reports[0]['counts'], 'packageSha256': package_before,
+            'addressChecks': addresses,
             'exceptionFrameCounts': [len(row['frames']) for row in observed['exceptions']],
             'failureControls': {'contextRejections': 2, 'cancellations': 6, 'deterministicRecovery': True},
             'scope': 'Selected Cortex-M3 runtime, structure, profile selection, failure/cancellation and preservation; required hosted lane and independent runtime mutation controls remain pending.'}

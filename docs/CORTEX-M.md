@@ -2,13 +2,15 @@
 
 **CONFIRMED local curated runtime; full profile acceptance pending.** The
 compiler reference and a fresh stripped/curated Ghidra import pass the selected
-QEMU/GDB checks. Production exports preserve eight functions and eleven globals;
+QEMU/GDB checks. Production exports preserve eight functions and thirteen globals;
 GNU, LLVM and pinned libdwarf validators report no errors. Repeated sidecar/source
 bytes match, and firmware, all saved-project files and installed-package hashes
 remain unchanged. Explicit profile checks and eight rejection/cancellation
-controls also pass locally. Required CI integration and independent runtime
-mutation controls remain outstanding. See the initial [runtime receipt](evidence/cortex-m-runtime.json)
-and the subsequent [profile and failure receipt](evidence/cortex-m-profile.json).
+controls also pass locally. Six independently mutated sidecars exercise the
+address and debugger oracles. The required CI lane is implemented but remains
+unverified on hosted runners. See the [complete local suite receipt](evidence/cortex-m-suite.json),
+initial [runtime receipt](evidence/cortex-m-runtime.json), and
+[profile and failure receipt](evidence/cortex-m-profile.json).
 Implementation follows the completed
 [call-site work, PR190](https://github.com/zwilcox/GhidraDwarfForge/pull/190).
 
@@ -53,14 +55,16 @@ each with absent outputs and an existing pair. No partial files replace the
 pair; a successful retry produces identical bytes. All saved-project files and
 the original firmware remain unchanged.
 
-## Compiler-reference checkpoint
+## Compiler and production runtime
 
 The source-built fixture has an actual vector table at flash address zero,
 separate RAM `.data` with a flash load address, `.bss`, and distinct thread
 stacks. Reset copies initialized data and clears a debugger-seeded BSS value.
 GDB verifies the initial SP/PC/xPSR, pre-execution Thumb disassembly, the odd
 function-pointer value, named and address breakpoints, `next`/`step`, an integer
-parameter, a stack local, and initialized/uninitialized globals.
+parameter, a stack local, and initialized/uninitialized globals. A one-byte
+global at an odd address retains its exact DWARF location and value `0x7b`;
+Thumb address normalization must never be applied to that data address.
 
 Two SVC exceptions exercise thread execution on MSP and PSP. The oracle
 independently checks the hardware frame, return PC/xPSR, EXC_RETURN values
@@ -115,24 +119,53 @@ The harness uses fresh temporary Ghidra settings within each run. Reproducible
 package timestamps otherwise allowed an older compiled script cache to survive
 a local package replacement. The temporary settings are removed on exit.
 
-## Remaining acceptance
+Run the complete compiler/export/failure/mutation suite with a fresh output directory:
+
+```bash
+python3 support/storage-guard.py run --cwd "$PWD" -- \
+    python3 src/test/integration/cortex-m-suite.py \
+    --ghidra "$GHIDRA_INSTALL_DIR" --results "$PWD/.forge-work/scratch/cortex-m-suite"
+```
+
+GNU Arm Embedded tools, `qemu-system-arm`, `gdb-multiarch`, `readelf` and
+`llvm-dwarfdump` must be on `PATH`; `DWARFDUMP` selects the pinned validator.
+The required `cortex-m-profile` CI job runs this same suite against the release
+package. Its result is required alongside the unchanged architecture matrix
+and Windows paths, including the Linux ARM-state lane.
+
+## Independent address and corruption checks
+
+Compiler ELF symbols and Thumb/data mappings supply the fixture's expected
+eight function bodies, thirteen objects (including vectors), and literal-pool
+extents. The artifact checker compares exact DWARF function ranges and global
+addresses, Thumb ELF symbol values, preserved target sections and every line
+row against compiler instruction boundaries. It checks the odd data address
+without masking it. The original firmware executes in QEMU unchanged.
+
+Six metadata-only mutations all pass LLVM structural verification but fail
+the exact artifact oracle. Wrong function entry, ordinary/odd global addresses,
+exception-global address and source-entry mapping also fail the GDB runtime
+oracle at the corresponding checks. Clearing a redundant Thumb symbol bit
+still passes GDB: its M-profile metadata supplies independent Thumb evidence.
+That result is explicitly recorded; the exact ELF symbol check rejects it.
+No mutation changes the original firmware, baseline sidecar or source file.
+
+## Acceptance map and bounds
 
 The first uncurated import did not discover the SVC handler path or typed
 globals. Fixture curation explicitly supplies source-known function extents,
 signatures and global types. ELF Thumb/data mapping symbols exclude literal
 pools from bodies; unvisited mapped Thumb padding is decoded explicitly.
+After initial analysis, the curation script disables further headless analysis
+so no-return propagation cannot shorten the recorded analyst-selected bodies
+before saving. Exact emitted ranges are checked against the compiler manifest.
 Production export does not perform these fixture-only repairs.
 
-1. Carry the passing explicit profile checks and incompatible ARM-state/extension
-   rejection tests into required CI; review their documented limits.
-2. Preserve the passing stripped/curated production export and debugger
-   coverage in the required hosted lane. Add negative runtime controls.
-3. Independently check vectors, flash load addresses, RAM addresses, code/data
-   distinctions, even instruction addresses and tagged function pointers.
-4. Preserve the passing bounded exception scenario and the documented handler
-   unwind limit without claiming compiler-CFI equivalence.
-5. Keep this ELF harness independent of raw input. Issue #119 is still open;
-   add its raw counterpart when explicit raw-firmware export is available.
-6. Add a required system-QEMU CI lane using the passing failure/cancellation,
-   structural, deterministic and preservation checks. Preserve the existing
-   ARM-state matrix.
+| Issue #120 criterion | Evidence and remaining condition |
+| --- | --- |
+| Selected core/ISA/compiler/ABI/board/map and rejection | Baseline above; 95 ELF checks, real Ghidra language/context checks and packaged ARM-state rejection pass locally. |
+| Stripped ELF and useful remote debugging | Compiler and real production exports pass named/address breakpoints, disassembly, pointers, stepping and defensible variable checks in QEMU/GDB. |
+| Reset, memory placement, code/data and actual bodies | Vector/MSP/xPSR checks, flash-to-RAM initialization, BSS seed clearing, exact ranges/sections/line boundaries and odd data location pass. |
+| Bounded exception behavior | Two SVC transitions exercise MSP/PSP, hardware frames and return. Forge unwinding remains handler-only; no broader claim. |
+| ELF independent of raw firmware | Suite imports the original ELF directly. #119 remains open; raw counterpart stays conditional on that feature. |
+| Validators, preservation, determinism, failure and CI | GNU/LLVM/pinned validation, complete saved-project/package/input hashes, repeated bytes and eight failure controls pass locally. Required hosted Cortex-M lane and existing regression matrix must pass before completion. |

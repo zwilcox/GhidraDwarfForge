@@ -1,5 +1,24 @@
 # TODO.md — GhidraDwarfForge
 
+## Cortex-M complete local suite; hosted CI pending — 2026-11-09
+
+**CONFIRMED locally:** the full compiler/installed-export suite passes eight exact
+function ranges, thirteen globals (including an odd-address byte), compiler
+instruction boundaries, reset/flash/RAM/BSS, source/variable/Thumb/SVC checks,
+structural validators, preservation, deterministic repeats and eight failure
+controls. Six metadata mutants all pass LLVM but fail the exact artifact oracle;
+five also fail GDB. GDB tolerates the redundant Thumb-symbol-bit mutation using
+independent M-profile metadata; that limitation is explicitly recorded.
+
+Fixture curation now prevents post-script analysis from shortening analyst
+bodies before saving. Production export is unchanged by this fixture correction.
+Receipt: `docs/evidence/cortex-m-suite.json`; complete local suite at
+`.forge-work/scratch/cortex-m-complete-suite`. The required `cortex-m-profile`
+job is wired into the final gate alongside all existing architecture/host lanes.
+**PRESENT, UNVERIFIED:** hosted job and full changed-head matrix. #120 stays open
+until CI, log review and the full six-criterion audit pass. #119 remains open;
+raw counterpart is conditional. #115/#117 remain complete.
+
 ## Cortex-M3 profile and failure checkpoint — 2026-11-09
 
 **CONFIRMED locally:** explicit `--target-profile=cortex-m3` checks ELF attributes

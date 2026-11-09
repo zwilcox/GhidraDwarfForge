@@ -7,7 +7,7 @@ import java.util.Map;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import ghidra.app.cmd.disassemble.DisassembleCommand;
-import ghidra.app.script.GhidraScript;
+import ghidra.app.util.headless.HeadlessScript;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
@@ -18,13 +18,14 @@ import ghidra.program.model.data.ParameterDefinition;
 import ghidra.program.model.data.ParameterDefinitionImpl;
 import ghidra.program.model.data.PointerDataType;
 import ghidra.program.model.data.UnsignedIntegerDataType;
+import ghidra.program.model.data.UnsignedCharDataType;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.listing.ReturnParameterImpl;
 import ghidra.program.model.symbol.SourceType;
 
-public class PrepareCortexM extends GhidraScript {
+public class PrepareCortexM extends HeadlessScript {
     @Override
     protected void run() throws Exception {
         if (getScriptArgs().length != 2 ||
@@ -33,6 +34,9 @@ public class PrepareCortexM extends GhidraScript {
             throw new IllegalArgumentException("expected Cortex/default plus manifest and receipt paths");
         }
         var manifest = new Gson().fromJson(Files.readString(Path.of(getScriptArgs()[0])), JsonObject.class);
+        // Initial analysis has completed. Keep subsequent no-return propagation
+        // from replacing analyst-selected bodies after this script's receipt.
+        enableHeadlessAnalysis(false);
         var manager = currentProgram.getFunctionManager();
         // Trim known function bodies first, so the adjacent Default_Handler
         // does not remain incorrectly owned by the non-returning PSP entry.
@@ -141,9 +145,14 @@ public class PrepareCortexM extends GhidraScript {
             String name = row.get("name").getAsString();
             DataType type = name.equals("cortex_function_pointer") ? new PointerDataType(callable) :
                 java.util.Set.of("cortex_initialized", "cortex_result", "cortex_bss_counter").contains(name) ? integer : unsigned;
-            if (row.get("size").getAsInt() != 4) throw new AssertionError("unexpected object size");
+            int size = row.get("size").getAsInt();
+            if (java.util.Set.of("cortex_byte_pad", "cortex_odd_byte").contains(name)) {
+                if (size != 1) throw new AssertionError("unexpected byte object size");
+                type = UnsignedCharDataType.dataType;
+            }
+            else if (size != 4) throw new AssertionError("unexpected object size");
             var address = toAddr(row.get("address").getAsLong());
-            DataUtilities.createData(currentProgram, address, type, 4, DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
+            DataUtilities.createData(currentProgram, address, type, size, DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
             currentProgram.getSymbolTable().createLabel(address, name, SourceType.USER_DEFINED).setPrimary();
         }
         clearListing(toAddr(0), toAddr(63));

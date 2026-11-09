@@ -1,6 +1,7 @@
-"""GDB Python oracle for the independent Cortex-M compiler reference."""
+"""Shared compiler/Forge Cortex-M runtime oracle driven by compiler fixture facts."""
 import json
 import os
+import re
 from pathlib import Path
 import struct
 import traceback
@@ -10,6 +11,7 @@ root = Path(os.environ['FORGE_CORTEX_CASE'])
 variant = os.environ.get('FORGE_CORTEX_VARIANT', 'compiler')
 symbols = Path(os.environ.get('FORGE_CORTEX_SYMBOLS', str(root / 'reference.elf')))
 output = Path(os.environ.get('FORGE_CORTEX_OUTPUT', str(root)))
+expected_source = Path(os.environ.get('FORGE_CORTEX_SOURCE', str(symbols) + '.c'))
 labels = json.loads((root / 'labels.json').read_text())
 result = {'status': 'FAIL', 'exceptions': []}
 
@@ -40,13 +42,23 @@ def frames():
 
 
 try:
+    result['phase'] = 'offline'
     gdb.execute('set pagination off')
     gdb.execute('set confirm off')
     gdb.execute('set auto-solib-add off')
     gdb.execute('file ' + json.dumps(str(root / 'original.elf')))
     gdb.execute('symbol-file ' + json.dumps(str(symbols)))
     result['offlineDisassembly'] = gdb.execute('x/4i ' + hex(labels['Reset_Handler'] & ~1), to_string=True)
-    assert 'ldr' in result['offlineDisassembly'] and 'r0' in result['offlineDisassembly']
+    offline_addresses = [int(match[1], 16) for line in result['offlineDisassembly'].splitlines()
+        if (match := re.match(r'\s*(?:=>\s*)?0x([0-9a-f]+)', line))]
+    assert 'ldr' in result['offlineDisassembly'] and 'r0' in result['offlineDisassembly'] and \
+        offline_addresses[:2] == [labels['Reset_Handler'] & ~1, (labels['Reset_Handler'] & ~1) + 2], \
+        'offline Thumb disassembly changed'
+    for function in json.loads((root / 'curation.json').read_text())['functions']:
+        assert value('&' + function['name']) & ~1 == function['entry'], 'function address changed: ' + function['name']
+        if variant == 'forge':
+            assert gdb.find_pc_line(function['entry']).line > 0, 'missing entry source mapping: ' + function['name']
+    result['phase'] = 'reset'
     gdb.execute('target remote ' + os.environ['FORGE_CORTEX_SOCKET'])
     vectors = words(0, 16)
     reset = labels['Reset_Handler'] & ~1
@@ -65,7 +77,14 @@ try:
     gdb.selected_inferior().write_memory(labels['cortex_bss_counter'], struct.pack('<I', 0x12345678))
     result['reset']['bssSeed'] = 0x12345678
     stop_at('cortex_main')
+    result['phase'] = 'globals'
     assert value('cortex_initialized') == 7 and value('cortex_bss_counter') == 0
+    assert labels['cortex_odd_byte'] & 1
+    assert value('(unsigned char *)&cortex_odd_byte') == labels['cortex_odd_byte'], 'odd data address changed'
+    assert value('*(unsigned char *)&cortex_odd_byte') == 0x7b, 'odd data value changed'
+    if variant == 'forge':
+        assert gdb.parse_and_eval('cortex_odd_byte').type.sizeof == 1
+    result['oddData'] = {'address': value('(unsigned char *)&cortex_odd_byte'), 'value': 0x7b}
     pointer = words(labels['cortex_function_pointer'], 1)[0]
     assert pointer == labels['cortex_compute'] | 1
     pointer_type = gdb.parse_and_eval('cortex_function_pointer').type.strip_typedefs()
@@ -75,6 +94,7 @@ try:
     assert len(function_type.fields()) == 1 and function_type.fields()[0].type.sizeof == 4
     result['functionPointerType'] = gdb.execute('ptype cortex_function_pointer', to_string=True)
     result['functionPointer'] = pointer
+    result['phase'] = 'source-stepping'
     gdb.execute('next')
     result['steps'] = []
     for _ in range(6):
@@ -91,18 +111,19 @@ try:
         'local': value('local'), 'line': gdb.selected_frame().find_sal().line,
         'file': gdb.selected_frame().find_sal().symtab.fullname()}
     if variant == 'forge':
-        assert Path(result['sourceStepping']['file']).resolve() == Path(str(symbols) + '.c').resolve()
+        assert Path(result['sourceStepping']['file']).resolve() == expected_source.resolve()
         gdb.execute('stepi')
         assert value('$pc') == labels['cortex_compute_probe'] + 2
         assert gdb.parse_and_eval('input').is_optimized_out, 'clobbered parameter must remain unavailable'
     for index, suffix, expected_return in ((1, 'msp', 0xfffffff9), (2, 'psp', 0xfffffffd)):
+        result['phase'] = 'exception-' + suffix
         if index == 2:
             stop_at('cortex_compute')
             assert value('input') == 11
         stop_at('*' + hex(labels['cortex_exception_probe']))
         assert value('cortex_exception_count') == index
         assert value('cortex_exception_number') == 11 and value('$xpsr') & 0x1ff == 11
-        assert value('cortex_exception_return') == expected_return
+        assert value('cortex_exception_return') == expected_return, 'exception return changed'
         address = value('cortex_stacked_address')
         frame = words(address, 8)
         msp, psp = value('$msp'), value('$psp')
