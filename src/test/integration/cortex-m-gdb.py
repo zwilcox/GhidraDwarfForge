@@ -7,6 +7,9 @@ import traceback
 import gdb
 
 root = Path(os.environ['FORGE_CORTEX_CASE'])
+variant = os.environ.get('FORGE_CORTEX_VARIANT', 'compiler')
+symbols = Path(os.environ.get('FORGE_CORTEX_SYMBOLS', str(root / 'reference.elf')))
+output = Path(os.environ.get('FORGE_CORTEX_OUTPUT', str(root)))
 labels = json.loads((root / 'labels.json').read_text())
 result = {'status': 'FAIL', 'exceptions': []}
 
@@ -26,12 +29,24 @@ def stop_at(location):
     assert not breakpoint.is_valid(), 'expected breakpoint was not reached: ' + location
 
 
+def frames():
+    observed = []
+    frame = gdb.newest_frame()
+    while frame is not None:
+        assert len(observed) < 16, 'unexpectedly deep exception trace'
+        observed.append({'name': frame.name(), 'pc': int(frame.pc()), 'type': int(frame.type())})
+        frame = frame.older()
+    return observed
+
+
 try:
     gdb.execute('set pagination off')
     gdb.execute('set confirm off')
     gdb.execute('set auto-solib-add off')
     gdb.execute('file ' + json.dumps(str(root / 'original.elf')))
-    gdb.execute('symbol-file ' + json.dumps(str(root / 'reference.elf')))
+    gdb.execute('symbol-file ' + json.dumps(str(symbols)))
+    result['offlineDisassembly'] = gdb.execute('x/4i ' + hex(labels['Reset_Handler'] & ~1), to_string=True)
+    assert 'ldr' in result['offlineDisassembly'] and 'r0' in result['offlineDisassembly']
     gdb.execute('target remote ' + os.environ['FORGE_CORTEX_SOCKET'])
     vectors = words(0, 16)
     reset = labels['Reset_Handler'] & ~1
@@ -73,7 +88,13 @@ try:
     stop_at('*' + hex(labels['cortex_compute_probe']))
     assert value('local') == 16 and value('cortex_bss_counter') == 17
     result['sourceStepping'] = {'function': gdb.selected_frame().name(), 'input': value('input'),
-        'local': value('local'), 'line': gdb.selected_frame().find_sal().line}
+        'local': value('local'), 'line': gdb.selected_frame().find_sal().line,
+        'file': gdb.selected_frame().find_sal().symtab.fullname()}
+    if variant == 'forge':
+        assert Path(result['sourceStepping']['file']).resolve() == Path(str(symbols) + '.c').resolve()
+        gdb.execute('stepi')
+        assert value('$pc') == labels['cortex_compute_probe'] + 2
+        assert gdb.parse_and_eval('input').is_optimized_out, 'clobbered parameter must remain unavailable'
     for index, suffix, expected_return in ((1, 'msp', 0xfffffff9), (2, 'psp', 0xfffffffd)):
         if index == 2:
             stop_at('cortex_compute')
@@ -95,8 +116,19 @@ try:
         else:
             assert 0x2000e000 < address < 0x2000f000
             assert psp == address and msp > 0x2000f000
+        observed_frames = frames()
+        if variant == 'compiler':
+            assert [f['name'] for f in observed_frames] == ['cortex_svc_body', None,
+                'cortex_main' if index == 1 else 'cortex_psp_main',
+                'Reset_Handler' if index == 1 else 'cortex_psp_entry']
+            assert observed_frames[1]['type'] == gdb.SIGTRAMP_FRAME
+        else:
+            reference_frames = json.loads((root / 'compiler-gdb.json').read_text())['exceptions'][index - 1]['frames']
+            assert observed_frames == reference_frames[:len(observed_frames)], 'Forge invented an exception frame'
+            assert gdb.parse_and_eval('number').is_optimized_out, 'overwritten exception argument must be unavailable'
         result['exceptions'].append({'stack': suffix, 'excReturn': expected_return,
             'msp': msp, 'psp': psp, 'frameAddress': address, 'hardwareFrame': frame,
+            'frames': observed_frames,
             'backtrace': gdb.execute('bt', to_string=True),
             'registers': gdb.execute('info all-registers', to_string=True)})
     stop_at('*' + hex(labels['cortex_done']))
@@ -109,6 +141,6 @@ try:
 except Exception:
     result['error'] = traceback.format_exc()
 finally:
-    (root / 'compiler-gdb.json').write_text(json.dumps(result, indent=4) + '\n')
+    (output / (variant + '-gdb.json')).write_text(json.dumps(result, indent=4) + '\n')
     print(json.dumps(result, indent=4))
     gdb.execute('quit ' + ('0' if result['status'] == 'PASS' else '1'))

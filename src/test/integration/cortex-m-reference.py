@@ -3,12 +3,11 @@
 import argparse
 import hashlib
 import json
-import os
+import runpy
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-import time
 
 HERE = Path(__file__).resolve().parent
 FIXTURES = HERE.parent / 'fixtures'
@@ -63,37 +62,45 @@ def main():
     assert labels['_sidata'] < 0x40000 and labels['_sdata'] == 0x20000000
     assert labels['_sdata'] < labels['_edata'] <= labels['_sbss'] < labels['_ebss']
     run('disassembly', ['arm-none-eabi-objdump', '-d', reference])
+    symbol_table = run('symbol-table', ['arm-none-eabi-readelf', '-sW', reference])
+    records = []
+    for line in symbol_table.splitlines():
+        fields = line.split()
+        if len(fields) == 8 and fields[0].rstrip(':').isdigit():
+            records.append({'address': int(fields[1], 16), 'size': int(fields[2]),
+                'type': fields[3], 'section': fields[6], 'name': fields[7]})
+    mappings = sorted((r for r in records if r['name'] in ('$t', '$d')),
+        key=lambda r: (r['section'], r['address']))
+    functions = []
+    for symbol in sorted((r for r in records if r['type'] == 'FUNC'), key=lambda r: r['address']):
+        assert symbol['address'] & 1, 'compiler function is not tagged Thumb'
+        start = symbol['address'] & ~1
+        end = start + symbol['size']
+        regions = [m for m in mappings if m['section'] == symbol['section']]
+        ranges = []
+        for index, mapping in enumerate(regions):
+            limit = regions[index + 1]['address'] if index + 1 < len(regions) else end
+            low, high = max(start, mapping['address']), min(end, limit)
+            if mapping['name'] == '$t' and low < high:
+                ranges.append([low, high])
+        assert len(ranges) == 1 and ranges[0][0] == start
+        functions.append({'name': symbol['name'], 'entry': start, 'ranges': ranges})
+    assert len(functions) == 8
+    text_section, = [r['section'] for r in records if r['type'] == 'SECTION' and r['name'] == '.text']
+    text_mappings = [m for m in mappings if m['section'] == text_section]
+    text_end = max((r['address'] & ~1) + r['size'] for r in records if r['type'] == 'FUNC')
+    data_ranges = [[m['address'], text_mappings[i + 1]['address'] if i + 1 < len(text_mappings) else text_end]
+        for i, m in enumerate(text_mappings) if m['name'] == '$d']
+    manifest = {'functions': functions, 'literalPools': data_ranges,
+        'objects': [r for r in records if r['type'] == 'OBJECT'], 'labels': labels}
+    (root / 'curation.json').write_text(json.dumps(manifest, indent=4) + '\n')
     run('llvm', ['llvm-dwarfdump', '--verify', reference])
     (root / 'labels.json').write_text(json.dumps(labels, indent=4) + '\n')
     (root / 'profile.json').write_text(json.dumps({'core': 'Cortex-M3', 'isa': 'ARMv7-M',
         'board': 'lm3s6965evb', 'abi': 'AAPCS32 base PCS', 'byteOrder': 'little',
         'versions': versions, 'inputSha256': protected[str(original)]}, indent=4) + '\n')
-    with tempfile.TemporaryDirectory(prefix='cortex-m-') as temporary:
-        socket = Path(temporary) / 'gdb'
-        command = ['qemu-system-arm', '-M', 'lm3s6965evb', '-cpu', 'cortex-m3',
-            '-kernel', str(original), '-display', 'none', '-serial', 'none',
-            '-monitor', 'none', '-nic', 'none', '-S',
-            '-gdb', 'unix:' + str(socket) + ',server=on,wait=off']
-        (root / 'qemu-command.json').write_text(json.dumps(command, indent=4) + '\n')
-        with (root / 'qemu.log').open('w') as output:
-            process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT)
-            try:
-                deadline = time.monotonic() + 10
-                while not socket.exists() and process.poll() is None and time.monotonic() < deadline:
-                    time.sleep(0.05)
-                assert socket.exists() and process.poll() is None, 'QEMU failed to start'
-                run('gdb', ['gdb-multiarch', '-q', '-nx', '-batch', '-x', HERE / 'cortex-m-gdb.py'],
-                    env=dict(os.environ, FORGE_CORTEX_CASE=str(root), FORGE_CORTEX_SOCKET=str(socket)))
-                assert process.poll() is None
-            finally:
-                if process.poll() is None:
-                    process.terminate()
-                try:
-                    process.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait(timeout=10)
-    observed = json.loads((root / 'compiler-gdb.json').read_text())
+    runtime = runpy.run_path(str(HERE / 'cortex-m-runtime.py'))
+    observed = runtime['debugger'](root, reference, root, 'compiler')
     assert observed['status'] == 'PASS' and len(observed['exceptions']) == 2
     assert all(digest(Path(path)) == before for path, before in protected.items())
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_COMPILER_CORTEX_M_REFERENCE',

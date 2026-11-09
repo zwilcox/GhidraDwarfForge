@@ -1,0 +1,74 @@
+{
+    "status": "CONFIRMED_LOCAL_CURATED_CORTEX_M_RUNTIME",
+    "date": "2026-11-09",
+    "profile": "Cortex-M3 / ARMv7-M / little-endian Thumb-only / base AAPCS / QEMU lm3s6965evb",
+    "versions": {
+        "arm-none-eabi-gcc": "arm-none-eabi-gcc (15:13.2.rel1-2) 13.2.1 20231009",
+        "arm-none-eabi-objcopy": "GNU objcopy (2.42-1ubuntu1+23) 2.42",
+        "qemu-system-arm": "QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)",
+        "gdb-multiarch": "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1"
+    },
+    "ghidra": "12.0.3 ARM:LE:32:Cortex/default, Java 21",
+    "case": "/home/ziggy/GhidraDwarfForge/.forge-work/scratch/cortex-m-reference/cortex-m3.ipc9_7ny",
+    "export": "/home/ziggy/GhidraDwarfForge/.forge-work/scratch/cortex-m-reference/cortex-m3.ipc9_7ny/export.4fl3blq6",
+    "originalSha256": "b82b58bcb1bbedc858083f2967d9f3653b637b1a9a12b562e61d8e143aaf4d77",
+    "sidecarSha256": "b1fba7e8df39b849e40e8d134fe9c5b3d82c77cf8d92479f8157969dc264603a",
+    "sourceSha256": {
+        "src/test/fixtures/cortex-m-profile.c": "997f846d13eb989f6ea4a0d3443c190470cc78ce91036aac59a37e7367790799",
+        "src/test/fixtures/cortex-m-start.S": "430fe5687b0d6318acf063613baa22f8b1f7c1a190f55ba60d4c501ad4560c2a",
+        "src/test/fixtures/cortex-m.ld": "f94bb2af12f1f2afa235ff175c370ef955307a57306ac7f96f261e5896b5e400",
+        "src/test/integration/cortex-m-reference.py": "1229534b8d09ccaad0aa945a2dce77edd1d14ad95535e8c31fabb881b8e94097",
+        "src/test/integration/cortex-m-runtime.py": "a11b10624b6fa485c0782363983267b7a568f4b3c04fc69065b2ea19b379275f",
+        "src/test/integration/cortex-m-gdb.py": "2380f967590560e6c3cc5c77e4acbb64a259c8ba3f46d397fddf8320bcffcd9b",
+        "src/test/integration/cortex-m-export.py": "49eb7b8151a8c8ca4d8c2ff6d134e5225ba28ebdf595c8dfc83266da0be69e71",
+        "src/test/integration/ghidra_scripts/PrepareCortexM.java": "fcbc2b00a9d64eb57801503f09856e64b59d0ae5ac3273e4a05bff702eed1f5c",
+        "src/test/integration/ghidra_scripts/ExportCortexMReadOnly.java": "d7dd38bab42c11c964b535a33f37c18497a7b5bedcb2f242a732da02a1d3ee53"
+    },
+    "counts": {
+        "functionsExported": 8,
+        "functionsDecompiled": 8,
+        "functionsFailed": 0,
+        "functionsSkipped": 0,
+        "functionSignatures": 8,
+        "parameters": 4,
+        "localVariables": 3,
+        "globalVariables": 11,
+        "functionStaticVariables": 0,
+        "canonicalTypes": 8,
+        "defensibleVariableLocations": 7,
+        "omittedLocationRanges": 2,
+        "mappedSourceLines": 54,
+        "unsupportedConstructs": 1,
+        "diagnostics": 13
+    },
+    "checks": [
+        "Compiler and Forge pre-execution Thumb disassembly, reset vector and MSP/xPSR",
+        "Flash-to-RAM data initialization and clearing debugger-seeded BSS",
+        "Odd function-pointer values, original indirect calls, named/address breakpoints",
+        "Synthetic-source next/step; input=9 and stack local=16",
+        "Forge input and handler-number omissions after register overwrite",
+        "SVC MSP/PSP hardware frames, EXC_RETURN, handler stack selection and return",
+        "GNU/LLVM/pinned DWARF validation with zero reported errors",
+        "Repeated sidecar/source byte equality; original, every saved-project file and installed-package hashes preserved"
+    ],
+    "exceptionFrames": {
+        "compiler": [
+            4,
+            4
+        ],
+        "forge": [
+            1,
+            1
+        ],
+        "limitation": "Forge stops at the handler. It does not currently recover the compiler-reference exception/parent frames; no general interrupt-unwind, nested-exception or FPU-context support claim."
+    },
+    "fixtureCuration": "Explicit source-known symbols/types and ELF Thumb mapping extents; literal pools excluded, unvisited mapped Thumb padding decoded. Known globals and vector words are typed. Normal export does not perform this fixture curation.",
+    "preservationHarness": "A separate headless host opens a read-only DefaultProjectData view; ordinary -readOnly processing rotated project backups and was rejected by the original strict hash check.",
+    "remaining": [
+        "Production profile rejection and unsupported-extension controls",
+        "Atomic failure/cancellation and negative-oracle controls",
+        "Required system-QEMU CI lane plus existing architecture matrix",
+        "Raw counterpart conditional on issue119"
+    ],
+    "syntheticSourceSha256": "089d20bd99e9c811e62c80c92cf1eca05f302ef55221480da837f9c38e2efee8"
+}
