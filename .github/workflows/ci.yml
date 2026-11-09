@@ -661,6 +661,7 @@ jobs:
             python3 -B -m unittest discover -s src/test/python -p test_jfr_phases.py -v
             python3 -B -m unittest discover -s src/test/python -p test_headless_observations.py -v
             python3 -B src/test/integration/mips-fpr-system-diagnostics-test.py
+            python3 -B src/test/integration/curated-thunk-entry-test.py
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
             build/linux-rename-contract
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-build-id-lock-contract.c -o build/linux-build-id-lock-contract
@@ -1084,6 +1085,15 @@ jobs:
           for profile in fpxx fp64a; do
               python3 src/test/integration/mips-fpr-system.py "$GHIDRA_INSTALL_DIR" \
                   --endian "${TARGET#mips32}" --profile "$profile"
+          done
+
+      - name: Curated thunk names retain signatures without borrowed destination source
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          for role in exec pie pie-rebased; do
+              python3 src/test/integration/curated-thunk-export.py "$GHIDRA_INSTALL_DIR" --target "$TARGET" --role "$role"
           done
 
       - name: Packaged call-site and tail-call runtime checks
@@ -2231,15 +2241,6 @@ jobs:
               "$GHIDRA_INSTALL_DIR" "$JAVA_HOME" "$module/os/linux_x86_64" \
               "build/test-results/function-relationships/$TARGET" \
               --target "$TARGET" --jar "$module/lib/GhidraDwarfForge.jar"
-
-      - name: Curated thunk names retain signatures without borrowed destination source
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
-        env:
-          TARGET: ${{ matrix.target }}
-        run: |
-          for role in exec pie pie-rebased; do
-              python3 src/test/integration/curated-thunk-export.py "$GHIDRA_INSTALL_DIR" --target "$TARGET" --role "$role"
-          done
 
       - name: ARM and Thumb automatic aliases retain mode and original symbols
         if: matrix.target == 'arm32'

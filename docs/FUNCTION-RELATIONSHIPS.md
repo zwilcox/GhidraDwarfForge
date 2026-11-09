@@ -6,6 +6,18 @@ This addresses the P3.3 thunk/alias relationship row without changing the accept
 P1.7 naming, code-body, type, source or variable-location ownership rules. It does
 not complete P1.11a, P3.3, reconstructed inlining, or release acceptance.
 
+## Entry storage in the call-site development profile
+
+The #117 entry-storage refinement can now retain a curated thunk's recorded
+integer argument register at the exact first instruction address. The raw
+location list is limited to `[entry, entry + 1)`; later unavailable locations
+remain unavailable. This is separate from the trampoline relationship and never
+copies the destination's source or location ranges. The six-role thunk regression
+checks the actual argument at entry, then its unavailability after one real
+instruction, alongside the existing naming, type, transfer and source-omission
+requirements. See [current validation status](CALL-SITES.md); historical tests
+below predate this entry-only behavior.
+
 ## Representation and evidence
 
 A saved Ghidra thunk is a distinct code body, not a second spelling for the

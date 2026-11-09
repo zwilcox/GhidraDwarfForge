@@ -6,6 +6,8 @@ __attribute__((noinline, noclone)) int implementation(int value)
 
 __attribute__((noinline, noclone)) int gateway(int value)
 {
+    /* Keep a real instruction boundary after the entry-only location. */
+    __asm__ volatile("nop");
     return implementation(value);
 }
 

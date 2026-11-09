@@ -4,29 +4,53 @@ See [the development usage and scope notes](CALL-SITES.md) for debugger commands
 current proof bounds and unavailable-value behavior. Full acceptance is still
 pending; those notes are not a released support claim.
 
-**CONFIRMED packaged and Windows checkpoints; full acceptance incomplete:**
-this plan preserves all six acceptance items in
-[issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117). Run
-[42536372353](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42536372353)
-at `cd3817ce` passed both primary packaged call-site steps, all 64 runtime cases,
-structural validation, provenance, deterministic exports and original/saved
-program preservation. Native builds, extension/package checks, Linux GUI,
-Windows host and transported Windows/GDB checks also passed.
+**CONFIRMED component checks; full acceptance incomplete:** this plan preserves
+all six acceptance items in [issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117).
+At `a5e04953`, [run 42542348245](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42542348245)
+passes both primary packaged call-site steps and both MIPS FPXX/FP64A steps.
+The packaged checks cover 64 runtime cases, structural validation, provenance,
+deterministic exports and original/saved-program preservation. Native builds,
+extension/package checks and Linux GUI also pass. The predecessor `cd3817ce`
+passed Windows host and transported Windows/GDB checks.
 
-The MIPS little-endian job `128904296904` failed the existing system-emulator
-harness's exact eight-diagnostic assertion before Forge validation/runtime.
-The call-site recovery selector now adds unsupported-profile diagnostics for
-all four fixture functions. The corrected harness requires those four exact
-messages using independently read compiler symbol addresses and retains the
-original eight-message check. It saves the report before assertions and checks
-that unsupported MIPS output has no call-site DIEs or completeness attributes.
-Five pure diagnostic controls reject missing/duplicate messages, wrong addresses
-or reasons, unrelated additions and malformed collections. These and workflow
-lint pass; the corrected hosted MIPS matrix and full gate remain unverified.
-No producer/exporter behavior or debugger-value assertion changes.
+The old MIPS diagnostic-count assertion is corrected and passes current hosted
+execution. The predecessor AArch64 run subsequently exposed the curated-thunk
+entry-location assertion described below. Its corrected six-role local matrix
+passes; full corrected-head hosted validation and final review remain required.
+No complete #117 acceptance is claimed by these component results.
 
 #120 follows completion and protected integration of #117. Storage controls
 remain mandatory. Earlier checkpoint details below are historical.
+
+## Curated thunk entry-location regression
+
+**CONFIRMED:** predecessor AArch64 job `128904296895` failed the old
+`DW_AT_location`-must-be-absent assertion in `curated-thunk-export.py`. Local
+reproduction emits a single register location at `[thunk entry, entry + 1)`;
+GDB reads the independently known argument 19. This is the intended formal
+entry-storage refinement, not a destination-body lifetime or borrowed source.
+
+The corrected fixture adds a NOP so a real instruction boundary remains inside
+the thunk. Its raw-DWARF oracle requires the exact one-byte address interval,
+correct ABI argument register and immediate list terminator. GDB requires 19 at
+entry, then an unavailable parameter after the first instruction, no borrowed
+source row, the original transfer target, correct destination argument, return
+39 and exit 0. The x86 control admits the compiler's optional CET ENDBR64 prefix
+and independently requires the NOP. The first local x86 control rejected this
+prefix; that was a fixture-oracle assumption, not an exporter change.
+
+All six guarded local cases pass: x86-64 and AArch64, each ET_EXEC, PIE and
+rebased PIE, with compiler references, GNU/LLVM/pinned validators, repeat-byte
+identity and input/package preservation. Three pure oracle tests reject missing,
+unbounded, wrong-register, borrowed, enlarged and later location ranges. The
+workflow moves the unchanged three-role thunk command earlier after package
+installation; no existing named step is dropped. Full corrected-head CI remains
+required; the production exporter and native payload are unchanged.
+
+The latest evidence is in the bounded workspace receipts
+`curated-thunk-entry-matrix.json`, `curated-thunk-entry-oracle-controls.log` and
+`curated-thunk-workflow-order.json`. Earlier pending/failure entries below are
+historical. This checkpoint does not complete #117 or start #120.
 
 ## Verified starting point
 

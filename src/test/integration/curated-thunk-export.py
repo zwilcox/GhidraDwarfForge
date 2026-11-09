@@ -17,6 +17,28 @@ support = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(support)
 
 
+def check_entry_location(parameter, locations, entry, target):
+    """The thunk owns one entry PC, never its destination's location lifetime."""
+    match = re.fullmatch(r'(0x[0-9a-f]+) \(location list\)', parameter['attrs'].get('DW_AT_location', ''))
+    assert match, 'missing bounded thunk entry location'
+    offset = int(match[1], 16)
+    rows = []
+    for line in locations.splitlines():
+        row = re.fullmatch(r'\s*([0-9a-f]+)\s+([0-9a-f]+)\s+([0-9a-f]+)\s+(\(.*\))\s*', line)
+        end = re.fullmatch(r'\s*([0-9a-f]+)\s+<End of list>\s*', line)
+        if row:
+            rows.append((int(row[1], 16), int(row[2], 16), int(row[3], 16), row[4]))
+        elif end:
+            rows.append((int(end[1], 16),))
+    index, = [i for i, row in enumerate(rows) if row[0] == offset]
+    row = rows[index]
+    register = 5 if target == 'x86_64' else 0
+    assert len(row) == 4 and row[1:3] == (entry, entry + 1), 'borrowed or extended thunk location'
+    assert re.fullmatch(r'\(DW_OP_regx: ' + str(register) + r'(?: \([^()]+\))?\)', row[3]), \
+        'incorrect thunk entry argument register'
+    assert index + 1 < len(rows) and len(rows[index + 1]) == 1, 'unexpected later thunk locations'
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
@@ -157,7 +179,9 @@ def main():
             parameters.append(child)
     parameter, = parameters
     assert parameter['attrs']['DW_AT_name'].rsplit(': ', 1)[-1] == 'value'
-    assert 'DW_AT_type' in parameter['attrs'] and 'DW_AT_location' not in parameter['attrs']
+    assert 'DW_AT_type' in parameter['attrs']
+    locations = (case / 'fixed-loc.log').read_text()
+    check_entry_location(parameter, locations, symbols['gateway'], args.target)
     by_offset = {record['offset']: record for record in records}
     for definition in (row, parameter):
         type_offset = int(re.fullmatch(r'<0x([0-9a-f]+)>', definition['attrs']['DW_AT_type'])[1], 16)
@@ -166,7 +190,8 @@ def main():
         assert int(dtype['attrs']['DW_AT_byte_size']) == 4
         assert dtype['attrs']['DW_AT_encoding'].split()[0] == '5'
     write('raw-dies.json', records)
-    write('model.json', {'target': args.target, 'role': args.role, 'hashes': hashes, 'projectBackupChanges': changes})
+    write('model.json', {'target': args.target, 'role': args.role, 'hashes': hashes, 'projectBackupChanges': changes,
+        'thunkEntryLocation': [symbols['gateway'], symbols['gateway'] + 1]})
     run('gdb-driver', ['env', 'THUNK_TARGET=' + args.target,
         'bash', source / 'curated-thunk-gdb.sh', repository, case], timeout=180)
     after = {name: support.digest(Path(name)) for name in before}

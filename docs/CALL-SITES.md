@@ -1,14 +1,17 @@
 # Call sites, tail frames and entry values
 
-**CONFIRMED packaged checks; full acceptance pending:** issue #117 is still under
-validation. Both selected profiles pass the installed-package call-site step in
-[run 42536372353](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42536372353)
-at `cd3817ce`, including all 64 runtime cases and structural/preservation checks.
-Windows host checks pass, but a MIPS diagnostic-count assertion failed; the
-complete hosted gate and final review have not passed. This document describes
-the development implementation, not a released support claim. The
-[acceptance plan](CALL-SITE-PLAN.md) records the remaining work and historical
-failures.
+**CONFIRMED component checks; full acceptance pending:** issue #117 remains
+under validation. Both selected packaged call-site steps and both MIPS FPXX/FP64A
+steps pass at `a5e04953` in
+[run 42542348245](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42542348245).
+The predecessor AArch64 run exposed an outdated curated-thunk assertion that
+forbade every parameter location. The entry-storage feature now describes the
+thunk's exact first PC; it does not copy the destination's location lifetime.
+The corrected regression passes six local compiler/Forge cases (x86-64/AArch64,
+ET_EXEC/PIE/rebased PIE), requiring the correct value at entry and unavailability
+after the first instruction. Full corrected-head hosted validation and final
+review remain required. These are development results, not a released support
+claim. The [acceptance plan](CALL-SITE-PLAN.md) records the remaining work.
 
 ## What the metadata provides
 
@@ -48,8 +51,11 @@ ordinary calling convention. Call-site argument expressions are limited to
 supported integer-like formal types with one recorded register storage piece
 and a proven whole-register actual value. Stack arguments, composite storage,
 floating-point arguments, pointer formals, forced-indirect arguments and custom
-storage do not acquire call-site value expressions through this profile. Existing
-variable-location support is a separate feature.
+storage do not acquire call-site value expressions through this profile. For an admitted formal register, the entry-storage refinement can supply a
+location only at `[entry, entry + 1)`, including a curated thunk with no synthetic
+source body. It does not extend a register lifetime after the first instruction
+or borrow a destination's location ranges. Existing variable-location support
+is otherwise a separate feature.
 
 Unsupported instructions, patched bytes, flow overrides, incomplete bodies and
 overlapping function ownership can prevent proof. Completeness is asserted only
