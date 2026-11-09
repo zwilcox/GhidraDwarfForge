@@ -9,6 +9,7 @@ param(
     [string] $CompressDebugSections = 'none',
     [string] $SourceContext = 'off',
     [string] $SourceLines,
+    [string] $TargetProfile,
     [ValidateSet('off', 'strict', 'conditioned')] [string] $SynthesizeUnwind = 'off',
     [string] $UnwindStackSeparation,
     [ValidateSet('off', 'fixed')] [string] $UnwindRelocatedPointers = 'off',
@@ -35,6 +36,9 @@ if ($CompressDebugSections -notin @('none', 'zlib')) {
 }
 if ($SourceContext -cnotin @('off', 'assembly', 'pcode', 'both')) {
     Exit-Usage '-SourceContext must be off, assembly, pcode or both'
+}
+if ($PSBoundParameters.ContainsKey('TargetProfile') -and $TargetProfile -cne 'cortex-m3') {
+    Exit-Usage '-TargetProfile must be cortex-m3'
 }
 if ($PSBoundParameters.ContainsKey('SourceLines')) {
     $sourceLineValue = 0
@@ -326,6 +330,9 @@ try {
     }
     if ($PSBoundParameters.ContainsKey('SourceLines')) {
         $exportOptions += @("--source-lines=$SourceLines")
+    }
+    if ($PSBoundParameters.ContainsKey('TargetProfile')) {
+        $exportOptions += @("--target-profile=$TargetProfile")
     }
     foreach ($entry in @(
         @('AnnotationRecordLimit', 'annotation-record-limit'),

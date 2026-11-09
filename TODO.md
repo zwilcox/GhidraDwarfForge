@@ -1,5 +1,23 @@
 # TODO.md — GhidraDwarfForge
 
+## Cortex-M3 profile and failure checkpoint — 2026-11-09
+
+**CONFIRMED locally:** explicit `--target-profile=cortex-m3` checks ELF attributes
+and Ghidra Thumb context without restricting ordinary ARM exports. Ninety-five
+ELF checks, four actual Ghidra controls, 3,880 ARM call-policy regression checks,
+Bash wrapper tests and extension builds pass. The installed production package
+passes eight context-rejection/cancellation controls (absent and existing output
+pairs), deterministic retry, validators and the full Cortex-M QEMU/GDB runtime.
+Original firmware, saved-project files and installed-package bytes are unchanged.
+See `docs/evidence/cortex-m-profile.json`; selected export is `export.9wudgr_2`.
+
+**PLANNED:** independent runtime mutation controls, complete code/data assertions,
+required Cortex-M CI lane, existing architecture/Windows regressions and final
+#120 acceptance/protected merge. No general exception-unwind claim: Forge stops
+at the handler. #115 and #117 remain complete; #120 remains open. Raw counterpart
+is conditional on #119. Local package hash is
+`63dba3f4a8b327483c298b1a1117ff1e173251e1a95b1540a35c9b9470b96b66`.
+
 ## Below-entry alias oracle correction — 2026-11-09
 
 **CONFIRMED:** local review of the remaining x86 steps reproduced a second

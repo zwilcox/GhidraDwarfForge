@@ -36,40 +36,8 @@ public final class Arm32CallAbi {
             // even when EF_ARM_ABI_FLOAT_HARD declares a VFP executable.
             return new Observation(declared, Pcs.BASE, false, "");
         }
-        if (sections.size() != 1) return invalid(true, "multiple ARM attribute sections");
-        var section = sections.getFirst();
-        if (section.type != 0x70000003 || section.size < 1 || section.size > 65536 || section.flags != 0) {
-            return invalid(true, "invalid or oversized ARM attribute section");
-        }
-        byte[] bytes = image.readSourceRange(section.offset, section.size, "ARM call ABI attributes");
         try {
-            var reader = new Reader(bytes, image.byteOrder(), cancelled);
-            require(reader.byteValue(bytes.length) == 'A', "unsupported ARM attribute format");
-            Map<Integer, Long> attributes = null;
-            while (reader.position < bytes.length) {
-                check(cancelled);
-                int start = reader.position;
-                long length = reader.word(bytes.length);
-                require(length >= 5 && length <= bytes.length - start, "invalid ARM vendor extent");
-                int end = start + (int) length;
-                String vendor = reader.string(end);
-                if (!vendor.equals("aeabi")) {
-                    reader.position = end;
-                    continue;
-                }
-                while (reader.position < end) {
-                    int scopeStart = reader.position;
-                    long scope = reader.uleb(end);
-                    long scopeLength = reader.word(end);
-                    require(scopeLength >= reader.position - scopeStart && scopeLength <= end - scopeStart,
-                        "invalid ARM attribute scope extent");
-                    int scopeEnd = scopeStart + (int) scopeLength;
-                    require(scope == 1, "section/symbol-scoped ARM ABI attributes need separate classification");
-                    require(attributes == null, "multiple AEABI file scopes");
-                    attributes = reader.attributes(scopeEnd);
-                }
-            }
-            require(attributes != null, "no AEABI file scope");
+            Map<Integer, Long> attributes = readFileAttributes(image, cancelled);
             require(!attributes.containsKey(64) || attributes.containsKey(28),
                 "Tag_nodefaults leaves the floating PCS unspecified");
             long value = attributes.getOrDefault(28, 0L);
@@ -85,6 +53,46 @@ public final class Arm32CallAbi {
         catch (IllegalArgumentException malformed) {
             return invalid(true, malformed.getMessage());
         }
+    }
+
+    /** Shared bounded parser; a selected execution profile must require a file scope. */
+    static Map<Integer, Long> readFileAttributes(ElfImage image, BooleanSupplier cancelled) throws IOException {
+        check(cancelled);
+        var sections = image.sections().stream()
+            .filter(s -> s.type == 0x70000003 || s.name.equals(".ARM.attributes")).toList();
+        require(sections.size() == 1, "requires exactly one ARM attribute section");
+        var section = sections.getFirst();
+        require(section.type == 0x70000003 && section.size >= 1 && section.size <= 65536 && section.flags == 0,
+            "invalid or oversized ARM attribute section");
+        byte[] bytes = image.readSourceRange(section.offset, section.size, "ARM call ABI attributes");
+        var reader = new Reader(bytes, image.byteOrder(), cancelled);
+        require(reader.byteValue(bytes.length) == 'A', "unsupported ARM attribute format");
+        Map<Integer, Long> attributes = null;
+        while (reader.position < bytes.length) {
+            check(cancelled);
+            int start = reader.position;
+            long length = reader.word(bytes.length);
+            require(length >= 5 && length <= bytes.length - start, "invalid ARM vendor extent");
+            int end = start + (int) length;
+            String vendor = reader.string(end);
+            if (!vendor.equals("aeabi")) {
+                reader.position = end;
+                continue;
+            }
+            while (reader.position < end) {
+                int scopeStart = reader.position;
+                long scope = reader.uleb(end);
+                long scopeLength = reader.word(end);
+                require(scopeLength >= reader.position - scopeStart && scopeLength <= end - scopeStart,
+                    "invalid ARM attribute scope extent");
+                int scopeEnd = scopeStart + (int) scopeLength;
+                require(scope == 1, "section/symbol-scoped ARM ABI attributes need separate classification");
+                require(attributes == null, "multiple AEABI file scopes");
+                attributes = reader.attributes(scopeEnd);
+            }
+        }
+        require(attributes != null, "no AEABI file scope");
+        return Map.copyOf(attributes);
     }
 
     private static Observation invalid(boolean present, String reason) {

@@ -76,6 +76,10 @@ public class GhidraDwarfForge extends GhidraScript {
         }
 
         Map<String, String> options = parseOptions(arguments);
+        String targetProfile = options.get("target-profile");
+        if (targetProfile != null && !targetProfile.equals("cortex-m3")) {
+            throw new IllegalArgumentException("unsupported --target-profile=" + targetProfile);
+        }
         int sourceLineTarget = 0;
         if (options.containsKey("source-lines")) {
             String selected = options.get("source-lines");
@@ -202,6 +206,9 @@ public class GhidraDwarfForge extends GhidraScript {
 
         ElfImage originalElf = ElfImage.read(input);
         DwarfTarget target = GhidraTargetAgreement.requireAgreement(currentProgram, originalElf);
+        if (targetProfile != null) {
+            ghidradwarfforge.GhidraCortexM3Profile.requireAgreement(currentProgram, originalElf, monitor);
+        }
         long elfLoadBase = originalElf.preferredImageBase();
         long importedImageBase = GhidraImageBase.originalImageBase(currentProgram);
         long rebaseDelta = AddressNormalizer.rebaseDelta(
@@ -214,6 +221,10 @@ public class GhidraDwarfForge extends GhidraScript {
             diagnostics.add(message);
             printerr("GhidraDwarfForge: " + message);
         };
+        if (targetProfile != null) {
+            diagnostic.accept("Explicit target profile cortex-m3: ARMv7-M/base PCS attributes and " +
+                "decoded Thumb context checked; no FPU, TrustZone or general exception-unwind claim");
+        }
         var recovered = !synthesizeUnwind ? null : ExportPhase.measure("unwind-recovery", () -> {
             var condition = unwindOptions.condition(originalElf, rebaseDelta, monitor::isCancelled);
             var result = condition.conditional() ?
@@ -512,6 +523,7 @@ public class GhidraDwarfForge extends GhidraScript {
         for (String name : result.keySet()) {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
                     !name.equals("input") && !name.equals("output") && !name.equals("formatters") &&
+                    !name.equals("target-profile") &&
                     !name.equals("packaged-natives") && !name.equals("gdb-loader") && !name.equals("attachment-preparation") &&
                     !name.equals("compress-debug-sections") && !name.equals("source-context") && !name.equals("source-lines") &&
                     !name.equals("synthesize-unwind") && !name.equals("unwind-stack-separation") &&

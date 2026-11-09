@@ -14,8 +14,9 @@ public class ExportCortexMReadOnly extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 4 || currentProgram != null) {
-            throw new IllegalArgumentException("project-parent original output expected-module");
+        if ((args.length != 4 && args.length != 5) || currentProgram != null ||
+                (args.length == 5 && !args[4].equals("controls"))) {
+            throw new IllegalArgumentException("project-parent original output expected-module [controls]");
         }
         Path expected = Path.of(args[3]).toRealPath();
         Path module = Application.getModuleRootDir("GhidraDwarfForge").getFile(false).toPath().toRealPath();
@@ -31,8 +32,14 @@ public class ExportCortexMReadOnly extends GhidraScript {
             var program = (Program) file.getReadOnlyDomainObject(this, DomainFile.DEFAULT_VERSION, monitor);
             try {
                 currentProgram = program;
-                runScript("GhidraDwarfForge.java", new String[] {
-                    "--packaged-natives", "--input=" + args[1], "--output=" + args[2]});
+                if (args.length == 5) {
+                    runScript("CheckCortexMFailures.java", new String[] {args[1], args[2]});
+                }
+                else {
+                    runScript("GhidraDwarfForge.java", new String[] {
+                        "--packaged-natives", "--target-profile=cortex-m3",
+                        "--input=" + args[1], "--output=" + args[2]});
+                }
                 println("cortex-m-read-only-export=PASS jar=" + jar);
             }
             finally {
