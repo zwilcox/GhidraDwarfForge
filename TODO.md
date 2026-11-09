@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+## Call-origin symbol inventory regression — 2026-11-08
+
+**CONFIRMED:** hosted x86 job `128942413613` rejected exact symbol-table
+equality after a justified private call-origin alias was added. The corrected
+oracles preserve every original symbol/string byte and verify each added
+alias against discontiguous ranges and original direct-call instructions.
+Nine section-backed fixtures, six independent-writer comparisons, three
+sectionless exports and the incomplete-count omission control pass locally;
+six unit tests reject 17 malformed inventories or call proofs. Exporter/native
+code is unchanged. The full corrected-head gate and protected #117 integration
+remain required before #120. See the [inventory receipt](docs/evidence/call-origin-symbol-inventory.json).
+
 ## Current entry-storage regression checkpoint — 2026-11-08
 
 **CONFIRMED:** all 64 fresh packaged GDB cases pass on x86-64 and AArch64,

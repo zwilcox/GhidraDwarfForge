@@ -99,3 +99,11 @@ For discontiguous callees, the sidecar may contain private
 Canonical recovered function names and body ranges remain intact. These aliases
 are exporter support symbols, not recovered original names. The original ELF
 is unchanged.
+
+For section-backed inputs, the symbol-preservation tests retain every original
+record and string byte while checking additions against discontiguous ranges
+and original call instructions. The independent-writer and sectionless tests
+include the same proven support symbols alongside analyst aliases; sectionless
+tests also verify the remapping into load sections. See the
+[local inventory regression receipt](evidence/call-origin-symbol-inventory.json);
+the full corrected-head hosted gate is still required.

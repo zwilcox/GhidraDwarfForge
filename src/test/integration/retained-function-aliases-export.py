@@ -75,6 +75,107 @@ def arm_mode_inventory(original, emitted, compiler_symbols, functions):
             row['elfSymbolValue'], row['end'] - row['entry'])
 
 
+def call_origin_expectations(original, emitted, identity, dies):
+    """Derive x86-64 alias extents from DIEs and original instructions, not symbols."""
+    declarations = {}
+    for die in dies:
+        attrs = die['attrs']
+        name = attrs.get('DW_AT_name', '').split(': ')[-1]
+        if not name.startswith('forge_call_entry_'):
+            continue
+        assert die['tag'] == 'DW_TAG_subprogram' and die['depth'] == 1
+        assert set(attrs) == {'DW_AT_name', 'DW_AT_artificial', 'DW_AT_declaration'}
+        assert attrs['DW_AT_artificial'] == attrs['DW_AT_declaration'] == '1'
+        assert name not in declarations
+        declarations[name] = die
+    sections = list(original.values())
+    observed = []
+    for name, declaration in declarations.items():
+        match = re.fullmatch('forge_call_entry_' + re.escape(identity) + '_([0-9a-f]+)', name)
+        assert match
+        address = int(match[1], 16)
+        # The alias must cover exactly one entry range of a discontiguous DIE.
+        owners = []
+        ranges = emitted['.debug_rnglists'][1]
+        for die in dies:
+            if die['tag'] != 'DW_TAG_subprogram' or 'DW_AT_ranges' not in die['attrs']:
+                continue
+            cursor = int(die['attrs']['DW_AT_ranges'], 16)
+            spans = []
+            while ranges[cursor] != 0:
+                assert ranges[cursor] == 6  # DW_RLE_start_end, ELF64 fixture.
+                low, high = struct.unpack_from('<QQ', ranges, cursor + 1)
+                assert low < high
+                spans.append((low, high))
+                cursor += 17
+            entry_spans = [(low, high) for low, high in spans if low == address]
+            if entry_spans:
+                assert len(spans) > 1
+                span, = entry_spans
+                owners.append((die['offset'], span[1] - address))
+        assert len(owners) == 1
+        owner, size = owners[0]
+        section_index, = [index for index, (header, data) in enumerate(sections)
+            if header[1] == 1 and header[2] & 6 == 6 and
+            header[3] <= address < address + size <= header[3] + len(data)]
+
+        # Independently decode every referring direct call from original bytes.
+        origin = declaration['offset']
+        calls = [die for die in dies if die['tag'] == 'DW_TAG_call_site' and
+            die['attrs'].get('DW_AT_call_origin') == '<0x%x>' % origin]
+        assert calls
+        for call in calls:
+            pc = int(call['attrs']['DW_AT_call_pc'], 16)
+            assert int(call['attrs']['DW_AT_call_return_pc'], 16) == pc + 5
+            assert 'DW_AT_call_tail_call' not in call['attrs']
+            instruction, = [data[pc - header[3]:pc - header[3] + 5] for header, data in sections
+                if header[1] == 1 and header[2] & 6 == 6 and header[3] <= pc <= header[3] + len(data) - 5]
+            assert instruction[0] == 0xe8
+            assert pc + 5 + int.from_bytes(instruction[1:], 'little', signed=True) == address
+        observed.append({'name': name, 'address': address, 'size': size,
+            'section': section_index, 'ownerDie': owner, 'calls': len(calls)})
+    return observed
+
+
+def call_origin_inventory(original, emitted, identity, dies):
+    """Allow only proven x86-64 call-entry additions; preserve every old byte."""
+    expected = {row['name']: row for row in call_origin_expectations(original, emitted, identity, dies)}
+    if not expected:
+        for name in ('.symtab', '.strtab'):
+            assert (name in original) == (name in emitted)
+            if name in original:
+                assert original[name][1] == emitted[name][1]
+        return []
+    old_table, old_records = original['.symtab' if '.symtab' in original else '.dynsym']
+    old_names = list(original.values())[old_table[6]][1]
+    table, records = emitted['.symtab']
+    names = list(emitted.values())[table[6]][1]
+    assert table[1:4] == (2, 0, 0) and table[9] == old_table[9] == 24
+    assert names == emitted['.strtab'][1]
+    count = len(expected)
+    assert table[7] == old_table[7] + count
+    start, end = old_table[7] * 24, table[7] * 24
+    assert records[:start] + records[end:] == old_records
+    assert len(records) == len(old_records) + count * 24
+    assert names.startswith(old_names)
+    for name in ('.dynsym', '.dynstr'):
+        if name in original:
+            assert emitted[name][1] == original[name][1]
+    expected_names = bytearray(old_names)
+    observed = []
+    for at in range(start, end, 24):
+        string, info, other, section_index, address, size = struct.unpack_from('<IBBHQQ', records, at)
+        name = names[string:].split(b'\0', 1)[0].decode()
+        assert name in expected and name not in [row['name'] for row in observed]
+        row = expected[name]
+        assert (info, other, section_index, address, size) == (2, 0, row['section'], row['address'], row['size'])
+        assert string == len(expected_names)
+        expected_names.extend(name.encode() + b'\0')
+        observed.append(row)
+    assert names == expected_names and len(observed) == count
+    return observed
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
@@ -279,9 +380,9 @@ def main():
     assert os['.note.gnu.build-id'][1] == ds['.note.gnu.build-id'][1]
     for name in ('.symtab', '.strtab'):
         assert (name in os) == (args.symbols == 'retained')
-        if args.target != 'arm32':
+        if args.target not in ('arm32', 'x86_64'):
             assert (name in ds) == (args.symbols == 'retained')
-        if name in os and args.target != 'arm32':
+        if name in os and args.target not in ('arm32', 'x86_64'):
             assert os[name][1] == ds[name][1]
     if args.target == 'arm32':
         if args.symbols == 'retained':
@@ -308,6 +409,8 @@ def main():
     facts = importlib.util.module_from_spec(facts_spec)
     facts_spec.loader.exec_module(facts)
     dies = facts.die_records(info)
+    if args.target == 'x86_64':
+        write('call-origin-symbols.json', call_origin_inventory(os, ds, before[str(binary)], dies))
     by_offset = {d['offset']: d for d in dies}
     raw = []
     for row in rows:

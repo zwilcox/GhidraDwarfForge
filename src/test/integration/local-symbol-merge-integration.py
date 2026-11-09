@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import tempfile
 
-from alias_relationships import check_alias_relationships
+from alias_relationships import check_alias_relationships, read_dies
 
 source = Path(__file__).resolve().parent
 repository = source.parents[2]
@@ -139,11 +139,22 @@ def main():
         section_index = list(sections).index('.text')
         records = ['\t'.join([row['original'], str(row['entry']), str(row['end'] - row['entry']), str(section_index)])
             for row in sorted(metadata['functions'], key=lambda row: (row['entry'], row['original']))]
+        origins = []
+        if args.target == 'x86_64':
+            baseline_sections = elf_support.elf(case / 'baseline.dbg')[2]
+            origins = elf_support.call_origin_inventory(sections, baseline_sections,
+                support.digest(case / 'aliases.input'),
+                read_dies(case / 'baseline.dbg', case / 'baseline-call-origins.log'))
+            # Independently validated pre-existing producer support symbols also
+            # belong in the writer experiment, after the two analyst aliases.
+            records.extend('\t'.join([row['name'], str(row['address']), str(row['size']), str(row['section'])])
+                for row in origins)
+            write('baseline-call-origins.json', origins)
         (case / 'symbols.tsv').write_text('\n'.join(records) + '\n')
         command = [java, '-cp', str(compilation) + os.pathsep + str(jar),
             'ghidradwarfforge.elf.LocalSymbolMergeProbe', case / 'aliases.input', case / 'automatic.dbg', case / 'symbols.tsv']
         for suffix in ('aliases.dbg', 'repeat.dbg'):
-            run('writer-' + suffix, [*command, case / suffix])
+            run('writer-' + suffix, [*command, case / suffix, str(len(records))])
             text = (case / ('writer-' + suffix + '.log')).read_text()
             assert 'java=21.' in text and 'curated-alias-writer=PASS' in text
             assert jar.resolve().as_uri() in text.replace('file:/', 'file:///')
@@ -153,7 +164,8 @@ def main():
             previous = case / 'previous.dbg'
             previous.write_bytes(b'previous output sentinel')
             comparison = subprocess.run([java, '-cp', str(compilation) + os.pathsep + str(args.previous_jar.resolve()),
-                *map(str, command[3:]), str(previous)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
+                *map(str, command[3:]), str(previous), str(len(records))],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
             (case / 'previous-writer.log').write_bytes(comparison.stdout)
             if symbols == 'retained':
                 assert comparison.returncode != 0 and b'conflict with existing sections' in comparison.stdout
@@ -178,22 +190,22 @@ def main():
                     name in ('.text', '.eh_frame', '.note.gnu.build-id')):
                 assert candidate[name][1] == payload
         if symbols == 'retained':
-            old, old_bytes = baseline['.symtab']
+            old, old_bytes = sections['.symtab']
             new, new_bytes = candidate['.symtab']
             width = 24 if ident[4] == 2 else 16
             split = old[7] * width
-            assert new[7] == old[7] + 2 and new[6] == old[6]
-            assert old_bytes == new_bytes[:split] + new_bytes[split + 2 * width:]
-            old_strings = baseline['.strtab'][1]
+            assert new[7] == old[7] + len(records) and new[6] == old[6]
+            assert old_bytes == new_bytes[:split] + new_bytes[split + len(records) * width:]
+            old_strings = sections['.strtab'][1]
             assert candidate['.strtab'][1][:len(old_strings)] == old_strings
-        elif '.dynsym' in baseline:
-            old, old_bytes = baseline['.dynsym']
+        elif '.dynsym' in sections:
+            old, old_bytes = sections['.dynsym']
             new, new_bytes = candidate['.symtab']
             width = 24 if ident[4] == 2 else 16
             split = old[7] * width
-            assert new[7] == old[7] + 2 and new[2] == new[3] == 0
-            assert old_bytes == new_bytes[:split] + new_bytes[split + 2 * width:]
-            old_strings = baseline['.dynstr'][1]
+            assert new[7] == old[7] + len(records) and new[2] == new[3] == 0
+            assert old_bytes == new_bytes[:split] + new_bytes[split + len(records) * width:]
+            old_strings = sections['.dynstr'][1]
             assert candidate['.strtab'][1][:len(old_strings)] == old_strings
             for name, (section, payload) in baseline.items():
                 if name in ('.dynsym', '.dynstr', '.hash', '.gnu.hash', '.dynamic') or name.startswith('.gnu.version'):
