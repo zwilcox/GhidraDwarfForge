@@ -1,5 +1,16 @@
 # TODO.md — GhidraDwarfForge
 
+## Versioned symbol inventory correction — 2026-11-09
+
+**CONFIRMED:** run42563112803 x86 job128986248749 failed because the
+versioned-symbol independent writer omitted a proven private call-origin alias.
+Four corrected packaged cases pass locally: both default symbol versions with
+and without section headers, exact writer equality, GDB/loader behavior,
+validators, determinism and preservation. Six negative-control tests pass.
+Production/native code is unchanged. Full corrected-head CI and protected
+#117 integration remain required before #120. See the
+[versioned-symbol receipt](docs/evidence/versioned-call-origin-symbols.json).
+
 ## Call-origin symbol inventory regression — 2026-11-08
 
 **CONFIRMED:** hosted x86 job `128942413613` rejected exact symbol-table

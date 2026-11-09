@@ -107,3 +107,10 @@ include the same proven support symbols alongside analyst aliases; sectionless
 tests also verify the remapping into load sections. See the
 [local inventory regression receipt](evidence/call-origin-symbol-inventory.json);
 the full corrected-head hosted gate is still required.
+
+The versioned-symbol fixture also includes independently proven call-origin
+aliases in its writer inventory. Both default versions pass with and without
+section headers, retaining exact output equality, GNU version metadata, GDB
+lookup and native loader checks. The pinned validator's two inherited frame
+diagnostics per case are corroborated against the original ELF. See the
+[versioned-symbol receipt](evidence/versioned-call-origin-symbols.json).

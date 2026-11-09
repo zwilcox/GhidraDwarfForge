@@ -13,6 +13,8 @@ import struct
 import subprocess
 import tempfile
 
+from alias_relationships import read_dies
+
 source = Path(__file__).resolve().parent
 repository = source.parents[2]
 spec = importlib.util.spec_from_file_location('elf_support', source / 'retained-function-aliases-export.py')
@@ -112,20 +114,33 @@ def main():
                 first = current
             else:
                 assert current == first
+        # Derive support symbols independently from range/origin DIEs and the
+        # original call instructions; do not copy the exporter's symbol table.
+        origins = elf_support.call_origin_expectations(original, elf_support.elf(automatic)[2],
+            digest(binary), read_dies(automatic, case / 'call-origins-info.log'))
+        (case / 'call-origins.json').write_text(json.dumps(origins, indent=4) + '\n')
+        expected_aliases = [{'alias': 'recovered::alternate_' + name,
+            'entry': row[4], 'size': row[5]} for name, row in defined.items()]
+        expected_aliases += [{'alias': row['name'], 'entry': row['address'], 'size': row['size']}
+            for row in origins]
+        # Keep analyst curation input separate from the independent writer's
+        # complete expected inventory, including private call-origin aliases.
+        writer_aliases = case / 'writer-symbols.tsv'
+        writer_aliases.write_text(aliases.read_text() + ''.join('\t'.join(map(str,
+            (row['name'], row['address'], row['size'], row['section']))) + '\n' for row in origins))
         for suffix in ('aliases.dbg', 'repeat.dbg'):
             text = run(case / (suffix + '.writer.log'), [java, '-cp', str(classes) + os.pathsep + str(jar),
-                'ghidradwarfforge.elf.LocalSymbolMergeProbe', binary, automatic, aliases, case / suffix])
+                'ghidradwarfforge.elf.LocalSymbolMergeProbe', binary, automatic, writer_aliases,
+                case / suffix, str(len(expected_aliases))])
             assert 'java=21.' in text and 'curated-alias-writer=PASS' in text
         output = case / 'aliases.dbg'
         assert output.read_bytes() == (case / 'repeat.dbg').read_bytes()
         assert output.read_bytes() == automatic.read_bytes()
         if args.sectionless:
             inventory_check.verify(oracle, binary, output,
-                [{'alias': 'recovered::alternate_' + name, 'entry': row[4], 'size': row[5]}
-                    for name, row in defined.items()], case / 'raw-inventory.json')
+                expected_aliases, case / 'raw-inventory.json')
             inventory_check.corruption_controls(oracle, binary, output,
-                [{'alias': 'recovered::alternate_' + name, 'entry': row[4], 'size': row[5]}
-                    for name, row in defined.items()], case / 'corruption-controls')
+                expected_aliases, case / 'corruption-controls')
         _, emitted_header, emitted = elf_support.elf(output)
         assert emitted_header[4] == emitted_header[8] == emitted_header[9] == 0
         for name in ('.dynsym', '.dynstr', '.gnu.version', '.gnu.version_d', '.gnu.version_r',
@@ -190,6 +205,7 @@ def main():
             case / 'strict-checks.log', '--original', binary,
             *(['--frame-reference', case / 'sectioned.so'] if args.sectionless else [])])
         observations.append({'defaultVersion': default, 'qualifiedLookup': lookup, 'unqualifiedLookup': unqualified,
+            'callOriginAliases': origins,
             'nativeLoaderDefault': default_offset, 'nativeVersionedCalls': runtime,
             'gdbDefaultMatchesLoader': unqualified['sidecar'] == default_offset,
             'sidecarSha256': digest(output)})
