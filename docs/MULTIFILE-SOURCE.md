@@ -717,23 +717,6 @@ record all ten cases and runtime observations. The read-back-verified
 `issue115-multifile/shared-checkpoint-v1.tar.gz` retains the final and failed runs.
 This closes the scoped local DSO gap, not the full #115 issue or release gate.
 
-## Hosted store correction and historical performance baseline
-
-**CONFIRMED scoped Windows rerun:** job `128565957060` in run `42425532357`
-at `59d5930` completed successfully. Its raw log records 1,454 source-store
-checks and 169 cancellation points, alongside passing partition/bundle/reader
-checks. This confirms the corrected resolved-path race hook on native Windows.
-The later combined multi-file formatter step was not present at that head;
-this result does not establish that newer combination or complete #115.
-
-**CONFIRMED local performance-control correction; hosted execution pending:**
-the historical Windows benchmark baseline predates the accepted CU directory
-attribute. The new comparator permits precisely that addition while retaining
-all other DIE, abbreviation, string, section, identity and repeatability checks.
-SQLite and U-Boot diagnostic exports pass validators and actual GDB behavior.
-See [the comparison contract](PERFORMANCE.md#historical-performance-baseline-directory-compatibility)
-and [bound evidence](evidence/multifile-performance-control.json).
-
 ## Native source failures and empty source bodies
 
 **CONFIRMED locally; hosted execution pending:** the extended

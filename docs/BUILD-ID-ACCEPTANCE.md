@@ -78,44 +78,6 @@ with local NTFS. Windows source paths require GDB substitution after transfer to
 Linux. Cross-compilation, Linux simulations and archived mode bits do not prove
 native Windows filesystem behavior.
 
-## Historical failures and corrections
-
-Run `42329832669` passed all x86-64 test stages but failed artifact upload on
-the intentional filename `request λ "literal".json`. No complete x86-64 archive
-was available for review, and its required gate failed. Diagnostics now travel
-inside one PAX tar.gz, preserving filenames, hidden files, contents and links.
-All five corrected archives uploaded and passed raw review. The x86-64 review
-binds the quoted filename and request bytes to both executed preview commands;
-4,438 hidden generation members are retained. The
-[historical retention receipt](evidence/build-id-target-artifact-retention.json)
-preserves the failure; the [implementation receipt](evidence/build-id-implementation-acceptance.json)
-records the successful hosted correction.
-
-The earlier MIPS little-endian harness selected Java's ASCII filesystem encoding
-with `LC_ALL=C`; it now selects `C.UTF-8` while retaining the production guard.
-The [locale receipt](evidence/build-id-linux-locale.json) preserves the failed
-run and isolated reproduction. Current MIPS jobs pass with that correction.
-
-Earlier Windows corrections preserve the production metadata and validation
-requirements: the DACL-only fixture distinguishes absent and explicit null SACLs;
-lock readback uses the locking handle; Linux uses an audited open-file-description
-lock; and MSYS2 GNU readelf passes Unicode/long-path and supervised-installation
-checks. The downstream GDB oracle checks file-local as well as global symbols,
-including absence controls. See the [SACL fixture receipt](evidence/windows-build-id-sacl-fixture.json),
-[locking evidence](evidence/build-id-locking.json) and
-[validator-path receipt](evidence/windows-build-id-validator-paths.json).
-
-Two independent review-tool corrections are retained with their controls. The
-archive reader recognizes only the exact retained absolute-link sentinel fixture
-without following host paths; unrelated absolute or escaping links remain refused.
-The command reviewer accepts only the exact test-configured `JAVA_TOOL_OPTIONS`
-startup notice and expected JVM launch count, rejecting extra stderr. A local
-Java 21 reproduction and 12 positive/negative controls corroborate that notice.
-All five affected installer reviews were rerun; the failed attempt and superseded
-reviews remain recorded. See [archive controls](evidence/build-id-review-archive-alias.json)
-and [Java startup controls](evidence/build-id-review-java-startup.json). These
-changes affect independent review tools, not production code or CI assertions.
-
 ## Integration contract
 
 The implementation receipt binds the successful run, packaged sources, raw

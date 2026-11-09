@@ -4,7 +4,7 @@
 survive repeated register transfers across fully inspected direct calls. This
 extends the earlier straight-line leaf proof to closed branches, loops, nested
 and recursive call graphs, and discontiguous function bodies. P1.11a and P3.3
-remain incomplete; see `LIFETIMES-AND-SCOPES-PLAN.md`.
+remain incomplete; see `LIFETIME-SCOPE-ACCEPTANCE.md`.
 
 ## Proof and boundaries
 

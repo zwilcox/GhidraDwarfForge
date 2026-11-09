@@ -213,7 +213,7 @@ identity/link counts and Windows handle-based file identities are supplied by
 the native host adapters. Their metadata, stream and sharing-lock contracts
 require native tests in addition to the architecture-neutral coordinator tests.
 Current scoped evidence and remaining product acceptance are tracked in
-[the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md). A Windows exporter or
+[the completion ledger](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md). A Windows exporter or
 GUI-only pass does not establish the attachment host contract.
 
 The first implementation is complete only after all of the following pass:

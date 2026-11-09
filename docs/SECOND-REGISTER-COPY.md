@@ -125,6 +125,6 @@ missing-interval assertion. That launch failure is not regression evidence.
 **CONFIRMED locally; hosted acceptance pending:** the exact handoff proof can
 now be composed without a fixed two-backup limit. Three/four/twelve-transfer
 decoder tests and four-transfer x86-64/AArch64 runtime cases cover repeated
-register reuse and lost-value tails. See `LIFETIMES-AND-SCOPES-PLAN.md` for
+register reuse and lost-value tails. See `LIFETIME-SCOPE-ACCEPTANCE.md` for
 commands, acceptance and the complete remaining P1.11a/P3.3 scope. Earlier
 one-additional-handoff wording describes the accepted previous component.

@@ -55,56 +55,6 @@ archive. U-Boot remains a Linux sandbox with partial recovered knowledge and its
 known decompilation timeout. No bare-metal or complete variable-coverage claim
 follows from these results.
 
-## Historical Windows measurement checkpoint and consumer correction
-
-**HISTORICAL native Windows measurement population; that hosted consumer failed:**
-run `41977254778` at `cfc212c` completes both pinned imports, five alternating
-baseline/candidate pairs per workload, separate JFR exports and native
-GNU/LLVM/pinned libdwarf validation. All eleven exports per workload preserve
-sidecar/source bytes and report counts. The raw review binds the exact baseline
-and candidate packages, Java 21.0.13 runtime/script observations, paired metrics,
-program database hashes and validators. Existing partial coverage and U-Boot's
-one-function timeout remain visible. See
-`docs/evidence/performance-windows-workloads-41977254778.json`.
-
-| Windows observation | SQLite baseline / candidate | U-Boot baseline / candidate |
-| --- | ---: | ---: |
-| Median fresh-process export, seconds | 102.982 / 104.449 | 233.503 / 233.882 |
-| Median descendant CPU, seconds | 141.297 / 141.109 | 292.844 / 290.609 |
-| Maximum job commitment, bytes | 1,466,216,448 / 1,377,759,232 | 1,383,165,952 / 1,449,435,136 |
-
-Candidate-minus-baseline paired elapsed differences are
-`-4.362, +10.744, -0.543, +1.982, -1.137` seconds for SQLite and
-`+2.087, -4.700, +1.137, -7.645, -0.750` for U-Boot. Retain every sample;
-these mixed differences do not establish a general speedup or zero overhead.
-Windows job commitment is not Linux RSS, and these hosted timings are not a
-controlled cross-platform comparison. Imports take 84.353/166.795 seconds;
-validation and profiling remain outside the unprofiled export population.
-
-Separate profiled Windows exports observe decompilation/source at
-76.733/188.631 seconds, types/storage at 13.737/28.155, native production at
-1.731/13.850 and ELF packaging at 0.0125/0.0201, for SQLite/U-Boot respectively.
-Inclusive export times are 93.994/233.939 seconds; do not add inclusive and child
-times or treat these observations as CPU measurements.
-
-The hosted Linux consumer then fails a real diagnostic: its SQLite compiler
-reference records a build-worker source path unavailable after artifact
-transfer. Its values and exit pass, but GDB warns that `sqlite-workload.c` is
-missing. The correction copies hash-verified SQLite sources and extracts the
-pinned U-Boot source archive into private consumer storage, then installs exact
-source/build-directory substitutions from retained build commands. Recorded
-paths are never opened on the consumer host. At each compiler breakpoint, GDB
-must resolve the expected source file and verify its SHA-256 before listing it.
-The diagnostic checks remain strict.
-
-**CONFIRMED local replay:** both unchanged Windows artifacts now pass independent
-Linux validators and compiler/Forge GDB, including source, values, stepping and
-normal exit. A small real-GDB control reproduces the missing-source warning,
-proves relocation and rejects changed/missing/escaped sources and a wrong source
-archive. This local evidence does not turn the failed hosted consumer run into
-a passing run; fresh hosted acceptance and the complete required gate remain
-pending at that checkpoint. The current corrected hosted run passes as recorded above.
-
 ## Measurements and corpus
 
 - **CONFIRMED retained Windows observer failure:** run `41975183135` completes
@@ -380,70 +330,7 @@ passes to the actual Ghidra JVM. It protects those configuration files during
 measurement and retains the same runtime/script checks. The corrected native
 workload/consumer run remains required.
 
-## Historical candidate evaluation before selection
-
-For each candidate below, document measured motivation, compatibility/resource
-cost, and an explicit implement/defer/reject decision. The local experiments
-below support a first selection; production implementation and full host
-acceptance remain incomplete.
-
-| Candidate | Evidence needed |
-|---|---|
-| `.debug_names` / GDB index | Consumer load/lookup cost and stale-index handling |
-| DWARF compression | Artifact size, production cost, consumer/validator compatibility |
-| String/address indexing | Actual section duplication/size and lookup/serialization cost |
-| Incremental export caching | Repeated work cost and reliable invalidation for analyst changes |
-| Bounded parallel decompilation | External decompiler CPU/wait cost, memory, ordering and cancellation |
-
-### Confirmed local consumer experiments
-
-`consumer-candidates.py` uses private copies, two deterministic generation runs,
-unchanged decompressed core DWARF sections, strict/LLVM/GNU checks, runtime GDB
-and five rotating fresh-GDB samples with the index cache disabled. U-Boot also
-checks its compiler reference. The baseline remains untouched. The full local
-evidence is `docs/evidence/performance-candidates-local-20261105.json`.
-
-| Workload / variant | Sidecar bytes | Median load / first lookups | Whole GDB process |
-|---|---:|---:|---:|
-| SQLite baseline | 5,638,224 | 4.93 / 9.47ms | 0.08s |
-| SQLite zlib | 1,938,296 | 7.44 / 13.58ms | 0.08s |
-| SQLite zstd | 1,711,032 | 5.29 / 11.23ms | 0.07s |
-| SQLite GDB index | 5,881,272 | 2.80 / 10.21ms | 0.07s |
-| U-Boot baseline | 17,029,464 | 11.75 / 25.54ms | 0.10s |
-| U-Boot zlib | 6,515,992 | 17.14 / 35.12ms | 0.11s |
-| U-Boot zstd | 6,022,128 | 15.08 / 28.66ms | 0.10s |
-| U-Boot GDB index | 17,367,904 | 5.76 / 27.27ms | 0.09s |
-
-These are warm-cache, single-host observations; hundredth-second whole-process
-resolution cannot justify fine-grained speed claims. Zlib generation takes
-0.08–0.09s for SQLite and 0.16–0.18s for U-Boot. The core decompressed DWARF
-bytes remain identical. No Windows compression or LLDB compatibility is claimed.
-
-Retained failures matter to the selection:
-
-- GNU BFD `objcopy` refuses to rewrite the matched non-loadable SQLite sidecar
-  with a PHDR/LOAD diagnostic. `run.na9a9vlq` is failed, including its unnecessary
-  baseline rewrite. LLVM 18.1.3 `llvm-objcopy` supports the tested copies; the
-  corrected baseline is not rewritten. Do not recommend an untested GNU
-  postprocessing command for these artifacts.
-- The older local checker lacks zlib/zstd support; `run.pvr5w_h6` retains those
-  failures. The exact-head CI checker from run `41973112217`, downloaded with
-  archive digest and complete manifest verification, accepts both compressed
-  variants in `run.pd7izo2k` and `run.2wrbht7k`.
-- GDB-generated `.debug_names` fails LLVM verification on both workloads,
-  including an unexpected `DW_FORM_udata` for `DW_IDX_parent`. No timings or
-  compatibility claim are accepted for this candidate. The supported index
-  generation interfaces are described in the
-  [GDB manual](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Index-Files.html);
-  the failure is an observed limit of the tested producer/consumer combination.
-
-`section-inventory.py` additionally finds zero duplicate strings and zero exact
-duplicate location lists in either artifact. Location-list address operands
-occupy 2,473,856 bytes (SQLite) and 7,511,056 bytes (U-Boot), with 19,260 and
-76,793 unique addresses. Those counts establish repetition, not the final size
-or speed of an indexed implementation.
-
-### Selected implementation and explicit deferrals
+## Selected implementation and explicit deferrals
 
 - **CONFIRMED opt-in zlib production implementation integrated through PR160.**
   The earlier private-copy experiment reduced whole-sidecar size 65.62%/61.74%.

@@ -302,5 +302,4 @@ including any independently rebuilt native differences recorded in its inventory
 it no longer labels this comparison as phase-instrumentation overhead. Export
 timing excludes report archival, large-report CLI, profiling and validation.
 
-[Historical development checkpoints](history/COVERAGE-DEVELOPMENT.md) preserve
-component stages, admission experiments and superseded limitations.
+See [the final acceptance record](COVERAGE-ACCEPTANCE.md) for the validated scope and retained evidence.

@@ -11,7 +11,7 @@ acceptance remain active work.
 
 **CONFIRMED compiler/consumer reference; exporter completion remains PLANNED.**
 This checkpoint advances the full #68–#71 scope in
-`../TARGET-ABI-COMPLETION-PLAN.md`. It does not complete #70, advertise aggregate
+`../TARGET-ABI-ACCEPTANCE.md`. It does not complete #70, advertise aggregate
 support, change the production baseline, or authorize a release.
 
 ## Reference contract

@@ -3,7 +3,7 @@
 **CONFIRMED local matrix; hosted acceptance pending:** this component
 extends the real packaged ARM PCS acceptance path. It changes tests and CI,
 not production classification or native bindings. The complete #68–#71 scope
-in `TARGET-ABI-COMPLETION-PLAN.md` remains active.
+in `TARGET-ABI-ACCEPTANCE.md` remains active.
 
 ## Contract
 

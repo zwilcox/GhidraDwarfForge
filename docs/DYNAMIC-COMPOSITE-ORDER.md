@@ -127,41 +127,6 @@ PR run `40141054093` at `f46712f` is component evidence only. Its all-twelve-job
 success does not cover this defect and cannot authorize integration. A corrected
 head requires a fresh full gate and independent artifact review.
 
-## Historical computed-only correction
-
-**HISTORICAL component evidence, not acceptance:** actual Java 21 at 256 MiB passes 603 focused checks across the five real language
-models, including saved/reopened programs. The previous `2fb0d5e4...` JAR fails
-the actual ARM ordering assertion. The corrected packaged `97018b02...` JAR
-passes the same checks with its production class origins independently verified.
-
-The final all-five compiler/Forge run observes 105 instruction PCs: 76 parameter
-observations are correctly available and 29 are explicitly unavailable. All
-five aggregate entries and the three non-MIPS scalar entries have correct
-values. MIPS scalar omissions remain exact; no fixture body, optimization choice
-or lifetime rule was changed to make them positive. Ten exports and ten GDB
-sessions pass, with deterministic source/sidecar/report pairs and preserved
-inputs. Strict validation records only two/four corroborated inherited frame
-errors for x86/AArch64 and none for the other targets; unexplained errors are
-zero. AArch64 and ARM retain one matching VDSO warning in each compiler/Forge
-session; this is not a quiet-GDB claim.
-
-Three additional fresh primary controls preserve the established ARM and both
-MIPS custom/local behavior using unchanged existing export/GDB scripts. Stack
-and shifted-stack values remain 42; both MIPS explicit composite values remain
-`0x1122334455667788`. Their validators, normal exits and independent raw review
-pass. This does not resolve arbitrary dynamic-to-custom conversion histories.
-
-The final author evidence receipt has SHA-256
-`585cbd82da6318fbb63306e016b0563b3caad85029aeff6a6077782f804b0b7c`.
-Independent all-five raw review is
-`3492a51b42ba6294ab48ff9c0bb1e1ea9dd8ae1c3e2f843d723e8e916cb6e431`;
-independent primary-controls review is
-`4c2d82e4347b6dab486f64e2731f53068da3128e2d01ddf62f270f9f67afab68`.
-Local headless runs use Java 25; the Java 21 focused controls are separate.
-These results do not accept the computed-only fix: the subsequent custom
-conversion fails. The shared correction requires new focused, packaged,
-runtime and hosted evidence before integration.
-
 ## Confirmed custom-conversion failure
 
 The owned ARM probe uses the same `97018b02...` package and an isolated clone

@@ -28,3 +28,7 @@ hs_err_pid*.log
 
 # Local headless-test projects
 .ghidra-test/
+
+# Local coding-agent instructions and project handoff
+/AGENTS.md
+/PROJECT_CONTEXT.md

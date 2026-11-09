@@ -9,7 +9,7 @@ historical evidence; this does not establish FR=0, new production floating
 locations or completion of the full #69 scope.
 
 **CONFIRMED active scope:** P2.3a/#69 remains open, alongside #68/#70/#71.
-The full requirement set is retained in `../TARGET-ABI-COMPLETION-PLAN.md`.
+The full requirement set is retained in `../TARGET-ABI-ACCEPTANCE.md`.
 This investigation establishes independent references before changing target
 selection or location emission. It does not replace the O32 aggregate, stack,
 wide-value, executable-form and sectionless requirements with a narrower goal.

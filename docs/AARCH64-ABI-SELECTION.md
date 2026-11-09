@@ -3,7 +3,7 @@
 **CONFIRMED local candidate (2026-11-01); hosted acceptance pending.** This
 component of P2.3/#68 classifies the selected language/compiler pair and ELF
 call-profile metadata. It does not finish P2.3 or the related MIPS, ARM32 and
-i386 issues. The complete remaining scope is in `TARGET-ABI-COMPLETION-PLAN.md`.
+i386 issues. The complete remaining scope is in `TARGET-ABI-ACCEPTANCE.md`.
 
 ## Contract
 

@@ -21,7 +21,7 @@ Reviewed real-ELF CLI/refresh/recovery and GUI evidence is recorded in
 [the complete GUI job receipt](evidence/linux-gui-attachment-41697807284.json).
 These are scoped prior-head results. Current passing native active-GUI
 cancellation and pending integration are tracked in
-[the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md).
+[the completion ledger](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md).
 
 The latest independent readback at `e2ccccf`, run41657292709, corroborates
 actual uid/gid1001, regular mode0710, nanosecond mtime1700000000123000000,

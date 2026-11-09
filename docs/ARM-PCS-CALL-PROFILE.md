@@ -198,7 +198,7 @@ matrix against the final candidate. Implicit default-convention recovery now
 has the distinct local evidence above.
 Confirm the newly wired hosted tests and complete exact-package host/target
 review before protected integration. All original rows in
-`TARGET-ABI-COMPLETION-PLAN.md` remain binding; no issue is closed here.
+`TARGET-ABI-ACCEPTANCE.md` remain binding; no issue is closed here.
 
 ## Fixture inventory follow-up
 
