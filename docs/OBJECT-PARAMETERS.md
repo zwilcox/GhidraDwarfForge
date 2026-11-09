@@ -82,5 +82,5 @@ attempt counts as acceptance.
 This component establishes the object-parameter relationship. Class-owned
 method declarations, namespace/class type ownership, specification/origin
 relationships, inferred statics and remaining same-name disambiguation are
-still required by `LIFETIMES-AND-SCOPES-PLAN.md`. It introduces no new variable
+still required by `LIFETIME-SCOPE-ACCEPTANCE.md`. It introduces no new variable
 location proof and does not complete either P1.11a or P3.3.

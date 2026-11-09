@@ -2,7 +2,7 @@
 
 **CONFIRMED locally; full target acceptance remains open.** This component
 addresses the stripped PIE/rebased PIE and dynamic-symbol portion of #70.
-The complete #68–#71 requirement table remains in `TARGET-ABI-COMPLETION-PLAN.md`.
+The complete #68–#71 requirement table remains in `TARGET-ABI-ACCEPTANCE.md`.
 Ghidra 12.0.3, Java 21 and libdwarf 2.3.2 are unchanged.
 
 **CONFIRMED hosted inventory correction:** run `41352322191` built the extension,

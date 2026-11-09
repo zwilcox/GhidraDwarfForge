@@ -6,9 +6,8 @@ and independent source/package/target/host reviews passed. Its tree is identical
 to tested candidate `7387a61dd79c6753998c9c89271a42ed295f6ac4`.
 
 The scope is all six P1.11a lifetime/storage requirements followed by all six
-P3.3 scope requirements in `LIFETIMES-AND-SCOPES-PLAN.md`, tracked by issues
-#67 and #73. Issue closure follows integration of this documentation reconciliation. Release
-publication is separate from feature acceptance.
+P3.3 scope requirements tracked by issues #67 and #73, mapped below.
+Release publication is separate from feature acceptance.
 
 ## Accepted source and independent evidence
 
@@ -136,6 +135,5 @@ This acceptance is tied to the exact source, package and workflow above.
 Separate main-push and documentation-only workflow runs retain their own
 identities; they do not relabel the original acceptance receipts. This
 reconciliation changes no production code, fixtures, workflow, native ABI or
-support-profile boundaries. Historical component documents retain their original
-receipts, failed attempts and then-current remaining-work lists; this acceptance
-and `LIFETIME-SCOPE-COMPLETION-AUDIT.md` supersede those status lists.
+support-profile boundaries. This acceptance supersedes intermediate status
+lists in the component documents.

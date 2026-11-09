@@ -117,5 +117,5 @@ This does not complete broad aggregate or ARM ABI support. Additional saved
 ordinary aggregates, mutable identities, discontiguous/control-flow and layout
 compositions, runtime negative piece/clobber controls, unsupported shapes, and
 full hosted/protected integration remain governed by
-`TARGET-ABI-COMPLETION-PLAN.md`. All original MIPS, AArch64 and i386 requirements
+`TARGET-ABI-ACCEPTANCE.md`. All original MIPS, AArch64 and i386 requirements
 remain active. No umbrella issue should close from this component alone.

@@ -101,7 +101,8 @@ normal integration remain pending.
 ## Reproduction
 
 Build/install the extension and the pinned standalone validator as documented
-in `AGENTS.md`. Set `DWARFDUMP` to that bundle's `bin/dwarfdump`, then run:
+in [the validation guide](VALIDATION.md) and
+[checker build instructions](../support/validation/README.md). Set `DWARFDUMP` to that bundle's `bin/dwarfdump`, then run:
 
 ```bash
 python3 src/test/integration/dwarfdump-subroutine-conventions.py "$DWARFDUMP"

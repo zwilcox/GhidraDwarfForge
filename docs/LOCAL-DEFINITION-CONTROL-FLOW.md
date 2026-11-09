@@ -5,7 +5,7 @@ explicit analyst-defined register local whose recorded nonzero first-use
 instruction defines its entire physical storage. This is part of P1.11a, not
 original lexical-scope reconstruction. The existing straight-line proof retains
 priority. Call effects, memory migration and mixed pieces remain separate work
-in `LIFETIMES-AND-SCOPES-PLAN.md`.
+in `LIFETIME-SCOPE-ACCEPTANCE.md`.
 
 The new proof requires an attached variable and function, matching formal and
 physical widths, an exact mapped register, and no overlapping variable binding.

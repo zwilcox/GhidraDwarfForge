@@ -153,4 +153,4 @@ model cases and exact-head hosted validation remain. Audit explicit composite al
 floating/return types and general delayed control-flow/storage transitions.
 The call policy remains restrictive for the newly inspected aggregate types;
 debugger-injected calls are not established by these argument observations.
-All original rows in `TARGET-ABI-COMPLETION-PLAN.md` remain binding.
+All original rows in `TARGET-ABI-ACCEPTANCE.md` remain binding.

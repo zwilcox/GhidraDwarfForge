@@ -62,7 +62,7 @@ The separate main-push run `41245137186` is not this PR gate. Mutable saved
 stack assignments and independently migrating pieces retain their own package,
 required CI and integration gates. Richer class/lexical/static/alias/origin and
 same-name relationships remain under P3.3. The full requirement audit remains
-`LIFETIMES-AND-SCOPES-PLAN.md`; neither #67 nor #73 is closed by this component.
+`LIFETIME-SCOPE-ACCEPTANCE.md`; neither #67 nor #73 is closed by this component.
 
 ## Independent pieces and mutable saved-stack integration (PR101)
 

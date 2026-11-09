@@ -9,7 +9,7 @@ ABI goal are still outstanding.
 
 **CONFIRMED local progress; full P2.3b/#70 acceptance remains incomplete.**
 This work retains the complete P2.3–P2.3c requirements in
-[the completion plan](../TARGET-ABI-COMPLETION-PLAN.md). The extension baseline
+[the completion plan](../TARGET-ABI-ACCEPTANCE.md). The extension baseline
 remains Ghidra 12.0.3, Java 21 and libdwarf 2.3.2.
 
 ## Reference and retained failures

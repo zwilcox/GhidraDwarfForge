@@ -1,7 +1,7 @@
 # GhidraDwarfForge
 
 <p align="center">
-    <img src="ghidra_dwarf_forge_logo.jpg" alt="GhidraDwarfForge logo: a dragon surrounding a dwarf at an anvil" width="320">
+    <img src="docs/images/ghidra-dwarf-forge.jpg" alt="GhidraDwarfForge logo: a dragon surrounding a dwarf at an anvil" width="320">
 </p>
 
 Hammering debug sections straight into your ELF.
@@ -50,7 +50,7 @@ Ghidra function as function-scoped static variables. GDB can distinguish
 `first_scope::private_count`, `second_scope::private_count`, and a same-named
 global. This uses the recorded function owner and memory address; it does not
 infer lexical blocks from datatype categories or decompiler formatting.
-See [the focused validation record](docs/VALIDATION.md#function-owned-static-data-2026-10-23)
+See [the focused validation record](docs/STATIC-SCOPE-EVIDENCE.md)
 for tested profiles and debugger limitations.
 
 Development builds retain recorded analyst namespace/class paths as qualified
@@ -59,7 +59,7 @@ breakpoint and quote it in C11 type/value expressions; a static variable uses
 `print 'analysis_left::nested::curated_same'::private_count`. Global short names
 remain unchanged. This is a display policy, not reconstructed C++ scope or
 linkage. See [function naming](docs/FUNCTION-NAMING.md) and its
-[validation status](docs/VALIDATION.md#qualified-analyst-function-display-names-2026-10-24).
+[validation status](docs/FUNCTION-NAMING.md).
 This behavior is not in published alpha.2.
 
 Development scalar floating locations now use audited logical register aliases.
@@ -72,7 +72,7 @@ loaded register hierarchy agree, including sectionless inputs. Other pair profil
 Bounded ARM32 terminal-return prefixes pass model, runtime and full hosted
 validation through PR59; see
 [terminal-return lifetimes](docs/TERMINAL-RETURN-PREFIX.md). See also
-[the bounded FP validation record](docs/VALIDATION.md#scalar-floating-register-aliases-2026-10-23).
+[the bounded FP validation record](docs/TARGET-PROFILES.md).
 
 Bounded incoming register/stack pieces pass ARM computed/custom
 exec/PIE/rebase tests and the full PR59 hosted gate. Their complete value

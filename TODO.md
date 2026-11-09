@@ -1,5 +1,19 @@
 # TODO.md — GhidraDwarfForge
 
+## Documentation and follow-up queue — 2026-11-08
+
+**CONFIRMED user requests:** remove superseded historical planning notes, retain
+current guides/acceptance maps, keep `AGENTS.md` and `PROJECT_CONTEXT.md` local
+and ignored, and replace the old documentation logo with the newer root image.
+The README uses `docs/images/ghidra-dwarf-forge.jpg`.
+
+The active feature order below remains unchanged. Follow-up issues are:
+
+- [#193: upgrade libdwarf after upstream fixes](https://github.com/zwilcox/GhidraDwarfForge/issues/193).
+- [#194: evaluate Gimli migration](https://github.com/zwilcox/GhidraDwarfForge/issues/194); exploration does not authorize a production migration.
+- [#191: comprehensive code and validation review](https://github.com/zwilcox/GhidraDwarfForge/issues/191) after the implementation backlog and dependency decisions.
+- [#192: final README refresh](https://github.com/zwilcox/GhidraDwarfForge/issues/192), last, after the remaining issues and review findings.
+
 ## Active goal: #115 → #117 → #120 — 2026-11-07 UTC
 
 **CONFIRMED:** the user selected this order: complete optional multi-file
@@ -29,12 +43,22 @@ regressions: at 1,000 functions all measured paired directions worsen; at
 10,000 functions scattered listing improves but all-function lookup regresses,
 with other timing/memory results mixed. Artifact size grows at both sizes.
 
-This is the pre-integration acceptance checkpoint, not a release announcement.
-Final documentation must retain the enforced validation gate, followed by the
-ordinary protected merge of [PR189](https://github.com/zwilcox/GhidraDwarfForge/pull/189).
-Then proceed to #117 and #120, in that order. Their implementation has not started.
-Earlier checkpoint notes below are historical and their pending lists are
-superseded by the acceptance audit.
+**CONFIRMED #115 integrated:** [PR189](https://github.com/zwilcox/GhidraDwarfForge/pull/189)
+merged as `71352a398bc71e4c9bfbae8a53e98d7b16f18636`. This is feature acceptance,
+not a release announcement.
+
+**PRESENT, UNVERIFIED full #117 acceptance:** the implementation is in
+[PR190](https://github.com/zwilcox/GhidraDwarfForge/pull/190), head
+`cd3817ce762b79e3da84b482440438132160ffe2`. In
+[run 42536372353](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42536372353),
+both primary installed-package call-site steps pass all 64 native/QEMU GDB
+cases with structural, determinism and preservation checks. Native builds,
+extension/package checks, Linux GUI, Windows host and transported Windows/GDB
+checks pass. The five target jobs and aggregate required gate remain pending.
+#120 has not started and follows protected #117 integration.
+
+Earlier checkpoint notes below are historical; their pending lists do not
+supersede the current goal status above or the feature acceptance maps.
 
 **CONFIRMED #115 consumer checkpoint:** the actual multi-file GDB companion
 passes eight local original/moved-tree and source-rule ownership cases, including
@@ -789,7 +813,7 @@ standalone large-ELF test because its hand-maintained `javac` inputs omitted the
 new frame writer dependencies. Adding the current production source path fixes
 that compilation without Ghidra/native dependencies. The unchanged >2 GiB test
 passes with a 64 MiB Java heap, GNU/LLVM/pinned strict validators and GDB behavior.
-See `docs/CFI-INTEGRATION.md`. The updated hosted gate is still required; no
+See `docs/UNWIND-ACCEPTANCE.md`. The updated hosted gate is still required; no
 production source changed and full #112/#110/#109 remain incomplete.
 
 **CONFIRMED locally — combined unwind integration:** current main `8041fdab`
@@ -797,7 +821,7 @@ and the preserved unwind commit stack now share one tested branch. Both
 annotation-aware normal exports and explicit frame exports retain their APIs.
 Two saved-annotation profiles, eight native-frame cases and all intrinsic-context
 modes pass with 38 retained strict reports. The combined package has 730 matching
-Java 21 classes and 207 matching production sources. See `docs/CFI-INTEGRATION.md`.
+Java 21 classes and 207 matching production sources. See `docs/UNWIND-ACCEPTANCE.md`.
 This replaces the planned serial integration route for PR167–174; those PRs remain
 open until combined hosted acceptance. PR175 keeps priority. Full #112 compiler,
 policy, provenance/ADR and normal-entry-point acceptance remain incomplete.
@@ -2245,7 +2269,7 @@ contract. Its branch includes the integrated loader plus transaction, validator
 and native mechanisms, but still needs complete production hosts, protected
 metadata admission, durability/recovery integration, public controls and full
 acceptance. The original #107/#72 scope is retained in
-`docs/DEBUG-LOADING-COMPLETION-PLAN.md`; the loader's companion publisher does
+`docs/DEBUGLINK-ATTACHMENT-ACCEPTANCE.md`; the loader's companion publisher does
 not satisfy the executable attachment/backup/receipt contract.
 
 **CONFIRMED native Windows #72 namespace acceptance:** run 41604998416 at
@@ -2883,7 +2907,7 @@ of P2.3a–P2.3c/#69–#71.
 `41261018738`, exact package/Java 21/native checks, all five target lanes,
 independent raw lifetime/scope reviews and both host/GUI reviews pass.
 All original six lifetime and six scope rows are mapped in
-`docs/LIFETIME-SCOPE-ACCEPTANCE.md` and `docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md`.
+`docs/LIFETIME-SCOPE-ACCEPTANCE.md` and `docs/LIFETIME-SCOPE-ACCEPTANCE.md`.
 No production/native/profile claim changes in this documentation reconciliation.
 Issues #67/#73 can close after this reconciliation is integrated. Release
 publication remains separate.
@@ -2907,7 +2931,7 @@ pointers. Six lexical-call configurations prove outer/inner shadow lookup while
 unwound from callees, discontiguous visibility, genuine decompiler failure and
 cancellation; two no-call regressions also pass. Production/native code is
 unchanged. See `docs/PIECE-CALL-MEMORY.md`, `docs/LEXICAL-CALL-LIFETIMES.md` and
-the refreshed `docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md`. Final combined hosted
+the refreshed `docs/LIFETIME-SCOPE-ACCEPTANCE.md`. Final combined hosted
 package/target/host acceptance, protected integration and full requirement
 reconciliation remain required. P1.11a/#67 and P3.3/#73 remain open.
 
@@ -2958,7 +2982,7 @@ below; it does not complete P1.11a/#67 or P3.3/#73.
 call-containing bodies, and inspected-call summaries preserve registers only,
 retiring all memory facts. Incoming-call and mixed-piece acceptance does not
 prove these missing local/caller-slot cases. See
-`docs/LIFETIME-SCOPE-COMPLETION-AUDIT.md` for the full original requirement map
+`docs/LIFETIME-SCOPE-ACCEPTANCE.md` for the full original requirement map
 and implementation/acceptance sequence. The combined automatic THIS/return
 buffer method now passes six local x86-64/AArch64 roles without a producer
 change (`docs/ARTIFICIAL-OBJECT-ROLES.md`); its hosted gate is pending.
@@ -3923,7 +3947,7 @@ Main now includes the reviewed semantic, GUI, target-language agreement and
 line-table/performance changes plus inline/debuglink research. This is no new
 release: published alpha.2 remains unchanged and excludes these subsequent
 features. Optional attachment and inline emission remain unimplemented. See
-[combined acceptance](docs/VALIDATION.md#combined-hosted-acceptance-and-main-integration-2026-10-24).
+[combined acceptance](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40068401197).
 Use Sections 1.1 and 4 for the next work; do not restart prototype bring-up.
 
 **CONFIRMED:** qualified-function head `d5f2521` passed all twelve jobs in
@@ -5123,7 +5147,7 @@ mutation, memory migration, stack reuse, calls, mixed pieces or lexical scopes.
 Tracking: [#67](https://github.com/zwilcox/GhidraDwarfForge/issues/67).
 
 **CONFIRMED active work:** the full remaining scope, followed by P3.3, is
-tracked in `docs/LIFETIMES-AND-SCOPES-PLAN.md`. Repeated incoming register
+tracked in `docs/LIFETIME-SCOPE-ACCEPTANCE.md`. Repeated incoming register
 handoffs pass local decoder, actual Java 21 and six-role packaged runtime
 checks, all twelve jobs in PR97 run `41209712240`, package/raw/host review,
 and normal merge `8d9e980`. This is one component and does not complete this checklist.
@@ -5930,7 +5954,7 @@ Linux preview/decline plus validators/GDB. Native modifying GUI journeys,
 current-head Windows/artifact review and the final protected gate remain incomplete.
 The explicit transaction design and remaining acceptance tests are in
 [`ADR-0004`](docs/ADR-0004-DEBUGLINK-ATTACHMENT.md) and the
-[completion ledger](docs/DEBUG-LOADING-COMPLETION-PLAN.md).
+[completion ledger](docs/DEBUGLINK-ATTACHMENT-ACCEPTANCE.md).
 
 **CONFIRMED inspection scope:** manual run `40129632540` and independent
 Linux/native Windows artifact reviews pass on actual Java 21/64 MiB. Linux covers
@@ -6600,8 +6624,10 @@ implementation unless new evidence requires it.
 
 Unless the user changes priorities:
 
-1. Run `git status --short`; read `AGENTS.md`, the current context/status in
-   `PROJECT_CONTEXT.md`, and this file's Sections 0.1/1.1. Preserve existing work.
+1. Run `git status --short`; read this file's current priorities and the
+   maintained validation and release guides. Read local `AGENTS.md` and
+   `PROJECT_CONTEXT.md` when present; these files are intentionally untracked.
+   Preserve existing work.
 2. Read the current acceptance checkpoints: PRs #25–#41 are merged. Candidate
    content head `b269ec5` passed run `40110565271` and tree-identical main merge
    `2bd6739`. Main-push gates through PR #37 pass; PR #38 main push
@@ -6624,7 +6650,8 @@ Unless the user changes priorities:
    twelve jobs and independent host reviews. Preserve
    the first writer run's compiler-oracle TCP collision and the failed
    original PR #32 report-selection attempt and earlier feature histories.
-   Require current-base checks under AGENTS.md Section 6.1; do not restart
+   Require up-to-date protected `required-validation` checks without an
+   administrator bypass; do not restart
    completed bring-up or integration.
 3. Preserve published alpha.2 at `2f88c4a` and alpha.1 at `f4a0199`. Future
    releases need their own version/notes, exact-commit CI and package/asset

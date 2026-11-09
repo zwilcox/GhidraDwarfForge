@@ -675,7 +675,7 @@ in the spill controls deliberately clears integer carriers; the compiler
 preserves required callee-saved state. The paired case adds a memory store
 whose lack of aliasing is not proven by the exporter. Both programs' actual
 values and returns are checked against source-known constants, raw ABI carriers
-and compiler debug information. See `docs/AARCH64-PROFILE-PLAN.md` for the exact
+and compiler debug information. See `docs/TARGET-ABI-ACCEPTANCE.md` for the exact
 consumer limitations, failure/cancellation controls and pending hosted gate.
 
 

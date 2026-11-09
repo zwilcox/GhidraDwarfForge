@@ -3,7 +3,7 @@
 **CONFIRMED locally; hosted acceptance pending:** all 48 production runtime
 cases pass. The source-built, instruction-audited controls cover additional
 ARM aggregate storage and clobber boundaries in #70. The full #68–#71 requirements in
-`TARGET-ABI-COMPLETION-PLAN.md` remain binding. This component changes tests and
+`TARGET-ABI-ACCEPTANCE.md` remain binding. This component changes tests and
 workflow coverage; it uses the production implementation from PR136.
 
 ## Acceptance contract

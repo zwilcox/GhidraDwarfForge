@@ -356,7 +356,7 @@ Unknown gaps intentionally prevent complete section mapping. A successful
 homogeneous-function mode hint elsewhere does not establish mixed-body coverage.
 The remaining ARM per-function base/VFP ABI, BE8 and storage requirements, MIPS
 FPXX/FP64A and wider lifetime work, i386 work, and full integration audit all
-remain active in `TARGET-ABI-COMPLETION-PLAN.md`.
+remain active in `TARGET-ABI-ACCEPTANCE.md`.
 
 ## Hosted boundary-audit correction
 

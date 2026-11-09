@@ -16,7 +16,7 @@ all-role preflight, versioned claims and complete-record publication to
 explicit initial attachment, refresh and saved-request recovery. Ordinary export
 does not enter this transaction. Native component and real-export evidence,
 including completed Windows/GUI checks and remaining integration, is tracked by
-[the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md).
+[the completion ledger](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md).
 
 ADR-0004 and ADR-0005 remain the required operation contract. Ghidra, Java and
 libdwarf baselines are unchanged. The producer ABI is unchanged; the separate

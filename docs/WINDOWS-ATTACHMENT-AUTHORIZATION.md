@@ -84,7 +84,7 @@ receipt binding, debuglink CRCs and 105 validator log hashes were checked; see
 [the evidence](evidence/windows-attachment-operation-41866768900.json). The runner
 already owns the required privilege. This does not establish standard-user UAC
 prompt/decline, saved-curation refresh or full Windows GUI/cancellation acceptance.
-Those remain in [the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md).
+Those remain in [the completion ledger](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md).
 
 **CONFIRMED isolated native token scope:** job126079085292 in run41680805435
 passes independent review of archive13253386157, all143 packaged production

@@ -20,7 +20,7 @@ The native component evidence below includes receipt replacement, actual sharing
 locks, initial/refresh rollback, concurrent-target refusal and eight abrupt
 process exits. These tests do not substitute for real Windows ELF attachment,
 GUI cancellation and GDB consumer acceptance. Current integration status is in
-[the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md). Later historical
+[the completion ledger](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md). Later historical
 checkpoints retain their original commit/run scope.
 
 The adapter admits fixed local NTFS with persistent ACL support. Directory
