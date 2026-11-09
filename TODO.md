@@ -43,12 +43,22 @@ regressions: at 1,000 functions all measured paired directions worsen; at
 10,000 functions scattered listing improves but all-function lookup regresses,
 with other timing/memory results mixed. Artifact size grows at both sizes.
 
-This is the pre-integration acceptance checkpoint, not a release announcement.
-Final documentation must retain the enforced validation gate, followed by the
-ordinary protected merge of [PR189](https://github.com/zwilcox/GhidraDwarfForge/pull/189).
-Then proceed to #117 and #120, in that order. Their implementation has not started.
-Earlier checkpoint notes below are historical and their pending lists are
-superseded by the acceptance audit.
+**CONFIRMED #115 integrated:** [PR189](https://github.com/zwilcox/GhidraDwarfForge/pull/189)
+merged as `71352a398bc71e4c9bfbae8a53e98d7b16f18636`. This is feature acceptance,
+not a release announcement.
+
+**PRESENT, UNVERIFIED full #117 acceptance:** the implementation is in
+[PR190](https://github.com/zwilcox/GhidraDwarfForge/pull/190), head
+`cd3817ce762b79e3da84b482440438132160ffe2`. In
+[run 42536372353](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42536372353),
+both primary installed-package call-site steps pass all 64 native/QEMU GDB
+cases with structural, determinism and preservation checks. Native builds,
+extension/package checks, Linux GUI, Windows host and transported Windows/GDB
+checks pass. The five target jobs and aggregate required gate remain pending.
+#120 has not started and follows protected #117 integration.
+
+Earlier checkpoint notes below are historical; their pending lists do not
+supersede the current goal status above or the feature acceptance maps.
 
 **CONFIRMED #115 consumer checkpoint:** the actual multi-file GDB companion
 passes eight local original/moved-tree and source-rule ownership cases, including
