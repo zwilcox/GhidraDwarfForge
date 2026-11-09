@@ -2271,3 +2271,22 @@ tasks.register("allocationDecompilerSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/allocation-decompiler/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/allocation-decompiler/cache").absolutePath
 }
+
+tasks.register("cortexM3ProfileSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit Cortex-M3 ELF attributes and incompatible-profile rejection"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.CortexM3ProfileSmoke"
+}
+
+tasks.register("ghidraCortexM3ProfileSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks Cortex-M3 profile against actual Ghidra language and Thumb contexts"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraCortexM3ProfileSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/cortex-m3-profile/settings").absolutePath
+}

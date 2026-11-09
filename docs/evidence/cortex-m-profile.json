@@ -1,0 +1,89 @@
+{
+    "status": "CONFIRMED_LOCAL_CORTEX_M_PROFILE_AND_FAILURE_CONTROLS",
+    "date": "2026-11-09",
+    "baseCommit": "3a0cfb5869628ded0e53defbde1bfe8c328af342",
+    "export": "/home/ziggy/GhidraDwarfForge/.forge-work/scratch/cortex-m-reference/cortex-m3.ipc9_7ny/export.9wudgr_2",
+    "packageSha256": "63dba3f4a8b327483c298b1a1117ff1e173251e1a95b1540a35c9b9470b96b66",
+    "originalSha256": "b82b58bcb1bbedc858083f2967d9f3653b637b1a9a12b562e61d8e143aaf4d77",
+    "sidecarSha256": "f41ef263522f5ce1937e7de7e8d52f79ce6a34b5a34fea3a4645b919804fe939",
+    "syntheticSourceSha256": "089d20bd99e9c811e62c80c92cf1eca05f302ef55221480da837f9c38e2efee8",
+    "profile": "Explicit --target-profile=cortex-m3; Cortex-M3/ARMv7-M/base PCS/LE/Thumb/QEMU lm3s6965evb; Ghidra12.0.3 Cortex/default Java21",
+    "checks": {
+        "elfProfileSmoke": 95,
+        "realGhidraContextChecks": 4,
+        "armCallPolicyRegression": 3880,
+        "targetAgreement": "PASS",
+        "extensionBuild": "PASS",
+        "bashWrapper": "PASS",
+        "actionlint": "PASS with shellcheck unavailable",
+        "failureControls": {
+            "contextRejections": 2,
+            "cancellations": 6,
+            "deterministicRecovery": true
+        },
+        "terminalReports": [
+            "CANCELLED",
+            "CANCELLED",
+            "CANCELLED",
+            "CANCELLED",
+            "CANCELLED",
+            "CANCELLED",
+            "PARTIAL",
+            "FATAL",
+            "FATAL"
+        ],
+        "gnuLlvmPinnedValidators": "PASS",
+        "qemuGdb": "PASS",
+        "determinism": "PASS",
+        "originalSavedProjectInstalledPackagePreservation": "PASS"
+    },
+    "limits": [
+        "Profile verifies metadata and existing decoded contexts; it is not a complete instruction/board verifier.",
+        "Missing attributes do not qualify the explicit M3 profile; ordinary export remains available.",
+        "Forge reports one exception-handler frame versus four compiler frames. No FPU/TrustZone/general interrupt-unwind support claim.",
+        "Opaque undefined4 retained; modified parameter-register locations omitted; no Cortex-M call-site or debugger-injected function-pointer call claim.",
+        "PowerShell wrapper tests and hosted Cortex-M end-to-end lane have not run for this change."
+    ],
+    "harnessCorrections": [
+        "Temporary per-run Ghidra settings prevent stale compiled scripts surviving deterministic package timestamps. Settings removed on exit.",
+        "Contradictory context is tested last in a disposable read-only domain object; GhidraScript outer transactions prevent immediate nested rollback. Saved-project bytes are verified unchanged."
+    ],
+    "sourceSha256": {
+        "src/main/java/ghidradwarfforge/elf/Arm32CallAbi.java": "450982fec006cc67e058e99c861e14a2c44e2dfe209e3380ebc6371f152eadff",
+        "src/main/java/ghidradwarfforge/elf/CortexM3Profile.java": "090b07fad251254c12eee93934b88f1c7731889acde31d9972ce4c60e888c36f",
+        "src/main/java/ghidradwarfforge/GhidraCortexM3Profile.java": "806073638e7b6c347791f459aacd00530ca37907b31b78cff258b9affde28475",
+        "ghidra_scripts/GhidraDwarfForge.java": "f0b6a1e4021644a52af45af22ccb2c003f23c42877624cfbc822a2cab279bb2b",
+        "src/test/java/ghidradwarfforge/elf/CortexM3ProfileSmoke.java": "0d494e14daa5148446c3893a2cf479bb52bb02ea6ee6de5b5630149295480068",
+        "src/test/java/ghidradwarfforge/GhidraCortexM3ProfileSmoke.java": "b55d6d4b7e333a1f4c881dd77f41d72ae73ec19b2337cb3c69f3d4f33c7232bd",
+        "src/test/integration/cortex-m-export.py": "1ad03a152cfe881f840202bc81a6719624973ce145dc9b935efa19109ef130bb",
+        "src/test/integration/ghidra_scripts/ExportCortexMReadOnly.java": "a177f07b8e2dcdd35fa33ecd4114b342c425fb943015934be1c827d9b608442c",
+        "src/test/integration/ghidra_scripts/CheckCortexMFailures.java": "50cb3e926336ce28294464ba226fe9095cfff3e9ada5e3d0426d2a18d61b3bf0",
+        "support/ghidra-dwarf-forge-headless": "811341b0d3f1b3decb46ebdd6a0d957aca817eaed07c7e6d62bfe534ae21062b",
+        "support/ghidra-dwarf-forge-headless.ps1": "0a5658ae6aab242d4295bb691e8cf14445894493981f5fb6eeff458b6a1a6870",
+        "src/test/integration/headless-wrapper.sh": "2fd6280c24bdda10ce567c2358e1912fe09af9c998c8e567bae278ff8d21a46a",
+        "src/test/integration/headless-wrapper.ps1": "0c0b37a2834d7ad6c520b83d4e50487733b4609e992460730f69e31463508cc3",
+        ".github/workflows/ci.yml": "64892727106fdd70ee93b8cf2c62d39708f4acc7ecf50fdd57154ae3eadd4c06",
+        "build.gradle": "9413c5e93b50810c996e3e653209e3ca2e8809196b341128bd2f0ab7145c3d64"
+    },
+    "logSha256": {
+        ".forge-work/evidence/cortex-m-profile-build.log": "658862d1c1ddc325bd1451196642f9113229218e79c46827a4e180d75b9ecc3a",
+        ".forge-work/evidence/cortex-m-ghidra-profile.log": "d504cf79c8134f52b43056987df9cf2bfcc8b72f291463d50113b8cbd3b63786",
+        ".forge-work/evidence/cortex-m-wrapper.log": "a9ff293ea9b585aed481bdd011dece4ee8b63d231317bcc2347f39313fbad978",
+        "/home/ziggy/GhidraDwarfForge/.forge-work/scratch/cortex-m-reference/cortex-m3.ipc9_7ny/export.9wudgr_2/controls.log": "0296626fa32f5b8062109835e50675aa6ea916e953fd5ed28699afd796769d86",
+        "/home/ziggy/GhidraDwarfForge/.forge-work/scratch/cortex-m-reference/cortex-m3.ipc9_7ny/export.9wudgr_2/gnu.log": "0606e2f93d444cda9c27787d82a81e23da2ca6fb727cfca59f5f0c4bb516858b",
+        "/home/ziggy/GhidraDwarfForge/.forge-work/scratch/cortex-m-reference/cortex-m3.ipc9_7ny/export.9wudgr_2/llvm.log": "eb1ab9d0696d9836e49ac84f1f4faabf6f9f885ad73367b5f98f08acc089d141",
+        "/home/ziggy/GhidraDwarfForge/.forge-work/scratch/cortex-m-reference/cortex-m3.ipc9_7ny/export.9wudgr_2/pinned.txt": "1b9cb281b4e6707b33e25c1b9c0b325b1c6673d64ddd9bd9527c26baa01137ba",
+        "/home/ziggy/GhidraDwarfForge/.forge-work/scratch/cortex-m-reference/cortex-m3.ipc9_7ny/export.9wudgr_2/runtime/forge-gdb.json": "66e44d8ce4cb67914fa545d39eb3068ee48b870daf9044428fe2bc87e12e871d"
+    },
+    "storageGiB": {
+        "scratch": 0.423,
+        "cache": 1.962,
+        "evidence": 4.395
+    },
+    "legacyEvidenceExceptionGiB": 2.301,
+    "remaining": [
+        "Independent runtime mutation controls and stronger complete code/data address assertions",
+        "Required system-QEMU CI lane and existing architecture/Windows regressions",
+        "Full six-criterion acceptance audit and protected merge; raw counterpart conditional on #119"
+    ]
+}

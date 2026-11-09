@@ -3,13 +3,14 @@ set -euo pipefail
 
 repository_dir=$(realpath "$(dirname "$0")/../../..")
 wrapper="$repository_dir/support/ghidra-dwarf-forge-headless"
-work=$(mktemp -d -t ghidra-dwarf-forge-wrapper-test.XXXXXXXX)
+temporary_parent=$(realpath "${TMPDIR:-/tmp}")
+work=$(mktemp -d -p "$temporary_parent" ghidra-dwarf-forge-wrapper-test.XXXXXXXX)
 fake_ghidra="$work/fake-ghidra"
 cp -R "$repository_dir/src/test/integration/fixtures/fake-ghidra" "$fake_ghidra"
 
 cleanup() {
     case "$work" in
-        /tmp/ghidra-dwarf-forge-wrapper-test.*) rm -rf -- "$work" ;;
+        "$temporary_parent"/ghidra-dwarf-forge-wrapper-test.*) rm -rf -- "$work" ;;
         *) echo "refusing to remove unexpected test path: $work" >&2 ;;
     esac
 }
@@ -58,6 +59,11 @@ selection="$work/formatter selection λ.json"
 printf 'selection sentinel\n' >"$selection"
 run_status 0 SUCCESS 0 --import="$input" --output="$output" --formatters="$selection"
 grep -Fxq -- "--formatters=$selection" "$argument_log"
+run_status 0 SUCCESS 0 --import="$input" --output="$output" --target-profile=cortex-m3
+grep -Fxq -- "--target-profile=cortex-m3" "$argument_log"
+for profile in cortex-m4 armv7 '' ; do
+    run_status 64 SUCCESS 0 --import="$input" --target-profile="$profile"
+done
 run_status 64 SUCCESS 0 --import="$input" --formatters=
 run_status 0 SUCCESS 0 --import="$input" --output="$output" --compress-debug-sections=zlib
 grep -Fxq -- '--compress-debug-sections=zlib' "$argument_log"

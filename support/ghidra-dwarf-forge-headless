@@ -13,6 +13,7 @@ Common options:
   --libdwarf=<path>       Override packaged libdwarf (requires --libdwarfp)
   --libdwarfp=<path>      Override packaged libdwarfp (requires --libdwarf)
   --input=<elf>           Original ELF override (defaults to --import value)
+  --target-profile=cortex-m3  Require the bounded ARMv7-M Thumb/base-PCS profile
   --output=<path>         Sidecar path (default: <input>.dbg)
   --source-lines=<n>      Optional source lines per file; whole functions stay together
                           Default: one synthetic source file
@@ -176,6 +177,7 @@ formatter_selection=
 debug_compression=none
 source_context=off
 source_lines=
+target_profile=
 import_path=
 project_dir=
 project_name=
@@ -200,6 +202,10 @@ for argument in "$@"; do
             source_lines=${argument#*=}
             [[ "$source_lines" =~ ^[1-9][0-9]{0,9}$ ]] && ((source_lines <= 2147483647)) ||
                 die_usage "--source-lines must be an integer from 1 to 2147483647"
+            ;;
+        --target-profile=*)
+            target_profile=${argument#*=}
+            [[ "$target_profile" == cortex-m3 ]] || die_usage "--target-profile must be cortex-m3"
             ;;
         --synthesize-unwind=*|--unwind-stack-separation=*|--unwind-relocated-pointers=*)
             unwind_options+=("$argument") ;;
@@ -296,6 +302,7 @@ fi
 [[ "$debug_compression" == zlib ]] && export_options+=("--compress-debug-sections=zlib")
 [[ "$source_context" != off ]] && export_options+=("--source-context=$source_context")
 [[ -n "$source_lines" ]] && export_options+=("--source-lines=$source_lines")
+[[ -n "$target_profile" ]] && export_options+=("--target-profile=$target_profile")
 export_options+=("${annotation_options[@]}" "${unwind_options[@]}")
 
 if ((import_mode)); then

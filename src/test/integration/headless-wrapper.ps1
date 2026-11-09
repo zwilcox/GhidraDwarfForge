@@ -126,6 +126,11 @@ exit /b %FAKE_HEADLESS_EXIT%
         'import wrapper did not select the ELF loader'
     $null = Invoke-Wrapper 0 $importOptions
     Assert-Condition (-not (Get-Content -LiteralPath $argumentLog -Raw).Contains('--source-lines=')) 'default selected multiple sources'
+    $null = Invoke-Wrapper 0 ($importOptions + @('-TargetProfile', 'cortex-m3'))
+    Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains('--target-profile=cortex-m3')) 'target profile not forwarded'
+    foreach ($profile in @('', 'cortex-m4', 'ARMv7')) {
+        $null = Invoke-Wrapper 64 ($importOptions + @('-TargetProfile', $profile))
+    }
     foreach ($target in @('1', '8', '1000', '2147483647')) {
         $null = Invoke-Wrapper 0 ($importOptions + @('-SourceLines', $target))
         Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains("--source-lines=$target")) 'source line target not forwarded'

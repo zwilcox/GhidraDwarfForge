@@ -1,6 +1,36 @@
 # Call-site and tail-call metadata — issue #117
 
-## Current entry-storage regression checkpoint — 2026-11-08
+## Accepted integration — 2026-11-09
+
+**CONFIRMED:** [PR190](https://github.com/zwilcox/GhidraDwarfForge/pull/190) merged
+as `5c0c6784cf66e07dac8fa99bcb4e8a81a7d90d0d`; its tree equals validated head
+`c6694f988448ba32373d00e9b9e3b14f4d20ee97`. Issue #117 is closed.
+[Run 42600090943](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42600090943)
+passed all sixteen jobs, including strict `required-validation`. Fifteen completed
+job logs were reviewed; workflow lint was checked through completed job metadata.
+
+| Original issue requirement | Accepted evidence |
+| --- | --- |
+| 1. Distinguish calls, tails, thunks, internal jumps and unresolved indirect transfers | Entry-contract, instruction-capture, argument-flow, tail-state and bounded-switch controls; both primary target jobs check plan rejection, ownership, curated thunks and outside-body transfers. |
+| 2. Correct PC/origin attributes, justified arguments and completeness | Linux/Windows native producer admission checks, target JNA form/reference checks and production serialization controls validate address, reference and expression forms. Partial inventories cannot claim complete call coverage. |
+| 3. Preserve unavailable values and ambiguous histories | Packaged runtime and serializer controls require exact available/unavailable entry values and frame structure; ambiguous paths and unresolved indirect transfers cannot fabricate a tail history. |
+| 4. Compare compiler and exported normal, chained, conditional, recursive and indirect cases | Each primary target passes 32 compiler/absent-debug scenarios and 32 packaged scenarios using preserved executable bytes. |
+| 5. Native/QEMU frames and argument values, including PIE/rebase | Native x86-64 and QEMU AArch64 pass 64 total packaged scenarios across ET_EXEC/PIE and original/rebased analysis, checking frame classifications, arguments, recursion depths and runtime results. |
+| 6. Validators, determinism, preservation/failure tests and support bounds | Both primary targets pass raw-form and GNU/LLVM/pinned validation, 28 serializer-control sessions each, cancellation/recovery, deterministic repeats and input/saved-program/package preservation. The full architecture/host gate also passes. |
+
+The primary completed logs are
+[x86-64 job 129107384559](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42600090943/job/129107384559)
+and [AArch64 job 129107384565](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42600090943/job/129107384565).
+[Usage and scope](CALL-SITES.md) retain the exact integer ABI profiles and
+unsupported cases. Other target lanes provide regression coverage, not additional
+recovered call-site support. Release publication is outside this acceptance.
+
+**HISTORICAL:** the checkpoints below describe development before integration.
+Their pending-gate and work-order statements are superseded by this section.
+#120 is now implemented locally and awaiting its own hosted acceptance; see
+[the Cortex-M profile](CORTEX-M.md).
+
+## Historical entry-storage regression checkpoint — 2026-11-08
 
 **CONFIRMED:** all 64 fresh packaged GDB cases pass on x86-64 and AArch64,
 ET_EXEC/PIE and original/rebased analysis. All nine adjacent no-return and

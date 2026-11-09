@@ -71,6 +71,9 @@ expected_sources=(
     cfi-shrinkwrap-x86_64.S
     composite-register-prefix.c
     composite-value-flow.c
+    cortex-m-profile.c
+    cortex-m-start.S
+    cortex-m.ld
     curated-thunk.c
     custom-call-storage.c
     defined-register-local.c
