@@ -388,8 +388,8 @@ corrective alpha.2 branch and shipped native libraries are unaffected.
 including native Linux configuration/capacity/allocation controls, all five
 target lanes and the Windows host. PR #25 merged normally as tree-identical
 `befce2c`. The separate main-push run was still pending at the documentation
-checkpoint; [VALIDATION.md](VALIDATION.md#combined-hosted-acceptance-and-main-integration-2026-10-24)
-records the exact source, job set and scope.
+checkpoint; [the combined workflow run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/40068401197)
+records the tested source and job results.
 
 These runs establish integrated planner/tool acceptance without repeating the
 timed 10,000-function experiment. The earlier local timings, byte equality and

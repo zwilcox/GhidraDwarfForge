@@ -1,7 +1,7 @@
 # Scope evidence in Ghidra 12.0.3
 
 **CONFIRMED research; implementation and exporter acceptance pending.** This
-investigation supports every P3.3 row in `LIFETIMES-AND-SCOPES-PLAN.md`. It does
+investigation supports every P3.3 row in `LIFETIME-SCOPE-ACCEPTANCE.md`. It does
 not complete P1.11a, replace its hosted gates, or reduce lexical scopes to
 qualified names. The baseline remains Ghidra 12.0.3 and Java 21.
 

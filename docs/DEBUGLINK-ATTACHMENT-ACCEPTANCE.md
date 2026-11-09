@@ -2,7 +2,7 @@
 
 **CONFIRMED implementation and A1–A7 runtime evidence; C1 integration pending.**
 This record evaluates the complete attachment scope of issue #72, ADR-0004,
-ADR-0005 and the [completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md).
+and ADR-0005.
 It does not close the issue before final required CI and protected integration.
 The separate GDB loader #107 is already integrated; see its
 [acceptance record](GDB-LOADER-ACCEPTANCE.md).

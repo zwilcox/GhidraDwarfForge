@@ -60,4 +60,4 @@ above passes all checks. Those failures are not acceptance evidence.
 Next, collect actual saved namespace/class/method ownership and reconcile
 explicit records with current object-parameter types. Connect that model to
 the validated declaration/specification layout and prove real GDB behavior.
-All rows in `LIFETIMES-AND-SCOPES-PLAN.md` remain required.
+All rows in `LIFETIME-SCOPE-ACCEPTANCE.md` remain required.

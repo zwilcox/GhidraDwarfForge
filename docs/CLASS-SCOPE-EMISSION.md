@@ -160,4 +160,4 @@ This component does not complete P1.11a or P3.3. Hosted acceptance and normal
 integration remain required. Additional real same-name category/scope fixtures,
 class/static ownership, inferred statics and thunk/alias/origin relationships
 still need their complete behavior matrix. The full requirements remain in
-`LIFETIMES-AND-SCOPES-PLAN.md`; no umbrella issue is closed here.
+`LIFETIME-SCOPE-ACCEPTANCE.md`; no umbrella issue is closed here.

@@ -83,7 +83,7 @@ does not validate all aggregate/wide/mixed/stack arguments, return transfer,
 ISA/FPU/compiler combinations, sectionless N64 inputs or debugger-injected
 calls. Existing restrictions on unverified calls remain in place. FPXX/FP64A,
 the remaining O32 work and the full N32/N64 ABI requirements remain open under
-`TARGET-ABI-COMPLETION-PLAN.md`.
+`TARGET-ABI-ACCEPTANCE.md`.
 
 **CONFIRMED separate research defect, outside scalar acceptance:** the next
 owned big-endian N32 aggregate/mixed fixture exposes wrong computed storage:

@@ -31,3 +31,7 @@ hs_err_pid*.log
 
 # Bounded local development workspace (see docs/STORAGE.md)
 .forge-work/
+
+# Local coding-agent instructions and project handoff
+/AGENTS.md
+/PROJECT_CONTEXT.md

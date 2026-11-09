@@ -1,7 +1,7 @@
 # MIPS wide argument allocation and stack-depth investigation
 
 **CONFIRMED local defects; full component acceptance pending.** This work
-continues #69 under `TARGET-ABI-COMPLETION-PLAN.md`. It does not close #69 or
+continues #69 under `TARGET-ABI-ACCEPTANCE.md`. It does not close #69 or
 any of #68–#71, and does not change the Ghidra 12.0.3 / Java 21 / libdwarf 2.3.2
 baseline.
 
@@ -122,7 +122,7 @@ allocation audit for opaque, wider/aligned/floating/nested aggregate signatures,
 and remaining return/storage cases. General N32 spill/reload and delayed
 control-flow tracking still require work. Hosted acceptance, protected
 integration and the remaining O32, FPXX/FP64A, ARM32 and i386 requirements in
-`TARGET-ABI-COMPLETION-PLAN.md` remain binding. Passing this fixture does not
+`TARGET-ABI-ACCEPTANCE.md` remain binding. Passing this fixture does not
 complete #69 or the combined goal.
 
 ## Wider reference and return follow-up

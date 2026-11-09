@@ -168,4 +168,4 @@ passes.
 This accepts the vector storage component. It does not establish native-vector
 injected calls or close any #68–#71 umbrella requirement. Earlier pending
 statements describe the historical local checkpoint; the combined goal remains
-active under `TARGET-ABI-COMPLETION-PLAN.md`.
+active under `TARGET-ABI-ACCEPTANCE.md`.

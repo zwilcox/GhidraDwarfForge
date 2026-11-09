@@ -143,4 +143,4 @@ x86-64/AArch64 profiles. Additional widths and byte orders have the model scope
 stated above. It does not establish arbitrary piece splitting/reassembly,
 restored caller-saved register proofs, mutable composite assignment identities,
 or uncertain call-memory nonaliasing. Never infer those locations from this
-acceptance. Richer scopes remain in `LIFETIMES-AND-SCOPES-PLAN.md`.
+acceptance. Richer scopes remain in `LIFETIME-SCOPE-ACCEPTANCE.md`.

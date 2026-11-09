@@ -84,4 +84,4 @@ Next: connect actual saved ownership and separately evidenced type bindings,
 validate immutable reopen/rebase/stale/conflicting records, then implement the
 tested class-owned declaration and qualified root definition layout. Class
 values and lookup need independent native/real-exporter GDB acceptance. All
-remaining rows in `LIFETIMES-AND-SCOPES-PLAN.md` stay in scope.
+remaining rows in `LIFETIME-SCOPE-ACCEPTANCE.md` stay in scope.

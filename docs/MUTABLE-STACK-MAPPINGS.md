@@ -121,4 +121,4 @@ PR100's separate hosted AArch64 gate exposed older semantic-harness expectations
 for unavailable parameters; the new scalar spill proof supplies their actual
 values. That correction and exact-head hosted validation remain separate from
 this component's local acceptance. Independently migrating mixed pieces and
-all richer-scope requirements remain in `LIFETIMES-AND-SCOPES-PLAN.md`.
+all richer-scope requirements remain in `LIFETIME-SCOPE-ACCEPTANCE.md`.

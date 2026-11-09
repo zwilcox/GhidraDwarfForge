@@ -29,7 +29,7 @@ CLI/refresh/recovery and GUI journeys pass within their recorded scope. Reviewed
 Windows real-ELF current-permission/RunAs commits, rollback, saved refresh and
 full GUI/active cancellation also pass at `be2e806`, with retained native cleanup
 and downstream GDB evidence. Linux active cancellation passes at the same head.
-See [the completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md) for exact evidence
+See [the completion ledger](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md) for exact evidence
 and the remaining C1 integration gate. Historical validation checkpoints below retain
 their original scope; their pending statements do not supersede the ledger.
 The metadata policy and Ghidra/Java/native producer baselines are unchanged.

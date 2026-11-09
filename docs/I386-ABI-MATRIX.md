@@ -2,7 +2,7 @@
 
 **CONFIRMED locally; hosted acceptance and protected integration pending.**
 This component advances the original #71 requirements. The full #68–#71 scope
-in `TARGET-ABI-COMPLETION-PLAN.md` remains binding; this does not close an issue
+in `TARGET-ABI-ACCEPTANCE.md` remains binding; this does not close an issue
 or establish every i386 or host-specific target ABI.
 
 The existing i386 register table omitted XMM registers. Explicitly curated

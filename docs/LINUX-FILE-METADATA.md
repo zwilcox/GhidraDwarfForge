@@ -3,7 +3,7 @@
 **CONFIRMED locally; prior baseline also confirmed on hosted Linux:** `LinuxFileMetadata` is a production-code primitive for
 native inspection and private-stage metadata application. It is deliberately
 not an `AttachmentOperation.Host`, admission decision or public action. A1 in
-the [completion ledger](DEBUG-LOADING-COMPLETION-PLAN.md) remains incomplete.
+the [attachment acceptance record](DEBUGLINK-ATTACHMENT-ACCEPTANCE.md) remains incomplete.
 The objective still requires the complete Linux/Windows host contract.
 
 ## Visibility decision still required
