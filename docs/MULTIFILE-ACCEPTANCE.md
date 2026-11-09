@@ -1,14 +1,18 @@
 # Multi-file synthetic source acceptance — issue #115
 
-**CONFIRMED implementation and hosted acceptance; protected integration remains a separate gate.** This
-record audits production revision `52358dbefab331beb3b96e610c50741cdc9427e4` against
-all seven original [issue #115](https://github.com/zwilcox/GhidraDwarfForge/issues/115)
-requirements. It does not close the issue or authorize a release. #117 and #120
-remain subsequent work, in that order.
+**CONFIRMED implementation, hosted acceptance and protected integration.**
+[PR189](https://github.com/zwilcox/GhidraDwarfForge/pull/189) merged as
+`71352a398bc71e4c9bfbae8a53e98d7b16f18636` on 2026-11-08; issue #115 is closed.
+The audits below cover all seven original
+[issue #115](https://github.com/zwilcox/GhidraDwarfForge/issues/115) requirements,
+starting with production revision `52358dbefab331beb3b96e610c50741cdc9427e4`.
+The final documentation head and integration are recorded below. No release
+publication is included. #117 subsequently merged; #120 has its own acceptance
+gate.
 
 The [design and historical checkpoints](MULTIFILE-SOURCE.md) explain individual
 fixtures, commands and failures. Their historical lists of then-pending work are
-superseded by this record's current remaining gates.
+superseded by this record's accepted integration.
 
 ## Requirement-by-requirement audit
 
@@ -100,11 +104,12 @@ same one-function timeout in both variants. Both reports describe partial
 recovery. Baseline/candidate median seconds are 78.41/80.96 and 183.82/194.82;
 no speedup is claimed.
 
-## Integration contract
+## Accepted integration
 
-This document records the pre-merge acceptance checkpoint. Final documentation
-changes must pass the enforced `required-validation` check on their own PR head;
-older successful runs do not authorize bypassing protection. Integrate
-[PR189](https://github.com/zwilcox/GhidraDwarfForge/pull/189) using normal merge
-history, record the actual integration, and then proceed to #117 followed by
-#120. No release publication is included in this goal.
+The final PR head `f4609efbca5e0c45fe199b162d0051e8bb5017d1` passed all sixteen jobs
+in [run 42446082844](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42446082844),
+including `required-validation`, and all five jobs in
+[performance run 42446082851](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42446082851).
+PR189 merged normally as `71352a398bc71e4c9bfbae8a53e98d7b16f18636`; its tree
+matches the tested head. The earlier audits above retain their exact revision
+and evidence scope. Their pre-merge gate requirements have been satisfied.

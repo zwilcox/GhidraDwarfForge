@@ -1,14 +1,15 @@
 # Call sites, tail frames and entry values
 
-**CONFIRMED component checks; full acceptance pending:** issue #117 remains
-under validation. The current regression tests distinguish recorded parameter
-storage at the first PC from inferred caller history. All 64 local packaged
-GDB cases and nine adjacent no-return/outside-body cases pass, with structural
-validation, deterministic exports and preservation checks. The typed model also
-verifies that recorded storage does not authorize unproved call values or
-completeness. The full corrected-head hosted gate and final review remain
-required. These are development results, not a released support claim. See the
-[acceptance plan](CALL-SITE-PLAN.md) and
+**CONFIRMED implementation and hosted acceptance:** issue #117 closed after
+[PR190](https://github.com/zwilcox/GhidraDwarfForge/pull/190) merged on 2026-11-09.
+The final head `c6694f98` passed all sixteen jobs in
+[run 42600090943](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/42600090943),
+including the required gate, 64 packaged GDB scenarios across x86-64/AArch64
+and 56 serialization-control sessions. Tests distinguish recorded parameter
+storage at the first PC from inferred caller history and preserve unavailable
+values when proof is absent. This acceptance covers the profiles below; it does
+not publish a release. See the
+[six-item acceptance record](CALL-SITE-PLAN.md#accepted-integration--2026-11-09) and
 [entry-storage receipt](evidence/call-site-entry-storage-distinction.json).
 
 ## What the metadata provides
@@ -40,9 +41,10 @@ GDB/GDB-multiarch 15.1 and QEMU AArch64 8.2.2. Structural checks use GNU binutil
 2.42, LLVM 18.1.3 and the pinned libdwarf checker. Exact versions and fixture
 identities are retained in the [compiler reference receipt](evidence/call-site-compiler-reference.json);
 the [call-origin receipt](evidence/call-site-call-origins.json) records the later
-64-case recovered-runtime checkpoint. The later packaged step is identified
-above. These component results do not establish the full hosted gate, other
-debugger versions or Windows-hosted call-site recovery.
+64-case recovered-runtime checkpoint. Final hosted acceptance is linked above;
+the earlier component receipts retain their original scope. Other debugger
+versions and Windows-hosted call-site recovery are not established by those
+Linux-hosted runtime cases.
 
 The implementation currently requires little-endian ELF64 and an audited
 ordinary calling convention. Call-site argument expressions are limited to
