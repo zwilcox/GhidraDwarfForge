@@ -1,5 +1,17 @@
 # TODO.md — GhidraDwarfForge
 
+## External declaration oracle correction — 2026-11-09
+
+**CONFIRMED:** run `42575663188` failed its x86 external-declaration check
+because it counted an internal call-origin declaration as an external function.
+The corrected oracle independently proves internal origins and preserves the
+exact addressless external inventory. A fresh packaged export passes GNU/LLVM/
+pinned validation, compiler/Forge GDB, deterministic reopen and preservation.
+Seven fixture mutation controls, six inventory tests and three adjacent signature
+fixtures pass. Exporter/native code is unchanged. Fourteen other hosted jobs
+passed, but the full corrected-head gate and protected #117 integration remain
+required before #120. See the [declaration receipt](docs/evidence/external-call-origin-declarations.json).
+
 ## Versioned symbol inventory correction — 2026-11-09
 
 **CONFIRMED:** run42563112803 x86 job128986248749 failed because the
