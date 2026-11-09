@@ -47,4 +47,14 @@ with tempfile.TemporaryDirectory(prefix='forge-architecture-check-') as temporar
     outside.parent.mkdir()
     shutil.copyfile(audited, outside)
     run(False, 'src/main/java/other/MipsAbiFlags.java:1:')
-print('architecture-neutrality-smoke=PASS checks=7')
+    outside.unlink()
+    for relative in ('ghidradwarfforge/GhidraCortexM3Profile.java', 'ghidradwarfforge/elf/CortexM3Profile.java'):
+        audited = source / relative
+        audited.parent.mkdir(parents=True, exist_ok=True)
+        audited.write_text('class Profile { String value = "TMode Thumb"; }\n')
+        run(True, 'architecture-neutrality=PASS')
+        outside = source / 'other' / audited.name
+        shutil.copyfile(audited, outside)
+        run(False, 'src/main/java/other/' + audited.name + ':1:')
+        outside.unlink()
+print('architecture-neutrality-smoke=PASS checks=11')

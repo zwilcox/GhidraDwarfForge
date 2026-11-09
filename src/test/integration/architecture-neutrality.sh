@@ -25,6 +25,8 @@ audited = {
     "ghidradwarfforge/locations/TargetRegisterMap.java",
     "ghidradwarfforge/GhidraArm32FunctionModes.java",
     "ghidradwarfforge/GhidraArm32SectionModes.java",
+    "ghidradwarfforge/GhidraCortexM3Profile.java",
+    "ghidradwarfforge/elf/CortexM3Profile.java",
     "ghidradwarfforge/elf/Arm32ModeSymbols.java",
     "ghidradwarfforge/elf/Arm32SectionModes.java",
     "ghidradwarfforge/elf/Arm32FunctionAliasSymbols.java",
