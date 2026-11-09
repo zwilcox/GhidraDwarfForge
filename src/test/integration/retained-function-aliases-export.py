@@ -94,7 +94,8 @@ def call_origin_expectations(original, emitted, identity, dies):
         match = re.fullmatch('forge_call_entry_' + re.escape(identity) + '_([0-9a-f]+)', name)
         assert match
         address = int(match[1], 16)
-        # The alias must cover exactly one entry range of a discontiguous DIE.
+        # Cover only the entry-to-end portion of its owning range. A body may
+        # also be contiguous but begin below its explicit DW_AT_entry_pc.
         owners = []
         ranges = emitted['.debug_rnglists'][1]
         for die in dies:
@@ -108,9 +109,12 @@ def call_origin_expectations(original, emitted, identity, dies):
                 assert low < high
                 spans.append((low, high))
                 cursor += 17
-            entry_spans = [(low, high) for low, high in spans if low == address]
+            assert spans
+            entry = (int(die['attrs']['DW_AT_entry_pc'], 16)
+                if 'DW_AT_entry_pc' in die['attrs'] else min(low for low, _ in spans))
+            entry_spans = [(low, high) for low, high in spans if low <= address < high and entry == address]
             if entry_spans:
-                assert len(spans) > 1
+                assert len(spans) > 1 or spans[0][0] < entry
                 span, = entry_spans
                 owners.append((die['offset'], span[1] - address))
         assert len(owners) == 1

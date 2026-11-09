@@ -1,5 +1,18 @@
 # TODO.md — GhidraDwarfForge
 
+## Below-entry alias oracle correction — 2026-11-09
+
+**CONFIRMED:** local review of the remaining x86 steps reproduced a second
+obsolete inventory assertion: exactly two analyst aliases excluded three proved
+private call-origin symbols. The oracle now verifies both inventories against
+assembler labels, original direct-call bytes and actual entry-to-range-end extents.
+Six ET_EXEC/PIE original/rebased/repeat cases pass validators and GDB; repeats
+are deterministic and original/package files are preserved. Eight unit tests,
+21 negative mutations and six actual-fixture corruption controls pass, as does
+a fresh external-declaration regression. Production/native code is unchanged.
+Full corrected-head CI and protected #117 integration remain required before
+#120. See the [entry-alias receipt](docs/evidence/function-entry-call-origin-inventory.json).
+
 ## External declaration oracle correction — 2026-11-09
 
 **CONFIRMED:** run `42575663188` failed its x86 external-declaration check

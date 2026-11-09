@@ -19,7 +19,7 @@ fi
 result_root="$repository_dir/build/test-results/$result_kind"
 mkdir -p "$result_root"
 result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
-projects=$(mktemp -d /tmp/forge-function-entry.XXXXXXXX)
+projects=$(mktemp -d "${TMPDIR:-/tmp}/forge-function-entry.XXXXXXXX")
 trap 'rm -rf -- "$projects"' EXIT
 echo "function-entry-results=$result_dir"
 module_jar="$ghidra_dir/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar"
@@ -27,7 +27,10 @@ sha256sum "$module_jar" "$sources/function_entry_ranges.c" "$sources/function_en
     "$repository_dir/src/test/integration/function-entry-export.sh" \
     "$repository_dir/src/test/integration/function-entry-gdb.py" \
     "$repository_dir/src/test/integration/ghidra_scripts/PrepareFunctionEntryRanges.java" \
-    "$repository_dir/src/test/integration/function-entry-alias-check.py" > "$result_dir/protected.sha256"
+    "$repository_dir/src/test/integration/function-entry-alias-check.py" \
+    "$repository_dir/src/test/integration/retained-function-aliases-export.py" \
+    "$repository_dir/src/test/integration/dynamic-composite-storage-check.py" \
+    "$repository_dir/src/test/integration/dynamic-parameter-storage-check.py" > "$result_dir/protected.sha256"
 
 run_case() {
     local role=$1 name=$2 delta=$3
@@ -91,7 +94,7 @@ PYORIGIN
     if [[ "${FORGE_ENTRY_ALIASES:-0}" == 1 ]]; then
         grep -Fq 'function-entry-alias-preparation=PASS' "$case_dir/headless.txt"
         python3 "$repository_dir/src/test/integration/function-entry-alias-check.py" \
-            "$input" "$output" "$labels" > "$case_dir/alias-symbols.json"
+            "$input" "$output" "$labels" "$case_dir/info.txt" > "$case_dir/alias-symbols.json"
     fi
     FORGE_ENTRY_LABELS="$labels" FORGE_ENTRY_ALIASES="${FORGE_ENTRY_ALIASES:-0}" timeout 30s gdb-multiarch -q -nx -batch \
         -ex 'set debuginfod enabled off' -ex 'set auto-solib-add off' \

@@ -64,6 +64,36 @@ class CallOriginInventoryTest(unittest.TestCase):
     def test_unchanged_inventory_without_additions(self):
         self.assertEqual(check(self.original, self.original, self.identity, []), [])
 
+    def test_explicit_entry_above_body_start(self):
+        # The symbol starts at the entry, not at the lower body address, and
+        # stops at the end of the containing range rather than spanning gaps.
+        self.dies[0]['attrs']['DW_AT_entry_pc'] = '0x1000'
+        header, _ = self.emitted['.debug_rnglists']
+        for spans in [[(0xff0, 0x1010)], [(0xff0, 0x1010), (0x1020, 0x1021)]]:
+            with self.subTest(spans=spans):
+                raw = b''.join(b'\x06' + struct.pack('<QQ', *span) for span in spans) + b'\0'
+                self.emitted['.debug_rnglists'] = (header, raw)
+                observed = check(self.original, self.emitted, self.identity, self.dies)
+                self.assertEqual((observed[0]['address'], observed[0]['size']), (0x1000, 0x10))
+
+    def test_rejects_wrong_missing_or_unnecessary_entry(self):
+        header, _ = self.emitted['.debug_rnglists']
+        controls = [
+            ([(0xff0, 0x1010)], None),
+            ([(0xff0, 0x1010)], '0x1001'),
+            ([(0x1000, 0x1010)], '0x1000'),
+            ([(0x1000, 0x1010), (0x1020, 0x1021)], '0x1020'),
+        ]
+        for spans, entry in controls:
+            with self.subTest(spans=spans, entry=entry):
+                dies = copy.deepcopy(self.dies)
+                if entry is not None:
+                    dies[0]['attrs']['DW_AT_entry_pc'] = entry
+                raw = b''.join(b'\x06' + struct.pack('<QQ', *span) for span in spans) + b'\0'
+                self.emitted['.debug_rnglists'] = (header, raw)
+                with self.assertRaises(AssertionError):
+                    check(self.original, self.emitted, self.identity, dies)
+
     def test_rejects_symbol_corruption(self):
         # Existing bytes, new binding/visibility/section/address/extent, and name.
         for section, offset in [('.symtab', 48), ('.symtab', 28), ('.symtab', 29),
