@@ -143,13 +143,6 @@ alias is checked for its exact address and actual raw/counter values. The probe
 rejects a missing qualifier, alias mismatch or changed project files. The explicit snapshot helper now also has local instrumented checks against
 these artifacts, described below. Hosted validation remains pending.
 
-**HISTORICAL at `9f57035e`:** the existing ELF-project wrapper also changed
-Ghidra's index/journal backup files. Fix `3fb950d0` applies the raw-firmware
-read-only project opener to all saved exports. The repeated installed probe now
-preserves project files on all three targets; separate root/nested tests preserve
-file bytes and modification times for stripped and unstripped ELF inputs.
-Hosted validation of that fix is still pending.
-
 ```bash
 python3 support/storage-guard.py run --cwd "$PWD" -- \
     python3 src/test/research/mmio-access/forge.py \
@@ -226,8 +219,7 @@ on x86-64, Cortex-M and MIPS BE, with no database or modification-counter change
 Installed export tests on x86-64 and both MIPS byte orders prove combined
 `const volatile`, independent packed views, canonical type aliases, validators,
 input/project preservation and byte-identical sidecar/source/profile reruns. The
-profile JSON uses stable field ordering; an initial unordered-map implementation
-failed the repeat check and was corrected. Hosted validation remains pending.
+profile JSON uses stable field ordering. Hosted validation remains pending.
 
 ### Explicit GDB snapshots
 
@@ -327,6 +319,18 @@ python3 support/storage-guard.py run --cwd "$PWD" -- \
 CI runs this test with the packaged helper after installed Forge export in all
 three target lanes. Hosted validation is still pending on the local MMIO branch.
 
+`lifecycle.py` exercises the registered command against the same instrumented
+transport. Duplicate JSON keys, register/view names, invalid inventories, missing
+transport evidence, oversized files, boolean widths and overflowing addresses
+fail without reads. A failed profile reload clears the old selection. Explicit
+replacement with an unknown policy prohibits access; foreign built-in types,
+unknown registers, sidecar bytes changed after load, and unloaded symbols are
+also rejected before access. One final valid snapshot verifies recovery. These
+checks preserve the input, reference, sidecar, selected profile and helper bytes.
+An independently installed intrusive pretty-printer is never called by snapshot
+decoding; the instrumented device still observes only the explicitly requested
+read. Ordinary debugger printing retains its own access behavior.
+
 ### Publication and saved-project protection
 
 `failures.py` opens the saved fixture without write access and runs the installed
@@ -361,12 +365,19 @@ even when a temporary selection is restored to its previous text.
 
 - Complete hosted validation of raw-firmware integration, saved-program
   configuration and publication failure/cancellation.
-- Exercise profile replacement, stale loaded artifacts, malformed inventories and
-  additional unsupported type controls through the packaged helper.
-- Review optional formatter interaction so read-sensitive registers are not
-  traversed automatically when a formatter is explicitly enabled elsewhere.
 - Complete structural and behavioral hosted validation and the issue acceptance
   audit. The local results do not substitute for that gate.
+
+### Issue #118 acceptance map
+
+| Requirement | Executable evidence |
+| --- | --- |
+| Saved memory/address/type evidence without inferred hardware semantics | `GhidraMmioEvidenceSmoke`, `GhidraMmioProfile`, `ApplyMmioFixture` and `PrepareRawMmio`; unsupported mappings and conflicting selections are rejected. |
+| Exact offsets, widths, signedness, endian bitfields, unions and aliases | `layout.py` compiler/raw-byte oracles and `forge.py` installed exports on x86-64 and MIPS32 BE/LE. |
+| Types and actual flag/field values, including packed storage and crossing byte boundaries | `helper.py` compares independently decoded compiler and Forge snapshots; `layout.py` includes a changed-value control. |
+| Observable read widths and side effects | `experiment.py`, `helper.py` and `widths.py` trace requests and device callbacks; cache, read-clear, read-increment, wrong-width and partial-reply controls. |
+| Explicit access policy, no polling or automatic traversal | Manual `forge-mmio` command; unknown/write-only rejection; `lifecycle.py` admission/replacement and intrusive-printer controls; formatter-combination rejection in `CheckMmioFailures`. |
+| Applicable 32/64-bit/endian targets, unchanged inputs and validator acceptance | Three ELF export lanes plus raw Cortex-M QEMU/GDB; GNU/LLVM/pinned validators, deterministic generations, original/project hashes and publication cancellation controls. |
 
 The callback log proves the behavior of this source-modeled peripheral; it does
 not establish the bus behavior of an arbitrary probe, QEMU machine or device.
