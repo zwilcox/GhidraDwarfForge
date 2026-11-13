@@ -4,10 +4,12 @@
 class inheritance, virtual methods, complete-object vtables and saved adjustment
 thunk relationships for little-endian Itanium x86-64 and AArch64. Ghidra 12.0.3,
 Java 21 and DWARF 5 remain the baseline. Synthetic source remains C11; it is not
-relabeled as original C++. The focused compiler/native and ordinary saved-export
-steps pass on both targets in
-[CI run 43411765598](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43411765598).
-These results do not replace the full regression gate or final issue acceptance.
+relabeled as original C++. Compiler/native references and ordinary saved-export
+checks pass on both targets. The complete
+[required gate](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43469904303)
+passed at `f87a21e7`; [PR #200](https://github.com/zwilcox/GhidraDwarfForge/pull/200)
+integrated the accepted implementation into main as `457b0a64`. Later changes
+must continue to pass the full regression gate.
 
 Ordinary export preserves the executable and writes the matched `.dbg` plus
 synthetic `.dbg.c`. No separate compiler-symbol insertion step is needed.
