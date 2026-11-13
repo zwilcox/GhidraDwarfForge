@@ -25,6 +25,18 @@ public enum CxxAbiProfile {
         }
     }
 
+    public void requireProgramTarget(String processor, int addressBytes, ByteOrder order) {
+        String expected = switch (this) {
+            case ITANIUM_X86_64 -> "x86";
+            case ITANIUM_AARCH64 -> "AARCH64";
+            case UNSPECIFIED -> "";
+        };
+        if (expected.isEmpty() || !expected.equals(processor)) {
+            throw new IllegalArgumentException("C++ ABI profile does not match Ghidra processor");
+        }
+        requireTarget(machine, addressBytes, order);
+    }
+
     /** Vbase displacements precede the offset-to-top and RTTI entries. */
     public void requireVirtualBase(long vptrOffset, long slotOffset, long objectBytes) {
         if (this == UNSPECIFIED || vptrOffset < 0 || vptrOffset % pointerBytes != 0 ||

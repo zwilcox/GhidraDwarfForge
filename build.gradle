@@ -2100,6 +2100,17 @@ tasks.register("objectParameterSmoke", JavaExec) {
     }
 }
 
+tasks.register("inheritanceBindingEvidenceSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.InheritanceBindingEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/inheritance-binding/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/inheritance-binding/cache").absolutePath
+}
+
 tasks.register("inheritanceModelSmoke", JavaExec) {
     group = "verification"
     dependsOn testClasses

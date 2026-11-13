@@ -145,3 +145,32 @@ also pass. Hosted checks for this checkpoint remain pending.
 method changes; admit actual vtable/address-point evidence; connect the model to
 native emission; and run independent compiler/Forge behavioral comparisons.
 The model is not yet populated by ordinary export.
+
+## Saved relationship snapshot
+
+**CONFIRMED locally:** `GhidraInheritanceBindings.save/read/remove` stores an
+explicit bounded relationship record in the caller's program transaction.
+The record is tied to the program identity, language, compiler specification,
+selected ABI, saved class/type identities and saved method IDs. It captures a
+physical type graph and method ownership/signature snapshot; changed nested
+storage, missing/rebound classes, or moved/deleted methods are rejected. Reads
+never repair records or replace rejected evidence with an inference.
+
+The snapshot excludes display names, category paths, comments and image addresses.
+Base-type/member/method renames that preserve identity and rebasing remain valid.
+A class-layout rename can make Ghidra's fuzzy automatic THIS lookup select a
+different structure. That changes the actual object parameter: it is rejected
+rather than treating an unchanged byte size as sufficient evidence.
+
+The format limits encoded data to one MiB, each relationship inventory and
+referenced class inventory to 4,096, and aggregate snapshot traversal/component
+work to bounded totals. It uses iterative type traversal and stops at pointer
+target identity rather than following an entire reachable object graph.
+Cancellation occurs before the final options write; immutable reopening leaves
+saved database bytes and timestamps unchanged.
+
+This API currently persists bases and virtual-method slots. Vtable address-point
+and byte evidence, extraction integration, configuration UI/script and native
+emission are still **PLANNED**. Saving a record alone does not enable inheritance
+export. The dedicated saved-program smoke is in both hosted test lists; its
+local results do not substitute for the full #113 runtime acceptance.
