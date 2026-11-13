@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--ghidra', type=Path, required=True)
     parser.add_argument('--models', type=Path, required=True)
     parser.add_argument('--results', type=Path, required=True)
+    parser.add_argument('--bindings', action='store_true', help='Also validate production saved vtable evidence')
     parser.add_argument('--targets', nargs='+', choices=('x86_64', 'aarch64'), default=['x86_64', 'aarch64'])
     args = parser.parse_args()
     root = args.results.resolve()
@@ -41,6 +42,9 @@ def main():
             command = list(map(str, [args.ghidra.resolve() / 'support/analyzeHeadless', project, 'Vtables',
                 '-import', binary, '-noanalysis', '-deleteProject', '-scriptPath', HERE,
                 '-postScript', 'ProbeVtableStorage.java', model / 'vtables.json', case / 'observation.json']))
+            if args.bindings:
+                command += list(map(str, ['-postScript', 'PrepareInheritanceFixture.java', model / 'model.json',
+                    '-postScript', 'ProbeVtableBindings.java', model / 'vtables.json', case / 'bindings.json']))
             (case / 'command.json').write_text(json.dumps(command, indent=4) + '\n')
             with (case / 'headless.log').open('w') as log:
                 subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=180, check=True)
@@ -53,13 +57,25 @@ def main():
                 assert before['loadedBytes'] == after['loadedBytes'], 'selected profile changed loaded bytes during rebase'
                 assert after['address'] - before['address'] == 0x200000
                 assert before['relocations'] == after['relocations']
+            if args.bindings:
+                assert 'vtable-bindings-imported=PASS tables=6' in (case / 'headless.log').read_text()
+                binding_report = json.loads((case / 'bindings.json').read_text())
+                assert binding_report['status'] == 'PASS_IMPORTED_VTABLE_BINDINGS'
+                assert len(binding_report['snapshots']) == 6
+                by_name = {row['name']: row for row in observed['before']}
+                for snapshot in binding_report['snapshots']:
+                    source = by_name[snapshot['request']['mangledName']]
+                    assert snapshot['fileOffset'] == source['fileOffset']
+                    assert snapshot['originalAddress'] == source['originalAddress']
+                    assert snapshot['originalSha256'] == hashlib.sha256(bytes.fromhex(source['originalBytes'])).hexdigest()
+                    assert snapshot['loadedSha256'] == hashlib.sha256(bytes.fromhex(source['loadedBytes'])).hexdigest()
             assert binary.read_bytes() == original
             observations.append({'target': target, 'role': role, 'inputSha256': hashlib.sha256(original).hexdigest(),
                 'loadedBytesChangeOnRebase': [a['name'] for a, b in zip(observed['before'], observed['after'])
                     if a['loadedBytes'] != b['loadedBytes']],
                 'loadedBytesDifferFromFile': [a['name'] for a in observed['before'] if a['loadedBytes'] != a['originalBytes']],
                 'tables': len(observed['before'])})
-    (root / 'result.json').write_text(json.dumps({'status': 'PASS_STORAGE_OBSERVATION', 'cases': observations}, indent=4) + '\n')
+    (root / 'result.json').write_text(json.dumps({'status': 'PASS_STORAGE_OBSERVATION', 'savedBindingsValidated': args.bindings, 'cases': observations}, indent=4) + '\n')
     print('vtable-storage=PASS', root)
 
 

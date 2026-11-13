@@ -176,8 +176,8 @@ required method or layout is absent/conflicting in this export is also omitted
 as a unit; independent class ownership and signatures remain intact. Reads never
 repair saved evidence or replace rejected relationships with inference.
 
-Vtable address-point/byte evidence and configuration UI/script are still
-**PLANNED**. The dedicated saved-program smoke is in both hosted test lists;
+Vtable address-point/byte persistence is validated below. Export admission and
+configuration UI/script remain **PLANNED**. The dedicated saved-program smoke is in both hosted test lists;
 its local results do not substitute for the full #113 runtime acceptance.
 
 ## Native emission checkpoint
@@ -319,3 +319,53 @@ Run `storage.py --ghidra <installed-ghidra> --models <native-results> --results
 <new-directory>` through the storage guard. `names.py` takes the same `--models`
 and `--results` plus `--classpath build/inheritance-classpath.txt`, with the Java
 and native/validator environment used by `produce.py`.
+
+## Saved vtable witness checkpoint
+
+**CONFIRMED locally:** `GhidraVtableBindings` persists explicitly supplied
+complete-object table identities, their canonical class IDs, bounded extents,
+primary/secondary address points and provenance. It requires valid saved
+inheritance that includes the selected class, a saved memory label, direct
+contiguous FileBytes backing, and the selected validated C++ ABI. Read-only
+Ghidra demangling checks that the supplied mangled name corresponds to the
+supplied consumer lookup name; it never infers class ownership from that name.
+Construction tables are outside this complete-object record format.
+
+The witness captures the original ELF address, exact backing-file offset,
+separate original-file and loaded-memory SHA-256 fingerprints, and a context
+fingerprint covering program identity, inheritance, file mapping and relocation
+records. The ABI checks offset-to-top words against the explicit subobject
+geometry in both byte views. A PIE loader can legitimately change pointer words;
+comparing its loaded table directly with original file bytes would be incorrect.
+Rebasing does not require subtracting a new image base from those old pointer
+words. Table-symbol renames do not change the explicit linkage identity.
+
+Reads reject missing/stale inheritance, changed layouts, moved/deleted labels,
+changed image-base provenance, changed mappings or byte patches. Reads never
+refresh a witness. Record size, table bytes, address points and relocation work
+are bounded. Save requires the caller's transaction and checks cancellation
+before publishing metadata. No executable or source output is changed by this
+API, and it does not yet authorize an ELF symbol or type alias.
+
+The real ProgramDB smoke passes 144 checks across x86-64 and AArch64, including
+separate relocated bytes, geometry/name rejection, absent backing, malformed or
+oversized records, cancellation, deterministic saves, rename/rebase preservation
+and byte-identical immutable reopening. The existing inheritance suite still
+passes 188 checks. Both suites are in the Linux/Windows workflow; current hosted
+validation of these new changes remains pending.
+
+`storage.py --bindings` additionally tests all eight imported compiler profiles
+(non-PIE/PIE, RTTI/no-RTTI, x86-64/AArch64), six tables each. It applies independent
+fixture class/relationship evidence, saves each table, requires a patched
+function pointer to invalidate its witness, restores it, and rebases without
+refreshing records. All 48 witnesses preserve their independently observed
+original address, file offset and both byte fingerprints. Original ELF files
+remain byte-identical. This checkpoint does not emit new DWARF; ordinary-export
+and debugger acceptance still require the admission work below.
+
+**PLANNED next:** validate these witnesses against the actual original ELF,
+admit unambiguous canonical lookup aliases, pass admitted table symbols through
+normal export, and replace the experimental compiler-symbol packaging step with
+that production path. Add configuration/recovery flows and the remaining
+conflicting-evidence, pure-virtual, mixed local/addressless-method, thunk and
+source-failure acceptance cases before closing #113.

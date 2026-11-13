@@ -2100,6 +2100,17 @@ tasks.register("objectParameterSmoke", JavaExec) {
     }
 }
 
+tasks.register("vtableBindingEvidenceSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.VtableBindingEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/vtable-binding/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/vtable-binding/cache").absolutePath
+}
+
 tasks.register("inheritanceBindingEvidenceSmoke", JavaExec) {
     group = "verification"
     dependsOn testClasses
