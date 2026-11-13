@@ -12,6 +12,8 @@ import ghidra.framework.HeadlessGhidraApplicationConfiguration;
 import ghidra.framework.data.OpenMode;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.data.MutabilitySettingsDefinition;
+import ghidra.program.model.data.StructureDataType;
+import ghidra.program.model.data.UnionDataType;
 import ghidra.program.model.data.UnsignedIntegerDataType;
 import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.symbol.SourceType;
@@ -53,6 +55,17 @@ public final class GhidraMmioEvidenceSmoke {
                         }
                     }
                     program.getSymbolTable().createLabel(space.getAddress(BASE), "status_alias", SourceType.USER_DEFINED);
+                    var register = new UnionDataType(ghidra.program.model.data.CategoryPath.ROOT,
+                        "RegisterView", program.getDataTypeManager());
+                    register.add(type, "raw", null);
+                    var aggregate = new StructureDataType("PeripheralView", 0, program.getDataTypeManager());
+                    aggregate.add(register, "status", null);
+                    aggregate.add(type, "counter", null);
+                    var object = program.getListing().createData(space.getAddress(BASE + 16), aggregate);
+                    MutabilitySettingsDefinition.DEF.setChoice(object, MutabilitySettingsDefinition.VOLATILE);
+                    MutabilitySettingsDefinition.DEF.setChoice(object.getComponent(0).getDefaultSettings(),
+                        MutabilitySettingsDefinition.CONSTANT);
+                    MutabilitySettingsDefinition.DEF.setChoice(object.getComponent(1), MutabilitySettingsDefinition.VOLATILE);
                     var overlay = memory.createUninitializedBlock("overlay", space.getAddress(BASE), 4, true);
                     program.getListing().createData(overlay.getStart(), type);
                     program.getSymbolTable().createLabel(overlay.getStart(), "overlay_status", SourceType.USER_DEFINED);
@@ -103,6 +116,12 @@ public final class GhidraMmioEvidenceSmoke {
         require(constantData.isConstant() && !constantData.isVolatile(), "explicit constant setting lost");
         var replaced = program.getListing().getDataAt(start.add(12));
         require(replaced.isConstant() && !replaced.isVolatile(), "mutability modes unexpectedly combine");
+        var aggregate = program.getListing().getDataAt(start.add(16));
+        require(MutabilitySettingsDefinition.DEF.getChoice(aggregate) == MutabilitySettingsDefinition.NORMAL,
+            "unsupported structure instance setting unexpectedly accepted");
+        require(!aggregate.isVolatile() && !aggregate.getComponent(0).isConstant(),
+            "unsupported aggregate settings unexpectedly became native type qualifiers");
+        require(aggregate.getComponent(1).isVolatile(), "supported scalar component qualifier lost");
         var labels = program.getSymbolTable().getSymbols(start);
         require(labels.length == 2 && Arrays.stream(labels).filter(s -> s.isPrimary()).count() == 1,
             "overlapping labels lost identity");

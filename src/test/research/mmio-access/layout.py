@@ -15,10 +15,11 @@ PROFILES = {
 }
 
 
-def observe(root, elf, name):
+def observe(root, elf, name, sidecar=None, require_qualifiers=True):
     script = root / (name + '.gdb')
     script.write_text('set pagination off\nset confirm off\nset auto-load off\n'
-        'set auto-solib-add off\nfile ' + json.dumps(str(elf)) + '\n'
+        'set auto-solib-add off\nfile ' + json.dumps(str(elf)) + '\n' +
+        ('symbol-file ' + json.dumps(str(sidecar)) + '\n' if sidecar else '') +
         'ptype peripheral\npython\n'
         'import json\n'
         'p=gdb.parse_and_eval("peripheral")\n'
@@ -40,7 +41,8 @@ def observe(root, elf, name):
     rows = [line.removeprefix('MMIO_JSON=') for line in completed.stdout.splitlines()
         if line.startswith('MMIO_JSON=')]
     assert len(rows) == 1, completed.stdout + completed.stderr
-    assert 'const volatile union Register status' in completed.stdout
+    if require_qualifiers:
+        assert 'const volatile union Register status' in completed.stdout
     return json.loads(rows[0])
 
 

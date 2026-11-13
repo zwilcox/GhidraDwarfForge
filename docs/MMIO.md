@@ -111,11 +111,44 @@ database reopening:
   different addresses. A byte-mapped alias remains a mapped block with its own
   address, not proof of an independent hardware register.
 
-The `ghidraMmioEvidenceSmoke` Gradle task checks these properties, unchanged
-program modification counters and unchanged saved database bytes/timestamps
-(66 assertions). Run through the storage guard with the normal Ghidra/Java
+The `ghidraMmioEvidenceSmoke` Gradle task also checks aggregate settings: Ghidra
+rejects the mutability key on a structure instance with an expected diagnostic.
+The union component also remains unqualified after an attempted default setting.
+Its supported scalar component does report the volatile setting. An attempted
+settings write is therefore insufficient evidence of type semantics.
+
+The task checks these properties, unchanged program modification counters and
+unchanged saved database bytes/timestamps. Run through the storage guard with the normal Ghidra/Java
 environment. It exercises the real Ghidra database API, but does not validate
 Forge emission, physical reads or unsupported processor profiles.
+
+### Installed exporter probe
+
+`src/test/research/mmio-access/forge.py` uses the layout reference directories,
+strips their compiler debug information, applies types and settings with
+`ApplyMmioFixture.java`, saves the Ghidra program, and exports it through the
+installed headless wrapper. It reports gaps explicitly; a successful probe
+process is not a feature-completion result.
+
+**CONFIRMED on the current exporter:** x86-64 and both MIPS32 byte orders retain
+the tested field values, flags, offsets and widths. GNU/LLVM/pinned validation,
+original-input preservation and repeated sidecar/source determinism pass.
+The scalar counter's saved volatile setting and the secondary global label are
+omitted. The existing ELF-project wrapper also changes Ghidra's index/journal
+backup files; the probe reports failed project preservation. These gaps must be
+fixed before claiming MMIO completion. The raw-firmware wrapper uses a different
+read-only project opener and has independent preservation evidence.
+
+```bash
+python3 support/storage-guard.py run --cwd "$PWD" -- \
+    python3 src/test/research/mmio-access/forge.py \
+    --ghidra /path/to/ghidra-with-packaged-extension \
+    --references "$PWD/.forge-work/scratch/mmio-layout" \
+    --results "$PWD/.forge-work/scratch/mmio-forge"
+```
+
+Use the normal Java 21 environment and set `DWARFDUMP` to the pinned validator.
+The probe reads static ELF memory; it does not establish live device behavior.
 
 ### Remaining validation
 
