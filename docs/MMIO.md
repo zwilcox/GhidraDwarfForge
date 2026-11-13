@@ -341,10 +341,26 @@ must reproduce the original generation. The harness compares input/output hashes
 and the saved project inventory; a cancellation or exception alone is insufficient.
 Raw and MMIO exports share the saved-project output protection.
 
+**CONFIRMED locally:** the Cortex-M raw fixture also exports an explicitly
+curated uninitialized peripheral block and independent scalar/union views with
+an unknown read policy. All four outputs (sidecar, source, firmware manifest,
+MMIO profile) repeat byte-identically. Its 22 publication controls include the
+raw map, synthetic image and firmware-manifest cancellation stages. Structural
+validators and the existing QEMU/GDB function, source and ordinary RAM checks
+pass with this generation. GDB exposes the peripheral address and bitfield types;
+the snapshot helper rejects its unknown policy before attempting a read. This
+does not establish an access contract for QEMU's peripherals or a physical probe.
+
+Run `raw-firmware-export.py --mmio` with the normal Cortex-M fixture arguments
+to reproduce this case. `cortex-m-suite.py` includes it in the hosted Cortex lane.
+The cancellation recovery check precedes deliberate option mutations because
+firmware manifests correctly retain the in-memory program modification number,
+even when a temporary selection is restored to its previous text.
+
 ### Remaining validation
 
-- Complete raw-firmware integration controls and hosted validation of the
-  saved-program configuration and publication failure/cancellation flow.
+- Complete hosted validation of raw-firmware integration, saved-program
+  configuration and publication failure/cancellation.
 - Exercise profile replacement, stale loaded artifacts, malformed inventories and
   additional unsupported type controls through the packaged helper.
 - Review optional formatter interaction so read-sensitive registers are not

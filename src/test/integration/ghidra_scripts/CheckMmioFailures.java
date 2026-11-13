@@ -16,12 +16,19 @@ import ghidradwarfforge.GhidraMmioProfile;
 public class CheckMmioFailures extends GhidraScript {
     private record Stage(String owner, String method, int stop) { }
     private int checks;
+    private boolean raw;
     @Override protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 3) throw new IllegalArgumentException("input output controls-directory");
+        if ((args.length != 3 && args.length != 4) || (args.length == 4 && !args[3].equals("raw"))) {
+            throw new IllegalArgumentException("input output controls-directory [raw]");
+        }
+        raw = args.length == 4;
         Path original = Path.of(args[0]);
         Path artifact = Path.of(args[1]);
-        var protectedPaths = List.of(original, artifact, Path.of(artifact + ".c"), Path.of(artifact + ".mmio.json"));
+        var suffixes = new java.util.ArrayList<>(List.of("", ".c", ".mmio.json"));
+        if (raw) suffixes.add(".firmware.json");
+        var protectedPaths = new java.util.ArrayList<>(List.of(original));
+        for (var suffix : suffixes) protectedPaths.add(Path.of(artifact + suffix));
         var hashes = new java.util.ArrayList<String>();
         for (var path : protectedPaths) hashes.add(ghidradwarfforge.output.FileDigests.read(path).sha256());
         Path controls = Path.of(args[2]);
@@ -29,17 +36,22 @@ public class CheckMmioFailures extends GhidraScript {
         for (boolean existing : new boolean[] {false, true}) {
             Path output = controls.resolve(existing ? "existing.dbg" : "absent.dbg");
             if (existing) {
-                for (String suffix : List.of("", ".c", ".mmio.json")) {
+                for (String suffix : suffixes) {
                     Files.copy(Path.of(artifact + suffix), Path.of(output + suffix));
                 }
             }
             var before = inventory(controls);
-            for (var stage : List.of(
+            var stages = new java.util.ArrayList<>(List.of(
                     new Stage("ghidradwarfforge.GhidraMmioProfile", "read", 2),
                     new Stage("ghidradwarfforge.GhidraMmioProfile", "contribute", 2),
                     new Stage("ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter", "produce", 3),
                     new Stage("ghidradwarfforge.elf.MatchedElfSidecarWriter", "write", 5),
-                    new Stage("ghidradwarfforge.GhidraMmioProfile", "render", 2))) {
+                    new Stage("ghidradwarfforge.GhidraMmioProfile", "render", 2)));
+            if (raw) stages.addAll(List.of(
+                new Stage("ghidradwarfforge.firmware.GhidraFirmwareMemoryMap", "capture", 3),
+                new Stage("ghidradwarfforge.firmware.FirmwareExportImage", "write", 5),
+                new Stage("ghidradwarfforge.firmware.GhidraFirmwareSession", "manifest", 3)));
+            for (var stage : stages) {
                 TaskMonitor previous = monitor;
                 var probe = new Probe(previous, stage);
                 boolean cancelled = false;
@@ -52,6 +64,16 @@ public class CheckMmioFailures extends GhidraScript {
                 checks++;
             }
         }
+        // Retry before deliberately mutating selection metadata. Raw manifests
+        // correctly record the in-memory modification number, even after a
+        // temporary option is restored to its previous value.
+        runScript("GhidraDwarfForge.java", options(original, artifact));
+        for (int i = 0; i < protectedPaths.size(); i++) {
+            if (!hashes.get(i).equals(ghidradwarfforge.output.FileDigests.read(protectedPaths.get(i)).sha256())) {
+                throw new AssertionError("MMIO cancellation recovery changed " + protectedPaths.get(i));
+            }
+        }
+        checks++;
         var savedOptions = currentProgram.getOptions(GhidraMmioProfile.OPTIONS);
         String selected = savedOptions.getString(GhidraMmioProfile.SELECTION, null);
         var template = JsonParser.parseString(selected).getAsJsonObject();
@@ -99,18 +121,17 @@ public class CheckMmioFailures extends GhidraScript {
         try { reject(original, collision, controls, "aliases a saved project file"); }
         finally { Files.delete(link); }
         reject(original, locator.getProjectDir().toPath().resolve("must-not-exist.dbg"), controls, "inside the saved project");
-        runScript("GhidraDwarfForge.java", options(original, artifact));
         for (int i = 0; i < protectedPaths.size(); i++) {
             if (!hashes.get(i).equals(ghidradwarfforge.output.FileDigests.read(protectedPaths.get(i)).sha256())) {
                 throw new AssertionError("MMIO control/recovery changed " + protectedPaths.get(i));
             }
         }
-        checks++;
         println("mmio-failure-controls=PASS checks=" + checks);
     }
 
     private String[] options(Path input, Path output, String... extra) {
         var result = new java.util.ArrayList<>(List.of("--packaged-natives", "--mmio", "--input=" + input, "--output=" + output));
+        if (raw) result.add("--raw-firmware=cortex-m3");
         result.addAll(List.of(extra));
         return result.toArray(String[]::new);
     }
