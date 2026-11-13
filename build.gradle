@@ -2337,3 +2337,15 @@ tasks.register("ghidraCortexM3ProfileSmoke", JavaExec) {
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/cortex-m3-profile/settings").absolutePath
 }
+
+tasks.register("ghidraMmioEvidenceSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved Ghidra MMIO settings, address spaces and alias evidence"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraMmioEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/mmio-evidence/settings").absolutePath
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
+}

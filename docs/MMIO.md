@@ -79,6 +79,25 @@ The DWARF writer gives a defined global an address expression. It does not encod
 device width, read-clear behavior, or a debugger cache policy. Those require an
 explicit access contract, not interpretation of a variable name or `volatile`.
 
+**CONFIRMED by the saved-program evidence test:** on Ghidra 12.0.3, x86-64,
+Cortex-M and big-endian MIPS programs retain these distinctions after immutable
+database reopening:
+
+- A loaded, uninitialized peripheral block can be volatile and read-only while
+  its data objects report neither explicit constant nor volatile qualification.
+- Explicit object mutability settings survive saving. Setting constant after
+  volatile replaces the mode; it does not represent `const volatile`.
+- Two labels at one address retain distinct identities with one primary label.
+- An overlay and ordinary address can have the same numeric offset but remain
+  different addresses. A byte-mapped alias remains a mapped block with its own
+  address, not proof of an independent hardware register.
+
+The `ghidraMmioEvidenceSmoke` Gradle task checks these properties, unchanged
+program modification counters and unchanged saved database bytes/timestamps
+(66 assertions). Run through the storage guard with the normal Ghidra/Java
+environment. It exercises the real Ghidra database API, but does not validate
+Forge emission, physical reads or unsupported processor profiles.
+
 ### Remaining validation
 
 - Audit actual Ghidra address spaces, data types, aliases and storage evidence;
