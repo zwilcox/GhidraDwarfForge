@@ -53,6 +53,9 @@ def main():
         assert raw_result['failureControls'] == (21 if label == 'shifted-ram' else 20)
         assert raw_result['addresses']['functions'] == 8
         raw_cases[label] = raw_result
+    run('portable-reference', [HERE / 'raw-firmware-portable.py', 'pack',
+        '--case', shifted, '--export', root / 'raw-shifted-ram',
+        '--output', root / 'portable-reference'], None)
     (root / 'result.json').write_text(json.dumps({'status': 'PASS', 'reference': str(case),
         'export': str(exported), 'checks': result, 'controls': controls, 'rawFirmware': raw_cases}, indent=4) + '\n')
     print('cortex-m-suite=PASS ' + str(root))

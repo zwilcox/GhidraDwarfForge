@@ -211,8 +211,17 @@ they do not copy its DWARF into the production output.
 
 The Cortex-M suite runs both raw layouts alongside its existing ELF tests. The
 model, strict input parser and actual Ghidra provenance checks run in both host
-smoke lists. **PRESENT, UNVERIFIED:** PowerShell raw argument tests and the full changed-head hosted
-architecture/host matrix until
-passing run evidence is recorded. No general raw-architecture claim follows
+smoke lists. Firmware ABI metadata lives in the audited target profile; the
+generic container writer does not encode architecture attributes.
+
+The Windows host receives a small, hash-bound compiler/raw reference capsule,
+imports it with the same fixture curation, and invokes the installed PowerShell
+wrapper twice. It checks all 21 two-input failure controls and preservation, then
+transports the exact outputs to Linux. The consumer verifies hashes, reruns
+structural/address checks, and uses QEMU/GDB with explicit source-directory
+substitution. A local Linux producer/consumer rehearsal passes, including source
+lookup after transport. **PRESENT, UNVERIFIED:** actual Windows production and
+the full changed-head hosted architecture/host gate until passing evidence is
+recorded. No general raw-architecture claim follows
 from a Cortex-M3 result; additional profiles require their own ABI and runtime
 proof.

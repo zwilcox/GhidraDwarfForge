@@ -11,7 +11,7 @@ import time
 HERE = Path(__file__).resolve().parent
 
 
-def debugger(case, symbols, output, variant, source=None, raw_input=None):
+def debugger(case, symbols, output, variant, source=None, raw_input=None, source_origin=None):
     assert variant in ('compiler', 'forge')
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='cortex-m-') as temporary:
@@ -35,6 +35,7 @@ def debugger(case, symbols, output, variant, source=None, raw_input=None):
                         env=dict(os.environ, FORGE_CORTEX_CASE=str(case), FORGE_CORTEX_SOCKET=str(socket),
                             FORGE_CORTEX_SYMBOLS=str(symbols), FORGE_CORTEX_OUTPUT=str(output),
                             FORGE_CORTEX_SOURCE=str(source or Path(str(symbols) + '.c')),
+                            FORGE_CORTEX_SOURCE_ORIGIN=source_origin or '',
                             FORGE_CORTEX_VARIANT=variant,
                             FORGE_CORTEX_RAW='1' if raw_input else '0'))
                 observed = json.loads((output / (variant + '-gdb.json')).read_text())

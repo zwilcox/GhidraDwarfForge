@@ -47,6 +47,10 @@ try:
     gdb.execute('set pagination off')
     gdb.execute('set confirm off')
     gdb.execute('set auto-solib-add off')
+    source_origin = os.environ.get('FORGE_CORTEX_SOURCE_ORIGIN')
+    if source_origin:
+        gdb.execute('set substitute-path ' + json.dumps(source_origin) + ' ' +
+            json.dumps(str(expected_source.parent)))
     if not raw_input:
         gdb.execute('file ' + json.dumps(str(root / 'original.elf')))
     gdb.execute('symbol-file ' + json.dumps(str(symbols)))

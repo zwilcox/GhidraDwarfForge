@@ -134,9 +134,9 @@ public final class FirmwareExportImage implements AutoCloseable {
                     region.address(), offset, region.length(), new byte[0]));
             }
             // Profile metadata is declared explicitly, not recovered compiler metadata.
-            if (target.equals(FirmwareTarget.CORTEX_M3)) {
-                byte[] attributes = cortexM3Attributes();
-                sections.add(new Section(".ARM.attributes", 0x70000003L, 0, 0,
+            for (var metadata : target.metadataSections()) {
+                byte[] attributes = metadata.bytes();
+                sections.add(new Section(metadata.name(), metadata.type(), 0, 0,
                     channel.position(), attributes.length, attributes));
                 writeAll(channel, ByteBuffer.wrap(attributes), cancelled);
             }
@@ -193,13 +193,6 @@ public final class FirmwareExportImage implements AutoCloseable {
             channel.position(0);
             writeAll(channel, header, cancelled);
         }
-    }
-
-    private static byte[] cortexM3Attributes() {
-        // AAELF32 vendor subsection: Tag_CPU_arch=v7, profile=M, Thumb-2;
-        // omitted extension/VFP tags are zero, the selected base-PCS profile.
-        return new byte[] {0x41, 21, 0, 0, 0, 'a', 'e', 'a', 'b', 'i', 0,
-            1, 11, 0, 0, 0, 6, 10, 7, 77, 9, 2};
     }
 
     private static int u32(long value) {

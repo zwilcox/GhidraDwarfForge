@@ -2,7 +2,7 @@
     "schema": 1,
     "status": "PASS_LOCAL_RAW_FIRMWARE",
     "scope": "Cortex-M3 raw firmware, local Linux host; hosted gate and Windows raw path pending",
-    "suiteResultSha256": "2234cbb3f939924ef31d8d12db8599dffe7282c56a886487b6916a6de2d7b3cf",
+    "suiteResultSha256": "a94793aea2206fd1c525dda0a5970c94a9d8aaeb4351416d83b866e5838daf2c",
     "existingElf": "PASS_CURATED_CORTEX_EXPORT_RUNTIME",
     "artifactMutationControls": 6,
     "raw": {
@@ -19,9 +19,9 @@
             },
             "inputSha256": "7c15f94ac36c5679350eaeb7eee6c042223ffe2bbd2f62df9b65b6bb1b4aaee4",
             "outputsSha256": [
-                "4599ecb91539d1960ee3303f1fe7d7d098659a7dbe70e29b49cd2b36497be814",
+                "f3e182203d87141b73cf3539e3cc489ee463697fb6fb6e367dd37cf9176b7872",
                 "0b0b8f15fb0f3ee6d56cf561bb46bc0cf1a3f6f6bba3167f70a3b7d8ca5acd65",
-                "827a4aaafda7ebf551e18eb2b1c28d0aff4672a0839ca5088d8e89314e17b623"
+                "9afb930f03941d292932a0186b9d065ebd7a7f0fdbe95b65c6a541fbadb6ee4f"
             ]
         },
         "shifted-ram": {
@@ -37,9 +37,9 @@
             },
             "inputSha256": "b25845684167d756f3165ef3c20b06663698ba940a6aebbc0063a4e4dfcb444d",
             "outputsSha256": [
-                "55f6957baa5b85d4b144cc9b423610f67f400b888cd8947b0e013ef59a50133a",
+                "1b8053cdc66fadb72181f910fa43285a216a6bcfa18035942b7792d1e8649c12",
                 "6fce7c090a25619533c077f2f28ac63ea16a1a4ac6a9bc52e58d5488cf816c86",
-                "abebd3646fe0b39ca19bf5e3695ca5a6f1b717ce3e76d041356c2b65e2a0b86c"
+                "30329c1672ffa6374fccc7394f774fca5a09f4d633ffc6a2f72e492547ae6ef4"
             ]
         }
     },
@@ -70,13 +70,35 @@
     "productionSha256": {
         "ghidra_scripts/GhidraDwarfForge.java": "079baf719ec377cda7de3f272e1ecf48739df48058df13e99c80ef4f3b8c265b",
         "ghidra_scripts/GhidraDwarfForgeReadOnly.java": "11d31c39c498ae3fbc693c8219921c798ec335aa033a62268ffe28f20d1973a7",
-        "src/main/java/ghidradwarfforge/firmware/FirmwareExportImage.java": "386cc2dbafdf2856d18aece793df0100665bd0d29df5378f21be4a16c8d98a50",
+        "src/main/java/ghidradwarfforge/firmware/FirmwareExportImage.java": "bf9238f23ba492ed8e88664b3689fa411e162b6430bacd6ba9a18c44a5d1993f",
         "src/main/java/ghidradwarfforge/firmware/FirmwareMemoryMap.java": "139719bd92947486bf4f4089c7a6413918725dddf04bf3192c893828da29e678",
-        "src/main/java/ghidradwarfforge/firmware/FirmwareTarget.java": "b3bc69aae14c6078344280fc78fe29d2778babce1f4e3f5911cb188c17358085",
+        "src/main/java/ghidradwarfforge/firmware/FirmwareTarget.java": "34347f40386b0d12bf8a5f5a2cce4d5ae106682f4fde8e3c99620fd81e98670d",
         "src/main/java/ghidradwarfforge/firmware/GhidraFirmwareMemoryMap.java": "2f1bb803faf51c1fd2dfd28f1c57386d5c7d4320aa52def79885342bb1605f6f",
         "src/main/java/ghidradwarfforge/firmware/GhidraFirmwareSession.java": "3e59a634aa60f5a345080dc71c12c38875d0001990f9ba3fdf17ea25b681ad0c",
         "src/main/java/ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": "3509ad167dc575b874c50eebf749cd7738fa59aaaf6e6fbda35a5d651b475b9a",
         "support/ghidra-dwarf-forge-headless": "5ec330900130eddcdb6b84a4894ebd77eda47c62ebbc55ae3bb1a8f7a6c82224",
         "support/ghidra-dwarf-forge-headless.ps1": "4b0b0515579a290fc93f2a50e48225ade24d3dbaf1ed81524156a30ce600253c"
+    },
+    "architectureBoundaryControls": 13,
+    "portableLinux": {
+        "status": "PASS_RAW_FIRMWARE_TRANSPORT",
+        "producerHost": "Linux",
+        "sidecarSha256": "fd110aac2db2a33ffcd92a5c1ed593d59c78bda32d3a6fd797a8ad65a51b6def",
+        "addresses": {
+            "status": "PASS",
+            "functions": 8,
+            "globals": 14,
+            "lineRows": 50,
+            "oddDataAddress": 536875009
+        },
+        "sourceSubstitution": true,
+        "scope": "Linux production/transport rehearsal; actual Windows production remains a hosted gate"
+    },
+    "harnessSha256": {
+        "src/test/integration/raw-firmware-export.py": "689fda05da714ca52114cc0fb12534b40288b87dee450080474b75f6b89f6bcb",
+        "src/test/integration/raw-firmware-portable.py": "f10c1d82b9f77a4ed36beff969a258ac05a303f9390fcb036d3bd6adee145613",
+        "src/test/integration/cortex-m-suite.py": "23ca36055a542b0f2cb4e8804bf11ee7594f6d637886de060a61768a17ea720c",
+        "src/test/integration/cortex-m-runtime.py": "8bb25ac17fb1a275efcc49593eea7118e8b85c68c0985af950d9230ca05dee4c",
+        "src/test/integration/cortex-m-gdb.py": "1bcfbdac5c64a387dfc98cde9d31dea42efa3b10baf033f51b1409abe243fad8"
     }
 }

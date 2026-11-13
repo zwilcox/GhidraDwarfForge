@@ -2,6 +2,7 @@ package ghidradwarfforge.firmware;
 
 import java.nio.ByteOrder;
 import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 
 /** Analyst-selected target identity; never inferred from a raw file's contents. */
@@ -42,5 +43,20 @@ public record FirmwareTarget(String profile, String architecture, String abi,
         if (!equals(PROFILES.get(profile))) {
             throw new IllegalArgumentException("unsupported or contradictory raw firmware target: " + profile);
         }
+    }
+
+    public record MetadataSection(String name, long type, byte[] bytes) { }
+
+    /** Profile-declared ABI metadata, not recovered compiler attributes. */
+    public List<MetadataSection> metadataSections() {
+        requireSupported();
+        if (equals(CORTEX_M3)) {
+            // AAELF32 vendor subsection: Tag_CPU_arch=v7, profile=M, Thumb-2;
+            // omitted extension/VFP tags are zero, the selected base-PCS profile.
+            return List.of(new MetadataSection(".ARM.attributes", 0x70000003L,
+                new byte[] {0x41, 21, 0, 0, 0, 'a', 'e', 'a', 'b', 'i', 0,
+                    1, 11, 0, 0, 0, 6, 10, 7, 77, 9, 2}));
+        }
+        throw new IllegalArgumentException("firmware target has no audited metadata profile: " + profile);
     }
 }

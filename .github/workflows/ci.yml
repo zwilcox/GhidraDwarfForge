@@ -3173,6 +3173,13 @@ jobs:
               --ghidra "$GHIDRA_INSTALL_DIR" --results "$PWD/build/test-results/cortex-m"
 
       - uses: actions/upload-artifact@v7
+        with:
+          name: raw-firmware-reference
+          path: build/test-results/cortex-m/portable-reference/
+          if-no-files-found: error
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: cortex-m-profile-diagnostics
@@ -3373,12 +3380,12 @@ jobs:
           retention-days: 14
 
   windows-host:
-    needs: [ release-package, native-windows, linux-x86-export-reference ]
+    needs: [ release-package, native-windows, linux-x86-export-reference, cortex-m-profile ]
     # The reference files are uploaded before the Linux GUI journey. Still
     # exercise Windows when that later journey fails; missing reference files
     # fail artifact download, and required-validation independently requires
     # the complete Linux reference/GUI job to succeed.
-    if: ${{ always() && !cancelled() && needs.release-package.result == 'success' && needs.native-windows.result == 'success' }}
+    if: ${{ always() && !cancelled() && needs.release-package.result == 'success' && needs.native-windows.result == 'success' && needs.cortex-m-profile.result == 'success' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -3675,6 +3682,21 @@ jobs:
             -ProducerDll $producer.FullName `
             -LinuxReferenceDirectory (Resolve-Path linux-reference)
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: raw-firmware-reference
+          path: raw-firmware-reference
+
+      - name: Windows PowerShell raw firmware export and preservation
+        shell: pwsh
+        run: |
+          python src/test/integration/raw-firmware-export.py `
+              --case raw-firmware-reference/reference `
+              --prepared-inputs raw-firmware-reference --separate-ram-input --producer-only `
+              --ghidra $env:GHIDRA_INSTALL_DIR `
+              --results build/test-results/windows-host/raw-firmware
+          if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell raw firmware export failed' }
+
       - name: Native Windows attachment rollback and saved-curation refresh
         shell: pwsh
         timeout-minutes: 25
@@ -3864,7 +3886,7 @@ jobs:
       - name: Install Linux target debugger and validators
         run: |
           sudo apt-get update
-          sudo apt-get install -y gdb gdb-multiarch llvm binutils lldb-18=1:18.1.3-1ubuntu1 python3-lldb-18=1:18.1.3-1ubuntu1
+          sudo apt-get install -y gdb gdb-multiarch qemu-system-arm llvm binutils lldb-18=1:18.1.3-1ubuntu1 python3-lldb-18=1:18.1.3-1ubuntu1
       - name: Validate Windows attachment, build-ID and GUI exports in GDB
         run: |
           (cd validation-tool && sha256sum -c SHA256SUMS)
@@ -3895,6 +3917,10 @@ jobs:
               "$PWD/windows-artifacts/windows-host/formatters-multifile" \
               "$PWD/build/test-results/windows-attachment-gdb/formatters-multifile" \
               --producer-host Windows --lldb lldb-18 --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/raw-firmware-portable.py consume \
+              --incoming "$PWD/windows-artifacts/windows-host/raw-firmware/transport" \
+              --output "$PWD/build/test-results/windows-attachment-gdb/raw-firmware" \
+              --producer-host Windows --dwarfdump "$DWARFDUMP"
       - uses: actions/upload-artifact@v7
         if: always()
         with:
