@@ -23,6 +23,13 @@ public final class GhidraCortexM3Profile {
         }
         GhidraTargetAgreement.requireAgreement(program, image);
         CortexM3Profile.requireImage(image, monitor::isCancelled);
+        requireThumbCode(program, monitor);
+    }
+
+    /** Shared decoded-code check; raw firmware supplies target identity separately. */
+    public static void requireThumbCode(Program program, TaskMonitor monitor)
+            throws CancelledException {
+        monitor.checkCancelled();
         Register mode = program.getRegister("TMode");
         if (mode == null) throw new IllegalArgumentException("Cortex-M3 profile requires TMode context");
         var functions = program.getFunctionManager().getFunctions(true);

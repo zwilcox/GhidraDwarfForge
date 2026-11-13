@@ -11,13 +11,13 @@ import time
 HERE = Path(__file__).resolve().parent
 
 
-def debugger(case, symbols, output, variant, source=None):
+def debugger(case, symbols, output, variant, source=None, raw_input=None):
     assert variant in ('compiler', 'forge')
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='cortex-m-') as temporary:
         socket = Path(temporary) / 'gdb'
         command = ['qemu-system-arm', '-M', 'lm3s6965evb', '-cpu', 'cortex-m3',
-            '-kernel', str(case / 'original.elf'), '-display', 'none', '-serial', 'none',
+            '-kernel', str(raw_input or case / 'original.elf'), '-display', 'none', '-serial', 'none',
             '-monitor', 'none', '-nic', 'none', '-S',
             '-gdb', 'unix:' + str(socket) + ',server=on,wait=off']
         (output / (variant + '-qemu-command.json')).write_text(json.dumps(command, indent=4) + '\n')
@@ -35,7 +35,8 @@ def debugger(case, symbols, output, variant, source=None):
                         env=dict(os.environ, FORGE_CORTEX_CASE=str(case), FORGE_CORTEX_SOCKET=str(socket),
                             FORGE_CORTEX_SYMBOLS=str(symbols), FORGE_CORTEX_OUTPUT=str(output),
                             FORGE_CORTEX_SOURCE=str(source or Path(str(symbols) + '.c')),
-                            FORGE_CORTEX_VARIANT=variant))
+                            FORGE_CORTEX_VARIANT=variant,
+                            FORGE_CORTEX_RAW='1' if raw_input else '0'))
                 observed = json.loads((output / (variant + '-gdb.json')).read_text())
                 assert completed.returncode == 0 and observed['status'] == 'PASS', observed.get('error', observed)
                 assert len(observed['exceptions']) == 2 and process.poll() is None
@@ -56,8 +57,10 @@ def main():
     parser.add_argument('--symbols', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--variant', choices=('compiler', 'forge'), required=True)
+    parser.add_argument('--raw-input', type=Path, help='Boot raw firmware; GDB receives no original ELF')
     args = parser.parse_args()
-    debugger(args.case.resolve(strict=True), args.symbols.resolve(strict=True), args.output.resolve(), args.variant)
+    debugger(args.case.resolve(strict=True), args.symbols.resolve(strict=True), args.output.resolve(), args.variant,
+        raw_input=args.raw_input.resolve(strict=True) if args.raw_input else None)
     print('cortex-m-runtime=PASS ' + args.variant)
 
 

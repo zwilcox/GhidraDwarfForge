@@ -2280,6 +2280,25 @@ tasks.register("cortexM3ProfileSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.elf.CortexM3ProfileSmoke"
 }
 
+tasks.register("firmwareMemoryMapSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks explicit firmware targets, runtime maps and file-offset provenance"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.firmware.FirmwareMemoryMapSmoke"
+}
+
+tasks.register("ghidraFirmwareMemoryMapSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks firmware provenance against actual Ghidra memory and FileBytes"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.firmware.GhidraFirmwareMemoryMapSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/firmware-map/settings").absolutePath
+}
+
 tasks.register("ghidraCortexM3ProfileSmoke", JavaExec) {
     group = "verification"
     description = "Checks Cortex-M3 profile against actual Ghidra language and Thumb contexts"
