@@ -134,10 +134,14 @@ process is not a feature-completion result.
 the tested field values, flags, offsets and widths. GNU/LLVM/pinned validation,
 original-input preservation and repeated sidecar/source determinism pass.
 The scalar counter's saved volatile setting and the secondary global label are
-omitted. The existing ELF-project wrapper also changes Ghidra's index/journal
-backup files; the probe reports failed project preservation. These gaps must be
-fixed before claiming MMIO completion. The raw-firmware wrapper uses a different
-read-only project opener and has independent preservation evidence.
+omitted. These gaps must be fixed before claiming MMIO completion.
+
+**HISTORICAL at `9f57035e`:** the existing ELF-project wrapper also changed
+Ghidra's index/journal backup files. Fix `3fb950d0` applies the raw-firmware
+read-only project opener to all saved exports. The repeated installed probe now
+preserves project files on all three targets; separate root/nested tests preserve
+file bytes and modification times for stripped and unstripped ELF inputs.
+Hosted validation of that fix is still pending.
 
 ```bash
 python3 support/storage-guard.py run --cwd "$PWD" -- \
