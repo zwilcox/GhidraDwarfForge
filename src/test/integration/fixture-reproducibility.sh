@@ -119,6 +119,7 @@ expected_sources=(
     mips_layout_arguments.c
     mips_wide_arguments.c
     mixed-incoming-prefix.c
+    mmio-registers.c
     mutable-stack-mappings.c
     nonzero_load_offset.c
     nonzero_load_offset.ld
