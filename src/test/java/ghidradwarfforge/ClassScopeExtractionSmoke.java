@@ -213,7 +213,7 @@ public final class ClassScopeExtractionSmoke {
         var signature = full.functions().stream().filter(f -> f.address() == 0x401000).findFirst().orElseThrow();
         collector.record(method, ClassScopeModel.FunctionReference.definition(signature.name(), signature.address()), signature.parameters());
         collector.prepare(type -> java.util.Objects.requireNonNull(reserved.get(type)));
-        collector.finish(full.types());
+        collector.finish(full.types(), full.functions(), full.functionDeclarations());
     }
 
     private static Function method(Program program, GhidraClass owner, String name, long offset) throws Exception {

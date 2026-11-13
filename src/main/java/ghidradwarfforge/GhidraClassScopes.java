@@ -24,6 +24,7 @@ import ghidradwarfforge.types.ClassScopeModel.Kind;
 import ghidradwarfforge.types.ClassScopeModel.Method;
 import ghidradwarfforge.types.ClassScopeModel.Scope;
 import ghidradwarfforge.types.TypeGraph;
+import ghidradwarfforge.types.ProgramTypeModel;
 import ghidradwarfforge.types.TypeGraph.TypeRef;
 
 /** Collect saved ownership without treating current THIS inference as durable identity. */
@@ -66,7 +67,8 @@ final class GhidraClassScopes {
         }
     }
 
-    ClassScopeModel finish(TypeGraph graph) throws CancelledException {
+    ClassScopeModel finish(TypeGraph graph, List<ProgramTypeModel.FunctionSignature> functions,
+            List<ProgramTypeModel.FunctionDeclaration> declarations) throws CancelledException {
         var types = graph.byKey();
         var witnesses = new HashMap<Long, HashSet<TypeRef>>();
         var invalidObjects = new HashSet<Long>();
@@ -135,6 +137,23 @@ final class GhidraClassScopes {
         for (String message : ghidradwarfforge.types.ClassScopeNames.build(graph, result).diagnostics()) {
             monitor.checkCancelled();
             diagnostic.accept(message);
+        }
+        var saved = GhidraInheritanceBindings.read(program, monitor, diagnostic);
+        if (saved.status() == GhidraInheritanceBindings.Status.VALID) {
+            // A saved record can be valid while this export omits a required
+            // method or rejects a competing canonical layout. Do not attach
+            // partial relationships or replace them with automatic inference.
+            result.validate(graph, functions, declarations);
+            monitor.checkCancelled();
+            var candidate = new ClassScopeModel(result.scopes(), result.bindings(), result.methods(), saved.model());
+            try {
+                candidate.validate(graph, functions, declarations);
+                monitor.checkCancelled();
+                return candidate;
+            }
+            catch (IllegalArgumentException invalid) {
+                diagnostic.accept("Omitted explicit inheritance from this export: " + invalid.getMessage());
+            }
         }
         return result;
     }

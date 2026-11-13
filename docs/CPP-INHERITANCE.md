@@ -1,9 +1,9 @@
 # C++ inheritance and vtable export
 
 **PRESENT, UNVERIFIED end to end:** issue #113 extends saved class/type ownership
-with explicit base, virtual-method and vtable relationships. The native exporter
-now emits inheritance from a validated explicit model; ordinary Ghidra extraction
-and vtable evidence admission remain incomplete. Ghidra 12.0.3, Java 21 and
+with explicit base, virtual-method and vtable relationships. Ordinary Ghidra
+extraction and native emission now retain validated saved inheritance. Vtable
+evidence admission remains incomplete. Ghidra 12.0.3, Java 21 and
 synthetic C11 remain the baseline.
 
 ## Compiler and debugger evidence
@@ -144,8 +144,7 @@ orders (400 binding and 290 extraction checks). Existing class-model/name tests
 also pass. Hosted checks for this checkpoint remain pending.
 
 The saved relationship and native emission checkpoints below extend this model.
-Actual vtable/address-point evidence and ordinary export integration remain
-incomplete.
+Actual vtable/address-point evidence and its export integration remain incomplete.
 
 ## Saved relationship snapshot
 
@@ -170,11 +169,16 @@ target identity rather than following an entire reachable object graph.
 Cancellation occurs before the final options write; immutable reopening leaves
 saved database bytes and timestamps unchanged.
 
-This API currently persists bases and virtual-method slots. Vtable address-point
-and byte evidence, extraction integration and configuration UI/script are still
-**PLANNED**. Saving a record alone does not enable inheritance export. The
-dedicated saved-program smoke is in both hosted test lists; its local results
-do not substitute for the full #113 runtime acceptance.
+This API currently persists bases and virtual-method slots. Ordinary type
+extraction reads the snapshot after resolving canonical layouts and method
+signatures. A stale record is omitted with a diagnostic. A valid snapshot whose
+required method or layout is absent/conflicting in this export is also omitted
+as a unit; independent class ownership and signatures remain intact. Reads never
+repair saved evidence or replace rejected relationships with inference.
+
+Vtable address-point/byte evidence and configuration UI/script are still
+**PLANNED**. The dedicated saved-program smoke is in both hosted test lists;
+its local results do not substitute for the full #113 runtime acceptance.
 
 ## Native emission checkpoint
 
@@ -201,10 +205,10 @@ diamond could hide an incorrect base expression. Deliberately incorrect fixed
 and individual virtual-base offsets remain structurally valid but must fail
 the runtime oracle. These negative controls are part of the harness.
 
-The test packages proven compiler vtable object identities through the production
+The native test packages proven compiler vtable object identities through the production
 ELF writer after native DWARF emission. It does not prove their extraction from
-Ghidra. Qualified/duplicate class names, recovery configuration, full source
-failure behavior and end-to-end saved-program export still need acceptance.
+Ghidra. Qualified/duplicate class names, recovery configuration and full source
+failure behavior still need acceptance. Saved-program results are described below.
 Secondary/thunk entries may display addresses instead of recovered thunk names;
 this checkpoint does not claim complete thunk reconstruction. The corresponding
 x86-64/AArch64 CI step is present but has not yet run on the hosted branch.
@@ -219,4 +223,46 @@ python3 support/storage-guard.py run --cwd "$PWD" -- \
     --references "$PWD/.forge-work/scratch/inheritance-reference" \
     --classpath build/inheritance-classpath.txt \
     --results "$PWD/.forge-work/scratch/inheritance-native"
+```
+
+## Saved-program export checkpoint
+
+**CONFIRMED locally:** `extract.py` imports the stripped compiler runtime, applies
+independently decoded fixture evidence, saves the relationships, and runs the
+ordinary `GhidraDwarfForge.java` exporter. A second export uses the supported
+existing-project wrapper, which opens the saved program through a read-only
+project handle. Both `.dbg` and `.dbg.c` are byte-identical across reopening;
+the original runtime and every saved project file retain their hashes.
+
+The fixture preserves compiler-declared methods with no code bodies as actual
+Ghidra addressless declarations under external-only classes. Dropping those
+declarations caused GDB to lose polymorphic recognition for the corresponding
+base types even with correct vtable symbols. No function addresses are invented.
+This fixture does not exercise a class mixing local methods and addressless
+declarations; the preparation script rejects that shape explicitly.
+
+GNU/LLVM/pinned validators and fresh GDB/QEMU sessions check single, multiple and
+diamond inheritance, individual virtual-base branches, dynamic types, member
+values, `ptype` and `info vtbl`. The export report can be PARTIAL because ordinary
+startup/import functions and unsupported call conventions are diagnosed; the
+test separately requires retained inheritance, complete fixture source generation
+and successful runtime/structural checks. Vtable object symbols are still added
+from compiler evidence in a separate production-writer step. This is not yet
+end-to-end validation of recovered Ghidra vtable identities.
+
+The harness also supports `--rebase`: it changes the image base after saving the
+relationships and does not refresh their snapshot. The hosted x86-64/AArch64
+steps run the four ordinary build profiles plus PIE/no-RTTI rebased cases.
+Hosted validation remains pending.
+
+```bash
+python3 support/storage-guard.py run --cwd "$PWD" -- \
+    env JAVA_HOME=/path/to/jdk21 LIBDWARF=/path/to/libdwarf.so \
+    LIBDWARFP=/path/to/libdwarfp.so DWARFDUMP=/path/to/pinned/dwarfdump \
+    python3 -B src/test/research/inheritance/extract.py \
+    --ghidra /path/to/ghidra-with-current-extension \
+    --references "$PWD/.forge-work/scratch/inheritance-reference" \
+    --models "$PWD/.forge-work/scratch/inheritance-native" \
+    --classpath build/inheritance-classpath.txt \
+    --results "$PWD/.forge-work/scratch/inheritance-extraction"
 ```

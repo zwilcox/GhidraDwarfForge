@@ -1113,6 +1113,26 @@ jobs:
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
 
+      - name: Saved inheritance through ordinary export and read-only reopening
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          results="$PWD/build/test-results/inheritance/$TARGET"
+          LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
+          LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
+              python3 -B src/test/research/inheritance/extract.py \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" \
+                  --references "$results/reference" --models "$results/producer" \
+                  --classpath build/inheritance-classpath.txt --results "$results/extraction"
+          LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
+          LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
+              python3 -B src/test/research/inheritance/extract.py \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" --roles pie pie-no-rtti --rebase \
+                  --references "$results/reference" --models "$results/producer" \
+                  --classpath build/inheritance-classpath.txt --results "$results/extraction-rebased"
+
       - name: MIPS O32 FPXX and FP64A system-emulator references
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
         env:

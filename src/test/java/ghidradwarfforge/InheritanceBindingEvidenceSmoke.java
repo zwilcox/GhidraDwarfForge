@@ -24,6 +24,8 @@ import ghidradwarfforge.targets.CxxAbiProfile;
 import ghidradwarfforge.types.InheritanceModel;
 import ghidradwarfforge.types.InheritanceModel.*;
 import ghidradwarfforge.GhidraInheritanceBindings.Status;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
+import ghidradwarfforge.types.ProgramTypeModel;
 
 /** Real saved programs: geometry, identity, malformed records, cancellation and immutable reopening. */
 public final class InheritanceBindingEvidenceSmoke {
@@ -95,6 +97,23 @@ public final class InheritanceBindingEvidenceSmoke {
                 var options = program.getOptions(GROUP);
                 encoded = options.getString(KEY, null);
                 require(read(program).model().equals(model), "saved relationship round trip");
+                require(extract(program, abi, true, new ArrayList<>(), MONITOR).classScopes().inheritance().equals(model),
+                    "production extraction lost saved relationships");
+                var partialMessages = new ArrayList<String>();
+                require(extract(program, abi, false, partialMessages, MONITOR).classScopes().inheritance().equals(InheritanceModel.empty()),
+                    "partial export retained unavailable virtual method");
+                require(partialMessages.stream().anyMatch(s -> s.startsWith("Omitted explicit inheritance from this export")),
+                    "partial export did not diagnose omitted relationships");
+                require(encoded.equals(options.getString(KEY, null)), "partial export changed saved evidence");
+                var competingClass = symbols.createClass(program.getGlobalNamespace(), "CompetingBase", SourceType.USER_DEFINED);
+                GhidraClassBindings.save(program, competingClass, base, "competing canonical layout", MONITOR);
+                require(read(program).status() == Status.VALID, "unrelated class changed saved snapshot");
+                var conflictMessages = new ArrayList<String>();
+                require(extract(program, abi, true, conflictMessages, MONITOR).classScopes().inheritance().equals(InheritanceModel.empty()),
+                    "conflicting canonical layout admitted inheritance");
+                require(conflictMessages.stream().anyMatch(s -> s.startsWith("Omitted explicit inheritance from this export")),
+                    "canonical conflict lacks inheritance diagnostic");
+                GhidraClassBindings.remove(program, competingClass.getID(), MONITOR);
                 int[] visits = { 0 };
                 var count = new TaskMonitorAdapter(true) {
                     @Override public void checkCancelled() { visits[0]++; }
@@ -110,15 +129,31 @@ public final class InheritanceBindingEvidenceSmoke {
                     cancelled(() -> GhidraInheritanceBindings.read(program, cancelAt(stop), ignored -> { }));
                     require(encoded.equals(options.getString(KEY, null)), "cancelled read repaired record");
                 }
+                visits[0] = 0;
+                extract(program, abi, true, new ArrayList<>(), count);
+                for (int stop : List.of(1, visits[0] / 2, visits[0])) {
+                    cancelled(() -> extract(program, abi, true, new ArrayList<>(), cancelAt(stop)));
+                    require(encoded.equals(options.getString(KEY, null)), "cancelled extraction changed evidence");
+                }
                 base.setName("RenamedBaseLayout"); base.setCategoryPath(new CategoryPath("/renamed"));
                 child.getDefinedComponents()[0].setFieldName("renamedMember");
                 method.setName("renamedMethod", SourceType.USER_DEFINED);
                 program.setImageBase(entry.add(0x200000), true);
                 require(read(program).model().equals(model), "rename or rebase invalidated stable geometry");
+                require(extract(program, abi, true, new ArrayList<>(), MONITOR).classScopes().inheritance().equals(model),
+                    "rename or rebase changed extracted relationships");
                 GhidraInheritanceBindings.save(program, model, MONITOR);
                 require(encoded.equals(options.getString(KEY, null)), "renames/rebase changed serialized evidence");
                 nested.replaceAtOffset(0, UnsignedIntegerDataType.dataType, 4, "changed", "");
                 rejected(program);
+                var staleMessages = new ArrayList<String>();
+                var staleModel = extract(program, abi, true, staleMessages, MONITOR);
+                require(staleModel.classScopes().inheritance().equals(InheritanceModel.empty()) &&
+                    staleModel.classScopes().methods().size() == 1 && staleModel.classScopes().bindings().size() == 2,
+                    "stale inheritance lost independently valid ownership/layouts or inferred relationships");
+                require(staleMessages.stream().anyMatch(s -> s.startsWith("Omitted explicit inheritance:")),
+                    "stale extraction lacks diagnostic");
+                require(encoded.equals(options.getString(KEY, null)), "stale extraction repaired saved record");
                 nested.replaceAtOffset(0, IntegerDataType.dataType, 4, "restored", "");
                 require(read(program).status() == Status.VALID, "restored nested geometry did not recover");
                 child.growStructure(1); rejected(program);
@@ -185,6 +220,8 @@ public final class InheritanceBindingEvidenceSmoke {
                 reopened = new ProgramDB(handle, OpenMode.IMMUTABLE, MONITOR, reopenedToken);
                 require(read(reopened).model().equals(model), "immutable reopening lost snapshot");
                 require(read(reopened).model().equals(model), "repeated immutable read differs");
+                require(extract(reopened, abi, true, new ArrayList<>(), MONITOR).classScopes().inheritance().equals(model),
+                    "immutable production extraction lost relationships");
             }
             finally { if (reopened != null) reopened.release(reopenedToken); else handle.close(); }
             require(Arrays.equals(hash, MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(saved))) &&
@@ -219,6 +256,18 @@ public final class InheritanceBindingEvidenceSmoke {
         var type = new StructureDataType(name, 0);
         for (int i = 0; i < size / 4; i++) type.add(IntegerDataType.dataType, "field" + i, "");
         return (Structure) program.getDataTypeManager().addDataType(type, DataTypeConflictHandler.DEFAULT_HANDLER);
+    }
+    private static ProgramTypeModel extract(Program program, CxxAbiProfile abi, boolean includeMethods,
+            List<String> messages, TaskMonitor monitor) throws Exception {
+        var functions = new ArrayList<FunctionSymbol>();
+        if (includeMethods) {
+            for (var function : program.getFunctionManager().getFunctions(true)) {
+                functions.add(new FunctionSymbol(function.getName(true), function.getEntryPoint().getOffset(),
+                    function.getBody().getNumAddresses()));
+            }
+        }
+        return GhidraTypeGraph.extract(program, functions,
+            abi == CxxAbiProfile.ITANIUM_X86_64 ? "x86_64" : "aarch64", 0, monitor, messages::add);
     }
     private static GhidraInheritanceBindings.Result read(Program program) throws Exception {
         var messages = new ArrayList<String>();
