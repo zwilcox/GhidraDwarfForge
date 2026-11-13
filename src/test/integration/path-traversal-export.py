@@ -56,17 +56,21 @@ def check_project(directory, label):
     observed = project_hashes()
     changed = sorted(key for key in set(observed) | set(saved_project)
         if observed.get(key) != saved_project.get(key))
-    # Pinned Ghidra rotates these filesystem index backups even when the
-    # Program is opened read-only. Every database, live index and property
-    # remains part of the strict byte-preservation assertion.
-    housekeeping = {"PathTraversal.rep/idata/~index.bak", "PathTraversal.rep/idata/~journal.bak"}
+    # The historical direct headless read-only mode rotates index backups.
+    # The supported saved-project adapter opens a read-only project handle:
+    # every file, including those backups, must now remain byte-identical.
+    housekeeping = {"PathTraversal.rep/idata/~index.bak", "PathTraversal.rep/idata/~journal.bak"} \
+        if args.expectation == "baseline-reproducer" else set()
     (directory / (label + "-project.json")).write_text(json.dumps({
         "hashes": observed, "changed_housekeeping": changed}, indent=4) + "\n")
     assert set(changed) <= housekeeping, ("saved program/project changed", changed)
 
 
 def report(log):
-    assert log.read_text().count("SCRIPT: " + str(module / "ghidra_scripts/GhidraDwarfForge.java")) == 1
+    # Headless logs the adapter it launches. Its nested runScript call emits
+    # the exporter report but not another HeadlessAnalyzer SCRIPT marker.
+    entry_script = "GhidraDwarfForge.java" if args.expectation == "baseline-reproducer" else "GhidraDwarfForgeReadOnly.java"
+    assert log.read_text().count("SCRIPT: " + str(module / "ghidra_scripts" / entry_script)) == 1
     marker = "GhidraDwarfForge report: "
     found = [json.JSONDecoder().raw_decode(line.split(marker, 1)[1])[0]
         for line in log.read_text().splitlines() if marker in line]
@@ -133,6 +137,8 @@ assert ".debug_" not in input_metadata and ".symtab" not in input_metadata
 protected = {path: digest(path) for path in [original, reference, lookalike,
     repository / "src/test/fixtures/minimal.c", module / "lib/GhidraDwarfForge.jar",
     module / "ghidra_scripts/GhidraDwarfForge.java"]}
+if args.expectation == "fixed":
+    protected.update({path: digest(path) for path in [wrapper, module / "ghidra_scripts/GhidraDwarfForgeReadOnly.java"]})
 (results / "protected.json").write_text(json.dumps({str(path): value for path, value in protected.items()}, indent=4) + "\n")
 run([ghidra / "support/analyzeHeadless", project, "PathTraversal", "-import", original,
     "-loader", "ElfLoader", "-analysisTimeoutPerFile", "120", "-scriptPath", scripts,
