@@ -121,18 +121,17 @@ project_dir="$work/projects"
 mkdir "$project_dir"
 run_status 0 SUCCESS 0 --project-dir="$project_dir" --project-name=Existing \
     --program=/folder/program --input="$input"
-grep -Fxq -- '-readOnly' "$argument_log"
+grep -Fxq -- 'GhidraDwarfForgeReadOnly.java' "$argument_log"
 grep -Fxq -- '-noanalysis' "$argument_log"
-grep -Fxq -- '-process' "$argument_log"
 grep -Fxq -- '/folder/program' "$argument_log"
-if grep -Fxq -- '-deleteProject' "$argument_log"; then
-    echo "existing-project wrapper would delete the project" >&2
+test "$(head -n 1 "$argument_log")" != "$project_dir"
+if grep -Eq -- '^(-process|-import|-loader|-readOnly)$' "$argument_log"; then
+    echo "existing-project wrapper would open the saved project through the writable launcher" >&2
     exit 1
 fi
-if grep -Fxq -- '-loader' "$argument_log"; then
-    echo "existing-project wrapper would select an import loader" >&2
-    exit 1
-fi
+run_status 0 SUCCESS 0 --project-dir="$project_dir" --project-name=Existing \
+    --program=program --input="$input"
+grep -Fxq -- '/program' "$argument_log"
 
 raw_options=(--project-dir="$project_dir" --project-name=Existing --program=/folder/program
     --input="$input" --raw-firmware=cortex-m3)

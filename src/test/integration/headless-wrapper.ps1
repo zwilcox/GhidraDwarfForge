@@ -119,6 +119,16 @@ exit /b %FAKE_HEADLESS_EXIT%
     $projectOptions = @('-ProjectDirectory', $project, '-ProjectName', 'Existing',
         '-Program', '/folder/program', '-OriginalElf', $inputElf)
 
+    $null = Invoke-Wrapper 0 $projectOptions
+    $savedArguments = Get-Content -LiteralPath $argumentLog -Raw
+    Assert-Condition ($savedArguments.Contains('GhidraDwarfForgeReadOnly.java')) 'saved export did not use read-only host'
+    Assert-Condition ($savedArguments.Contains('/folder/program')) 'nested project path lost'
+    Assert-Condition ($savedArguments -notmatch '(?:^|\s)"?-(process|import|loader|readOnly)"?(?:\s|$)') `
+        'saved wrapper used writable project launcher'
+    $null = Invoke-Wrapper 0 @('-ProjectDirectory', $project, '-ProjectName', 'Existing',
+        '-Program', 'program', '-OriginalElf', $inputElf)
+    Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains('/program')) 'root basename not normalized'
+
     $null = Invoke-Wrapper 0 ($importOptions + @('-Log', (Join-Path $work 'success.log')))
     Assert-Condition (Test-Path -LiteralPath $argumentLog) 'valid log did not launch Ghidra'
     $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw

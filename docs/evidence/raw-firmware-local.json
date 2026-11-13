@@ -100,5 +100,75 @@
         "src/test/integration/cortex-m-suite.py": "23ca36055a542b0f2cb4e8804bf11ee7594f6d637886de060a61768a17ea720c",
         "src/test/integration/cortex-m-runtime.py": "8bb25ac17fb1a275efcc49593eea7118e8b85c68c0985af950d9230ca05dee4c",
         "src/test/integration/cortex-m-gdb.py": "1bcfbdac5c64a387dfc98cde9d31dea42efa3b10baf033f51b1409abe243fad8"
+    },
+    "baselineCommit": "9f57035eaef550126dac0983b495d971bff73a0f",
+    "savedProjectWrapperRegression": {
+        "status": "PASS_LOCAL_LINUX_HOSTED_WINDOWS_PENDING",
+        "change": "All saved-program wrappers use the read-only project opener; basename and nested paths supported.",
+        "oldWrapperControl": "REJECTED: index/journal backups or timestamps changed",
+        "savedProjectResultSha256": "1bfb1fa645d76d4a71dfe2f807a5cdcdf979153cccb5cf2921a1656ea3ab6760",
+        "savedProjectCases": [
+            {
+                "folder": "root",
+                "filesPreserved": 10,
+                "exports": 2,
+                "outputsSha256": [
+                    "cd793f087468346856e9b6224c5f2cdf926ff3e0f7c8e9e62945fe38e3870a71",
+                    "56976085fb954bf0c71a0a4ad5554dd78bdd54d45f649c4dc15976f72717082a"
+                ]
+            },
+            {
+                "folder": "nested",
+                "filesPreserved": 10,
+                "exports": 2,
+                "outputsSha256": [
+                    "f8602c8d0b6b95adf45dcd0e3bffe1311ddc56bda444eadba1c78ceaa2bfd964",
+                    "56976085fb954bf0c71a0a4ad5554dd78bdd54d45f649c4dc15976f72717082a"
+                ]
+            }
+        ],
+        "rawSuiteResultSha256": "df0d0bdf05d40db420e3d7d74fafcf54867db382eef1d8a63b54be3dbb676570",
+        "rawLayouts": {
+            "raw-base": {
+                "status": "PASS_RAW_FIRMWARE_EXPORT_RUNTIME",
+                "outputsSha256": [
+                    "3377cb70a5138abdb3f4304e22cc083d042df1492b824ed15173f52acca608d4",
+                    "0b0b8f15fb0f3ee6d56cf561bb46bc0cf1a3f6f6bba3167f70a3b7d8ca5acd65",
+                    "2a2ec32649e51995bb16163e640c6cf62196295ada20f928cf3fa2b2d597f5ba"
+                ],
+                "addresses": {
+                    "status": "PASS",
+                    "functions": 8,
+                    "globals": 14,
+                    "lineRows": 50,
+                    "oddDataAddress": 536870913
+                },
+                "failureControls": 20,
+                "inputFiles": 1
+            },
+            "raw-shifted-ram": {
+                "status": "PASS_RAW_FIRMWARE_EXPORT_RUNTIME",
+                "outputsSha256": [
+                    "ccf5eca3c7b90c3f8532faca55553812e02c513be389bc287c75c6665bb9fada",
+                    "6fce7c090a25619533c077f2f28ac63ea16a1a4ac6a9bc52e58d5488cf816c86",
+                    "b495c42363a119f3bc260e2990445ae928c988d64d512dd8a0ce32ab855e0a9e"
+                ],
+                "addresses": {
+                    "status": "PASS",
+                    "functions": 8,
+                    "globals": 14,
+                    "lineRows": 50,
+                    "oddDataAddress": 536875009
+                },
+                "failureControls": 21,
+                "inputFiles": 2
+            }
+        },
+        "changedSourceSha256": {
+            "support/ghidra-dwarf-forge-headless": "1e2b87cf088aedfdd34a41a5047259de4b6faddc7f328ab66ca86a9800332433",
+            "support/ghidra-dwarf-forge-headless.ps1": "394722787c34873dcdc8b704ca3ad2ad0131beae675a85d663b7de499e79b46e",
+            "src/test/integration/saved-project-preservation.py": "c9f7f5c2b959a071c46c53597b7254dc504822152bbbc39c072e0b7335642277",
+            "src/test/integration/ghidra_scripts/PrepareProjectPreservation.java": "24ef03ec9116625a1edc950bd709918cc3d8de75ebc05ed7f1bd9155475274df"
+        }
     }
 }
