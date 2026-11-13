@@ -2415,3 +2415,5 @@ tasks.register("ghidraMmioEvidenceSmoke", JavaExec) {
     systemProperty "application.settingsdir", file("build/tmp/mmio-evidence/settings").absolutePath
     if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
+
+apply from: "support/test-coverage.gradle"
