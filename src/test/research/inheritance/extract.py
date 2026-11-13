@@ -124,6 +124,14 @@ def main():
                     command += ['-import', runtime, '-postScript', 'PrepareInheritanceFixture.java', model_dir / 'model.json']
                     command += ['-postScript', 'ProbeVtableBindings.java', model_dir / 'vtables.json',
                         case / 'vtable-witnesses.json', 'save-only']
+                    selection = case / 'selection.json'
+                    command += ['-postScript', 'RoundTripCxxProfile.java', 'capture-clear', selection,
+                        '-postScript', 'GhidraDwarfForgeCxxProfile.java', 'check', selection,
+                        '-postScript', 'RoundTripCxxProfile.java', 'assert-clear', selection,
+                        '-postScript', 'GhidraDwarfForgeCxxProfile.java', 'apply', selection,
+                        '-postScript', 'RoundTripCxxProfile.java', 'assert-saved', selection,
+                        '-postScript', 'GhidraDwarfForgeCxxProfile.java', 'check', selection,
+                        '-postScript', 'RoundTripCxxProfile.java', 'assert-saved', selection]
                     if args.variant not in ('valid', 'retained'):
                         command += ['-postScript', 'MutateVtableFixture.java', args.variant,
                             model_dir / 'model.json', case / 'vtable-witnesses.json']
@@ -149,6 +157,11 @@ def main():
                     assert 'Omitted explicit vtable' not in log, label
                 if phase == 'curate':
                     assert 'inheritance-curation=PASS' in log
+                    assert 'cxx-profile-roundtrip=capture-clear PASS' in log
+                    assert 'cxx-profile-roundtrip=assert-clear PASS' in log
+                    assert log.count('cxx-profile-roundtrip=assert-saved PASS') == 2
+                    selections = [json.loads(value) for value in re.findall(r'GhidraDwarfForge C\+\+ selection: (\{.*\})', log)]
+                    assert [value['saved'] for value in selections] == [False, True, False], selections
                     if args.rebase:
                         assert 'inheritance-rebase=PASS' in log
                     first = digest(produced), digest(Path(str(produced) + '.c'))

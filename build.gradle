@@ -2129,6 +2129,17 @@ tasks.register("inheritanceBindingEvidenceSmoke", JavaExec) {
     systemProperty "application.cachedir", file("build/tmp/inheritance-binding/cache").absolutePath
 }
 
+tasks.register("cxxProfileSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.CxxProfileSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/cxx-profile/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/cxx-profile/cache").absolutePath
+}
+
 tasks.register("declarationBindingEvidenceSmoke", JavaExec) {
     group = "verification"
     dependsOn testClasses

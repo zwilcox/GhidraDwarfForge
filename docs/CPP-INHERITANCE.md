@@ -4,8 +4,124 @@
 with explicit base, virtual-method and vtable relationships. Ordinary Ghidra
 extraction and native emission now retain validated saved inheritance and vtable
 witnesses. The production-path checkpoint below is locally validated; broader
-configuration and #113 acceptance remain incomplete. Ghidra 12.0.3, Java 21 and
+#113 acceptance remains incomplete. Analyst configuration is available through
+the script described below. Ghidra 12.0.3, Java 21 and
 synthetic C11 remain the baseline.
+
+## Analyst configuration
+
+`ghidra_scripts/GhidraDwarfForgeCxxProfile.java` supplies `inspect`, `check` and
+`apply` actions for the current analyzed program. In the Script Manager, run it
+and choose an action; `check` and `apply` then ask for the selection JSON file.
+In headless Ghidra, pass the action and its argument as script arguments:
+
+```text
+-postScript GhidraDwarfForgeCxxProfile.java inspect Mixed
+-postScript GhidraDwarfForgeCxxProfile.java check /absolute/path/selection.json
+-postScript GhidraDwarfForgeCxxProfile.java apply /absolute/path/selection.json
+```
+
+`inspect [name-filter]` prints an inventory of existing class namespaces,
+functions, memory labels and structures, including their saved IDs. The optional
+case-sensitive substring filter limits candidates, not existing configuration.
+Each candidate category is capped at 1,024 entries; `candidates_truncated` tells
+you to narrow the filter. No symbols, functions, types or program options are
+created by inspection. Copy the **`selection` object**, rather than the enclosing
+inventory, into a JSON file. An unconfigured program has `abi: "UNSPECIFIED"`;
+you must replace that with an evidence-backed profile before checking/applying.
+
+The supported profiles are `ITANIUM_X86_64` and `ITANIUM_AARCH64`, both for the
+validated 64-bit little-endian targets. Selecting an ABI is an analyst assertion;
+a class name, vptr-shaped field, compiler-spec name or function-pointer array does
+not establish that assertion. Microsoft C++ ABI and construction vtables are not
+covered. The eventual ELF export independently checks target and table admission.
+
+This example shows the complete schema for a class with an implemented virtual
+method and an addressless pure-virtual declaration. **All IDs are examples**:
+replace them and the target header with the current inventory and supply your
+actual evidence. The existing Ghidra functions must already have defensible
+signatures and `this` types; configuration does not manufacture them.
+
+```json
+{
+    "schema": 1,
+    "program_id": "123456789",
+    "language": "x86:LE:64:default",
+    "compiler": "gcc",
+    "abi": "ITANIUM_X86_64",
+    "inheritance_mode": "replace",
+    "classes": [
+        {"class_id": "10", "type_id": "72057594037927936", "evidence": "Analyst-confirmed Mixed layout"}
+    ],
+    "declarations": [
+        {"method_id": "12", "class_id": "10", "evidence": "Existing external declaration belongs to Mixed"}
+    ],
+    "bases": [],
+    "virtual_methods": [
+        {"method_id": "11", "slot": 0, "access": "PUBLIC", "virtuality": "VIRTUAL", "evidence": "Confirmed primary slot 0"},
+        {"method_id": "12", "slot": 1, "access": "PUBLIC", "virtuality": "PURE_VIRTUAL", "evidence": "Confirmed pure declaration at slot 1"}
+    ],
+    "vtables": [],
+    "remove": {"classes": [], "declarations": [], "vtables": []}
+}
+```
+
+IDs and signed offsets use canonical decimal **strings** to avoid JSON number
+precision loss. `schema`, `order`, `slot`, `byte_size` and `table_offset` are
+nonnegative JSON integers. Unknown/missing fields, duplicate keys/identities,
+wrong target headers, malformed UTF-8 and excessive input are rejected. Input is
+limited to 1 MiB, 8,192 characters per string and 4,096 entries per array.
+
+Additional record shapes:
+
+- A base contains `derived_class_id`, `base_class_id`, `order`, `access`,
+  `location` and `evidence`. Access is `PUBLIC`, `PROTECTED` or `PRIVATE`.
+  Fixed location: `{"kind":"fixed","offset":"8","occupied_bytes":"8"}`.
+  `occupied_bytes` describes the evidenced occupied base extent, accounting for
+  ABI tail-padding reuse. Virtual location:
+  `{"kind":"virtual","vptr_offset":"0","slot_offset":"-24"}`; the slot is
+  relative to the vtable address point and its contents supply the dynamic base
+  displacement. The two location shapes cannot be combined.
+- A vtable contains `symbol_id`, `class_id`, `mangled_name`, `lookup_name`,
+  `byte_size`, `points` and `evidence`. Each point contains `table_offset`,
+  `subobject_offset` and `evidence`. For example, a primary address point may be
+  `{"table_offset":16,"subobject_offset":"0","evidence":"Confirmed primary address point"}`.
+  The symbol must already exist at backed memory, and the byte extent,
+  offset-to-top headers, class relationships and target profile must agree.
+  Mangled names use complete-object `_ZTV...` spellings; names alone do not prove
+  a semantic association. Each table is limited to 1 MiB, with 64 MiB total.
+
+`check` runs the same current-program checks as `apply`, then rolls back its
+metadata transaction. `apply` retains the configuration; save the Ghidra program
+to persist it. Neither action changes target bytes, namespaces, signatures or
+data types. Cancellation and validation failure roll back the operation.
+The script starts with no other program mutations; Java API callers must isolate
+this operation from unrelated enclosing transactions because Ghidra nested
+transactions participate in their parent's commit/rollback.
+
+`inheritance_mode: "replace"` deliberately replaces the **complete** saved base
+and virtual-method model, including when those arrays are empty. Selected class,
+declaration and vtable records are applied by ID; unselected records remain.
+Remove unwanted IDs explicitly in the corresponding `remove` arrays. An ID
+cannot be both selected and removed. Every retained record must still be valid;
+stale or conflicting evidence must be corrected/reselected or explicitly removed.
+Inspection diagnoses rejected saved records instead of repairing them.
+
+Checking configuration validates current Ghidra evidence, not DWARF or debugger
+behavior. Run the ordinary exporter afterward and inspect its diagnostics. Table
+admission against the original ELF, structural validators and actual debugger
+checks remain required before claiming a particular recovered program works.
+
+**CONFIRMED locally:** the configuration smoke test passes 140 checks across
+x86-64 and AArch64 ProgramDB fixtures, including rollback after actual metadata
+writes, stale-record retention/removal, target mismatch, strict input parsing,
+complete relationship replacement and immutable reopen. Twelve ordinary-export
+cases (eight target/RTTI/PIE profiles plus four rebased PIE cases) clear the
+independently curated bindings and restore them through the public script.
+Preview leaves no bindings behind; apply recreates the original records exactly;
+a further preview preserves those records. GNU, LLVM and pinned libdwarf
+validators, GDB/QEMU behavior, original preservation and deterministic read-only
+reopen pass. The Script Manager chooser itself has not been exercised locally.
 
 ## Compiler and debugger evidence
 
