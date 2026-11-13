@@ -94,6 +94,14 @@ tasks.register("prepareCallSiteSerializationHarness") {
     }
 }
 
+tasks.register("prepareInheritanceHarness") {
+    group = "verification"
+    dependsOn testClasses
+    doLast {
+        layout.buildDirectory.file("inheritance-classpath.txt").get().asFile.text = sourceSets.test.runtimeClasspath.asPath
+    }
+}
+
 tasks.register("callSitePlanSmoke", JavaExec) {
     group = "verification"
     dependsOn testClasses
@@ -2090,6 +2098,64 @@ tasks.register("objectParameterSmoke", JavaExec) {
             })
         }
     }
+}
+
+tasks.register("vtableSymbolsSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.VtableSymbolsSmoke"
+}
+
+tasks.register("vtableBindingEvidenceSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.VtableBindingEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/vtable-binding/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/vtable-binding/cache").absolutePath
+}
+
+tasks.register("inheritanceBindingEvidenceSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.InheritanceBindingEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/inheritance-binding/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/inheritance-binding/cache").absolutePath
+}
+
+tasks.register("cxxProfileSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.CxxProfileSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/cxx-profile/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/cxx-profile/cache").absolutePath
+}
+
+tasks.register("declarationBindingEvidenceSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.DeclarationBindingEvidenceSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", file("build/tmp/declaration-binding/settings").absolutePath
+    systemProperty "application.cachedir", file("build/tmp/declaration-binding/cache").absolutePath
+}
+
+tasks.register("inheritanceModelSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.types.InheritanceModelSmoke"
 }
 
 tasks.register("classScopeModelSmoke", JavaExec) {

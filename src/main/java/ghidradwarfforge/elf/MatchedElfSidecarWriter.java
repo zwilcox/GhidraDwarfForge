@@ -45,6 +45,7 @@ public final class MatchedElfSidecarWriter {
     private static final long SHT_SYMTAB_SHNDX = 18;
     private static final long SHF_ALLOC = 0x2;
     private static final long SHF_EXECINSTR = 0x4;
+    private static final long SHF_TLS = 0x400;
     private static final long PT_NOTE = 4;
     private static final int SHN_LORESERVE = 0xff00;
     private static final int SHN_XINDEX = 0xffff;
@@ -390,7 +391,7 @@ public final class MatchedElfSidecarWriter {
             return offset;
         }
         if (symbols.size() > 65536) {
-            throw new IllegalArgumentException("local function symbol count exceeds safety limit");
+            throw new IllegalArgumentException("local symbol count exceeds safety limit");
         }
         int width = image.is64Bit() ? 24 : 16;
         SymbolTableInput old = readSymbolTable(image, sections, width, cancelled);
@@ -427,13 +428,24 @@ public final class MatchedElfSidecarWriter {
         for (int index = 0; index < symbols.size(); index++) {
             checkCancelled(cancelled);
             ElfLocalSymbol symbol = symbols.get(index);
-            if (symbol.sectionIndex() >= sections.size() ||
-                    (sections.get(symbol.sectionIndex()).flags & (SHF_ALLOC | SHF_EXECINSTR)) !=
-                        (SHF_ALLOC | SHF_EXECINSTR) || !names.add(symbol.name())) {
-                throw new IllegalArgumentException("invalid or duplicate planned local function symbol");
+            if (symbol.sectionIndex() >= sections.size() || !names.add(symbol.name())) {
+                throw new IllegalArgumentException("invalid or duplicate planned local symbol");
+            }
+            Section allocation = sections.get(symbol.sectionIndex());
+            if (symbol instanceof ElfLocalObjectSymbol) {
+                // Check the complete extent without overflowing value + size.
+                // An ordinary st_value cannot represent a thread-local offset.
+                if ((allocation.flags & (SHF_ALLOC | SHF_TLS)) != SHF_ALLOC ||
+                        symbol.value() < allocation.address ||
+                        symbol.value() - allocation.address >= allocation.size ||
+                        symbol.size() > allocation.size - (symbol.value() - allocation.address)) {
+                    throw new IllegalArgumentException("object symbol extent is outside an ordinary allocation");
+                }
+            }
+            else if ((allocation.flags & (SHF_ALLOC | SHF_EXECINSTR)) != (SHF_ALLOC | SHF_EXECINSTR)) {
+                throw new IllegalArgumentException("invalid executable allocation for local symbol");
             }
             if (symbol instanceof ElfLocalMappingSymbol) {
-                Section allocation = sections.get(symbol.sectionIndex());
                 if (symbol.value() < allocation.address || symbol.value() - allocation.address >= allocation.size) {
                     throw new IllegalArgumentException("mapping boundary is outside its executable allocation");
                 }
@@ -532,6 +544,72 @@ public final class MatchedElfSidecarWriter {
             offset = addOffset(offset, indices.capacity());
         }
         return offset;
+    }
+
+    enum OriginalObjectMatch { ABSENT, MATCH, CONFLICT }
+
+    /** Compare requested identities with the exact static inventory (or its dynamic mirror). */
+    static Map<String, OriginalObjectMatch> originalObjectMatches(ElfImage image,
+            List<ElfLocalObjectSymbol> objects, BooleanSupplier cancelled) throws IOException {
+        var result = new HashMap<String, OriginalObjectMatch>();
+        var wanted = new HashMap<ByteBuffer, ElfLocalObjectSymbol>();
+        for (var object : objects) {
+            result.put(object.name(), OriginalObjectMatch.ABSENT);
+            wanted.put(ByteBuffer.wrap(object.name().getBytes(java.nio.charset.StandardCharsets.UTF_8)), object);
+        }
+        int width = image.is64Bit() ? 24 : 16;
+        var input = readSymbolTable(image, image.sections(), width, cancelled);
+        var existing = new HashSet<ByteBuffer>();
+        if (input != null) {
+            matchObjects(image, input.records(), input.names(), input.extended(), wanted, result, cancelled);
+            existing.addAll(input.existingNames());
+        }
+        if (input != null && !input.synthesized()) {
+            var dynamic = DynamicSymbolMirror.read(image, cancelled);
+            if (dynamic != null) {
+                matchObjects(image, dynamic.records(), dynamic.names(), dynamic.indices(), wanted, result, cancelled);
+                existing.addAll(dynamic.existingNames());
+            }
+        }
+        for (var entry : wanted.entrySet()) {
+            if (existing.contains(entry.getKey()) && result.get(entry.getValue().name()) == OriginalObjectMatch.ABSENT) {
+                result.put(entry.getValue().name(), OriginalObjectMatch.CONFLICT);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static void matchObjects(ElfImage image, byte[] records, byte[] names, byte[] extended,
+            Map<ByteBuffer, ElfLocalObjectSymbol> wanted, Map<String, OriginalObjectMatch> result,
+            BooleanSupplier cancelled) {
+        int width = image.is64Bit() ? 24 : 16;
+        var rows = ByteBuffer.wrap(records).order(image.byteOrder());
+        var indices = extended == null ? null : ByteBuffer.wrap(extended).order(image.byteOrder());
+        var decoded = new HashMap<Integer, ElfLocalObjectSymbol>();
+        for (int index = 0; index < records.length / width; index++) {
+            checkCancelled(cancelled);
+            int at = index * width, start = rows.getInt(at);
+            // Bounds and framing were validated by readSymbolTable/DynamicSymbolMirror.
+            // Cache repeated offsets to preserve that reader's aggregate name bound.
+            if (!decoded.containsKey(start)) {
+                int end = start;
+                while (names[end] != 0) {
+                    if ((end & 1023) == 0) checkCancelled(cancelled);
+                    end++;
+                }
+                decoded.put(start, wanted.get(ByteBuffer.wrap(names, start, end - start)));
+            }
+            var object = decoded.get(start);
+            if (object == null) continue;
+            int type = Byte.toUnsignedInt(records[at + (image.is64Bit() ? 4 : 12)]) & 15;
+            long section = Short.toUnsignedInt(rows.getShort(at + (image.is64Bit() ? 6 : 14)));
+            if (section == SHN_XINDEX) section = Integer.toUnsignedLong(indices.getInt(index * 4));
+            long value = image.is64Bit() ? rows.getLong(at + 8) : Integer.toUnsignedLong(rows.getInt(at + 4));
+            long size = image.is64Bit() ? rows.getLong(at + 16) : Integer.toUnsignedLong(rows.getInt(at + 8));
+            boolean equal = type == 1 && value == object.value() && size == object.size() && section == object.sectionIndex();
+            result.merge(object.name(), equal ? OriginalObjectMatch.MATCH : OriginalObjectMatch.CONFLICT,
+                (old, current) -> old == OriginalObjectMatch.CONFLICT ? old : current);
+        }
     }
 
     /** Read only the symbol metadata needed for a lossless local insertion. */

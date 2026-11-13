@@ -28,6 +28,28 @@ public final class LocalSymbolMergeSmoke {
                     new ElfLocalFunctionSymbol("curated::alias", 0x1040, 16, 1),
                     new ElfLocalFunctionSymbol("curated::\u03bb", 0x1050, 16, 1));
                 checkMerge(root, original, additions, 2, false);
+                byte[] dataAllocation = original.clone();
+                field(dataAllocation, 4, "flags", 3);
+                field(dataAllocation, 4, "address", 0x2000);
+                var object = new ElfLocalObjectSymbol("proved_object", 0x2000, 16, 4);
+                checkMerge(root, dataAllocation, List.of(additions.get(0), object), 2, false);
+                byte[] zeroFill = dataAllocation.clone();
+                field(zeroFill, 4, "type", 8);
+                checkMerge(root, zeroFill, List.of(object), 2, false);
+                byte[] tls = dataAllocation.clone();
+                field(tls, 4, "flags", 0x403);
+                reject(root, tls, List.of(object), "ordinary allocation", () -> false);
+                reject(root, original, List.of(object), "ordinary allocation", () -> false);
+                for (var invalid : List.of(
+                        new ElfLocalObjectSymbol("before", 0x1fff, 1, 4),
+                        new ElfLocalObjectSymbol("after", 0x2010, 1, 4),
+                        new ElfLocalObjectSymbol("past_end", 0x2008, 9, 4),
+                        new ElfLocalObjectSymbol("overflow", Long.MAX_VALUE, Long.MAX_VALUE, 4))) {
+                    reject(root, dataAllocation, List.of(invalid), "ordinary allocation", () -> false);
+                }
+                reject(root, dataAllocation, List.of(new ElfLocalObjectSymbol("old_global", 0x2000, 4, 4)),
+                    "conflicts with existing symbol", () -> false);
+                reject(root, dataAllocation, List.of(object, object), "duplicate", () -> false);
                 byte[] allLocal = original.clone();
                 field(allLocal, 3, "info", 4);
                 symbolByte(allLocal, 2, wide ? 4 : 12, 2);
@@ -61,6 +83,8 @@ public final class LocalSymbolMergeSmoke {
                 checkMerge(root, extended, high, 2, true);
                 byte[] createExtended = fixture(wide, order, false, true);
                 checkMerge(root, createExtended, high, 2, true);
+                checkMerge(root, createExtended,
+                    List.of(new ElfLocalObjectSymbol("high_object", 0x2000, 16, 0xff01)), 2, true);
 
                 reject(root, original, List.of(new ElfLocalFunctionSymbol("old_global", 0x1040, 16, 1)),
                     "conflicts with existing symbol", () -> false);
@@ -136,6 +160,8 @@ public final class LocalSymbolMergeSmoke {
                 for (int at : List.of(1, 8, 20, 35)) {
                     AtomicInteger calls = new AtomicInteger();
                     reject(root, original, additions, "cancel", () -> calls.incrementAndGet() >= at);
+                    AtomicInteger objectCalls = new AtomicInteger();
+                    reject(root, dataAllocation, List.of(object), "cancel", () -> objectCalls.incrementAndGet() >= at);
                 }
                 System.out.println("local-symbol-merge-format=PASS ELF" + (wide ? 64 : 32) + " " + order);
             }
@@ -143,7 +169,7 @@ public final class LocalSymbolMergeSmoke {
         System.out.println("local-symbol-merge-smoke=PASS checks=" + checks);
     }
 
-    private static void checkMerge(Path root, byte[] inputBytes, List<ElfLocalFunctionSymbol> additions,
+    private static void checkMerge(Path root, byte[] inputBytes, List<? extends ElfLocalSymbol> additions,
             int locals, boolean extended) throws Exception {
         Path dir = Files.createTempDirectory(root, "positive-");
         Path input = dir.resolve("input");
@@ -177,7 +203,10 @@ public final class LocalSymbolMergeSmoke {
             byte[] expected = additions.get(i).name().getBytes(StandardCharsets.UTF_8);
             require(Arrays.equals(Arrays.copyOfRange(names, name, name + expected.length), expected) &&
                 names[name + expected.length] == 0, "appended exact name");
-            require(records[entry + (original.is64Bit() ? 4 : 12)] == 2, "local function binding");
+            require(records[entry + (original.is64Bit() ? 4 : 12)] == additions.get(i).type(), "local binding and type");
+            long value = original.is64Bit() ? values.getLong(entry + 8) : Integer.toUnsignedLong(values.getInt(entry + 4));
+            long size = original.is64Bit() ? values.getLong(entry + 16) : Integer.toUnsignedLong(values.getInt(entry + 8));
+            require(value == additions.get(i).value() && size == additions.get(i).size(), "exact symbol address/size");
         }
         if (extended) {
             var indexSection = result.sections().stream().filter(s -> s.type == 18).findFirst().orElseThrow();
@@ -208,7 +237,7 @@ public final class LocalSymbolMergeSmoke {
             untouched.sections().get(3).info == locals, "empty plan retains original table");
     }
 
-    private static void reject(Path root, byte[] inputBytes, List<ElfLocalFunctionSymbol> additions,
+    private static void reject(Path root, byte[] inputBytes, List<? extends ElfLocalSymbol> additions,
             String message, BooleanSupplier cancelled) throws Exception {
         Path dir = Files.createTempDirectory(root, "negative-");
         Path input = dir.resolve("input");

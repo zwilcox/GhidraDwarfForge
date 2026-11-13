@@ -1,5 +1,11 @@
 package ghidradwarfforge.nativeapi;
 
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_TAG_INHERITANCE;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_ACCESSIBILITY;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_CONTAINING_TYPE;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_VIRTUALITY;
+import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_VTABLE_ELEM_LOCATION;
+
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_TAG_CALL_SITE;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_TAG_CALL_SITE_PARAMETER;
 import static ghidradwarfforge.nativeapi.DwarfConstants.DW_AT_CALL_ALL_CALLS;
@@ -543,10 +549,20 @@ public final class MinimalDwarfSidecarExporter {
 
         ElfImage elf = ElfImage.read(source);
         DwarfTarget target = DwarfTarget.fromElf(elf);
+        if (typeModel != null && typeModel.classScopes().inheritance().abi() !=
+                ghidradwarfforge.targets.CxxAbiProfile.UNSPECIFIED) {
+            typeModel.classScopes().inheritance().abi().requireTarget(elf.machine(), target.addressBytes(), elf.byteOrder());
+        }
         if (framePlan != null && (framePlan.addressBytes() != target.addressBytes() || framePlan.order() != elf.byteOrder())) {
             throw new IllegalArgumentException("frame plan target layout differs from original ELF");
         }
         typeModel = target.applyCallRestrictions(elf, typeModel, cancelled, diagnostic);
+        var vtableReserved = new java.util.HashSet<>(constantNames);
+        vtableReserved.addAll(formatterAliases.values());
+        for (var function : ordered) vtableReserved.add(function.qualifiedDisplayName());
+        for (var alias : aliases) vtableReserved.add(alias.name());
+        var vtables = ghidradwarfforge.elf.VtableSymbols.plan(elf, typeModel, vtableReserved, cancelled, diagnostic);
+        typeModel = vtables.types();
         Map<Integer, String> constantTypeNames = new java.util.TreeMap<>();
         if (!constants.isEmpty()) {
             var namesModel = typeModel == null ? new ProgramTypeModel(new TypeGraph(List.of()), List.of(), List.of()) : typeModel;
@@ -574,6 +590,7 @@ public final class MinimalDwarfSidecarExporter {
         List<ElfLocalFunctionSymbol> modeSymbols = target.planFunctionModeSymbols(
             elf, modeCues, ordered, cancelled, diagnostic);
         List<ghidradwarfforge.elf.ElfLocalSymbol> supplemental = new ArrayList<>(modeSymbols);
+        supplemental.addAll(vtables.symbols());
         var plannedAliases = target.planFunctionAliases(elf, aliases, ordered, modeSymbols,
             aliasModeCues, cancelled, diagnostic);
         supplemental.addAll(plannedAliases);
@@ -752,6 +769,7 @@ public final class MinimalDwarfSidecarExporter {
                 emittedFunctionSignatures(functions, typeModel, syntheticSource);
             Map<ClassScopeModel.FunctionReference, Die> methodDeclarations = allocateMethodDeclarations(
                 producer, consumer, debug, typeModel, classes.scopes(), allocatedTypes, signatures, errorOut);
+            emitInheritance(producer, consumer, debug, typeModel, classes.scopes(), methodDeclarations, errorOut, cancelled);
             Map<VariableKey, VariableLocation> variableLocations =
                 variableLocations(typeModel);
             Map<Long, Die> functionDies = new HashMap<>();
@@ -1284,6 +1302,60 @@ public final class MinimalDwarfSidecarExporter {
             result.put(target, die);
         }
         return result;
+    }
+
+    private static void emitInheritance(LibDwarfProducer producer, LibDwarfConsumer consumer,
+            Debug debug, ProgramTypeModel model, Map<Long, Die> classes,
+            Map<ClassScopeModel.FunctionReference, Die> methods, PointerByReference errorOut,
+            BooleanSupplier cancelled) {
+        if (model == null) return;
+        var inheritance = model.classScopes().inheritance();
+        if (inheritance.bases().isEmpty() && inheritance.virtualMethods().isEmpty()) return;
+        var bindings = new HashMap<Long, ClassScopeModel.Binding>();
+        for (var binding : model.classScopes().bindings()) {
+            checkCancelled(cancelled);
+            bindings.put(binding.classId(), binding);
+        }
+        var types = model.types().byKey();
+        for (var base : inheritance.bases()) {
+            checkCancelled(cancelled);
+            Die owner = Objects.requireNonNull(classes.get(base.derivedClassId()));
+            Die die = newDie(producer, consumer, debug, DW_TAG_INHERITANCE, owner, errorOut);
+            addReference(producer, consumer, debug, die, DW_AT_TYPE,
+                Objects.requireNonNull(classes.get(base.baseClassId())), errorOut);
+            addUnsigned(producer, consumer, debug, die, DW_AT_ACCESSIBILITY, accessibility(base.access()), errorOut);
+            if (base.location() instanceof ghidradwarfforge.types.InheritanceModel.FixedBase fixed) {
+                addUnsigned(producer, consumer, debug, die, DW_AT_DATA_MEMBER_LOCATION, fixed.offset(), errorOut);
+            }
+            else if (base.location() instanceof ghidradwarfforge.types.InheritanceModel.VirtualBase virtual) {
+                addUnsigned(producer, consumer, debug, die, DW_AT_VIRTUALITY, 1, errorOut);
+                long size = types.get(bindings.get(base.derivedClassId()).type().key()).byteSize();
+                addBlock(producer, consumer, debug, die, DW_AT_DATA_MEMBER_LOCATION,
+                    ghidradwarfforge.dwarf.DwarfInheritanceExpression.virtualBase(inheritance.abi(), virtual, size), errorOut);
+            }
+        }
+        var identities = new HashMap<Long, ClassScopeModel.Method>();
+        for (var method : model.classScopes().methods()) {
+            checkCancelled(cancelled);
+            identities.put(method.id(), method);
+        }
+        for (var virtual : inheritance.virtualMethods()) {
+            checkCancelled(cancelled);
+            var method = Objects.requireNonNull(identities.get(virtual.methodId()));
+            Die die = methods.get(method.function());
+            if (die == null) continue; // Preserve genuine source-failure symbol-only behavior.
+            addUnsigned(producer, consumer, debug, die, DW_AT_ACCESSIBILITY, accessibility(virtual.access()), errorOut);
+            addUnsigned(producer, consumer, debug, die, DW_AT_VIRTUALITY,
+                virtual.virtuality() == ghidradwarfforge.types.InheritanceModel.Virtuality.PURE_VIRTUAL ? 2 : 1, errorOut);
+            addReference(producer, consumer, debug, die, DW_AT_CONTAINING_TYPE,
+                Objects.requireNonNull(classes.get(method.classId())), errorOut);
+            addBlock(producer, consumer, debug, die, DW_AT_VTABLE_ELEM_LOCATION,
+                ghidradwarfforge.dwarf.DwarfInheritanceExpression.virtualSlot(virtual.slot()), errorOut);
+        }
+    }
+
+    private static int accessibility(ghidradwarfforge.types.InheritanceModel.Access access) {
+        return switch (access) { case PUBLIC -> 1; case PROTECTED -> 2; case PRIVATE -> 3; };
     }
 
     private static Map<List<String>, Die> allocateNamespaces(LibDwarfProducer producer,

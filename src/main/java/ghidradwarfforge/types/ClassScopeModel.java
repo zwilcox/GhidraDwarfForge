@@ -11,7 +11,15 @@ import java.util.PriorityQueue;
 import ghidradwarfforge.types.TypeGraph.TypeRef;
 
 /** Saved ownership and separately evidenced class layout; never a location proof. */
-public record ClassScopeModel(List<Scope> scopes, List<Binding> bindings, List<Method> methods) {
+public record ClassScopeModel(List<Scope> scopes, List<Binding> bindings, List<Method> methods,
+        InheritanceModel inheritance, List<VtableEvidence> vtables) {
+    public ClassScopeModel(List<Scope> scopes, List<Binding> bindings, List<Method> methods,
+            InheritanceModel inheritance) {
+        this(scopes, bindings, methods, inheritance, List.of());
+    }
+    public ClassScopeModel(List<Scope> scopes, List<Binding> bindings, List<Method> methods) {
+        this(scopes, bindings, methods, InheritanceModel.empty());
+    }
     public enum Kind { NAMESPACE, CLASS }
 
     /** An inference is a current snapshot, not a durable class/type identity. */
@@ -62,7 +70,9 @@ public record ClassScopeModel(List<Scope> scopes, List<Binding> bindings, List<M
     }
 
     public ClassScopeModel {
-        if (scopes == null || bindings == null || methods == null) throw invalid("missing class model lists");
+        if (scopes == null || bindings == null || methods == null || inheritance == null || vtables == null || vtables.size() > 4096) {
+            throw invalid("missing class model lists");
+        }
         var byId = new HashMap<Long, Scope>();
         for (Scope scope : scopes) {
             if (scope == null || byId.put(scope.id(), scope) != null) throw invalid("duplicate scope identity");
@@ -105,6 +115,14 @@ public record ClassScopeModel(List<Scope> scopes, List<Binding> bindings, List<M
                 throw invalid("conflicting saved method identity");
             }
         }
+        var tableIds = new HashSet<Long>();
+        for (var table : vtables) {
+            if (table == null || !tableIds.add(table.symbolId()) || table.abi() != inheritance.abi() ||
+                    bindings.stream().noneMatch(binding -> binding.classId() == table.classId() &&
+                        binding.source() == BindingSource.EXPLICIT_SAVED)) throw invalid("missing or conflicting explicit vtable class");
+        }
+        vtables = vtables.stream().sorted(Comparator.comparingLong(VtableEvidence::address)
+            .thenComparing(VtableEvidence::mangledName).thenComparingLong(VtableEvidence::symbolId)).toList();
         methods = methods.stream().sorted(Comparator.comparingLong(Method::classId)
             .thenComparing(Method::name).thenComparingLong(Method::id)).toList();
     }
@@ -159,6 +177,7 @@ public record ClassScopeModel(List<Scope> scopes, List<Binding> bindings, List<M
                 throw invalid("inferred class layout has no current object parameter witness");
             }
         }
+        inheritance.validate(graph, this, signatures);
     }
 
     private static TypeGraph.TypeNode unqualified(TypeRef reference, Map<String, TypeGraph.TypeNode> types) {

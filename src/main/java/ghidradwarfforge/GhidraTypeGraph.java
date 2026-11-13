@@ -681,7 +681,7 @@ public final class GhidraTypeGraph {
         if (mmio != null) mmio.validateAliases(graph, monitor);
         return new ProgramTypeModel(graph,
             signatures, globals, new VariableStorageModel(variableLocations), functionStatics,
-            declarations, lexicalScopes, classScopes.finish(graph),
+            declarations, lexicalScopes, classScopes.finish(graph, signatures, declarations),
             GhidraFunctionRelations.extract(program, signatures, declarations, rebaseDelta, monitor, diagnostic));
     }
 
