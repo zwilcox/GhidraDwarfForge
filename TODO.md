@@ -1,6 +1,18 @@
 # TODO.md — GhidraDwarfForge
 
-## Raw firmware complete local suite; hosted gate pending — 2026-11-12
+## Current goal and accepted milestones — 2026-11-13
+
+- **CONFIRMED:** #119 raw firmware is accepted in [PR #198](https://github.com/zwilcox/GhidraDwarfForge/pull/198), merged as `95fc00d0`. Its required PR gate and [post-merge main gate](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43432295894) passed. Scope: [RAW-FIRMWARE.md](docs/RAW-FIRMWARE.md).
+- **CONFIRMED:** #118 MMIO is accepted in [PR #199](https://github.com/zwilcox/GhidraDwarfForge/pull/199), merged as `eb622948`, after its [full required gate](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43432393192) passed. Access policies and device/probe limits: [MMIO.md](docs/MMIO.md).
+- **PRESENT, UNVERIFIED on main:** #113 C++ passed full PR CI at `0013ec68`. [PR #200](https://github.com/zwilcox/GhidraDwarfForge/pull/200) now targets main at tree-identical `f87a21e7`; its updated required gate and integration remain pending. ABI scope: [CPP-INHERITANCE.md](docs/CPP-INHERITANCE.md).
+- **PRESENT, UNVERIFIED on main:** #162 Java test-coverage and #163 main CI badges passed their PR gate. [PR #201](https://github.com/zwilcox/GhidraDwarfForge/pull/201) still needs integration after #200, successful main publication, and rendered badge/report-link verification. A PR percentage is not a main measurement. Scope: [TEST-CODE-COVERAGE.md](docs/TEST-CODE-COVERAGE.md).
+- **CONFIRMED:** merged-branch cleanup is complete for retired work. Preserve active C++/badge branches until integrated, unique older work, and the eventual `reports/test-coverage` publication branch.
+
+The dated checkpoints below describe historical states; their pending-work wording
+does not override this current status. Acceptance requirements in the later
+milestone sections remain applicable to their stated scopes.
+
+## Historical raw-firmware local checkpoint — 2026-11-12
 
 **CONFIRMED locally:** #119 exports the saved raw memory map through the real
 native producer and installed headless wrapper. Both Cortex-M3 RAM layouts pass
