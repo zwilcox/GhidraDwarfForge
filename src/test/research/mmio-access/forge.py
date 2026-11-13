@@ -66,6 +66,7 @@ def main():
         assert 'GhidraDwarfForge symbol export PASS' in (case / 'export.log').read_text()
         after = snapshot(project)
         project_changes = sorted(k for k in saved.keys() | after.keys() if saved.get(k) != after.get(k))
+        assert not project_changes, 'saved project changed: ' + repr(project_changes)
         run(['llvm-dwarfdump', '--verify', str(sidecar)], case / 'llvm.log')
         assert 'No errors.' in (case / 'llvm.log').read_text()
         run(['readelf', '-hSW', '--debug-dump=info', '--debug-dump=decodedline', str(sidecar)], case / 'readelf.log')
@@ -74,15 +75,12 @@ def main():
         values = observe(case, original, 'forge', sidecar, require_qualifiers=False)
         assert values == expected(PROFILES[name][3]), (name, values)
         types = (case / 'forge.log').read_text()
+        assert 'volatile word32 counter' in types, 'saved scalar-member volatility omitted'
         alias = subprocess.run(['gdb-multiarch', '-nx', '-nh', '-batch', '-ex', 'set auto-load off',
             '-ex', 'symbol-file ' + json.dumps(str(sidecar)), '-ex', 'info address peripheral_alias'],
             capture_output=True, text=True, timeout=30)
         (case / 'alias.log').write_text(alias.stdout + alias.stderr)
         gaps = []
-        if project_changes:
-            gaps.append('existing ELF wrapper changed project files: ' + ','.join(project_changes))
-        if 'volatile word32 counter' not in types:
-            gaps.append('saved scalar-member volatile setting omitted')
         if alias.returncode != 0 or '0x40000000' not in alias.stdout:
             gaps.append('secondary global label omitted')
         outputs = [digest(sidecar), digest(Path(str(sidecar) + '.c'))]
@@ -90,8 +88,7 @@ def main():
         assert outputs == [digest(sidecar), digest(Path(str(sidecar) + '.c'))]
         repeated = snapshot(project)
         extra_changes = sorted(k for k in after.keys() | repeated.keys() if after.get(k) != repeated.get(k))
-        if extra_changes:
-            gaps.append('repeated ELF wrapper changed project files: ' + ','.join(extra_changes))
+        assert not extra_changes, 'repeated export changed project: ' + repr(extra_changes)
         assert digest(original) == original_hash and digest(reference) == reference_hash
         results[name] = {'status': 'INCOMPLETE_MMIO_EXPORT' if gaps else 'PASS_LAYOUT_AND_SAVED_SETTINGS',
             'values': values, 'gaps': gaps, 'inputSha256': original_hash, 'outputsSha256': outputs,

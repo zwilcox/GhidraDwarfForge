@@ -22,6 +22,7 @@ import ghidra.program.model.data.DataTypeComponent;
 import ghidra.program.model.data.DefaultDataType;
 import ghidra.program.model.data.Dynamic;
 import ghidra.program.model.data.Enum;
+import ghidra.program.model.data.MutabilitySettingsDefinition;
 import ghidra.program.model.data.FunctionDefinition;
 import ghidra.program.model.data.ParameterDefinition;
 import ghidra.program.model.data.Pointer;
@@ -550,7 +551,7 @@ public final class GhidraTypeGraph {
                     continue;
                 }
                 functionStatics.add(new ProgramTypeModel.FunctionStaticVariable(binding.displayName(), address,
-                    objectSize, extractor.reserve(objectType), ownerAddress,
+                    objectSize, extractor.reserveObject(objectType, inferredType ? null : data), ownerAddress,
                     "EXPLICIT_STATIC_BINDING: " + binding.evidence(), binding.block()));
                 diagnostic.accept("Using explicit static ownership for " + symbol.getName(true) +
                     " in " + binding.owner().getName(true) + "; " + binding.evidence());
@@ -574,12 +575,12 @@ public final class GhidraTypeGraph {
                 }
                 functionStatics.add(new ProgramTypeModel.FunctionStaticVariable(
                     symbol.getName(), address, objectSize,
-                    extractor.reserve(objectType), ownerAddress,
+                    extractor.reserveObject(objectType, inferredType ? null : data), ownerAddress,
                     (inferredType ? "DECOMPILER_INFERRED_TYPE; " : "") + symbol.getSource().name()));
                 continue;
             }
             globals.add(new ProgramTypeModel.GlobalVariable(symbol.getName(), address,
-                objectSize, extractor.reserve(objectType), false,
+                objectSize, extractor.reserveObject(objectType, inferredType ? null : data), false,
                 symbol.getSource().name(),
                 namespacePath(symbol.getParentNamespace())));
         }
@@ -843,6 +844,37 @@ public final class GhidraTypeGraph {
             }
         }
 
+        TypeRef reserveObject(DataType type, Data data) {
+            // Data's supported mutability setting excludes block/processor flags.
+            // Apply it to this object's reference, never mutate the shared base type.
+            TypeGraph.Qualifier qualifier = data == null ? null : data.isConstant()
+                ? TypeGraph.Qualifier.CONST : data.isVolatile() ? TypeGraph.Qualifier.VOLATILE : null;
+            return qualify(type, qualifier);
+        }
+
+        private TypeRef qualify(DataType type, TypeGraph.Qualifier qualifier) {
+            TypeRef base = reserve(type);
+            if (qualifier == null) return base;
+            String key = "qualified:" + qualifier.name() + ":" + base.key();
+            nodes.putIfAbsent(key, new TypeGraph.QualifiedType(key,
+                qualifier.name().toLowerCase(java.util.Locale.ROOT) + " " + displayName(type),
+                nonNegativeSize(type), List.of(qualifier), base));
+            return new TypeRef(key);
+        }
+
+        private TypeRef reserveMember(DataType type, DataTypeComponent component) {
+            boolean supported = java.util.Arrays.stream(component.getDataType().getSettingsDefinitions())
+                .anyMatch(definition -> definition instanceof MutabilitySettingsDefinition);
+            int mode = supported ? MutabilitySettingsDefinition.DEF.getChoice(component.getDefaultSettings())
+                : MutabilitySettingsDefinition.NORMAL;
+            TypeGraph.Qualifier qualifier = switch (mode) {
+                case MutabilitySettingsDefinition.CONSTANT -> TypeGraph.Qualifier.CONST;
+                case MutabilitySettingsDefinition.VOLATILE -> TypeGraph.Qualifier.VOLATILE;
+                default -> null;
+            };
+            return qualify(type, qualifier);
+        }
+
         private String uniqueKey(DataType type) {
             String base = stableKey(type);
             DataType owner = owners.get(base);
@@ -977,7 +1009,7 @@ public final class GhidraTypeGraph {
                 if (fieldName == null || fieldName.isBlank()) {
                     fieldName = component.getDefaultFieldName();
                 }
-                members.add(new Member(fieldName, reserve(memberType), component.getOffset(),
+                members.add(new Member(fieldName, reserveMember(memberType, component), component.getOffset(),
                     bitSize, storageBitOffset, storageByteSize));
             }
             return new AggregateType(key, name, nonNegativeSize(composite), kind, members);

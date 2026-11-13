@@ -19,6 +19,7 @@ import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.util.DefaultLanguageService;
 import ghidra.util.task.TaskMonitor;
+import ghidradwarfforge.types.TypeGraph;
 
 /** Saved Ghidra evidence for MMIO policy; not an export or hardware-access test. */
 public final class GhidraMmioEvidenceSmoke {
@@ -29,6 +30,7 @@ public final class GhidraMmioEvidenceSmoke {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
         for (String id : List.of("x86:LE:64:default", "ARM:LE:32:Cortex", "MIPS:BE:32:default")) {
+            String target = id.startsWith("x86:") ? "x86_64" : id.startsWith("ARM:") ? "arm" : "mips";
             var language = DefaultLanguageService.getLanguageService().getLanguage(new LanguageID(id));
             Object owner = new Object();
             var program = new ProgramDB("mmio-evidence", language, language.getDefaultCompilerSpec(), owner);
@@ -65,7 +67,9 @@ public final class GhidraMmioEvidenceSmoke {
                     MutabilitySettingsDefinition.DEF.setChoice(object, MutabilitySettingsDefinition.VOLATILE);
                     MutabilitySettingsDefinition.DEF.setChoice(object.getComponent(0).getDefaultSettings(),
                         MutabilitySettingsDefinition.CONSTANT);
-                    MutabilitySettingsDefinition.DEF.setChoice(object.getComponent(1), MutabilitySettingsDefinition.VOLATILE);
+                    MutabilitySettingsDefinition.DEF.setChoice(object.getComponent(1).getDefaultSettings(),
+                        MutabilitySettingsDefinition.VOLATILE);
+                    program.getSymbolTable().createLabel(space.getAddress(BASE + 16), "aggregate_view", SourceType.USER_DEFINED);
                     var overlay = memory.createUninitializedBlock("overlay", space.getAddress(BASE), 4, true);
                     program.getListing().createData(overlay.getStart(), type);
                     program.getSymbolTable().createLabel(overlay.getStart(), "overlay_status", SourceType.USER_DEFINED);
@@ -73,7 +77,7 @@ public final class GhidraMmioEvidenceSmoke {
                         space.getAddress(BASE), 4, false);
                 }
                 finally { program.endTransaction(tx, true); }
-                observe(program);
+                observe(program, target);
                 program.getDBHandle().saveAs(saved.toFile(), false, TaskMonitor.DUMMY);
                 byte[] before = Files.readAllBytes(saved);
                 var modified = Files.getLastModifiedTime(saved);
@@ -82,7 +86,7 @@ public final class GhidraMmioEvidenceSmoke {
                 ProgramDB reopened = null;
                 try {
                     reopened = new ProgramDB(handle, OpenMode.IMMUTABLE, TaskMonitor.DUMMY, reader);
-                    observe(reopened);
+                    observe(reopened, target);
                 }
                 finally {
                     if (reopened == null) handle.close();
@@ -101,7 +105,7 @@ public final class GhidraMmioEvidenceSmoke {
         System.out.println("ghidra-mmio-evidence=PASS checks=" + checks);
     }
 
-    private static void observe(ProgramDB program) throws Exception {
+    private static void observe(ProgramDB program, String target) throws Exception {
         long modification = program.getModificationNumber();
         var space = program.getAddressFactory().getDefaultAddressSpace();
         var start = space.getAddress(BASE);
@@ -131,7 +135,29 @@ public final class GhidraMmioEvidenceSmoke {
         var alias = program.getMemory().getBlock("mapped_alias");
         require(alias.isMapped() && !alias.isOverlay() && alias.getStart().getOffset() == BASE + 0x100,
             "mapped alias became an independent physical register");
+        var model = GhidraTypeGraph.extract(program, List.of(), target, 0, TaskMonitor.DUMMY, ignored -> { });
+        var globals = model.globals().stream().collect(java.util.stream.Collectors.toMap(g -> g.name(), g -> g));
+        var nodes = model.types().byKey();
+        require(!(nodes.get(globals.get("register_0").type().key()) instanceof TypeGraph.QualifiedType),
+            "block attributes leaked into an ordinary object's type");
+        require(qualified(nodes.get(globals.get("register_4").type().key()), TypeGraph.Qualifier.VOLATILE),
+            "export model lost explicit object volatility");
+        require(qualified(nodes.get(globals.get("register_8").type().key()), TypeGraph.Qualifier.CONST),
+            "export model lost explicit object const qualification");
+        require(globals.get("register_8").type().equals(globals.get("register_12").type()),
+            "identical qualified references were duplicated");
+        var aggregateType = (TypeGraph.AggregateType) nodes.get(globals.get("aggregate_view").type().key());
+        var counterMember = aggregateType.members().stream().filter(m -> m.name().equals("counter")).findFirst().orElseThrow();
+        require(qualified(nodes.get(counterMember.type().key()), TypeGraph.Qualifier.VOLATILE),
+            "export model lost supported member volatility");
+        var statusMember = aggregateType.members().stream().filter(m -> m.name().equals("status")).findFirst().orElseThrow();
+        require(!(nodes.get(statusMember.type().key()) instanceof TypeGraph.QualifiedType),
+            "export model invented an unsupported aggregate qualifier");
         require(program.getModificationNumber() == modification, "observation modified program");
+    }
+
+    private static boolean qualified(TypeGraph.TypeNode node, TypeGraph.Qualifier qualifier) {
+        return node instanceof TypeGraph.QualifiedType type && type.qualifiers().equals(List.of(qualifier));
     }
 
     private static void require(boolean condition, String message) {

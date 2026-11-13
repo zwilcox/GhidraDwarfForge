@@ -1901,6 +1901,15 @@ jobs:
           fi
           src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
+      - name: Validate saved MMIO layouts and qualifier preservation
+        if: matrix.target == 'x86_64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/research/mmio-access/forge.py --ghidra "$GHIDRA_INSTALL_DIR" \
+              --references build/test-results/mmio-layout --targets "$TARGET" \
+              --results build/test-results/mmio-forge
+
       - name: Freestanding i386 stack values through stripped exec and PIE exports
         if: matrix.target == 'x86_64'
         run: |

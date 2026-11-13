@@ -85,14 +85,17 @@ mapping. A peripheral profile must retain and validate the actual Ghidra address
 space before converting to a runtime address, and distinguish explicit aliases
 from coincident names or offsets.
 
-The aggregate extractor already preserves each bitfield's actual storage size
+The aggregate extractor preserves each bitfield's actual storage size
 with `BitFieldDataType.getStorageSize()`, separately from its base type. It emits
 union member offsets, enum values and signedness. The generic type graph and
-writer can represent qualified types, but the current Ghidra extractor has no
-const/volatile conversion in its type dispatch. A compiler-reference qualifier
-test therefore cannot establish preservation from a saved Ghidra program. The
-next fixture must explicitly exercise Ghidra's data-instance settings and
-document the distinction between object qualifiers and member type information.
+writer can represent qualified types. **CONFIRMED locally:** extraction now
+wraps the references of data objects with supported explicit constant/volatile
+settings, including function-owned statics. Aggregate members use supported
+component default settings. The shared base type remains unchanged, and matching
+qualified references reuse one node. Block/processor flags and unsupported
+aggregate settings do not imply C qualifiers. Arbitrary per-instance overrides
+on nested components and combined `const volatile` aggregate views still need
+an explicit representation in the MMIO profile.
 
 The DWARF writer gives a defined global an address expression. It does not encode
 device width, read-clear behavior, or a debugger cache policy. Those require an
@@ -133,8 +136,10 @@ process is not a feature-completion result.
 **CONFIRMED on the current exporter:** x86-64 and both MIPS32 byte orders retain
 the tested field values, flags, offsets and widths. GNU/LLVM/pinned validation,
 original-input preservation and repeated sidecar/source determinism pass.
-The scalar counter's saved volatile setting and the secondary global label are
-omitted. These gaps must be fixed before claiming MMIO completion.
+The scalar counter's saved volatile setting now survives into GDB on all three
+profiles, with unchanged field values and layouts. The probe rejects a missing
+qualifier or changed project files. The secondary global label remains omitted;
+the access profile/helper and instrumented production reads are still pending.
 
 **HISTORICAL at `9f57035e`:** the existing ELF-project wrapper also changed
 Ghidra's index/journal backup files. Fix `3fb950d0` applies the raw-firmware
