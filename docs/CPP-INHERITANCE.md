@@ -1,8 +1,10 @@
 # C++ inheritance and vtable export
 
-**PLANNED:** issue #113 extends saved class/type ownership with explicit base,
-virtual-method and vtable relationships. The current exporter does not emit
-those relationships. Ghidra 12.0.3, Java 21 and synthetic C11 remain the baseline.
+**PRESENT, UNVERIFIED end to end:** issue #113 extends saved class/type ownership
+with explicit base, virtual-method and vtable relationships. The native exporter
+now emits inheritance from a validated explicit model; ordinary Ghidra extraction
+and vtable evidence admission remain incomplete. Ghidra 12.0.3, Java 21 and
+synthetic C11 remain the baseline.
 
 ## Compiler and debugger evidence
 
@@ -141,10 +143,9 @@ bindings and extraction still pass on x86-64, AArch64, ARM32 and both MIPS byte
 orders (400 binding and 290 extraction checks). Existing class-model/name tests
 also pass. Hosted checks for this checkpoint remain pending.
 
-**PLANNED:** persist and revalidate the new relationships, including layout and
-method changes; admit actual vtable/address-point evidence; connect the model to
-native emission; and run independent compiler/Forge behavioral comparisons.
-The model is not yet populated by ordinary export.
+The saved relationship and native emission checkpoints below extend this model.
+Actual vtable/address-point evidence and ordinary export integration remain
+incomplete.
 
 ## Saved relationship snapshot
 
@@ -170,7 +171,52 @@ Cancellation occurs before the final options write; immutable reopening leaves
 saved database bytes and timestamps unchanged.
 
 This API currently persists bases and virtual-method slots. Vtable address-point
-and byte evidence, extraction integration, configuration UI/script and native
-emission are still **PLANNED**. Saving a record alone does not enable inheritance
-export. The dedicated saved-program smoke is in both hosted test lists; its
-local results do not substitute for the full #113 runtime acceptance.
+and byte evidence, extraction integration and configuration UI/script are still
+**PLANNED**. Saving a record alone does not enable inheritance export. The
+dedicated saved-program smoke is in both hosted test lists; its local results
+do not substitute for the full #113 runtime acceptance.
+
+## Native emission checkpoint
+
+**CONFIRMED locally:** `produce.py` supplies the production native exporter with
+an explicit model decoded independently from the compiler fixture. The emitter
+adds ordered `DW_TAG_inheritance` children to canonical class definitions, fixed
+or ABI-specific virtual-base locations, accessibility, virtuality, containing
+types and vtable slots on the existing method declarations. Object parameters
+and declaration/definition identities are retained. The selected C++ profile
+must match the original ELF before native production begins.
+
+Eight cases cover x86-64/AArch64, non-PIE/PIE and RTTI/no-RTTI. GNU readelf, LLVM
+and the pinned libdwarf checker accept the packaged artifacts. Fresh GDB/QEMU
+sessions compare derived types, base offsets and member values with compiler
+references, inspect `ptype` and `info vtbl`, and run the original virtual calls.
+Repeated native exports to the same destination are byte-identical. Cancellation
+at early/middle/late checkpoints preserves existing output or leaves no new
+final artifact; wrong-target profiles preserve the prior generation. Originals
+remain byte-identical.
+
+The fixture includes standalone virtual-left and virtual-right objects in
+addition to a diamond. Without them, a valid alternative path through the
+diamond could hide an incorrect base expression. Deliberately incorrect fixed
+and individual virtual-base offsets remain structurally valid but must fail
+the runtime oracle. These negative controls are part of the harness.
+
+The test packages proven compiler vtable object identities through the production
+ELF writer after native DWARF emission. It does not prove their extraction from
+Ghidra. Qualified/duplicate class names, recovery configuration, full source
+failure behavior and end-to-end saved-program export still need acceptance.
+Secondary/thunk entries may display addresses instead of recovered thunk names;
+this checkpoint does not claim complete thunk reconstruction. The corresponding
+x86-64/AArch64 CI step is present but has not yet run on the hosted branch.
+
+After generating the reference and preparing the Java harness:
+
+```bash
+python3 support/storage-guard.py run --cwd "$PWD" -- \
+    env JAVA_HOME=/path/to/jdk21 LIBDWARF=/path/to/libdwarf.so \
+    LIBDWARFP=/path/to/libdwarfp.so DWARFDUMP=/path/to/pinned/dwarfdump \
+    python3 -B src/test/research/inheritance/produce.py \
+    --references "$PWD/.forge-work/scratch/inheritance-reference" \
+    --classpath build/inheritance-classpath.txt \
+    --results "$PWD/.forge-work/scratch/inheritance-native"
+```

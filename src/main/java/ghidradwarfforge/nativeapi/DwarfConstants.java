@@ -23,6 +23,7 @@ public final class DwarfConstants {
     public static final long DW_DLC_TARGET_BIGENDIAN = 0x08000000L;
     public static final long DW_DLC_TARGET_LITTLEENDIAN = 0x00100000L;
 
+    public static final long DW_TAG_INHERITANCE = 0x1cL;
     public static final long DW_TAG_COMPILE_UNIT = 0x11L;
     public static final long DW_TAG_SUBPROGRAM = 0x2eL;
     public static final long DW_TAG_IMPORTED_DECLARATION = 0x08L;
@@ -52,6 +53,10 @@ public final class DwarfConstants {
     public static final long DW_TAG_CALL_SITE = 0x48L;
     public static final long DW_TAG_CALL_SITE_PARAMETER = 0x49L;
 
+    public static final short DW_AT_CONTAINING_TYPE = 0x1d;
+    public static final short DW_AT_ACCESSIBILITY = 0x32;
+    public static final short DW_AT_VIRTUALITY = 0x4c;
+    public static final short DW_AT_VTABLE_ELEM_LOCATION = 0x4d;
     public static final short DW_AT_BYTE_SIZE = 0x0b;
     public static final short DW_AT_LOCATION = 0x02;
     public static final short DW_AT_BIT_SIZE = 0x0d;

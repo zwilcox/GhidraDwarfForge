@@ -46,6 +46,8 @@ Multiple *multiple_object;
 VirtualBase *diamond_base;
 VirtualRight *diamond_right;
 Diamond *diamond_object;
+VirtualLeft *virtual_left_object;
+VirtualRight *virtual_right_object;
 
 extern "C" __attribute__((noinline)) void inheritance_checkpoint() {
     asm volatile("" ::: "memory");
@@ -55,6 +57,8 @@ int main() {
     Single one;
     Multiple many;
     Diamond diamond;
+    VirtualLeft standalone_left;
+    VirtualRight standalone_right;
     single_base = &one;
     single_object = &one;
     multiple_right = &many;
@@ -62,7 +66,10 @@ int main() {
     diamond_base = &diamond;
     diamond_right = &diamond;
     diamond_object = &diamond;
+    virtual_left_object = &standalone_left;
+    virtual_right_object = &standalone_right;
     inheritance_checkpoint();
     return single_base->value() != 58 || multiple_right->second() != 46 ||
-        diamond_base->root_value() != 56 || diamond_right->right_value() != 68;
+        diamond_base->root_value() != 56 || diamond_right->right_value() != 68 ||
+        virtual_left_object->root_value() != 19 || virtual_right_object->root_value() != 19;
 }

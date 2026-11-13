@@ -1048,6 +1048,22 @@ jobs:
           python3 src/test/native/validate-call-site-jna.py --profile "$TARGET" \
             --sections "$results/sections" --output "$results/validation"
 
+      - name: Compiler inheritance references and native exporter runtime controls
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon prepareInheritanceHarness
+          results="$PWD/build/test-results/inheritance/$TARGET"
+          python3 -B src/test/research/inheritance/reference.py \
+              --targets "$TARGET" --results "$results/reference"
+          LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
+          LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
+              python3 -B src/test/research/inheritance/produce.py \
+                  --targets "$TARGET" --references "$results/reference" \
+                  --classpath build/inheritance-classpath.txt --results "$results/producer"
+
       - name: Compiler call-site references and production serialization controls
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:

@@ -42,6 +42,19 @@ try:
         assert {name: value.removeprefix('struct ') for name, value in result['dynamicTypes'].items()} == {
             'single_base': 'Single *', 'multiple_right': 'Multiple *',
             'diamond_base': 'Diamond *', 'diamond_right': 'Diamond *'}, result['dynamicTypes']
+    if os.environ['INHERITANCE_VARIANT'].endswith('vtables'):
+        expected_members = {'single_object->base': 11, 'single_object->single': 47,
+            'multiple_object->left': 13, 'multiple_object->right': 17, 'multiple_object->multiple': 29,
+            'diamond_object->left': 23, 'diamond_object->right': 31, 'diamond_object->leaf': 37,
+            'diamond_object->root': 19, 'diamond_right->root': 19,
+            'virtual_left_object->root': 19, 'virtual_right_object->root': 19}
+        result['inheritedValues'] = {name: int(gdb.parse_and_eval(name)) for name in expected_members}
+        assert result['inheritedValues'] == expected_members, result['inheritedValues']
+        for name in ('Single', 'Multiple', 'Diamond'):
+            result['queries']['ptype struct ' + name] = {'result': gdb.execute('ptype struct ' + name, to_string=True)}
+        for name in ('single_base', 'multiple_right', 'diamond_base'):
+            query = result['queries']['info vtbl *' + name]
+            assert 'error' not in query and '[0]:' in query['result'], query
     gdb.execute('continue')
     assert int(gdb.parse_and_eval('$_exitcode')) == 0
     result['status'] = 'PASS_REFERENCE_OBSERVATION'
