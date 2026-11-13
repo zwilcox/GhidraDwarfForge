@@ -498,10 +498,16 @@ public final class GhidraTypeGraph {
             var staticBinding = GhidraStaticBindings.read(program, symbol.getID(), monitor, diagnostic);
             if (staticBinding.status() == GhidraStaticBindings.Status.REJECTED) continue;
             MemoryBlock block = program.getMemory().getBlock(symbol.getAddress());
-            if (symbol.getSymbolType() != SymbolType.LABEL || !symbol.isPrimary() ||
+            if (symbol.getSymbolType() != SymbolType.LABEL ||
                     symbol.isExternal() || symbol.getSource() == SourceType.DEFAULT ||
                     !symbol.getAddress().isMemoryAddress() || block == null ||
                     !block.isLoaded()) {
+                continue;
+            }
+            if (block.isOverlay() || block.isMapped() || !symbol.getAddress().getAddressSpace().equals(
+                    program.getAddressFactory().getDefaultAddressSpace())) {
+                diagnostic.accept("Omitted global " + symbol.getName(true) +
+                    ": no established runtime mapping for overlay, mapped or nondefault memory");
                 continue;
             }
             Data data = program.getListing().getDataAt(symbol.getAddress());

@@ -57,6 +57,9 @@ public final class GhidraMmioEvidenceSmoke {
                         }
                     }
                     program.getSymbolTable().createLabel(space.getAddress(BASE), "status_alias", SourceType.USER_DEFINED);
+                    var alternate = program.getSymbolTable().createNameSpace(null, "alternate", SourceType.USER_DEFINED);
+                    program.getSymbolTable().createLabel(space.getAddress(BASE + 4), "status_alias", alternate,
+                        SourceType.USER_DEFINED);
                     var register = new UnionDataType(ghidra.program.model.data.CategoryPath.ROOT,
                         "RegisterView", program.getDataTypeManager());
                     register.add(type, "raw", null);
@@ -73,8 +76,10 @@ public final class GhidraMmioEvidenceSmoke {
                     var overlay = memory.createUninitializedBlock("overlay", space.getAddress(BASE), 4, true);
                     program.getListing().createData(overlay.getStart(), type);
                     program.getSymbolTable().createLabel(overlay.getStart(), "overlay_status", SourceType.USER_DEFINED);
-                    memory.createByteMappedBlock("mapped_alias", space.getAddress(BASE + 0x100),
+                    var mapped = memory.createByteMappedBlock("mapped_alias", space.getAddress(BASE + 0x100),
                         space.getAddress(BASE), 4, false);
+                    program.getListing().createData(mapped.getStart(), type);
+                    program.getSymbolTable().createLabel(mapped.getStart(), "mapped_status", SourceType.USER_DEFINED);
                 }
                 finally { program.endTransaction(tx, true); }
                 observe(program, target);
@@ -135,8 +140,24 @@ public final class GhidraMmioEvidenceSmoke {
         var alias = program.getMemory().getBlock("mapped_alias");
         require(alias.isMapped() && !alias.isOverlay() && alias.getStart().getOffset() == BASE + 0x100,
             "mapped alias became an independent physical register");
-        var model = GhidraTypeGraph.extract(program, List.of(), target, 0, TaskMonitor.DUMMY, ignored -> { });
-        var globals = model.globals().stream().collect(java.util.stream.Collectors.toMap(g -> g.name(), g -> g));
+        var diagnostics = new java.util.ArrayList<String>();
+        var model = GhidraTypeGraph.extract(program, List.of(), target, 0, TaskMonitor.DUMMY, diagnostics::add);
+        var globals = model.globals().stream().collect(java.util.stream.Collectors.toMap(
+            ghidradwarfforge.types.GlobalScopeNames::qualifiedName, g -> g));
+        require(globals.get("status_alias").address() == BASE &&
+            globals.get("status_alias").type().equals(globals.get("register_0").type()),
+            "secondary global lost actual address/type identity");
+        require(globals.get("alternate::status_alias").address() == BASE + 4 &&
+            globals.get("alternate::status_alias").type().equals(globals.get("register_4").type()),
+            "same short name incorrectly merged distinct addresses/namespaces");
+        require(!globals.containsKey("overlay_status") && !globals.containsKey("mapped_status"),
+            "unproved memory alias emitted as a physical register");
+        require(diagnostics.stream().anyMatch(d -> d.contains("overlay_status") && d.contains("runtime mapping")) &&
+            diagnostics.stream().anyMatch(d -> d.contains("mapped_status") && d.contains("runtime mapping")),
+            "unproved mappings were omitted silently");
+        var aliasDiagnostics = new java.util.ArrayList<String>();
+        require(GhidraFunctionAliases.extract(program, List.of(), 0, TaskMonitor.DUMMY, aliasDiagnostics::add).isEmpty() &&
+            aliasDiagnostics.isEmpty(), "typed data names were misclassified as function aliases");
         var nodes = model.types().byKey();
         require(!(nodes.get(globals.get("register_0").type().key()) instanceof TypeGraph.QualifiedType),
             "block attributes leaked into an ordinary object's type");

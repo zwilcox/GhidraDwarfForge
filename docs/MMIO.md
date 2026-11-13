@@ -76,14 +76,15 @@ and [remote packet specification](https://sourceware.org/gdb/current/onlinedocs/
 
 ### Extraction audit
 
-**CONFIRMED in the current implementation:** `GhidraTypeGraph` selects primary,
-non-default labels on loaded memory blocks with defined data. It does not require
-initialized bytes, so an uninitialized peripheral block is eligible. However,
-secondary labels are skipped; the numeric global model loses address-space
-identity. Neither behavior establishes overlapping MMIO views or safe overlay
-mapping. A peripheral profile must retain and validate the actual Ghidra address
-space before converting to a runtime address, and distinguish explicit aliases
-from coincident names or offsets.
+**CONFIRMED locally:** `GhidraTypeGraph` selects primary and secondary non-default
+labels at defined data objects in loaded memory. It does not require initialized
+bytes, so an uninitialized peripheral block is eligible. Each name retains its
+namespace, actual address and shared object type. Names alone never merge
+different addresses. Before numeric address conversion, overlays, mapped blocks
+and nondefault address spaces are omitted with a diagnostic because their runtime
+mapping is unproved. Arbitrary offcut or independently typed overlapping views
+still require an explicit MMIO profile; a secondary label at an object's start
+describes that same complete object.
 
 The aggregate extractor preserves each bitfield's actual storage size
 with `BitFieldDataType.getStorageSize()`, separately from its base type. It emits
@@ -136,10 +137,11 @@ process is not a feature-completion result.
 **CONFIRMED on the current exporter:** x86-64 and both MIPS32 byte orders retain
 the tested field values, flags, offsets and widths. GNU/LLVM/pinned validation,
 original-input preservation and repeated sidecar/source determinism pass.
-The scalar counter's saved volatile setting now survives into GDB on all three
-profiles, with unchanged field values and layouts. The probe rejects a missing
-qualifier or changed project files. The secondary global label remains omitted;
-the access profile/helper and instrumented production reads are still pending.
+The scalar counter's saved volatile setting and secondary global name now survive
+into GDB on all three profiles, with unchanged field values and layouts. The
+alias is checked for its exact address and actual raw/counter values. The probe
+rejects a missing qualifier, alias mismatch or changed project files. The access
+profile/helper and instrumented production reads are still pending.
 
 **HISTORICAL at `9f57035e`:** the existing ELF-project wrapper also changed
 Ghidra's index/journal backup files. Fix `3fb950d0` applies the raw-firmware

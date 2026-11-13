@@ -27,6 +27,16 @@ def run(command, log, timeout=180):
         subprocess.run(command, stdout=stream, stderr=subprocess.STDOUT, check=True, timeout=timeout, env=environment)
 
 
+def observe_alias(original, sidecar):
+    return subprocess.run(['gdb-multiarch', '-nx', '-nh', '-batch', '-ex', 'set auto-load off',
+        '-ex', 'set auto-solib-add off', '-ex', 'file ' + json.dumps(str(original)),
+        '-ex', 'symbol-file ' + json.dumps(str(sidecar)), '-ex', 'info address peripheral_alias',
+        '-ex', 'python a=gdb.parse_and_eval("peripheral_alias"); p=gdb.parse_and_eval("peripheral"); '
+        'assert int(a.address)==int(p.address)==0x40000000; '
+        'assert int(a["status"]["raw"])==0xa5a5e28d and int(a["counter"])==17; '
+        'print("MMIO_ALIAS_VALUES=PASS")'], capture_output=True, text=True, timeout=30)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--ghidra', type=Path, required=True)
@@ -76,13 +86,11 @@ def main():
         assert values == expected(PROFILES[name][3]), (name, values)
         types = (case / 'forge.log').read_text()
         assert 'volatile word32 counter' in types, 'saved scalar-member volatility omitted'
-        alias = subprocess.run(['gdb-multiarch', '-nx', '-nh', '-batch', '-ex', 'set auto-load off',
-            '-ex', 'symbol-file ' + json.dumps(str(sidecar)), '-ex', 'info address peripheral_alias'],
-            capture_output=True, text=True, timeout=30)
+        alias = observe_alias(original, sidecar)
         (case / 'alias.log').write_text(alias.stdout + alias.stderr)
         gaps = []
-        if alias.returncode != 0 or '0x40000000' not in alias.stdout:
-            gaps.append('secondary global label omitted')
+        assert alias.returncode == 0 and '0x40000000' in alias.stdout and 'MMIO_ALIAS_VALUES=PASS' in alias.stdout, \
+            'secondary global address/value mismatch: ' + alias.stdout + alias.stderr
         outputs = [digest(sidecar), digest(Path(str(sidecar) + '.c'))]
         run(command, case / 'repeat.log')
         assert outputs == [digest(sidecar), digest(Path(str(sidecar) + '.c'))]
