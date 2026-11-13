@@ -47,6 +47,25 @@ callback widths/effects, values, and absence of fabricated snapshots after a
 device rejection. GDB can return zero after command errors followed by a
 successful detach, so exit status alone is not the negative-test oracle.
 
+The separate `src/test/research/mmio-access/layout.py` test compiles the same
+fixture for x86-64 and MIPS32 in both byte orders, then uses `gdb-multiarch` to
+inspect the compiler ELF's static memory. It checks exact addresses, storage
+widths, signed cross-byte fields, enum constants, union offsets, and packed
+views against explicit per-ABI values and section bytes. A changed-register
+control preserves type metadata but changes both field values and the raw word;
+the value oracle rejects it. Compiler inputs and the original ELF stay unchanged.
+
+```bash
+python3 support/storage-guard.py run --cwd "$PWD" -- \
+    python3 src/test/research/mmio-access/layout.py \
+    --results "$PWD/.forge-work/scratch/mmio-layout"
+```
+
+Use `--targets x86_64`, `mips32be` or `mips32le` to select available toolchains.
+These static layout checks do not execute MIPS firmware or establish MIPS device
+access behavior. CI runs them in the corresponding target lanes and runs the
+instrumented access experiment in the x86-64 lane.
+
 GDB documents separate memory access, width and cache attributes, and the
 remote protocol represents a memory read as an address and byte count. These
 interfaces must be distinguished from the target stub's device accesses.

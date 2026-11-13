@@ -882,6 +882,20 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y "${packages[@]}"
 
+      - name: Validate compiler MMIO layouts against register bytes
+        if: matrix.target == 'x86_64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/research/mmio-access/layout.py --targets "$TARGET" \
+              --results "$PWD/build/test-results/mmio-layout"
+
+      - name: Observe compiler MMIO reads against instrumented peripheral
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/research/mmio-access/experiment.py \
+              --results "$PWD/build/test-results/mmio-access-reference"
+
       - name: Build pinned MIPS register-piece debugger
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
         run: python3 support/validation/build-mips-gdb.py "$RUNNER_TEMP/mips-gdb"
