@@ -34,16 +34,29 @@ def number(attribute, form):
     return int(match[1], 0)
 
 
-def inspect(case, sidecar, output):
+def inspect(case, sidecar, output, firmware_manifest=None):
     output.mkdir(parents=True, exist_ok=True)
     manifest = json.loads((case / 'curation.json').read_text())
     original, artifact = (facts['elf'](path) for path in (case / 'original.elf', sidecar))
-    assert original['header'][:4] == artifact['header'][:4]
-    assert original['header'][6] == artifact['header'][6] == 0x05000200
-    assert artifact['header'][4] == artifact['header'][8] == artifact['header'][9] == 0
-    for section in ('.vectors', '.text', '.data', '.bss', '.note.gnu.build-id', '.ARM.attributes'):
-        old, new = original['sections'][section], artifact['sections'][section]
-        assert old[0][1:] == new[0][1:] and old[1] == new[1], 'target section changed: ' + section
+    if firmware_manifest is None:
+        assert original['header'][:4] == artifact['header'][:4]
+        assert original['header'][6] == artifact['header'][6] == 0x05000200
+        assert artifact['header'][4] == artifact['header'][8] == artifact['header'][9] == 0
+        for section in ('.vectors', '.text', '.data', '.bss', '.note.gnu.build-id', '.ARM.attributes'):
+            old, new = original['sections'][section], artifact['sections'][section]
+            assert old[0][1:] == new[0][1:] and old[1] == new[1], 'target section changed: ' + section
+    else:
+        # Explicit synthetic identity, not equality with a compiler executable.
+        assert artifact['header'][:3] == (2, 40, 1)
+        assert artifact['header'][3] == artifact['header'][4] == artifact['header'][8] == artifact['header'][9] == 0
+        assert artifact['header'][6] == 0x05000000
+        assert not any(section_name.startswith('.note') for section_name in artifact['sections'])
+        allocations = {section_name: record for section_name, record in artifact['sections'].items() if record[0][2] & 2}
+        assert allocations.keys() == {row['section'] for row in firmware_manifest['regions']}
+        for row in firmware_manifest['regions']:
+            section = allocations[row['section']][0]
+            assert section[1] == 8 and section[3] == int(row['address'], 16) and section[5] == row['size']
+            assert section[2] == 2 | (1 if row['write'] else 0) | (4 if row['execute'] else 0)
     text = subprocess.check_output(['readelf', '-W', '--debug-dump=info', sidecar], text=True)
     (output / 'info.txt').write_text(text)
     dies = records(text)
@@ -65,7 +78,17 @@ def inspect(case, sidecar, output):
     assert len(globals_) == sum(row['tag'] == 'DW_TAG_variable' and row['depth'] == 1 for row in dies)
     objects = {row['name']: row for row in manifest['objects']}
     objects['cortex_vectors'] = {'address': 0, 'size': 64}
-    assert globals_.keys() == objects.keys()
+    if firmware_manifest is None:
+        assert globals_.keys() == objects.keys()
+    else:
+        assert objects.keys() <= globals_.keys()
+        for symbol in globals_.keys() - objects.keys():
+            # Raw analysis may retain additional unknown/opaque memory objects.
+            # They must still refer to a declared allocation, never fabricated addresses.
+            location = globals_[symbol]['attrs']['DW_AT_location']['text']
+            match = re.search(r'DW_OP_addr: ([0-9a-f]+)', location)
+            assert match and any(int(row['address'], 16) <= int(match[1], 16) <
+                int(row['address'], 16) + row['size'] for row in firmware_manifest['regions'])
     for symbol, expected in objects.items():
         location = globals_[symbol]['attrs']['DW_AT_location']
         match = re.fullmatch(r'\(exprloc\) 5 byte block: [0-9a-f ]+\s*\(DW_OP_addr: ([0-9a-f]+)\)', location['text'])

@@ -134,6 +134,32 @@ if grep -Fxq -- '-loader' "$argument_log"; then
     exit 1
 fi
 
+raw_options=(--project-dir="$project_dir" --project-name=Existing --program=/folder/program
+    --input="$input" --raw-firmware=cortex-m3)
+run_status 0 SUCCESS 0 "${raw_options[@]}" --firmware-inputs="$selection"
+grep -Fxq -- 'GhidraDwarfForgeReadOnly.java' "$argument_log"
+grep -Fxq -- '--raw-firmware=cortex-m3' "$argument_log"
+grep -Fxq -- "--firmware-inputs=$selection" "$argument_log"
+grep -Fxq -- "$project_dir" "$argument_log"
+if grep -Eq -- '^(-process|-import|-loader)$' "$argument_log"; then
+    echo 'raw wrapper would open the saved project through the writable launcher' >&2
+    exit 1
+fi
+test "$(head -n 1 "$argument_log")" != "$project_dir"
+for invalid in --gdb-loader --target-profile=cortex-m3 --formatters=x --synthesize-unwind=strict --program=relative; do
+    run_status 64 NONE 0 "${raw_options[@]}" "$invalid"
+done
+run_status 64 NONE 0 --import="$input" --raw-firmware=cortex-m3
+run_status 64 NONE 0 --import="$input" --firmware-inputs="$selection"
+run_status 64 NONE 0 "${raw_options[@]}" --firmware-inputs=
+run_status 64 NONE 0 "${raw_options[@]}" --raw-firmware=cortex-m4
+rm -f -- "$argument_log"
+run_status 64 NONE 0 "${raw_options[@]}" --firmware-inputs="$selection" --log="$input"
+test ! -e "$argument_log"
+grep -Fxq 'input sentinel' "$input"
+run_status 64 NONE 0 "${raw_options[@]}" --output="$output" --log="$output.firmware.json"
+test ! -e "$output.firmware.json"
+
 run_status 64 NONE 0 --import="$input" --unknown=value
 
 set +e

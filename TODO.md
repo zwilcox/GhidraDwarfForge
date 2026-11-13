@@ -1,5 +1,22 @@
 # TODO.md — GhidraDwarfForge
 
+## Raw firmware complete local suite; hosted gate pending — 2026-11-12
+
+**CONFIRMED locally:** #119 exports the saved raw memory map through the real
+native producer and installed headless wrapper. Both Cortex-M3 RAM layouts pass
+QEMU/GDB and GNU/LLVM/pinned validation; the shifted layout uses two original
+inputs. Exact function/line/Thumb addresses, globals and defensible values pass.
+Twenty/21 failure controls include cancellation, invalid maps and original-input
+and saved-project alias rejection. Deterministic repeats preserve inputs, saved
+project files and package files. The existing ELF export and six independent
+artifact corruption controls pass in the same fresh suite.
+
+See `docs/RAW-FIRMWARE.md` and `docs/evidence/raw-firmware-local.json` for evidence
+and support limits. **PRESENT, UNVERIFIED:** changed-head hosted architecture/host
+gate and PowerShell raw-path validation. Do not close #119 before these pass.
+Continue afterward with #118, #113, #162, #163. Branch cleanup is complete;
+branches with unique commits remain preserved.
+
 ## Cortex-M complete local suite; hosted CI pending — 2026-11-09
 
 **CONFIRMED locally:** the full compiler/installed-export suite passes eight exact

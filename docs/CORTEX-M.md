@@ -167,5 +167,5 @@ Production export does not perform these fixture-only repairs.
 | Stripped ELF and useful remote debugging | Compiler and real production exports pass named/address breakpoints, disassembly, pointers, stepping and defensible variable checks in QEMU/GDB. |
 | Reset, memory placement, code/data and actual bodies | Vector/MSP/xPSR checks, flash-to-RAM initialization, BSS seed clearing, exact ranges/sections/line boundaries and odd data location pass. |
 | Bounded exception behavior | Two SVC transitions exercise MSP/PSP, hardware frames and return. Forge unwinding remains handler-only; no broader claim. |
-| ELF independent of raw firmware | Suite imports the original ELF directly. #119 remains open; raw counterpart stays conditional on that feature. |
+| ELF independent of raw firmware | Suite retains the original ELF import and adds two explicit raw runtime layouts, including separate flash/RAM inputs. See [raw export evidence and remaining gate](RAW-FIRMWARE.md); #119 remains open until its full gate passes. |
 | Validators, preservation, determinism, failure and CI | GNU/LLVM/pinned validation, complete saved-project/package/input hashes, repeated bytes and eight failure controls pass locally. Required hosted Cortex-M lane and existing regression matrix must pass before completion. |

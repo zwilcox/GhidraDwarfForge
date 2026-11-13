@@ -20,12 +20,23 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--results', type=Path, required=True)
+    parser.add_argument('--ram-origin', choices=('0x20000000', '0x20001000'), default='0x20000000')
     args = parser.parse_args()
     args.results.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix='cortex-m3.', dir=args.results.resolve()))
     print('cortex-m-reference-results=' + str(root), flush=True)
     sources = [FIXTURES / name for name in ('cortex-m-profile.c', 'cortex-m-start.S', 'cortex-m.ld')]
     protected = {str(p): digest(p) for p in sources}
+    linker = sources[2]
+    if args.ram_origin != '0x20000000':
+        # Move only data/RAM; retain flash, reset and stack limits. This catches a
+        # guessed single load-bias transformation applied to disjoint memory banks.
+        text = linker.read_text()
+        original_region = 'ORIGIN = 0x20000000, LENGTH = 64K'
+        assert text.count(original_region) == 1
+        linker = root / 'shifted-ram.ld'
+        linker.write_text(text.replace(original_region, 'ORIGIN = 0x20001000, LENGTH = 60K'))
+        protected[str(linker)] = digest(linker)
     commands = []
 
     def run(label, argv, **kwargs):
@@ -45,7 +56,7 @@ def main():
     run('compile', [cc, '-mcpu=cortex-m3', '-mthumb', '-mfloat-abi=soft',
         '-O1', '-g', '-gdwarf-5', '-ffreestanding', '-fno-builtin', '-fno-common',
         '-fno-omit-frame-pointer', '-fno-optimize-sibling-calls', '-Wall', '-Wextra', '-Werror',
-        '-nostdlib', '-static', '-Wl,--build-id=sha1', '-Wl,-z,noexecstack', '-Wl,-T,' + str(sources[2]),
+        '-nostdlib', '-static', '-Wl,--build-id=sha1', '-Wl,-z,noexecstack', '-Wl,-T,' + str(linker),
         sources[1], sources[0], '-o', reference])
     run('strip', ['arm-none-eabi-objcopy', '--strip-all', reference, original])
     protected.update({str(p): digest(p) for p in (reference, original)})
@@ -59,7 +70,7 @@ def main():
         if len(parts := line.split()) == 3}
     assert labels['cortex_vectors'] == 0 and labels['_stack_top'] == 0x20010000
     assert labels['_psp_top'] == 0x2000f000
-    assert labels['_sidata'] < 0x40000 and labels['_sdata'] == 0x20000000
+    assert labels['_sidata'] < 0x40000 and labels['_sdata'] == int(args.ram_origin, 16)
     assert labels['_sdata'] < labels['_edata'] <= labels['_sbss'] < labels['_ebss']
     run('disassembly', ['arm-none-eabi-objdump', '-d', reference])
     symbol_table = run('symbol-table', ['arm-none-eabi-readelf', '-sW', reference])
@@ -98,7 +109,7 @@ def main():
     (root / 'labels.json').write_text(json.dumps(labels, indent=4) + '\n')
     (root / 'profile.json').write_text(json.dumps({'core': 'Cortex-M3', 'isa': 'ARMv7-M',
         'board': 'lm3s6965evb', 'abi': 'AAPCS32 base PCS', 'byteOrder': 'little',
-        'versions': versions, 'inputSha256': protected[str(original)]}, indent=4) + '\n')
+        'ramOrigin': args.ram_origin, 'versions': versions, 'inputSha256': protected[str(original)]}, indent=4) + '\n')
     runtime = runpy.run_path(str(HERE / 'cortex-m-runtime.py'))
     observed = runtime['debugger'](root, reference, root, 'compiler')
     assert observed['status'] == 'PASS' and len(observed['exceptions']) == 2

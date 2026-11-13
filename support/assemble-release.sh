@@ -54,7 +54,7 @@ module="$stage/GhidraDwarfForge"
     echo "base ZIP does not contain corresponding-source instructions" >&2
     exit 1
 }
-for entry_point in GhidraDwarfForge.java ExportGhidraDwarfForge.java ExportGhidraDwarfForgeMultiFile.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
+for entry_point in GhidraDwarfForge.java GhidraDwarfForgeReadOnly.java ExportGhidraDwarfForge.java ExportGhidraDwarfForgeMultiFile.java AttachGhidraDwarfForge.java RecoverGhidraDwarfForgeAttachment.java ExportAndAttachGhidraDwarfForge.java; do
     [[ -s "$module/ghidra_scripts/$entry_point" ]] || {
         echo "base ZIP is missing required script: $entry_point" >&2
         exit 1

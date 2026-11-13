@@ -10,6 +10,8 @@ param(
     [string] $SourceContext = 'off',
     [string] $SourceLines,
     [string] $TargetProfile,
+    [string] $RawFirmware,
+    [string] $FirmwareInputs,
     [ValidateSet('off', 'strict', 'conditioned')] [string] $SynthesizeUnwind = 'off',
     [string] $UnwindStackSeparation,
     [ValidateSet('off', 'fixed')] [string] $UnwindRelocatedPointers = 'off',
@@ -39,6 +41,12 @@ if ($SourceContext -cnotin @('off', 'assembly', 'pcode', 'both')) {
 }
 if ($PSBoundParameters.ContainsKey('TargetProfile') -and $TargetProfile -cne 'cortex-m3') {
     Exit-Usage '-TargetProfile must be cortex-m3'
+}
+if ($PSBoundParameters.ContainsKey('RawFirmware') -and $RawFirmware -cne 'cortex-m3') {
+    Exit-Usage '-RawFirmware must be cortex-m3'
+}
+if ($PSBoundParameters.ContainsKey('FirmwareInputs') -and [string]::IsNullOrWhiteSpace($FirmwareInputs)) {
+    Exit-Usage '-FirmwareInputs requires a selection file'
 }
 if ($PSBoundParameters.ContainsKey('SourceLines')) {
     $sourceLineValue = 0
@@ -217,6 +225,7 @@ namespace GhidraDwarfForge {
         Assert-LogNotAlias "$selectedOutput.c"
         Assert-LogNotAlias "$selectedOutput.gdb.py"
         Assert-LogNotAlias "$selectedOutput.unwind.json"
+        Assert-LogNotAlias "$selectedOutput.firmware.json"
         $formatterHasher = [Security.Cryptography.SHA256]::Create()
         try {
             $formatterHash = [BitConverter]::ToString($formatterHasher.ComputeHash(
@@ -257,6 +266,26 @@ if ($projectMode -and $projectValues.Count -ne 3) {
 }
 if ($projectMode -and $ProjectName -match '[/\\]') {
     Exit-Usage '-ProjectName must not contain a path separator'
+}
+if ($RawFirmware) {
+    if (-not $projectMode -or [string]::IsNullOrWhiteSpace($OriginalElf)) {
+        Exit-Usage '-RawFirmware requires existing-project mode and -Input'
+    }
+    if (-not $Program.StartsWith('/')) {
+        Exit-Usage 'raw -Program must be an absolute project path'
+    }
+    if ($TargetProfile -or $Formatters -or $GdbLoader) {
+        Exit-Usage 'raw mode cannot combine -TargetProfile, -Formatters or -GdbLoader'
+    }
+    if ($SynthesizeUnwind -cne 'off' -or $UnwindStackSeparation -or $UnwindRelocatedPointers -cne 'off') {
+        Exit-Usage 'raw mode does not support unwind synthesis'
+    }
+}
+elseif ($FirmwareInputs) {
+    Exit-Usage '-FirmwareInputs requires -RawFirmware'
+}
+if ($FirmwareInputs -and $Log) {
+    Exit-Usage '-FirmwareInputs requires a private temporary log; omit -Log to protect every selected input'
 }
 
 $headless = Join-Path $GhidraDirectory 'support\analyzeHeadless.bat'
@@ -334,6 +363,12 @@ try {
     if ($PSBoundParameters.ContainsKey('TargetProfile')) {
         $exportOptions += @("--target-profile=$TargetProfile")
     }
+    if ($RawFirmware) {
+        $exportOptions += @("--raw-firmware=$RawFirmware")
+    }
+    if ($FirmwareInputs) {
+        $exportOptions += @("--firmware-inputs=$FirmwareInputs")
+    }
     foreach ($entry in @(
         @('AnnotationRecordLimit', 'annotation-record-limit'),
         @('AnnotationTextLimit', 'annotation-text-limit'),
@@ -359,6 +394,19 @@ try {
             '-import', $Import, '-loader', 'ElfLoader',
             '-analysisTimeoutPerFile', "$AnalysisTimeout",
             '-postScript', 'GhidraDwarfForge.java'
+        ) + $exportOptions
+    }
+    elseif ($RawFirmware) {
+        if (-not (Test-Path -LiteralPath $ProjectDirectory -PathType Container)) {
+            Exit-Usage "project directory does not exist: $ProjectDirectory"
+        }
+        $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) (
+            "ghidra-dwarf-forge-headless-wrapper-$([guid]::NewGuid())")
+        New-Item -ItemType Directory -Path $temporaryRoot | Out-Null
+        $headlessArguments = @(
+            $temporaryRoot, 'GhidraDwarfForgeHeadless', '-deleteProject', '-noanalysis',
+            '-postScript', 'GhidraDwarfForgeReadOnly.java',
+            (Get-AbsoluteFilesystemPath $ProjectDirectory), $ProjectName, $Program
         ) + $exportOptions
     }
     else {

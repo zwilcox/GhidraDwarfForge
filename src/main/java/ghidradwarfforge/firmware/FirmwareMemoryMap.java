@@ -121,7 +121,8 @@ public record FirmwareMemoryMap(int addressBits, List<Input> inputs, List<Region
     }
 
     private static void requireName(String name, String what) {
-        if (name == null || name.isBlank() || name.indexOf('\0') >= 0) {
+        if (name == null || name.isBlank() || name.indexOf('\0') >= 0 ||
+                !java.nio.charset.StandardCharsets.UTF_8.newEncoder().canEncode(name)) {
             throw new IllegalArgumentException("invalid firmware " + what);
         }
     }

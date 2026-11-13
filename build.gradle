@@ -2286,6 +2286,7 @@ tasks.register("firmwareMemoryMapSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.firmware.FirmwareMemoryMapSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
 tasks.register("ghidraFirmwareMemoryMapSmoke", JavaExec) {
@@ -2297,6 +2298,33 @@ tasks.register("ghidraFirmwareMemoryMapSmoke", JavaExec) {
     args ghidraInstallDir
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/firmware-map/settings").absolutePath
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
+}
+
+tasks.register("firmwareInputsSmoke", JavaExec) {
+    group = "verification"
+    description = "Rejects malformed or ambiguous firmware original-file selections"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.FirmwareInputsSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
+}
+
+tasks.register("firmwareExportSmoke", JavaExec) {
+    group = "verification"
+    description = "Produces synthetic firmware DWARF in an isolated native process"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.firmware.FirmwareExportSmoke"
+    jvmArgs "--enable-native-access=ALL-UNNAMED"
+    if (System.env.TMPDIR) {
+        systemProperty "java.io.tmpdir", System.env.TMPDIR
+        systemProperty "jna.tmpdir", System.env.TMPDIR
+    }
+    doFirst {
+        args project.property("libdwarfPath"), project.property("libdwarfpPath"),
+            project.property("firmwareOutput")
+    }
 }
 
 tasks.register("ghidraCortexM3ProfileSmoke", JavaExec) {

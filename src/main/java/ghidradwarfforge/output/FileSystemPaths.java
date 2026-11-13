@@ -40,7 +40,7 @@ public final class FileSystemPaths {
     }
 
     /** Paths must already have resolved parents; existing leaf identity follows links. */
-    static boolean aliases(Path first, Path second) throws IOException {
+    public static boolean aliases(Path first, Path second) throws IOException {
         return first.equals(second) || (Files.exists(first) && Files.exists(second) &&
             Files.isSameFile(first, second));
     }
