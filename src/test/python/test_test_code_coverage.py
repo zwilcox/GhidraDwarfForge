@@ -141,6 +141,33 @@ class CoverageTests(unittest.TestCase):
             self.assertEqual(publisher.publish(self.root, REPO, SHA, 123, request=request)['status'], 'PUBLISHED')
         self.assertEqual(len(calls), 6)
 
+    def test_first_publication_creates_only_the_report_branch(self):
+        self.generate()
+        writes = []
+        def request(endpoint, method='GET', payload=None, missing=False):
+            if method == 'GET':
+                if endpoint.endswith('/ref/heads/main'):
+                    return {'object': {'sha': SHA}}
+                self.assertTrue(endpoint.endswith('/ref/heads/' + publisher.BRANCH))
+                self.assertTrue(missing)
+                return None
+            writes.append((endpoint, method, payload))
+            if endpoint.endswith('/trees'):
+                self.assertNotIn('base_tree', payload)
+                self.assertEqual({item['path'] for item in payload['tree']},
+                    {'README.md', 'summary.json', 'test-coverage.svg'})
+                return {'sha': 'first-tree'}
+            if endpoint.endswith('/commits'):
+                self.assertEqual(payload['parents'], [])
+                self.assertEqual(payload['tree'], 'first-tree')
+                return {'sha': 'first-commit'}
+            self.assertTrue(endpoint.endswith('/git/refs'))
+            self.assertEqual(payload, {'ref': 'refs/heads/' + publisher.BRANCH, 'sha': 'first-commit'})
+            return {}
+        with patch.dict(os.environ, {'GITHUB_REF': 'refs/heads/main'}):
+            self.assertEqual(publisher.publish(self.root, REPO, SHA, 123, request=request)['status'], 'PUBLISHED')
+        self.assertEqual([method for _, method, _ in writes], ['POST', 'POST', 'POST'])
+
 
 if __name__ == '__main__':
     unittest.main()
