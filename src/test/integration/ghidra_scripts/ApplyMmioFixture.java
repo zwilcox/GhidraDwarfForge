@@ -72,16 +72,35 @@ public class ApplyMmioFixture extends GhidraScript {
         standalone.addBitField(unsigned, 3, "a", null);
         standalone.addBitField(unsigned, 5, "b", null);
         var independent = manager.resolve(standalone, DataTypeConflictHandler.REPLACE_HANDLER);
+        var registers = new java.util.ArrayList<java.util.Map<String, Object>>();
+        registers.add(java.util.Map.of("name", "status", "address", address.toString(true),
+            "runtime_address", "0x40000000", "width", 4, "read_effect", "read-clear", "views", java.util.List.of(
+                java.util.Map.of("name", "register", "datatype", data.getComponent(0).getDataType().getPathName(),
+                    "offset", 0, "qualifiers", java.util.List.of("const", "volatile")),
+                java.util.Map.of("name", "packed", "datatype", independent.getPathName(),
+                    "offset", 0, "qualifiers", java.util.List.of("const")))));
+        DataType[] widthTypes = { new UnsignedCharDataType(manager), new UnsignedShortDataType(manager),
+            new UnsignedLongLongDataType(manager) };
+        String[] effects = { "read-clear", "none", "read-increment" };
+        for (int i = 0; i < widthTypes.length; i++) {
+            int width = widthTypes[i].getLength();
+            String name = "reg" + (width * 8);
+            var scalar = manager.resolve(new TypedefDataType(category, "word" + (width * 8), widthTypes[i], manager),
+                DataTypeConflictHandler.REPLACE_HANDLER);
+            var registerAddress = toAddr(0x40001000L + i * 8);
+            DataUtilities.createData(currentProgram, registerAddress, scalar, width,
+                DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
+            currentProgram.getSymbolTable().createLabel(registerAddress, name, SourceType.USER_DEFINED).setPrimary();
+            registers.add(java.util.Map.of("name", name, "address", registerAddress.toString(true),
+                "runtime_address", "0x" + Long.toHexString(registerAddress.getOffset()), "width", width,
+                "read_effect", effects[i], "views", java.util.List.of(java.util.Map.of("name", "scalar",
+                    "datatype", scalar.getPathName(), "offset", 0, "qualifiers", java.util.List.of("volatile")))));
+        }
         var selection = java.util.Map.of("schema", 1,
             "language", currentProgram.getLanguageID().getIdAsString(), "architecture", architecture,
-            "transport", java.util.Map.of("id", "instrumented-word32", "evidence",
-                "Source-modeled Target/Device callback trace in mmio-access/helper.py; no physical bus claim"),
-            "registers", java.util.List.of(java.util.Map.of("name", "status", "address", address.toString(true),
-                "runtime_address", "0x40000000", "width", 4, "read_effect", "read-clear", "views", java.util.List.of(
-                    java.util.Map.of("name", "register", "datatype", data.getComponent(0).getDataType().getPathName(),
-                        "offset", 0, "qualifiers", java.util.List.of("const", "volatile")),
-                    java.util.Map.of("name", "packed", "datatype", independent.getPathName(),
-                        "offset", 0, "qualifiers", java.util.List.of("const"))))));
+            "transport", java.util.Map.of("id", "instrumented-register-widths", "evidence",
+                "Source-modeled callback traces in mmio-access/helper.py and widths.py; no physical bus claim"),
+            "registers", registers);
         String selected = new com.google.gson.Gson().toJson(selection);
         var selectionPath = java.nio.file.Path.of(currentProgram.getExecutablePath()).resolveSibling("analyst-mmio.json");
         java.nio.file.Files.writeString(selectionPath, selected);

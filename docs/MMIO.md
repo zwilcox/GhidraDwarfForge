@@ -306,9 +306,13 @@ The test's MIPS stub advertises the documented CPU/CP0/FPU register description
 but does not execute code or emulate a dynamic loader. GDB's missing dynamic-linker
 breakpoint warning must reproduce exactly with the unchanged compiler reference;
 other warnings are rejected. This limitation is separate from DWARF validation.
-Only aligned four-byte device callbacks are validated so far; the profile format
-also encodes one-, two- and eight-byte accesses, which need their own transport
-proof. Profiles can be supplied externally or generated from the explicitly saved
+The companion `widths.py` test validates aligned one-, two- and eight-byte
+callbacks on the same three targets against compiler and Forge artifacts. It
+checks read-clear, unchanged and read-increment values, repeated snapshots with
+GDB caching enabled, and preservation of an adjacent read-clear register. A
+transport that substitutes byte reads is rejected for the wider registers,
+without retries or changes to their state. Together these tests cover all four
+profile widths on the instrumented transport. Profiles can be supplied externally or generated from the explicitly saved
 program selection described above; neither route infers device semantics. Do not infer broader hardware support from these tests.
 
 ```bash
@@ -323,12 +327,24 @@ python3 support/storage-guard.py run --cwd "$PWD" -- \
 CI runs this test with the packaged helper after installed Forge export in all
 three target lanes. Hosted validation is still pending on the local MMIO branch.
 
+### Publication and saved-project protection
+
+`failures.py` opens the saved fixture without write access and runs the installed
+exporter through cancellation during profile reading, type contribution, native
+production, ELF writing and profile rendering. It checks both absent and existing
+output generations. A valid saved selection that exceeds the rendered profile's
+size limit exercises a late failure after staging the sidecar and source.
+
+The controls also reject formatter combinations, profile hard links to the input
+or project marker, and outputs inside the saved project. A final successful retry
+must reproduce the original generation. The harness compares input/output hashes
+and the saved project inventory; a cancellation or exception alone is insufficient.
+Raw and MMIO exports share the saved-project output protection.
+
 ### Remaining validation
 
-- Complete profile publication failure/cancellation and raw-firmware integration
-  controls, plus final hosted validation of the saved-program configuration flow.
-- Validate the declared one-, two- and eight-byte transport widths before making
-  device-access claims for them. Four-byte callback evidence is already present.
+- Complete raw-firmware integration controls and hosted validation of the
+  saved-program configuration and publication failure/cancellation flow.
 - Exercise profile replacement, stale loaded artifacts, malformed inventories and
   additional unsupported type controls through the packaged helper.
 - Review optional formatter interaction so read-sensitive registers are not

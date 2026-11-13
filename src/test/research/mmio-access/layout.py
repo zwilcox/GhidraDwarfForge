@@ -68,7 +68,8 @@ def main():
         case.mkdir()
         elf = case / 'reference.elf'
         command = [compiler, '-g', '-gdwarf-5', '-O0', '-fno-pie', '-no-pie',
-            '-Wall', '-Wextra', '-Werror', '-Wl,--section-start=.mmio=0x40000000', str(source), '-o', str(elf)]
+            '-Wall', '-Wextra', '-Werror', '-Wl,--section-start=.mmio=0x40000000',
+            '-Wl,--section-start=.mmio_widths=0x40001000', str(source), '-o', str(elf)]
         subprocess.run(command, check=True)
         (case / 'compile-command.json').write_text(json.dumps(command, indent=4) + '\n')
         original = hashlib.sha256(elf.read_bytes()).hexdigest()

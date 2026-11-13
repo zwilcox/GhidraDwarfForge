@@ -1916,6 +1916,18 @@ jobs:
               --reference "build/test-results/mmio-layout/$TARGET/reference.elf" \
               --helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/support/mmio/forge_mmio.py" \
               --results build/test-results/mmio-helper
+          python3 -B src/test/research/mmio-access/widths.py --target "$TARGET" \
+              --original "build/test-results/mmio-forge/$TARGET/input.elf" \
+              --sidecar "build/test-results/mmio-forge/$TARGET/firmware.dbg" \
+              --profile "build/test-results/mmio-forge/$TARGET/firmware.dbg.mmio.json" \
+              --reference "build/test-results/mmio-layout/$TARGET/reference.elf" \
+              --helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/support/mmio/forge_mmio.py" \
+              --results build/test-results/mmio-widths
+          python3 -B src/test/research/mmio-access/failures.py --ghidra "$GHIDRA_INSTALL_DIR" \
+              --project "build/test-results/mmio-forge/$TARGET/project" \
+              --original "build/test-results/mmio-forge/$TARGET/input.elf" \
+              --sidecar "build/test-results/mmio-forge/$TARGET/firmware.dbg" \
+              --results build/test-results/mmio-failures
 
       - name: Freestanding i386 stack values through stripped exec and PIE exports
         if: matrix.target == 'x86_64'

@@ -112,39 +112,7 @@ public final class GhidraFirmwareSession implements AutoCloseable {
 
     /** Also protect the saved analysis from a deliberately colliding output path. */
     public void requireSafeOutputs(java.util.List<Path> outputs, TaskMonitor monitor) throws Exception {
-        var locator = program.getDomainFile().getProjectLocator();
-        Path directory = locator.getProjectDir().toPath().toRealPath();
-        var resolved = new ArrayList<Path>();
-        for (Path output : outputs) {
-            monitor.checkCancelled();
-            Path path = ghidradwarfforge.output.FileSystemPaths.resolveLeaf(output, "firmware output");
-            if (path.startsWith(directory)) {
-                throw new IOException("firmware output is inside the saved project: " + path);
-            }
-            resolved.add(path);
-        }
-        var protectedPaths = new ArrayList<Path>();
-        protectedPaths.add(locator.getMarkerFile().toPath());
-        protectedPaths.add(locator.getProjectLockFile().toPath());
-        // Do not follow directory symlinks recursively. Existing file symlinks
-        // are still compared by identity, like hard links, by aliases().
-        try (var files = Files.walk(directory)) {
-            var iterator = files.iterator();
-            while (iterator.hasNext()) {
-                monitor.checkCancelled();
-                Path path = iterator.next();
-                if (Files.isRegularFile(path)) protectedPaths.add(path);
-            }
-        }
-        for (Path path : protectedPaths) {
-            monitor.checkCancelled();
-            Path protectedPath = ghidradwarfforge.output.FileSystemPaths.resolveLeaf(path, "saved project file");
-            for (Path output : resolved) {
-                if (ghidradwarfforge.output.FileSystemPaths.aliases(output, protectedPath)) {
-                    throw new IOException("firmware output aliases a saved project file: " + path);
-                }
-            }
-        }
+        ghidradwarfforge.GhidraProjectOutputProtection.requireSafeOutputs(program, outputs, monitor);
     }
 
     public void requireUnchanged(TaskMonitor monitor) throws IOException, CancelledException {

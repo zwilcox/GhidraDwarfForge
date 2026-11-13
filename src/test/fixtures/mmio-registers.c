@@ -48,6 +48,29 @@ volatile struct Device peripheral __attribute__((section(".mmio"))) = {
     .counter = 17
 };
 
+typedef unsigned char word8;
+typedef unsigned short word16;
+typedef unsigned long long word64;
+struct WidthDevice {
+    word8 reg8;
+    word8 pad8[7];
+    word16 reg16;
+    word8 pad16[6];
+    word64 reg64;
+    word64 adjacent;
+};
+_Static_assert(sizeof(word8) == 1 && sizeof(word16) == 2 && sizeof(word64) == 8,
+    "explicit scalar register widths required");
+_Static_assert(__builtin_offsetof(struct WidthDevice, reg16) == 8 &&
+    __builtin_offsetof(struct WidthDevice, reg64) == 16 && sizeof(struct WidthDevice) == 32,
+    "register bank offsets must match the device model");
+volatile struct WidthDevice widths __attribute__((section(".mmio_widths"))) = {
+    .reg8 = 0xd3,
+    .reg16 = 0xb6d5,
+    .reg64 = 0x89abcdef01234567ULL,
+    .adjacent = 17
+};
+
 int main(void) {
     return 0;
 }

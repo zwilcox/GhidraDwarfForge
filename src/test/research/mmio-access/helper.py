@@ -66,7 +66,7 @@ def run_case(root, original, sidecar, backend, target_name, helper, negative=Non
     case = root / name
     case.mkdir()
     data = json.loads(saved_profile.read_text()) if saved_profile else profile(sidecar, target_name)
-    contract = 'instrumented-word32'
+    contract = data['transport']['id']
     if negative == 'unknown':
         data['registers'][0]['read_effect'] = 'unknown'
     elif negative == 'write-only':

@@ -208,6 +208,9 @@ public class GhidraDwarfForge extends GhidraScript {
         if (gdbLoader) generation.add(companionOutput);
         if (formatterSelection != null) generation.add(formatterOutput);
         if (mmioProfile != null) generation.add(mmioOutput);
+        if (mmioProfile != null) {
+            ghidradwarfforge.GhidraProjectOutputProtection.requireSafeOutputs(currentProgram, generation, monitor);
+        }
         if (generation.size() > 2) {
             var protectedInputs = new ArrayList<>(List.of(consumer, producer));
             if (formatterSelectionPath != null) protectedInputs.add(formatterSelectionPath);
