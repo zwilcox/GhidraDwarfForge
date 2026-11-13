@@ -42,6 +42,7 @@ struct Diamond : VirtualLeft, VirtualRight {
 struct Abstract {
     int abstract_value = 41;
     virtual int pure_value() = 0;
+    virtual int base_value() { return abstract_value; }
 };
 struct Concrete : Abstract {
     int extra = 43;
@@ -83,7 +84,8 @@ int main() {
     virtual_left_object = &standalone_left;
     virtual_right_object = &standalone_right;
     inheritance_checkpoint();
-    return abstract_base->pure_value() != 84 || single_base->value() != 58 || multiple_right->second() != 46 ||
+    return abstract_base->pure_value() != 84 || abstract_base->base_value() != 41 ||
+        single_base->value() != 58 || multiple_right->second() != 46 ||
         diamond_base->root_value() != 56 || diamond_right->right_value() != 68 ||
         virtual_left_object->root_value() != 19 || virtual_right_object->root_value() != 19;
 }

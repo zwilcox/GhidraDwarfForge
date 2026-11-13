@@ -47,7 +47,8 @@ final class GhidraClassScopes {
     void record(Function function, FunctionReference reference, List<TypeGraph.Parameter> signature)
             throws CancelledException {
         monitor.checkCancelled();
-        if (!(function.getParentNamespace() instanceof GhidraClass owner)) return;
+        var owner = GhidraDeclarationBindings.owner(program, function, monitor, diagnostic);
+        if (owner == null) return;
         if (!retain(owner)) return;
         methods.add(new Method(function.getID(), owner.getID(), function.getName(), reference));
         parameters.put(function.getID(), List.copyOf(signature));

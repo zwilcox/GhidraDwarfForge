@@ -107,6 +107,9 @@ def main():
                 occupied[name] = max((m['offset'] + (8 if m['vptr'] else 4) for m in members), default=0)
                 model['classes'].append({'name': name, 'id': class_id, 'size': number(node['attributes']['DW_AT_byte_size']), 'members': members})
             assert sum(method['virtuality'] == 2 for method in model['methods']) == 1
+            abstract_methods = [method for method in model['methods'] if method['owner'] == 'Abstract']
+            assert {method['name'] for method in abstract_methods} == {'pure_value', 'base_value'}
+            assert sum('address' in method for method in abstract_methods) == 1
             for name in CLASSES:
                 children = [n for n in nodes.values() if n['parent'] == classes[name]['offset'] and n['tag'] == 'DW_TAG_inheritance']
                 for order, child in enumerate(children):

@@ -490,12 +490,12 @@ the expected value. Missing or rejected table evidence must retain `Abstract`
 as the static type. These checks apply to x86-64 and AArch64, non-PIE/PIE,
 RTTI/no-RTTI, saved-program reopening and rebasing.
 
-The fixture now has eleven classes, fourteen virtual methods and seven emitted
+The fixture now has eleven classes, fifteen virtual methods and seven emitted
 table groups per build. Native and ordinary-export checks require the pure
 method count to be one, preventing a vacuous pass when compiler metadata omits
-the stronger flag. This acceptance does not yet cover a single canonical class
-containing both local and addressless methods; that representation and the
-analyst configuration workflow remain required work for #113.
+the stronger flag. The mixed-method association below extends this fixture with
+an implemented method in the same abstract class. The analyst configuration
+workflow remains required work for #113.
 
 **CONFIRMED locally:** the expanded fixture passes 48 compiler-reference GDB
 sessions, eight native-producer profiles with six deliberately incorrect-base
@@ -507,3 +507,46 @@ repeats deterministically. The standalone naming harness passes forty cases,
 and imported-storage validation checks 56 table witnesses across eight profiles.
 The full four-profile naming/rejection matrix remains in hosted CI; these local
 results do not replace its required validation at the final PR head.
+
+## Mixed local and addressless methods
+
+Ghidra requires external functions to have external namespaces. A class with
+local code therefore cannot directly own a genuinely addressless Ghidra
+function. `GhidraDeclarationBindings` records an explicit association from an
+existing external function ID to an explicitly bound canonical class ID. The
+caller supplies provenance in a program transaction. No function, namespace,
+type, executable bytes or code address is created or changed by the association.
+
+The existing automatic `this` parameter must point to that exact saved class
+type. The record snapshots program/target identity, the external function's
+namespace, calling convention, parameter/return types and physical class layout.
+Changes reject the association with a diagnostic. Renames that preserve those
+identities and geometry, and image rebasing, retain it. Reads never refresh
+stale records. Rejection leaves the independent function signature available
+without inferring replacement class ownership.
+
+Both ordinary class extraction and saved inheritance use this association.
+The addressless method retains its external declaration key; a local method
+retains its own executable address and definition. Emitted method declarations
+share the one canonical class DIE, and the local definition references its
+own declaration. The fixture explicitly confirms this for `Abstract::pure_value`
+and the implemented `Abstract::base_value`; absence of a body is never used to
+guess a class or pure-virtual status.
+
+`declarationBindingEvidenceSmoke` passes 262 checks across x86-64, AArch64,
+ARM32 and both MIPS byte orders: exact type/namespace/signature validation,
+malformed metadata, cancellation, rejected-record preservation, coordinated
+renaming, rebasing and immutable saved-program extraction. These neutral
+ownership checks do not add C++ ABI support claims beyond the selected x86-64
+and AArch64 profiles. Full issue #113 acceptance and hosted validation remain
+pending.
+
+The mixed fixture passes the same 48 compiler-reference sessions, eight native
+profiles/six incorrect-base controls, twelve ordinary exports and fourteen
+rebased no-RTTI naming/rejection cases described above. Structural inspection
+requires the pure declaration and implemented method declaration to share a
+canonical class, and exactly one local definition to reference the implemented
+method declaration. Forty standalone naming cases and 56 imported table
+witnesses pass as well. Coordinated rename fixtures use saved declaration IDs
+to rename the external namespace alongside the canonical class; they do not
+join unrelated classes by spelling.

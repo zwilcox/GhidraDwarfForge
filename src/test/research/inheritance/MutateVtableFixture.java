@@ -4,6 +4,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.HashSet;
 
 import com.google.gson.JsonParser;
 import ghidra.app.script.GhidraScript;
@@ -11,6 +13,7 @@ import ghidra.program.model.data.CategoryPath;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.symbol.SymbolType;
 import ghidradwarfforge.GhidraClassBindings;
+import ghidradwarfforge.GhidraDeclarationBindings;
 import ghidradwarfforge.GhidraInheritanceBindings;
 import ghidradwarfforge.GhidraVtableBindings;
 import ghidradwarfforge.GhidraVtableBindings.*;
@@ -35,6 +38,17 @@ public class MutateVtableFixture extends GhidraScript {
             snapshots.add(value.snapshot());
         }
         if (variant.equals("renamed") || variant.equals("duplicate")) {
+            // External namespaces are separate Ghidra identities. Coordinate
+            // their fixture rename only through explicit declaration bindings.
+            var declarationOwners = new HashMap<Long, java.util.Set<ghidra.program.model.symbol.Namespace>>();
+            var declarations = currentProgram.getFunctionManager().getExternalFunctions();
+            while (declarations.hasNext()) {
+                var method = declarations.next();
+                var binding = GhidraDeclarationBindings.read(currentProgram, method.getID(), monitor, this::println);
+                if (binding.status() == GhidraDeclarationBindings.Status.VALID) {
+                    declarationOwners.computeIfAbsent(binding.binding().classId(), ignored -> new HashSet<>()).add(method.getParentNamespace());
+                }
+            }
             for (var item : model.getAsJsonArray("classes")) {
                 monitor.checkCancelled();
                 String original = item.getAsJsonObject().get("name").getAsString();
@@ -42,7 +56,9 @@ public class MutateVtableFixture extends GhidraScript {
                 var candidates = currentProgram.getSymbolTable().getSymbols(original);
                 while (candidates.hasNext()) {
                     var candidate = candidates.next();
-                    if (candidate.getSymbolType() == SymbolType.CLASS) matches.add(candidate);
+                    if (candidate.getSymbolType() == SymbolType.CLASS &&
+                            GhidraClassBindings.read(currentProgram, candidate.getID(), monitor, this::println).status() ==
+                                GhidraClassBindings.Status.VALID) matches.add(candidate);
                 }
                 if (matches.size() != 1) throw new AssertionError("ambiguous fixture class " + original);
                 var owner = matches.getFirst();
@@ -58,6 +74,14 @@ public class MutateVtableFixture extends GhidraScript {
                 }
                 binding.binding().type().setName(renamed);
                 owner.setName(renamed, SourceType.USER_DEFINED);
+                for (var declarationOwner : declarationOwners.getOrDefault(owner.getID(), java.util.Set.of())) {
+                    var symbol = declarationOwner.getSymbol();
+                    symbol.setName(renamed, SourceType.USER_DEFINED);
+                    if (variant.equals("duplicate")) {
+                        var parent = currentProgram.getSymbolTable().createNameSpace(declarationOwner.getParentNamespace(), original, SourceType.USER_DEFINED);
+                        symbol.setNamespace(parent);
+                    }
+                }
             }
         }
         for (var snapshot : snapshots) {

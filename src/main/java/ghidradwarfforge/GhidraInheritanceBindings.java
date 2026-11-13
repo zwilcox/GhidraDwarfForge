@@ -153,11 +153,14 @@ public final class GhidraInheritanceBindings {
         var classes = new TreeSet<Long>();
         for (var base : model.bases()) { classes.add(base.derivedClassId()); classes.add(base.baseClassId()); }
         var methods = new TreeMap<Long, Function>();
+        var methodOwners = new HashMap<Long, Long>();
         for (var method : model.virtualMethods()) {
             monitor.checkCancelled();
             var symbol = program.getSymbolTable().getSymbol(method.methodId());
-            if (symbol == null || !(symbol.getObject() instanceof Function function) ||
-                    !(function.getParentNamespace() instanceof GhidraClass owner)) throw invalid("saved virtual method is absent or has no class");
+            if (symbol == null || !(symbol.getObject() instanceof Function function)) throw invalid("saved virtual method is absent");
+            var owner = GhidraDeclarationBindings.owner(program, function, monitor, ignored -> { });
+            if (owner == null) throw invalid("saved virtual method has no validated class");
+            methodOwners.put(method.methodId(), owner.getID());
             methods.put(method.methodId(), function); classes.add(owner.getID());
         }
         count(classes.size());
@@ -197,7 +200,7 @@ public final class GhidraInheritanceBindings {
                 for (var method : model.virtualMethods()) {
                     monitor.checkCancelled();
                     var function = methods.get(method.methodId());
-                    long owner = function.getParentNamespace().getID();
+                    long owner = methodOwners.get(method.methodId());
                     if (!slots.add(List.of(owner, (long) method.slot()))) throw invalid("conflicting virtual method slot");
                     out.writeLong(method.methodId()); out.writeLong(owner);
                     out.writeUTF(function.getCallingConventionName()); out.writeBoolean(function.hasVarArgs());
@@ -223,6 +226,48 @@ public final class GhidraInheritanceBindings {
             return digest.digest();
         }
         catch (IOException | NoSuchAlgorithmException failure) { throw invalid("cannot fingerprint inheritance: " + failure.getMessage()); }
+    }
+
+    /** Reuse the bounded physical-type snapshot for explicit addressless class membership. */
+    static byte[] declarationFingerprint(Program program, GhidraDeclarationBindings.Binding binding,
+            TaskMonitor monitor) throws CancelledException {
+        monitor.checkCancelled();
+        var symbol = program.getSymbolTable().getSymbol(binding.methodId());
+        if (symbol == null || !(symbol.getObject() instanceof Function function) || !function.isExternal()) {
+            throw invalid("declaration requires an existing external function, never a fabricated image address");
+        }
+        var result = GhidraClassBindings.read(program, binding.classId(), monitor, ignored -> { });
+        if (result.status() != GhidraClassBindings.Status.VALID) throw invalid("declaration requires explicit canonical class binding");
+        var type = result.binding();
+        try {
+            var digest = MessageDigest.getInstance("SHA-256");
+            var budget = new TraversalBudget();
+            try (var out = new DataOutputStream(new DigestOutputStream(OutputStream.nullOutputStream(), digest))) {
+                out.writeLong(binding.classId()); out.writeLong(type.typeId());
+                out.writeLong(function.getParentNamespace().getID());
+                out.writeUTF(function.getCallingConventionName()); out.writeBoolean(function.hasVarArgs());
+                layout(out, type.type(), monitor, budget);
+                layout(out, function.getReturnType(), monitor, budget);
+                count(function.getParameterCount());
+                var parameters = function.getParameters(); out.writeInt(parameters.length);
+                int objects = 0;
+                for (var parameter : parameters) {
+                    monitor.checkCancelled();
+                    boolean object = parameter.getAutoParameterType() == AutoParameterType.THIS;
+                    out.writeBoolean(object); layout(out, parameter.getDataType(), monitor, budget);
+                    if (object) {
+                        objects++;
+                        if (!(parameter.getDataType() instanceof Pointer pointer) || pointer.getDataType() == null ||
+                                program.getDataTypeManager().getID(pointer.getDataType()) != type.typeId()) {
+                            throw invalid("addressless object parameter differs from canonical class");
+                        }
+                    }
+                }
+                if (objects != 1) throw invalid("addressless method requires one saved object parameter");
+            }
+            return digest.digest();
+        }
+        catch (IOException | NoSuchAlgorithmException failure) { throw invalid("cannot fingerprint declaration: " + failure.getMessage()); }
     }
 
     /** Physical type graph only: renames/categories/comments and image addresses are not geometry. */

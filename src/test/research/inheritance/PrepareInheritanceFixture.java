@@ -14,6 +14,7 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.GhidraClass;
 import ghidra.program.model.symbol.SourceType;
 import ghidradwarfforge.GhidraClassBindings;
+import ghidradwarfforge.GhidraDeclarationBindings;
 import ghidradwarfforge.GhidraImageBase;
 import ghidradwarfforge.GhidraInheritanceBindings;
 import ghidradwarfforge.targets.CxxAbiProfile;
@@ -30,6 +31,7 @@ public class PrepareInheritanceFixture extends GhidraScript {
         delta = currentProgram.getImageBase().getOffset() - GhidraImageBase.originalImageBase(currentProgram);
         var manager = currentProgram.getDataTypeManager();
         var classes = new HashMap<String, GhidraClass>();
+        var declarationOwners = new HashMap<String, GhidraClass>();
         var layouts = new HashMap<String, Structure>();
         var declarations = currentProgram.getExternalManager().addExternalLibraryName("FixtureDeclarations", SourceType.USER_DEFINED);
         var functionType = new FunctionDefinitionDataType("FixtureVirtualFunction");
@@ -46,11 +48,13 @@ public class PrepareInheritanceFixture extends GhidraScript {
                 if (method.has("address")) hasBody = true;
                 else hasDeclaration = true;
             }
-            if (hasBody && hasDeclaration) throw new AssertionError("fixture requires mixed local/addressless class declarations");
             // Ghidra represents a class with only addressless methods beneath
             // an external library. The library is not a DWARF source namespace.
             var owner = currentProgram.getSymbolTable().createClass(
-                hasDeclaration ? declarations : currentProgram.getGlobalNamespace(), name, SourceType.USER_DEFINED);
+                hasDeclaration && !hasBody ? declarations : currentProgram.getGlobalNamespace(), name, SourceType.USER_DEFINED);
+            if (hasBody && hasDeclaration) {
+                declarationOwners.put(name, currentProgram.getSymbolTable().createClass(declarations, name, SourceType.USER_DEFINED));
+            }
             var layout = new StructureDataType(name, row.get("size").getAsInt());
             for (var value : row.getAsJsonArray("members")) {
                 var member = value.getAsJsonObject();
@@ -70,7 +74,7 @@ public class PrepareInheritanceFixture extends GhidraScript {
             Function function;
             if (!row.has("address")) {
                 addressless++;
-                function = currentProgram.getExternalManager().addExtFunction(owner,
+                function = currentProgram.getExternalManager().addExtFunction(declarationOwners.getOrDefault(row.get("owner").getAsString(), owner),
                     row.get("name").getAsString(), null, SourceType.USER_DEFINED).getFunction();
             }
             else {
@@ -79,6 +83,10 @@ public class PrepareInheritanceFixture extends GhidraScript {
             }
             function.setCallingConvention("__thiscall");
             function.setReturnType(IntegerDataType.dataType, SourceType.USER_DEFINED);
+            if (function.isExternal() && function.getParentNamespace().getID() != owner.getID()) {
+                GhidraDeclarationBindings.save(currentProgram, new GhidraDeclarationBindings.Binding(function.getID(), owner.getID(),
+                    "Source-built fixture confirms addressless declaration and local method share canonical class"), monitor);
+            }
             virtuals.add(new VirtualMethod(function.getID(), row.get("slot").getAsInt(), Access.PUBLIC,
                 row.has("virtuality") && row.get("virtuality").getAsInt() == 2 ? Virtuality.PURE_VIRTUAL : Virtuality.VIRTUAL,
                 "Independent compiler virtual slot"));

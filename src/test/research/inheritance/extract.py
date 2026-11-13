@@ -192,6 +192,11 @@ def main():
                     pure = [die for die in methods if re.search(r'\b2\b.*pure_virtual', die['attributes']['DW_AT_virtuality'])]
                     assert len(pure) == sum(row.get('virtuality') == 2 for row in model['methods']) == 1
                     assert all('DW_AT_low_pc' not in die['attributes'] and 'DW_AT_ranges' not in die['attributes'] for die in pure)
+                    mixed_owner = pure[0]['parent']
+                    sibling, = [die for die in methods if die['parent'] == mixed_owner and die['name'] == 'base_value']
+                    definitions = [die for die in dies.values() if 'DW_AT_low_pc' in die['attributes'] and
+                        die['attributes'].get('DW_AT_specification', '').endswith(f"<0x{sibling['offset']:x}>")]
+                    assert len(definitions) == 1, 'mixed canonical class lost its local method definition'
             if args.variant == 'valid':
                 run(label + '-gdb', ['bash', HERE / 'gdb.sh', case, target, 'forge-vtables'])
                 actual = json.loads((case / 'forge-vtables.gdb.json').read_text())

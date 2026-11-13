@@ -46,7 +46,9 @@ public class ProbeVtableBindings extends GhidraScript {
             var symbols = currentProgram.getSymbolTable().getSymbols(name);
             while (symbols.hasNext()) {
                 var symbol = symbols.next();
-                if (symbol.getSymbolType() == SymbolType.CLASS && symbol.getName().equals(name)) candidates.add(symbol.getID());
+                if (symbol.getSymbolType() == SymbolType.CLASS && symbol.getName().equals(name) &&
+                        ghidradwarfforge.GhidraClassBindings.read(currentProgram, symbol.getID(), monitor, this::println).status() ==
+                            ghidradwarfforge.GhidraClassBindings.Status.VALID) candidates.add(symbol.getID());
             }
             if (candidates.size() != 1) throw new AssertionError("ambiguous fixture class " + name + ": " + candidates);
             var address = currentProgram.getAddressFactory().getDefaultAddressSpace().getAddress(table.get("address").getAsLong() + delta);
