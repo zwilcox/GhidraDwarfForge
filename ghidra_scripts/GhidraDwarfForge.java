@@ -111,7 +111,12 @@ public class GhidraDwarfForge extends GhidraScript {
         var formatterSelectionHash = formatterSelectionPath == null ? null : FileDigests.read(formatterSelectionPath, monitor::isCancelled);
         var formatterSelection = formatterSelectionPath == null ? null :
             ghidradwarfforge.output.FormatterSelection.read(formatterSelectionPath, monitor::isCancelled);
+        var mmioProfile = options.containsKey("mmio") ?
+            ghidradwarfforge.GhidraMmioProfile.read(currentProgram, monitor) : null;
         boolean attachmentPreparation = options.containsKey("attachment-preparation");
+        if (mmioProfile != null && (attachmentPreparation || formatterSelection != null)) {
+            throw new IllegalArgumentException("MMIO snapshots require standalone export without automatic formatters");
+        }
         if (rawTarget != null && (attachmentPreparation || formatterSelection != null ||
                 options.containsKey("gdb-loader") || synthesizeUnwind)) {
             throw new IllegalArgumentException("raw firmware requires explicit remote symbol-file loading; " +
@@ -196,11 +201,16 @@ public class GhidraDwarfForge extends GhidraScript {
         Path unwindOutput = output.resolveSibling(output.getFileName() + ".unwind.json");
         Path formatterOutput = ghidradwarfforge.formatters.FormatterPlan.outputPath(output);
         Path firmwareManifest = output.resolveSibling(output.getFileName() + ".firmware.json");
+        Path mmioOutput = output.resolveSibling(output.getFileName() + ".mmio.json");
         List<Path> generation = new ArrayList<>(List.of(output, sourceOutput));
         if (rawTarget != null) generation.add(firmwareManifest);
         if (synthesizeUnwind) generation.add(unwindOutput);
         if (gdbLoader) generation.add(companionOutput);
         if (formatterSelection != null) generation.add(formatterOutput);
+        if (mmioProfile != null) generation.add(mmioOutput);
+        if (mmioProfile != null) {
+            ghidradwarfforge.GhidraProjectOutputProtection.requireSafeOutputs(currentProgram, generation, monitor);
+        }
         if (generation.size() > 2) {
             var protectedInputs = new ArrayList<>(List.of(consumer, producer));
             if (formatterSelectionPath != null) protectedInputs.add(formatterSelectionPath);
@@ -307,7 +317,7 @@ public class GhidraDwarfForge extends GhidraScript {
                 var extractedTypes = GhidraTypeGraph.extract(currentProgram, functions, registers,
                     rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
                     decompilation.recoveredParameters(), decompilation.recoveredStatics(),
-                    allocation, callEntries::add);
+                    allocation, callEntries::add, mmioProfile);
                 return ghidradwarfforge.GhidraCompilerCallPolicy.apply(currentProgram,
                     target, originalElf, extractedTypes, monitor, diagnostic);
             });
@@ -450,7 +460,11 @@ public class GhidraDwarfForge extends GhidraScript {
                         Files.writeString(stages.get(index++), companion, java.nio.charset.StandardCharsets.UTF_8);
                     }
                     if (formatterPlan != null) {
-                        Files.writeString(stages.get(index), formatterPlan.render(input, stages.get(0), output,
+                        Files.writeString(stages.get(index++), formatterPlan.render(input, stages.get(0), output,
+                            monitor::isCancelled), java.nio.charset.StandardCharsets.UTF_8);
+                    }
+                    if (mmioProfile != null) {
+                        Files.writeString(stages.get(index), mmioProfile.render(originalElf, stages.get(0),
                             monitor::isCancelled), java.nio.charset.StandardCharsets.UTF_8);
                     }
                 }, prePublishCheck);
@@ -472,6 +486,7 @@ public class GhidraDwarfForge extends GhidraScript {
             }
             println("  output: " + output);
             if (firmware != null) println("  firmware provenance: " + firmwareManifest);
+            if (mmioProfile != null) println("  explicit MMIO snapshot profile: " + mmioOutput);
             println("  output SHA-256: " + prepared.outputHash());
             if (formatterPlan != null) println("  optional GDB/LLDB formatters: " + formatterOutput);
             println("  input SHA-256: " + inputHash);
@@ -549,7 +564,7 @@ public class GhidraDwarfForge extends GhidraScript {
             }
             else {
                 name = argument.substring(2);
-                if (name.equals("packaged-natives") || name.equals("gdb-loader") || name.equals("attachment-preparation")) {
+                if (name.equals("packaged-natives") || name.equals("gdb-loader") || name.equals("attachment-preparation") || name.equals("mmio")) {
                     value = "true";
                 }
                 else {
@@ -565,7 +580,7 @@ public class GhidraDwarfForge extends GhidraScript {
         }
         for (String name : result.keySet()) {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
-                    !name.equals("input") && !name.equals("output") && !name.equals("formatters") &&
+                    !name.equals("input") && !name.equals("output") && !name.equals("formatters") && !name.equals("mmio") &&
                     !name.equals("target-profile") && !name.equals("raw-firmware") && !name.equals("firmware-inputs") &&
                     !name.equals("packaged-natives") && !name.equals("gdb-loader") && !name.equals("attachment-preparation") &&
                     !name.equals("compress-debug-sections") && !name.equals("source-context") && !name.equals("source-lines") &&
@@ -575,7 +590,7 @@ public class GhidraDwarfForge extends GhidraScript {
                     !name.equals("annotation-source-limit")) {
                 throw new IllegalArgumentException("unknown option --" + name);
             }
-            if ((name.equals("packaged-natives") || name.equals("gdb-loader") || name.equals("attachment-preparation")) &&
+            if ((name.equals("packaged-natives") || name.equals("gdb-loader") || name.equals("attachment-preparation") || name.equals("mmio")) &&
                     !result.get(name).equals("true")) {
                 throw new IllegalArgumentException("--" + name + " does not take a value");
             }

@@ -683,7 +683,7 @@ jobs:
               ghidraVariableIdentitySmoke ghidraInstructionEvidenceSmoke sourceCoverageSmoke sourceCoverageInventorySmoke coverageComparisonPresentationSmoke coverageVariableComparisonSmoke coverageTypeEvidenceSmoke typeGraphEvidenceSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke exportCoverageSmoke coverageComparisonSmoke coveragePresentationSmoke coverageReportJsonSmoke reportValueReaderSmoke coverageReportClaimsSmoke exportReportCoverageSmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
-              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke cortexM3ProfileSmoke ghidraCortexM3ProfileSmoke firmwareMemoryMapSmoke ghidraFirmwareMemoryMapSmoke firmwareInputsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
+              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke cortexM3ProfileSmoke ghidraCortexM3ProfileSmoke firmwareMemoryMapSmoke ghidraFirmwareMemoryMapSmoke ghidraMmioEvidenceSmoke firmwareInputsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               callOriginSymbolsSmoke functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
@@ -881,6 +881,20 @@ jobs:
           fi
           sudo apt-get update -y
           sudo apt-get install --no-install-recommends -y "${packages[@]}"
+
+      - name: Validate compiler MMIO layouts against register bytes
+        if: matrix.target == 'x86_64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/research/mmio-access/layout.py --targets "$TARGET" \
+              --results "$PWD/build/test-results/mmio-layout"
+
+      - name: Observe compiler MMIO reads against instrumented peripheral
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/research/mmio-access/experiment.py \
+              --results "$PWD/build/test-results/mmio-access-reference"
 
       - name: Build pinned MIPS register-piece debugger
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
@@ -1886,6 +1900,41 @@ jobs:
               export FORGE_LLDB=lldb-18
           fi
           src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+
+      - name: Validate saved MMIO layouts and qualifier preservation
+        if: matrix.target == 'x86_64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 src/test/research/mmio-access/forge.py --ghidra "$GHIDRA_INSTALL_DIR" \
+              --references build/test-results/mmio-layout --targets "$TARGET" \
+              --results build/test-results/mmio-forge
+          python3 -B src/test/research/mmio-access/helper.py --target "$TARGET" \
+              --original "build/test-results/mmio-forge/$TARGET/input.elf" \
+              --sidecar "build/test-results/mmio-forge/$TARGET/firmware.dbg" \
+              --profile "build/test-results/mmio-forge/$TARGET/firmware.dbg.mmio.json" \
+              --reference "build/test-results/mmio-layout/$TARGET/reference.elf" \
+              --helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/support/mmio/forge_mmio.py" \
+              --results build/test-results/mmio-helper
+          python3 -B src/test/research/mmio-access/widths.py --target "$TARGET" \
+              --original "build/test-results/mmio-forge/$TARGET/input.elf" \
+              --sidecar "build/test-results/mmio-forge/$TARGET/firmware.dbg" \
+              --profile "build/test-results/mmio-forge/$TARGET/firmware.dbg.mmio.json" \
+              --reference "build/test-results/mmio-layout/$TARGET/reference.elf" \
+              --helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/support/mmio/forge_mmio.py" \
+              --results build/test-results/mmio-widths
+          python3 -B src/test/research/mmio-access/failures.py --ghidra "$GHIDRA_INSTALL_DIR" \
+              --project "build/test-results/mmio-forge/$TARGET/project" \
+              --original "build/test-results/mmio-forge/$TARGET/input.elf" \
+              --sidecar "build/test-results/mmio-forge/$TARGET/firmware.dbg" \
+              --results build/test-results/mmio-failures
+          python3 -B src/test/research/mmio-access/lifecycle.py --target "$TARGET" \
+              --original "build/test-results/mmio-forge/$TARGET/input.elf" \
+              --sidecar "build/test-results/mmio-forge/$TARGET/firmware.dbg" \
+              --profile "build/test-results/mmio-forge/$TARGET/firmware.dbg.mmio.json" \
+              --reference "build/test-results/mmio-layout/$TARGET/reference.elf" \
+              --helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/support/mmio/forge_mmio.py" \
+              --results build/test-results/mmio-lifecycle
 
       - name: Freestanding i386 stack values through stripped exec and PIE exports
         if: matrix.target == 'x86_64'
@@ -3523,7 +3572,7 @@ jobs:
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat formatterPlanSmoke exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
             syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
-            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke cortexM3ProfileSmoke ghidraCortexM3ProfileSmoke firmwareMemoryMapSmoke ghidraFirmwareMemoryMapSmoke firmwareInputsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
+            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke cortexM3ProfileSmoke ghidraCortexM3ProfileSmoke firmwareMemoryMapSmoke ghidraFirmwareMemoryMapSmoke ghidraMmioEvidenceSmoke firmwareInputsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             callOriginSymbolsSmoke functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke debugCompressionSmoke matchedElfPrefixSmoke `

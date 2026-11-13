@@ -56,6 +56,12 @@ def main():
     run('portable-reference', [HERE / 'raw-firmware-portable.py', 'pack',
         '--case', shifted, '--export', root / 'raw-shifted-ram',
         '--output', root / 'portable-reference'], None)
+    run('raw-mmio', [HERE / 'raw-firmware-export.py', '--case', case,
+        '--ghidra', args.ghidra, '--results', root / 'raw-mmio', '--mmio'], None)
+    mmio = json.loads((root / 'raw-mmio/result.json').read_text())
+    assert mmio['status'] == 'PASS_RAW_FIRMWARE_EXPORT_RUNTIME' and mmio['mmio']
+    assert mmio['failureControls'] == 22 and mmio['addresses']['functions'] == 8
+    raw_cases['mmio'] = mmio
     (root / 'result.json').write_text(json.dumps({'status': 'PASS', 'reference': str(case),
         'export': str(exported), 'checks': result, 'controls': controls, 'rawFirmware': raw_cases}, indent=4) + '\n')
     print('cortex-m-suite=PASS ' + str(root))

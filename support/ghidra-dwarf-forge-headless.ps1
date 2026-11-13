@@ -5,6 +5,7 @@ param(
     [Alias('Input')] [string] $OriginalElf,
     [string] $Output,
     [switch] $GdbLoader,
+    [switch] $Mmio,
     [string] $Formatters,
     [string] $CompressDebugSections = 'none',
     [string] $SourceContext = 'off',
@@ -226,6 +227,7 @@ namespace GhidraDwarfForge {
         Assert-LogNotAlias "$selectedOutput.gdb.py"
         Assert-LogNotAlias "$selectedOutput.unwind.json"
         Assert-LogNotAlias "$selectedOutput.firmware.json"
+        Assert-LogNotAlias "$selectedOutput.mmio.json"
         $formatterHasher = [Security.Cryptography.SHA256]::Create()
         try {
             $formatterHash = [BitConverter]::ToString($formatterHasher.ComputeHash(
@@ -341,6 +343,9 @@ try {
     }
     if ($GdbLoader) {
         $exportOptions += @('--gdb-loader')
+    }
+    if ($Mmio) {
+        $exportOptions += @('--mmio')
     }
     if ($CompressDebugSections -eq 'zlib') {
         $exportOptions += @('--compress-debug-sections=zlib')

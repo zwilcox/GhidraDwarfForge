@@ -22,6 +22,7 @@ import ghidra.program.model.data.DataTypeComponent;
 import ghidra.program.model.data.DefaultDataType;
 import ghidra.program.model.data.Dynamic;
 import ghidra.program.model.data.Enum;
+import ghidra.program.model.data.MutabilitySettingsDefinition;
 import ghidra.program.model.data.FunctionDefinition;
 import ghidra.program.model.data.ParameterDefinition;
 import ghidra.program.model.data.Pointer;
@@ -157,6 +158,18 @@ public final class GhidraTypeGraph {
             Map<Long, GhidraStaticRecovery.Result> recoveredStatics,
             GhidraParameterAllocation allocation,
             Consumer<GhidraCallParameters.Entry> parameterEntries) throws CancelledException {
+        return extract(program, exportedFunctions, registerMap, rebaseDelta, monitor, diagnostic,
+            recoveredReturns, recoveredParameters, recoveredStatics, allocation, parameterEntries, null);
+    }
+
+    public static ProgramTypeModel extract(Program program,
+            List<FunctionSymbol> exportedFunctions, TargetRegisterMap registerMap, long rebaseDelta,
+            TaskMonitor monitor, Consumer<String> diagnostic,
+            Map<Long, DataType> recoveredReturns,
+            Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters,
+            Map<Long, GhidraStaticRecovery.Result> recoveredStatics,
+            GhidraParameterAllocation allocation,
+            Consumer<GhidraCallParameters.Entry> parameterEntries, GhidraMmioProfile mmio) throws CancelledException {
         Extractor extractor = new Extractor(program, diagnostic);
         var classScopes = new GhidraClassScopes(program, monitor, diagnostic);
         List<DataType> favoriteTypes = new ArrayList<>(
@@ -497,10 +510,16 @@ public final class GhidraTypeGraph {
             var staticBinding = GhidraStaticBindings.read(program, symbol.getID(), monitor, diagnostic);
             if (staticBinding.status() == GhidraStaticBindings.Status.REJECTED) continue;
             MemoryBlock block = program.getMemory().getBlock(symbol.getAddress());
-            if (symbol.getSymbolType() != SymbolType.LABEL || !symbol.isPrimary() ||
+            if (symbol.getSymbolType() != SymbolType.LABEL ||
                     symbol.isExternal() || symbol.getSource() == SourceType.DEFAULT ||
                     !symbol.getAddress().isMemoryAddress() || block == null ||
                     !block.isLoaded()) {
+                continue;
+            }
+            if (block.isOverlay() || block.isMapped() || !symbol.getAddress().getAddressSpace().equals(
+                    program.getAddressFactory().getDefaultAddressSpace())) {
+                diagnostic.accept("Omitted global " + symbol.getName(true) +
+                    ": no established runtime mapping for overlay, mapped or nondefault memory");
                 continue;
             }
             Data data = program.getListing().getDataAt(symbol.getAddress());
@@ -550,7 +569,7 @@ public final class GhidraTypeGraph {
                     continue;
                 }
                 functionStatics.add(new ProgramTypeModel.FunctionStaticVariable(binding.displayName(), address,
-                    objectSize, extractor.reserve(objectType), ownerAddress,
+                    objectSize, extractor.reserveObject(objectType, inferredType ? null : data), ownerAddress,
                     "EXPLICIT_STATIC_BINDING: " + binding.evidence(), binding.block()));
                 diagnostic.accept("Using explicit static ownership for " + symbol.getName(true) +
                     " in " + binding.owner().getName(true) + "; " + binding.evidence());
@@ -574,12 +593,12 @@ public final class GhidraTypeGraph {
                 }
                 functionStatics.add(new ProgramTypeModel.FunctionStaticVariable(
                     symbol.getName(), address, objectSize,
-                    extractor.reserve(objectType), ownerAddress,
+                    extractor.reserveObject(objectType, inferredType ? null : data), ownerAddress,
                     (inferredType ? "DECOMPILER_INFERRED_TYPE; " : "") + symbol.getSource().name()));
                 continue;
             }
             globals.add(new ProgramTypeModel.GlobalVariable(symbol.getName(), address,
-                objectSize, extractor.reserve(objectType), false,
+                objectSize, extractor.reserveObject(objectType, inferredType ? null : data), false,
                 symbol.getSource().name(),
                 namespacePath(symbol.getParentNamespace())));
         }
@@ -656,8 +675,10 @@ public final class GhidraTypeGraph {
                 nonDefaultConvention, callRestriction, effectiveCallingConvention(external)));
         }
         classScopes.prepare(extractor::reserve);
+        if (mmio != null) mmio.contribute(extractor::qualify, extractor.nodes, monitor);
         extractor.drain(monitor);
         var graph = new TypeGraph(new ArrayList<>(extractor.nodes.values()));
+        if (mmio != null) mmio.validateAliases(graph, monitor);
         return new ProgramTypeModel(graph,
             signatures, globals, new VariableStorageModel(variableLocations), functionStatics,
             declarations, lexicalScopes, classScopes.finish(graph),
@@ -843,6 +864,41 @@ public final class GhidraTypeGraph {
             }
         }
 
+        TypeRef reserveObject(DataType type, Data data) {
+            // Data's supported mutability setting excludes block/processor flags.
+            // Apply it to this object's reference, never mutate the shared base type.
+            TypeGraph.Qualifier qualifier = data == null ? null : data.isConstant()
+                ? TypeGraph.Qualifier.CONST : data.isVolatile() ? TypeGraph.Qualifier.VOLATILE : null;
+            return qualify(type, qualifier);
+        }
+
+        private TypeRef qualify(DataType type, TypeGraph.Qualifier qualifier) {
+            return qualify(type, qualifier == null ? List.of() : List.of(qualifier));
+        }
+
+        private TypeRef qualify(DataType type, List<TypeGraph.Qualifier> qualifiers) {
+            TypeRef base = reserve(type);
+            if (qualifiers.isEmpty()) return base;
+            String key = "qualified:" + String.join(":", qualifiers.stream().map(q -> q.name()).toList()) + ":" + base.key();
+            nodes.putIfAbsent(key, new TypeGraph.QualifiedType(key,
+                String.join(" ", qualifiers.stream().map(q -> q.name().toLowerCase(java.util.Locale.ROOT)).toList()) + " " + displayName(type),
+                nonNegativeSize(type), qualifiers, base));
+            return new TypeRef(key);
+        }
+
+        private TypeRef reserveMember(DataType type, DataTypeComponent component) {
+            boolean supported = java.util.Arrays.stream(component.getDataType().getSettingsDefinitions())
+                .anyMatch(definition -> definition instanceof MutabilitySettingsDefinition);
+            int mode = supported ? MutabilitySettingsDefinition.DEF.getChoice(component.getDefaultSettings())
+                : MutabilitySettingsDefinition.NORMAL;
+            TypeGraph.Qualifier qualifier = switch (mode) {
+                case MutabilitySettingsDefinition.CONSTANT -> TypeGraph.Qualifier.CONST;
+                case MutabilitySettingsDefinition.VOLATILE -> TypeGraph.Qualifier.VOLATILE;
+                default -> null;
+            };
+            return qualify(type, qualifier);
+        }
+
         private String uniqueKey(DataType type) {
             String base = stableKey(type);
             DataType owner = owners.get(base);
@@ -977,7 +1033,7 @@ public final class GhidraTypeGraph {
                 if (fieldName == null || fieldName.isBlank()) {
                     fieldName = component.getDefaultFieldName();
                 }
-                members.add(new Member(fieldName, reserve(memberType), component.getOffset(),
+                members.add(new Member(fieldName, reserveMember(memberType, component), component.getOffset(),
                     bitSize, storageBitOffset, storageByteSize));
             }
             return new AggregateType(key, name, nonNegativeSize(composite), kind, members);

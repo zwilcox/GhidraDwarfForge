@@ -59,7 +59,8 @@ public final class GhidraFunctionAliases {
                 collisions.add(name);
             }
             if (symbol.getSymbolType() == SymbolType.LABEL && !symbol.isPrimary() &&
-                    symbol.getSource() == SourceType.USER_DEFINED) {
+                    symbol.getSource() == SourceType.USER_DEFINED &&
+                    program.getListing().getDefinedDataAt(symbol.getAddress()) == null) {
                 candidates.add(symbol);
                 if (candidates.size() > MAX_ALIASES) {
                     diagnostic.accept("Omitted function aliases: candidate count exceeds " + MAX_ALIASES);
