@@ -266,3 +266,56 @@ python3 support/storage-guard.py run --cwd "$PWD" -- \
     --classpath build/inheritance-classpath.txt \
     --results "$PWD/.forge-work/scratch/inheritance-extraction"
 ```
+
+## Vtable evidence and lookup experiments
+
+**CONFIRMED locally:** `storage.py` imports all eight compiler runtime profiles
+and observes six complete-object vtable groups in each. It checks every mapped
+byte through Ghidra's `MemoryBlockSourceInfo` and `FileBytes` against the original
+ELF file offset, then repeats after rebasing by `0x200000`. File mappings,
+original bytes, loaded bytes and recorded relocations stay stable across this
+rebase. For all four PIE profiles, loaded vtable bytes differ from file bytes
+because Ghidra applied relocations at import. The four non-PIE profiles have
+matching loaded/file bytes in this fixture. These are observed profiles, not a
+claim that every relocation or loader behaves identically.
+
+The binding design must therefore retain separate original-file and loaded-byte
+witnesses, along with normalized addresses and explicit class identity. A single
+"bytes equal ELF" check would reject legitimate PIE imports. Reads should reject
+changed loaded bytes, changed backing-file mappings or changed class evidence;
+the original ELF must be checked independently at emission. Rebinding must be an
+explicit operation, not an automatic repair during export.
+
+**CONFIRMED locally:** `names.py` compares five naming arrangements for every
+target/build profile, using the production emitter/writer and fresh GDB sessions:
+
+| Arrangement | Observed result |
+| --- | --- |
+| Plain `vtable for Class` object names | Static types only; negative control. |
+| Explicit mangled symbols for renamed types | Correct recovered derived types. |
+| Original mangled symbols plus unambiguous class lookup aliases | Correct renamed canonical types. |
+| Namespace-qualified mangled names and lookup aliases | Correct canonical types through qualified lookup. |
+| Distinct qualified aliases for nine same-spelling canonical types | Correct individual sizes and direct members, not merely matching printed names. |
+
+All 40 artifacts pass GNU/LLVM/pinned validators. The 32 positive debugger cases
+retain virtual-table inspection and member values; the eight negative cases
+retain static types as expected. Original binaries remain unchanged. The fixture
+labels are explicit experimental identities, not evidence recovered from a table
+of pointers. The synthetic C11 language remains unchanged.
+
+**PLANNED production contract:** persist an explicit symbol/class association,
+bounded table extent, address points and provenance; validate the selected ABI,
+class snapshot, memory/file witnesses and complete-object table geometry. Use
+the binding's explicit mangled identity and a collision-checked lookup alias to
+the canonical type when needed. If a qualified lookup is ambiguous, diagnose and
+omit that table rather than assigning it to another class. Do not infer identity
+from `_ZTV` spelling alone or guess mangling for arbitrary recovered names.
+Address points and offset-to-top checks must follow the selected
+[ABI profile](https://itanium-cxx-abi.github.io/cxx-abi/abi.html#vtable), including
+secondary tables; construction tables require separate evidence and handling.
+This persistence/admission path is not implemented yet.
+
+Run `storage.py --ghidra <installed-ghidra> --models <native-results> --results
+<new-directory>` through the storage guard. `names.py` takes the same `--models`
+and `--results` plus `--classpath build/inheritance-classpath.txt`, with the Java
+and native/validator environment used by `produce.py`.

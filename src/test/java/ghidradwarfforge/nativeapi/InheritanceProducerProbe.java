@@ -36,6 +36,7 @@ public final class InheritanceProducerProbe {
         var scopes = new ArrayList<Scope>();
         var bindings = new ArrayList<Binding>();
         var classIds = new HashMap<String, Long>();
+        var namespaceIds = new HashMap<String, Long>();
         for (var value : evidence.getAsJsonArray("classes")) {
             var row = value.getAsJsonObject();
             String name = row.get("name").getAsString();
@@ -47,9 +48,20 @@ public final class InheritanceProducerProbe {
                 members.add(new Member(member.get("name").getAsString(),
                     new TypeRef(member.get("vptr").getAsBoolean() ? "vptr" : "int"), member.get("offset").getAsLong()));
             }
-            nodes.add(new AggregateType(name, name, row.get("size").getAsLong(), AggregateKind.STRUCTURE, members));
+            nodes.add(new AggregateType(name, row.has("typeName") ? row.get("typeName").getAsString() : name,
+                row.get("size").getAsLong(), AggregateKind.STRUCTURE, members));
             nodes.add(new IndirectionType(name + "*", name + " *", 8, IndirectionKind.POINTER, new TypeRef(name)));
-            scopes.add(new Scope(id, 0, name, Kind.CLASS));
+            long parent = 0;
+            if (row.has("namespace")) {
+                String namespace = row.get("namespace").getAsString();
+                if (!namespaceIds.containsKey(namespace)) {
+                    long namespaceId = 1_000_000L + namespaceIds.size();
+                    namespaceIds.put(namespace, namespaceId);
+                    scopes.add(new Scope(namespaceId, 0, namespace, Kind.NAMESPACE));
+                }
+                parent = namespaceIds.get(namespace);
+            }
+            scopes.add(new Scope(id, parent, row.has("scopeName") ? row.get("scopeName").getAsString() : name, Kind.CLASS));
             bindings.add(new Binding(id, new TypeRef(name), BindingSource.EXPLICIT_SAVED, "compiler reference fixture identity"));
         }
         var bases = new ArrayList<Base>();

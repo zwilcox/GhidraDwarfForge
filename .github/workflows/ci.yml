@@ -1063,6 +1063,11 @@ jobs:
               python3 -B src/test/research/inheritance/produce.py \
                   --targets "$TARGET" --references "$results/reference" \
                   --classpath build/inheritance-classpath.txt --results "$results/producer"
+          LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
+          LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
+              python3 -B src/test/research/inheritance/names.py \
+                  --targets "$TARGET" --models "$results/producer" \
+                  --classpath build/inheritance-classpath.txt --results "$results/vtable-names"
 
       - name: Compiler call-site references and production serialization controls
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
@@ -1120,6 +1125,9 @@ jobs:
         run: |
           set -euo pipefail
           results="$PWD/build/test-results/inheritance/$TARGET"
+          python3 -B src/test/research/inheritance/storage.py \
+              --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" \
+              --models "$results/producer" --results "$results/vtable-storage"
           LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
           LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
               python3 -B src/test/research/inheritance/extract.py \

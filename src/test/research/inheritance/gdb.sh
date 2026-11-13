@@ -19,5 +19,5 @@ INHERITANCE_REMOTE="$remote" INHERITANCE_VARIANT="$variant" INHERITANCE_RESULT="
     -ex 'set debuginfod enabled off' -ex 'set auto-solib-add off' \
     -ex 'set disable-randomization off' "${options[@]}" \
     -ex "file \"$case_dir/runtime.elf\"" -ex "symbol-file \"$case_dir/$variant.dbg\"" \
-    -x "$repository/src/test/research/inheritance/gdb.py"
+    -x "${4:-$repository/src/test/research/inheritance/gdb.py}"
 if [[ -n "$remote" ]]; then qemu_socket_wait; fi
