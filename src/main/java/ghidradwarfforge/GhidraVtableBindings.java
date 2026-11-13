@@ -201,7 +201,12 @@ public final class GhidraVtableBindings {
         boolean included = model.bases().stream().anyMatch(base -> base.derivedClassId() == request.classId() || base.baseClassId() == request.classId());
         for (var method : model.virtualMethods()) {
             monitor.checkCancelled();
-            if (program.getSymbolTable().getSymbol(method.methodId()).getParentNamespace().getID() == request.classId()) included = true;
+            var symbol = program.getSymbolTable().getSymbol(method.methodId());
+            if (symbol == null || !(symbol.getObject() instanceof ghidra.program.model.listing.Function function)) {
+                throw invalid("saved virtual method is absent");
+            }
+            var owner = GhidraDeclarationBindings.owner(program, function, monitor, ignored -> { });
+            if (owner != null && owner.getID() == request.classId()) included = true;
         }
         var binding = GhidraClassBindings.read(program, request.classId(), monitor, ignored -> { });
         if (!included || binding.status() != GhidraClassBindings.Status.VALID) throw invalid("vtable class is outside saved inheritance snapshot");

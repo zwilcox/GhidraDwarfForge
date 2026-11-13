@@ -225,6 +225,7 @@ libdwarf checker. Runtime checks use GDB and QEMU user emulation for AArch64.
 | Analyst configuration | 140 ProgramDB checks: strict input, target mismatch, explicit replacement, retained/removable stale evidence, rollback after writes, cancellation and immutable inventory. |
 | Saved method association | 262 checks across five target descriptions; these establish neutral ownership behavior, not extra C++ ABI support. |
 | Saved inheritance | 188 evidence checks; model admission separately covers 80 cases. |
+| Saved vtable evidence | 164 checks, including an explicitly associated addressless-only virtual owner with no base/local-virtual edge and rejection when that association disappears. |
 | Compiler consumer reference | 48 sessions across two targets, non-PIE/PIE, RTTI/no-RTTI and six debug-copy arrangements. |
 | Native producer | Eight profiles and six deliberately wrong-base controls. |
 | Public configuration and ordinary export | Eight profiles plus four rebased PIE cases; exact metadata restoration, original/project preservation and deterministic reopening. |

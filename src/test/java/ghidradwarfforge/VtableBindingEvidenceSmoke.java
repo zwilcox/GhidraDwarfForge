@@ -96,6 +96,38 @@ public final class VtableBindingEvidenceSmoke {
                 String key = "symbol-" + symbolId;
                 var options = program.getOptions(GROUP);
                 String encoded = options.getString(key, null);
+                // No base edge and no local virtual method can establish this class's
+                // table membership: use only the explicitly bound addressless method.
+                var library = program.getExternalManager().addExternalLibraryName("Declarations", SourceType.USER_DEFINED);
+                var externalOwner = program.getSymbolTable().createClass(library, "Child", SourceType.USER_DEFINED);
+                var declaration = program.getExternalManager().addExtFunction(externalOwner, "declared", null, SourceType.USER_DEFINED).getFunction();
+                declaration.setCallingConvention("__thiscall");
+                declaration.setReturnType(IntegerDataType.dataType, SourceType.USER_DEFINED);
+                var association = new GhidraDeclarationBindings.Binding(declaration.getID(), owner.getID(), "explicit canonical virtual owner");
+                GhidraDeclarationBindings.save(program, association, MONITOR);
+                var externalModel = new InheritanceModel(abi, List.of(), List.of(new VirtualMethod(declaration.getID(), 0,
+                    Access.PUBLIC, Virtuality.VIRTUAL, "addressless-only virtual membership")));
+                GhidraInheritanceBindings.save(program, externalModel, MONITOR);
+                rejected(program, symbolId);
+                GhidraVtableBindings.save(program, request, MONITOR);
+                require(valid(program, symbolId).request().classId() == owner.getID(), "explicit declaration owner admits table without base/local virtual edge");
+                var selected = List.of(new ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol("inspect", 0x401100, 4));
+                String target = abi == CxxAbiProfile.ITANIUM_X86_64 ? "x86_64" : "aarch64";
+                var extractionMessages = new ArrayList<String>();
+                var extracted = GhidraTypeGraph.extract(program, selected, target, 0, MONITOR, extractionMessages::add);
+                require(extracted.classScopes().vtables().size() == 1 &&
+                    extracted.classScopes().vtables().getFirst().classId() == owner.getID(), "ordinary extraction retains explicit addressless table ownership: " + extractionMessages);
+                GhidraDeclarationBindings.remove(program, declaration.getID(), MONITOR);
+                rejected(program, symbolId);
+                rejects(() -> GhidraVtableBindings.save(program, request, MONITOR));
+                require(GhidraTypeGraph.extract(program, selected, target, 0, MONITOR, ignored -> { }).classScopes().vtables().isEmpty(),
+                    "missing explicit owner cannot infer a replacement table association");
+                GhidraDeclarationBindings.save(program, association, MONITOR);
+                require(valid(program, symbolId).request().classId() == owner.getID(), "exact association restoration recovers table witness");
+                GhidraInheritanceBindings.save(program, model, MONITOR);
+                GhidraDeclarationBindings.remove(program, declaration.getID(), MONITOR);
+                GhidraVtableBindings.save(program, request, MONITOR);
+                require(encoded.equals(options.getString(key, null)), "original local-virtual witness restored exactly");
                 GhidraVtableBindings.save(program, request, MONITOR);
                 require(encoded.equals(options.getString(key, null)), "nondeterministic saved record");
                 int[] visits = {0};
