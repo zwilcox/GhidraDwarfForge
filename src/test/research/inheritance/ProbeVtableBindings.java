@@ -25,13 +25,15 @@ public class ProbeVtableBindings extends GhidraScript {
         var tables = JsonParser.parseString(Files.readString(Path.of(getScriptArgs()[0]))).getAsJsonArray();
         // Explicit source-built fixture geometry; never a production table-scanning heuristic.
         var geometry = Map.of(
+            "_ZTV8Abstract", new long[][] {{16, 0}}, "_ZTV8Concrete", new long[][] {{16, 0}},
             "_ZTV6Single", new long[][] {{16, 0}},
             "_ZTV8Multiple", new long[][] {{16, 0}, {48, 16}},
             "_ZTV11VirtualBase", new long[][] {{16, 0}},
             "_ZTV11VirtualLeft", new long[][] {{24, 0}, {56, 16}},
             "_ZTV12VirtualRight", new long[][] {{24, 0}, {56, 16}},
             "_ZTV7Diamond", new long[][] {{24, 0}, {72, 16}, {104, 32}});
-        var names = Map.of("_ZTV6Single", "Single", "_ZTV8Multiple", "Multiple", "_ZTV11VirtualBase", "VirtualBase",
+        var names = Map.of("_ZTV8Abstract", "Abstract", "_ZTV8Concrete", "Concrete",
+            "_ZTV6Single", "Single", "_ZTV8Multiple", "Multiple", "_ZTV11VirtualBase", "VirtualBase",
             "_ZTV11VirtualLeft", "VirtualLeft", "_ZTV12VirtualRight", "VirtualRight", "_ZTV7Diamond", "Diamond");
         var snapshots = new LinkedHashMap<Long, Snapshot>();
         long delta = currentProgram.getImageBase().getOffset() - GhidraImageBase.originalImageBase(currentProgram);

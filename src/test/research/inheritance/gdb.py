@@ -14,13 +14,14 @@ try:
     gdb.execute('continue' if remote else 'run')
     result['language'] = gdb.execute('show language', to_string=True)
     result['dynamicTypes'] = {name: str(gdb.parse_and_eval(name).dynamic_type)
-        for name in ('single_base', 'multiple_right', 'diamond_base', 'diamond_right')}
+        for name in ('single_base', 'multiple_right', 'diamond_base', 'diamond_right', 'abstract_base')}
     gdb.execute('set print object on')
     for query in ('print *single_base', 'print *multiple_right', 'print *diamond_base',
             'ptype Single', 'ptype Multiple', 'ptype Diamond', 'ptype struct Diamond',
             'info vtbl *single_base', 'info vtbl *multiple_right', 'info vtbl *diamond_base',
             'print single_base->base', 'print multiple_right->right', 'print diamond_object->root',
-            'print diamond_right->root'):
+            'print diamond_right->root', 'print abstract_base->abstract_value',
+            'ptype struct Abstract', 'ptype struct Concrete', 'info vtbl *abstract_base'):
         try:
             result['queries'][query] = {'result': gdb.execute(query, to_string=True)}
         except gdb.error as error:
@@ -35,24 +36,24 @@ try:
     assert all(value > 0 for value in result['offsets'].values())
     if os.environ['INHERITANCE_VARIANT'] == 'cpp':
         assert result['dynamicTypes'] == {'single_base': 'Single *', 'multiple_right': 'Multiple *',
-            'diamond_base': 'Diamond *', 'diamond_right': 'Diamond *'}, result['dynamicTypes']
+            'diamond_base': 'Diamond *', 'diamond_right': 'Diamond *', 'abstract_base': 'Concrete *'}, result['dynamicTypes']
         assert all('error' not in value for value in result['queries'].values())
         assert int(gdb.parse_and_eval('diamond_right->root')) == 19
     if os.environ['INHERITANCE_VARIANT'].endswith('vtables'):
         assert {name: value.removeprefix('struct ') for name, value in result['dynamicTypes'].items()} == {
             'single_base': 'Single *', 'multiple_right': 'Multiple *',
-            'diamond_base': 'Diamond *', 'diamond_right': 'Diamond *'}, result['dynamicTypes']
+            'diamond_base': 'Diamond *', 'diamond_right': 'Diamond *', 'abstract_base': 'Concrete *'}, result['dynamicTypes']
     if os.environ['INHERITANCE_VARIANT'].endswith('vtables'):
-        expected_members = {'single_object->base': 11, 'single_object->single': 47,
+        expected_members = {'abstract_base->abstract_value': 41, 'concrete_object->extra': 43, 'single_object->base': 11, 'single_object->single': 47,
             'multiple_object->left': 13, 'multiple_object->right': 17, 'multiple_object->multiple': 29,
             'diamond_object->left': 23, 'diamond_object->right': 31, 'diamond_object->leaf': 37,
             'diamond_object->root': 19, 'diamond_right->root': 19,
             'virtual_left_object->root': 19, 'virtual_right_object->root': 19}
         result['inheritedValues'] = {name: int(gdb.parse_and_eval(name)) for name in expected_members}
         assert result['inheritedValues'] == expected_members, result['inheritedValues']
-        for name in ('Single', 'Multiple', 'Diamond'):
+        for name in ('Single', 'Multiple', 'Diamond', 'Abstract', 'Concrete'):
             result['queries']['ptype struct ' + name] = {'result': gdb.execute('ptype struct ' + name, to_string=True)}
-        for name in ('single_base', 'multiple_right', 'diamond_base'):
+        for name in ('single_base', 'multiple_right', 'diamond_base', 'abstract_base'):
             query = result['queries']['info vtbl *' + name]
             assert 'error' not in query and '[0]:' in query['result'], query
     gdb.execute('continue')

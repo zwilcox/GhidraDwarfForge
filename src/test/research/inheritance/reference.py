@@ -63,7 +63,7 @@ def main():
                     r'^\s*\d+:\s+([0-9a-f]+)\s+\d+\s+OBJECT\s+\S+\s+\S+\s+(\d+)\s+(_ZTV\S+)\s*$', symbols, re.M):
                 # Fixture classes are global. Exclude ABI runtime type_info
                 # vtables supplied by copy relocations in non-PIE executables.
-                if not re.fullmatch(r'_ZTV\d+(?:Base|Single|Left|Right|Multiple|VirtualBase|VirtualLeft|VirtualRight|Diamond)', name):
+                if not re.fullmatch(r'_ZTV\d+(?:Base|Single|Left|Right|Multiple|VirtualBase|VirtualLeft|VirtualRight|Diamond|Abstract|Concrete)', name):
                     continue
                 section, base = section_addresses[int(index)]
                 vtables.append((name, section, int(address, 16) - base))

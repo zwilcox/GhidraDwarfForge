@@ -25,14 +25,14 @@ try:
         result['layouts'][variable] = {'size': kind.sizeof, 'members': members}
         assert kind.sizeof == item['size'] and members == item['members'], (variable, result['layouts'][variable], item)
     result['ptype'] = {name: gdb.execute('ptype *' + name, to_string=True)
-        for name in ('single_object', 'multiple_object', 'diamond_object')}
+        for name in ('single_object', 'multiple_object', 'diamond_object', 'concrete_object')}
     assert all('type =' in value for value in result['ptype'].values()), result
     gdb.execute('set print object on')
     result['printed'] = {name: gdb.execute('print *' + name, to_string=True) for name in expected}
     if not expect_static:
         result['vtables'] = {name: gdb.execute('info vtbl *' + name, to_string=True) for name in expected}
         assert all('[0]:' in value for value in result['vtables'].values()), result
-    values = {'single_object->base': 11, 'multiple_object->right': 17, 'diamond_object->root': 19,
+    values = {'abstract_base->abstract_value': 41, 'concrete_object->extra': 43, 'single_object->base': 11, 'multiple_object->right': 17, 'diamond_object->root': 19,
         'virtual_left_object->root': 19, 'virtual_right_object->root': 19}
     assert {name: int(gdb.parse_and_eval(name)) for name in values} == values
     gdb.execute('continue')

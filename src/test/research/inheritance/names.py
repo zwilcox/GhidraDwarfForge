@@ -72,9 +72,9 @@ def main():
                 expected = {}
                 original_classes = {row['name']: row for row in original_model['classes']}
                 for phase, types in [('dynamic', {'single_base': 'Single', 'multiple_right': 'Multiple',
-                        'diamond_base': 'Diamond', 'diamond_right': 'Diamond'}),
+                        'diamond_base': 'Diamond', 'diamond_right': 'Diamond', 'abstract_base': 'Concrete'}),
                         ('static', {'single_base': 'Base', 'multiple_right': 'Right',
-                        'diamond_base': 'VirtualBase', 'diamond_right': 'VirtualRight'})]:
+                        'diamond_base': 'VirtualBase', 'diamond_right': 'VirtualRight', 'abstract_base': 'Abstract'})]:
                     expected[phase] = {variable: {'name': names[kind], 'size': original_classes[kind]['size'],
                         'members': [member['name'] for member in original_classes[kind]['members']]}
                         for variable, kind in types.items()}

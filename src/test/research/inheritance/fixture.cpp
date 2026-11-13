@@ -39,6 +39,17 @@ struct Diamond : VirtualLeft, VirtualRight {
     int right_value() override { return right + leaf; }
 };
 
+struct Abstract {
+    int abstract_value = 41;
+    virtual int pure_value() = 0;
+};
+struct Concrete : Abstract {
+    int extra = 43;
+    int pure_value() override { return abstract_value + extra; }
+};
+
+Abstract *abstract_base;
+Concrete *concrete_object;
 Base *single_base;
 Single *single_object;
 Right *multiple_right;
@@ -54,6 +65,9 @@ extern "C" __attribute__((noinline)) void inheritance_checkpoint() {
 }
 
 int main() {
+    Concrete concrete;
+    abstract_base = &concrete;
+    concrete_object = &concrete;
     Single one;
     Multiple many;
     Diamond diamond;
@@ -69,7 +83,7 @@ int main() {
     virtual_left_object = &standalone_left;
     virtual_right_object = &standalone_right;
     inheritance_checkpoint();
-    return single_base->value() != 58 || multiple_right->second() != 46 ||
+    return abstract_base->pure_value() != 84 || single_base->value() != 58 || multiple_right->second() != 46 ||
         diamond_base->root_value() != 56 || diamond_right->right_value() != 68 ||
         virtual_left_object->root_value() != 19 || virtual_right_object->root_value() != 19;
 }

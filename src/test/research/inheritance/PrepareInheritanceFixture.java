@@ -80,7 +80,8 @@ public class PrepareInheritanceFixture extends GhidraScript {
             function.setCallingConvention("__thiscall");
             function.setReturnType(IntegerDataType.dataType, SourceType.USER_DEFINED);
             virtuals.add(new VirtualMethod(function.getID(), row.get("slot").getAsInt(), Access.PUBLIC,
-                Virtuality.VIRTUAL, "Independent compiler virtual slot"));
+                row.has("virtuality") && row.get("virtuality").getAsInt() == 2 ? Virtuality.PURE_VIRTUAL : Virtuality.VIRTUAL,
+                "Independent compiler virtual slot"));
         }
         var bases = new ArrayList<Base>();
         for (var item : evidence.getAsJsonArray("bases")) {

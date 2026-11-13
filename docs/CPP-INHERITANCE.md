@@ -10,7 +10,8 @@ synthetic C11 remain the baseline.
 ## Compiler and debugger evidence
 
 **CONFIRMED locally:** `src/test/research/inheritance/reference.py` compares
-single, multiple and diamond-shaped virtual inheritance on x86-64 and AArch64.
+single, multiple and diamond-shaped virtual inheritance, plus an abstract base
+and concrete pure-virtual override, on x86-64 and AArch64.
 Each target tests non-PIE and PIE, with and without compiler RTTI. Six separate
 debug artifacts per build vary CU language and retained ELF symbols, for 48
 fresh GDB sessions. AArch64 executes through QEMU user emulation. All artifacts
@@ -470,3 +471,39 @@ signed offset-to-top decoding resides inside that profile. The gate and local
 80 inheritance-model/144 saved-vtable checks pass; the corrected hosted
 extension-build job also passed. This does not replace the remaining full hosted
 acceptance gate for the final PR head.
+
+## Pure-virtual method acceptance
+
+The source-built fixture includes `Abstract::pure_value() = 0` and a concrete
+override. GCC's DWARF describes the abstract declaration as `virtual`, so the
+harness records the stronger pure-virtual fact explicitly from this known
+fixture source. It does not infer purity from a missing body. The compiler's
+slot, signature and layout remain the independent reference, and the model
+records both the compiler virtuality and the explicit source witness.
+
+The checks require exactly one `DW_VIRTUALITY_pure_virtual` method with an
+object parameter and no executable address/ranges. The concrete override has
+its own method identity and code. GDB must identify `Concrete` through the
+abstract pointer, show both layouts, read inherited/member values and display
+the concrete vtable; the original program executes the virtual call and returns
+the expected value. Missing or rejected table evidence must retain `Abstract`
+as the static type. These checks apply to x86-64 and AArch64, non-PIE/PIE,
+RTTI/no-RTTI, saved-program reopening and rebasing.
+
+The fixture now has eleven classes, fourteen virtual methods and seven emitted
+table groups per build. Native and ordinary-export checks require the pure
+method count to be one, preventing a vacuous pass when compiler metadata omits
+the stronger flag. This acceptance does not yet cover a single canonical class
+containing both local and addressless methods; that representation and the
+analyst configuration workflow remain required work for #113.
+
+**CONFIRMED locally:** the expanded fixture passes 48 compiler-reference GDB
+sessions, eight native-producer profiles with six deliberately incorrect-base
+controls, and twelve ordinary exports (eight standard and four rebased PIE).
+All seven production naming/rejection variants also pass on both targets using
+rebased no-RTTI PIE, for fourteen additional ordinary exports. Each export
+passes the structural validators, preserves the input and saved program, and
+repeats deterministically. The standalone naming harness passes forty cases,
+and imported-storage validation checks 56 table witnesses across eight profiles.
+The full four-profile naming/rejection matrix remains in hosted CI; these local
+results do not replace its required validation at the final PR head.

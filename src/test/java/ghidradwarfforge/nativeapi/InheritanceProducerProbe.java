@@ -87,7 +87,8 @@ public final class InheritanceProducerProbe {
             var reference = address >= 0 ? FunctionReference.definition(name, address) :
                 FunctionReference.declaration(name, "compiler-method:" + id);
             methods.add(new Method(id, classIds.get(owner), leaf, reference));
-            virtuals.add(new VirtualMethod(id, row.get("slot").getAsInt(), Access.PUBLIC, Virtuality.VIRTUAL,
+            virtuals.add(new VirtualMethod(id, row.get("slot").getAsInt(), Access.PUBLIC,
+                row.has("virtuality") && row.get("virtuality").getAsInt() == 2 ? Virtuality.PURE_VIRTUAL : Virtuality.VIRTUAL,
                 "compiler reference vtable slot"));
             var parameters = List.of(new Parameter("this", new TypeRef(owner + "*"), true, false, true));
             if (address >= 0) {

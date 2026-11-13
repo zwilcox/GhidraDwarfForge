@@ -26,9 +26,9 @@ def fixture_names(model, variant):
     classes = {row['name']: row for row in model['classes']}
     result = {}
     for phase, types in [('dynamic', {'single_base': 'Single', 'multiple_right': 'Multiple',
-            'diamond_base': 'Diamond', 'diamond_right': 'Diamond'}),
+            'diamond_base': 'Diamond', 'diamond_right': 'Diamond', 'abstract_base': 'Concrete'}),
             ('static', {'single_base': 'Base', 'multiple_right': 'Right',
-            'diamond_base': 'VirtualBase', 'diamond_right': 'VirtualRight'})]:
+            'diamond_base': 'VirtualBase', 'diamond_right': 'VirtualRight', 'abstract_base': 'Abstract'})]:
         result[phase] = {variable: {'name': 'Recovered_' + kind if variant == 'renamed' else 'Shared' if variant == 'duplicate' else kind,
             'size': classes[kind]['size'], 'members': [member['name'] for member in classes[kind]['members']]}
             for variable, kind in types.items()}
@@ -189,6 +189,9 @@ def main():
                     methods = [die for die in dies.values() if 'DW_AT_vtable_elem_location' in die['attributes']]
                     assert len(bases) == len(model['bases']) and len(methods) == len(model['methods'])
                     assert all('DW_AT_object_pointer' in die['attributes'] for die in methods)
+                    pure = [die for die in methods if re.search(r'\b2\b.*pure_virtual', die['attributes']['DW_AT_virtuality'])]
+                    assert len(pure) == sum(row.get('virtuality') == 2 for row in model['methods']) == 1
+                    assert all('DW_AT_low_pc' not in die['attributes'] and 'DW_AT_ranges' not in die['attributes'] for die in pure)
             if args.variant == 'valid':
                 run(label + '-gdb', ['bash', HERE / 'gdb.sh', case, target, 'forge-vtables'])
                 actual = json.loads((case / 'forge-vtables.gdb.json').read_text())

@@ -15,8 +15,8 @@ HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('object_checker', HERE.parents[1] / 'integration/check-object-parameters.py')
 checker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(checker)
-CLASSES = ['Base', 'Single', 'Left', 'Right', 'Multiple', 'VirtualBase', 'VirtualLeft', 'VirtualRight', 'Diamond']
-GLOBALS = {'single_base': 'Base', 'single_object': 'Single', 'multiple_right': 'Right', 'multiple_object': 'Multiple',
+CLASSES = ['Base', 'Single', 'Left', 'Right', 'Multiple', 'VirtualBase', 'VirtualLeft', 'VirtualRight', 'Diamond', 'Abstract', 'Concrete']
+GLOBALS = {'abstract_base': 'Abstract', 'concrete_object': 'Concrete', 'single_base': 'Base', 'single_object': 'Single', 'multiple_right': 'Right', 'multiple_object': 'Multiple',
     'diamond_base': 'VirtualBase', 'diamond_right': 'VirtualRight', 'diamond_object': 'Diamond',
     'virtual_left_object': 'VirtualLeft', 'virtual_right_object': 'VirtualRight'}
 
@@ -87,13 +87,26 @@ def main():
                     if child['tag'] == 'DW_TAG_subprogram' and 'DW_AT_vtable_elem_location' in attrs:
                         slot, = re.findall(r'DW_OP_constu: (\d+)', attrs['DW_AT_vtable_elem_location'])
                         linkage = text(attrs['DW_AT_linkage_name'])
-                        method = {'owner': name, 'name': text(attrs['DW_AT_name']), 'slot': int(slot), 'id': child['offset'] + 1000}
+                        method = {'owner': name, 'name': text(attrs['DW_AT_name']), 'slot': int(slot), 'id': child['offset'] + 1000,
+                            'virtuality': number(attrs['DW_AT_virtuality'])}
+                        assert method['virtuality'] in (1, 2)
+                        if (name, method['name']) == ('Abstract', 'pure_value'):
+                            # GCC's reference DWARF uses "virtual" even for this
+                            # pure declaration. The source-built fixture supplies
+                            # the stronger explicit fact; never infer it from a
+                            # missing body in a recovered program.
+                            assert 'virtual int pure_value() = 0;' in (ref / 'fixture.cpp').read_text()
+                            assert linkage not in inventory
+                            method['compilerVirtuality'] = method['virtuality']
+                            method['virtuality'] = 2
+                            method['virtualityEvidence'] = 'fixture.cpp: Abstract::pure_value is explicitly declared = 0'
                         if linkage in inventory:
                             address, size, _ = inventory[linkage]
                             method.update(address=address, size=size)
                         model['methods'].append(method)
                 occupied[name] = max((m['offset'] + (8 if m['vptr'] else 4) for m in members), default=0)
                 model['classes'].append({'name': name, 'id': class_id, 'size': number(node['attributes']['DW_AT_byte_size']), 'members': members})
+            assert sum(method['virtuality'] == 2 for method in model['methods']) == 1
             for name in CLASSES:
                 children = [n for n in nodes.values() if n['parent'] == classes[name]['offset'] and n['tag'] == 'DW_TAG_inheritance']
                 for order, child in enumerate(children):
@@ -161,8 +174,10 @@ def main():
                         n['name'] == method['name']]
                     attrs = declaration['attributes']
                     slot, = re.findall(r'DW_OP_constu: (\d+)', attrs['DW_AT_vtable_elem_location'])
-                    assert int(slot) == method['slot'] and number(attrs['DW_AT_virtuality']) == 1
+                    assert int(slot) == method['slot'] and number(attrs['DW_AT_virtuality']) == method['virtuality']
                     assert 'DW_AT_object_pointer' in attrs
+                    if 'address' not in method:
+                        assert 'DW_AT_low_pc' not in attrs and 'DW_AT_ranges' not in attrs
 
             run(label + '-gdb', ['bash', HERE / 'gdb.sh', case, target, 'forge-vtables'])
             actual = json.loads((case / 'forge-vtables.gdb.json').read_text())

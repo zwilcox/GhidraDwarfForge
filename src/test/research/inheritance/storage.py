@@ -58,10 +58,10 @@ def main():
                 assert after['address'] - before['address'] == 0x200000
                 assert before['relocations'] == after['relocations']
             if args.bindings:
-                assert 'vtable-bindings-imported=PASS tables=6' in (case / 'headless.log').read_text()
+                assert f"vtable-bindings-imported=PASS tables={len(observed['before'])}" in (case / 'headless.log').read_text()
                 binding_report = json.loads((case / 'bindings.json').read_text())
                 assert binding_report['status'] == 'PASS_IMPORTED_VTABLE_BINDINGS'
-                assert len(binding_report['snapshots']) == 6
+                assert len(binding_report['snapshots']) == len(observed['before'])
                 by_name = {row['name']: row for row in observed['before']}
                 for snapshot in binding_report['snapshots']:
                     source = by_name[snapshot['request']['mangledName']]
