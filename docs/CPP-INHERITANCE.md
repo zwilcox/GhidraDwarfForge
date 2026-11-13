@@ -111,3 +111,37 @@ python3 support/storage-guard.py run --cwd "$PWD" -- \
     --classpath build/inheritance-classpath.txt \
     --results "$PWD/.forge-work/scratch/inheritance-packaging"
 ```
+
+## Inheritance model checkpoint
+
+**CONFIRMED locally:** `InheritanceModel` records direct bases by persistent
+class IDs, declaration order, access, provenance and either a fixed subobject
+extent or a virtual-base lookup. Virtual methods refer to saved method IDs and
+explicit slots. Admission requires canonical structures from explicit saved
+class bindings and validates virtual methods against existing object parameters.
+Current automatic THIS-type guesses cannot establish inheritance.
+
+Fixed subobject extents deliberately differ from the complete base type's byte
+size: reusable tail padding, empty bases and shared virtual bases make a simple
+non-overlap or `sizeof(base)` containment rule incorrect. Declaration order is
+retained independently of address order. The graph validator is iterative and
+rejects duplicate direct bases, missing order entries and cycles while allowing
+diamonds. Virtual slots reject conflicting ownership or missing methods.
+
+`CxxAbiProfile` currently describes the x86-64 and AArch64 little-endian Itanium
+layouts used by the compiler reference. A profile must be explicitly selected
+and checked against the target; a machine number alone is not ABI evidence.
+Virtual-base entry geometry is checked against that profile. These model tests
+do not establish emitted inheritance support on either target or change the
+existing support claims for other architectures.
+
+`inheritanceModelSmoke` passes 80 admission checks, including an 8,192-edge graph,
+and is included in the Linux and Windows smoke lists. Existing saved class
+bindings and extraction still pass on x86-64, AArch64, ARM32 and both MIPS byte
+orders (400 binding and 290 extraction checks). Existing class-model/name tests
+also pass. Hosted checks for this checkpoint remain pending.
+
+**PLANNED:** persist and revalidate the new relationships, including layout and
+method changes; admit actual vtable/address-point evidence; connect the model to
+native emission; and run independent compiler/Forge behavioral comparisons.
+The model is not yet populated by ordinary export.
