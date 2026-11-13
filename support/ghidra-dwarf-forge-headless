@@ -37,8 +37,9 @@ Common options:
   --log=<path>            Preserve the complete headless transcript
   --analysis-timeout=<s> Import-mode analysis timeout (default: 120)
 
-Existing-project mode is read-only and disables analysis. The project and
-program are never deleted or saved by this wrapper.
+Existing-project mode opens one saved program through a read-only project
+handle. A basename selects a root file; /folder/program selects a nested file.
+Analysis is disabled. The saved project and program are never deleted or saved.
 An explicit --log in existing-project mode also requires --input so log
 preflight can protect the original executable and its default output paths.
 Raw mode requires existing-project mode and --input. Its memory map comes from
@@ -351,20 +352,15 @@ if ((import_mode)); then
         -import "$import_path" -loader ElfLoader -analysisTimeoutPerFile "$analysis_timeout"
         -postScript GhidraDwarfForge.java "${export_options[@]}"
     )
-elif [[ -n "$raw_firmware" ]]; then
+else
     [[ -d "$project_dir" ]] || die_usage "project directory does not exist: $project_dir"
+    [[ "$program" == /* ]] || program="/$program"
     temporary_root=$(mktemp -d \
         "$temporary_base/ghidra-dwarf-forge-headless-wrapper.XXXXXXXX") || exit 12
     headless_arguments=(
         "$temporary_root" GhidraDwarfForgeHeadless -deleteProject -noanalysis
         -postScript GhidraDwarfForgeReadOnly.java "$project_dir" "$project_name" "$program"
         "${export_options[@]}"
-    )
-else
-    [[ -d "$project_dir" ]] || die_usage "project directory does not exist: $project_dir"
-    headless_arguments=(
-        "$project_dir" "$project_name" -readOnly -noanalysis -process "$program"
-        -postScript GhidraDwarfForge.java "${export_options[@]}"
     )
 fi
 

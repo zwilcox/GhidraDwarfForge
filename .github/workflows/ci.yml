@@ -1826,6 +1826,13 @@ jobs:
         if: matrix.target == 'x86_64'
         run: src/test/integration/saved-program-determinism.sh "$GHIDRA_INSTALL_DIR"
 
+      - name: Saved-project wrapper preserves databases and project backups
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/integration/saved-project-preservation.py \
+              --ghidra "$GHIDRA_INSTALL_DIR" --input build/fixtures/x86_64/semantic.exec.stripped \
+              --results build/test-results/saved-project-preservation
+
       - name: Saved analyst edits through backup-based attachment refresh
         if: matrix.target == 'x86_64'
         run: |
@@ -3686,6 +3693,14 @@ jobs:
         with:
           name: raw-firmware-reference
           path: raw-firmware-reference
+
+      - name: Windows saved-project wrapper preserves databases and project backups
+        shell: pwsh
+        run: |
+          python src/test/integration/saved-project-preservation.py `
+              --ghidra "$env:GHIDRA_INSTALL_DIR" --input linux-reference/semantic.exec.stripped `
+              --results build/test-results/windows-host/saved-project-preservation
+          if ($LASTEXITCODE -ne 0) { throw 'Windows saved-project preservation failed' }
 
       - name: Windows PowerShell raw firmware export and preservation
         shell: pwsh

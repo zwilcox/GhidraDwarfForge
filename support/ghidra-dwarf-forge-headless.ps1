@@ -396,26 +396,19 @@ try {
             '-postScript', 'GhidraDwarfForge.java'
         ) + $exportOptions
     }
-    elseif ($RawFirmware) {
+    else {
         if (-not (Test-Path -LiteralPath $ProjectDirectory -PathType Container)) {
             Exit-Usage "project directory does not exist: $ProjectDirectory"
         }
         $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) (
             "ghidra-dwarf-forge-headless-wrapper-$([guid]::NewGuid())")
         New-Item -ItemType Directory -Path $temporaryRoot | Out-Null
+        $savedProgram = $Program
+        if (-not $savedProgram.StartsWith('/')) { $savedProgram = '/' + $savedProgram }
         $headlessArguments = @(
             $temporaryRoot, 'GhidraDwarfForgeHeadless', '-deleteProject', '-noanalysis',
             '-postScript', 'GhidraDwarfForgeReadOnly.java',
-            (Get-AbsoluteFilesystemPath $ProjectDirectory), $ProjectName, $Program
-        ) + $exportOptions
-    }
-    else {
-        if (-not (Test-Path -LiteralPath $ProjectDirectory -PathType Container)) {
-            Exit-Usage "project directory does not exist: $ProjectDirectory"
-        }
-        $headlessArguments = @(
-            $ProjectDirectory, $ProjectName, '-readOnly', '-noanalysis',
-            '-process', $Program, '-postScript', 'GhidraDwarfForge.java'
+            (Get-AbsoluteFilesystemPath $ProjectDirectory), $ProjectName, $savedProgram
         ) + $exportOptions
     }
 
