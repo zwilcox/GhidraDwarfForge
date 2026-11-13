@@ -61,6 +61,8 @@ public final class ClassScopeNames {
                 candidates.add(new Alias(scope.id(), qualified));
             }
         }
+        for (var table : scopes.vtables()) candidates.add(new Alias(table.classId(), table.lookupName()));
+        candidates = new ArrayList<>(new java.util.LinkedHashSet<>(candidates));
         var claims = new HashMap<String, HashSet<Long>>();
         for (Alias alias : candidates) claims.computeIfAbsent(alias.name(), ignored -> new HashSet<>()).add(alias.classId());
         var aliases = new ArrayList<Alias>();
@@ -75,6 +77,15 @@ public final class ClassScopeNames {
             else if (existing == null) aliases.add(alias);
         }
         return new Plan(names, aliases, diagnostics);
+    }
+
+    /** True only when the emitted C lookup resolves to this exact canonical type. */
+    public static boolean resolvesTo(TypeGraph graph, ClassScopeModel scopes, Plan plan, long classId, String name) {
+        var binding = scopes.bindings().stream().filter(item -> item.classId() == classId).findFirst().orElse(null);
+        if (binding == null || binding.source() != ClassScopeModel.BindingSource.EXPLICIT_SAVED) return false;
+        var named = graph.nodes().stream().filter(type -> type.name().equals(name)).toList();
+        if (!named.isEmpty()) return named.size() == 1 && named.getFirst().key().equals(binding.type().key());
+        return plan.aliases().contains(new Alias(classId, name));
     }
 
     private static UnboundIdentity unboundKey(long id) { return new UnboundIdentity(id); }

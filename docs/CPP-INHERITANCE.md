@@ -2,8 +2,9 @@
 
 **PRESENT, UNVERIFIED end to end:** issue #113 extends saved class/type ownership
 with explicit base, virtual-method and vtable relationships. Ordinary Ghidra
-extraction and native emission now retain validated saved inheritance. Vtable
-evidence admission remains incomplete. Ghidra 12.0.3, Java 21 and
+extraction and native emission now retain validated saved inheritance and vtable
+witnesses. The production-path checkpoint below is locally validated; broader
+configuration and #113 acceptance remain incomplete. Ghidra 12.0.3, Java 21 and
 synthetic C11 remain the baseline.
 
 ## Compiler and debugger evidence
@@ -144,7 +145,7 @@ orders (400 binding and 290 extraction checks). Existing class-model/name tests
 also pass. Hosted checks for this checkpoint remain pending.
 
 The saved relationship and native emission checkpoints below extend this model.
-Actual vtable/address-point evidence and its export integration remain incomplete.
+The later vtable checkpoints extend this model with saved byte evidence and export admission.
 
 ## Saved relationship snapshot
 
@@ -363,9 +364,59 @@ original address, file offset and both byte fingerprints. Original ELF files
 remain byte-identical. This checkpoint does not emit new DWARF; ordinary-export
 and debugger acceptance still require the admission work below.
 
-**PLANNED next:** validate these witnesses against the actual original ELF,
-admit unambiguous canonical lookup aliases, pass admitted table symbols through
-normal export, and replace the experimental compiler-symbol packaging step with
-that production path. Add configuration/recovery flows and the remaining
-conflicting-evidence, pure-virtual, mixed local/addressless-method, thunk and
-source-failure acceptance cases before closing #113.
+The next checkpoint connects these witnesses to the original ELF and ordinary
+export. Configuration/recovery flows and the remaining conflicting-evidence,
+pure-virtual, mixed local/addressless-method, thunk and source-failure acceptance
+cases remain required before closing #113.
+
+## Ordinary vtable export checkpoint
+
+**CONFIRMED locally:** ordinary class extraction now reads saved vtable witnesses.
+The inventory includes orphaned symbol records so deleted or stale evidence is
+diagnosed. It requires the class and inheritance to survive normal extraction,
+and bounds aggregate encoded records and byte-witness work before reading them.
+A vtable record cannot restore inheritance or canonical ownership rejected by
+another extraction check.
+
+`VtableSymbols` makes the ELF symbol and its canonical lookup association one
+admission decision. It checks the selected ABI, original ET_EXEC/ET_DYN target,
+unique non-TLS allocation, complete file-backed extent, exact FileBytes offset
+and original-byte SHA-256. Sectionless inputs use the writer's shared PT_LOAD
+allocation identities. Conflicting/overlapping table records, reserved function
+or global names, and ambiguous canonical lookup spellings are omitted with a
+diagnostic. No table alias is retained solely on behalf of rejected evidence.
+Independent pre-existing class aliases and original ELF symbols remain governed
+by their existing preservation rules.
+
+Accepted lookup names become typedef aliases to the exact canonical class DIE
+only when needed; synthetic C11 and existing class/method ownership remain
+unchanged. The native exporter appends validated object symbols through the
+ordinary matched writer. An original symbol with matching name/type/address/
+extent/section is reused; conflicting identities are rejected. Both static and
+applicable dynamic inventories are checked, with bounded repeated-name handling.
+Default export never modifies the executable or adds a debuglink.
+
+`vtableSymbolsSmoke` passes 166 checks for both selected targets, including
+original-byte changes, incorrect mappings/targets, TLS/NOBITS/overlapping
+allocations, table and canonical-name conflicts, distinct qualified lookups for
+same-spelling types, matching/conflicting original symbols, sectionless mapping,
+determinism, input preservation and cancellation. Regression suites pass:
+saved vtables 144, saved inheritance 188, class names 12, class extraction 300,
+class model 51 and local symbol merge 1,752. Extension build and workflow lint pass.
+
+`extract.py` now saves fixture vtable witnesses and consumes the normal export
+artifact directly. It no longer inserts compiler symbols in a second packaging
+step. Eight standard profiles and four rebased PIE profiles pass GNU readelf,
+LLVM verification, the pinned libdwarf checker and GDB/QEMU runtime comparisons.
+The checks require exactly the expected object symbols and their addresses/
+extents, canonical inheritance/object parameters, derived types through primary,
+secondary and virtual-base pointers, inherited member values, `ptype`, `info vtbl`
+and successful original virtual calls. These fixtures run with and without RTTI.
+
+Every case reopens the saved program through the supported read-only wrapper,
+requires identical sidecar/source bytes, hashes every project file, and checks
+that the original executable is unchanged. The final local runs use the current
+development extension; hosted checks for these C++ changes remain pending.
+This does not yet establish the full recovery/configuration workflow, production
+rejected/renamed/duplicate-name runtime matrix, pure-virtual/mixed-method cases,
+or genuine decompilation-failure behavior. Those remain #113 work.

@@ -26,7 +26,6 @@ def main():
     parser.add_argument('--ghidra', type=Path, required=True)
     parser.add_argument('--references', type=Path, required=True)
     parser.add_argument('--models', type=Path, required=True)
-    parser.add_argument('--classpath', type=Path, required=True)
     parser.add_argument('--results', type=Path, required=True)
     parser.add_argument('--targets', nargs='+', choices=('x86_64', 'aarch64'), default=['x86_64', 'aarch64'])
     parser.add_argument('--roles', nargs='+', choices=('exec', 'pie', 'exec-no-rtti', 'pie-no-rtti'),
@@ -36,8 +35,6 @@ def main():
     root = args.results.resolve()
     root.mkdir(parents=True, exist_ok=False)
     commands, cases = [], []
-    java = str(Path(os.environ['JAVA_HOME']) / 'bin/java')
-    classpath = args.classpath.read_text().strip()
     scripts = ';'.join(map(str, (HERE, REPOSITORY / 'ghidra_scripts')))
     headless = args.ghidra.resolve() / 'support/analyzeHeadless'
     settings = root / 'settings'
@@ -69,7 +66,7 @@ def main():
             original = digest(runtime)
             project = case / 'project'
             project.mkdir()
-            produced = case / 'producer.dbg'
+            produced = case / 'forge-vtables.dbg'
             output_args = [
                 '--libdwarf=' + os.environ['LIBDWARF'], '--libdwarfp=' + os.environ['LIBDWARFP'],
                 '--output=' + str(produced)]
@@ -77,6 +74,8 @@ def main():
                 command = [headless, project, 'Inheritance', '-scriptPath', scripts, '-noanalysis']
                 if phase == 'curate':
                     command += ['-import', runtime, '-postScript', 'PrepareInheritanceFixture.java', model_dir / 'model.json']
+                    command += ['-postScript', 'ProbeVtableBindings.java', model_dir / 'vtables.json',
+                        case / 'vtable-witnesses.json', 'save-only']
                     if args.rebase:
                         command += ['-postScript', 'RebaseInheritanceFixture.java']
                     command += ['-postScript', 'GhidraDwarfForge.java', *output_args]
@@ -92,6 +91,7 @@ def main():
                 assert report['counts']['functionsFailed'] == 0, report['failedFunctions']
                 assert not re.search(r'REPORT SCRIPT ERROR|Error running script|Exception in thread', log), label + '-' + phase
                 assert 'Omitted explicit inheritance' not in log, label
+                assert 'Omitted explicit vtable' not in log, label
                 if phase == 'curate':
                     assert 'inheritance-curation=PASS' in log
                     if args.rebase:
@@ -108,9 +108,12 @@ def main():
                         'changed': changed}, indent=4) + '\n')
                     assert any(name.startswith('Inheritance.rep/idata/') for name in database)
                     assert not changed, changed
-            artifact = case / 'forge-vtables.dbg'
-            run(label + '-package', [java, '-cp', classpath, 'ghidradwarfforge.elf.VtablePackagingProbe',
-                runtime, produced, model_dir / 'vtables.json', artifact])
+            artifact = produced
+            symbols = run(label + '-symbols', ['readelf', '-sW', artifact])
+            for table in json.loads((model_dir / 'vtables.json').read_text()):
+                matches = [line.split() for line in symbols.splitlines() if line.split() and line.split()[-1] == table['name']]
+                assert len(matches) == 1 and matches[0][3] == 'OBJECT', (label, table['name'], matches)
+                assert int(matches[0][1], 16) == table['address'] and int(matches[0][2]) == table['size']
             assert 'No errors.' in run(label + '-llvm', ['llvm-dwarfdump', '--verify', artifact])
             for validator, command in [('gnu', ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline']),
                     ('strict', [os.environ['DWARFDUMP']])]:
@@ -132,7 +135,7 @@ def main():
                 'sidecarSha256': digest(produced), 'sourceSha256': first[1], 'savedProgramUnchanged': True,
                 'projectMetadataChanges': changed})
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_SAVED_INHERITANCE_EXPORT', 'cases': cases,
-        'scope': 'ordinary export of curated saved programs; vtable symbols supplied separately from compiler evidence'}, indent=4) + '\n')
+        'scope': 'ordinary export of curated saved programs with persisted vtable evidence and original-ELF admission'}, indent=4) + '\n')
     print('inheritance-extraction=PASS', root)
 
 

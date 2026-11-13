@@ -546,6 +546,72 @@ public final class MatchedElfSidecarWriter {
         return offset;
     }
 
+    enum OriginalObjectMatch { ABSENT, MATCH, CONFLICT }
+
+    /** Compare requested identities with the exact static inventory (or its dynamic mirror). */
+    static Map<String, OriginalObjectMatch> originalObjectMatches(ElfImage image,
+            List<ElfLocalObjectSymbol> objects, BooleanSupplier cancelled) throws IOException {
+        var result = new HashMap<String, OriginalObjectMatch>();
+        var wanted = new HashMap<ByteBuffer, ElfLocalObjectSymbol>();
+        for (var object : objects) {
+            result.put(object.name(), OriginalObjectMatch.ABSENT);
+            wanted.put(ByteBuffer.wrap(object.name().getBytes(java.nio.charset.StandardCharsets.UTF_8)), object);
+        }
+        int width = image.is64Bit() ? 24 : 16;
+        var input = readSymbolTable(image, image.sections(), width, cancelled);
+        var existing = new HashSet<ByteBuffer>();
+        if (input != null) {
+            matchObjects(image, input.records(), input.names(), input.extended(), wanted, result, cancelled);
+            existing.addAll(input.existingNames());
+        }
+        if (input != null && !input.synthesized()) {
+            var dynamic = DynamicSymbolMirror.read(image, cancelled);
+            if (dynamic != null) {
+                matchObjects(image, dynamic.records(), dynamic.names(), dynamic.indices(), wanted, result, cancelled);
+                existing.addAll(dynamic.existingNames());
+            }
+        }
+        for (var entry : wanted.entrySet()) {
+            if (existing.contains(entry.getKey()) && result.get(entry.getValue().name()) == OriginalObjectMatch.ABSENT) {
+                result.put(entry.getValue().name(), OriginalObjectMatch.CONFLICT);
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    private static void matchObjects(ElfImage image, byte[] records, byte[] names, byte[] extended,
+            Map<ByteBuffer, ElfLocalObjectSymbol> wanted, Map<String, OriginalObjectMatch> result,
+            BooleanSupplier cancelled) {
+        int width = image.is64Bit() ? 24 : 16;
+        var rows = ByteBuffer.wrap(records).order(image.byteOrder());
+        var indices = extended == null ? null : ByteBuffer.wrap(extended).order(image.byteOrder());
+        var decoded = new HashMap<Integer, ElfLocalObjectSymbol>();
+        for (int index = 0; index < records.length / width; index++) {
+            checkCancelled(cancelled);
+            int at = index * width, start = rows.getInt(at);
+            // Bounds and framing were validated by readSymbolTable/DynamicSymbolMirror.
+            // Cache repeated offsets to preserve that reader's aggregate name bound.
+            if (!decoded.containsKey(start)) {
+                int end = start;
+                while (names[end] != 0) {
+                    if ((end & 1023) == 0) checkCancelled(cancelled);
+                    end++;
+                }
+                decoded.put(start, wanted.get(ByteBuffer.wrap(names, start, end - start)));
+            }
+            var object = decoded.get(start);
+            if (object == null) continue;
+            int type = Byte.toUnsignedInt(records[at + (image.is64Bit() ? 4 : 12)]) & 15;
+            long section = Short.toUnsignedInt(rows.getShort(at + (image.is64Bit() ? 6 : 14)));
+            if (section == SHN_XINDEX) section = Integer.toUnsignedLong(indices.getInt(index * 4));
+            long value = image.is64Bit() ? rows.getLong(at + 8) : Integer.toUnsignedLong(rows.getInt(at + 4));
+            long size = image.is64Bit() ? rows.getLong(at + 16) : Integer.toUnsignedLong(rows.getInt(at + 8));
+            boolean equal = type == 1 && value == object.value() && size == object.size() && section == object.sectionIndex();
+            result.merge(object.name(), equal ? OriginalObjectMatch.MATCH : OriginalObjectMatch.CONFLICT,
+                (old, current) -> old == OriginalObjectMatch.CONFLICT ? old : current);
+        }
+    }
+
     /** Read only the symbol metadata needed for a lossless local insertion. */
     private static SymbolTableInput readSymbolTable(ElfImage image, List<Section> sections,
             int width, BooleanSupplier cancelled) throws IOException {

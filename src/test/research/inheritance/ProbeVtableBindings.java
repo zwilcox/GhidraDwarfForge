@@ -19,7 +19,9 @@ import ghidradwarfforge.GhidraVtableBindings.*;
 public class ProbeVtableBindings extends GhidraScript {
     @Override
     protected void run() throws Exception {
-        if (getScriptArgs().length != 2) throw new IllegalArgumentException("vtables.json result.json");
+        if (getScriptArgs().length < 2 || getScriptArgs().length > 3) throw new IllegalArgumentException("vtables.json result.json [save-only]");
+        boolean saveOnly = getScriptArgs().length == 3 && getScriptArgs()[2].equals("save-only");
+        if (getScriptArgs().length == 3 && !saveOnly) throw new IllegalArgumentException("unknown fixture mode");
         var tables = JsonParser.parseString(Files.readString(Path.of(getScriptArgs()[0]))).getAsJsonArray();
         // Explicit source-built fixture geometry; never a production table-scanning heuristic.
         var geometry = Map.of(
@@ -55,6 +57,7 @@ public class ProbeVtableBindings extends GhidraScript {
             var before = GhidraVtableBindings.read(currentProgram, symbol.getID(), monitor, this::println);
             if (before.status() != Status.VALID) throw new AssertionError("fixture table rejected");
             snapshots.put(symbol.getID(), before.snapshot());
+            if (saveOnly) continue;
             // Patch a function pointer, not the offset-to-top, to require a byte-witness rejection.
             var at = address.add(points.getFirst().tableOffset());
             byte old = currentProgram.getMemory().getByte(at);
@@ -67,7 +70,7 @@ public class ProbeVtableBindings extends GhidraScript {
                 throw new AssertionError("restored imported table differs");
             }
         }
-        currentProgram.setImageBase(currentProgram.getImageBase().add(0x200000), true);
+        if (!saveOnly) currentProgram.setImageBase(currentProgram.getImageBase().add(0x200000), true);
         for (var entry : snapshots.entrySet()) {
             var after = GhidraVtableBindings.read(currentProgram, entry.getKey(), monitor, this::println);
             if (after.status() != Status.VALID || !after.snapshot().equals(entry.getValue())) throw new AssertionError("rebased snapshot changed");

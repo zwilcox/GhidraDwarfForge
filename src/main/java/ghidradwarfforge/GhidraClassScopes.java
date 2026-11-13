@@ -149,12 +149,14 @@ final class GhidraClassScopes {
             try {
                 candidate.validate(graph, functions, declarations);
                 monitor.checkCancelled();
-                return candidate;
+                var tables = GhidraVtableBindings.extract(program, candidate, monitor, diagnostic);
+                return new ClassScopeModel(candidate.scopes(), candidate.bindings(), candidate.methods(), candidate.inheritance(), tables);
             }
             catch (IllegalArgumentException invalid) {
                 diagnostic.accept("Omitted explicit inheritance from this export: " + invalid.getMessage());
             }
         }
+        GhidraVtableBindings.extract(program, result, monitor, diagnostic);
         return result;
     }
 

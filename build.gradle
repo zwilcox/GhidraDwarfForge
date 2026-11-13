@@ -2100,6 +2100,13 @@ tasks.register("objectParameterSmoke", JavaExec) {
     }
 }
 
+tasks.register("vtableSymbolsSmoke", JavaExec) {
+    group = "verification"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.elf.VtableSymbolsSmoke"
+}
+
 tasks.register("vtableBindingEvidenceSmoke", JavaExec) {
     group = "verification"
     dependsOn testClasses

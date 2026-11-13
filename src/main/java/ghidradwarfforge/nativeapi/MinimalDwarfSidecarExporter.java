@@ -557,6 +557,12 @@ public final class MinimalDwarfSidecarExporter {
             throw new IllegalArgumentException("frame plan target layout differs from original ELF");
         }
         typeModel = target.applyCallRestrictions(elf, typeModel, cancelled, diagnostic);
+        var vtableReserved = new java.util.HashSet<>(constantNames);
+        vtableReserved.addAll(formatterAliases.values());
+        for (var function : ordered) vtableReserved.add(function.qualifiedDisplayName());
+        for (var alias : aliases) vtableReserved.add(alias.name());
+        var vtables = ghidradwarfforge.elf.VtableSymbols.plan(elf, typeModel, vtableReserved, cancelled, diagnostic);
+        typeModel = vtables.types();
         Map<Integer, String> constantTypeNames = new java.util.TreeMap<>();
         if (!constants.isEmpty()) {
             var namesModel = typeModel == null ? new ProgramTypeModel(new TypeGraph(List.of()), List.of(), List.of()) : typeModel;
@@ -584,6 +590,7 @@ public final class MinimalDwarfSidecarExporter {
         List<ElfLocalFunctionSymbol> modeSymbols = target.planFunctionModeSymbols(
             elf, modeCues, ordered, cancelled, diagnostic);
         List<ghidradwarfforge.elf.ElfLocalSymbol> supplemental = new ArrayList<>(modeSymbols);
+        supplemental.addAll(vtables.symbols());
         var plannedAliases = target.planFunctionAliases(elf, aliases, ordered, modeSymbols,
             aliasModeCues, cancelled, diagnostic);
         supplemental.addAll(plannedAliases);

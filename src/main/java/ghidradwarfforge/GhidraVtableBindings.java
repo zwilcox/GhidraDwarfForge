@@ -100,6 +100,11 @@ public final class GhidraVtableBindings {
     /** Read-only: never refreshes stale fingerprints or infers a replacement for rejected evidence. */
     public static Result read(Program program, long symbolId, TaskMonitor monitor, Consumer<String> diagnostic)
             throws CancelledException {
+        return read(program, symbolId, monitor, diagnostic, ignored -> { });
+    }
+
+    private static Result read(Program program, long symbolId, TaskMonitor monitor, Consumer<String> diagnostic,
+            java.util.function.IntConsumer charge) throws CancelledException {
         monitor.checkCancelled();
         String key = key(symbolId);
         if (!program.getOptionsNames().contains(OPTIONS_NAME) || !program.getOptions(OPTIONS_NAME).contains(key)) {
@@ -121,6 +126,7 @@ public final class GhidraVtableBindings {
                 var expected = new Snapshot(request, CxxAbiProfile.valueOf(in.readUTF()), in.readLong(), in.readLong(),
                     in.readUTF(), in.readUTF(), in.readUTF());
                 if (in.read() != -1) throw invalid("trailing vtable record bytes");
+                charge.accept(request.byteSize());
                 var actual = capture(program, request, monitor);
                 if (!expected.equals(actual)) throw invalid("vtable identity, layout, mapping, relocation or bytes changed");
                 return new Result(Status.VALID, actual);
@@ -130,6 +136,57 @@ public final class GhidraVtableBindings {
             diagnostic.accept("Omitted explicit vtable " + symbolId + ": " + failure.getMessage());
             return new Result(Status.REJECTED, null);
         }
+    }
+
+    /** Bounded inventory including orphaned records, so deleted symbols are diagnosed. */
+    public static List<ghidradwarfforge.types.VtableEvidence> extract(Program program,
+            ghidradwarfforge.types.ClassScopeModel classes, TaskMonitor monitor, Consumer<String> diagnostic)
+            throws CancelledException {
+        monitor.checkCancelled();
+        if (!program.getOptionsNames().contains(OPTIONS_NAME)) return List.of();
+        var keys = program.getOptions(OPTIONS_NAME).getOptionNames();
+        if (keys.size() > 4096) {
+            diagnostic.accept("Omitted explicit vtables: saved inventory exceeds bound");
+            return List.of();
+        }
+        var result = new ArrayList<ghidradwarfforge.types.VtableEvidence>();
+        long[] inspectedBytes = {0};
+        long encodedBytes = 0;
+        for (String key : keys.stream().sorted().toList()) {
+            monitor.checkCancelled();
+            if (!key.startsWith("symbol-")) {
+                diagnostic.accept("Omitted unknown vtable record key: " + key);
+                continue;
+            }
+            long id;
+            try { id = Long.parseLong(key.substring(7)); if (id <= 0 || !key(id).equals(key)) throw invalid("invalid key"); }
+            catch (IllegalArgumentException invalid) { diagnostic.accept("Omitted invalid vtable record key: " + key); continue; }
+            var options = program.getOptions(OPTIONS_NAME);
+            if (options.getType(key) == OptionType.STRING_TYPE) {
+                encodedBytes += Objects.toString(options.getString(key, ""), "").length();
+                if (encodedBytes > 16L * 1024 * 1024) {
+                    diagnostic.accept("Omitted explicit vtables: aggregate encoded record budget exceeded");
+                    return List.of();
+                }
+            }
+            var value = read(program, id, monitor, diagnostic, size -> {
+                inspectedBytes[0] += size;
+                if (inspectedBytes[0] > 64L * 1024 * 1024) throw invalid("aggregate byte witness budget exceeded");
+            });
+            if (inspectedBytes[0] > 64L * 1024 * 1024) return List.of();
+            if (value.status() != Status.VALID) continue;
+            var snapshot = value.snapshot(); var request = snapshot.request();
+            if (snapshot.abi() != classes.inheritance().abi() || classes.bindings().stream().noneMatch(binding ->
+                    binding.classId() == request.classId() && binding.source() ==
+                        ghidradwarfforge.types.ClassScopeModel.BindingSource.EXPLICIT_SAVED)) {
+                diagnostic.accept("Omitted explicit vtable " + id + ": canonical class/inheritance is unavailable in this export");
+                continue;
+            }
+            result.add(new ghidradwarfforge.types.VtableEvidence(id, request.classId(), snapshot.abi(), request.mangledName(),
+                request.lookupName(), snapshot.originalAddress(), request.byteSize(), snapshot.fileOffset(),
+                snapshot.originalSha256(), request.evidence()));
+        }
+        return List.copyOf(result);
     }
 
     public static void remove(Program program, long symbolId, TaskMonitor monitor) throws CancelledException {
