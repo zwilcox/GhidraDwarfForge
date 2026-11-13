@@ -94,6 +94,14 @@ tasks.register("prepareCallSiteSerializationHarness") {
     }
 }
 
+tasks.register("prepareInheritanceHarness") {
+    group = "verification"
+    dependsOn testClasses
+    doLast {
+        layout.buildDirectory.file("inheritance-classpath.txt").get().asFile.text = sourceSets.test.runtimeClasspath.asPath
+    }
+}
+
 tasks.register("callSitePlanSmoke", JavaExec) {
     group = "verification"
     dependsOn testClasses

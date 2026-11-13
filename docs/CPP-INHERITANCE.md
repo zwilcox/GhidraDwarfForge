@@ -62,9 +62,9 @@ exporter acceptance result.
 - Add validated inheritance and virtual-method metadata without replacing
   existing method ownership, object parameters or canonical types. Virtual-base
   locations require evidenced ABI expressions rather than fixed object offsets.
-- Preserve or emit only proven vtable symbol identities. The current local ELF
-  symbol model admits functions and mapping symbols; adding object symbols needs
-  its own section/extent/address and conflict checks.
+- Preserve or emit only proven vtable symbol identities. The local ELF
+  symbol model now admits validated non-TLS objects; extraction must still prove
+  the identity, byte extent and target address before requesting such a symbol.
 - Keep C11 unless further consumer evidence requires a deliberate language
   change. Test qualified/duplicate names and fresh debugger lookup using the
   existing class-scope representation; the global-class experiment does not
@@ -74,3 +74,40 @@ exporter acceptance result.
   and cancellation through the production exporter and required hosted gates.
 
 No issue #113 acceptance item is complete solely because this reference passes.
+
+## Production ELF packaging checkpoint
+
+**CONFIRMED locally:** `package.py` uses `MatchedElfSidecarWriter` to package
+compiler DWARF with explicit fixture vtable records. Its 16 cases cover both
+reference targets, all four build profiles, and both CU languages. GNU readelf,
+LLVM and the pinned libdwarf checker validate the artifacts. Fresh GDB sessions
+match the compiler reference for dynamic types, inherited values, base offsets
+and language behavior. These tests do not yet exercise Forge inheritance DIEs
+or Ghidra binding admission.
+
+The writer admits `ElfLocalObjectSymbol` only inside a non-TLS allocated section,
+with a positive, fully contained extent. It preserves original symbol records,
+checks name conflicts, handles extended section indexes, and retains the same
+cancellation and atomic publication rules. ELF32/64 and both byte orders have
+independent smoke coverage, including NOBITS and rejected TLS/overflow cases.
+
+The experiment also exposed valid copy-relocated C++ runtime objects whose
+version identity comes from VERNEED while their storage is defined in the
+executable. The dynamic mirror now reads bounded VERNEED chains alongside
+VERDEF, including program-header-only inputs, and emits the required single
+`@VERSION` spelling. Original dynamic tables remain byte-identical. Malformed
+chains, duplicate/conflicting identifiers, missing tables and cancellation have
+regression controls. This matches the distinction documented in the
+[binutils copy-relocation handling](https://sourceware.org/pipermail/binutils-cvs/2015-November/040929.html).
+
+After generating the compiler reference and running Gradle's
+`prepareInheritanceHarness` task through the storage guard:
+
+```bash
+python3 support/storage-guard.py run --cwd "$PWD" -- \
+    env DWARFDUMP=/path/to/pinned/dwarfdump \
+    python3 -B src/test/research/inheritance/package.py \
+    --references "$PWD/.forge-work/scratch/inheritance-reference" \
+    --classpath build/inheritance-classpath.txt \
+    --results "$PWD/.forge-work/scratch/inheritance-packaging"
+```
