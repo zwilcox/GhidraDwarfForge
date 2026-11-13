@@ -1,6 +1,7 @@
 package ghidradwarfforge.targets;
 
 import java.nio.ByteOrder;
+import java.nio.ByteBuffer;
 
 /** Explicit C++ layout profiles; an ELF machine alone does not select a C++ ABI. */
 public enum CxxAbiProfile {
@@ -35,6 +36,15 @@ public enum CxxAbiProfile {
             throw new IllegalArgumentException("C++ ABI profile does not match Ghidra processor");
         }
         requireTarget(machine, addressBytes, order);
+    }
+
+    /** Decode the signed complete-object displacement for this explicitly selected layout. */
+    public long offsetToTop(byte[] table, int addressPoint) {
+        if (this == UNSPECIFIED || table == null || addressPoint < 2 * pointerBytes ||
+                addressPoint > table.length || addressPoint % pointerBytes != 0) {
+            throw new IllegalArgumentException("invalid vtable address point for C++ ABI profile");
+        }
+        return ByteBuffer.wrap(table).order(ByteOrder.LITTLE_ENDIAN).getLong(addressPoint - 2 * pointerBytes);
     }
 
     /** Vbase displacements precede the offset-to-top and RTTI entries. */

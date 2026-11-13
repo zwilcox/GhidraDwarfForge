@@ -1,8 +1,6 @@
 package ghidradwarfforge;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -250,11 +248,9 @@ public final class GhidraVtableBindings {
             }
             if (firstOffset < 0) throw invalid("negative vtable file offset");
             Math.addExact(firstOffset, original.length);
-            var words = ByteBuffer.wrap(loaded).order(ByteOrder.LITTLE_ENDIAN);
-            var originalWords = ByteBuffer.wrap(original).order(ByteOrder.LITTLE_ENDIAN);
             for (var point : request.points()) {
-                int at = point.tableOffset() - 2 * pointer;
-                if (words.getLong(at) != -point.subobjectOffset() || originalWords.getLong(at) != -point.subobjectOffset()) {
+                if (model.abi().offsetToTop(loaded, point.tableOffset()) != -point.subobjectOffset() ||
+                        model.abi().offsetToTop(original, point.tableOffset()) != -point.subobjectOffset()) {
                     throw invalid("complete-object offset-to-top disagrees with saved subobject geometry");
                 }
             }
