@@ -1,0 +1,80 @@
+// Optional instrumentation of the JavaExec tests selected by the production CI job.
+// Ordinary extension/native builds do not attach a coverage agent.
+if (project.findProperty("testCoverage")?.toString() != "true") {
+    return
+}
+
+apply plugin: "jacoco"
+
+repositories {
+    mavenCentral()
+}
+
+jacoco {
+    toolVersion = "0.8.16"
+}
+
+def coverageDirectory = layout.buildDirectory.dir("test-coverage")
+def coverageExecution = layout.buildDirectory.dir("jacoco")
+
+tasks.withType(JavaExec).configureEach { task ->
+    project.extensions.getByType(org.gradle.testing.jacoco.plugins.JacocoPluginExtension).applyTo(task)
+    def agent = task.extensions.getByType(org.gradle.testing.jacoco.plugins.JacocoTaskExtension)
+    agent.destinationFile = coverageExecution.get().file("${task.name}.exec").asFile
+    agent.includes = ["ghidradwarfforge.*"]
+    doFirst {
+        def marker = coverageDirectory.get().file("tasks/${task.name}.json").asFile
+        marker.parentFile.mkdirs()
+        marker.text = groovy.json.JsonOutput.toJson([task: task.name, complete: false]) + "\n"
+    }
+    doLast {
+        def marker = coverageDirectory.get().file("tasks/${task.name}.json").asFile
+        marker.text = groovy.json.JsonOutput.toJson([task: task.name, complete: true]) + "\n"
+    }
+}
+
+tasks.register("testCoverageReport", org.gradle.testing.jacoco.tasks.JacocoReport) {
+    group = "verification"
+    description = "Reports all production Java lines, measured by this checkout's instrumented JavaExec tests"
+    dependsOn classes
+    executionData.from(fileTree(coverageExecution) { include "*.exec" })
+    sourceDirectories.from(files("src/main/java"))
+    classDirectories.from(sourceSets.main.output.classesDirs)
+    reports {
+        xml.required = true
+        xml.outputLocation = coverageDirectory.map { it.file("coverage.xml") }
+        html.required = true
+        html.outputLocation = coverageDirectory.map { it.dir("html") }
+        csv.required = false
+    }
+}
+
+// A separate prerequisite runs even when JacocoReport would skip missing data.
+tasks.register("validateTestCoverageSessions") {
+    doLast {
+        def markers = fileTree(coverageDirectory.map { it.dir("tasks") }) { include "*.json" }.files
+        if (markers.empty) {
+            throw new GradleException("No instrumented JavaExec tests were recorded; coverage is unavailable")
+        }
+        def expected = markers.collect { marker ->
+            def record = new groovy.json.JsonSlurper().parse(marker)
+            if (record.complete != true || record.task != marker.name.replaceFirst(/\.json$/, "")) {
+                throw new GradleException("Incomplete test coverage session: ${marker.name}")
+            }
+            def data = coverageExecution.get().file("${record.task}.exec").asFile
+            if (!data.isFile() || data.length() == 0) {
+                throw new GradleException("Missing execution data for ${record.task}")
+            }
+            return data.canonicalFile
+        }.toSet()
+        if (expected != fileTree(coverageExecution) { include "*.exec" }.files.collect { it.canonicalFile }.toSet()) {
+            throw new GradleException("Coverage execution data does not match the recorded test sessions; clean and rerun")
+        }
+    }
+}
+
+tasks.named("testCoverageReport") { dependsOn "validateTestCoverageSessions" }
+// These are ordering constraints only: native/fixture JavaExec tasks still need
+// their explicit CI arguments and must not be pulled into the graph implicitly.
+tasks.named("validateTestCoverageSessions") { mustRunAfter tasks.withType(JavaExec) }
+tasks.named("testCoverageReport") { mustRunAfter tasks.withType(JavaExec) }

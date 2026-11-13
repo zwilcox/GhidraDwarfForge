@@ -1,11 +1,15 @@
 # C++ inheritance and vtable export
 
-**CONFIRMED locally:** the development exporter retains explicitly evidenced
+**CONFIRMED:** the development exporter retains explicitly evidenced
 class inheritance, virtual methods, complete-object vtables and saved adjustment
 thunk relationships for little-endian Itanium x86-64 and AArch64. Ghidra 12.0.3,
 Java 21 and DWARF 5 remain the baseline. Synthetic source remains C11; it is not
-relabeled as original C++. **PRESENT, UNVERIFIED at the final hosted gate:** issue
-#113 remains open until protected CI and the final scope review pass.
+relabeled as original C++. Compiler/native references and ordinary saved-export
+checks pass on both targets. The complete
+[required gate](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43469904303)
+passed at `f87a21e7`; [PR #200](https://github.com/zwilcox/GhidraDwarfForge/pull/200)
+integrated the accepted implementation into main as `457b0a64`. Later changes
+must continue to pass the full regression gate.
 
 Ordinary export preserves the executable and writes the matched `.dbg` plus
 synthetic `.dbg.c`. No separate compiler-symbol insertion step is needed.
@@ -241,8 +245,8 @@ sizes, members, inherited values, `ptype` and `info vtbl` before broad expansion
 can mask lookup gaps. No artifact is made to pass by inserting compiler symbols
 after Forge export.
 
-The Script Manager chooser itself has not been exercised locally. Full hosted
-validation at the final PR head remains required. ARM32, MIPS, Microsoft C++ ABI,
+The Script Manager chooser itself has not been exercised locally. Every integrated
+revision must pass the full hosted regression gate. ARM32, MIPS, Microsoft C++ ABI,
 construction vtables, covariant-return thunks and other class-recovery schemes
 are not established by this C++ matrix. General architecture support elsewhere
 in the project does not imply these C++ layout profiles.

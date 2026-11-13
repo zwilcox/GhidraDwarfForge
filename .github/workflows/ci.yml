@@ -648,6 +648,8 @@ jobs:
           echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
 
       - name: Build extension
+        env:
+          ORG_GRADLE_PROJECT_testCoverage: "true"
         run: |
           set -euo pipefail
           ./gradlew clean
@@ -661,6 +663,7 @@ jobs:
             python3 -B -m unittest discover -s src/test/python -p test_jfr_phases.py -v
             python3 -B -m unittest discover -s src/test/python -p test_headless_observations.py -v
             python3 -B -m unittest discover -s src/test/python -p test_call_origin_inventory.py -v
+            python3 -B -m unittest discover -s src/test/python -p test_test_code_coverage.py -v
             python3 -B src/test/integration/mips-fpr-system-diagnostics-test.py
             python3 -B src/test/integration/curated-thunk-entry-test.py
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
@@ -710,6 +713,26 @@ jobs:
             zipinfo -l dist/*.zip | grep -Eq \
               '^-rwxr-xr-x.*GhidraDwarfForge/support/ghidra-dwarf-forge-headless$'
           } 2>&1 | tee build/test-results/extension-build/build.log
+
+      - name: Measure Java test code coverage
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+          SOURCE_RUN: ${{ github.run_id }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon -PtestCoverage=true testCoverageReport
+          python3 -B support/test-coverage-report.py \
+              --xml build/test-coverage/coverage.xml --tasks build/test-coverage/tasks \
+              --output build/test-coverage/public --repository "$SOURCE_REPOSITORY" \
+              --commit "$SOURCE_COMMIT" --run-id "$SOURCE_RUN"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: test-code-coverage
+          path: build/test-coverage/
+          if-no-files-found: error
+          retention-days: 14
 
       - uses: actions/upload-artifact@v7
         with:
@@ -4101,3 +4124,32 @@ jobs:
             exit 1
           fi
           echo "required-validation=PASS"
+
+  publish-test-coverage:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [ required-validation ]
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: test-coverage-publication
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: test-code-coverage
+          path: build/test-coverage
+      - name: Publish last validated main coverage
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          SOURCE_RUN: ${{ github.run_id }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 -B support/publish-test-coverage.py \
+              --directory build/test-coverage --repository "$SOURCE_REPOSITORY" \
+              --commit "$SOURCE_COMMIT" --run-id "$SOURCE_RUN"

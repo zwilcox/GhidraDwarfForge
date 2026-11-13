@@ -1,5 +1,10 @@
 # GhidraDwarfForge
 
+[![Production CI status for main](https://github.com/zwilcox/GhidraDwarfForge/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/zwilcox/GhidraDwarfForge/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
+[![Java test line coverage — last validated main](https://raw.githubusercontent.com/zwilcox/GhidraDwarfForge/reports/test-coverage/test-coverage.svg)](https://github.com/zwilcox/GhidraDwarfForge/blob/reports/test-coverage/README.md)
+
+See [test coverage scope and limitations](docs/TEST-CODE-COVERAGE.md). This metric is separate from exported evidence coverage.
+
 <p align="center">
     <img src="docs/images/ghidra-dwarf-forge.jpg" alt="GhidraDwarfForge logo: a dragon surrounding a dwarf at an anvil" width="320">
 </p>

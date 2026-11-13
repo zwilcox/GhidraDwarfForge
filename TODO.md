@@ -1,6 +1,18 @@
 # TODO.md — GhidraDwarfForge
 
-## Raw firmware complete local suite; hosted gate pending — 2026-11-12
+## Current goal and accepted milestones — 2026-11-13
+
+- **CONFIRMED:** #119 raw firmware is accepted in [PR #198](https://github.com/zwilcox/GhidraDwarfForge/pull/198), merged as `95fc00d0`. Its required PR gate and [post-merge main gate](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43432295894) passed. Scope: [RAW-FIRMWARE.md](docs/RAW-FIRMWARE.md).
+- **CONFIRMED:** #118 MMIO is accepted in [PR #199](https://github.com/zwilcox/GhidraDwarfForge/pull/199), merged as `eb622948`, after its [full required gate](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43432393192) passed. Access policies and device/probe limits: [MMIO.md](docs/MMIO.md).
+- **CONFIRMED:** #113 C++ inheritance and vtables is accepted in [PR #200](https://github.com/zwilcox/GhidraDwarfForge/pull/200), merged as `457b0a64`, after the [full updated-head gate](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43469904303) passed. The validated little-endian Itanium x86-64/AArch64 profiles and consumer limits are documented in [CPP-INHERITANCE.md](docs/CPP-INHERITANCE.md).
+- **CONFIRMED:** #162 Java test-coverage and #163 main CI badge implementation and provisional PR measurement are validated in [PR #201](https://github.com/zwilcox/GhidraDwarfForge/pull/201). Publication requires a successful full main gate; the [coverage report](https://github.com/zwilcox/GhidraDwarfForge/blob/reports/test-coverage/README.md) identifies its measured commit, run and population. Published-output acceptance is tracked in [#162](https://github.com/zwilcox/GhidraDwarfForge/issues/162) and [#163](https://github.com/zwilcox/GhidraDwarfForge/issues/163). A PR percentage is not a main measurement. Scope and verification procedure: [TEST-CODE-COVERAGE.md](docs/TEST-CODE-COVERAGE.md).
+- **CONFIRMED:** merged-branch cleanup preserves unique older work. Retire each feature branch only after all commits are integrated and no open PR or worktree depends on it; preserve the `reports/test-coverage` publication branch.
+
+The dated checkpoints below describe historical states; their pending-work wording
+does not override this current status. Acceptance requirements in the later
+milestone sections remain applicable to their stated scopes.
+
+## Historical raw-firmware local checkpoint — 2026-11-12
 
 **CONFIRMED locally:** #119 exports the saved raw memory map through the real
 native producer and installed headless wrapper. Both Cortex-M3 RAM layouts pass
