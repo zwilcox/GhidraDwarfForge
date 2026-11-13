@@ -80,6 +80,15 @@ public class GhidraDwarfForge extends GhidraScript {
         if (targetProfile != null && !targetProfile.equals("cortex-m3")) {
             throw new IllegalArgumentException("unsupported --target-profile=" + targetProfile);
         }
+        var rawTarget = options.containsKey("raw-firmware")
+            ? ghidradwarfforge.firmware.FirmwareTarget.select(options.get("raw-firmware")) : null;
+        Path firmwareInputs = options.containsKey("firmware-inputs") ? hostPath(options.get("firmware-inputs")) : null;
+        if (rawTarget == null && firmwareInputs != null) {
+            throw new IllegalArgumentException("--firmware-inputs requires explicit --raw-firmware=<profile>");
+        }
+        if (rawTarget != null && targetProfile != null) {
+            throw new IllegalArgumentException("select the raw target with --raw-firmware, without --target-profile");
+        }
         int sourceLineTarget = 0;
         if (options.containsKey("source-lines")) {
             String selected = options.get("source-lines");
@@ -103,6 +112,11 @@ public class GhidraDwarfForge extends GhidraScript {
         var formatterSelection = formatterSelectionPath == null ? null :
             ghidradwarfforge.output.FormatterSelection.read(formatterSelectionPath, monitor::isCancelled);
         boolean attachmentPreparation = options.containsKey("attachment-preparation");
+        if (rawTarget != null && (attachmentPreparation || formatterSelection != null ||
+                options.containsKey("gdb-loader") || synthesizeUnwind)) {
+            throw new IllegalArgumentException("raw firmware requires explicit remote symbol-file loading; " +
+                "ELF attachment, automatic loaders, formatters and optional unwind synthesis are not selected by this mode");
+        }
         if (attachmentPreparation && formatterSelection != null) {
             throw new IllegalArgumentException("formatters require standalone export; attachment preparation has a separate generation contract");
         }
@@ -181,7 +195,9 @@ public class GhidraDwarfForge extends GhidraScript {
         Path companionOutput = output.resolveSibling(output.getFileName() + ".gdb.py");
         Path unwindOutput = output.resolveSibling(output.getFileName() + ".unwind.json");
         Path formatterOutput = ghidradwarfforge.formatters.FormatterPlan.outputPath(output);
+        Path firmwareManifest = output.resolveSibling(output.getFileName() + ".firmware.json");
         List<Path> generation = new ArrayList<>(List.of(output, sourceOutput));
+        if (rawTarget != null) generation.add(firmwareManifest);
         if (synthesizeUnwind) generation.add(unwindOutput);
         if (gdbLoader) generation.add(companionOutput);
         if (formatterSelection != null) generation.add(formatterOutput);
@@ -204,281 +220,308 @@ public class GhidraDwarfForge extends GhidraScript {
         println("  output policy: " + (guiFallback ? "GUI fallback" :
             (paths.defaultOutput() ? "default beside executable" : "explicit")));
 
-        ElfImage originalElf = ElfImage.read(input);
-        DwarfTarget target = GhidraTargetAgreement.requireAgreement(currentProgram, originalElf);
-        if (targetProfile != null) {
-            ghidradwarfforge.GhidraCortexM3Profile.requireAgreement(currentProgram, originalElf, monitor);
-        }
-        long elfLoadBase = originalElf.preferredImageBase();
-        long importedImageBase = GhidraImageBase.originalImageBase(currentProgram);
-        long rebaseDelta = AddressNormalizer.rebaseDelta(
-            currentProgram.getImageBase().getOffset(), importedImageBase);
-        println("  ELF minimum PT_LOAD VA: 0x" + Long.toHexString(elfLoadBase));
-        println("  Ghidra original ELF image base: 0x" + Long.toHexString(importedImageBase));
-        println("  Ghidra-to-ELF address delta: 0x" + Long.toHexString(rebaseDelta));
-        List<String> diagnostics = new ArrayList<>();
-        Consumer<String> diagnostic = message -> {
-            diagnostics.add(message);
-            printerr("GhidraDwarfForge: " + message);
-        };
-        if (targetProfile != null) {
-            diagnostic.accept("Explicit target profile cortex-m3: ARMv7-M/base PCS attributes and " +
-                "decoded Thumb context checked; no FPU, TrustZone or general exception-unwind claim");
-        }
-        var recovered = !synthesizeUnwind ? null : ExportPhase.measure("unwind-recovery", () -> {
-            var condition = unwindOptions.condition(originalElf, rebaseDelta, monitor::isCancelled);
-            var result = condition.conditional() ?
-                ghidradwarfforge.unwind.GhidraUnwindRecovery.recoverConditioned(currentProgram,
-                    originalElf, rebaseDelta, monitor, condition) :
-                ghidradwarfforge.unwind.GhidraUnwindRecovery.recover(currentProgram, originalElf, rebaseDelta, monitor);
-            if (condition.conditional()) diagnostic.accept("Synthetic unwind uses explicit external conditions, not proved runtime facts: " + condition.basis());
-            result.refusals().forEach((address, reason) -> diagnostic.accept("Unwind omitted at database address " + address + ": " + reason));
-            if (result.plan().isEmpty()) diagnostic.accept("No supported synthetic unwind rules were recovered; original metadata is preserved");
-            return result;
-        });
-        var extraction = GhidraFunctionSymbols.extractDetailed(currentProgram, monitor,
-            diagnostic, rebaseDelta);
-        var functions = extraction.functions();
-        var decoded = ExportPhase.measure("coverage-instruction-capture", () ->
-            GhidraInstructionEvidence.capture(currentProgram, functions,
-                rebaseDelta, monitor, diagnostic));
-        var aliases = GhidraFunctionAliases.extract(currentProgram, functions,
-            rebaseDelta, monitor, diagnostic);
-        var sectionModes = ghidradwarfforge.GhidraArm32SectionModes.extract(currentProgram,
-            originalElf, functions, target, rebaseDelta, monitor, diagnostic);
-        var modeCues = GhidraArm32FunctionModes.extract(currentProgram, functions,
-            target, rebaseDelta, monitor, diagnostic);
-        var aliasModeCues = GhidraArm32FunctionModes.extractAliases(currentProgram, aliases,
-            target, rebaseDelta, monitor, diagnostic);
-        monitor.checkCancelled();
-        var allocation = ghidradwarfforge.targets.TargetParameterAllocation.forProgram(
-            currentProgram, originalElf, monitor, diagnostic);
-        var inventory = ExportPhase.measure("annotation-inventory", () ->
-            ghidradwarfforge.GhidraAnnotationInventory.read(currentProgram,
-                new ghidradwarfforge.GhidraAnnotationInventory.Limits(
-                    annotationLimits.records(), annotationLimits.textUnits()), monitor));
-        var dynamicEquates = new ghidradwarfforge.GhidraEquateEvidence.DynamicCollector(currentProgram, inventory, monitor);
-        var sourceContext = new ghidradwarfforge.GhidraSourceContext(currentProgram, sourceContextMode,
-            ghidradwarfforge.GhidraSourceContext.Limits.DEFAULT);
-        var decompilation = ExportPhase.measure("decompilation-and-source", () ->
-            GhidraSyntheticSource.decompileDetailed(currentProgram, functions,
-                rebaseDelta, monitor, (decompiler, function, timeout, taskMonitor) -> {
-                    var result = decompiler.decompileFunction(function, timeout, taskMonitor);
-                    sourceContext.accept(function, result, taskMonitor);
-                    if (result != null && result.decompileCompleted() && result.getHighFunction() != null) {
-                        dynamicEquates.accept(result.getHighFunction(), taskMonitor);
-                    }
-                    return result;
-                }, allocation, diagnostic));
-        monitor.checkCancelled();
-        var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(
-            target.name(), originalElf, monitor::isCancelled);
-        var callEntries = new ArrayList<ghidradwarfforge.GhidraCallParameters.Entry>();
-        var extractedTypeModel = ExportPhase.measure("types-and-storage", () -> {
-            var extractedTypes = GhidraTypeGraph.extract(currentProgram, functions, registers,
-                rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
-                decompilation.recoveredParameters(), decompilation.recoveredStatics(),
-                allocation, callEntries::add);
-            return ghidradwarfforge.GhidraCompilerCallPolicy.apply(currentProgram,
-                target, originalElf, extractedTypes, monitor, diagnostic);
-        });
-        monitor.checkCancelled();
-        var callSites = ExportPhase.measure("call-site-recovery", () ->
-            ghidradwarfforge.calls.GhidraCallSitePlan.recover(currentProgram, functions, extractedTypeModel,
-                callEntries, registers, originalElf, rebaseDelta, monitor));
-        var typeModel = callSites.types();
-        callSites.diagnostics().forEach((address, reasons) -> reasons.forEach(reason ->
-            diagnostic.accept("Call-site metadata at ELF address 0x" + Long.toHexString(address) + ": " + reason)));
-        var annotated = ExportPhase.measure("source-annotations", () -> {
-            var contextualSource = sourceContext.compose(decompilation.source(), rebaseDelta,
-                annotationLimits.sourceBytes(), monitor);
-            var evidence = ghidradwarfforge.GhidraEquateEvidence.interpret(currentProgram, inventory,
-                dynamicEquates.snapshot(monitor), monitor);
-            if (evidence.isEmpty()) {
-                var comments = ghidradwarfforge.GhidraListingAnnotationSource.compose(currentProgram,
-                    inventory, contextualSource, rebaseDelta, annotationLimits.sourceBytes(), monitor).source();
-                return new PreparedSource(comments,
-                    new ghidradwarfforge.annotations.SyntheticConstants(List.of(), java.util.Set.of()));
+        try (var firmware = rawTarget == null ? null :
+                ghidradwarfforge.firmware.GhidraFirmwareSession.open(currentProgram, rawTarget,
+                    input, firmwareInputs, monitor)) {
+            ElfImage originalElf = firmware == null ? ElfImage.read(input) : firmware.image().witness();
+            if (firmware != null) {
+                firmware.requireSafeOutputs(generation, monitor);
+                var protectedFirmwareInputs = new ArrayList<>(firmware.protectedInputs());
+                protectedFirmwareInputs.addAll(List.of(consumer, producer));
+                ghidradwarfforge.output.CompanionArtifactPublisher.validate(input, generation,
+                    protectedFirmwareInputs.toArray(Path[]::new));
             }
-            var reserved = ghidradwarfforge.elf.EquateNameReservations.read(originalElf, typeModel,
-                functions, aliases, monitor::isCancelled, diagnostic);
-            reserved = ghidradwarfforge.GhidraEquateNames.extend(currentProgram, reserved, monitor);
-            var catalog = ghidradwarfforge.annotations.EquateCatalog.plan(evidence, reserved, reserved.size(), monitor::isCancelled);
-            var constants = catalog.entries().stream().flatMap(entry -> entry.constants().stream())
-                .map(constant -> new ghidradwarfforge.annotations.SyntheticConstant(constant.name(),
-                    constant.value().bits(), constant.value().signed(), constant.value().value())).toList();
-            try {
-                var comments = ghidradwarfforge.GhidraListingAnnotationSource.compose(currentProgram,
-                    inventory, contextualSource, rebaseDelta, annotationLimits.sourceBytes(), monitor).source();
-                var source = ghidradwarfforge.GhidraEquateSource.compose(comments, catalog, annotationLimits.sourceBytes(), monitor);
-                return new PreparedSource(source, new ghidradwarfforge.annotations.SyntheticConstants(constants,
-                    reserved.namedReservations()));
+            DwarfTarget target = GhidraTargetAgreement.requireAgreement(currentProgram, originalElf);
+            if (targetProfile != null) {
+                ghidradwarfforge.GhidraCortexM3Profile.requireAgreement(currentProgram, originalElf, monitor);
             }
-            catch (IllegalArgumentException limit) {
-                throw new IllegalArgumentException(limit.getMessage() +
-                    "; raise --annotation-source-limit to preserve the full source; outputs were not published", limit);
+            long importedImageBase = firmware == null ? GhidraImageBase.originalImageBase(currentProgram) :
+                currentProgram.getImageBase().getOffset();
+            long rebaseDelta = firmware == null ? AddressNormalizer.rebaseDelta(
+                currentProgram.getImageBase().getOffset(), importedImageBase) : 0;
+            if (firmware == null) {
+                println("  ELF minimum PT_LOAD VA: 0x" + Long.toHexString(originalElf.preferredImageBase()));
+                println("  Ghidra original ELF image base: 0x" + Long.toHexString(importedImageBase));
+                println("  Ghidra-to-ELF address delta: 0x" + Long.toHexString(rebaseDelta));
             }
-        });
-        var source = annotated.source();
-        var sourceBundle = sourceLineTarget == 0 ? null : ghidradwarfforge.output.SourceBundle.prepare(
-            inputHash, sourceOutput.getFileName().toString(), source, sourceLineTarget, monitor::isCancelled);
-        var sourceDependencies = new ghidradwarfforge.output.SourceBundleStore.Installed[1];
-        var sourceProtectedPaths = new ArrayList<Path>(generation);
-        sourceProtectedPaths.addAll(List.of(input, consumer, producer));
-        if (formatterSelectionPath != null) sourceProtectedPaths.add(formatterSelectionPath);
-        var formatterPlan = formatterSelection == null ? null :
-            ghidradwarfforge.formatters.FormatterPlan.prepare(typeModel, formatterSelection, monitor::isCancelled);
-        var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
-        var stagedSidecarHolder = new Path[1];
-        var reportHolder = new PreparedReport[1];
-        consistency.requireUnchanged(monitor::isCancelled);
-        ArtifactPairPublisher.PrePublishCheck prePublishCheck = () -> {
+            else println("  raw firmware: explicit current memory-map addresses; no implicit relocation");
+            List<String> diagnostics = new ArrayList<>();
+            Consumer<String> diagnostic = message -> {
+                diagnostics.add(message);
+                printerr("GhidraDwarfForge: " + message);
+            };
+            if (targetProfile != null) {
+                diagnostic.accept("Explicit target profile cortex-m3: ARMv7-M/base PCS attributes and " +
+                    "decoded Thumb context checked; no FPU, TrustZone or general exception-unwind claim");
+            }
+            var recovered = !synthesizeUnwind ? null : ExportPhase.measure("unwind-recovery", () -> {
+                var condition = unwindOptions.condition(originalElf, rebaseDelta, monitor::isCancelled);
+                var result = condition.conditional() ?
+                    ghidradwarfforge.unwind.GhidraUnwindRecovery.recoverConditioned(currentProgram,
+                        originalElf, rebaseDelta, monitor, condition) :
+                    ghidradwarfforge.unwind.GhidraUnwindRecovery.recover(currentProgram, originalElf, rebaseDelta, monitor);
+                if (condition.conditional()) diagnostic.accept("Synthetic unwind uses explicit external conditions, not proved runtime facts: " + condition.basis());
+                result.refusals().forEach((address, reason) -> diagnostic.accept("Unwind omitted at database address " + address + ": " + reason));
+                if (result.plan().isEmpty()) diagnostic.accept("No supported synthetic unwind rules were recovered; original metadata is preserved");
+                return result;
+            });
+            var extraction = GhidraFunctionSymbols.extractDetailed(currentProgram, monitor,
+                diagnostic, rebaseDelta);
+            var functions = extraction.functions();
+            var decoded = ExportPhase.measure("coverage-instruction-capture", () ->
+                GhidraInstructionEvidence.capture(currentProgram, functions,
+                    rebaseDelta, monitor, diagnostic));
+            var aliases = GhidraFunctionAliases.extract(currentProgram, functions,
+                rebaseDelta, monitor, diagnostic);
+            var sectionModes = ghidradwarfforge.GhidraArm32SectionModes.extract(currentProgram,
+                originalElf, functions, target, rebaseDelta, monitor, diagnostic);
+            var modeCues = GhidraArm32FunctionModes.extract(currentProgram, functions,
+                target, rebaseDelta, monitor, diagnostic);
+            var aliasModeCues = GhidraArm32FunctionModes.extractAliases(currentProgram, aliases,
+                target, rebaseDelta, monitor, diagnostic);
+            monitor.checkCancelled();
+            var allocation = ghidradwarfforge.targets.TargetParameterAllocation.forProgram(
+                currentProgram, originalElf, monitor, diagnostic);
+            var inventory = ExportPhase.measure("annotation-inventory", () ->
+                ghidradwarfforge.GhidraAnnotationInventory.read(currentProgram,
+                    new ghidradwarfforge.GhidraAnnotationInventory.Limits(
+                        annotationLimits.records(), annotationLimits.textUnits()), monitor));
+            var dynamicEquates = new ghidradwarfforge.GhidraEquateEvidence.DynamicCollector(currentProgram, inventory, monitor);
+            var sourceContext = new ghidradwarfforge.GhidraSourceContext(currentProgram, sourceContextMode,
+                ghidradwarfforge.GhidraSourceContext.Limits.DEFAULT);
+            var decompilation = ExportPhase.measure("decompilation-and-source", () ->
+                GhidraSyntheticSource.decompileDetailed(currentProgram, functions,
+                    rebaseDelta, monitor, (decompiler, function, timeout, taskMonitor) -> {
+                        var result = decompiler.decompileFunction(function, timeout, taskMonitor);
+                        sourceContext.accept(function, result, taskMonitor);
+                        if (result != null && result.decompileCompleted() && result.getHighFunction() != null) {
+                            dynamicEquates.accept(result.getHighFunction(), taskMonitor);
+                        }
+                        return result;
+                    }, allocation, diagnostic));
+            monitor.checkCancelled();
+            var registers = ghidradwarfforge.locations.TargetRegisterMap.forElf(
+                target.name(), originalElf, monitor::isCancelled);
+            var callEntries = new ArrayList<ghidradwarfforge.GhidraCallParameters.Entry>();
+            var extractedTypeModel = ExportPhase.measure("types-and-storage", () -> {
+                var extractedTypes = GhidraTypeGraph.extract(currentProgram, functions, registers,
+                    rebaseDelta, monitor, diagnostic, decompilation.recoveredReturns(),
+                    decompilation.recoveredParameters(), decompilation.recoveredStatics(),
+                    allocation, callEntries::add);
+                return ghidradwarfforge.GhidraCompilerCallPolicy.apply(currentProgram,
+                    target, originalElf, extractedTypes, monitor, diagnostic);
+            });
+            monitor.checkCancelled();
+            var callSites = ExportPhase.measure("call-site-recovery", () ->
+                ghidradwarfforge.calls.GhidraCallSitePlan.recover(currentProgram, functions, extractedTypeModel,
+                    callEntries, registers, originalElf, rebaseDelta, monitor));
+            var typeModel = callSites.types();
+            callSites.diagnostics().forEach((address, reasons) -> reasons.forEach(reason ->
+                diagnostic.accept("Call-site metadata at ELF address 0x" + Long.toHexString(address) + ": " + reason)));
+            var annotated = ExportPhase.measure("source-annotations", () -> {
+                var contextualSource = sourceContext.compose(decompilation.source(), rebaseDelta,
+                    annotationLimits.sourceBytes(), monitor);
+                var evidence = ghidradwarfforge.GhidraEquateEvidence.interpret(currentProgram, inventory,
+                    dynamicEquates.snapshot(monitor), monitor);
+                if (evidence.isEmpty()) {
+                    var comments = ghidradwarfforge.GhidraListingAnnotationSource.compose(currentProgram,
+                        inventory, contextualSource, rebaseDelta, annotationLimits.sourceBytes(), monitor).source();
+                    return new PreparedSource(comments,
+                        new ghidradwarfforge.annotations.SyntheticConstants(List.of(), java.util.Set.of()));
+                }
+                var reserved = ghidradwarfforge.elf.EquateNameReservations.read(originalElf, typeModel,
+                    functions, aliases, monitor::isCancelled, diagnostic);
+                reserved = ghidradwarfforge.GhidraEquateNames.extend(currentProgram, reserved, monitor);
+                var catalog = ghidradwarfforge.annotations.EquateCatalog.plan(evidence, reserved, reserved.size(), monitor::isCancelled);
+                var constants = catalog.entries().stream().flatMap(entry -> entry.constants().stream())
+                    .map(constant -> new ghidradwarfforge.annotations.SyntheticConstant(constant.name(),
+                        constant.value().bits(), constant.value().signed(), constant.value().value())).toList();
+                try {
+                    var comments = ghidradwarfforge.GhidraListingAnnotationSource.compose(currentProgram,
+                        inventory, contextualSource, rebaseDelta, annotationLimits.sourceBytes(), monitor).source();
+                    var source = ghidradwarfforge.GhidraEquateSource.compose(comments, catalog, annotationLimits.sourceBytes(), monitor);
+                    return new PreparedSource(source, new ghidradwarfforge.annotations.SyntheticConstants(constants,
+                        reserved.namedReservations()));
+                }
+                catch (IllegalArgumentException limit) {
+                    throw new IllegalArgumentException(limit.getMessage() +
+                        "; raise --annotation-source-limit to preserve the full source; outputs were not published", limit);
+                }
+            });
+            var source = annotated.source();
+            var sourceBundle = sourceLineTarget == 0 ? null : ghidradwarfforge.output.SourceBundle.prepare(
+                inputHash, sourceOutput.getFileName().toString(), source, sourceLineTarget, monitor::isCancelled);
+            var sourceDependencies = new ghidradwarfforge.output.SourceBundleStore.Installed[1];
+            var sourceProtectedPaths = new ArrayList<Path>(generation);
+            sourceProtectedPaths.addAll(List.of(input, consumer, producer));
+            if (formatterSelectionPath != null) sourceProtectedPaths.add(formatterSelectionPath);
+            var formatterPlan = formatterSelection == null ? null :
+                ghidradwarfforge.formatters.FormatterPlan.prepare(typeModel, formatterSelection, monitor::isCancelled);
+            var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
+            var stagedSidecarHolder = new Path[1];
+            var reportHolder = new PreparedReport[1];
             consistency.requireUnchanged(monitor::isCancelled);
-            // The companion publisher also invokes this check while observing old
-            // outputs, before any new source dependencies have been installed.
-            if (sourceDependencies[0] != null) sourceDependencies[0].verify(monitor::isCancelled);
-            if (formatterSelectionPath != null && !formatterSelectionHash.equals(
-                    FileDigests.read(formatterSelectionPath, monitor::isCancelled))) {
-                throw new IOException("formatter selection changed during export");
+            ArtifactPairPublisher.PrePublishCheck prePublishCheck = () -> {
+                consistency.requireUnchanged(monitor::isCancelled);
+                if (firmware != null) firmware.requireUnchanged(monitor);
+                // The companion publisher also invokes this check while observing old
+                // outputs, before any new source dependencies have been installed.
+                if (sourceDependencies[0] != null) sourceDependencies[0].verify(monitor::isCancelled);
+                if (formatterSelectionPath != null && !formatterSelectionHash.equals(
+                        FileDigests.read(formatterSelectionPath, monitor::isCancelled))) {
+                    throw new IOException("formatter selection changed during export");
+                }
+            };
+            ArtifactPairPublisher.StagedWriter sidecarWriter = stagedOutput -> {
+                if (sourceBundle != null) {
+                    sourceDependencies[0] = ghidradwarfforge.output.SourceBundleStore.install(
+                        sourceOutput, sourceBundle, sourceProtectedPaths, monitor::isCancelled);
+                }
+                var exporter = new MinimalDwarfSidecarExporter(compression,
+                    formatterPlan == null ? Map.of() : formatterPlan.aliases(),
+                    sourceBundle == null ? null : sourceBundle.fileLayout(), callSites.plan());
+                if (firmware != null) {
+                    resultHolder[0] = exporter.exportFirmware(firmware.image(), stagedOutput,
+                        consumer, producer, functions, source, typeModel,
+                        sourceOutput.getFileName().toString(), monitor::isCancelled,
+                        modeCues, aliases, aliasModeCues, sectionModes, annotated.constants(), diagnostic, null);
+                }
+                else if (recovered != null && recovered.plan().isPresent()) {
+                    resultHolder[0] = exporter.exportWithFrames(input, stagedOutput,
+                        consumer, producer, functions, source, typeModel,
+                        sourceOutput.getFileName().toString(), monitor::isCancelled,
+                        modeCues, aliases, aliasModeCues, sectionModes, annotated.constants(), diagnostic,
+                        recovered.plan().orElseThrow());
+                }
+                else {
+                    resultHolder[0] = exporter.export(input, stagedOutput,
+                        consumer, producer, functions, source, typeModel,
+                        sourceOutput.getFileName().toString(), monitor::isCancelled,
+                        modeCues, aliases, aliasModeCues, sectionModes, annotated.constants(), diagnostic);
+                }
+                stagedSidecarHolder[0] = stagedOutput;
+                if (sourceBundle != null) sourceDependencies[0].synchronizeSidecarTime(stagedOutput, monitor::isCancelled);
+            };
+            ArtifactPairPublisher.StagedWriter sourceWriter = stagedSource -> {
+                if (sourceBundle == null) source.writeAtomically(stagedSource);
+                else Files.write(stagedSource, sourceBundle.indexBytes(monitor::isCancelled));
+                // Validate the complete report while both files are still staged. Report
+                // paths describe the final generation; digests describe its staged bytes.
+                var result = resultHolder[0];
+                var coverage = ExportPhase.measure("coverage-assembly", () ->
+                    ExportCoverage.build(typeModel, source, decoded, result.emission(),
+                        monitor::isCancelled));
+                var profile = new CoverageReportJson.Profile(
+                    currentProgram.getLanguageID().getIdAsString(),
+                    currentProgram.getCompilerSpec().getCompilerSpecID().getIdAsString());
+                String outputHash = FileDigests.read(stagedSidecarHolder[0], monitor::isCancelled).sha256();
+                String sourceHash = FileDigests.read(stagedSource, monitor::isCancelled).sha256();
+                ExportReport report = ExportReport.completed(result.target(), result.libdwarfVersion(),
+                    input, inputHash, output, outputHash, sourceOutput, sourceHash,
+                    result.functionCount(), result.sectionNames(), source, typeModel,
+                    extraction.skippedFunctions(), diagnostics);
+                var typeEvidence = ExportPhase.measure("coverage-type-evidence", () ->
+                    ghidradwarfforge.output.CoverageTypeEvidence.capture(typeModel, result.emission(), coverage,
+                        monitor::isCancelled));
+                var claims = new CoverageReportClaims(profile, coverage, typeEvidence);
+                String json = ExportPhase.measure("coverage-report-preflight", () ->
+                    report.toJsonWithCoverage(claims,
+                        monitor::isCancelled));
+                reportHolder[0] = new PreparedReport(json, outputHash, sourceHash, claims, report.status().name());
+            };
+            if (generation.size() > 2) {
+                ghidradwarfforge.output.CompanionArtifactPublisher.stageAndPublish(input, generation, stages -> {
+                    sidecarWriter.write(stages.get(0));
+                    sourceWriter.write(stages.get(1));
+                    int index = 2;
+                    if (firmware != null) {
+                        Files.writeString(stages.get(index++), firmware.manifest(output,
+                            reportHolder[0].outputHash(), sourceOutput, reportHolder[0].sourceHash(), monitor),
+                            java.nio.charset.StandardCharsets.UTF_8);
+                    }
+                    if (synthesizeUnwind) {
+                        String evidence = ghidradwarfforge.output.UnwindEvidenceJson.describe(originalElf, recovered,
+                            rebaseDelta, inputHash, reportHolder[0].outputHash(), reportHolder[0].sourceHash(), monitor::isCancelled);
+                        Files.writeString(stages.get(index++), evidence + "\n", java.nio.charset.StandardCharsets.UTF_8);
+                    }
+                    if (gdbLoader) {
+                        String companion = ghidradwarfforge.elf.GdbCompanion.render(input,
+                            stages.get(0), stages.get(1), output, sourceOutput, monitor::isCancelled);
+                        Files.writeString(stages.get(index++), companion, java.nio.charset.StandardCharsets.UTF_8);
+                    }
+                    if (formatterPlan != null) {
+                        Files.writeString(stages.get(index), formatterPlan.render(input, stages.get(0), output,
+                            monitor::isCancelled), java.nio.charset.StandardCharsets.UTF_8);
+                    }
+                }, prePublishCheck);
             }
-        };
-        ArtifactPairPublisher.StagedWriter sidecarWriter = stagedOutput -> {
-            if (sourceBundle != null) {
-                sourceDependencies[0] = ghidradwarfforge.output.SourceBundleStore.install(
-                    sourceOutput, sourceBundle, sourceProtectedPaths, monitor::isCancelled);
-            }
-            var exporter = new MinimalDwarfSidecarExporter(compression,
-                formatterPlan == null ? Map.of() : formatterPlan.aliases(),
-                sourceBundle == null ? null : sourceBundle.fileLayout(), callSites.plan());
-            if (recovered != null && recovered.plan().isPresent()) {
-                resultHolder[0] = exporter.exportWithFrames(input, stagedOutput,
-                    consumer, producer, functions, source, typeModel,
-                    sourceOutput.getFileName().toString(), monitor::isCancelled,
-                    modeCues, aliases, aliasModeCues, sectionModes, annotated.constants(), diagnostic,
-                    recovered.plan().orElseThrow());
+            else if (attachmentPreparation) {
+                ArtifactPairPublisher.stageAndPublishNew(output, sourceOutput,
+                    sidecarWriter, sourceWriter, prePublishCheck);
             }
             else {
-                resultHolder[0] = exporter.export(input, stagedOutput,
-                    consumer, producer, functions, source, typeModel,
-                    sourceOutput.getFileName().toString(), monitor::isCancelled,
-                    modeCues, aliases, aliasModeCues, sectionModes, annotated.constants(), diagnostic);
+                ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
+                    sidecarWriter, sourceWriter, prePublishCheck);
             }
-            stagedSidecarHolder[0] = stagedOutput;
-            if (sourceBundle != null) sourceDependencies[0].synchronizeSidecarTime(stagedOutput, monitor::isCancelled);
-        };
-        ArtifactPairPublisher.StagedWriter sourceWriter = stagedSource -> {
-            if (sourceBundle == null) source.writeAtomically(stagedSource);
-            else Files.write(stagedSource, sourceBundle.indexBytes(monitor::isCancelled));
-            // Validate the complete report while both files are still staged. Report
-            // paths describe the final generation; digests describe its staged bytes.
-            var result = resultHolder[0];
-            var coverage = ExportPhase.measure("coverage-assembly", () ->
-                ExportCoverage.build(typeModel, source, decoded, result.emission(),
-                    monitor::isCancelled));
-            var profile = new CoverageReportJson.Profile(
-                currentProgram.getLanguageID().getIdAsString(),
-                currentProgram.getCompilerSpec().getCompilerSpecID().getIdAsString());
-            String outputHash = FileDigests.read(stagedSidecarHolder[0], monitor::isCancelled).sha256();
-            String sourceHash = FileDigests.read(stagedSource, monitor::isCancelled).sha256();
-            ExportReport report = ExportReport.completed(result.target(), result.libdwarfVersion(),
-                input, inputHash, output, outputHash, sourceOutput, sourceHash,
-                result.functionCount(), result.sectionNames(), source, typeModel,
-                extraction.skippedFunctions(), diagnostics);
-            var typeEvidence = ExportPhase.measure("coverage-type-evidence", () ->
-                ghidradwarfforge.output.CoverageTypeEvidence.capture(typeModel, result.emission(), coverage,
-                    monitor::isCancelled));
-            var claims = new CoverageReportClaims(profile, coverage, typeEvidence);
-            String json = ExportPhase.measure("coverage-report-preflight", () ->
-                report.toJsonWithCoverage(claims,
-                    monitor::isCancelled));
-            reportHolder[0] = new PreparedReport(json, outputHash, sourceHash, claims, report.status().name());
-        };
-        if (generation.size() > 2) {
-            ghidradwarfforge.output.CompanionArtifactPublisher.stageAndPublish(input, generation, stages -> {
-                sidecarWriter.write(stages.get(0));
-                sourceWriter.write(stages.get(1));
-                int index = 2;
-                if (synthesizeUnwind) {
-                    String evidence = ghidradwarfforge.output.UnwindEvidenceJson.describe(originalElf, recovered,
-                        rebaseDelta, inputHash, reportHolder[0].outputHash(), reportHolder[0].sourceHash(), monitor::isCancelled);
-                    Files.writeString(stages.get(index++), evidence + "\n", java.nio.charset.StandardCharsets.UTF_8);
+            MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
+            PreparedReport prepared = reportHolder[0];
+            println("GhidraDwarfForge symbol export PASS");
+            if (sourceBundle != null) {
+                println("  synthetic source parts: " + sourceBundle.manifest().parts().size());
+                println("  source manifest: " + sourceOutput.resolveSibling(sourceBundle.manifestName()));
+            }
+            println("  output: " + output);
+            if (firmware != null) println("  firmware provenance: " + firmwareManifest);
+            println("  output SHA-256: " + prepared.outputHash());
+            if (formatterPlan != null) println("  optional GDB/LLDB formatters: " + formatterOutput);
+            println("  input SHA-256: " + inputHash);
+            println("  target: " + result.target().name());
+            println("  functions: " + result.functionCount());
+            println("  sections: " + result.sectionNames());
+            println("  source: " + sourceOutput);
+            println("  source SHA-256: " + prepared.sourceHash());
+            if (gdbLoader) {
+                println("  GDB companion: " + companionOutput);
+                println("  GDB companion SHA-256: " + sha256(companionOutput));
+                println("  Load explicitly in GDB with: source " + companionOutput);
+            }
+            if (synthesizeUnwind) println("  unwind evidence: " + unwindOutput + " (recovered rules, independent validation NOT_RUN)");
+            println("  decompiled functions: " + source.functions().stream()
+                .filter(function -> function.decompiled()).count());
+            println("  mapped source lines: " + source.mappedLines().size());
+            println("  function signatures: " + typeModel.functions().size());
+            println("  local variables: " + typeModel.functions().stream()
+                .mapToInt(function -> function.locals().size()).sum());
+            println("  defensible variable locations: " + typeModel.variableStorage().variables()
+                .stream().filter(variable -> variable.hasDefensibleLocation()).count());
+            println("  omitted variable locations: " + typeModel.variableStorage().variables()
+                .stream().filter(variable -> !variable.hasDefensibleLocation()).count());
+            println("  canonical types: " + typeModel.types().nodes().size());
+            println("  global variables: " + typeModel.globals().size());
+            println("  function-owned static variables: " +
+                ghidradwarfforge.source.FunctionStaticPolicy.select(typeModel, source)
+                    .exported().size());
+            if (attachmentPreparation) state.addEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY, prepared.json());
+            if (isRunningHeadless()) {
+                println("GhidraDwarfForge report: " + prepared.json());
+            }
+            else {
+                println("GhidraDwarfForge report: schema 2; " +
+                    ghidradwarfforge.output.CoveragePresentation.summary(prepared.coverage(), prepared.status()));
+                if (!attachmentPreparation) {
+                    // Publication is already complete. A presentation failure must not
+                    // change the export outcome or masquerade as an artifact failure.
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        try {
+                            ghidradwarfforge.output.CoverageReportGui.show(state.getTool().getToolFrame(),
+                                prepared.coverage(), prepared.status(), prepared.json(),
+                                output.resolveSibling(output.getFileName() + ".report.json"));
+                        }
+                        catch (RuntimeException failure) {
+                            printerr("Coverage window could not open; artifacts were exported: " + failure);
+                        }
+                    });
                 }
-                if (gdbLoader) {
-                    String companion = ghidradwarfforge.elf.GdbCompanion.render(input,
-                        stages.get(0), stages.get(1), output, sourceOutput, monitor::isCancelled);
-                    Files.writeString(stages.get(index++), companion, java.nio.charset.StandardCharsets.UTF_8);
-                }
-                if (formatterPlan != null) {
-                    Files.writeString(stages.get(index), formatterPlan.render(input, stages.get(0), output,
-                        monitor::isCancelled), java.nio.charset.StandardCharsets.UTF_8);
-                }
-            }, prePublishCheck);
-        }
-        else if (attachmentPreparation) {
-            ArtifactPairPublisher.stageAndPublishNew(output, sourceOutput,
-                sidecarWriter, sourceWriter, prePublishCheck);
-        }
-        else {
-            ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
-                sidecarWriter, sourceWriter, prePublishCheck);
-        }
-        MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
-        PreparedReport prepared = reportHolder[0];
-        println("GhidraDwarfForge symbol export PASS");
-        if (sourceBundle != null) {
-            println("  synthetic source parts: " + sourceBundle.manifest().parts().size());
-            println("  source manifest: " + sourceOutput.resolveSibling(sourceBundle.manifestName()));
-        }
-        println("  output: " + output);
-        println("  output SHA-256: " + prepared.outputHash());
-        if (formatterPlan != null) println("  optional GDB/LLDB formatters: " + formatterOutput);
-        println("  input SHA-256: " + inputHash);
-        println("  target: " + result.target().name());
-        println("  functions: " + result.functionCount());
-        println("  sections: " + result.sectionNames());
-        println("  source: " + sourceOutput);
-        println("  source SHA-256: " + prepared.sourceHash());
-        if (gdbLoader) {
-            println("  GDB companion: " + companionOutput);
-            println("  GDB companion SHA-256: " + sha256(companionOutput));
-            println("  Load explicitly in GDB with: source " + companionOutput);
-        }
-        if (synthesizeUnwind) println("  unwind evidence: " + unwindOutput + " (recovered rules, independent validation NOT_RUN)");
-        println("  decompiled functions: " + source.functions().stream()
-            .filter(function -> function.decompiled()).count());
-        println("  mapped source lines: " + source.mappedLines().size());
-        println("  function signatures: " + typeModel.functions().size());
-        println("  local variables: " + typeModel.functions().stream()
-            .mapToInt(function -> function.locals().size()).sum());
-        println("  defensible variable locations: " + typeModel.variableStorage().variables()
-            .stream().filter(variable -> variable.hasDefensibleLocation()).count());
-        println("  omitted variable locations: " + typeModel.variableStorage().variables()
-            .stream().filter(variable -> !variable.hasDefensibleLocation()).count());
-        println("  canonical types: " + typeModel.types().nodes().size());
-        println("  global variables: " + typeModel.globals().size());
-        println("  function-owned static variables: " +
-            ghidradwarfforge.source.FunctionStaticPolicy.select(typeModel, source)
-                .exported().size());
-        if (attachmentPreparation) state.addEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY, prepared.json());
-        if (isRunningHeadless()) {
-            println("GhidraDwarfForge report: " + prepared.json());
-        }
-        else {
-            println("GhidraDwarfForge report: schema 2; " +
-                ghidradwarfforge.output.CoveragePresentation.summary(prepared.coverage(), prepared.status()));
-            if (!attachmentPreparation) {
-                // Publication is already complete. A presentation failure must not
-                // change the export outcome or masquerade as an artifact failure.
-                javax.swing.SwingUtilities.invokeLater(() -> {
-                    try {
-                        ghidradwarfforge.output.CoverageReportGui.show(state.getTool().getToolFrame(),
-                            prepared.coverage(), prepared.status(), prepared.json(),
-                            output.resolveSibling(output.getFileName() + ".report.json"));
-                    }
-                    catch (RuntimeException failure) {
-                        printerr("Coverage window could not open; artifacts were exported: " + failure);
-                    }
-                });
             }
         }
     }
@@ -523,7 +566,7 @@ public class GhidraDwarfForge extends GhidraScript {
         for (String name : result.keySet()) {
             if (!name.equals("libdwarf") && !name.equals("libdwarfp") &&
                     !name.equals("input") && !name.equals("output") && !name.equals("formatters") &&
-                    !name.equals("target-profile") &&
+                    !name.equals("target-profile") && !name.equals("raw-firmware") && !name.equals("firmware-inputs") &&
                     !name.equals("packaged-natives") && !name.equals("gdb-loader") && !name.equals("attachment-preparation") &&
                     !name.equals("compress-debug-sections") && !name.equals("source-context") && !name.equals("source-lines") &&
                     !name.equals("synthesize-unwind") && !name.equals("unwind-stack-separation") &&

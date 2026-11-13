@@ -119,6 +119,16 @@ exit /b %FAKE_HEADLESS_EXIT%
     $projectOptions = @('-ProjectDirectory', $project, '-ProjectName', 'Existing',
         '-Program', '/folder/program', '-OriginalElf', $inputElf)
 
+    $null = Invoke-Wrapper 0 $projectOptions
+    $savedArguments = Get-Content -LiteralPath $argumentLog -Raw
+    Assert-Condition ($savedArguments.Contains('GhidraDwarfForgeReadOnly.java')) 'saved export did not use read-only host'
+    Assert-Condition ($savedArguments.Contains('/folder/program')) 'nested project path lost'
+    Assert-Condition ($savedArguments -notmatch '(?:^|\s)"?-(process|import|loader|readOnly)"?(?:\s|$)') `
+        'saved wrapper used writable project launcher'
+    $null = Invoke-Wrapper 0 @('-ProjectDirectory', $project, '-ProjectName', 'Existing',
+        '-Program', 'program', '-OriginalElf', $inputElf)
+    Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains('/program')) 'root basename not normalized'
+
     $null = Invoke-Wrapper 0 ($importOptions + @('-Log', (Join-Path $work 'success.log')))
     Assert-Condition (Test-Path -LiteralPath $argumentLog) 'valid log did not launch Ghidra'
     $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
@@ -130,7 +140,26 @@ exit /b %FAKE_HEADLESS_EXIT%
     Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains('--target-profile=cortex-m3')) 'target profile not forwarded'
     foreach ($profile in @('', 'cortex-m4', 'ARMv7')) {
         $null = Invoke-Wrapper 64 ($importOptions + @('-TargetProfile', $profile))
+        $null = Invoke-Wrapper 64 ($importOptions + @('-RawFirmware', $profile))
     }
+    $rawOptions = $projectOptions + @('-RawFirmware', 'cortex-m3')
+    $null = Invoke-Wrapper 0 ($rawOptions + @('-FirmwareInputs', $selection))
+    $rawArguments = Get-Content -LiteralPath $argumentLog -Raw
+    Assert-Condition ($rawArguments.Contains('GhidraDwarfForgeReadOnly.java')) 'raw wrapper did not use read-only host'
+    Assert-Condition ($rawArguments.Contains('--raw-firmware=cortex-m3')) 'raw profile not forwarded'
+    Assert-Condition ($rawArguments.Contains("--firmware-inputs=$selection")) 'raw input selection not forwarded'
+    Assert-Condition ($rawArguments -notmatch '(?:^|\s)"?-(process|import|loader)"?(?:\s|$)') 'raw wrapper used import or writable processing'
+    $null = Invoke-Wrapper 64 ($importOptions + @('-RawFirmware', 'cortex-m3'))
+    $null = Invoke-Wrapper 64 ($projectOptions + @('-FirmwareInputs', $selection))
+    $null = Invoke-Wrapper 64 ($rawOptions + @('-FirmwareInputs', ''))
+    $null = Invoke-Wrapper 64 ($rawOptions + @('-TargetProfile', 'cortex-m3'))
+    $null = Invoke-Wrapper 64 ($rawOptions + @('-GdbLoader'))
+    $null = Invoke-Wrapper 64 ($rawOptions + @('-SynthesizeUnwind', 'strict'))
+    Remove-Item -LiteralPath $argumentLog -Force -ErrorAction SilentlyContinue
+    $null = Invoke-Wrapper 64 ($rawOptions + @('-FirmwareInputs', $selection, '-Log', $inputElf))
+    Assert-Condition (-not (Test-Path -LiteralPath $argumentLog)) 'raw input collision launched Ghidra'
+    Assert-Preserved
+    Assert-RejectedLog "$inputElf.dbg.firmware.json" $rawOptions
     foreach ($target in @('1', '8', '1000', '2147483647')) {
         $null = Invoke-Wrapper 0 ($importOptions + @('-SourceLines', $target))
         Assert-Condition ((Get-Content -LiteralPath $argumentLog -Raw).Contains("--source-lines=$target")) 'source line target not forwarded'

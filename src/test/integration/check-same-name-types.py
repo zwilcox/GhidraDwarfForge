@@ -9,6 +9,7 @@ from alias_relationships import read_dies, value
 
 case = Path(sys.argv[1])
 rows = read_dies(case / 'forge.dbg', case / 'raw-info.log')
+saved_globals = json.loads((case / 'prepared.json').read_text())['model']['globals']
 by_offset = {row['offset']: row for row in rows}
 parents, stack = {}, []
 for row in rows:
@@ -45,6 +46,7 @@ def children(row, tag):
 
 
 objects, categories, states = [], [], []
+global_aliases = {}
 for namespace, size, field_width, state_value in [('alpha', 16, 4, 5), ('beta', 24, 8, 17)]:
     owner = one('DW_TAG_namespace', namespace)
     variable = one('DW_TAG_variable', namespace + '::object')
@@ -81,7 +83,19 @@ for namespace, size, field_width, state_value in [('alpha', 16, 4, 5), ('beta', 
         imported, = imports
         assert set(imported['attrs']) == {'DW_AT_import'}, 'ambiguous leaf must not shadow another object'
         location = global_die['attrs']['DW_AT_location']
-        assert sum(row['tag'] == 'DW_TAG_variable' and row['attrs'].get('DW_AT_location') == location for row in rows) == 1
+        # Ghidra can retain both imported mangled labels and qualified source
+        # labels. Require exactly the saved identities at this address, rather
+        # than treating every second label as an invented namespace alias.
+        saved, = [item for item in saved_globals
+            if '::'.join([*item['namespace'], item['name']]) == name(global_die)]
+        expected = [item for item in saved_globals if not item['declaration'] and item['address'] == saved['address']]
+        expected_names = sorted('::'.join([*item['namespace'], item['name']]) for item in expected)
+        assert len(set(expected_names)) == len(expected_names)
+        assert all(item['type'] == saved['type'] and item['size'] == saved['size'] for item in expected)
+        located = [row for row in rows if row['tag'] == 'DW_TAG_variable' and row['attrs'].get('DW_AT_location') == location]
+        assert sorted(name(row) for row in located) == expected_names, (name(global_die), expected_names, [name(row) for row in located])
+        assert all(row['depth'] == 1 and reference(row)['offset'] == reference(global_die)['offset'] for row in located)
+        global_aliases[name(global_die)] = expected_names
 for variable_name, size, width in [('category_small', 4, 4), ('category_large', 16, 8)]:
     variable = one('DW_TAG_variable', variable_name)
     alias = reference(variable)
@@ -117,5 +131,6 @@ for spelling in ['AnalystCategories::first::Packet', 'AnalystCategories::second:
     result = subprocess.run(command, capture_output=True, text=True, timeout=60)
     assert result.returncode != 0 and 'No symbol' in result.stderr
 (case / 'type-identity-check.json').write_text(json.dumps({'status': 'SAME_NAME_RAW_AND_COLD_LOOKUP_PASS',
-    'classDefinitions': objects, 'categoryDefinitions': categories, 'enumDefinitions': states, 'coldQueries': observed}, indent=4) + '\n')
+    'classDefinitions': objects, 'categoryDefinitions': categories, 'enumDefinitions': states,
+    'savedGlobalAliases': global_aliases, 'coldQueries': observed}, indent=4) + '\n')
 print('same-name-types-identity=PASS')

@@ -181,6 +181,18 @@ The PowerShell equivalent is `support/ghidra-dwarf-forge-headless.ps1` with
 `-Input`, `-Output`, and `-Log` parameters. `-Libdwarf` and `-Libdwarfp` are
 optional paired overrides for development builds.
 
+Saved-program export opens the project through a read-only handle from a
+disposable host project, preserving its database and index/journal backups.
+`--program=program` selects a root file; `--program=/folder/program` selects one
+exact nested project file. It does not run analysis or save analyst changes.
+
+Development builds also offer explicit raw-firmware export for a saved Cortex-M3
+program: add `--raw-firmware=cortex-m3 --input=/path/to/firmware.bin` in
+existing-project mode (PowerShell `-RawFirmware cortex-m3 -Input ...`). The
+saved memory map supplies runtime addresses; multiple original files require
+an explicit input descriptor. The synthetic ELF is for remote debugger symbols,
+not programming the device. See [raw firmware usage and validation bounds](docs/RAW-FIRMWARE.md).
+
 Development builds offer optional multi-file synthetic source with
 `--source-lines=1000` (PowerShell `-SourceLines 1000`). The value is a positive
 line target; whole functions and the declaration preamble stay together, so a

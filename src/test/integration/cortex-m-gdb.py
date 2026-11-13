@@ -9,6 +9,7 @@ import gdb
 
 root = Path(os.environ['FORGE_CORTEX_CASE'])
 variant = os.environ.get('FORGE_CORTEX_VARIANT', 'compiler')
+raw_input = os.environ.get('FORGE_CORTEX_RAW') == '1'
 symbols = Path(os.environ.get('FORGE_CORTEX_SYMBOLS', str(root / 'reference.elf')))
 output = Path(os.environ.get('FORGE_CORTEX_OUTPUT', str(root)))
 expected_source = Path(os.environ.get('FORGE_CORTEX_SOURCE', str(symbols) + '.c'))
@@ -46,14 +47,22 @@ try:
     gdb.execute('set pagination off')
     gdb.execute('set confirm off')
     gdb.execute('set auto-solib-add off')
-    gdb.execute('file ' + json.dumps(str(root / 'original.elf')))
+    source_origin = os.environ.get('FORGE_CORTEX_SOURCE_ORIGIN')
+    if source_origin:
+        gdb.execute('set substitute-path ' + json.dumps(source_origin) + ' ' +
+            json.dumps(str(expected_source.parent)))
+    if not raw_input:
+        gdb.execute('file ' + json.dumps(str(root / 'original.elf')))
     gdb.execute('symbol-file ' + json.dumps(str(symbols)))
-    result['offlineDisassembly'] = gdb.execute('x/4i ' + hex(labels['Reset_Handler'] & ~1), to_string=True)
-    offline_addresses = [int(match[1], 16) for line in result['offlineDisassembly'].splitlines()
-        if (match := re.match(r'\s*(?:=>\s*)?0x([0-9a-f]+)', line))]
-    assert 'ldr' in result['offlineDisassembly'] and 'r0' in result['offlineDisassembly'] and \
-        offline_addresses[:2] == [labels['Reset_Handler'] & ~1, (labels['Reset_Handler'] & ~1) + 2], \
-        'offline Thumb disassembly changed'
+    if not raw_input:
+        result['offlineDisassembly'] = gdb.execute('x/4i ' + hex(labels['Reset_Handler'] & ~1), to_string=True)
+        offline_addresses = [int(match[1], 16) for line in result['offlineDisassembly'].splitlines()
+            if (match := re.match(r'\s*(?:=>\s*)?0x([0-9a-f]+)', line))]
+        assert 'ldr' in result['offlineDisassembly'] and 'r0' in result['offlineDisassembly'] and \
+            offline_addresses[:2] == [labels['Reset_Handler'] & ~1, (labels['Reset_Handler'] & ~1) + 2], \
+            'offline Thumb disassembly changed'
+    else:
+        result['inputMode'] = 'raw: symbol-file only; instruction bytes come from remote memory'
     for function in json.loads((root / 'curation.json').read_text())['functions']:
         assert value('&' + function['name']) & ~1 == function['entry'], 'function address changed: ' + function['name']
         if variant == 'forge':

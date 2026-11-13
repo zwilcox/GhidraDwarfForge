@@ -94,6 +94,9 @@ public final class CallSiteSerializationProbe {
         var source = SyntheticSourceFile.build("call-site serialization control", "fixture", texts);
         var exporter = new MinimalDwarfSidecarExporter(DebugSectionCompression.NONE, Map.of(), null, plan);
         Path output = Path.of(args[3]);
+        // This isolated serializer probe bypasses the production pair publisher.
+        // Write source first so GDB never sees it as newer than its debug objfile.
+        source.writeAtomically(Path.of(args[3] + ".c"));
         var polls = new java.util.concurrent.atomic.AtomicInteger();
         exporter.export(Path.of(args[2]), output, Path.of(args[0]), Path.of(args[1]), functions, source, model,
             output.getFileName() + ".c", () -> { polls.incrementAndGet(); return false; });
@@ -125,7 +128,6 @@ public final class CallSiteSerializationProbe {
             exporter.export(Path.of(args[2]), output, Path.of(args[0]), Path.of(args[1]), functions, source, model);
             System.out.println("PASS_CANCEL_POLLS " + total);
         }
-        source.writeAtomically(Path.of(args[3] + ".c"));
         System.out.println("PASS_SERIALIZATION_PROBE " + args[5] + " " + variant);
     }
 }

@@ -683,7 +683,7 @@ jobs:
               ghidraVariableIdentitySmoke ghidraInstructionEvidenceSmoke sourceCoverageSmoke sourceCoverageInventorySmoke coverageComparisonPresentationSmoke coverageVariableComparisonSmoke coverageTypeEvidenceSmoke typeGraphEvidenceSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke exportCoverageSmoke coverageComparisonSmoke coveragePresentationSmoke coverageReportJsonSmoke reportValueReaderSmoke coverageReportClaimsSmoke exportReportCoverageSmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
-              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke cortexM3ProfileSmoke ghidraCortexM3ProfileSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
+              opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke cortexM3ProfileSmoke ghidraCortexM3ProfileSmoke firmwareMemoryMapSmoke ghidraFirmwareMemoryMapSmoke firmwareInputsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               callOriginSymbolsSmoke functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
               dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
@@ -1006,6 +1006,12 @@ jobs:
                     -PtargetProfile="$wide_profile" -PnativeIterations=16
           fi
           if [[ "$TARGET" == arm32 ]]; then
+              src/test/integration/run-isolated-native-smoke.sh \
+                  "build/test-results/native-producer/firmware" \
+                  ./gradlew --no-daemon firmwareExportSmoke \
+                    -PlibdwarfPath="$PWD/native-integration/libdwarf.so.2.3.2" \
+                    -PlibdwarfpPath="$PWD/native-integration/libdwarfp.so.2.3.2" \
+                    -PfirmwareOutput="$PWD/build/test-results/native-producer/firmware/artifacts"
               src/test/integration/run-isolated-native-smoke.sh \
                   "build/test-results/native-producer/arm32be8" \
                   ./gradlew nativeProducerSmoke \
@@ -1819,6 +1825,13 @@ jobs:
       - name: Saved-program type identity across fresh headless processes
         if: matrix.target == 'x86_64'
         run: src/test/integration/saved-program-determinism.sh "$GHIDRA_INSTALL_DIR"
+
+      - name: Saved-project wrapper preserves databases and project backups
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/integration/saved-project-preservation.py \
+              --ghidra "$GHIDRA_INSTALL_DIR" --input build/fixtures/x86_64/semantic.exec.stripped \
+              --results build/test-results/saved-project-preservation
 
       - name: Saved analyst edits through backup-based attachment refresh
         if: matrix.target == 'x86_64'
@@ -3167,6 +3180,13 @@ jobs:
               --ghidra "$GHIDRA_INSTALL_DIR" --results "$PWD/build/test-results/cortex-m"
 
       - uses: actions/upload-artifact@v7
+        with:
+          name: raw-firmware-reference
+          path: build/test-results/cortex-m/portable-reference/
+          if-no-files-found: error
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: cortex-m-profile-diagnostics
@@ -3367,12 +3387,12 @@ jobs:
           retention-days: 14
 
   windows-host:
-    needs: [ release-package, native-windows, linux-x86-export-reference ]
+    needs: [ release-package, native-windows, linux-x86-export-reference, cortex-m-profile ]
     # The reference files are uploaded before the Linux GUI journey. Still
     # exercise Windows when that later journey fails; missing reference files
     # fail artifact download, and required-validation independently requires
     # the complete Linux reference/GUI job to succeed.
-    if: ${{ always() && !cancelled() && needs.release-package.result == 'success' && needs.native-windows.result == 'success' }}
+    if: ${{ always() && !cancelled() && needs.release-package.result == 'success' && needs.native-windows.result == 'success' && needs.cortex-m-profile.result == 'success' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -3503,7 +3523,7 @@ jobs:
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat formatterPlanSmoke exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
             syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
-            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke cortexM3ProfileSmoke ghidraCortexM3ProfileSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
+            opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke cortexM3ProfileSmoke ghidraCortexM3ProfileSmoke firmwareMemoryMapSmoke ghidraFirmwareMemoryMapSmoke firmwareInputsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             callOriginSymbolsSmoke functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
             elfBuildIdSmoke exportReportClaimsSmoke debugCompressionSmoke matchedElfPrefixSmoke `
@@ -3595,6 +3615,12 @@ jobs:
           }
           'isolated-native-producer=PASS' |
             Add-Content -Path "$resultDirectory\native-producer-status.txt" -Encoding utf8
+          & .\gradlew.bat --no-daemon firmwareExportSmoke `
+            "-PlibdwarfPath=$($consumer.FullName)" `
+            "-PlibdwarfpPath=$($producer.FullName)" `
+            "-PfirmwareOutput=$PWD\$resultDirectory\firmware" 2>&1 |
+            Tee-Object -FilePath "$resultDirectory\firmware.log"
+          if ($LASTEXITCODE -ne 0) { throw 'isolated Windows firmware producer failed' }
 
           $callSiteResults = Join-Path $PWD 'build/test-results/windows-host/call-site-jna'
           & .\gradlew.bat --no-daemon callSiteProducerSmoke `
@@ -3662,6 +3688,29 @@ jobs:
             -ConsumerDll $consumer.FullName `
             -ProducerDll $producer.FullName `
             -LinuxReferenceDirectory (Resolve-Path linux-reference)
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: raw-firmware-reference
+          path: raw-firmware-reference
+
+      - name: Windows saved-project wrapper preserves databases and project backups
+        shell: pwsh
+        run: |
+          python src/test/integration/saved-project-preservation.py `
+              --ghidra "$env:GHIDRA_INSTALL_DIR" --input linux-reference/semantic.exec.stripped `
+              --results build/test-results/windows-host/saved-project-preservation
+          if ($LASTEXITCODE -ne 0) { throw 'Windows saved-project preservation failed' }
+
+      - name: Windows PowerShell raw firmware export and preservation
+        shell: pwsh
+        run: |
+          python src/test/integration/raw-firmware-export.py `
+              --case raw-firmware-reference/reference `
+              --prepared-inputs raw-firmware-reference --separate-ram-input --producer-only `
+              --ghidra $env:GHIDRA_INSTALL_DIR `
+              --results build/test-results/windows-host/raw-firmware
+          if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell raw firmware export failed' }
 
       - name: Native Windows attachment rollback and saved-curation refresh
         shell: pwsh
@@ -3852,7 +3901,7 @@ jobs:
       - name: Install Linux target debugger and validators
         run: |
           sudo apt-get update
-          sudo apt-get install -y gdb gdb-multiarch llvm binutils lldb-18=1:18.1.3-1ubuntu1 python3-lldb-18=1:18.1.3-1ubuntu1
+          sudo apt-get install -y gdb gdb-multiarch qemu-system-arm llvm binutils lldb-18=1:18.1.3-1ubuntu1 python3-lldb-18=1:18.1.3-1ubuntu1
       - name: Validate Windows attachment, build-ID and GUI exports in GDB
         run: |
           (cd validation-tool && sha256sum -c SHA256SUMS)
@@ -3883,6 +3932,10 @@ jobs:
               "$PWD/windows-artifacts/windows-host/formatters-multifile" \
               "$PWD/build/test-results/windows-attachment-gdb/formatters-multifile" \
               --producer-host Windows --lldb lldb-18 --dwarfdump "$DWARFDUMP"
+          python3 src/test/integration/raw-firmware-portable.py consume \
+              --incoming "$PWD/windows-artifacts/windows-host/raw-firmware/transport" \
+              --output "$PWD/build/test-results/windows-attachment-gdb/raw-firmware" \
+              --producer-host Windows --dwarfdump "$DWARFDUMP"
       - uses: actions/upload-artifact@v7
         if: always()
         with:

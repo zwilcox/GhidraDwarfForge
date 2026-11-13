@@ -441,7 +441,7 @@ public final class MinimalDwarfSidecarExporter {
             SyntheticConstants syntheticConstants, java.util.function.Consumer<String> diagnostic) throws IOException {
         return exportInternal(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
             typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
-            syntheticConstants, diagnostic, null);
+            syntheticConstants, diagnostic, null, null);
     }
 
     /**
@@ -473,7 +473,36 @@ public final class MinimalDwarfSidecarExporter {
         Objects.requireNonNull(framePlan, "proved frame plan");
         return exportInternal(input, output, consumerLibrary, producerLibrary, functions, syntheticSource,
             typeModel, sourceFileName, cancelled, modeCues, aliases, aliasModeCues, sectionModes,
-            syntheticConstants, diagnostic, framePlan);
+            syntheticConstants, diagnostic, framePlan, null);
+    }
+
+    /**
+     * Explicit raw-firmware path. Reuses target code-evidence and DWARF production
+     * against a private byte witness; publishes only synthetic allocation metadata.
+     * The caller owns the image, supplies a staging output, and must publish its
+     * provenance manifest with the pair after final consistency checks.
+     */
+    public ExportResult exportFirmware(ghidradwarfforge.firmware.FirmwareExportImage firmware,
+            Path output, Path consumerLibrary, Path producerLibrary, List<FunctionSymbol> functions,
+            SyntheticSourceFile syntheticSource, ProgramTypeModel typeModel,
+            String sourceFileName, BooleanSupplier cancelled, List<ElfFunctionModeCue> modeCues,
+            List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
+            List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
+            SyntheticConstants syntheticConstants, java.util.function.Consumer<String> diagnostic,
+            ghidradwarfforge.unwind.CallFramePlan framePlan) throws IOException {
+        Objects.requireNonNull(firmware, "explicit firmware image");
+        firmware.requireSafeOutput(output);
+        for (Path library : List.of(consumerLibrary, producerLibrary)) {
+            if (FileSystemPaths.aliases(FileSystemPaths.resolveLeaf(output, "firmware output"), library.toRealPath())) {
+                throw new IOException("firmware output aliases a native library");
+            }
+        }
+        firmware.requireInputsUnchanged(cancelled);
+        var result = exportInternal(firmware.witnessPath(), output, consumerLibrary, producerLibrary,
+            functions, syntheticSource, typeModel, sourceFileName, cancelled, modeCues, aliases,
+            aliasModeCues, sectionModes, syntheticConstants, diagnostic, framePlan, firmware);
+        firmware.requireInputsUnchanged(cancelled);
+        return result;
     }
 
     private ExportResult exportInternal(Path input, Path output, Path consumerLibrary,
@@ -483,7 +512,8 @@ public final class MinimalDwarfSidecarExporter {
             List<ElfFunctionAlias> aliases, List<ElfFunctionModeCue> aliasModeCues,
             List<ghidradwarfforge.elf.Arm32SectionModes.Evidence> sectionModes,
             SyntheticConstants syntheticConstants, java.util.function.Consumer<String> diagnostic,
-            ghidradwarfforge.unwind.CallFramePlan framePlan) throws IOException {
+            ghidradwarfforge.unwind.CallFramePlan framePlan,
+            ghidradwarfforge.firmware.FirmwareExportImage firmware) throws IOException {
         var constants = syntheticConstants.values();
         var constantNames = new java.util.HashSet<String>();
         for (var constant : constants) {
@@ -499,7 +529,7 @@ public final class MinimalDwarfSidecarExporter {
         if (cancelled.getAsBoolean()) {
             throw new CancellationException("DWARF export cancelled");
         }
-        Path source = requireFile(input, "input ELF");
+        Path source = requireFile(input, firmware == null ? "input ELF" : "private firmware byte witness");
         Path consumerPath = requireFile(consumerLibrary, "libdwarf");
         Path producerPath = requireFile(producerLibrary, "libdwarfp");
         if (functions.isEmpty()) {
@@ -645,8 +675,11 @@ public final class MinimalDwarfSidecarExporter {
         }
         try (var phase = ExportPhase.start("elf-packaging")) {
             var writer = new MatchedElfSidecarWriter(compression);
-            if (framePlan == null) writer.write(elf, destination, sections, supplemental, cancelled, diagnostic);
-            else writer.writeWithFrames(elf, destination, sections, supplemental, framePlan, cancelled, diagnostic);
+            // Synthetic allocations have the same section indices as the checked byte
+            // witness, but no code/data payload or original executable identity.
+            ElfImage packaging = firmware == null ? elf : firmware.allocations();
+            if (framePlan == null) writer.write(packaging, destination, sections, supplemental, cancelled, diagnostic);
+            else writer.writeWithFrames(packaging, destination, sections, supplemental, framePlan, cancelled, diagnostic);
             phase.completed = true;
         }
         var emittedSections = new ArrayList<>(sections.keySet());

@@ -39,8 +39,25 @@ def main():
     run('controls', [HERE / 'cortex-m-controls.py', case, exported / 'firmware.dbg', root / 'controls'], None)
     controls = json.loads((root / 'controls/result.json').read_text())
     assert controls['status'] == 'PASS' and len(controls['controls']) == 6
+    raw_cases = {}
+    shifted = run('shifted-ram-reference', [HERE / 'cortex-m-reference.py',
+        '--results', root / 'shifted-reference', '--ram-origin', '0x20001000'],
+        'cortex-m-reference-results=')
+    for label, reference in (('base', case), ('shifted-ram', shifted)):
+        raw = root / ('raw-' + label)
+        run('raw-' + label, [HERE / 'raw-firmware-export.py', '--case', reference,
+            '--ghidra', args.ghidra, '--results', raw,
+            *(['--separate-ram-input'] if label == 'shifted-ram' else [])], None)
+        raw_result = json.loads((raw / 'result.json').read_text())
+        assert raw_result['status'] == 'PASS_RAW_FIRMWARE_EXPORT_RUNTIME'
+        assert raw_result['failureControls'] == (21 if label == 'shifted-ram' else 20)
+        assert raw_result['addresses']['functions'] == 8
+        raw_cases[label] = raw_result
+    run('portable-reference', [HERE / 'raw-firmware-portable.py', 'pack',
+        '--case', shifted, '--export', root / 'raw-shifted-ram',
+        '--output', root / 'portable-reference'], None)
     (root / 'result.json').write_text(json.dumps({'status': 'PASS', 'reference': str(case),
-        'export': str(exported), 'checks': result, 'controls': controls}, indent=4) + '\n')
+        'export': str(exported), 'checks': result, 'controls': controls, 'rawFirmware': raw_cases}, indent=4) + '\n')
     print('cortex-m-suite=PASS ' + str(root))
 
 

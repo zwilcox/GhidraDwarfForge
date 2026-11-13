@@ -21,6 +21,7 @@ audited = {
     "ghidradwarfforge/targets/ArmCompositeParameterAllocation.java",
     "ghidradwarfforge/targets/MipsWideParameterAllocation.java",
     "ghidradwarfforge/nativeapi/DwarfTarget.java",
+    "ghidradwarfforge/firmware/FirmwareTarget.java",
     "ghidradwarfforge/nativeapi/Arm32EndianProfile.java",
     "ghidradwarfforge/locations/TargetRegisterMap.java",
     "ghidradwarfforge/GhidraArm32FunctionModes.java",
