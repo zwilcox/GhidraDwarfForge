@@ -86,11 +86,14 @@ def main():
         sidecar = directory / "input.dbg"
         command = [*java, sidecar, model_path, args.target, variant]
         run(command, directory / "producer")
+        source = Path(str(sidecar) + ".c")
+        assert source.stat().st_mtime_ns <= sidecar.stat().st_mtime_ns, "source newer than debug objfile"
         first = digest(sidecar)
-        first_source = digest(Path(str(sidecar) + ".c"))
+        first_source = digest(source)
         run(command, directory / "repeat")
+        assert source.stat().st_mtime_ns <= sidecar.stat().st_mtime_ns, "repeated source newer than debug objfile"
         assert first == digest(sidecar), "nondeterministic sidecar"
-        assert first_source == digest(Path(str(sidecar) + ".c")), "nondeterministic source"
+        assert first_source == digest(source), "nondeterministic source"
         text = run(["readelf", "--debug-dump=info", sidecar], directory / "info")
         run(["readelf", "-h", "-S", "-n", "--debug-dump=abbrev,aranges,decodedline", sidecar], directory / "gnu")
         run(["llvm-dwarfdump", "--verify", sidecar], directory / "llvm")
