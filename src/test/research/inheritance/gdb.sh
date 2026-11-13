@@ -13,7 +13,7 @@ if [[ "$target" == aarch64 ]]; then
     remote=$qemu_socket_path
     options+=(-ex 'set sysroot /usr/aarch64-linux-gnu')
 fi
-INHERITANCE_REMOTE="$remote" INHERITANCE_VARIANT="$variant" INHERITANCE_RESULT="$case_dir/$variant.gdb.json" \
+INHERITANCE_REMOTE="$remote" INHERITANCE_VARIANT="$variant" INHERITANCE_RESULT="${INHERITANCE_RESULT_PATH:-$case_dir/$variant.gdb.json}" \
     timeout 90s gdb-multiarch -q -nx -nh -batch \
     -ex 'set pagination off' -ex 'set confirm off' -ex 'set auto-load off' \
     -ex 'set debuginfod enabled off' -ex 'set auto-solib-add off' \

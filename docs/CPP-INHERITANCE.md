@@ -1,12 +1,16 @@
 # C++ inheritance and vtable export
 
-**PRESENT, UNVERIFIED end to end:** issue #113 extends saved class/type ownership
-with explicit base, virtual-method and vtable relationships. Ordinary Ghidra
-extraction and native emission now retain validated saved inheritance and vtable
-witnesses. The production-path checkpoint below is locally validated; broader
-#113 acceptance remains incomplete. Analyst configuration is available through
-the script described below. Ghidra 12.0.3, Java 21 and
-synthetic C11 remain the baseline.
+**CONFIRMED locally:** the development exporter retains explicitly evidenced
+class inheritance, virtual methods, complete-object vtables and saved adjustment
+thunk relationships for little-endian Itanium x86-64 and AArch64. Ghidra 12.0.3,
+Java 21 and DWARF 5 remain the baseline. Synthetic source remains C11; it is not
+relabeled as original C++. **PRESENT, UNVERIFIED at the final hosted gate:** issue
+#113 remains open until protected CI and the final scope review pass.
+
+Ordinary export preserves the executable and writes the matched `.dbg` plus
+synthetic `.dbg.c`. No separate compiler-symbol insertion step is needed.
+An explicit C++ layout profile does not establish every calling convention,
+class recovery heuristic or debugger capability.
 
 ## Analyst configuration
 
@@ -112,16 +116,155 @@ behavior. Run the ordinary exporter afterward and inspect its diagnostics. Table
 admission against the original ELF, structural validators and actual debugger
 checks remain required before claiming a particular recovered program works.
 
-**CONFIRMED locally:** the configuration smoke test passes 140 checks across
-x86-64 and AArch64 ProgramDB fixtures, including rollback after actual metadata
-writes, stale-record retention/removal, target mismatch, strict input parsing,
-complete relationship replacement and immutable reopen. Twelve ordinary-export
-cases (eight target/RTTI/PIE profiles plus four rebased PIE cases) clear the
-independently curated bindings and restore them through the public script.
-Preview leaves no bindings behind; apply recreates the original records exactly;
-a further preview preserves those records. GNU, LLVM and pinned libdwarf
-validators, GDB/QEMU behavior, original preservation and deterministic read-only
-reopen pass. The Script Manager chooser itself has not been exercised locally.
+## Saved evidence and export admission
+
+`GhidraClassBindings` supplies canonical class/type identities.
+`GhidraInheritanceBindings` stores ordered direct bases, access, fixed occupied
+extents or virtual-base lookup expressions, and virtual methods with explicit
+slots/purity. Records carry analyst provenance and saved IDs. The model rejects
+missing/conflicting methods, duplicate direct bases, incomplete ordering and
+cycles while allowing diamonds, empty bases and reused base tail padding.
+Automatic `this`-type guesses cannot establish inheritance.
+
+Snapshots include program/language/compiler identity, explicit ABI, physical
+class layouts, and method ownership/signatures. Display names, categories,
+comments and image addresses are excluded. Identity-preserving renames and
+rebasing can remain valid; a rename that changes Ghidra's actual automatic
+`this` type is rejected. Snapshot traversal, record sizes and inventory counts
+are bounded and cancellable. Reads do not repair stale records. If a required
+layout or method is missing/conflicting during extraction, the relationship
+unit is omitted with a diagnostic; independent class/signature information
+remains available.
+
+Ghidra external functions live in external namespaces. For a canonical class
+with both local and addressless methods, `GhidraDeclarationBindings` explicitly
+associates an existing external Function ID with a saved canonical class ID.
+The automatic `this` parameter must point to that exact saved type. Namespace,
+signature and layout changes invalidate the association. No function, namespace,
+type or address is manufactured. The emitted addressless declaration and local
+method declaration share one canonical class DIE; the local definition refers
+to its own declaration.
+
+Pure virtuality requires explicit evidence. The fixture contains
+`Abstract::pure_value() = 0` and an implemented `Abstract::base_value`. GCC emits
+ordinary virtuality for the pure declaration; the harness records the stronger
+fact from this known source and retains the compiler's original value. Missing
+code alone never establishes pure virtuality. The pure declaration has no
+executable address, and `Concrete` retains its separate overriding method.
+
+`GhidraVtableBindings` captures explicit symbol/class/lookup identities, byte
+extent, address points, offset-to-top headers, FileBytes mapping and original/
+loaded byte hashes. Relocation context is part of the witness, so legitimate
+loaded PIE bytes can differ from original bytes. A record cannot restore class
+ownership or inheritance rejected by another check. Orphaned saved records are
+also diagnosed; reads do not silently discard them.
+
+`VtableSymbols` admits the ELF object symbol and canonical lookup alias together.
+It checks the original ET_EXEC/ET_DYN target, selected ABI, unique non-TLS
+allocation, full file-backed extent, exact original offset and SHA-256.
+Sectionless inputs use the matched writer's PT_LOAD allocation identities.
+Conflicting/overlapping tables, reserved function/global names, ambiguous lookup
+names and mismatched original symbols are rejected. An existing object symbol
+is reused only when name, address, extent, type and allocation agree. An imported
+global for the same table is accepted only at its exact global definition and
+extent. No lookup alias is introduced solely for rejected table evidence.
+
+Qualified lookup aliases refer to the exact canonical class DIE, including
+same-spelling classes in different namespaces. Renaming a class does not change
+its saved table identity. The generic exporter never guesses an Itanium mangled
+name from a recovered display name.
+
+## Adjustment thunks and failure isolation
+
+Only explicitly analyst-named saved memory thunks are selected for export.
+`GhidraFunctionRelations` preserves the direct saved target using
+`DW_AT_trampoline`; the thunk keeps its own name, address and extent. Destination
+source is intentionally omitted from the thunk, and destination parameter
+locations are not borrowed. Source omission is distinct from decompiler failure.
+
+The fixture saves two fixed secondary-base thunks and one virtual-base thunk.
+Compiler and Forge debugger sessions stop at each entry, inspect the incoming
+subobject pointer, single-step to the saved target, check the adjusted complete
+object pointer and validate the real return register. The tested adjustments are
+-16, -32 and -16 bytes. Every executed thunk instruction must have no borrowed
+source line or `this` location. x86-64 uses three/four/three steps; AArch64 uses
+two/four/two. PIE runs require nonzero runtime load bias.
+
+**Known consumer limit:** recovered `__thiscall` signatures retain the existing
+conservative `DW_CC_nocall` policy. The layout profile does not audit arbitrary
+inferior method calls. GDB `finish` therefore warns that it cannot automatically
+display these return values. The test records that exact expected restriction
+and verifies the actual return register independently; no calling-convention
+restriction is relaxed to make the display appear complete.
+
+`InheritanceDecompilerFailureExport.java` requests a real native decompiler
+instruction-limit failure for `Diamond::root_value`. The normal source/type/
+producer path must emit only its qualified symbol and address extent, with no
+borrowed signature, parameters, locals, source lines or virtual-slot declaration.
+The fourteen other virtual methods, base relationships, table lookup and three
+thunk links remain. Later functions still decompile, and GDB continues to show
+correct dynamic types/inherited values and execute the unchanged virtual calls.
+The failed method's diagnostic appears in synthetic source. Repeated failure
+exports must be byte-identical.
+
+The failure harness opens the fixture through a read-only project handle from
+an empty temporary host project, as the supported wrapper does. Plain Ghidra
+`-readOnly` processing can still rotate project bookkeeping and is insufficient
+for the exact preservation claim. Every saved project file and executable is
+hashed before and after the final harness.
+
+## Validation and limits
+
+The source-built fixture contains eleven canonical classes, fifteen virtual
+methods, seven complete-object table groups and three explicit adjustment
+thunks. Structural checks use GNU readelf, LLVM verification and the pinned
+libdwarf checker. Runtime checks use GDB and QEMU user emulation for AArch64.
+
+| Validation | Local evidence |
+| --- | --- |
+| Analyst configuration | 140 ProgramDB checks: strict input, target mismatch, explicit replacement, retained/removable stale evidence, rollback after writes, cancellation and immutable inventory. |
+| Saved method association | 262 checks across five target descriptions; these establish neutral ownership behavior, not extra C++ ABI support. |
+| Saved inheritance | 188 evidence checks; model admission separately covers 80 cases. |
+| Compiler consumer reference | 48 sessions across two targets, non-PIE/PIE, RTTI/no-RTTI and six debug-copy arrangements. |
+| Native producer | Eight profiles and six deliberately wrong-base controls. |
+| Public configuration and ordinary export | Eight profiles plus four rebased PIE cases; exact metadata restoration, original/project preservation and deterministic reopening. |
+| Adjustment-thunk execution | The same twelve ordinary cases, each compared with compiler-debug behavior. |
+| Native decompiler failure | Both targets with no-RTTI PIE, ordinary and rebased; two identical exports per case. |
+| Naming/rejection variants | Fourteen current-fixture local cases: both targets with rebased no-RTTI PIE. The full four-profile matrix is in hosted CI. |
+| Table witnesses and standalone lookup | 56 imported table witnesses and forty naming cases. |
+
+Missing, stale and conflicting table variants require the correct **static**
+type to remain. Renamed, qualified, duplicate-name and retained-symbol variants
+require the exact canonical layouts and runtime dynamic type. Oracles inspect
+sizes, members, inherited values, `ptype` and `info vtbl` before broad expansion
+can mask lookup gaps. No artifact is made to pass by inserting compiler symbols
+after Forge export.
+
+The Script Manager chooser itself has not been exercised locally. Full hosted
+validation at the final PR head remains required. ARM32, MIPS, Microsoft C++ ABI,
+construction vtables, covariant-return thunks and other class-recovery schemes
+are not established by this C++ matrix. General architecture support elsewhere
+in the project does not imply these C++ layout profiles.
+
+The Linux/Windows smoke lists include configuration and saved-evidence tests.
+The x86-64/AArch64 pipeline invokes `reference.py`, `produce.py`, `storage.py`,
+`names.py`, `extract.py --adjustment-thunks`, the rebased extraction variant,
+`failure.py` and all seven naming/rejection variants. Local runs must use the
+storage guard, shared cache and bounded result directories:
+
+```bash
+python3 support/storage-guard.py run --cwd "$PWD" -- \
+    python3 -B src/test/research/inheritance/extract.py \
+    --ghidra "$GHIDRA_INSTALL_DIR" --references /path/to/reference-results \
+    --models /path/to/producer-results --adjustment-thunks \
+    --results "$PWD/.forge-work/scratch/inheritance-extraction"
+```
+
+Set `LIBDWARF`, `LIBDWARFP` and `DWARFDUMP` to the pinned built libraries/checker.
+`failure.py` takes `--ghidra`, `--extraction` (a completed thunk-enabled export
+matrix) and a new `--results` directory. `--targets` and `--roles` select bounded
+subsets. Commands, validator/debugger observations, hashes and preservation
+receipts are retained with the results; unavailable/skipped lanes are not passes.
 
 ## Compiler and debugger evidence
 
@@ -173,496 +316,3 @@ and LLVM. `--targets x86_64` selects the native subset. Commands, validator logs
 symbol inventories, debugger observations and protected hashes are retained in
 the selected bounded workspace. This is compiler-reference research, not an
 exporter acceptance result.
-
-## Implementation requirements
-
-- Reuse persistent class and canonical-type identities from `GhidraClassBindings`.
-  Require explicit provenance for bases, virtual slots, address points and
-  adjustments; a class name or function-pointer array is insufficient.
-- Add validated inheritance and virtual-method metadata without replacing
-  existing method ownership, object parameters or canonical types. Virtual-base
-  locations require evidenced ABI expressions rather than fixed object offsets.
-- Preserve or emit only proven vtable symbol identities. The local ELF
-  symbol model now admits validated non-TLS objects; extraction must still prove
-  the identity, byte extent and target address before requesting such a symbol.
-- Keep C11 unless further consumer evidence requires a deliberate language
-  change. Test qualified/duplicate names and fresh debugger lookup using the
-  existing class-scope representation; the global-class experiment does not
-  settle those cases.
-- Validate stripped/PIE/rebased exports, secondary vptrs, adjustment thunks,
-  missing or conflicting evidence, deterministic reruns, original preservation
-  and cancellation through the production exporter and required hosted gates.
-
-No issue #113 acceptance item is complete solely because this reference passes.
-
-## Production ELF packaging checkpoint
-
-**CONFIRMED locally:** `package.py` uses `MatchedElfSidecarWriter` to package
-compiler DWARF with explicit fixture vtable records. Its 16 cases cover both
-reference targets, all four build profiles, and both CU languages. GNU readelf,
-LLVM and the pinned libdwarf checker validate the artifacts. Fresh GDB sessions
-match the compiler reference for dynamic types, inherited values, base offsets
-and language behavior. These tests do not yet exercise Forge inheritance DIEs
-or Ghidra binding admission.
-
-The writer admits `ElfLocalObjectSymbol` only inside a non-TLS allocated section,
-with a positive, fully contained extent. It preserves original symbol records,
-checks name conflicts, handles extended section indexes, and retains the same
-cancellation and atomic publication rules. ELF32/64 and both byte orders have
-independent smoke coverage, including NOBITS and rejected TLS/overflow cases.
-
-The experiment also exposed valid copy-relocated C++ runtime objects whose
-version identity comes from VERNEED while their storage is defined in the
-executable. The dynamic mirror now reads bounded VERNEED chains alongside
-VERDEF, including program-header-only inputs, and emits the required single
-`@VERSION` spelling. Original dynamic tables remain byte-identical. Malformed
-chains, duplicate/conflicting identifiers, missing tables and cancellation have
-regression controls. This matches the distinction documented in the
-[binutils copy-relocation handling](https://sourceware.org/pipermail/binutils-cvs/2015-November/040929.html).
-
-After generating the compiler reference and running Gradle's
-`prepareInheritanceHarness` task through the storage guard:
-
-```bash
-python3 support/storage-guard.py run --cwd "$PWD" -- \
-    env DWARFDUMP=/path/to/pinned/dwarfdump \
-    python3 -B src/test/research/inheritance/package.py \
-    --references "$PWD/.forge-work/scratch/inheritance-reference" \
-    --classpath build/inheritance-classpath.txt \
-    --results "$PWD/.forge-work/scratch/inheritance-packaging"
-```
-
-## Inheritance model checkpoint
-
-**CONFIRMED locally:** `InheritanceModel` records direct bases by persistent
-class IDs, declaration order, access, provenance and either a fixed subobject
-extent or a virtual-base lookup. Virtual methods refer to saved method IDs and
-explicit slots. Admission requires canonical structures from explicit saved
-class bindings and validates virtual methods against existing object parameters.
-Current automatic THIS-type guesses cannot establish inheritance.
-
-Fixed subobject extents deliberately differ from the complete base type's byte
-size: reusable tail padding, empty bases and shared virtual bases make a simple
-non-overlap or `sizeof(base)` containment rule incorrect. Declaration order is
-retained independently of address order. The graph validator is iterative and
-rejects duplicate direct bases, missing order entries and cycles while allowing
-diamonds. Virtual slots reject conflicting ownership or missing methods.
-
-`CxxAbiProfile` currently describes the x86-64 and AArch64 little-endian Itanium
-layouts used by the compiler reference. A profile must be explicitly selected
-and checked against the target; a machine number alone is not ABI evidence.
-Virtual-base entry geometry is checked against that profile. These model tests
-do not establish emitted inheritance support on either target or change the
-existing support claims for other architectures.
-
-`inheritanceModelSmoke` passes 80 admission checks, including an 8,192-edge graph,
-and is included in the Linux and Windows smoke lists. Existing saved class
-bindings and extraction still pass on x86-64, AArch64, ARM32 and both MIPS byte
-orders (400 binding and 290 extraction checks). Existing class-model/name tests
-also pass. Hosted checks for this checkpoint remain pending.
-
-The saved relationship and native emission checkpoints below extend this model.
-The later vtable checkpoints extend this model with saved byte evidence and export admission.
-
-## Saved relationship snapshot
-
-**CONFIRMED locally:** `GhidraInheritanceBindings.save/read/remove` stores an
-explicit bounded relationship record in the caller's program transaction.
-The record is tied to the program identity, language, compiler specification,
-selected ABI, saved class/type identities and saved method IDs. It captures a
-physical type graph and method ownership/signature snapshot; changed nested
-storage, missing/rebound classes, or moved/deleted methods are rejected. Reads
-never repair records or replace rejected evidence with an inference.
-
-The snapshot excludes display names, category paths, comments and image addresses.
-Base-type/member/method renames that preserve identity and rebasing remain valid.
-A class-layout rename can make Ghidra's fuzzy automatic THIS lookup select a
-different structure. That changes the actual object parameter: it is rejected
-rather than treating an unchanged byte size as sufficient evidence.
-
-The format limits encoded data to one MiB, each relationship inventory and
-referenced class inventory to 4,096, and aggregate snapshot traversal/component
-work to bounded totals. It uses iterative type traversal and stops at pointer
-target identity rather than following an entire reachable object graph.
-Cancellation occurs before the final options write; immutable reopening leaves
-saved database bytes and timestamps unchanged.
-
-This API currently persists bases and virtual-method slots. Ordinary type
-extraction reads the snapshot after resolving canonical layouts and method
-signatures. A stale record is omitted with a diagnostic. A valid snapshot whose
-required method or layout is absent/conflicting in this export is also omitted
-as a unit; independent class ownership and signatures remain intact. Reads never
-repair saved evidence or replace rejected relationships with inference.
-
-Vtable address-point/byte persistence is validated below. Export admission and
-configuration UI/script remain **PLANNED**. The dedicated saved-program smoke is in both hosted test lists;
-its local results do not substitute for the full #113 runtime acceptance.
-
-## Native emission checkpoint
-
-**CONFIRMED locally:** `produce.py` supplies the production native exporter with
-an explicit model decoded independently from the compiler fixture. The emitter
-adds ordered `DW_TAG_inheritance` children to canonical class definitions, fixed
-or ABI-specific virtual-base locations, accessibility, virtuality, containing
-types and vtable slots on the existing method declarations. Object parameters
-and declaration/definition identities are retained. The selected C++ profile
-must match the original ELF before native production begins.
-
-Eight cases cover x86-64/AArch64, non-PIE/PIE and RTTI/no-RTTI. GNU readelf, LLVM
-and the pinned libdwarf checker accept the packaged artifacts. Fresh GDB/QEMU
-sessions compare derived types, base offsets and member values with compiler
-references, inspect `ptype` and `info vtbl`, and run the original virtual calls.
-Repeated native exports to the same destination are byte-identical. Cancellation
-at early/middle/late checkpoints preserves existing output or leaves no new
-final artifact; wrong-target profiles preserve the prior generation. Originals
-remain byte-identical.
-
-The fixture includes standalone virtual-left and virtual-right objects in
-addition to a diamond. Without them, a valid alternative path through the
-diamond could hide an incorrect base expression. Deliberately incorrect fixed
-and individual virtual-base offsets remain structurally valid but must fail
-the runtime oracle. These negative controls are part of the harness.
-
-The native test packages proven compiler vtable object identities through the production
-ELF writer after native DWARF emission. It does not prove their extraction from
-Ghidra. Qualified/duplicate class names, recovery configuration and full source
-failure behavior still need acceptance. Saved-program results are described below.
-Secondary/thunk entries may display addresses instead of recovered thunk names;
-this checkpoint does not claim complete thunk reconstruction. The corresponding
-x86-64/AArch64 CI step is present but has not yet run on the hosted branch.
-
-After generating the reference and preparing the Java harness:
-
-```bash
-python3 support/storage-guard.py run --cwd "$PWD" -- \
-    env JAVA_HOME=/path/to/jdk21 LIBDWARF=/path/to/libdwarf.so \
-    LIBDWARFP=/path/to/libdwarfp.so DWARFDUMP=/path/to/pinned/dwarfdump \
-    python3 -B src/test/research/inheritance/produce.py \
-    --references "$PWD/.forge-work/scratch/inheritance-reference" \
-    --classpath build/inheritance-classpath.txt \
-    --results "$PWD/.forge-work/scratch/inheritance-native"
-```
-
-## Saved-program export checkpoint
-
-**CONFIRMED locally:** `extract.py` imports the stripped compiler runtime, applies
-independently decoded fixture evidence, saves the relationships, and runs the
-ordinary `GhidraDwarfForge.java` exporter. A second export uses the supported
-existing-project wrapper, which opens the saved program through a read-only
-project handle. Both `.dbg` and `.dbg.c` are byte-identical across reopening;
-the original runtime and every saved project file retain their hashes.
-
-The fixture preserves compiler-declared methods with no code bodies as actual
-Ghidra addressless declarations under external-only classes. Dropping those
-declarations caused GDB to lose polymorphic recognition for the corresponding
-base types even with correct vtable symbols. No function addresses are invented.
-This fixture does not exercise a class mixing local methods and addressless
-declarations; the preparation script rejects that shape explicitly.
-
-GNU/LLVM/pinned validators and fresh GDB/QEMU sessions check single, multiple and
-diamond inheritance, individual virtual-base branches, dynamic types, member
-values, `ptype` and `info vtbl`. The export report can be PARTIAL because ordinary
-startup/import functions and unsupported call conventions are diagnosed; the
-test separately requires retained inheritance, complete fixture source generation
-and successful runtime/structural checks. Vtable object symbols are still added
-from compiler evidence in a separate production-writer step. This is not yet
-end-to-end validation of recovered Ghidra vtable identities.
-
-The harness also supports `--rebase`: it changes the image base after saving the
-relationships and does not refresh their snapshot. The hosted x86-64/AArch64
-steps run the four ordinary build profiles plus PIE/no-RTTI rebased cases.
-Hosted validation remains pending.
-
-```bash
-python3 support/storage-guard.py run --cwd "$PWD" -- \
-    env JAVA_HOME=/path/to/jdk21 LIBDWARF=/path/to/libdwarf.so \
-    LIBDWARFP=/path/to/libdwarfp.so DWARFDUMP=/path/to/pinned/dwarfdump \
-    python3 -B src/test/research/inheritance/extract.py \
-    --ghidra /path/to/ghidra-with-current-extension \
-    --references "$PWD/.forge-work/scratch/inheritance-reference" \
-    --models "$PWD/.forge-work/scratch/inheritance-native" \
-    --classpath build/inheritance-classpath.txt \
-    --results "$PWD/.forge-work/scratch/inheritance-extraction"
-```
-
-## Vtable evidence and lookup experiments
-
-**CONFIRMED locally:** `storage.py` imports all eight compiler runtime profiles
-and observes six complete-object vtable groups in each. It checks every mapped
-byte through Ghidra's `MemoryBlockSourceInfo` and `FileBytes` against the original
-ELF file offset, then repeats after rebasing by `0x200000`. File mappings,
-original bytes, loaded bytes and recorded relocations stay stable across this
-rebase. For all four PIE profiles, loaded vtable bytes differ from file bytes
-because Ghidra applied relocations at import. The four non-PIE profiles have
-matching loaded/file bytes in this fixture. These are observed profiles, not a
-claim that every relocation or loader behaves identically.
-
-The binding design must therefore retain separate original-file and loaded-byte
-witnesses, along with normalized addresses and explicit class identity. A single
-"bytes equal ELF" check would reject legitimate PIE imports. Reads should reject
-changed loaded bytes, changed backing-file mappings or changed class evidence;
-the original ELF must be checked independently at emission. Rebinding must be an
-explicit operation, not an automatic repair during export.
-
-**CONFIRMED locally:** `names.py` compares five naming arrangements for every
-target/build profile, using the production emitter/writer and fresh GDB sessions:
-
-| Arrangement | Observed result |
-| --- | --- |
-| Plain `vtable for Class` object names | Static types only; negative control. |
-| Explicit mangled symbols for renamed types | Correct recovered derived types. |
-| Original mangled symbols plus unambiguous class lookup aliases | Correct renamed canonical types. |
-| Namespace-qualified mangled names and lookup aliases | Correct canonical types through qualified lookup. |
-| Distinct qualified aliases for nine same-spelling canonical types | Correct individual sizes and direct members, not merely matching printed names. |
-
-All 40 artifacts pass GNU/LLVM/pinned validators. The 32 positive debugger cases
-retain virtual-table inspection and member values; the eight negative cases
-retain static types as expected. Original binaries remain unchanged. The fixture
-labels are explicit experimental identities, not evidence recovered from a table
-of pointers. The synthetic C11 language remains unchanged.
-
-**PLANNED production contract:** persist an explicit symbol/class association,
-bounded table extent, address points and provenance; validate the selected ABI,
-class snapshot, memory/file witnesses and complete-object table geometry. Use
-the binding's explicit mangled identity and a collision-checked lookup alias to
-the canonical type when needed. If a qualified lookup is ambiguous, diagnose and
-omit that table rather than assigning it to another class. Do not infer identity
-from `_ZTV` spelling alone or guess mangling for arbitrary recovered names.
-Address points and offset-to-top checks must follow the selected
-[ABI profile](https://itanium-cxx-abi.github.io/cxx-abi/abi.html#vtable), including
-secondary tables; construction tables require separate evidence and handling.
-This persistence/admission path is not implemented yet.
-
-Run `storage.py --ghidra <installed-ghidra> --models <native-results> --results
-<new-directory>` through the storage guard. `names.py` takes the same `--models`
-and `--results` plus `--classpath build/inheritance-classpath.txt`, with the Java
-and native/validator environment used by `produce.py`.
-
-## Saved vtable witness checkpoint
-
-**CONFIRMED locally:** `GhidraVtableBindings` persists explicitly supplied
-complete-object table identities, their canonical class IDs, bounded extents,
-primary/secondary address points and provenance. It requires valid saved
-inheritance that includes the selected class, a saved memory label, direct
-contiguous FileBytes backing, and the selected validated C++ ABI. Read-only
-Ghidra demangling checks that the supplied mangled name corresponds to the
-supplied consumer lookup name; it never infers class ownership from that name.
-Construction tables are outside this complete-object record format.
-
-The witness captures the original ELF address, exact backing-file offset,
-separate original-file and loaded-memory SHA-256 fingerprints, and a context
-fingerprint covering program identity, inheritance, file mapping and relocation
-records. The ABI checks offset-to-top words against the explicit subobject
-geometry in both byte views. A PIE loader can legitimately change pointer words;
-comparing its loaded table directly with original file bytes would be incorrect.
-Rebasing does not require subtracting a new image base from those old pointer
-words. Table-symbol renames do not change the explicit linkage identity.
-
-Reads reject missing/stale inheritance, changed layouts, moved/deleted labels,
-changed image-base provenance, changed mappings or byte patches. Reads never
-refresh a witness. Record size, table bytes, address points and relocation work
-are bounded. Save requires the caller's transaction and checks cancellation
-before publishing metadata. No executable or source output is changed by this
-API, and it does not yet authorize an ELF symbol or type alias.
-
-The real ProgramDB smoke passes 144 checks across x86-64 and AArch64, including
-separate relocated bytes, geometry/name rejection, absent backing, malformed or
-oversized records, cancellation, deterministic saves, rename/rebase preservation
-and byte-identical immutable reopening. The existing inheritance suite still
-passes 188 checks. Both suites are in the Linux/Windows workflow; current hosted
-validation of these new changes remains pending.
-
-`storage.py --bindings` additionally tests all eight imported compiler profiles
-(non-PIE/PIE, RTTI/no-RTTI, x86-64/AArch64), six tables each. It applies independent
-fixture class/relationship evidence, saves each table, requires a patched
-function pointer to invalidate its witness, restores it, and rebases without
-refreshing records. All 48 witnesses preserve their independently observed
-original address, file offset and both byte fingerprints. Original ELF files
-remain byte-identical. This checkpoint does not emit new DWARF; ordinary-export
-and debugger acceptance still require the admission work below.
-
-The next checkpoint connects these witnesses to the original ELF and ordinary
-export. Configuration/recovery flows and the remaining conflicting-evidence,
-pure-virtual, mixed local/addressless-method, thunk and source-failure acceptance
-cases remain required before closing #113.
-
-## Ordinary vtable export checkpoint
-
-**CONFIRMED locally:** ordinary class extraction now reads saved vtable witnesses.
-The inventory includes orphaned symbol records so deleted or stale evidence is
-diagnosed. It requires the class and inheritance to survive normal extraction,
-and bounds aggregate encoded records and byte-witness work before reading them.
-A vtable record cannot restore inheritance or canonical ownership rejected by
-another extraction check.
-
-`VtableSymbols` makes the ELF symbol and its canonical lookup association one
-admission decision. It checks the selected ABI, original ET_EXEC/ET_DYN target,
-unique non-TLS allocation, complete file-backed extent, exact FileBytes offset
-and original-byte SHA-256. Sectionless inputs use the writer's shared PT_LOAD
-allocation identities. Conflicting/overlapping table records, reserved function
-or global names, and ambiguous canonical lookup spellings are omitted with a
-diagnostic. No table alias is retained solely on behalf of rejected evidence.
-Independent pre-existing class aliases and original ELF symbols remain governed
-by their existing preservation rules.
-
-Accepted lookup names become typedef aliases to the exact canonical class DIE
-only when needed; synthetic C11 and existing class/method ownership remain
-unchanged. The native exporter appends validated object symbols through the
-ordinary matched writer. An original symbol with matching name/type/address/
-extent/section is reused; conflicting identities are rejected. Both static and
-applicable dynamic inventories are checked, with bounded repeated-name handling.
-Default export never modifies the executable or adds a debuglink.
-
-`vtableSymbolsSmoke` passes 166 checks for both selected targets, including
-original-byte changes, incorrect mappings/targets, TLS/NOBITS/overlapping
-allocations, table and canonical-name conflicts, distinct qualified lookups for
-same-spelling types, matching/conflicting original symbols, sectionless mapping,
-determinism, input preservation and cancellation. Regression suites pass:
-saved vtables 144, saved inheritance 188, class names 12, class extraction 300,
-class model 51 and local symbol merge 1,752. Extension build and workflow lint pass.
-
-`extract.py` now saves fixture vtable witnesses and consumes the normal export
-artifact directly. It no longer inserts compiler symbols in a second packaging
-step. Eight standard profiles and four rebased PIE profiles pass GNU readelf,
-LLVM verification, the pinned libdwarf checker and GDB/QEMU runtime comparisons.
-The checks require exactly the expected object symbols and their addresses/
-extents, canonical inheritance/object parameters, derived types through primary,
-secondary and virtual-base pointers, inherited member values, `ptype`, `info vtbl`
-and successful original virtual calls. These fixtures run with and without RTTI.
-
-Every case reopens the saved program through the supported read-only wrapper,
-requires identical sidecar/source bytes, hashes every project file, and checks
-that the original executable is unchanged. The final local runs use the current
-development extension; hosted checks for these C++ changes remain pending.
-The subsequent checkpoint covers production rejected/naming runtime variants.
-The full recovery/configuration workflow, pure-virtual/mixed-method cases and
-genuine decompilation-failure behavior still remain #113 work.
-
-## Rejected evidence and recovered-name runtime checkpoint
-
-**CONFIRMED locally:** seven additional variants pass on x86-64 and AArch64,
-non-PIE/PIE and RTTI/no-RTTI: 56 ordinary-export cases. Every variant rebases the
-saved program before exporting and then repeats export through the read-only
-wrapper. All pass GNU readelf, LLVM and the pinned libdwarf checker, preserve
-original executable/project bytes, and produce identical sidecar/source bytes
-on reopening.
-
-- **Missing:** explicitly removed vtable records produce no new table symbols.
-- **Stale:** patched Ghidra table-pointer bytes invalidate the saved witness;
-  export diagnoses the omission without refreshing the record.
-- **Conflicting:** two explicit records claim each table. Both claims are omitted,
-  rather than selecting whichever was visited first.
-- **Renamed:** coordinated class/layout renames preserve their identities and
-  original vtable records; the original lookup names resolve to renamed canonical
-  types through the admitted aliases.
-- **Qualified:** explicitly supplied qualified linkage names resolve to the
-  intended canonical types. The fixture's ASCII mangling helper is not a
-  production inference or mangling API.
-- **Duplicate:** nine distinct canonical layouts share the name `Shared` in
-  separate namespace/category paths. Qualified table identities resolve each
-  exact type. The oracle checks sizes and member names, not merely display names.
-- **Retained:** the owned runtime fixture already contains the six object symbols.
-  Export reuses them once each with their exact addresses and extents.
-
-All 24 rejection cases require GDB's dynamic-type query to retain the correct
-static type. Inheritance DIEs, virtual-method/object-parameter metadata, member
-access and original virtual-call execution remain valid. Positive cases require
-correct dynamic types before broad type expansion, exact layouts, `ptype`,
-object printing and `info vtbl`. This matrix tests ordinary extraction/emission;
-it does not add symbols to the exported artifact afterward.
-
-The retained-symbol fixture found a real collision-policy defect: Ghidra's
-imported global for the same table was treated as a competing object. Admission
-now permits that global only if it is a definition in the global namespace with
-the exact same address and extent. Another address, size, declaration, namespace
-or lookup-name collision remains rejected. Qualified global names are checked
-as well as leaf names. The admission smoke now passes 218 checks for the two
-profiles. After the qualified-global check was added, a further 12 retained,
-qualified and duplicate cases revalidate the final build across both targets,
-non-PIE and no-RTTI PIE.
-
-The hosted architecture-boundary gate initially rejected processor names in the
-new isolated `CxxAbiProfile`. Its exact path is now in the audited boundary, and
-signed offset-to-top decoding resides inside that profile. The gate and local
-80 inheritance-model/144 saved-vtable checks pass; the corrected hosted
-extension-build job also passed. This does not replace the remaining full hosted
-acceptance gate for the final PR head.
-
-## Pure-virtual method acceptance
-
-The source-built fixture includes `Abstract::pure_value() = 0` and a concrete
-override. GCC's DWARF describes the abstract declaration as `virtual`, so the
-harness records the stronger pure-virtual fact explicitly from this known
-fixture source. It does not infer purity from a missing body. The compiler's
-slot, signature and layout remain the independent reference, and the model
-records both the compiler virtuality and the explicit source witness.
-
-The checks require exactly one `DW_VIRTUALITY_pure_virtual` method with an
-object parameter and no executable address/ranges. The concrete override has
-its own method identity and code. GDB must identify `Concrete` through the
-abstract pointer, show both layouts, read inherited/member values and display
-the concrete vtable; the original program executes the virtual call and returns
-the expected value. Missing or rejected table evidence must retain `Abstract`
-as the static type. These checks apply to x86-64 and AArch64, non-PIE/PIE,
-RTTI/no-RTTI, saved-program reopening and rebasing.
-
-The fixture now has eleven classes, fifteen virtual methods and seven emitted
-table groups per build. Native and ordinary-export checks require the pure
-method count to be one, preventing a vacuous pass when compiler metadata omits
-the stronger flag. The mixed-method association below extends this fixture with
-an implemented method in the same abstract class. The analyst configuration
-workflow remains required work for #113.
-
-**CONFIRMED locally:** the expanded fixture passes 48 compiler-reference GDB
-sessions, eight native-producer profiles with six deliberately incorrect-base
-controls, and twelve ordinary exports (eight standard and four rebased PIE).
-All seven production naming/rejection variants also pass on both targets using
-rebased no-RTTI PIE, for fourteen additional ordinary exports. Each export
-passes the structural validators, preserves the input and saved program, and
-repeats deterministically. The standalone naming harness passes forty cases,
-and imported-storage validation checks 56 table witnesses across eight profiles.
-The full four-profile naming/rejection matrix remains in hosted CI; these local
-results do not replace its required validation at the final PR head.
-
-## Mixed local and addressless methods
-
-Ghidra requires external functions to have external namespaces. A class with
-local code therefore cannot directly own a genuinely addressless Ghidra
-function. `GhidraDeclarationBindings` records an explicit association from an
-existing external function ID to an explicitly bound canonical class ID. The
-caller supplies provenance in a program transaction. No function, namespace,
-type, executable bytes or code address is created or changed by the association.
-
-The existing automatic `this` parameter must point to that exact saved class
-type. The record snapshots program/target identity, the external function's
-namespace, calling convention, parameter/return types and physical class layout.
-Changes reject the association with a diagnostic. Renames that preserve those
-identities and geometry, and image rebasing, retain it. Reads never refresh
-stale records. Rejection leaves the independent function signature available
-without inferring replacement class ownership.
-
-Both ordinary class extraction and saved inheritance use this association.
-The addressless method retains its external declaration key; a local method
-retains its own executable address and definition. Emitted method declarations
-share the one canonical class DIE, and the local definition references its
-own declaration. The fixture explicitly confirms this for `Abstract::pure_value`
-and the implemented `Abstract::base_value`; absence of a body is never used to
-guess a class or pure-virtual status.
-
-`declarationBindingEvidenceSmoke` passes 262 checks across x86-64, AArch64,
-ARM32 and both MIPS byte orders: exact type/namespace/signature validation,
-malformed metadata, cancellation, rejected-record preservation, coordinated
-renaming, rebasing and immutable saved-program extraction. These neutral
-ownership checks do not add C++ ABI support claims beyond the selected x86-64
-and AArch64 profiles. Full issue #113 acceptance and hosted validation remain
-pending.
-
-The mixed fixture passes the same 48 compiler-reference sessions, eight native
-profiles/six incorrect-base controls, twelve ordinary exports and fourteen
-rebased no-RTTI naming/rejection cases described above. Structural inspection
-requires the pure declaration and implemented method declaration to share a
-canonical class, and exactly one local definition to reference the implemented
-method declaration. Forty standalone naming cases and 56 imported table
-witnesses pass as well. Coordinated rename fixtures use saved declaration IDs
-to rename the external namespace alongside the canonical class; they do not
-join unrelated classes by spelling.

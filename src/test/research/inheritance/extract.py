@@ -71,7 +71,10 @@ def main():
         default=['exec', 'pie', 'exec-no-rtti', 'pie-no-rtti'])
     parser.add_argument('--variant', choices=('valid', 'missing', 'stale', 'conflict', 'renamed', 'qualified', 'duplicate', 'retained'), default='valid')
     parser.add_argument('--rebase', action='store_true', help='Rebase after saving evidence, without refreshing it')
+    parser.add_argument('--adjustment-thunks', action='store_true', help='Curate and execute compiler-evidenced this-adjustment thunks')
     args = parser.parse_args()
+    if args.adjustment_thunks and args.variant != 'valid':
+        parser.error('adjustment thunk observations use the unrenamed valid fixture')
     root = args.results.resolve()
     root.mkdir(parents=True, exist_ok=False)
     commands, cases = [], []
@@ -111,6 +114,27 @@ def main():
                 # GNU objcopy does not set symbol sizes; fill only these owned fixture records below.
                 run(label + '-retain-symbols', [*command, runtime])
                 patch_retained_sizes(runtime, tables)
+            thunk_evidence = None
+            if args.adjustment_thunks:
+                symbols = run(label + '-thunk-reference', ['readelf', '-sW', ref / 'reference.elf'])
+                inventory = {name: (int(address, 16), int(size)) for address, size, name in re.findall(
+                    r'^\s*\d+:\s+([0-9a-f]+)\s+(\d+)\s+FUNC\s+\S+\s+\S+\s+\d+\s+(\S+)\s*$', symbols, re.M)}
+                # Explicit source-built fixture witnesses, never a production mangling heuristic.
+                fixtures = [
+                    ('_ZThn16_N8Multiple6secondEv', '_ZN8Multiple6secondEv', 'recovered_multiple_adjustor',
+                        'fixed', 'multiple_right', 'multiple_object', 46),
+                    ('_ZTv0_n24_N7Diamond10root_valueEv', '_ZN7Diamond10root_valueEv', 'recovered_diamond_virtual_adjustor',
+                        'virtual', 'diamond_base', 'diamond_object', 56),
+                    ('_ZThn16_N7Diamond11right_valueEv', '_ZN7Diamond11right_valueEv', 'recovered_diamond_right_adjustor',
+                        'fixed', 'diamond_right', 'diamond_object', 68)]
+                rows = []
+                for mangled, destination, name, kind, subobject, complete, returned in fixtures:
+                    address, size = inventory[mangled]
+                    rows.append({'name': name, 'mangled': mangled, 'address': address, 'size': size,
+                        'target': inventory[destination][0], 'kind': kind, 'subobject': subobject,
+                        'complete': complete, 'return': returned})
+                thunk_evidence = {'target': target, 'checkpoint': model['checkpoint']['address'], 'thunks': rows}
+                (case / 'thunks.json').write_text(json.dumps(thunk_evidence, indent=4) + '\n')
             original = digest(runtime)
             project = case / 'project'
             project.mkdir()
@@ -132,6 +156,8 @@ def main():
                         '-postScript', 'RoundTripCxxProfile.java', 'assert-saved', selection,
                         '-postScript', 'GhidraDwarfForgeCxxProfile.java', 'check', selection,
                         '-postScript', 'RoundTripCxxProfile.java', 'assert-saved', selection]
+                    if args.adjustment_thunks:
+                        command += ['-postScript', 'PrepareAdjustmentThunks.java', case / 'thunks.json']
                     if args.variant not in ('valid', 'retained'):
                         command += ['-postScript', 'MutateVtableFixture.java', args.variant,
                             model_dir / 'model.json', case / 'vtable-witnesses.json']
@@ -157,6 +183,8 @@ def main():
                     assert 'Omitted explicit vtable' not in log, label
                 if phase == 'curate':
                     assert 'inheritance-curation=PASS' in log
+                    if args.adjustment_thunks:
+                        assert 'adjustment-thunks-curation=PASS count=3' in log
                     assert 'cxx-profile-roundtrip=capture-clear PASS' in log
                     assert 'cxx-profile-roundtrip=assert-clear PASS' in log
                     assert log.count('cxx-profile-roundtrip=assert-saved PASS') == 2
@@ -210,6 +238,16 @@ def main():
                     definitions = [die for die in dies.values() if 'DW_AT_low_pc' in die['attributes'] and
                         die['attributes'].get('DW_AT_specification', '').endswith(f"<0x{sibling['offset']:x}>")]
                     assert len(definitions) == 1, 'mixed canonical class lost its local method definition'
+                    if thunk_evidence:
+                        for row in thunk_evidence['thunks']:
+                            thunk, = [die for die in dies.values() if die['tag'] == 'DW_TAG_subprogram' and die['name'] == row['name']]
+                            attrs = thunk['attributes']
+                            assert int(attrs['DW_AT_low_pc'].split()[-1], 0) == row['address']
+                            assert int(attrs['DW_AT_high_pc'].split()[-1], 0) == row['size']
+                            assert 'DW_AT_abstract_origin' not in attrs and 'DW_AT_specification' not in attrs
+                            target_die, = [die for die in dies.values() if die['tag'] == 'DW_TAG_subprogram' and
+                                int(die['attributes'].get('DW_AT_low_pc', '-1').split()[-1], 0) == row['target']]
+                            assert attrs['DW_AT_trampoline'].endswith(f"<0x{target_die['offset']:x}>")
             if args.variant == 'valid':
                 run(label + '-gdb', ['bash', HERE / 'gdb.sh', case, target, 'forge-vtables'])
                 actual = json.loads((case / 'forge-vtables.gdb.json').read_text())
@@ -224,10 +262,23 @@ def main():
                     extra_env={'INHERITANCE_NAMES': str(name_file), 'INHERITANCE_EXPECT_STATIC': '1' if negative else '0'})
                 actual = json.loads((case / 'forge-vtables.gdb.json').read_text())
                 assert actual['status'] == ('PASS_STATIC_NAME_CONTROL' if negative else 'PASS_RECOVERED_VTABLE_NAMES')
+            thunk_observations = []
+            if thunk_evidence:
+                shutil.copy2(ref / 'cpp.dbg', case / 'compiler-thunks.dbg')
+                for debug in ('compiler-thunks', 'forge-vtables'):
+                    observation = case / (debug + '.thunks.gdb.json')
+                    run(label + '-' + debug + '-thunks-gdb', ['bash', HERE / 'gdb.sh', case, target, debug, HERE / 'thunks-gdb.py'],
+                        extra_env={'INHERITANCE_RESULT_PATH': str(observation)})
+                    observed = json.loads(observation.read_text())
+                    assert observed['status'] == 'PASS_ADJUSTMENT_THUNKS'
+                    if role.startswith('pie'):
+                        assert observed['bias'] != 0
+                    thunk_observations.append(observed)
+                assert thunk_observations[0]['thunks'] == thunk_observations[1]['thunks'], 'Forge changed adjustment behavior'
             assert digest(runtime) == original
             cases.append({'target': target, 'role': role, 'variant': args.variant, 'rebased': args.rebase, 'observed': actual, 'inputSha256': original,
                 'sidecarSha256': digest(produced), 'sourceSha256': first[1], 'savedProgramUnchanged': True,
-                'projectMetadataChanges': changed})
+                'projectMetadataChanges': changed, 'adjustmentThunks': thunk_observations})
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_SAVED_INHERITANCE_EXPORT', 'cases': cases,
         'scope': 'ordinary export of curated saved programs with persisted vtable evidence and original-ELF admission'}, indent=4) + '\n')
     print('inheritance-extraction=PASS', root)

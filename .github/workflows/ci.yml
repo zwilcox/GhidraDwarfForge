@@ -1133,13 +1133,20 @@ jobs:
               python3 -B src/test/research/inheritance/extract.py \
                   --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" \
                   --references "$results/reference" --models "$results/producer" \
-                  --results "$results/extraction"
+                  --adjustment-thunks --results "$results/extraction"
           LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
           LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
               python3 -B src/test/research/inheritance/extract.py \
                   --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" --roles pie pie-no-rtti --rebase \
                   --references "$results/reference" --models "$results/producer" \
-                  --results "$results/extraction-rebased"
+                  --adjustment-thunks --results "$results/extraction-rebased"
+          for source in extraction extraction-rebased; do
+              LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
+              LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
+                  python3 -B src/test/research/inheritance/failure.py \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" \
+                      --extraction "$results/$source" --results "$results/$source-failure"
+          done
           for variant in missing stale conflict renamed qualified duplicate retained; do
               LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
               LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
