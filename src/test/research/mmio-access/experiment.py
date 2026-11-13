@@ -19,8 +19,9 @@ INITIAL = 0xa5a5e28d
 
 class Device:
     """Two aligned 32-bit registers with separately observed side effects."""
-    def __init__(self, initial):
+    def __init__(self, initial, byteorder='little'):
         self.initial = initial
+        self.byteorder = byteorder
         self.storage = bytearray(initial)
         self.accesses = []
 
@@ -32,12 +33,12 @@ class Device:
         if not accepted:
             raise ValueError('device requires aligned 32-bit reads')
         result = bytes(self.storage[offset:offset + 4])
-        event['value'] = int.from_bytes(result, 'little')
+        event['value'] = int.from_bytes(result, self.byteorder)
         if offset == 0:
             self.storage[:4] = bytes(4)
             event['effect'] = 'read-clear'
         else:
-            self.storage[4:] = ((event['value'] + 1) & 0xffffffff).to_bytes(4, 'little')
+            self.storage[4:] = ((event['value'] + 1) & 0xffffffff).to_bytes(4, self.byteorder)
             event['effect'] = 'read-increment'
         return result
 

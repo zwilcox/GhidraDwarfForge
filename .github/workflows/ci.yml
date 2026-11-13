@@ -1909,6 +1909,12 @@ jobs:
           python3 src/test/research/mmio-access/forge.py --ghidra "$GHIDRA_INSTALL_DIR" \
               --references build/test-results/mmio-layout --targets "$TARGET" \
               --results build/test-results/mmio-forge
+          python3 -B src/test/research/mmio-access/helper.py --target "$TARGET" \
+              --original "build/test-results/mmio-forge/$TARGET/input.elf" \
+              --sidecar "build/test-results/mmio-forge/$TARGET/firmware.dbg" \
+              --reference "build/test-results/mmio-layout/$TARGET/reference.elf" \
+              --helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/support/mmio/forge_mmio.py" \
+              --results build/test-results/mmio-helper
 
       - name: Freestanding i386 stack values through stripped exec and PIE exports
         if: matrix.target == 'x86_64'

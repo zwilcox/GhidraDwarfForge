@@ -1,9 +1,9 @@
 # MMIO register views and access policy
 
-**PLANNED:** issue #118's production profile and debugger helper. Existing
-aggregate/bitfield/enum export does not establish safe peripheral access. This
-document records the first compiler/device reference experiment; it does not
-claim Forge MMIO export or physical hardware validation.
+**PRESENT, UNVERIFIED in hosted CI:** the explicit GDB snapshot helper and profile
+are implemented, with local instrumented tests against real Forge sidecars.
+Saved-program qualifier/alias and layout checks also pass locally. This does not
+establish physical bus behavior; the remaining acceptance work is listed below.
 
 ## Reference experiment
 
@@ -72,7 +72,7 @@ interfaces must be distinguished from the target stub's device accesses.
 See the [memory-region manual](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Memory-Region-Attributes.html)
 and [remote packet specification](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Packets.html).
 
-## Production requirements still pending
+## Production evidence and remaining requirements
 
 ### Extraction audit
 
@@ -140,8 +140,8 @@ original-input preservation and repeated sidecar/source determinism pass.
 The scalar counter's saved volatile setting and secondary global name now survive
 into GDB on all three profiles, with unchanged field values and layouts. The
 alias is checked for its exact address and actual raw/counter values. The probe
-rejects a missing qualifier, alias mismatch or changed project files. The access
-profile/helper and instrumented production reads are still pending.
+rejects a missing qualifier, alias mismatch or changed project files. The explicit snapshot helper now also has local instrumented checks against
+these artifacts, described below. Hosted validation remains pending.
 
 **HISTORICAL at `9f57035e`:** the existing ELF-project wrapper also changed
 Ghidra's index/journal backup files. Fix `3fb950d0` applies the raw-firmware
@@ -161,21 +161,112 @@ python3 support/storage-guard.py run --cwd "$PWD" -- \
 Use the normal Java 21 environment and set `DWARFDUMP` to the pinned validator.
 The probe reads static ELF memory; it does not establish live device behavior.
 
+### Explicit GDB snapshots
+
+`support/mmio/forge_mmio.py` is a manually loaded helper. It registers one command,
+with no event hooks, pretty-printers, polling, target writes, or automatic reads.
+The profile is JSON data supplied by the analyst, bound to the exact loaded
+sidecar SHA-256. It declares target identity, register addresses, aligned widths,
+known read effects, overlapping type views and a transport evidence reference.
+It does not derive hardware semantics from names or qualifiers. A profile is an
+analyst assertion; a transport name is not proof that a physical probe honors it.
+
+Example profile (replace the hash and transport evidence with actual evidence):
+
+```json
+{
+    "schema": 1,
+    "sidecar_sha256": "<64 lowercase hex digits from sha256sum firmware.dbg>",
+    "architecture": "i386:x86-64",
+    "address_bits": 64,
+    "byteorder": "little",
+    "transport": {
+        "id": "instrumented-word32",
+        "evidence": "experiment.py Target/Device callback trace for this exact transport"
+    },
+    "registers": [{
+        "name": "status",
+        "address": "0x40000000",
+        "width": 4,
+        "read_effect": "read-clear",
+        "views": [
+            {"name": "register", "type": "union Register", "offset": 0},
+            {"name": "packed", "type": "struct ByteFields", "offset": 0}
+        ]
+    }]
+}
+```
+
+With the original and sidecar already loaded and the remote target stopped:
+
+```gdb
+source /path/to/GhidraDwarfForge/support/mmio/forge_mmio.py
+forge-mmio load /path/to/profile.json /path/to/firmware.dbg
+forge-mmio snapshot status instrumented-word32
+```
+
+Every snapshot is an explicit potentially destructive read. A `read-clear`
+register clears on that read; another explicit snapshot observes its new state.
+Unknown and write-only policies are rejected. The command disables GDB command
+repetition and requires the transport identifier on every request. Profiles are
+not automatically loaded from the executable, saved program, or working directory.
+
+The helper checks ELF class/byte order, active target architecture/pointer width,
+sidecar identity, type ownership and view bounds before access. Views must be
+integer/enum/boolean aggregates; pointers, references and unsupported members are
+rejected before the read. Each view must fit wholly within the selected register.
+It sends one explicit RSP `m` packet through `RemoteTargetConnection.send_packet`,
+bypassing GDB's memory cache and prefetch. It never retries a failed or partial
+reply: the device might already have applied a side effect. It constructs eager
+GDB values from captured bytes and returns only JSON scalars/containers. No target
+value, pointer dereference, or third-party pretty-printer participates in decoding.
+See GDB's [connection API](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Connections-In-Python.html)
+and [buffer value constructor](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Values-From-Inferior.html).
+
+**CONFIRMED locally:** `helper.py` compares unchanged compiler references with
+Forge sidecars on x86-64, MIPS32 big-endian and MIPS32 little-endian. With GDB cache
+explicitly enabled, each snapshot causes one four-byte request and one four-byte
+callback. Union, packed, signed cross-byte and enum values decode from that same
+sample; the adjacent increment-on-read register remains untouched. A second
+explicit read observes zero after read-clear. Type/profile loading causes no
+peripheral access. Unknown/write-only policy, unaligned address, stale hash,
+wrong transport/architecture/byte order and oversized views fail without reads.
+A byte-splitting transport is rejected by the peripheral. A partial reply after a
+successful read produces no snapshot and is not retried.
+
+The test's MIPS stub advertises the documented CPU/CP0/FPU register description
+but does not execute code or emulate a dynamic loader. GDB's missing dynamic-linker
+breakpoint warning must reproduce exactly with the unchanged compiler reference;
+other warnings are rejected. This limitation is separate from DWARF validation.
+Only aligned four-byte device callbacks are validated so far; the profile format
+also encodes one-, two- and eight-byte accesses, which need their own transport
+proof. The current profile is external JSON, not an automatic saved-program MMIO
+profile extractor. Do not infer broader hardware support from these tests.
+
+```bash
+python3 support/storage-guard.py run --cwd "$PWD" -- \
+    python3 -B src/test/research/mmio-access/helper.py --target mips32be \
+    --original /path/to/input.elf --sidecar /path/to/firmware.dbg \
+    --reference /path/to/compiler-reference.elf \
+    --results "$PWD/.forge-work/scratch/mmio-helper"
+```
+
+CI runs this test with the packaged helper after installed Forge export in all
+three target lanes. Hosted validation is still pending on the local MMIO branch.
+
 ### Remaining validation
 
-- Audit actual Ghidra address spaces, data types, aliases and storage evidence;
-  preserve analyst-defined views without deriving hardware semantics from names.
-- Define an explicit access profile, including register width/alignment,
-  readability, effects and a tested target/transport contract. Unknown and
-  read-sensitive registers must not be polled or traversed automatically.
-- Read a selected register once, then decode immutable captured bytes. Qualifiers
-  and pretty-printer expressions must not trigger additional lazy target reads.
-- Compare real Forge artifacts against compiler/raw-byte oracles, including
-  packed storage, cross-byte signed fields, flags, reserved bits and overlapping
-  names. Extend the reference to applicable 32/64-bit and endian profiles.
-- Prove debugger behavior with the production helper and an instrumented target,
-  preserve input files and addresses, run structural validation and required CI.
+- Complete the explicit saved-program profile/view representation, including
+  supported combined qualifiers and independently typed overlapping views;
+  preserve actual address-space identity and reject unproved mappings.
+- Validate the declared one-, two- and eight-byte transport widths before making
+  device-access claims for them. Four-byte callback evidence is already present.
+- Exercise profile replacement, stale loaded artifacts, malformed inventories and
+  additional unsupported type controls through the packaged helper.
+- Review optional formatter interaction so read-sensitive registers are not
+  traversed automatically when a formatter is explicitly enabled elsewhere.
+- Complete structural and behavioral hosted validation and the issue acceptance
+  audit. The local results do not substitute for that gate.
 
-The current fixture alone satisfies none of the production completion claims.
-Its callback log proves the behavior of this source-modeled peripheral; it does
+The callback log proves the behavior of this source-modeled peripheral; it does
 not establish the bus behavior of an arbitrary probe, QEMU machine or device.
