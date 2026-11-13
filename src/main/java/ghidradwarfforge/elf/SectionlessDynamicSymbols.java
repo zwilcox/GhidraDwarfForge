@@ -19,8 +19,10 @@ final class SectionlessDynamicSymbols {
     private static final long VERSYM = 0x6ffffff0L;
     private static final long VERDEF = 0x6ffffffcL;
     private static final long VERDEFNUM = 0x6ffffffdL;
+    private static final long VERNEED = 0x6ffffffeL;
+    private static final long VERNEEDNUM = 0x6fffffffL;
     private static final Set<Long> SINGLETONS = Set.of(4L, 5L, 6L, 10L, 11L, 34L,
-        GNU_HASH, VERSYM, VERDEF, VERDEFNUM, MipsDynamicSymbols.DT_MIPS_SYMTABNO);
+        GNU_HASH, VERSYM, VERDEF, VERDEFNUM, VERNEED, VERNEEDNUM, MipsDynamicSymbols.DT_MIPS_SYMTABNO);
 
     private SectionlessDynamicSymbols() {
     }
@@ -124,17 +126,25 @@ final class SectionlessDynamicSymbols {
                 }
             }
             byte[] versions = tags.containsKey(VERSYM) ? reader.bytes(tags.get(VERSYM), count * 2L) : null;
-            require(tags.containsKey(VERDEF) == tags.containsKey(VERDEFNUM), "incomplete PT_DYNAMIC version-definition pair");
+            require(tags.containsKey(VERDEF) == tags.containsKey(VERDEFNUM), "incomplete PT_DYNAMIC version-table pair");
             byte[] definitions = null;
             long definitionCount = 0;
             if (tags.containsKey(VERDEF)) {
                 require(versions != null, "PT_DYNAMIC definitions lack symbol versions");
                 definitionCount = tags.get(VERDEFNUM);
-                definitions = definitions(reader, tags.get(VERDEF), definitionCount);
+                definitions = versionExtent(reader, tags.get(VERDEF), definitionCount, false);
+            }
+            require(tags.containsKey(VERNEED) == tags.containsKey(VERNEEDNUM), "incomplete PT_DYNAMIC version-requirement pair");
+            byte[] requirements = null;
+            long requirementCount = 0;
+            if (tags.containsKey(VERNEED)) {
+                require(versions != null, "PT_DYNAMIC requirements lack symbol versions");
+                requirementCount = tags.get(VERNEEDNUM);
+                requirements = versionExtent(reader, tags.get(VERNEED), requirementCount, true);
             }
             reader.verify();
             return new DynamicSymbolMirror.Input(locals, records, names, hasExtended ? indices.array() : null,
-                versions, definitions, definitionCount, reader.allocations.size() + 1);
+                versions, definitions, definitionCount, requirements, requirementCount, reader.allocations.size() + 1);
         }
     }
 
@@ -258,34 +268,39 @@ final class SectionlessDynamicSymbols {
     }
 
     /** Determine only a bounded extent here; shared decoding validates names and semantics. */
-    private static byte[] definitions(Reader reader, long address, long count) throws IOException {
-        require(count > 0 && count <= MAX_SYMBOLS, "PT_DYNAMIC version-definition count exceeds limits");
+    private static byte[] versionExtent(Reader reader, long address, long count, boolean requirements) throws IOException {
+        int headerWidth = requirements ? 16 : 20;
+        int auxiliaryWidth = requirements ? 16 : 8;
+        int countOffset = requirements ? 2 : 6;
+        int auxiliaryOffset = requirements ? 8 : 12;
+        int nextOffset = requirements ? 12 : 16;
+        require(count > 0 && count <= MAX_SYMBOLS, "PT_DYNAMIC version-table count exceeds limits");
         long cursor = 0;
         long end = 0;
         long totalAux = 0;
         for (long index = 0; index < count; index++) {
             checkCancelled(reader.cancelled);
-            require(cursor <= ElfImage.MAX_TABLE_BYTES - 20, "PT_DYNAMIC version-definition extent exceeds limits");
-            ByteBuffer header = reader.buffer(add(address, cursor), 20);
-            int members = Short.toUnsignedInt(header.getShort(6));
-            long auxiliary = Integer.toUnsignedLong(header.getInt(12));
-            long next = Integer.toUnsignedLong(header.getInt(16));
-            require(members > 0 && (totalAux += members) <= MAX_SYMBOLS && auxiliary >= 20 &&
-                auxiliary <= ElfImage.MAX_TABLE_BYTES - cursor - 8 &&
-                (index + 1 == count) == (next == 0), "invalid PT_DYNAMIC version-definition chain");
+            require(cursor <= ElfImage.MAX_TABLE_BYTES - headerWidth, "PT_DYNAMIC version-table extent exceeds limits");
+            ByteBuffer header = reader.buffer(add(address, cursor), headerWidth);
+            int members = Short.toUnsignedInt(header.getShort(countOffset));
+            long auxiliary = Integer.toUnsignedLong(header.getInt(auxiliaryOffset));
+            long next = Integer.toUnsignedLong(header.getInt(nextOffset));
+            require(members > 0 && (totalAux += members) <= MAX_SYMBOLS && auxiliary >= headerWidth &&
+                auxiliary <= ElfImage.MAX_TABLE_BYTES - cursor - auxiliaryWidth &&
+                (index + 1 == count) == (next == 0), "invalid PT_DYNAMIC version-table chain");
             long aux = cursor + auxiliary;
             long boundary = next == 0 ? ElfImage.MAX_TABLE_BYTES : add(cursor, next);
-            require(boundary <= ElfImage.MAX_TABLE_BYTES && boundary >= aux + 8,
-                "PT_DYNAMIC version-definition chain overlaps");
+            require(boundary <= ElfImage.MAX_TABLE_BYTES && boundary >= aux + auxiliaryWidth,
+                "PT_DYNAMIC version-table chain overlaps");
             for (int member = 0; member < members; member++) {
                 checkCancelled(reader.cancelled);
-                require(aux <= boundary - 8, "PT_DYNAMIC version auxiliary exceeds definition");
-                ByteBuffer row = reader.buffer(add(address, aux), 8);
-                long following = Integer.toUnsignedLong(row.getInt(4));
+                require(aux <= boundary - auxiliaryWidth, "PT_DYNAMIC version auxiliary exceeds table");
+                ByteBuffer row = reader.buffer(add(address, aux), auxiliaryWidth);
+                long following = Integer.toUnsignedLong(row.getInt(auxiliaryWidth - 4));
                 require((member + 1 == members) == (following == 0), "invalid PT_DYNAMIC version auxiliary count");
-                end = Math.max(end, aux + 8);
+                end = Math.max(end, aux + auxiliaryWidth);
                 if (following != 0) {
-                    require(following >= 8 && following <= boundary - aux - 8,
+                    require(following >= auxiliaryWidth && following <= boundary - aux - auxiliaryWidth,
                         "invalid PT_DYNAMIC version auxiliary chain");
                     aux += following;
                 }

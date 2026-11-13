@@ -16,6 +16,7 @@ final class DynamicSymbolMirror {
     private static final int MAX_SYMBOLS = 262144;
     private static final long VERSYM = 0x6fffffffL;
     private static final long VERDEF = 0x6ffffffdL;
+    private static final long VERNEED = 0x6ffffffeL;
 
     record Snapshot(int locals, byte[] records, byte[] names, byte[] indices,
             Set<ByteBuffer> existingNames, boolean versionedDefinitions) {
@@ -25,7 +26,7 @@ final class DynamicSymbolMirror {
     }
 
     record Input(int locals, byte[] records, byte[] names, byte[] indices, byte[] versions,
-            byte[] definitions, long definitionCount, int sectionCount) {
+            byte[] definitions, long definitionCount, byte[] requirements, long requirementCount, int sectionCount) {
     }
 
     static Snapshot read(ElfImage image, BooleanSupplier cancelled) throws IOException {
@@ -49,6 +50,12 @@ final class DynamicSymbolMirror {
             ByteBuffer.wrap(input.versions()).order(image.byteOrder());
         Map<Integer, byte[]> versionNames = input.definitions() == null ? Map.of() :
             definitions(image, input.definitions(), input.definitionCount(), names, cancelled);
+        Map<Integer, byte[]> requiredNames = input.requirements() == null ? Map.of() :
+            requirements(image, input.requirements(), input.requirementCount(), names, cancelled);
+        for (int identifier : requiredNames.keySet()) {
+            checkCancelled(cancelled);
+            require(!versionNames.containsKey(identifier), "conflicting definition/requirement version identifier");
+        }
         ByteArrayOutputStream text = new ByteArrayOutputStream();
         text.writeBytes(names.bytes);
         Set<ByteBuffer> occupied = new HashSet<>();
@@ -78,14 +85,19 @@ final class DynamicSymbolMirror {
                 continue;
             }
             byte[] versionName = versionNames.get(versionIndex);
-            require(versionName != null, "defined dynamic symbol lacks a version definition");
+            boolean importedVersion = versionName == null;
+            if (importedVersion) versionName = requiredNames.get(versionIndex);
+            // Copy-relocated objects have defined storage, but their version
+            // identity still comes from VERNEED rather than VERDEF. Do not infer
+            // this distinction from section type (.dynbss need not be NOBITS).
+            require(versionName != null, "defined dynamic symbol lacks a version definition or requirement");
             long value = image.is64Bit() ? rows.getLong(offset + 8) : Integer.toUnsignedLong(rows.getInt(offset + 4));
             // GNU's absolute version-node symbols retain their original spelling.
             if (section == 0xfff1 && value == 0 && Arrays.equals(name, versionName)) {
                 continue;
             }
             require(name.length > 0, "versioned definition has an empty name");
-            int separator = (version & 0x8000) == 0 ? 2 : 1;
+            int separator = !importedVersion && (version & 0x8000) == 0 ? 2 : 1;
             require((long) name.length + separator + versionName.length <= ElfImage.MAX_NAME_BYTES,
                 "qualified dynamic name exceeds limit");
             byte[] qualified = Arrays.copyOf(name, name.length + separator + versionName.length);
@@ -137,6 +149,7 @@ final class DynamicSymbolMirror {
         ElfImage.Section indexSection = null;
         ElfImage.Section versionSection = null;
         ElfImage.Section definitions = null;
+        ElfImage.Section requirements = null;
         for (var section : image.sections()) {
             checkCancelled(cancelled);
             if (section.type == 18 && section.link == table.originalIndex) {
@@ -154,13 +167,64 @@ final class DynamicSymbolMirror {
                     "ambiguous or compressed version definitions");
                 definitions = section;
             }
+            if (section.type == VERNEED && section.link == table.link) {
+                require(requirements == null && (section.flags & 0x800) == 0,
+                    "ambiguous or compressed version requirements");
+                requirements = section;
+            }
         }
         require(definitions == null || versionSection != null, "version definitions lack symbol versions");
+        require(requirements == null || versionSection != null, "version requirements lack symbol versions");
         return new Input((int) table.info, records, names,
             indexSection == null ? null : image.sectionData(indexSection),
             versionSection == null ? null : image.sectionData(versionSection),
             definitions == null ? null : image.sectionData(definitions),
-            definitions == null ? 0 : definitions.info, image.sections().size());
+            definitions == null ? 0 : definitions.info,
+            requirements == null ? null : image.sectionData(requirements),
+            requirements == null ? 0 : requirements.info, image.sections().size());
+    }
+
+    private static Map<Integer, byte[]> requirements(ElfImage image, byte[] data, long requirementCount,
+            Names strings, BooleanSupplier cancelled) throws IOException {
+        require(data.length >= 16 && data.length <= ElfImage.MAX_TABLE_BYTES &&
+            requirementCount > 0 && requirementCount <= MAX_SYMBOLS, "unsupported version-requirement extent");
+        ByteBuffer bytes = ByteBuffer.wrap(data).order(image.byteOrder());
+        var names = new HashMap<Integer, byte[]>();
+        int cursor = 0;
+        long totalAux = 0;
+        for (int index = 0; index < requirementCount; index++) {
+            checkCancelled(cancelled);
+            require(cursor <= bytes.limit() - 16, "truncated version requirement");
+            int revision = Short.toUnsignedInt(bytes.getShort(cursor));
+            int count = Short.toUnsignedInt(bytes.getShort(cursor + 2));
+            byte[] file = strings.get(Integer.toUnsignedLong(bytes.getInt(cursor + 4)));
+            long auxiliary = Integer.toUnsignedLong(bytes.getInt(cursor + 8));
+            long next = Integer.toUnsignedLong(bytes.getInt(cursor + 12));
+            require(revision == 1 && file.length > 0 && count > 0 && (totalAux += count) <= MAX_SYMBOLS &&
+                auxiliary >= 16 && auxiliary <= bytes.limit() - cursor - 16L, "unsupported version requirement");
+            long boundary = next == 0 ? bytes.limit() : (long) cursor + next;
+            require(boundary <= bytes.limit() && boundary >= cursor + auxiliary + 16 &&
+                (index + 1 == requirementCount) == (next == 0), "invalid version-requirement chain");
+            int aux = (int) (cursor + auxiliary);
+            for (int member = 0; member < count; member++) {
+                checkCancelled(cancelled);
+                require(aux <= boundary - 16, "truncated version requirement auxiliary");
+                int flags = Short.toUnsignedInt(bytes.getShort(aux + 4));
+                int identifier = Short.toUnsignedInt(bytes.getShort(aux + 6)) & 0x7fff;
+                byte[] name = strings.get(Integer.toUnsignedLong(bytes.getInt(aux + 8)));
+                require((flags & ~7) == 0 && identifier > 1 && name.length > 0,
+                    "unsupported required version identifier or name");
+                require(names.putIfAbsent(identifier, name) == null, "duplicate required version identifier");
+                long following = Integer.toUnsignedLong(bytes.getInt(aux + 12));
+                require((member + 1 == count) == (following == 0), "invalid version requirement auxiliary count");
+                if (following != 0) {
+                    require(following >= 16 && following <= boundary - aux - 16, "invalid version requirement auxiliary chain");
+                    aux += (int) following;
+                }
+            }
+            if (next != 0) cursor += (int) next;
+        }
+        return names;
     }
 
     private static Map<Integer, byte[]> definitions(ElfImage image, byte[] data, long definitionCount,

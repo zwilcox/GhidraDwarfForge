@@ -24,6 +24,7 @@ public final class DynamicSymbolMirrorSmoke {
         Path root = Files.createTempDirectory("forge-dynamic-mirror-");
         for (boolean wide : List.of(false, true)) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+                requirementsCases(root, wide, order);
                 for (boolean versioned : List.of(false, true)) {
                     for (boolean extended : List.of(false, true)) {
                         byte[] input = fixture(wide, order, versioned, extended);
@@ -119,6 +120,70 @@ public final class DynamicSymbolMirrorSmoke {
         return input;
     }
 
+    private static void requirementsCases(Path root, boolean wide, ByteOrder order) throws Exception {
+        for (boolean chained : List.of(false, true)) {
+            byte[] valid = requirementFixture(wide, order, chained);
+            positive(root, valid, true, true);
+            for (int offset : new int[] { 0, 2, 20, 22 }) {
+                byte[] bad = valid.clone();
+                bytes(bad).putShort(0x280 + offset, (short) 0xffff);
+                reject(root, bad);
+            }
+            for (int offset : new int[] { 4, 8, 12, 24, 28 }) {
+                byte[] bad = valid.clone();
+                bytes(bad).putInt(0x280 + offset, -1);
+                reject(root, bad);
+            }
+            byte[] bad = valid.clone();
+            bytes(bad).putShort(0x280 + (chained ? 54 : 38), (short) 2);
+            reject(root, bad);
+            bad = valid.clone();
+            LocalSymbolMergeSmoke.field(bad, 7, "size", 31);
+            reject(root, bad);
+            bad = valid.clone();
+            LocalSymbolMergeSmoke.field(bad, 7, "info", 0);
+            reject(root, bad);
+            bad = valid.clone();
+            LocalSymbolMergeSmoke.field(bad, 6, "type", 1);
+            reject(root, bad);
+        }
+        // Separate VERDEF and VERNEED may coexist, but cannot claim the same ID.
+        byte[] conflict = requirementFixture(wide, order, false);
+        bytes(conflict).putShort(0x3c0, (short) 1).putShort(0x3c4, (short) 4)
+            .putShort(0x3c6, (short) 1).putInt(0x3cc, 20).putInt(0x3d4, (int) field(conflict, 2, "size") - 6);
+        LocalSymbolMergeSmoke.field(conflict, 4, "type", 0x6ffffffdL);
+        LocalSymbolMergeSmoke.field(conflict, 4, "offset", 0x3c0);
+        LocalSymbolMergeSmoke.field(conflict, 4, "size", 28);
+        LocalSymbolMergeSmoke.field(conflict, 4, "link", 2);
+        LocalSymbolMergeSmoke.field(conflict, 4, "info", 1);
+        positive(root, conflict, true, true);
+        bytes(conflict).putShort(0x3c4, (short) 2);
+        reject(root, conflict);
+    }
+
+    private static byte[] requirementFixture(boolean wide, ByteOrder order, boolean chained) {
+        byte[] data = fixture(wide, order, true, false);
+        int end = (int) field(data, 2, "size") - 6;
+        byte[] requirements = requirementBytes(order, end, end + 3, chained);
+        Arrays.fill(data, 0x280, 0x2c0, (byte) 0);
+        bytes(data).put(0x280, requirements);
+        LocalSymbolMergeSmoke.field(data, 7, "type", 0x6ffffffeL);
+        LocalSymbolMergeSmoke.field(data, 7, "size", requirements.length);
+        LocalSymbolMergeSmoke.field(data, 7, "info", chained ? 2 : 1);
+        return data;
+    }
+
+    static byte[] requirementBytes(ByteOrder order, int first, int second, boolean chained) {
+        var b = ByteBuffer.allocate(chained ? 64 : 48).order(order);
+        b.putShort((short) 1).putShort((short) (chained ? 1 : 2)).putInt(1).putInt(16).putInt(chained ? 32 : 0);
+        b.putInt(0).putShort((short) 0).putShort((short) 2).putInt(first).putInt(chained ? 0 : 16);
+        if (chained) {
+            b.putShort((short) 1).putShort((short) 1).putInt(1).putInt(16).putInt(0);
+        }
+        b.putInt(0).putShort((short) 0).putShort((short) 3).putInt(second).putInt(0);
+        return b.array();
+    }
+
     private static long field(byte[] input, int index, String name) {
         boolean wide = input[4] == 2;
         int offset = 0x400 + index * (wide ? 64 : 40) + (name.equals("size") ? wide ? 32 : 20 : 0);
@@ -130,6 +195,11 @@ public final class DynamicSymbolMirrorSmoke {
     }
 
     private static void positive(Path root, byte[] input, boolean versioned) throws Exception {
+        positive(root, input, versioned, false);
+    }
+
+    private static void positive(Path root, byte[] input, boolean versioned, boolean required) throws Exception {
+        String weakName = required ? "old_weak@V2" : "old_weak@@V2";
         Path path = root.resolve("original"), output = root.resolve("sidecar"), repeat = root.resolve("repeat");
         Files.write(path, input);
         var image = ElfImage.read(path);
@@ -140,7 +210,7 @@ public final class DynamicSymbolMirrorSmoke {
         require(mirror.existingNames().contains(ByteBuffer.wrap("old_global".getBytes(StandardCharsets.US_ASCII))),
             "lost original spelling");
         if (versioned) {
-            for (String name : List.of("old_global@V1", "old_weak@@V2")) {
+            for (String name : List.of("old_global@V1", weakName)) {
                 require(mirror.existingNames().contains(ByteBuffer.wrap(name.getBytes(StandardCharsets.US_ASCII))),
                     "lost qualified spelling " + name);
             }
@@ -155,7 +225,7 @@ public final class DynamicSymbolMirrorSmoke {
             "planner rejected complete dynamic inventory");
         require(versioned ? diagnostics.size() == 1 && diagnostics.get(0).contains("loader default") :
             diagnostics.isEmpty(), "version limitation diagnostic missing or spurious");
-        for (String occupied : versioned ? List.of("old_global", "old_global@V1", "old_weak@@V2") :
+        for (String occupied : versioned ? List.of("old_global", "old_global@V1", weakName) :
                 List.of("old_global", "old_weak")) {
             diagnostics.clear();
             require(FunctionAliasSymbols.plan(image,

@@ -25,6 +25,7 @@ public final class SectionlessDynamicSymbolsSmoke {
         Path root = Files.createTempDirectory("forge-sectionless-symbols-");
         for (boolean wide : List.of(false, true)) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+                requirementsCases(root, wide, order);
                 for (int hashes : List.of(1, 2, 3)) {
                     for (boolean versioned : List.of(false, true)) {
                         for (boolean extended : List.of(false, true)) {
@@ -130,7 +131,48 @@ public final class SectionlessDynamicSymbolsSmoke {
         return data;
     }
 
+    private static void requirementsCases(Path root, boolean wide, ByteOrder order) throws Exception {
+        for (boolean chained : List.of(false, true)) {
+            byte[] valid = fixture(wide, order, 3, true, true);
+            replaceTag(valid, 0x6ffffffcL, 0x6ffffffeL);
+            replaceTag(valid, 0x6ffffffdL, 0x6fffffffL);
+            tag(valid, 0x6fffffffL, chained ? 2 : 1);
+            Arrays.fill(valid, 0xd00, 0xd40, (byte) 0);
+            bytes(valid).put(0xd00, DynamicSymbolMirrorSmoke.requirementBytes(order,
+                NAMES.indexOf("V1"), NAMES.indexOf("V2"), chained));
+            positive(root, valid, true, true);
+            cancellation(root, valid);
+            for (int offset : new int[] { 0, 2, 20, 22 }) {
+                byte[] bad = valid.clone();
+                bytes(bad).putShort(0xd00 + offset, (short) 0xffff);
+                reject(root, bad, "requirement short field " + offset);
+            }
+            for (int offset : new int[] { 4, 8, 12, 24, 28 }) {
+                byte[] bad = valid.clone();
+                bytes(bad).putInt(0xd00 + offset, -1);
+                reject(root, bad, "requirement offset " + offset);
+            }
+            byte[] bad = valid.clone();
+            replaceTag(bad, 0x6fffffffL, 1);
+            reject(root, bad, "missing requirement count");
+            bad = valid.clone();
+            replaceTag(bad, 0x6ffffff0L, 1);
+            reject(root, bad, "missing requirement symbol versions");
+            bad = valid.clone();
+            tag(bad, 0x6ffffffeL, 0x87f0);
+            reject(root, bad, "requirement in BSS");
+            bad = valid.clone();
+            bytes(bad).putShort(0xd00 + (chained ? 54 : 38), (short) 2);
+            reject(root, bad, "duplicate required identifier");
+        }
+    }
+
     private static void positive(Path root, byte[] data, boolean versioned) throws Exception {
+        positive(root, data, versioned, false);
+    }
+
+    private static void positive(Path root, byte[] data, boolean versioned, boolean required) throws Exception {
+        String weakName = required ? "weak@V2" : "weak@@V2";
         Path path = root.resolve("original"), output = root.resolve("sidecar"), repeat = root.resolve("repeat");
         Files.write(path, data);
         var image = ElfImage.read(path);
@@ -156,7 +198,7 @@ public final class SectionlessDynamicSymbolsSmoke {
         var additions = plan(image, "alternate", diagnostics);
         require(additions.equals(List.of(new ElfLocalFunctionSymbol("alternate", 0x4040, 16, 1))), "alias planning");
         require(versioned ? diagnostics.toString().contains("loader default") : diagnostics.isEmpty(), "diagnostics");
-        for (String name : versioned ? List.of("global", "global@V1", "weak@@V2") : List.of("global", "weak")) {
+        for (String name : versioned ? List.of("global", "global@V1", weakName) : List.of("global", "weak")) {
             diagnostics.clear();
             require(plan(image, name, diagnostics).isEmpty() && diagnostics.toString().contains("already exists"), "name collision");
         }
