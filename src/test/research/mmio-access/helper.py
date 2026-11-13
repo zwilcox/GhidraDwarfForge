@@ -61,11 +61,11 @@ def profile(sidecar, target):
                 {'name': 'packed', 'type': 'struct ByteFields', 'offset': 0}]}]}
 
 
-def run_case(root, original, sidecar, backend, target_name, helper, negative=None):
+def run_case(root, original, sidecar, backend, target_name, helper, negative=None, saved_profile=None):
     name = negative or backend
     case = root / name
     case.mkdir()
-    data = profile(sidecar, target_name)
+    data = json.loads(saved_profile.read_text()) if saved_profile else profile(sidecar, target_name)
     contract = 'instrumented-word32'
     if negative == 'unknown':
         data['registers'][0]['read_effect'] = 'unknown'
@@ -174,6 +174,7 @@ def main():
     parser.add_argument('--results', type=Path, required=True)
     parser.add_argument('--target', choices=tuple(PROFILES), required=True)
     parser.add_argument('--helper', type=Path, default=REPOSITORY / 'support/mmio/forge_mmio.py')
+    parser.add_argument('--profile', type=Path, help='Use the real saved-program export profile for Forge cases')
     args = parser.parse_args()
     root = args.results.resolve()
     root.mkdir(parents=True, exist_ok=False)
@@ -183,10 +184,10 @@ def main():
     compiler_root.mkdir()
     helper = args.helper.resolve(strict=True)
     compiler = run_case(compiler_root, reference, reference, 'word32', args.target, helper)
-    cases = {backend: run_case(root, original, sidecar, backend, args.target, helper)
+    cases = {backend: run_case(root, original, sidecar, backend, args.target, helper, saved_profile=args.profile)
         for backend in ('word32', 'byte-split', 'partial-reply')}
     for negative in ('unknown', 'write-only', 'stale', 'unaligned', 'wide-view', 'transport', 'byteorder', 'architecture'):
-        cases[negative] = run_case(root, original, sidecar, 'word32', args.target, helper, negative)
+        cases[negative] = run_case(root, original, sidecar, 'word32', args.target, helper, negative, args.profile)
     assert all(case['warnings'] == compiler['warnings'] for case in cases.values()), 'uncorroborated debugger warning'
     assert all(digest(Path(p)) == value for p, value in before.items())
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_MMIO_HELPER',

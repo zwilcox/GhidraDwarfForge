@@ -64,6 +64,32 @@ public class ApplyMmioFixture extends GhidraScript {
         block.setVolatile(true);
         currentProgram.getSymbolTable().createLabel(address, "peripheral", SourceType.USER_DEFINED).setPrimary();
         currentProgram.getSymbolTable().createLabel(address, "peripheral_alias", SourceType.USER_DEFINED);
+        String architecture = currentProgram.getLanguageID().getIdAsString().startsWith("x86:")
+            ? "i386:x86-64" : "mips:isa32r2";
+        var standalone = new StructureDataType(category, "IndependentByteView", 0, manager);
+        standalone.setPackingEnabled(true);
+        standalone.setExplicitPackingValue(1);
+        standalone.addBitField(unsigned, 3, "a", null);
+        standalone.addBitField(unsigned, 5, "b", null);
+        var independent = manager.resolve(standalone, DataTypeConflictHandler.REPLACE_HANDLER);
+        var selection = java.util.Map.of("schema", 1,
+            "language", currentProgram.getLanguageID().getIdAsString(), "architecture", architecture,
+            "transport", java.util.Map.of("id", "instrumented-word32", "evidence",
+                "Source-modeled Target/Device callback trace in mmio-access/helper.py; no physical bus claim"),
+            "registers", java.util.List.of(java.util.Map.of("name", "status", "address", address.toString(true),
+                "runtime_address", "0x40000000", "width", 4, "read_effect", "read-clear", "views", java.util.List.of(
+                    java.util.Map.of("name", "register", "datatype", data.getComponent(0).getDataType().getPathName(),
+                        "offset", 0, "qualifiers", java.util.List.of("const", "volatile")),
+                    java.util.Map.of("name", "packed", "datatype", independent.getPathName(),
+                        "offset", 0, "qualifiers", java.util.List.of("const"))))));
+        String selected = new com.google.gson.Gson().toJson(selection);
+        var selectionPath = java.nio.file.Path.of(currentProgram.getExecutablePath()).resolveSibling("analyst-mmio.json");
+        java.nio.file.Files.writeString(selectionPath, selected);
+        runScript("GhidraDwarfForgeMmioProfile.java", new String[] { selectionPath.toString() });
+        if (!selected.equals(currentProgram.getOptions(ghidradwarfforge.GhidraMmioProfile.OPTIONS)
+                .getString(ghidradwarfforge.GhidraMmioProfile.SELECTION, null))) {
+            throw new IllegalStateException("configuration script did not retain selected MMIO profile");
+        }
         println("MMIO_MUTABILITY aggregate=" + data.isVolatile() + " status=" +
             data.getComponent(0).isConstant() + " counter=" + data.getComponent(1).isVolatile());
         println("MMIO_CURATION=PASS address=" + address + " size=" + data.getLength());

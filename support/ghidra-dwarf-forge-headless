@@ -20,6 +20,7 @@ Common options:
   --source-lines=<n>      Optional source lines per file; whole functions stay together
                           Default: one synthetic source file
   --formatters=<json>    Explicit canonical-type selections for GDB/LLDB formatters
+  --mmio                Export the explicitly saved MMIO snapshot profile
   --gdb-loader            Also generate <sidecar>.gdb.py for explicit GDB loading
   --compress-debug-sections=none|zlib
                           Optional ELF debug-section compression (default: none)
@@ -151,6 +152,7 @@ validate_log_path() {
         reject_log_alias "$selected_output.gdb.py"
         reject_log_alias "$selected_output.unwind.json"
         reject_log_alias "$selected_output.firmware.json"
+        reject_log_alias "$selected_output.mmio.json"
         formatter_hash=$(printf '%s' "${selected_output##*/}" | sha256sum) || die_usage "cannot derive formatter filename"
         formatter_hash=${formatter_hash%% *}
         # Command substitution strips trailing newlines from directory names.
@@ -180,6 +182,7 @@ producer=
 input=
 output=
 gdb_loader=0
+mmio=0
 formatter_selection=
 debug_compression=none
 source_context=off
@@ -204,6 +207,7 @@ for argument in "$@"; do
         --input=*) input=${argument#*=} ;;
         --output=*) output=${argument#*=} ;;
         --gdb-loader) gdb_loader=1 ;;
+        --mmio) mmio=1 ;;
         --formatters=*) formatter_selection=${argument#*=}; [[ -n "$formatter_selection" ]] || die_usage "--formatters requires a selection file" ;;
         --compress-debug-sections=*) debug_compression=${argument#*=} ;;
         --source-context=*) source_context=${argument#*=} ;;
@@ -331,6 +335,7 @@ fi
 [[ -n "$input" ]] && export_options+=("--input=$input")
 [[ -n "$output" ]] && export_options+=("--output=$output")
 ((gdb_loader)) && export_options+=("--gdb-loader")
+((mmio)) && export_options+=("--mmio")
 [[ -n "$formatter_selection" ]] && export_options+=("--formatters=$formatter_selection")
 [[ "$debug_compression" == zlib ]] && export_options+=("--compress-debug-sections=zlib")
 [[ "$source_context" != off ]] && export_options+=("--source-context=$source_context")

@@ -94,9 +94,9 @@ wraps the references of data objects with supported explicit constant/volatile
 settings, including function-owned statics. Aggregate members use supported
 component default settings. The shared base type remains unchanged, and matching
 qualified references reuse one node. Block/processor flags and unsupported
-aggregate settings do not imply C qualifiers. Arbitrary per-instance overrides
-on nested components and combined `const volatile` aggregate views still need
-an explicit representation in the MMIO profile.
+aggregate settings do not imply C qualifiers. Arbitrary per-instance overrides on nested components are not inferred.
+The saved MMIO profile explicitly represents combined `const volatile` views
+without relying on unsupported aggregate mutability settings.
 
 The DWARF writer gives a defined global an address expression. It does not encode
 device width, read-clear behavior, or a debugger cache policy. Those require an
@@ -160,6 +160,74 @@ python3 support/storage-guard.py run --cwd "$PWD" -- \
 
 Use the normal Java 21 environment and set `DWARFDUMP` to the pinned validator.
 The probe reads static ELF memory; it does not establish live device behavior.
+
+### Saved analyst profile and export
+
+`GhidraDwarfForgeMmioProfile.java` explicitly validates and stores a selection in
+the current program's `GhidraDwarfForge` options under `MMIO profile JSON`. Run it
+from Script Manager and select the JSON file, or supply that file as its one
+headless script argument. Applying the profile changes the program's analyst
+metadata; save the program to retain it. It does not read a device or modify an
+input executable. Invalid selections and cancellation do not commit the change.
+
+The saved selection describes Ghidra addresses and runtime addresses separately.
+It never assumes an image rebase or PIE load bias also relocates a hardware
+register. Each Ghidra address must identify ordinary loaded default-space memory
+in one complete block; initialized bytes are not required. Overlay, mapped,
+missing and out-of-block regions are rejected. Runtime addresses and read policies
+are explicit analyst assertions, checked for width/alignment rather than inferred.
+Exact data-type paths select types from the saved program, including types not
+otherwise used by a listing object. Independent overlapping views share captured
+bytes without changing ordinary global-variable locations or merging names.
+
+Example saved selection for the fixture's x86-64 program:
+
+```json
+{
+    "schema": 1,
+    "language": "x86:LE:64:default",
+    "architecture": "i386:x86-64",
+    "transport": {
+        "id": "instrumented-word32",
+        "evidence": "Source-modeled Target/Device callback trace; no physical bus claim"
+    },
+    "registers": [{
+        "name": "status",
+        "address": "ram:40000000",
+        "runtime_address": "0x40000000",
+        "width": 4,
+        "read_effect": "read-clear",
+        "views": [{
+            "name": "register",
+            "datatype": "/ForgeMmioFixture/Register",
+            "offset": 0,
+            "qualifiers": ["const", "volatile"]
+        }]
+    }]
+}
+```
+
+Then select `--mmio` in the Bash wrapper/export script, or `-Mmio` in PowerShell.
+The exporter publishes `<sidecar>.mmio.json` with the sidecar/source generation,
+using the existing recoverable companion publication path. It includes the exact
+sidecar hash and generated canonical type aliases. The aliases preserve the
+selected qualifiers and avoid choosing a type merely by its display name. The
+underlying data objects and shared types remain unchanged. The default export
+without this option does not apply the profile or add its companion.
+
+MMIO profile export cannot be combined with automatic formatter generation or
+attachment preparation. This prevents a selected MMIO generation from installing
+aggregate formatters that could traverse read-sensitive registers. The snapshot
+helper itself does not install printers or disable independently installed scripts;
+normal GDB prints and third-party printers retain their own access behavior.
+
+**CONFIRMED locally:** immutable saved-program tests retain combined qualifiers
+on x86-64, Cortex-M and MIPS BE, with no database or modification-counter change.
+Installed export tests on x86-64 and both MIPS byte orders prove combined
+`const volatile`, independent packed views, canonical type aliases, validators,
+input/project preservation and byte-identical sidecar/source/profile reruns. The
+profile JSON uses stable field ordering; an initial unordered-map implementation
+failed the repeat check and was corrected. Hosted validation remains pending.
 
 ### Explicit GDB snapshots
 
@@ -240,14 +308,15 @@ breakpoint warning must reproduce exactly with the unchanged compiler reference;
 other warnings are rejected. This limitation is separate from DWARF validation.
 Only aligned four-byte device callbacks are validated so far; the profile format
 also encodes one-, two- and eight-byte accesses, which need their own transport
-proof. The current profile is external JSON, not an automatic saved-program MMIO
-profile extractor. Do not infer broader hardware support from these tests.
+proof. Profiles can be supplied externally or generated from the explicitly saved
+program selection described above; neither route infers device semantics. Do not infer broader hardware support from these tests.
 
 ```bash
 python3 support/storage-guard.py run --cwd "$PWD" -- \
     python3 -B src/test/research/mmio-access/helper.py --target mips32be \
     --original /path/to/input.elf --sidecar /path/to/firmware.dbg \
     --reference /path/to/compiler-reference.elf \
+    --profile /path/to/firmware.dbg.mmio.json \
     --results "$PWD/.forge-work/scratch/mmio-helper"
 ```
 
@@ -256,9 +325,8 @@ three target lanes. Hosted validation is still pending on the local MMIO branch.
 
 ### Remaining validation
 
-- Complete the explicit saved-program profile/view representation, including
-  supported combined qualifiers and independently typed overlapping views;
-  preserve actual address-space identity and reject unproved mappings.
+- Complete profile publication failure/cancellation and raw-firmware integration
+  controls, plus final hosted validation of the saved-program configuration flow.
 - Validate the declared one-, two- and eight-byte transport widths before making
   device-access claims for them. Four-byte callback evidence is already present.
 - Exercise profile replacement, stale loaded artifacts, malformed inventories and

@@ -71,7 +71,7 @@ def main():
         (case / 'saved-before.json').write_text(json.dumps(saved, indent=4) + '\n')
         sidecar = case / 'firmware.dbg'
         command = ['bash', str(wrapper), '--ghidra-dir=' + str(ghidra), '--project-dir=' + str(project),
-            '--project-name=Mmio', '--program=input.elf', '--input=' + str(original), '--output=' + str(sidecar)]
+            '--project-name=Mmio', '--program=input.elf', '--input=' + str(original), '--output=' + str(sidecar), '--mmio']
         run(command, case / 'export.log')
         assert 'GhidraDwarfForge symbol export PASS' in (case / 'export.log').read_text()
         after = snapshot(project)
@@ -79,7 +79,7 @@ def main():
         assert not project_changes, 'saved project changed: ' + repr(project_changes)
         run(['llvm-dwarfdump', '--verify', str(sidecar)], case / 'llvm.log')
         assert 'No errors.' in (case / 'llvm.log').read_text()
-        run(['readelf', '-hSW', '--debug-dump=info', '--debug-dump=decodedline', str(sidecar)], case / 'readelf.log')
+        run(['readelf', '-hSW', '-n', '--debug-dump=info,abbrev,aranges,decodedline', str(sidecar)], case / 'readelf.log')
         run(['python3', str(REPOSITORY / 'src/test/integration/check-dwarfdump.py'),
             str(sidecar), str(case / 'dwarfdump.log'), '--original', str(original)], case / 'validator.log')
         values = observe(case, original, 'forge', sidecar, require_qualifiers=False)
@@ -91,9 +91,20 @@ def main():
         gaps = []
         assert alias.returncode == 0 and '0x40000000' in alias.stdout and 'MMIO_ALIAS_VALUES=PASS' in alias.stdout, \
             'secondary global address/value mismatch: ' + alias.stdout + alias.stderr
-        outputs = [digest(sidecar), digest(Path(str(sidecar) + '.c'))]
+        profile_path = Path(str(sidecar) + '.mmio.json')
+        profile = json.loads(profile_path.read_text())
+        assert profile['sidecar_sha256'] == digest(sidecar) and profile['registers'][0]['address'] == '0x40000000'
+        alias_type = profile['registers'][0]['views'][0]['type']
+        qualifiers = subprocess.run(['gdb-multiarch', '-nx', '-nh', '-batch', '-ex', 'set auto-load off',
+            '-ex', 'symbol-file ' + json.dumps(str(sidecar)), '-ex', 'ptype ' + alias_type], capture_output=True, text=True, timeout=30)
+        (case / 'profile-type.log').write_text(qualifiers.stdout + qualifiers.stderr)
+        assert qualifiers.returncode == 0 and not qualifiers.stderr
+        assert 'const' in qualifiers.stdout and 'volatile' in qualifiers.stdout and 'union Register' in qualifiers.stdout, qualifiers.stdout
+        outputs = [digest(sidecar), digest(Path(str(sidecar) + '.c')), digest(profile_path)]
+        (case / 'first-output-hashes.json').write_text(json.dumps(outputs) + '\n')
         run(command, case / 'repeat.log')
-        assert outputs == [digest(sidecar), digest(Path(str(sidecar) + '.c'))]
+        repeated_outputs = [digest(sidecar), digest(Path(str(sidecar) + '.c')), digest(profile_path)]
+        assert outputs == repeated_outputs, (outputs, repeated_outputs)
         repeated = snapshot(project)
         extra_changes = sorted(k for k in after.keys() | repeated.keys() if after.get(k) != repeated.get(k))
         assert not extra_changes, 'repeated export changed project: ' + repr(extra_changes)

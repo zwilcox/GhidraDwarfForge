@@ -80,6 +80,23 @@ public final class GhidraMmioEvidenceSmoke {
                         space.getAddress(BASE), 4, false);
                     program.getListing().createData(mapped.getStart(), type);
                     program.getSymbolTable().createLabel(mapped.getStart(), "mapped_status", SourceType.USER_DEFINED);
+                    var options = program.getOptions(GhidraMmioProfile.OPTIONS);
+                    String selected = selection(program, object.getDataType().getPathName(), object.getAddress().toString(true));
+                    options.setString(GhidraMmioProfile.SELECTION, selected);
+                    for (String rejected : List.of(
+                            selected.replace(object.getAddress().toString(true), overlay.getStart().toString(true)),
+                            selected.replace(object.getAddress().toString(true), mapped.getStart().toString(true)),
+                            selected.replace(object.getDataType().getPathName(), "/missing-type"),
+                            selected.replace("0x40000010", "0x40000011"),
+                            selected.replace("\"schema\":1", "\"schema\":1,\"schema\":1"))) {
+                        options.setString(GhidraMmioProfile.SELECTION, rejected);
+                        try {
+                            GhidraMmioProfile.read(program, TaskMonitor.DUMMY);
+                            throw new AssertionError("invalid saved MMIO profile accepted");
+                        }
+                        catch (java.io.IOException expected) { checks++; }
+                    }
+                    options.setString(GhidraMmioProfile.SELECTION, selected);
                 }
                 finally { program.endTransaction(tx, true); }
                 observe(program, target);
@@ -174,7 +191,29 @@ public final class GhidraMmioEvidenceSmoke {
         var statusMember = aggregateType.members().stream().filter(m -> m.name().equals("status")).findFirst().orElseThrow();
         require(!(nodes.get(statusMember.type().key()) instanceof TypeGraph.QualifiedType),
             "export model invented an unsupported aggregate qualifier");
+        var profile = GhidraMmioProfile.read(program, TaskMonitor.DUMMY);
+        var extended = GhidraTypeGraph.extract(program, List.of(),
+            ghidradwarfforge.locations.TargetRegisterMap.forTarget(target), 0,
+            TaskMonitor.DUMMY, diagnostics::add, java.util.Map.of(), java.util.Map.of(), java.util.Map.of(),
+            GhidraParameterAllocation.UNCHANGED, null, profile);
+        var witness = extended.types().nodes().stream().filter(n -> n.name().startsWith("__forge_mmio_")).findFirst().orElseThrow();
+        require(witness instanceof TypeGraph.TypedefType, "MMIO witness must name a canonical type");
+        var qualified = extended.types().byKey().get(((TypeGraph.TypedefType) witness).target().key());
+        require(qualified instanceof TypeGraph.QualifiedType q &&
+            q.qualifiers().equals(List.of(TypeGraph.Qualifier.CONST, TypeGraph.Qualifier.VOLATILE)),
+            "saved MMIO view lost combined const volatile");
+        require(extended.globals().equals(model.globals()), "MMIO profile changed ordinary global locations");
         require(program.getModificationNumber() == modification, "observation modified program");
+    }
+
+    private static String selection(ProgramDB program, String datatype, String address) {
+        return new com.google.gson.Gson().toJson(java.util.Map.of(
+            "schema", 1, "language", program.getLanguageID().getIdAsString(), "architecture", "test-architecture",
+            "transport", java.util.Map.of("id", "instrumented-word32", "evidence", "saved-evidence smoke test; no live access"),
+            "registers", List.of(java.util.Map.of("name", "aggregate", "address", address,
+                "runtime_address", "0x40000010", "width", 8, "read_effect", "unknown", "views",
+                List.of(java.util.Map.of("name", "qualified", "datatype", datatype, "offset", 0,
+                    "qualifiers", List.of("volatile", "const")))))));
     }
 
     private static boolean qualified(TypeGraph.TypeNode node, TypeGraph.Qualifier qualifier) {

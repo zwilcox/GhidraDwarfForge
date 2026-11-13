@@ -55,6 +55,8 @@ grep -Fxq -- "--input=$input" "$argument_log"
 grep -Fxq -- "--output=$output" "$argument_log"
 run_status 0 SUCCESS 0 --import="$input" --output="$output" --gdb-loader
 grep -Fxq -- '--gdb-loader' "$argument_log"
+run_status 0 SUCCESS 0 --import="$input" --output="$output" --mmio
+grep -Fxq -- '--mmio' "$argument_log"
 selection="$work/formatter selection λ.json"
 printf 'selection sentinel\n' >"$selection"
 run_status 0 SUCCESS 0 --import="$input" --output="$output" --formatters="$selection"
@@ -158,6 +160,8 @@ test ! -e "$argument_log"
 grep -Fxq 'input sentinel' "$input"
 run_status 64 NONE 0 "${raw_options[@]}" --output="$output" --log="$output.firmware.json"
 test ! -e "$output.firmware.json"
+run_status 64 NONE 0 "${raw_options[@]}" --output="$output" --mmio --log="$output.mmio.json"
+test ! -e "$output.mmio.json"
 
 run_status 64 NONE 0 --import="$input" --unknown=value
 

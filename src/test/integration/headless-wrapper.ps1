@@ -174,6 +174,10 @@ exit /b %FAKE_HEADLESS_EXIT%
     $null = Invoke-Wrapper 0 ($importOptions + @('-Formatters', $selection))
     $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
     Assert-Condition ($launchedArguments.Contains("--formatters=$selection")) 'formatter selection was not forwarded'
+    $null = Invoke-Wrapper 0 ($importOptions + @('-Mmio'))
+    $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw
+    Assert-Condition ($launchedArguments.Contains('--mmio')) 'MMIO selection was not forwarded'
+    Assert-RejectedLog "$inputElf.dbg.mmio.json" ($importOptions + @('-Mmio'))
     $null = Invoke-Wrapper 0 ($importOptions + @('-AnnotationRecordLimit', '123',
         '-AnnotationTextLimit', '456', '-AnnotationSourceLimit', '789'))
     $launchedArguments = Get-Content -LiteralPath $argumentLog -Raw

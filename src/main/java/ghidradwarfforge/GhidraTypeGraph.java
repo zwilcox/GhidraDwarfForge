@@ -158,6 +158,18 @@ public final class GhidraTypeGraph {
             Map<Long, GhidraStaticRecovery.Result> recoveredStatics,
             GhidraParameterAllocation allocation,
             Consumer<GhidraCallParameters.Entry> parameterEntries) throws CancelledException {
+        return extract(program, exportedFunctions, registerMap, rebaseDelta, monitor, diagnostic,
+            recoveredReturns, recoveredParameters, recoveredStatics, allocation, parameterEntries, null);
+    }
+
+    public static ProgramTypeModel extract(Program program,
+            List<FunctionSymbol> exportedFunctions, TargetRegisterMap registerMap, long rebaseDelta,
+            TaskMonitor monitor, Consumer<String> diagnostic,
+            Map<Long, DataType> recoveredReturns,
+            Map<Long, GhidraSyntheticSource.ParameterRecovery> recoveredParameters,
+            Map<Long, GhidraStaticRecovery.Result> recoveredStatics,
+            GhidraParameterAllocation allocation,
+            Consumer<GhidraCallParameters.Entry> parameterEntries, GhidraMmioProfile mmio) throws CancelledException {
         Extractor extractor = new Extractor(program, diagnostic);
         var classScopes = new GhidraClassScopes(program, monitor, diagnostic);
         List<DataType> favoriteTypes = new ArrayList<>(
@@ -663,8 +675,10 @@ public final class GhidraTypeGraph {
                 nonDefaultConvention, callRestriction, effectiveCallingConvention(external)));
         }
         classScopes.prepare(extractor::reserve);
+        if (mmio != null) mmio.contribute(extractor::qualify, extractor.nodes, monitor);
         extractor.drain(monitor);
         var graph = new TypeGraph(new ArrayList<>(extractor.nodes.values()));
+        if (mmio != null) mmio.validateAliases(graph, monitor);
         return new ProgramTypeModel(graph,
             signatures, globals, new VariableStorageModel(variableLocations), functionStatics,
             declarations, lexicalScopes, classScopes.finish(graph),
@@ -859,12 +873,16 @@ public final class GhidraTypeGraph {
         }
 
         private TypeRef qualify(DataType type, TypeGraph.Qualifier qualifier) {
+            return qualify(type, qualifier == null ? List.of() : List.of(qualifier));
+        }
+
+        private TypeRef qualify(DataType type, List<TypeGraph.Qualifier> qualifiers) {
             TypeRef base = reserve(type);
-            if (qualifier == null) return base;
-            String key = "qualified:" + qualifier.name() + ":" + base.key();
+            if (qualifiers.isEmpty()) return base;
+            String key = "qualified:" + String.join(":", qualifiers.stream().map(q -> q.name()).toList()) + ":" + base.key();
             nodes.putIfAbsent(key, new TypeGraph.QualifiedType(key,
-                qualifier.name().toLowerCase(java.util.Locale.ROOT) + " " + displayName(type),
-                nonNegativeSize(type), List.of(qualifier), base));
+                String.join(" ", qualifiers.stream().map(q -> q.name().toLowerCase(java.util.Locale.ROOT)).toList()) + " " + displayName(type),
+                nonNegativeSize(type), qualifiers, base));
             return new TypeRef(key);
         }
 
