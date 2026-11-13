@@ -1140,6 +1140,14 @@ jobs:
                   --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" --roles pie pie-no-rtti --rebase \
                   --references "$results/reference" --models "$results/producer" \
                   --results "$results/extraction-rebased"
+          for variant in missing stale conflict renamed qualified duplicate retained; do
+              LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
+              LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
+                  python3 -B src/test/research/inheritance/extract.py \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" --rebase --variant "$variant" \
+                      --references "$results/reference" --models "$results/producer" \
+                      --results "$results/variant-$variant"
+          done
 
       - name: MIPS O32 FPXX and FP64A system-emulator references
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'

@@ -43,6 +43,18 @@ public final class VtableSymbolsSmoke {
         var names = ClassScopeNames.build(plan.types().types(), plan.types().classScopes());
         require(ClassScopeNames.resolvesTo(plan.types().types(), plan.types().classScopes(), names, 1, "OriginalC"), "canonical alias not emitted");
         require(plan.equals(plan(root, bytes, model, Set.of(), () -> false, new ArrayList<>())), "admission not deterministic");
+        var matchingGlobal = withGlobal(model, new ProgramTypeModel.GlobalVariable("_ZTV1C", 0x1040, 24,
+            new TypeRef("a"), false, "retained table object"));
+        require(plan(root, bytes, matchingGlobal, Set.of(), () -> false, new ArrayList<>()).symbols().size() == 1,
+            "matching recovered table object blocked admission");
+        for (var global : List.of(
+                new ProgramTypeModel.GlobalVariable("_ZTV1C", 0x1048, 24, new TypeRef("a"), false, "wrong address"),
+                new ProgramTypeModel.GlobalVariable("_ZTV1C", 0x1040, 8, new TypeRef("a"), false, "wrong size"),
+                new ProgramTypeModel.GlobalVariable("_ZTV1C", 0x1040, 24, new TypeRef("a"), true, "declaration"),
+                new ProgramTypeModel.GlobalVariable("_ZTV1C", 0x1040, 24, new TypeRef("a"), false, "scoped", List.of("other")),
+                new ProgramTypeModel.GlobalVariable("OriginalC", 0x1040, 24, new TypeRef("a"), false, "lookup collision"))) {
+            reject(root, bytes, withGlobal(model, global), Set.of(), "conflicts");
+        }
         reject(root, bytes, model, Set.of("_ZTV1C"), "conflicts");
         reject(root, bytes, model, Set.of("OriginalC"), "conflicts");
         var bad = bytes.clone(); bad[0x140] = 1;
@@ -62,6 +74,9 @@ public final class VtableSymbolsSmoke {
         var qualified = table(abi, 10, 1, "_ZTVN1N1CE", "N::C", 0x1040, 0x140, hash);
         plan = plan(root, bytes, model(List.of(qualified), true, false), Set.of(), () -> false, new ArrayList<>());
         require(plan.symbols().size() == 1 && plan.types().classScopes().vtables().size() == 1, "duplicate type names blocked unique lookup");
+        reject(root, bytes, withGlobal(model(List.of(qualified), true, false),
+            new ProgramTypeModel.GlobalVariable("C", 0x1040, 24, new TypeRef("a"), false,
+                "qualified lookup collision", List.of("N"))), Set.of(), "conflicts");
         var ambiguous = table(abi, 10, 1, "_ZTV6Shared", "Shared", 0x1040, 0x140, hash);
         reject(root, bytes, model(List.of(ambiguous), true, false), Set.of(), "canonical class");
         // Reuse an exactly matching original table; never duplicate it in the new symtab.
@@ -93,6 +108,10 @@ public final class VtableSymbolsSmoke {
         }
     }
 
+    private static ProgramTypeModel withGlobal(ProgramTypeModel model, ProgramTypeModel.GlobalVariable global) {
+        return new ProgramTypeModel(model.types(), model.functions(), List.of(global), model.variableStorage(),
+            model.functionStatics(), model.functionDeclarations(), model.lexicalScopes(), model.classScopes());
+    }
     private static VtableEvidence table(CxxAbiProfile abi, long id, long owner, String name, String lookup, long address, long offset, String hash) {
         return new VtableEvidence(id, owner, abi, name, lookup, address, 24, offset, hash, "explicit fixture witness");
     }

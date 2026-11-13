@@ -1,4 +1,4 @@
-"""Observe recovered class names through explicit human-readable vtable symbols."""
+"""Observe exact recovered class identities through explicitly evidenced vtable symbols."""
 import json
 import os
 from pathlib import Path
@@ -24,6 +24,9 @@ try:
         members = [field.name for field in kind.fields() if not field.is_base_class]
         result['layouts'][variable] = {'size': kind.sizeof, 'members': members}
         assert kind.sizeof == item['size'] and members == item['members'], (variable, result['layouts'][variable], item)
+    result['ptype'] = {name: gdb.execute('ptype *' + name, to_string=True)
+        for name in ('single_object', 'multiple_object', 'diamond_object')}
+    assert all('type =' in value for value in result['ptype'].values()), result
     gdb.execute('set print object on')
     result['printed'] = {name: gdb.execute('print *' + name, to_string=True) for name in expected}
     if not expect_static:

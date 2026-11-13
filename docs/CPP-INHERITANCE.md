@@ -417,6 +417,56 @@ Every case reopens the saved program through the supported read-only wrapper,
 requires identical sidecar/source bytes, hashes every project file, and checks
 that the original executable is unchanged. The final local runs use the current
 development extension; hosted checks for these C++ changes remain pending.
-This does not yet establish the full recovery/configuration workflow, production
-rejected/renamed/duplicate-name runtime matrix, pure-virtual/mixed-method cases,
-or genuine decompilation-failure behavior. Those remain #113 work.
+The subsequent checkpoint covers production rejected/naming runtime variants.
+The full recovery/configuration workflow, pure-virtual/mixed-method cases and
+genuine decompilation-failure behavior still remain #113 work.
+
+## Rejected evidence and recovered-name runtime checkpoint
+
+**CONFIRMED locally:** seven additional variants pass on x86-64 and AArch64,
+non-PIE/PIE and RTTI/no-RTTI: 56 ordinary-export cases. Every variant rebases the
+saved program before exporting and then repeats export through the read-only
+wrapper. All pass GNU readelf, LLVM and the pinned libdwarf checker, preserve
+original executable/project bytes, and produce identical sidecar/source bytes
+on reopening.
+
+- **Missing:** explicitly removed vtable records produce no new table symbols.
+- **Stale:** patched Ghidra table-pointer bytes invalidate the saved witness;
+  export diagnoses the omission without refreshing the record.
+- **Conflicting:** two explicit records claim each table. Both claims are omitted,
+  rather than selecting whichever was visited first.
+- **Renamed:** coordinated class/layout renames preserve their identities and
+  original vtable records; the original lookup names resolve to renamed canonical
+  types through the admitted aliases.
+- **Qualified:** explicitly supplied qualified linkage names resolve to the
+  intended canonical types. The fixture's ASCII mangling helper is not a
+  production inference or mangling API.
+- **Duplicate:** nine distinct canonical layouts share the name `Shared` in
+  separate namespace/category paths. Qualified table identities resolve each
+  exact type. The oracle checks sizes and member names, not merely display names.
+- **Retained:** the owned runtime fixture already contains the six object symbols.
+  Export reuses them once each with their exact addresses and extents.
+
+All 24 rejection cases require GDB's dynamic-type query to retain the correct
+static type. Inheritance DIEs, virtual-method/object-parameter metadata, member
+access and original virtual-call execution remain valid. Positive cases require
+correct dynamic types before broad type expansion, exact layouts, `ptype`,
+object printing and `info vtbl`. This matrix tests ordinary extraction/emission;
+it does not add symbols to the exported artifact afterward.
+
+The retained-symbol fixture found a real collision-policy defect: Ghidra's
+imported global for the same table was treated as a competing object. Admission
+now permits that global only if it is a definition in the global namespace with
+the exact same address and extent. Another address, size, declaration, namespace
+or lookup-name collision remains rejected. Qualified global names are checked
+as well as leaf names. The admission smoke now passes 218 checks for the two
+profiles. After the qualified-global check was added, a further 12 retained,
+qualified and duplicate cases revalidate the final build across both targets,
+non-PIE and no-RTTI PIE.
+
+The hosted architecture-boundary gate initially rejected processor names in the
+new isolated `CxxAbiProfile`. Its exact path is now in the audited boundary, and
+signed offset-to-top decoding resides inside that profile. The gate and local
+80 inheritance-model/144 saved-vtable checks pass; the corrected hosted
+extension-build job also passed. This does not replace the remaining full hosted
+acceptance gate for the final PR head.
