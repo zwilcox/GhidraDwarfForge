@@ -1,10 +1,12 @@
 # Explicit raw firmware export
 
-**CONFIRMED locally:** the production exporter creates synthetic debug containers
+**CONFIRMED:** the production exporter creates synthetic debug containers
 from saved raw-firmware programs. Two Cortex-M3 runtime layouts, including a
-two-input flash/RAM case, pass structural and QEMU/GDB checks. Issue #119 remains
-open pending final review and the required hosted regression
-gate. Ghidra 12.0.3 and Java 21 remain the baseline; native producer signatures
+two-input flash/RAM case, pass structural and QEMU/GDB checks. The focused Linux
+suite, Windows PowerShell producer and Linux consumer of Windows artifacts pass
+in [CI run 43403232767](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43403232767).
+These focused results do not replace the full architecture/host regression gate.
+Ghidra 12.0.3 and Java 21 remain the baseline; native producer signatures
 and the pinned libdwarf revision are unchanged.
 
 ## Target and address contract
@@ -187,7 +189,7 @@ side effects, or cache policy. Those semantics remain the separate #118 work.
 Forge's current Cortex-M exception backtrace remains handler-only; this feature
 does not claim exception unwinding beyond the existing validated profile.
 
-## Acceptance evidence and remaining gate
+## Acceptance evidence and required gate
 
 Local production tests use `raw-firmware-export.py`, the installed Bash wrapper, extension and
 native producer, a BinaryLoader import with explicit fixture curation, and raw
@@ -220,8 +222,9 @@ wrapper twice. It checks all 21 two-input failure controls and preservation, the
 transports the exact outputs to Linux. The consumer verifies hashes, reruns
 structural/address checks, and uses QEMU/GDB with explicit source-directory
 substitution. A local Linux producer/consumer rehearsal passes, including source
-lookup after transport. **PRESENT, UNVERIFIED:** actual Windows production and
-the full changed-head hosted architecture/host gate until passing evidence is
-recorded. No general raw-architecture claim follows
+lookup after transport. The actual Windows producer and transported-artifact
+consumer also pass in the focused hosted jobs linked above. Each integrated
+revision must additionally pass the full architecture/host regression gate.
+No general raw-architecture claim follows
 from a Cortex-M3 result; additional profiles require their own ABI and runtime
 proof.

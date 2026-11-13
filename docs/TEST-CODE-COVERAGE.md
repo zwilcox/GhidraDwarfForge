@@ -94,6 +94,9 @@ Implementation references: [Gradle JaCoCo plugin](https://docs.gradle.org/curren
 [JaCoCo release history](https://www.jacoco.org/jacoco/trunk/doc/changes.html), and
 [GitHub workflow status badges](https://docs.github.com/en/actions/how-tos/monitor-workflows/add-a-status-badge).
 
-**PRESENT, UNVERIFIED in hosted CI:** initial implementation. A measured main
-artifact, published percentage, rendered SVG and destination links must be
-verified after integration before closing #162/#163.
+To verify a published measurement, follow the badge to its detailed report and
+check the source commit, CI run, XML hash and completed-task population. Compare
+the SVG percentage with the report counters and confirm that the linked run's
+full required gate passed. A PR artifact verifies collection and rendering; it
+does not establish that a main measurement has been published. The live main
+badge and report links must also be checked after publication.

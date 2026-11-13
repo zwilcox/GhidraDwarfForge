@@ -1,9 +1,10 @@
 # MMIO register views and access policy
 
-**PRESENT, UNVERIFIED in hosted CI:** the explicit GDB snapshot helper and profile
-are implemented, with local instrumented tests against real Forge sidecars.
-Saved-program qualifier/alias and layout checks also pass locally. This does not
-establish physical bus behavior; the remaining acceptance work is listed below.
+**CONFIRMED:** the explicit GDB snapshot helper and saved profile have instrumented
+tests against real Forge sidecars. The focused x86-64 and MIPS32 BE/LE MMIO steps
+pass in [CI run 43403242562](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43403242562),
+including qualifier/alias preservation, values, read widths and rejection controls.
+This does not establish physical bus behavior or replace the full regression gate.
 
 ## Reference experiment
 
@@ -72,7 +73,7 @@ interfaces must be distinguished from the target stub's device accesses.
 See the [memory-region manual](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Memory-Region-Attributes.html)
 and [remote packet specification](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Packets.html).
 
-## Production evidence and remaining requirements
+## Production evidence and requirements
 
 ### Extraction audit
 
@@ -141,7 +142,8 @@ The scalar counter's saved volatile setting and secondary global name now surviv
 into GDB on all three profiles, with unchanged field values and layouts. The
 alias is checked for its exact address and actual raw/counter values. The probe
 rejects a missing qualifier, alias mismatch or changed project files. The explicit snapshot helper now also has local instrumented checks against
-these artifacts, described below. Hosted validation remains pending.
+these artifacts, described below. The same checks run in the corresponding target
+CI lanes.
 
 ```bash
 python3 support/storage-guard.py run --cwd "$PWD" -- \
@@ -219,7 +221,7 @@ on x86-64, Cortex-M and MIPS BE, with no database or modification-counter change
 Installed export tests on x86-64 and both MIPS byte orders prove combined
 `const volatile`, independent packed views, canonical type aliases, validators,
 input/project preservation and byte-identical sidecar/source/profile reruns. The
-profile JSON uses stable field ordering. Hosted validation remains pending.
+profile JSON uses stable field ordering. These tests also run in hosted CI.
 
 ### Explicit GDB snapshots
 
@@ -317,7 +319,7 @@ python3 support/storage-guard.py run --cwd "$PWD" -- \
 ```
 
 CI runs this test with the packaged helper after installed Forge export in all
-three target lanes. Hosted validation is still pending on the local MMIO branch.
+three target lanes; the focused hosted steps pass in the run linked above.
 
 `lifecycle.py` exercises the registered command against the same instrumented
 transport. Duplicate JSON keys, register/view names, invalid inventories, missing
@@ -361,12 +363,12 @@ The cancellation recovery check precedes deliberate option mutations because
 firmware manifests correctly retain the in-memory program modification number,
 even when a temporary selection is restored to its previous text.
 
-### Remaining validation
+### Required validation
 
-- Complete hosted validation of raw-firmware integration, saved-program
-  configuration and publication failure/cancellation.
-- Complete structural and behavioral hosted validation and the issue acceptance
-  audit. The local results do not substitute for that gate.
+- Every integrated revision must pass hosted raw-firmware integration,
+  saved-program configuration and publication failure/cancellation checks.
+- The full structural and behavioral regression gate and issue acceptance audit
+  remain mandatory. Focused results do not substitute for that gate.
 
 ### Issue #118 acceptance map
 
