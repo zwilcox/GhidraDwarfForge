@@ -58,6 +58,20 @@ jobs:
               with:
                   distribution: temurin
                   java-version: 21
+            - name: Install supervisor diagnostic compiler
+              id: supervisor-msys2
+              uses: msys2/setup-msys2@v2
+              with:
+                  msystem: MINGW64
+                  install: mingw-w64-x86_64-gcc
+            - name: Identify native supervisor output-limit failure
+              shell: pwsh
+              run: |
+                  $compiler = Join-Path '${{ steps.supervisor-msys2.outputs.msys2-location }}' 'mingw64/bin/gcc.exe'
+                  python src/test/integration/attachment-host-observations/windows-supervisor-race.py `
+                      --compiler $compiler `
+                      --output build/test-results/attachment-host-observations/supervisor-race/evidence
+                  if ($LASTEXITCODE -ne 0) { throw 'supervisor diagnostic failed' }
             - name: Observe Java21 validator working directories on owned Windows paths
               shell: pwsh
               run: |
@@ -94,5 +108,6 @@ jobs:
                       build/test-results/attachment-host-observations/**/evidence/*.java
                       build/test-results/attachment-host-observations/**/evidence/*.cs
                       build/test-results/attachment-host-observations/**/evidence/*.ps1
+                      build/test-results/attachment-host-observations/**/evidence/*.c
                   if-no-files-found: error
                   retention-days: 14
