@@ -664,6 +664,7 @@ jobs:
             python3 -B -m unittest discover -s src/test/python -p test_headless_observations.py -v
             python3 -B -m unittest discover -s src/test/python -p test_call_origin_inventory.py -v
             python3 -B -m unittest discover -s src/test/python -p test_test_code_coverage.py -v
+            python3 -B -m unittest discover -s src/test/coverage -p 'test_*.py' -v
             python3 -B src/test/integration/mips-fpr-system-diagnostics-test.py
             python3 -B src/test/integration/curated-thunk-entry-test.py
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
@@ -688,13 +689,17 @@ jobs:
               stackFirstUseSmoke \
               opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke cortexM3ProfileSmoke ghidraCortexM3ProfileSmoke firmwareMemoryMapSmoke ghidraFirmwareMemoryMapSmoke ghidraMmioEvidenceSmoke firmwareInputsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke \
               callOriginSymbolsSmoke functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke \
-              dwarfInfoRepairSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
+              dwarfInfoRepairSmoke dwarfInfoRepairBoundarySmoke sourceRelocationBoundarySmoke companionPublicationFailureSmoke dwarfLineTableSmoke dwarfRangeListsSmoke functionEntrySmoke \
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
               unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke callSiteEvidenceSmoke tailStateProofSmoke callEntryContractSmoke callValueSmoke callArgumentFlowSmoke boundedSwitchProofSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke buildExtension
+            python3 -B src/test/coverage/mutation-check.py \
+                --classes build/classes/java/main --tests build/classes/java/test \
+                --java-home "$JAVA_HOME" \
+                --output build/test-results/extension-build/high-risk-mutations
             python3 -B src/test/integration/check-call-values.py build/test-results/call-values/vectors.json
             python3 -B src/test/integration/check-call-values.py build/test-results/call-argument-flow/vectors.json --min-count 240
             python3 -B src/test/integration/debuglink-basename.py \
@@ -1252,6 +1257,26 @@ jobs:
         run: |
           make -C src/test/fixtures "$TARGET"
           src/test/integration/fixture-reproducibility.sh "$TARGET"
+
+      - name: Measure a bounded installed headless exporter sample
+        if: matrix.target == 'x86_64'
+        run: |
+          ./gradlew --no-daemon -PtestCoverage=true prepareHeadlessCoverage
+          python3 -B src/test/coverage/headless-coverage.py \
+            --ghidra "$GHIDRA_INSTALL_DIR" \
+            --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+            --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
+            --agent "$PWD/build/test-coverage-tools/jacocoagent.jar" \
+            --output "$PWD/build/headless-coverage" --dwarfdump "$DWARFDUMP"
+          ./gradlew --no-daemon -PtestCoverage=true headlessCoverageReport
+
+      - uses: actions/upload-artifact@v7
+        if: always() && matrix.target == 'x86_64'
+        with:
+          name: headless-java-coverage-sample
+          path: build/headless-coverage/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Validate independent compiler unwind references
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
@@ -3653,6 +3678,7 @@ jobs:
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat formatterPlanSmoke exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
+            dwarfInfoRepairSmoke dwarfInfoRepairBoundarySmoke sourceRelocationBoundarySmoke `
             syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke cortexM3ProfileSmoke ghidraCortexM3ProfileSmoke firmwareMemoryMapSmoke ghidraFirmwareMemoryMapSmoke ghidraMmioEvidenceSmoke firmwareInputsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             callOriginSymbolsSmoke functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `

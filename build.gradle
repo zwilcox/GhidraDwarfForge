@@ -499,6 +499,15 @@ tasks.register("companionArtifactPublisherSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.CompanionArtifactPublisherSmoke"
 }
 
+tasks.register("companionPublicationFailureSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks publication preflight, cancellation and cleanup-failure preservation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.CompanionPublicationFailureSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
+}
+
 tasks.register("buildIdRecordsSmoke", JavaExec) {
     group = "verification"
     description = "Checks complete large source inventories and separate command record bounds"
@@ -863,6 +872,22 @@ tasks.register("dwarfInfoRepairSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.dwarf.Dwarf32InfoRepairSmoke"
+}
+
+tasks.register("dwarfInfoRepairBoundarySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks byte-order, truncation and overflow boundaries in DWARF32 repair"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.dwarf.Dwarf32InfoRepairBoundarySmoke"
+}
+
+tasks.register("sourceRelocationBoundarySmoke", JavaExec) {
+    group = "verification"
+    description = "Checks independent DWARF source-relocation fixtures and cancellation boundaries"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.dwarf.SyntheticSourceRelocationBoundarySmoke"
 }
 
 tasks.register("dwarfRangeListsSmoke", JavaExec) {

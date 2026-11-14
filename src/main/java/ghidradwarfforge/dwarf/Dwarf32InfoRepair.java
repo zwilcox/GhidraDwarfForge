@@ -109,6 +109,9 @@ public final class Dwarf32InfoRepair {
                             "unreviewed oversized section-offset attribute " + attribute.name());
                     }
                     requireAvailable(working, cursor.offset, addressBytes);
+                    if ((buffer.getLong(cursor.offset) & 0xffffffff00000000L) != 0) {
+                        throw new IllegalArgumentException("section offset does not fit DWARF32");
+                    }
                     int deleteStart = order == ByteOrder.LITTLE_ENDIAN
                         ? cursor.offset + 4 : cursor.offset;
                     deletions.add(new Deletion(deleteStart, deleteStart + 4));
