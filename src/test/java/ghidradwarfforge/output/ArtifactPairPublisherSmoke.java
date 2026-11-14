@@ -25,7 +25,8 @@ public final class ArtifactPairPublisherSmoke {
             Path source = directory.resolve("fixture.dbg.c");
             Path artifactStage = directory.resolve("artifact.staged");
             Path sourceStage = directory.resolve("source.staged");
-            testPublicationTimestamps(directory);
+            testPublicationTimestamps(directory, false);
+            testPublicationTimestamps(Files.createDirectory(directory.resolve("fresh-times")), true);
             write(artifact, "old artifact");
             write(source, "old source");
             FileTime originalArtifactTime = Files.getLastModifiedTime(artifact);
@@ -122,7 +123,7 @@ public final class ArtifactPairPublisherSmoke {
         }
     }
 
-    private static void testPublicationTimestamps(Path directory) throws Exception {
+    private static void testPublicationTimestamps(Path directory, boolean fresh) throws Exception {
         // All three values are within one second: compare full FileTime values,
         // independently of GDB's coarser seconds-only freshness check.
         FileTime sourceTime = FileTime.fromMillis(1_700_000_002_123L);
@@ -131,14 +132,22 @@ public final class ArtifactPairPublisherSmoke {
             Path artifact = directory.resolve("time-" + artifactMillis + ".dbg");
             Path source = Path.of(artifact + ".c");
             FileTime artifactTime = FileTime.fromMillis(artifactMillis);
-            ArtifactPairPublisher.stageAndPublish(artifact, source,
-                stage -> {
-                    write(stage, "timestamp artifact");
-                    Files.setLastModifiedTime(stage, artifactTime);
-                }, stage -> {
-                    write(stage, "timestamp source");
-                    Files.setLastModifiedTime(stage, sourceTime);
-                }, () -> { });
+            ArtifactPairPublisher.StagedWriter artifactWriter = stage -> {
+                write(stage, "timestamp artifact");
+                Files.setLastModifiedTime(stage, artifactTime);
+            };
+            ArtifactPairPublisher.StagedWriter sourceWriter = stage -> {
+                write(stage, "timestamp source");
+                Files.setLastModifiedTime(stage, sourceTime);
+            };
+            if (fresh) {
+                ArtifactPairPublisher.stageAndPublishNew(artifact, source, artifactWriter,
+                    sourceWriter, () -> { });
+            }
+            else {
+                ArtifactPairPublisher.stageAndPublish(artifact, source, artifactWriter,
+                    sourceWriter, () -> { });
+            }
             FileTime expected = artifactTime.compareTo(sourceTime) < 0 ? sourceTime : artifactTime;
             if (!expected.equals(Files.getLastModifiedTime(artifact)) ||
                     !sourceTime.equals(Files.getLastModifiedTime(source))) {

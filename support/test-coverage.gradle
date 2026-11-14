@@ -78,3 +78,60 @@ tasks.named("testCoverageReport") { dependsOn "validateTestCoverageSessions" }
 // their explicit CI arguments and must not be pulled into the graph implicitly.
 tasks.named("validateTestCoverageSessions") { mustRunAfter tasks.withType(JavaExec) }
 tasks.named("testCoverageReport") { mustRunAfter tasks.withType(JavaExec) }
+
+// One installed headless sample has a separate denominator/report. Its bytecode
+// comes from the installed release JAR, never from a different job's compilation.
+def headlessDirectory = layout.buildDirectory.dir("headless-coverage")
+def headlessJar = new File(System.env.GHIDRA_INSTALL_DIR ?: project.property("GHIDRA_INSTALL_DIR"),
+    "Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar")
+
+tasks.register("prepareHeadlessCoverage") {
+    doLast {
+        copy {
+            from zipTree(configurations.jacocoAgent.singleFile)
+            include "jacocoagent.jar"
+            into layout.buildDirectory.dir("test-coverage-tools")
+        }
+    }
+}
+
+tasks.register("validateHeadlessCoverage") {
+    doLast {
+        def receiptCheck = providers.exec {
+            commandLine "python3", "-B", "src/test/coverage/headless-coverage.py",
+                "--validate", "--output", headlessDirectory.get().asFile,
+                "--jar", headlessJar
+        }
+        receiptCheck.result.get().assertNormalExitValue()
+        println receiptCheck.standardOutput.asText.get()
+        for (int index = 0; index < 2; index++) {
+            def identityCheck = providers.exec {
+                commandLine new File(System.getProperty("java.home"), "bin/java"),
+                    "-Djava.io.tmpdir=" + (System.env.TMPDIR ?: System.getProperty("java.io.tmpdir")),
+                    "-cp", configurations.jacocoAnt.asPath,
+                    "src/test/coverage/VerifyHeadlessCoverage.java", headlessJar,
+                    headlessDirectory.get().file("headless-${index}.exec").asFile,
+                    "forge-headless-coverage-${index}", "--self-test"
+            }
+            identityCheck.result.get().assertNormalExitValue()
+            println identityCheck.standardOutput.asText.get()
+        }
+    }
+}
+
+tasks.register("headlessCoverageReport", org.gradle.testing.jacoco.tasks.JacocoReport) {
+    group = "verification"
+    description = "Separate installed-exporter sample; not included in the Java test coverage badge"
+    dependsOn "validateHeadlessCoverage"
+    executionData.from(headlessDirectory.map { it.file("headless-0.exec") },
+        headlessDirectory.map { it.file("headless-1.exec") })
+    classDirectories.from(zipTree(headlessJar).matching { include "**/*.class" })
+    sourceDirectories.from(files("src/main/java"))
+    reports {
+        xml.required = true
+        xml.outputLocation = headlessDirectory.map { it.file("coverage.xml") }
+        html.required = true
+        html.outputLocation = headlessDirectory.map { it.dir("html") }
+        csv.required = false
+    }
+}
