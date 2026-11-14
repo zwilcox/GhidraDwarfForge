@@ -167,7 +167,11 @@ comma or equals characters in agent/output/temp paths because of the upstream
 VM argument splitting and agent option grammar; ordinary export has no new
 path restriction. It never edits the Ghidra installation. Temporary projects
 are removed on success/failure; failed runs retain an incomplete receipt and
-diagnostics and cannot produce an accepted report.
+diagnostics and cannot produce an accepted report. Each command owns a process
+group, which is stopped before returning on failure, timeout or SIGTERM. Three
+process controls prove descendants cannot keep writing after the caller returns;
+the timeout and nonzero-exit controls reproduced the previous orphaning defect.
+The seven receipt tests plus these three process tests take about four seconds.
 
 Remaining gaps: native C/libdwarf execution, Windows Java execution, other target
 architectures, GUI execution, and the broad independent integration suites.

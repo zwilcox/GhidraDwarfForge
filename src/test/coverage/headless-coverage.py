@@ -3,8 +3,10 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import tempfile
 import time
@@ -37,9 +39,31 @@ def validate_receipt(output, jar):
 
 
 def run_logged(command, output, label, timeout=240):
-    with (output / (label + '.log')).open('w') as log:
-        subprocess.run([str(item) for item in command], stdout=log,
-            stderr=subprocess.STDOUT, check=True, timeout=timeout)
+    command = [str(item) for item in command]
+
+    def interrupt(signum, frame):
+        raise KeyboardInterrupt
+
+    previous = signal.signal(signal.SIGTERM, interrupt)
+    try:
+        with (output / (label + '.log')).open('w') as log:
+            # launch.sh owns a separate Java child. Killing only the shell on a
+            # timeout leaves that JVM running against a removed temporary project.
+            # Own the entire group, including on nonzero exits and interruption.
+            with subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT,
+                    start_new_session=True) as process:
+                try:
+                    status = process.wait(timeout=timeout)
+                    if status:
+                        raise subprocess.CalledProcessError(status, command)
+                finally:
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    process.wait()
+    finally:
+        signal.signal(signal.SIGTERM, previous)
     return (output / (label + '.log')).read_text()
 
 
