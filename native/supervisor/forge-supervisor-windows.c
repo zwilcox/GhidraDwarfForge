@@ -130,7 +130,16 @@ static bool drain(stream *output, uint64_t cap, bool *exceeded) {
     if (!available) return true;
     char bytes[16384];
     DWORD count = 0;
-    if (!ReadFile(output->pipe, bytes, available < sizeof(bytes) ? available : sizeof(bytes), &count, NULL)) return false;
+    if (!ReadFile(output->pipe, bytes, available < sizeof(bytes) ? available : sizeof(bytes), &count, NULL)) {
+        /* A pending writer can exit after PeekNamedPipe reports bytes. Its
+         * cancelled write then leaves ReadFile at EOF, just like a broken
+         * pipe observed by the peek. Other read errors still fail cleanup. */
+        if (GetLastError() != ERROR_BROKEN_PIPE) return false;
+        output->eof = true;
+        CloseHandle(output->pipe);
+        output->pipe = INVALID_HANDLE_VALUE;
+        return true;
+    }
     output->observed += count;
     DWORD keep = (DWORD)(count < cap - output->retained ? count : cap - output->retained);
     if (!write_all(output->log, bytes, keep)) return false;

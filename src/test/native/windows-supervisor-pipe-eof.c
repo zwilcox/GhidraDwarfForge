@@ -8,10 +8,16 @@
 
 static HANDLE pending_writer;
 static bool intercepted;
+static bool invalidate_reader;
 
 static BOOL controlled_peek(HANDLE pipe, LPVOID buffer, DWORD capacity,
         LPDWORD read, LPDWORD available, LPDWORD remaining) {
     BOOL result = PeekNamedPipe(pipe, buffer, capacity, read, available, remaining);
+    if (result && available && *available && invalidate_reader) {
+        if (!CloseHandle(pipe)) return FALSE;
+        intercepted = true;
+        return result;
+    }
     if (result && available && *available && pending_writer && !intercepted) {
         if (!TerminateProcess(pending_writer, 125) ||
                 WaitForSingleObject(pending_writer, 5000) != WAIT_OBJECT_0) {
@@ -29,6 +35,60 @@ static BOOL controlled_peek(HANDLE pipe, LPVOID buffer, DWORD capacity,
 #undef wmain
 #undef PeekNamedPipe
 
+static int drain_control(const wchar_t *mode, const wchar_t *path) {
+    HANDLE reader = INVALID_HANDLE_VALUE, writer = INVALID_HANDLE_VALUE;
+    HANDLE log = INVALID_HANDLE_VALUE;
+    int result = 1;
+    if (!CreatePipe(&reader, &writer, NULL, 4096)) goto finished;
+    log = CreateFileW(path, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW,
+        FILE_ATTRIBUTE_NORMAL, NULL);
+    if (log == INVALID_HANDLE_VALUE) goto finished;
+    char bytes[128];
+    memset(bytes, 'q', sizeof(bytes));
+    DWORD written = 0;
+    if (!WriteFile(writer, bytes, sizeof(bytes), &written, NULL) || written != sizeof(bytes)) goto finished;
+    CloseHandle(writer);
+    writer = INVALID_HANDLE_VALUE;
+    bool bad_read = wcscmp(mode, L"bad-read") == 0;
+    bool bad_log = wcscmp(mode, L"bad-log") == 0;
+    uint64_t cap = wcscmp(mode, L"capped") == 0 ? 64 : 256;
+    invalidate_reader = bad_read;
+    stream output = { reader, bad_log ? INVALID_HANDLE_VALUE : log, 0, 0, false };
+    bool exceeded = false;
+    bool drained = drain(&output, cap, &exceeded);
+    DWORD error = GetLastError();
+    reader = bad_read && intercepted ? INVALID_HANDLE_VALUE : output.pipe;
+    if (bad_read || bad_log) {
+        result = !drained && !output.eof && !exceeded && error == ERROR_INVALID_HANDLE &&
+            output.observed == (bad_read ? 0 : sizeof(bytes)) && output.retained == 0 &&
+            (!bad_read || intercepted) ? 0 : 1;
+    }
+    else {
+        bool eof = drain(&output, cap, &exceeded);
+        reader = output.pipe;
+        bool repeat = drain(&output, cap, &exceeded);
+        DWORD expected = cap < sizeof(bytes) ? (DWORD)cap : sizeof(bytes);
+        char retained[128];
+        DWORD count = 0;
+        LARGE_INTEGER size;
+        bool contents = GetFileSizeEx(log, &size) && size.QuadPart == expected &&
+            SetFilePointer(log, 0, NULL, FILE_BEGIN) != INVALID_SET_FILE_POINTER &&
+            ReadFile(log, retained, sizeof(retained), &count, NULL) && count == expected &&
+            memcmp(retained, bytes, count) == 0;
+        result = drained && eof && repeat && output.eof && output.pipe == INVALID_HANDLE_VALUE &&
+            output.observed == sizeof(bytes) && output.retained == expected &&
+            exceeded == (cap < sizeof(bytes)) && contents ? 0 : 1;
+    }
+    printf("mode=%ls drained=%d eof=%d observed=%llu retained=%llu exceeded=%d error=%lu result=%d\n",
+        mode, drained, output.eof, (unsigned long long)output.observed,
+        (unsigned long long)output.retained, exceeded, (unsigned long)error, result);
+finished:
+    if (reader != INVALID_HANDLE_VALUE) CloseHandle(reader);
+    if (writer != INVALID_HANDLE_VALUE) CloseHandle(writer);
+    if (log != INVALID_HANDLE_VALUE) CloseHandle(log);
+    return result;
+}
+
 int wmain(int argc, wchar_t **argv) {
     if (argc == 2 && wcscmp(argv[1], L"--writer") == 0) {
         char bytes[65536];
@@ -36,7 +96,12 @@ int wmain(int argc, wchar_t **argv) {
         DWORD count;
         return WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), bytes, sizeof(bytes), &count, NULL) ? 0 : 2;
     }
-    if (argc != 2) return 64;
+    if (argc != 3) return 64;
+    if (wcscmp(argv[1], L"race") != 0) {
+        if (wcscmp(argv[1], L"data") && wcscmp(argv[1], L"capped") &&
+                wcscmp(argv[1], L"bad-read") && wcscmp(argv[1], L"bad-log")) return 64;
+        return drain_control(argv[1], argv[2]);
+    }
     SECURITY_ATTRIBUTES inherited = { sizeof(inherited), NULL, TRUE };
     HANDLE read_pipe = INVALID_HANDLE_VALUE, write_pipe = INVALID_HANDLE_VALUE;
     HANDLE input = INVALID_HANDLE_VALUE, log = INVALID_HANDLE_VALUE;
@@ -46,7 +111,7 @@ int wmain(int argc, wchar_t **argv) {
             !SetHandleInformation(read_pipe, HANDLE_FLAG_INHERIT, 0)) goto finished;
     input = CreateFileW(L"NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
         &inherited, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    log = CreateFileW(argv[1], GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+    log = CreateFileW(argv[2], GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
     if (input == INVALID_HANDLE_VALUE || log == INVALID_HANDLE_VALUE) goto finished;
     wchar_t executable[4096], command[8192];
     DWORD length = GetModuleFileNameW(NULL, executable, 4096);
@@ -77,7 +142,10 @@ int wmain(int argc, wchar_t **argv) {
     printf("intercepted=%d snapshot=%lu drained=%d eof=%d observed=%llu error=%lu\n",
         intercepted, (unsigned long)available, drained, output.eof,
         (unsigned long long)output.observed, (unsigned long)error);
-    result = intercepted && drained && output.eof && output.observed == 0 ? 0 : 1;
+    LARGE_INTEGER size;
+    result = intercepted && drained && output.eof && output.pipe == INVALID_HANDLE_VALUE &&
+        output.observed == 0 && output.retained == 0 && !exceeded &&
+        GetFileSizeEx(log, &size) && size.QuadPart == 0 && drain(&output, 4096, &exceeded) ? 0 : 1;
 finished:
     if (child.hProcess) {
         if (WaitForSingleObject(child.hProcess, 0) == WAIT_TIMEOUT) {

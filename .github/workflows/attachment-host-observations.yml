@@ -58,20 +58,20 @@ jobs:
               with:
                   distribution: temurin
                   java-version: 21
-            - name: Install supervisor diagnostic compiler
+            - name: Install supervisor regression compiler
               id: supervisor-msys2
               uses: msys2/setup-msys2@v2
               with:
                   msystem: MINGW64
                   install: mingw-w64-x86_64-gcc
-            - name: Identify native supervisor output-limit failure
+            - name: Verify native supervisor pipe EOF and failure regressions
               shell: pwsh
               run: |
                   $compiler = Join-Path '${{ steps.supervisor-msys2.outputs.msys2-location }}' 'mingw64/bin/gcc.exe'
-                  python src/test/integration/attachment-host-observations/windows-supervisor-race.py `
+                  python src/test/integration/windows-supervisor-pipe.py `
                       --compiler $compiler `
-                      --output build/test-results/attachment-host-observations/supervisor-race/evidence
-                  if ($LASTEXITCODE -ne 0) { throw 'supervisor diagnostic failed' }
+                      --results build/test-results/attachment-host-observations/supervisor-race/evidence
+                  if ($LASTEXITCODE -ne 0) { throw 'supervisor pipe regression failed' }
             - name: Observe Java21 validator working directories on owned Windows paths
               shell: pwsh
               run: |
