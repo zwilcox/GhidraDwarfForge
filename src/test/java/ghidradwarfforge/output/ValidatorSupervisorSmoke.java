@@ -85,7 +85,9 @@ public final class ValidatorSupervisorSmoke {
                 throw new AssertionError("unsafe validator succeeded: " + mode);
             }
             catch (ValidatorSupervisor.Failure expected) {
-                require(expected.evidence() != null && expected.evidence().status().cleanupComplete(), "failure did not clean up");
+                require(expected.evidence() != null && expected.evidence().status().cleanupComplete(),
+                    "failure did not clean up: mode=" + mode + " status=" +
+                    (expected.evidence() == null ? "missing" : expected.evidence().status()) + " cause=" + expected);
                 String reason = switch (mode) {
                     case "error" -> "tool_error";
                     case "flood" -> "output_limit";

@@ -337,6 +337,14 @@ jobs:
       - name: Locate audited Windows metadata compiler
         run: printf 'FORGE_METADATA_CC=%s\n' "$(cygpath -w "$(command -v gcc)")" >> "$GITHUB_ENV"
 
+      - name: Windows pipe EOF after writer termination and real I/O failures
+        shell: pwsh
+        run: |
+            python src/test/integration/windows-supervisor-pipe.py `
+                --compiler $env:FORGE_METADATA_CC `
+                --results build/test-results/native-windows/supervisor-pipe
+            if ($LASTEXITCODE -ne 0) { throw 'Windows supervisor pipe regression failed' }
+
       - name: Isolated Windows identity and metadata application
         shell: pwsh
         run: |
