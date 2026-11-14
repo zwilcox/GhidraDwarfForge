@@ -1,0 +1,1752 @@
+{
+    "schema": 1,
+    "scope": "Production Java line coverage from extension-build JavaExec tests",
+    "repository": "zwilcox/GhidraDwarfForge",
+    "commit": "8f49e96c122f4a31a3125eec5f6d8b40134e6349",
+    "runId": 43530431362,
+    "metric": "LINE",
+    "covered": 22865,
+    "missed": 6915,
+    "percent": "76.8",
+    "jacocoVersion": "0.8.16",
+    "xmlSha256": "f01cf0f0ac50269dcf0e5cbb75b6f3c85c8de7c16c39a8968d58e06cd743f04d",
+    "tasks": [
+        "aarch64AbiSelectionSmoke",
+        "aarch64ParameterAllocationSmoke",
+        "addressNormalizerSmoke",
+        "allocationDecompilerSmoke",
+        "annotatedSourceSmoke",
+        "annotationTextSmoke",
+        "arm32CallPolicySmoke",
+        "arm32FunctionAliasSymbolsSmoke",
+        "arm32ModeSymbolsSmoke",
+        "arm32SectionModesSmoke",
+        "armCompositeParameterAllocationSmoke",
+        "armHfaParameterAllocationSmoke",
+        "artifactPairPublisherSmoke",
+        "attachmentExportBindingSmoke",
+        "attachmentFileStoreSmoke",
+        "attachmentGuiProcessSmoke",
+        "attachmentHelperSmoke",
+        "attachmentInvocationSmoke",
+        "attachmentOperationSmoke",
+        "attachmentPreparationSmoke",
+        "attachmentProtocolSmoke",
+        "attachmentReceiptStoreSmoke",
+        "attachmentRecoveryInvocationSmoke",
+        "attachmentTargetStoreSmoke",
+        "attachmentTransactionSmoke",
+        "boundedSwitchProofSmoke",
+        "buildIdFileLockSmoke",
+        "buildIdRecordsSmoke",
+        "callArgumentFlowSmoke",
+        "callEntryContractSmoke",
+        "callFrameEncoderSmoke",
+        "callMemoryEffectsSmoke",
+        "callOriginSymbolsSmoke",
+        "callSiteEvidenceSmoke",
+        "callValueSmoke",
+        "callingConventionPolicySmoke",
+        "classBindingEvidenceSmoke",
+        "classScopeExtractionSmoke",
+        "classScopeModelSmoke",
+        "classScopeNamesSmoke",
+        "classScopeSmoke",
+        "companionArtifactPublisherSmoke",
+        "compilerCallPolicySmoke",
+        "compositeRegisterPrefixSmoke",
+        "compositeValueFlowSmoke",
+        "cortexM3ProfileSmoke",
+        "coverageComparisonPresentationSmoke",
+        "coverageComparisonSmoke",
+        "coveragePresentationSmoke",
+        "coverageReportClaimsSmoke",
+        "coverageReportJsonSmoke",
+        "coverageTypeEvidenceSmoke",
+        "coverageVariableComparisonSmoke",
+        "curatedThunkSmoke",
+        "customCallStorageSmoke",
+        "cxxProfileSmoke",
+        "debugCompressionSmoke",
+        "debuglinkBasenameSmoke",
+        "debuglinkCandidateContentSmoke",
+        "declarationBindingEvidenceSmoke",
+        "defaultTypeIdentitySmoke",
+        "definedRegisterLocalSmoke",
+        "delayedReturnPrefixSmoke",
+        "directLeafCallSmoke",
+        "dwarfAddressRangesSmoke",
+        "dwarfInfoRepairSmoke",
+        "dwarfLineTableSmoke",
+        "dwarfLocationListsSmoke",
+        "dwarfRangeListsSmoke",
+        "dwarfTargetSmoke",
+        "dynamicCompositeOrderSmoke",
+        "dynamicParameterStorageSmoke",
+        "dynamicSymbolMirrorSmoke",
+        "elfBuildIdSmoke",
+        "elfCodeBytesSmoke",
+        "elfCopyCancellationSmoke",
+        "elfImageBaseSmoke",
+        "elfImageReaderSmoke",
+        "elfRelocatedPointersSmoke",
+        "elfRelocationEffectsSmoke",
+        "elfRuntimeRelocationsSmoke",
+        "executableProgramBytesSmoke",
+        "existingDebugSidecarSmoke",
+        "exportArtifactHashBindingSmoke",
+        "exportConsistencySmoke",
+        "exportCoverageSmoke",
+        "exportPhaseSmoke",
+        "exportReportClaimsSmoke",
+        "exportReportCoverageSmoke",
+        "exportReportDetailsSmoke",
+        "exportReportSmoke",
+        "extendedSectionNumberingSmoke",
+        "externalFunctionInventorySmoke",
+        "fileDigestsSmoke",
+        "firmwareInputsSmoke",
+        "firmwareMemoryMapSmoke",
+        "floatingTypeLayoutSmoke",
+        "formalFunctionReturnSmoke",
+        "formatterPlanSmoke",
+        "functionAliasSymbolsSmoke",
+        "functionEntrySmoke",
+        "functionPointerCallPolicySmoke",
+        "functionRelationExtractionSmoke",
+        "functionRelationsSmoke",
+        "ghidraArm32FunctionModesSmoke",
+        "ghidraArm32SectionModesSmoke",
+        "ghidraArmBe8ProfileSmoke",
+        "ghidraCortexM3ProfileSmoke",
+        "ghidraFirmwareMemoryMapSmoke",
+        "ghidraFunctionAliasesSmoke",
+        "ghidraImageBaseSmoke",
+        "ghidraInstructionEvidenceSmoke",
+        "ghidraMmioEvidenceSmoke",
+        "ghidraTargetAgreementSmoke",
+        "ghidraUnwindCallsSmoke",
+        "ghidraUnwindInstructionsSmoke",
+        "ghidraVariableIdentitySmoke",
+        "globalScopeNamesSmoke",
+        "i386AbiSelectionSmoke",
+        "i386ParameterAllocationSmoke",
+        "indirectParameterStorageSmoke",
+        "inheritanceBindingEvidenceSmoke",
+        "inheritanceModelSmoke",
+        "inspectedCallsSmoke",
+        "intraInstructionFlowSmoke",
+        "laterRegisterLocalSmoke",
+        "lexicalScopeEvidenceSmoke",
+        "lexicalScopeModelSmoke",
+        "localCallLifetimeSmoke",
+        "localDefinitionFlowSmoke",
+        "localMappingsSmoke",
+        "localSymbolMergeSmoke",
+        "locationCoverageSmoke",
+        "locationEmissionPlanSmoke",
+        "matchedElfAllocationsSmoke",
+        "matchedElfPrefixSmoke",
+        "mergedLocalLifetimeSmoke",
+        "mipsAbiFlagsSmoke",
+        "mipsAggregateCallPolicySmoke",
+        "mipsFloatingCallPolicySmoke",
+        "mipsFp32PairSmoke",
+        "mipsFunctionAliasSymbolsSmoke",
+        "mipsN32ParameterAllocationSmoke",
+        "mipsWideCallPolicySmoke",
+        "mixedParameterPrefixSmoke",
+        "mutableStackMappingsSmoke",
+        "objectParameterSmoke",
+        "opaqueRegisterEffectsSmoke",
+        "originalFrameRangesSmoke",
+        "originalFrameSourcesSmoke",
+        "outputPathPolicySmoke",
+        "outsideBodyFlowSmoke",
+        "ownedDebuglinkCandidateSmoke",
+        "packagedNativeLibrariesSmoke",
+        "pathTraversalSmoke",
+        "qualifiedFunctionNameSmoke",
+        "recoveredParameterSmoke",
+        "recoveredReturnSmoke",
+        "registerAliasSmoke",
+        "registerBodyCoverageSmoke",
+        "registerByteSliceFlowSmoke",
+        "registerCopyChainSmoke",
+        "registerCopySmoke",
+        "registerPrefixSmoke",
+        "reportValueReaderSmoke",
+        "secondRegisterCopySmoke",
+        "sectionlessDynamicSymbolsSmoke",
+        "sectionlessUnwindSmoke",
+        "sourceBundleFilesSmoke",
+        "sourceBundleSmoke",
+        "sourceBundleStoreSmoke",
+        "sourceCoverageInventorySmoke",
+        "sourceCoverageSmoke",
+        "sourcePartitionSmoke",
+        "stackControlFlowSmoke",
+        "stackFirstUseSmoke",
+        "stackLocalIdentitySmoke",
+        "stackLocalLifetimeSmoke",
+        "stackSpillSmoke",
+        "stackValueFlowSmoke",
+        "staticBindingEvidenceSmoke",
+        "staticRecoverySmoke",
+        "staticScopeExtractionSmoke",
+        "strictDwarfReportSmoke",
+        "syntheticSourceSmoke",
+        "tailStateProofSmoke",
+        "terminalStackValueSmoke",
+        "truncatedSpaceStoreSmoke",
+        "truncatedStackDepthSmoke",
+        "typeCoverageSmoke",
+        "typeGraphEvidenceSmoke",
+        "typeGraphSmoke",
+        "unwindAbiProfileSmoke",
+        "unwindCallsSmoke",
+        "unwindEvidenceJsonSmoke",
+        "unwindFlowSmoke",
+        "unwindFrameRowsSmoke",
+        "unwindOptionsSmoke",
+        "unwindStackSeparationSmoke",
+        "upperAliasValueFlowSmoke",
+        "validatorSupervisorSmoke",
+        "variableCoverageInventorySmoke",
+        "variableStorageSmoke",
+        "vtableBindingEvidenceSmoke",
+        "vtableSymbolsSmoke"
+    ],
+    "sources": [
+        {
+            "source": "ghidradwarfforge/AddressNormalizer.java",
+            "covered": 2,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/CallMemoryEffects.java",
+            "covered": 133,
+            "missed": 3,
+            "percent": "97.8"
+        },
+        {
+            "source": "ghidradwarfforge/CompositeValueFlow.java",
+            "covered": 84,
+            "missed": 3,
+            "percent": "96.6"
+        },
+        {
+            "source": "ghidradwarfforge/DirectLeafCalls.java",
+            "covered": 126,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/ExporterPreflight.java",
+            "covered": 0,
+            "missed": 10,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraAllocationDecompiler.java",
+            "covered": 60,
+            "missed": 79,
+            "percent": "43.2"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraAnnotationInventory.java",
+            "covered": 0,
+            "missed": 109,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraArm32FunctionModes.java",
+            "covered": 175,
+            "missed": 8,
+            "percent": "95.6"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraArm32SectionModes.java",
+            "covered": 106,
+            "missed": 6,
+            "percent": "94.6"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraCallParameters.java",
+            "covered": 139,
+            "missed": 5,
+            "percent": "96.5"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraClassBindings.java",
+            "covered": 82,
+            "missed": 3,
+            "percent": "96.5"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraClassScopes.java",
+            "covered": 127,
+            "missed": 8,
+            "percent": "94.1"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraCompilerCallPolicy.java",
+            "covered": 13,
+            "missed": 4,
+            "percent": "76.5"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraCortexM3Profile.java",
+            "covered": 24,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraCustomCallStorage.java",
+            "covered": 40,
+            "missed": 8,
+            "percent": "83.3"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraCxxProfile.java",
+            "covered": 126,
+            "missed": 34,
+            "percent": "78.8"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraDeclarationBindings.java",
+            "covered": 67,
+            "missed": 1,
+            "percent": "98.5"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraEncoderTree.java",
+            "covered": 70,
+            "missed": 2,
+            "percent": "97.2"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraEquateEvidence.java",
+            "covered": 0,
+            "missed": 122,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraEquateNames.java",
+            "covered": 0,
+            "missed": 25,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraEquateSource.java",
+            "covered": 0,
+            "missed": 49,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraExportConsistency.java",
+            "covered": 26,
+            "missed": 1,
+            "percent": "96.3"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraFunctionAliases.java",
+            "covered": 102,
+            "missed": 8,
+            "percent": "92.7"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraFunctionRelations.java",
+            "covered": 38,
+            "missed": 7,
+            "percent": "84.4"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraFunctionSymbols.java",
+            "covered": 72,
+            "missed": 27,
+            "percent": "72.7"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraImageBase.java",
+            "covered": 7,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraInheritanceBindings.java",
+            "covered": 229,
+            "missed": 4,
+            "percent": "98.3"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraInstructionContext.java",
+            "covered": 0,
+            "missed": 184,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraInstructionEvidence.java",
+            "covered": 61,
+            "missed": 8,
+            "percent": "88.4"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraLexicalScopes.java",
+            "covered": 211,
+            "missed": 10,
+            "percent": "95.5"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraListingAnnotationSource.java",
+            "covered": 0,
+            "missed": 65,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraLocalMappings.java",
+            "covered": 129,
+            "missed": 13,
+            "percent": "90.8"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraMmioProfile.java",
+            "covered": 55,
+            "missed": 37,
+            "percent": "59.8"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraParameterAllocation.java",
+            "covered": 15,
+            "missed": 1,
+            "percent": "93.8"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraProjectOutputProtection.java",
+            "covered": 0,
+            "missed": 31,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraSourceContext.java",
+            "covered": 0,
+            "missed": 181,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraStaticBindings.java",
+            "covered": 130,
+            "missed": 8,
+            "percent": "94.2"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraStaticRecovery.java",
+            "covered": 41,
+            "missed": 46,
+            "percent": "47.1"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraSyntheticSource.java",
+            "covered": 71,
+            "missed": 84,
+            "percent": "45.8"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraTargetAgreement.java",
+            "covered": 26,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraTypeGraph.java",
+            "covered": 605,
+            "missed": 60,
+            "percent": "91.0"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraVariableStorage.java",
+            "covered": 817,
+            "missed": 50,
+            "percent": "94.2"
+        },
+        {
+            "source": "ghidradwarfforge/GhidraVtableBindings.java",
+            "covered": 211,
+            "missed": 31,
+            "percent": "87.2"
+        },
+        {
+            "source": "ghidradwarfforge/IntraInstructionFlow.java",
+            "covered": 39,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/MergedLocalLifetime.java",
+            "covered": 162,
+            "missed": 1,
+            "percent": "99.4"
+        },
+        {
+            "source": "ghidradwarfforge/RegisterByteSlice.java",
+            "covered": 36,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/RegisterCopyLifetime.java",
+            "covered": 138,
+            "missed": 2,
+            "percent": "98.6"
+        },
+        {
+            "source": "ghidradwarfforge/RegisterDefinitionFlow.java",
+            "covered": 162,
+            "missed": 10,
+            "percent": "94.2"
+        },
+        {
+            "source": "ghidradwarfforge/StackLocalLifetime.java",
+            "covered": 38,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/StackSpillLifetime.java",
+            "covered": 125,
+            "missed": 6,
+            "percent": "95.4"
+        },
+        {
+            "source": "ghidradwarfforge/StackValueFlow.java",
+            "covered": 525,
+            "missed": 17,
+            "percent": "96.9"
+        },
+        {
+            "source": "ghidradwarfforge/TruncatedStackDepth.java",
+            "covered": 72,
+            "missed": 4,
+            "percent": "94.7"
+        },
+        {
+            "source": "ghidradwarfforge/annotations/EquateCatalog.java",
+            "covered": 0,
+            "missed": 106,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/annotations/SyntheticConstant.java",
+            "covered": 0,
+            "missed": 9,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/annotations/SyntheticConstants.java",
+            "covered": 4,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/calls/CallSitePlan.java",
+            "covered": 51,
+            "missed": 9,
+            "percent": "85.0"
+        },
+        {
+            "source": "ghidradwarfforge/calls/CallValue.java",
+            "covered": 144,
+            "missed": 8,
+            "percent": "94.7"
+        },
+        {
+            "source": "ghidradwarfforge/calls/GhidraBoundedSwitch.java",
+            "covered": 208,
+            "missed": 9,
+            "percent": "95.9"
+        },
+        {
+            "source": "ghidradwarfforge/calls/GhidraCallArgumentFlow.java",
+            "covered": 193,
+            "missed": 7,
+            "percent": "96.5"
+        },
+        {
+            "source": "ghidradwarfforge/calls/GhidraCallSiteEvidence.java",
+            "covered": 178,
+            "missed": 6,
+            "percent": "96.7"
+        },
+        {
+            "source": "ghidradwarfforge/calls/GhidraCallSitePlan.java",
+            "covered": 101,
+            "missed": 5,
+            "percent": "95.3"
+        },
+        {
+            "source": "ghidradwarfforge/calls/GhidraTailStateProof.java",
+            "covered": 171,
+            "missed": 1,
+            "percent": "99.4"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/DecodedInstructions.java",
+            "covered": 15,
+            "missed": 3,
+            "percent": "83.3"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/ExportCoverage.java",
+            "covered": 70,
+            "missed": 4,
+            "percent": "94.6"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/ExportEmission.java",
+            "covered": 37,
+            "missed": 3,
+            "percent": "92.5"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/LocationCoverage.java",
+            "covered": 76,
+            "missed": 2,
+            "percent": "97.4"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/SourceCoverage.java",
+            "covered": 5,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/SourceCoverageIndex.java",
+            "covered": 78,
+            "missed": 4,
+            "percent": "95.1"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/SourceCoverageInventory.java",
+            "covered": 105,
+            "missed": 3,
+            "percent": "97.2"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/TypeCoverage.java",
+            "covered": 6,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/TypeCoverageIndex.java",
+            "covered": 129,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/TypeGraphEvidence.java",
+            "covered": 131,
+            "missed": 4,
+            "percent": "97.0"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/VariableCoverageInventory.java",
+            "covered": 169,
+            "missed": 4,
+            "percent": "97.7"
+        },
+        {
+            "source": "ghidradwarfforge/coverage/VariableCoverageTotals.java",
+            "covered": 39,
+            "missed": 2,
+            "percent": "95.1"
+        },
+        {
+            "source": "ghidradwarfforge/dwarf/Dwarf32InfoRepair.java",
+            "covered": 112,
+            "missed": 57,
+            "percent": "66.3"
+        },
+        {
+            "source": "ghidradwarfforge/dwarf/Dwarf5LineTable.java",
+            "covered": 164,
+            "missed": 5,
+            "percent": "97.0"
+        },
+        {
+            "source": "ghidradwarfforge/dwarf/Dwarf5LocationLists.java",
+            "covered": 111,
+            "missed": 11,
+            "percent": "91.0"
+        },
+        {
+            "source": "ghidradwarfforge/dwarf/Dwarf5RangeLists.java",
+            "covered": 92,
+            "missed": 3,
+            "percent": "96.8"
+        },
+        {
+            "source": "ghidradwarfforge/dwarf/DwarfAddressRanges.java",
+            "covered": 34,
+            "missed": 1,
+            "percent": "97.1"
+        },
+        {
+            "source": "ghidradwarfforge/dwarf/DwarfDebugFrame.java",
+            "covered": 166,
+            "missed": 7,
+            "percent": "96.0"
+        },
+        {
+            "source": "ghidradwarfforge/dwarf/DwarfInheritanceExpression.java",
+            "covered": 0,
+            "missed": 28,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/dwarf/DwarfLocationExpression.java",
+            "covered": 66,
+            "missed": 6,
+            "percent": "91.7"
+        },
+        {
+            "source": "ghidradwarfforge/dwarf/SyntheticSourceRelocation.java",
+            "covered": 0,
+            "missed": 182,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/Arm32CallAbi.java",
+            "covered": 100,
+            "missed": 3,
+            "percent": "97.1"
+        },
+        {
+            "source": "ghidradwarfforge/elf/Arm32CallPolicy.java",
+            "covered": 138,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/Arm32FunctionAliasSymbols.java",
+            "covered": 160,
+            "missed": 7,
+            "percent": "95.8"
+        },
+        {
+            "source": "ghidradwarfforge/elf/Arm32ModeSymbols.java",
+            "covered": 235,
+            "missed": 19,
+            "percent": "92.5"
+        },
+        {
+            "source": "ghidradwarfforge/elf/Arm32SectionModes.java",
+            "covered": 121,
+            "missed": 11,
+            "percent": "91.7"
+        },
+        {
+            "source": "ghidradwarfforge/elf/Arm32SymbolValues.java",
+            "covered": 4,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/CallOriginSymbols.java",
+            "covered": 82,
+            "missed": 5,
+            "percent": "94.3"
+        },
+        {
+            "source": "ghidradwarfforge/elf/CortexM3Profile.java",
+            "covered": 20,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/DebugSectionCompression.java",
+            "covered": 50,
+            "missed": 2,
+            "percent": "96.2"
+        },
+        {
+            "source": "ghidradwarfforge/elf/DebuglinkCandidateContent.java",
+            "covered": 250,
+            "missed": 11,
+            "percent": "95.8"
+        },
+        {
+            "source": "ghidradwarfforge/elf/DynamicSymbolMirror.java",
+            "covered": 212,
+            "missed": 4,
+            "percent": "98.1"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfBuildId.java",
+            "covered": 150,
+            "missed": 6,
+            "percent": "96.2"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfCodeBytes.java",
+            "covered": 94,
+            "missed": 1,
+            "percent": "98.9"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfFunctionAlias.java",
+            "covered": 31,
+            "missed": 2,
+            "percent": "93.9"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfFunctionModeCue.java",
+            "covered": 6,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfImage.java",
+            "covered": 266,
+            "missed": 5,
+            "percent": "98.2"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfLoadAllocations.java",
+            "covered": 25,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfLocalFunctionSymbol.java",
+            "covered": 6,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfLocalMappingSymbol.java",
+            "covered": 6,
+            "missed": 1,
+            "percent": "85.7"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfLocalObjectSymbol.java",
+            "covered": 4,
+            "missed": 1,
+            "percent": "80.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfLocalSymbol.java",
+            "covered": 0,
+            "missed": 0,
+            "percent": null
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfNoteFormats.java",
+            "covered": 4,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfRelocatedPointers.java",
+            "covered": 62,
+            "missed": 2,
+            "percent": "96.9"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfRelocationEffects.java",
+            "covered": 156,
+            "missed": 1,
+            "percent": "99.4"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ElfRuntimeRelocations.java",
+            "covered": 163,
+            "missed": 3,
+            "percent": "98.2"
+        },
+        {
+            "source": "ghidradwarfforge/elf/EquateNameReservations.java",
+            "covered": 34,
+            "missed": 39,
+            "percent": "46.6"
+        },
+        {
+            "source": "ghidradwarfforge/elf/ExecutableProgramBytes.java",
+            "covered": 248,
+            "missed": 12,
+            "percent": "95.4"
+        },
+        {
+            "source": "ghidradwarfforge/elf/FunctionAliasSymbols.java",
+            "covered": 179,
+            "missed": 5,
+            "percent": "97.3"
+        },
+        {
+            "source": "ghidradwarfforge/elf/GdbCompanion.java",
+            "covered": 0,
+            "missed": 153,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/InheritedFrameBytes.java",
+            "covered": 28,
+            "missed": 4,
+            "percent": "87.5"
+        },
+        {
+            "source": "ghidradwarfforge/elf/MatchedElfAllocations.java",
+            "covered": 367,
+            "missed": 22,
+            "percent": "94.3"
+        },
+        {
+            "source": "ghidradwarfforge/elf/MatchedElfPrefix.java",
+            "covered": 125,
+            "missed": 7,
+            "percent": "94.7"
+        },
+        {
+            "source": "ghidradwarfforge/elf/MatchedElfSidecarWriter.java",
+            "covered": 537,
+            "missed": 46,
+            "percent": "92.1"
+        },
+        {
+            "source": "ghidradwarfforge/elf/MipsAbiFlags.java",
+            "covered": 63,
+            "missed": 1,
+            "percent": "98.4"
+        },
+        {
+            "source": "ghidradwarfforge/elf/MipsAggregateCallPolicy.java",
+            "covered": 102,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/MipsDynamicSymbols.java",
+            "covered": 1,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/MipsFloatingCallPolicy.java",
+            "covered": 83,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/MipsFunctionAliasSymbols.java",
+            "covered": 62,
+            "missed": 2,
+            "percent": "96.9"
+        },
+        {
+            "source": "ghidradwarfforge/elf/MipsWideCallPolicy.java",
+            "covered": 136,
+            "missed": 1,
+            "percent": "99.3"
+        },
+        {
+            "source": "ghidradwarfforge/elf/OriginalFrameSources.java",
+            "covered": 131,
+            "missed": 24,
+            "percent": "84.5"
+        },
+        {
+            "source": "ghidradwarfforge/elf/OriginalFrameView.java",
+            "covered": 55,
+            "missed": 1,
+            "percent": "98.2"
+        },
+        {
+            "source": "ghidradwarfforge/elf/OriginalUnwindCoverage.java",
+            "covered": 45,
+            "missed": 4,
+            "percent": "91.8"
+        },
+        {
+            "source": "ghidradwarfforge/elf/OwnedDebuglinkCandidate.java",
+            "covered": 221,
+            "missed": 6,
+            "percent": "97.4"
+        },
+        {
+            "source": "ghidradwarfforge/elf/SectionlessDynamicSymbols.java",
+            "covered": 287,
+            "missed": 9,
+            "percent": "97.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/SectionlessUnwind.java",
+            "covered": 163,
+            "missed": 3,
+            "percent": "98.2"
+        },
+        {
+            "source": "ghidradwarfforge/elf/SyntheticSourceSidecar.java",
+            "covered": 0,
+            "missed": 200,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/elf/VtableSymbols.java",
+            "covered": 88,
+            "missed": 8,
+            "percent": "91.7"
+        },
+        {
+            "source": "ghidradwarfforge/firmware/FirmwareExportImage.java",
+            "covered": 0,
+            "missed": 162,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/firmware/FirmwareMemoryMap.java",
+            "covered": 74,
+            "missed": 2,
+            "percent": "97.4"
+        },
+        {
+            "source": "ghidradwarfforge/firmware/FirmwareTarget.java",
+            "covered": 16,
+            "missed": 7,
+            "percent": "69.6"
+        },
+        {
+            "source": "ghidradwarfforge/firmware/GhidraFirmwareMemoryMap.java",
+            "covered": 94,
+            "missed": 6,
+            "percent": "94.0"
+        },
+        {
+            "source": "ghidradwarfforge/firmware/GhidraFirmwareSession.java",
+            "covered": 0,
+            "missed": 117,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/formatters/FormatterPlan.java",
+            "covered": 72,
+            "missed": 7,
+            "percent": "91.1"
+        },
+        {
+            "source": "ghidradwarfforge/locations/TargetRegisterMap.java",
+            "covered": 156,
+            "missed": 9,
+            "percent": "94.5"
+        },
+        {
+            "source": "ghidradwarfforge/locations/VariableStorageModel.java",
+            "covered": 90,
+            "missed": 13,
+            "percent": "87.4"
+        },
+        {
+            "source": "ghidradwarfforge/nativeapi/Arm32EndianProfile.java",
+            "covered": 12,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/nativeapi/DwarfConstants.java",
+            "covered": 0,
+            "missed": 0,
+            "percent": null
+        },
+        {
+            "source": "ghidradwarfforge/nativeapi/DwarfNativeTypes.java",
+            "covered": 0,
+            "missed": 16,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/nativeapi/DwarfTarget.java",
+            "covered": 82,
+            "missed": 12,
+            "percent": "87.2"
+        },
+        {
+            "source": "ghidradwarfforge/nativeapi/LibDwarfConsumer.java",
+            "covered": 0,
+            "missed": 0,
+            "percent": null
+        },
+        {
+            "source": "ghidradwarfforge/nativeapi/LibDwarfProducer.java",
+            "covered": 0,
+            "missed": 0,
+            "percent": null
+        },
+        {
+            "source": "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java",
+            "covered": 97,
+            "missed": 1099,
+            "percent": "8.1"
+        },
+        {
+            "source": "ghidradwarfforge/nativeapi/PackagedNativeLibraries.java",
+            "covered": 53,
+            "missed": 14,
+            "percent": "79.1"
+        },
+        {
+            "source": "ghidradwarfforge/output/ArtifactPairPublisher.java",
+            "covered": 136,
+            "missed": 9,
+            "percent": "93.8"
+        },
+        {
+            "source": "ghidradwarfforge/output/ArtifactValidationBinding.java",
+            "covered": 0,
+            "missed": 53,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentCancellationFile.java",
+            "covered": 17,
+            "missed": 2,
+            "percent": "89.5"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentExportBinding.java",
+            "covered": 60,
+            "missed": 14,
+            "percent": "81.1"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentFileStore.java",
+            "covered": 122,
+            "missed": 10,
+            "percent": "92.4"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentGui.java",
+            "covered": 34,
+            "missed": 194,
+            "percent": "14.9"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentHelper.java",
+            "covered": 139,
+            "missed": 131,
+            "percent": "51.5"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentInvocation.java",
+            "covered": 106,
+            "missed": 3,
+            "percent": "97.2"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentOperation.java",
+            "covered": 162,
+            "missed": 13,
+            "percent": "92.6"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentPathArgument.java",
+            "covered": 21,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentPaths.java",
+            "covered": 61,
+            "missed": 6,
+            "percent": "91.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentPreparation.java",
+            "covered": 71,
+            "missed": 2,
+            "percent": "97.3"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentReceipt.java",
+            "covered": 205,
+            "missed": 20,
+            "percent": "91.1"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentReceiptStore.java",
+            "covered": 128,
+            "missed": 14,
+            "percent": "90.1"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentRecoveryFile.java",
+            "covered": 34,
+            "missed": 9,
+            "percent": "79.1"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentRecoveryInvocation.java",
+            "covered": 79,
+            "missed": 2,
+            "percent": "97.5"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentTargetStore.java",
+            "covered": 47,
+            "missed": 6,
+            "percent": "88.7"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentTransaction.java",
+            "covered": 254,
+            "missed": 15,
+            "percent": "94.4"
+        },
+        {
+            "source": "ghidradwarfforge/output/AttachmentValidator.java",
+            "covered": 0,
+            "missed": 204,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/BuildIdFileLock.java",
+            "covered": 56,
+            "missed": 9,
+            "percent": "86.2"
+        },
+        {
+            "source": "ghidradwarfforge/output/BuildIdHelper.java",
+            "covered": 0,
+            "missed": 179,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/BuildIdInstallation.java",
+            "covered": 0,
+            "missed": 417,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/BuildIdRecords.java",
+            "covered": 24,
+            "missed": 39,
+            "percent": "38.1"
+        },
+        {
+            "source": "ghidradwarfforge/output/CompanionArtifactPublisher.java",
+            "covered": 138,
+            "missed": 26,
+            "percent": "84.1"
+        },
+        {
+            "source": "ghidradwarfforge/output/CoverageComparison.java",
+            "covered": 113,
+            "missed": 1,
+            "percent": "99.1"
+        },
+        {
+            "source": "ghidradwarfforge/output/CoverageComparisonPresentation.java",
+            "covered": 32,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/CoveragePresentation.java",
+            "covered": 84,
+            "missed": 7,
+            "percent": "92.3"
+        },
+        {
+            "source": "ghidradwarfforge/output/CoverageReportClaims.java",
+            "covered": 454,
+            "missed": 10,
+            "percent": "97.8"
+        },
+        {
+            "source": "ghidradwarfforge/output/CoverageReportGui.java",
+            "covered": 0,
+            "missed": 148,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/CoverageReportJson.java",
+            "covered": 322,
+            "missed": 7,
+            "percent": "97.9"
+        },
+        {
+            "source": "ghidradwarfforge/output/CoverageReportTool.java",
+            "covered": 85,
+            "missed": 4,
+            "percent": "95.5"
+        },
+        {
+            "source": "ghidradwarfforge/output/CoverageTypeEvidence.java",
+            "covered": 62,
+            "missed": 13,
+            "percent": "82.7"
+        },
+        {
+            "source": "ghidradwarfforge/output/CoverageVariableComparison.java",
+            "covered": 118,
+            "missed": 1,
+            "percent": "99.2"
+        },
+        {
+            "source": "ghidradwarfforge/output/CxxSelection.java",
+            "covered": 96,
+            "missed": 24,
+            "percent": "80.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/DebuglinkBasename.java",
+            "covered": 29,
+            "missed": 5,
+            "percent": "85.3"
+        },
+        {
+            "source": "ghidradwarfforge/output/ExportArtifactHashBinding.java",
+            "covered": 67,
+            "missed": 1,
+            "percent": "98.5"
+        },
+        {
+            "source": "ghidradwarfforge/output/ExportReport.java",
+            "covered": 392,
+            "missed": 13,
+            "percent": "96.8"
+        },
+        {
+            "source": "ghidradwarfforge/output/ExportReportClaims.java",
+            "covered": 233,
+            "missed": 7,
+            "percent": "97.1"
+        },
+        {
+            "source": "ghidradwarfforge/output/FileDigests.java",
+            "covered": 32,
+            "missed": 4,
+            "percent": "88.9"
+        },
+        {
+            "source": "ghidradwarfforge/output/FileSystemPaths.java",
+            "covered": 13,
+            "missed": 3,
+            "percent": "81.3"
+        },
+        {
+            "source": "ghidradwarfforge/output/FirmwareInputs.java",
+            "covered": 36,
+            "missed": 1,
+            "percent": "97.3"
+        },
+        {
+            "source": "ghidradwarfforge/output/FormatterSelection.java",
+            "covered": 24,
+            "missed": 1,
+            "percent": "96.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/LinuxAtomicRename.java",
+            "covered": 23,
+            "missed": 7,
+            "percent": "76.7"
+        },
+        {
+            "source": "ghidradwarfforge/output/LinuxAttachmentHost.java",
+            "covered": 0,
+            "missed": 87,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/LinuxAttachmentMount.java",
+            "covered": 53,
+            "missed": 2,
+            "percent": "96.4"
+        },
+        {
+            "source": "ghidradwarfforge/output/LinuxBuildIdHost.java",
+            "covered": 21,
+            "missed": 41,
+            "percent": "33.9"
+        },
+        {
+            "source": "ghidradwarfforge/output/LinuxDirectorySync.java",
+            "covered": 60,
+            "missed": 4,
+            "percent": "93.8"
+        },
+        {
+            "source": "ghidradwarfforge/output/LinuxFileMetadata.java",
+            "covered": 99,
+            "missed": 103,
+            "percent": "49.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/LinuxMetadataVisibility.java",
+            "covered": 0,
+            "missed": 69,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/MmioSelection.java",
+            "covered": 75,
+            "missed": 1,
+            "percent": "98.7"
+        },
+        {
+            "source": "ghidradwarfforge/output/OutputPathPolicy.java",
+            "covered": 33,
+            "missed": 2,
+            "percent": "94.3"
+        },
+        {
+            "source": "ghidradwarfforge/output/ReportFileSave.java",
+            "covered": 14,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/ReportJsonReader.java",
+            "covered": 133,
+            "missed": 8,
+            "percent": "94.3"
+        },
+        {
+            "source": "ghidradwarfforge/output/ReportValueReader.java",
+            "covered": 87,
+            "missed": 1,
+            "percent": "98.9"
+        },
+        {
+            "source": "ghidradwarfforge/output/SourceBundle.java",
+            "covered": 185,
+            "missed": 4,
+            "percent": "97.9"
+        },
+        {
+            "source": "ghidradwarfforge/output/SourceBundleFiles.java",
+            "covered": 100,
+            "missed": 14,
+            "percent": "87.7"
+        },
+        {
+            "source": "ghidradwarfforge/output/SourceBundleStore.java",
+            "covered": 96,
+            "missed": 4,
+            "percent": "96.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/StrictDwarfCheck.java",
+            "covered": 0,
+            "missed": 66,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/StrictDwarfReport.java",
+            "covered": 106,
+            "missed": 2,
+            "percent": "98.1"
+        },
+        {
+            "source": "ghidradwarfforge/output/UnwindEvidenceJson.java",
+            "covered": 204,
+            "missed": 1,
+            "percent": "99.5"
+        },
+        {
+            "source": "ghidradwarfforge/output/ValidatorInput.java",
+            "covered": 35,
+            "missed": 5,
+            "percent": "87.5"
+        },
+        {
+            "source": "ghidradwarfforge/output/ValidatorSupervisor.java",
+            "covered": 145,
+            "missed": 22,
+            "percent": "86.8"
+        },
+        {
+            "source": "ghidradwarfforge/output/WindowsAttachmentHost.java",
+            "covered": 0,
+            "missed": 83,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/WindowsAttachmentMetadata.java",
+            "covered": 0,
+            "missed": 43,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/WindowsAttachmentPrivilege.java",
+            "covered": 0,
+            "missed": 76,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/WindowsBackupStreams.java",
+            "covered": 0,
+            "missed": 85,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/WindowsDirectorySync.java",
+            "covered": 0,
+            "missed": 97,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/WindowsFileMetadata.java",
+            "covered": 0,
+            "missed": 185,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/WindowsFileRename.java",
+            "covered": 0,
+            "missed": 70,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/WindowsFileSecurity.java",
+            "covered": 0,
+            "missed": 71,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/performance/ExportPhase.java",
+            "covered": 14,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/source/AnnotatedSourceFile.java",
+            "covered": 120,
+            "missed": 3,
+            "percent": "97.6"
+        },
+        {
+            "source": "ghidradwarfforge/source/AnnotationLimits.java",
+            "covered": 0,
+            "missed": 15,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/source/AnnotationText.java",
+            "covered": 44,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/source/FunctionStaticPolicy.java",
+            "covered": 18,
+            "missed": 1,
+            "percent": "94.7"
+        },
+        {
+            "source": "ghidradwarfforge/source/SourceContextMode.java",
+            "covered": 0,
+            "missed": 14,
+            "percent": "0.0"
+        },
+        {
+            "source": "ghidradwarfforge/source/SourcePartitionPlan.java",
+            "covered": 99,
+            "missed": 4,
+            "percent": "96.1"
+        },
+        {
+            "source": "ghidradwarfforge/source/SyntheticSourceFile.java",
+            "covered": 128,
+            "missed": 14,
+            "percent": "90.1"
+        },
+        {
+            "source": "ghidradwarfforge/targets/Aarch64ParameterAllocation.java",
+            "covered": 74,
+            "missed": 8,
+            "percent": "90.2"
+        },
+        {
+            "source": "ghidradwarfforge/targets/ArmCompositeParameterAllocation.java",
+            "covered": 85,
+            "missed": 3,
+            "percent": "96.6"
+        },
+        {
+            "source": "ghidradwarfforge/targets/ArmHfaParameterAllocation.java",
+            "covered": 90,
+            "missed": 3,
+            "percent": "96.8"
+        },
+        {
+            "source": "ghidradwarfforge/targets/CxxAbiProfile.java",
+            "covered": 25,
+            "missed": 1,
+            "percent": "96.2"
+        },
+        {
+            "source": "ghidradwarfforge/targets/I386ParameterAllocation.java",
+            "covered": 89,
+            "missed": 12,
+            "percent": "88.1"
+        },
+        {
+            "source": "ghidradwarfforge/targets/MipsWideParameterAllocation.java",
+            "covered": 139,
+            "missed": 7,
+            "percent": "95.2"
+        },
+        {
+            "source": "ghidradwarfforge/targets/TargetParameterAllocation.java",
+            "covered": 14,
+            "missed": 1,
+            "percent": "93.3"
+        },
+        {
+            "source": "ghidradwarfforge/targets/UnwindAbiProfile.java",
+            "covered": 115,
+            "missed": 3,
+            "percent": "97.5"
+        },
+        {
+            "source": "ghidradwarfforge/targets/UnwindRelocationProfile.java",
+            "covered": 33,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/targets/UnwindSectionProfile.java",
+            "covered": 7,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/types/ClassScopeModel.java",
+            "covered": 131,
+            "missed": 3,
+            "percent": "97.8"
+        },
+        {
+            "source": "ghidradwarfforge/types/ClassScopeNames.java",
+            "covered": 59,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/types/DebuggerCallRestrictions.java",
+            "covered": 41,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/types/FunctionRelations.java",
+            "covered": 44,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/types/GlobalScopeNames.java",
+            "covered": 36,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/types/InheritanceModel.java",
+            "covered": 94,
+            "missed": 1,
+            "percent": "98.9"
+        },
+        {
+            "source": "ghidradwarfforge/types/LexicalScopeModel.java",
+            "covered": 87,
+            "missed": 1,
+            "percent": "98.9"
+        },
+        {
+            "source": "ghidradwarfforge/types/ProgramTypeModel.java",
+            "covered": 204,
+            "missed": 22,
+            "percent": "90.3"
+        },
+        {
+            "source": "ghidradwarfforge/types/TypeGraph.java",
+            "covered": 134,
+            "missed": 12,
+            "percent": "91.8"
+        },
+        {
+            "source": "ghidradwarfforge/types/VtableEvidence.java",
+            "covered": 10,
+            "missed": 1,
+            "percent": "90.9"
+        },
+        {
+            "source": "ghidradwarfforge/unwind/CallFramePlan.java",
+            "covered": 63,
+            "missed": 4,
+            "percent": "94.0"
+        },
+        {
+            "source": "ghidradwarfforge/unwind/GhidraUnwindCalls.java",
+            "covered": 84,
+            "missed": 2,
+            "percent": "97.7"
+        },
+        {
+            "source": "ghidradwarfforge/unwind/GhidraUnwindFrames.java",
+            "covered": 62,
+            "missed": 3,
+            "percent": "95.4"
+        },
+        {
+            "source": "ghidradwarfforge/unwind/GhidraUnwindInstructions.java",
+            "covered": 168,
+            "missed": 18,
+            "percent": "90.3"
+        },
+        {
+            "source": "ghidradwarfforge/unwind/GhidraUnwindRecovery.java",
+            "covered": 76,
+            "missed": 4,
+            "percent": "95.0"
+        },
+        {
+            "source": "ghidradwarfforge/unwind/OriginalFrameRanges.java",
+            "covered": 162,
+            "missed": 3,
+            "percent": "98.2"
+        },
+        {
+            "source": "ghidradwarfforge/unwind/UnwindCalls.java",
+            "covered": 120,
+            "missed": 2,
+            "percent": "98.4"
+        },
+        {
+            "source": "ghidradwarfforge/unwind/UnwindFlow.java",
+            "covered": 211,
+            "missed": 4,
+            "percent": "98.1"
+        },
+        {
+            "source": "ghidradwarfforge/unwind/UnwindFrameRows.java",
+            "covered": 83,
+            "missed": 1,
+            "percent": "98.8"
+        },
+        {
+            "source": "ghidradwarfforge/unwind/UnwindOptions.java",
+            "covered": 56,
+            "missed": 5,
+            "percent": "91.8"
+        },
+        {
+            "source": "ghidradwarfforge/unwind/UnwindStackSeparation.java",
+            "covered": 73,
+            "missed": 1,
+            "percent": "98.6"
+        }
+    ]
+}
