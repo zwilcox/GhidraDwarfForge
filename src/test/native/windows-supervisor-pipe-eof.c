@@ -1,0 +1,95 @@
+/* Exercise actual Windows pipe EOF after a successful availability snapshot. */
+#define _WIN32_WINNT 0x0602
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <wchar.h>
+
+static HANDLE pending_writer;
+static bool intercepted;
+
+static BOOL controlled_peek(HANDLE pipe, LPVOID buffer, DWORD capacity,
+        LPDWORD read, LPDWORD available, LPDWORD remaining) {
+    BOOL result = PeekNamedPipe(pipe, buffer, capacity, read, available, remaining);
+    if (result && available && *available && pending_writer && !intercepted) {
+        if (!TerminateProcess(pending_writer, 125) ||
+                WaitForSingleObject(pending_writer, 5000) != WAIT_OBJECT_0) {
+            SetLastError(ERROR_GEN_FAILURE);
+            return FALSE;
+        }
+        intercepted = true;
+    }
+    return result;
+}
+
+#define PeekNamedPipe controlled_peek
+#define wmain supervisor_program_main
+#include "../../../native/supervisor/forge-supervisor-windows.c"
+#undef wmain
+#undef PeekNamedPipe
+
+int wmain(int argc, wchar_t **argv) {
+    if (argc == 2 && wcscmp(argv[1], L"--writer") == 0) {
+        char bytes[65536];
+        memset(bytes, 'x', sizeof(bytes));
+        DWORD count;
+        return WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), bytes, sizeof(bytes), &count, NULL) ? 0 : 2;
+    }
+    if (argc != 2) return 64;
+    SECURITY_ATTRIBUTES inherited = { sizeof(inherited), NULL, TRUE };
+    HANDLE read_pipe = INVALID_HANDLE_VALUE, write_pipe = INVALID_HANDLE_VALUE;
+    HANDLE input = INVALID_HANDLE_VALUE, log = INVALID_HANDLE_VALUE;
+    PROCESS_INFORMATION child = {0};
+    int result = 1;
+    if (!CreatePipe(&read_pipe, &write_pipe, &inherited, 4096) ||
+            !SetHandleInformation(read_pipe, HANDLE_FLAG_INHERIT, 0)) goto finished;
+    input = CreateFileW(L"NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+        &inherited, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    log = CreateFileW(argv[1], GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (input == INVALID_HANDLE_VALUE || log == INVALID_HANDLE_VALUE) goto finished;
+    wchar_t executable[4096], command[8192];
+    DWORD length = GetModuleFileNameW(NULL, executable, 4096);
+    if (!length || length >= 4096 || swprintf(command, 8192, L"\"%ls\" --writer", executable) < 0) goto finished;
+    STARTUPINFOW startup = {0};
+    startup.cb = sizeof(startup);
+    startup.dwFlags = STARTF_USESTDHANDLES;
+    startup.hStdInput = input;
+    startup.hStdOutput = write_pipe;
+    startup.hStdError = write_pipe;
+    if (!CreateProcessW(executable, command, NULL, NULL, TRUE, CREATE_NO_WINDOW,
+            NULL, NULL, &startup, &child)) goto finished;
+    CloseHandle(write_pipe);
+    write_pipe = INVALID_HANDLE_VALUE;
+    ULONGLONG deadline = GetTickCount64() + 5000;
+    DWORD available = 0;
+    while (!available && GetTickCount64() < deadline) {
+        if (!PeekNamedPipe(read_pipe, NULL, 0, NULL, &available, NULL)) goto finished;
+        Sleep(1);
+    }
+    if (!available) goto finished;
+    pending_writer = child.hProcess;
+    stream output = { read_pipe, log, 0, 0, false };
+    bool exceeded = false;
+    bool drained = drain(&output, 4096, &exceeded);
+    DWORD error = GetLastError();
+    read_pipe = output.pipe;
+    printf("intercepted=%d snapshot=%lu drained=%d eof=%d observed=%llu error=%lu\n",
+        intercepted, (unsigned long)available, drained, output.eof,
+        (unsigned long long)output.observed, (unsigned long)error);
+    result = intercepted && drained && output.eof && output.observed == 0 ? 0 : 1;
+finished:
+    if (child.hProcess) {
+        if (WaitForSingleObject(child.hProcess, 0) == WAIT_TIMEOUT) {
+            TerminateProcess(child.hProcess, 125);
+            WaitForSingleObject(child.hProcess, 5000);
+        }
+        CloseHandle(child.hProcess);
+    }
+    if (child.hThread) CloseHandle(child.hThread);
+    if (read_pipe != INVALID_HANDLE_VALUE) CloseHandle(read_pipe);
+    if (write_pipe != INVALID_HANDLE_VALUE) CloseHandle(write_pipe);
+    if (input != INVALID_HANDLE_VALUE) CloseHandle(input);
+    if (log != INVALID_HANDLE_VALUE) CloseHandle(log);
+    return result;
+}

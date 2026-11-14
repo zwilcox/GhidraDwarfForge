@@ -48,6 +48,16 @@ def main():
     environment['PATH'] = str(Path(args.compiler).resolve().parent) + os.pathsep + environment.get('PATH', '')
     subprocess.run([args.compiler, '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror',
         '-municode', '-static-libgcc', str(probe), '-o', str(helper)], check=True, timeout=60, env=environment)
+    controlled = root / 'controlled-pipe.exe'
+    subprocess.run([args.compiler, '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror',
+        '-municode', '-static-libgcc', 'src/test/native/windows-supervisor-pipe-eof.c',
+        '-o', str(controlled)], check=True, timeout=60, env=environment)
+    control = subprocess.run([str(controlled), str(root / 'controlled-output.bin')],
+        capture_output=True, timeout=15)
+    (root / 'controlled.stdout').write_bytes(control.stdout)
+    (root / 'controlled.stderr').write_bytes(control.stderr)
+    (root / 'controlled.json').write_text(json.dumps({'exit': control.returncode,
+        'stdout': control.stdout.decode(), 'stderr': control.stderr.decode()}, indent=4) + '\n')
     child = root / 'flood.py'
     child.write_text('import os\nwhile True:\n    os.write(1, b"x" * 16384)\n')
     started = time.monotonic()
