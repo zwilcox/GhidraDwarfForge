@@ -70,6 +70,30 @@ def report(args):
                 for directory, _ in collections}}
     summary['status'] = 'PASS'
     coverage.save(output / 'summary.json', summary)
+    lines = ['# Integration Java coverage', '',
+        'These measurements retain every production class and keep execution layers separate. '
+        'They are not added to the JavaExec badge; percentages cannot be added across layers. '
+        'Native C and uninstrumented child processes are not measured.', '',
+        'Production JAR SHA-256: `' + summary['productionJarSha256'] + '`.', '',
+        'A passing report verifies collection integrity and the recorded harness oracles. '
+        'It does not replace the complete CI gate or establish coverage of every behavior.', '']
+    for layer, value in summary['layers'].items():
+        lines.extend(['## ' + layer, '',
+            f'{value["sessions"]} measured JVM sessions; {value["productionClasses"]} production classes. '
+            f'{len(value["unmeasuredForcedHalts"])} explicitly unmeasured direct halt controls. '
+            'See each oracle receipt for additional unmeasured nested processes.', '',
+            'Suites: ' + ', '.join('`' + name + '`' for name in value['suites']) + '.', '',
+            '| Source | Covered / total lines | Covered / total branches |',
+            '| --- | ---: | ---: |'])
+        for source, counters in sorted(value['sources'].items()):
+            cells = []
+            for metric in ('LINE', 'BRANCH'):
+                counter = counters.get(metric, {'covered': 0, 'missed': 0})
+                total = counter['covered'] + counter['missed']
+                cells.append(f'{counter["covered"]} / {total}' if total else 'not applicable')
+            lines.append('| ' + source + ' | ' + ' | '.join(cells) + ' |')
+        lines.append('')
+    (output / 'README.md').write_text('\n'.join(lines), encoding='utf-8')
     print(json.dumps({'status': 'PASS', 'layers': {name: value['counters']
         for name, value in summary['layers'].items()}}))
 
