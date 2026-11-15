@@ -332,7 +332,7 @@ def main():
     write_json(root / "retained-bytes.json", retained)
     source_copies = root / "source"
     source_copies.mkdir()
-    for path in (source, Path(__file__).resolve(), source.with_name("README.md")):
+    for path in (source, Path(__file__).resolve()):
         with (source_copies / path.name).open("xb") as output:
             output.write(path.read_bytes())
     final = snapshot(protected)

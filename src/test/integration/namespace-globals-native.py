@@ -23,7 +23,7 @@ def main():
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[3]
     harness = root / 'src/test/integration'
-    research = root / 'src/test/research/namespace-globals'
+    research = root / 'src/test/scenarios/namespace-globals'
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     jar, native = module / 'lib/GhidraDwarfForge.jar', module / 'os/linux_x86_64'

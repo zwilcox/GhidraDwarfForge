@@ -23,7 +23,7 @@ input_hash=$(sha256sum "$input" | cut -d' ' -f1)
 entry=$(readelf -h "$input" | awk '/Entry point address:/ { print $NF }')
 "$ghidra/support/analyzeHeadless" "$work/project" DebuglinkResearch \
     -import "$input" -loader ElfLoader -analysisTimeoutPerFile 120 \
-    -scriptPath "$repository/src/test/research/debuglink/ghidra_scripts" \
+    -scriptPath "$repository/src/test/scenarios/debuglink/ghidra_scripts" \
     -postScript CurateDebuglinkEntry.java "$entry" \
     > "$work/import-and-curate.log" 2>&1
 grep -Fq 'debuglink-research-analyst-name=APPLIED' "$work/import-and-curate.log"
@@ -45,7 +45,7 @@ javac --release 21 -d "$work/classes" \
     "$repository/src/main/java/ghidradwarfforge/elf/ExecutableProgramBytes.java" \
     "$repository/src/main/java/ghidradwarfforge/elf/DebuglinkCandidateContent.java" \
     "$repository/src/main/java/ghidradwarfforge/output/FileDigests.java" \
-    "$repository/src/test/research/debuglink/DebuglinkToolProbe.java"
+    "$repository/src/test/scenarios/debuglink/DebuglinkToolProbe.java"
 java -cp "$work/classes" ghidradwarfforge.elf.DebuglinkToolProbe \
     "$input" "$work/attached.stage" "$output" \
     "$(python3 -c 'import base64,os,sys; print(base64.b64encode(os.fsencode(os.path.basename(sys.argv[1]))).decode("ascii"))' "$output")" > "$work/attachment-probe.txt"

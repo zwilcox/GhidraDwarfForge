@@ -923,13 +923,13 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          python3 src/test/research/mmio-access/layout.py --targets "$TARGET" \
+          python3 src/test/scenarios/mmio-access/layout.py --targets "$TARGET" \
               --results "$PWD/build/test-results/mmio-layout"
 
       - name: Observe compiler MMIO reads against instrumented peripheral
         if: matrix.target == 'x86_64'
         run: |
-          python3 src/test/research/mmio-access/experiment.py \
+          python3 src/test/scenarios/mmio-access/experiment.py \
               --results "$PWD/build/test-results/mmio-access-reference"
 
       - name: Build pinned MIPS register-piece debugger
@@ -1092,16 +1092,16 @@ jobs:
           set -euo pipefail
           ./gradlew --no-daemon prepareInheritanceHarness
           results="$PWD/build/test-results/inheritance/$TARGET"
-          python3 -B src/test/research/inheritance/reference.py \
+          python3 -B src/test/scenarios/inheritance/reference.py \
               --targets "$TARGET" --results "$results/reference"
           LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
           LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
-              python3 -B src/test/research/inheritance/produce.py \
+              python3 -B src/test/scenarios/inheritance/produce.py \
                   --targets "$TARGET" --references "$results/reference" \
                   --classpath build/inheritance-classpath.txt --results "$results/producer"
           LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
           LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
-              python3 -B src/test/research/inheritance/names.py \
+              python3 -B src/test/scenarios/inheritance/names.py \
                   --targets "$TARGET" --models "$results/producer" \
                   --classpath build/inheritance-classpath.txt --results "$results/vtable-names"
 
@@ -1161,32 +1161,32 @@ jobs:
         run: |
           set -euo pipefail
           results="$PWD/build/test-results/inheritance/$TARGET"
-          python3 -B src/test/research/inheritance/storage.py --bindings \
+          python3 -B src/test/scenarios/inheritance/storage.py --bindings \
               --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" \
               --models "$results/producer" --results "$results/vtable-storage"
           LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
           LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
-              python3 -B src/test/research/inheritance/extract.py \
+              python3 -B src/test/scenarios/inheritance/extract.py \
                   --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" \
                   --references "$results/reference" --models "$results/producer" \
                   --adjustment-thunks --results "$results/extraction"
           LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
           LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
-              python3 -B src/test/research/inheritance/extract.py \
+              python3 -B src/test/scenarios/inheritance/extract.py \
                   --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" --roles pie pie-no-rtti --rebase \
                   --references "$results/reference" --models "$results/producer" \
                   --adjustment-thunks --results "$results/extraction-rebased"
           for source in extraction extraction-rebased; do
               LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
               LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
-                  python3 -B src/test/research/inheritance/failure.py \
+                  python3 -B src/test/scenarios/inheritance/failure.py \
                       --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" \
                       --extraction "$results/$source" --results "$results/$source-failure"
           done
           for variant in missing stale conflict renamed qualified duplicate retained; do
               LIBDWARF="$PWD/native-integration/libdwarf.so.2.3.2" \
               LIBDWARFP="$PWD/native-integration/libdwarfp.so.2.3.2" \
-                  python3 -B src/test/research/inheritance/extract.py \
+                  python3 -B src/test/scenarios/inheritance/extract.py \
                       --ghidra "$GHIDRA_INSTALL_DIR" --targets "$TARGET" --rebase --variant "$variant" \
                       --references "$results/reference" --models "$results/producer" \
                       --results "$results/variant-$variant"
@@ -2021,29 +2021,29 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          python3 src/test/research/mmio-access/forge.py --ghidra "$GHIDRA_INSTALL_DIR" \
+          python3 src/test/scenarios/mmio-access/forge.py --ghidra "$GHIDRA_INSTALL_DIR" \
               --references build/test-results/mmio-layout --targets "$TARGET" \
               --results build/test-results/mmio-forge
-          python3 -B src/test/research/mmio-access/helper.py --target "$TARGET" \
+          python3 -B src/test/scenarios/mmio-access/helper.py --target "$TARGET" \
               --original "build/test-results/mmio-forge/$TARGET/input.elf" \
               --sidecar "build/test-results/mmio-forge/$TARGET/firmware.dbg" \
               --profile "build/test-results/mmio-forge/$TARGET/firmware.dbg.mmio.json" \
               --reference "build/test-results/mmio-layout/$TARGET/reference.elf" \
               --helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/support/mmio/forge_mmio.py" \
               --results build/test-results/mmio-helper
-          python3 -B src/test/research/mmio-access/widths.py --target "$TARGET" \
+          python3 -B src/test/scenarios/mmio-access/widths.py --target "$TARGET" \
               --original "build/test-results/mmio-forge/$TARGET/input.elf" \
               --sidecar "build/test-results/mmio-forge/$TARGET/firmware.dbg" \
               --profile "build/test-results/mmio-forge/$TARGET/firmware.dbg.mmio.json" \
               --reference "build/test-results/mmio-layout/$TARGET/reference.elf" \
               --helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/support/mmio/forge_mmio.py" \
               --results build/test-results/mmio-widths
-          python3 -B src/test/research/mmio-access/failures.py --ghidra "$GHIDRA_INSTALL_DIR" \
+          python3 -B src/test/scenarios/mmio-access/failures.py --ghidra "$GHIDRA_INSTALL_DIR" \
               --project "build/test-results/mmio-forge/$TARGET/project" \
               --original "build/test-results/mmio-forge/$TARGET/input.elf" \
               --sidecar "build/test-results/mmio-forge/$TARGET/firmware.dbg" \
               --results build/test-results/mmio-failures
-          python3 -B src/test/research/mmio-access/lifecycle.py --target "$TARGET" \
+          python3 -B src/test/scenarios/mmio-access/lifecycle.py --target "$TARGET" \
               --original "build/test-results/mmio-forge/$TARGET/input.elf" \
               --sidecar "build/test-results/mmio-forge/$TARGET/firmware.dbg" \
               --profile "build/test-results/mmio-forge/$TARGET/firmware.dbg.mmio.json" \
@@ -2415,7 +2415,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           module="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge"
-          python3 src/test/research/function-relationships/probe.py \
+          python3 src/test/scenarios/function-relationships/probe.py \
               "$GHIDRA_INSTALL_DIR" "$JAVA_HOME" "$module/os/linux_x86_64" \
               "build/test-results/function-relationships/$TARGET" \
               --target "$TARGET" --jar "$module/lib/GhidraDwarfForge.jar"

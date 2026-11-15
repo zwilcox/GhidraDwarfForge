@@ -26,7 +26,7 @@ for phase in initial reopened repeat; do
             -postScript CurateDebuglinkEntry.java "$entry")
     fi
     "$ghidra/support/analyzeHeadless" "$work/project" SaveReopenResearch \
-        -scriptPath "$repository/src/test/research/debuglink/ghidra_scripts" "${options[@]}" \
+        -scriptPath "$repository/src/test/scenarios/debuglink/ghidra_scripts" "${options[@]}" \
         -postScript SnapshotDebuglinkModel.java "$input" "$work/$phase.before" \
         -postScript GhidraDwarfForge.java --packaged-natives "--input=$input" "--output=$output" \
         -postScript SnapshotDebuglinkModel.java "$input" "$work/$phase.after" \

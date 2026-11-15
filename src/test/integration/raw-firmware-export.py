@@ -151,7 +151,7 @@ def main():
                     {'regionOffset': 0, 'size': ram.stat().st_size, 'inputId': 'ram', 'fileOffset': 0}]
         if args.mmio:
             import sys
-            text = run('controls', [sys.executable, '-B', HERE.parent / 'research/mmio-access/failures.py',
+            text = run('controls', [sys.executable, '-B', HERE.parent / 'scenarios/mmio-access/failures.py',
                 '--ghidra', ghidra, '--project', project, '--original', original, '--sidecar', sidecar,
                 '--results', root / 'mmio-failures', '--raw-firmware'])
             failure_controls = 22

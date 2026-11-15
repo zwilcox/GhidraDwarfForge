@@ -17,7 +17,7 @@ fi
 CLASS_LAYOUT_REMOTE="$remote" timeout 90s gdb-multiarch -q -nx -batch \
     -ex 'set pagination off' -ex 'set confirm off' -ex 'set debuginfod enabled off' \
     -ex 'set auto-solib-add off' -ex 'set disable-randomization off' "${options[@]}" \
-    -ex "set substitute-path $repository/src/test/research/scopes $case_dir" \
+    -ex "set substitute-path $repository/src/test/scenarios/scopes $case_dir" \
     -ex "file \"$case_dir/stripped\"" -ex "symbol-file \"$case_dir/$variant.dbg\"" \
-    -x "$repository/src/test/research/class-layout/gdb-probe.py"
+    -x "$repository/src/test/scenarios/class-layout/gdb-probe.py"
 if [[ -n "$remote" ]]; then qemu_socket_wait; fi
