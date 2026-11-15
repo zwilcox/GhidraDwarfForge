@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 from urllib.parse import unquote, urlsplit
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -35,6 +36,7 @@ def main():
     original = root / 'fixture'
     shutil.copy2(args.fixture, original)
     jar = args.ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+    coverage = Collection('instruction-context', jar, 'headless')
     protected = {str(p.resolve()): digest(p) for p in [Path(__file__), helper, args.fixture, original, jar]}
     commands = []
 
@@ -42,11 +44,12 @@ def main():
         command = list(map(str, command))
         commands.append({'phase': phase, 'argv': command})
         (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (root / (phase + '.log')).open('w') as log:
-            result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=300)
-        text = (root / (phase + '.log')).read_text()
-        assert result.returncode == 0 and 'instruction-context=PASS' in text, phase
-        assert 'ERROR REPORT SCRIPT ERROR' not in text and 'error: cannot find symbol' not in text
+        with coverage.session(command, phase, headless=True) as measured:
+            with (root / (phase + '.log')).open('w') as log:
+                result = subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, timeout=300)
+            text = (root / (phase + '.log')).read_text()
+            assert result.returncode == 0 and 'instruction-context=PASS' in text, phase
+            assert 'ERROR REPORT SCRIPT ERROR' not in text and 'error: cannot find symbol' not in text
 
     base = [args.ghidra / 'support/analyzeHeadless', project, 'Context', '-scriptPath', scripts]
     run('setup', base + ['-import', original, '-noanalysis', '-postScript', helper.name, 'setup', root / 'setup.json'])
@@ -66,6 +69,7 @@ def main():
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_PACKAGED_INSTRUCTION_CONTEXT',
         'observations': observed, 'protectedSha256': protected, 'firstReopenBackups': changed,
         'scope': 'Read-only packaged instruction component; no production source/DWARF context emission yet.'}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('instruction-context-harness=PASS ' + observed['language'])
 
 

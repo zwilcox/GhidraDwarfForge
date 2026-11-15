@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate production source/ELF relocation with independent byte checks and debuggers."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import importlib.util
 import json
@@ -14,18 +15,21 @@ import subprocess
 import time
 import zlib
 import lldb_consumer
+from integration_coverage import Collection
 
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def command(argv, log, environment=None):
+def command(argv, log, environment=None, coverage=None):
     log.with_suffix('.command.json').write_text(json.dumps(list(map(str, argv)), indent=4) + '\n')
-    result = subprocess.run(list(map(str, argv)), env=dict(os.environ, **(environment or {})),
-        text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
-    log.write_text(result.stdout)
-    assert result.returncode == 0, result.stdout[-5000:]
+    session = coverage.session(argv, log.stem) if coverage else nullcontext(argv)
+    with session as measured:
+        result = subprocess.run(list(map(str, measured)), env=dict(os.environ, **(environment or {})),
+            text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+        log.write_text(result.stdout)
+        assert result.returncode == 0, result.stdout[-5000:]
     return result.stdout
 
 
@@ -41,6 +45,9 @@ def main():
     parser.add_argument('--perf')
     args = parser.parse_args()
     fixture, root, jar = args.fixture.resolve(), args.output.resolve(), args.jar.resolve()
+    coverage = Collection('source-relocation', jar, 'native-java', test_classes=(
+        'ghidradwarfforge.dwarf.SyntheticSourceRelocationSmoke',
+        'ghidradwarfforge.elf.SyntheticSourceSidecarSmoke'))
     root.mkdir(parents=True, exist_ok=False)
     script_root = Path(__file__).resolve().parent
     repo = script_root.parents[2]
@@ -89,7 +96,7 @@ def main():
     rewritten = root / 'rewritten'
     command([java, '-cp', str(jar) + os.pathsep + str(classes),
         'ghidradwarfforge.dwarf.SyntheticSourceRelocationSmoke', raw, rewritten,
-        generation, 'little' if order == '<' else 'big'], root / 'relocation.log')
+        generation, 'little' if order == '<' else 'big'], root / 'relocation.log', coverage=coverage)
     assert (rewritten / 'file-name.txt').read_text() == source.name
     assert Path((rewritten / 'previous-directory.txt').read_text()) == source.parent
     build_id, = set(re.findall(r'Build ID: ([0-9a-f]+)',
@@ -99,7 +106,7 @@ def main():
     installed.parent.mkdir(parents=True)
     command([java, '-cp', str(jar) + os.pathsep + str(classes),
         'ghidradwarfforge.elf.SyntheticSourceSidecarSmoke', sidecar, installed, generation],
-        root / 'container.log')
+        root / 'container.log', coverage=coverage)
     after = installed.read_bytes()
     after_order, after_wide, after_sections = elf.sections(after)
     assert (after_order, after_wide) == (order, wide)
@@ -210,6 +217,7 @@ def main():
         'gdb': True, 'lldb': bool(args.lldb), 'perf': bool(args.perf),
         'scope': 'Production DWARF and ELF stage relocators with independent decoded-section and byte checks; '
             'original source absent during real automatic-lookup runtime checks; no installer transaction.'}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('source-relocation=PASS ' + args.target + ' ' + fixture.name)
 
 

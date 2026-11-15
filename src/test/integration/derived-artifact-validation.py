@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -46,6 +47,12 @@ def main():
     java = shutil.which(args.java)
     assert java
     prefix = [java, '--enable-native-access=ALL-UNNAMED', '-Djava.io.tmpdir=' + str(root), '-cp', runtime]
+    coverage = Collection('derived-validation', jar, 'native-java', test_classes=(
+        'ghidradwarfforge.output.DerivedArtifactValidatorProbe',
+        'ghidradwarfforge.output.AttachmentValidatorProbe',
+        'ghidradwarfforge.output.ArtifactValidationBindingSmoke',
+        'ghidradwarfforge.output.AttachmentElfTransactionProbe',
+        'ghidradwarfforge.output.AttachmentReceiptStoreSmoke'))
     tools = [ghidra / 'Ghidra/Extensions/GhidraDwarfForge/os/linux_x86_64/forge-validator-supervisor',
         Path(shutil.which('readelf')), Path(shutil.which('llvm-dwarfdump')),
         bundle / 'libexec/dwarfdump', bundle / 'share/dwarfdump/dwarfdump.conf']
@@ -53,9 +60,10 @@ def main():
     def run(name, command):
         command = list(map(str, command))
         (root / (name + '.command.json')).write_text(json.dumps(command, indent=4) + '\n')
-        completed = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=300)
-        (root / (name + '.log')).write_text(completed.stdout)
-        assert completed.returncode == 0, completed.stdout[-5000:]
+        with coverage.session(command, name) as measured:
+            completed = subprocess.run(measured, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=300)
+            (root / (name + '.log')).write_text(completed.stdout)
+            assert completed.returncode == 0, completed.stdout[-5000:]
         return completed.stdout
 
     run('derived', prefix + ['ghidradwarfforge.output.DerivedArtifactValidatorProbe', report,
@@ -78,6 +86,7 @@ def main():
         'target': result['target'], 'role': result['role'], 'protectedSha256': protected,
         'controls': controls.strip(), 'hostContract': derived['hostContract'],
         'scope': 'Production binding and GNU/LLVM/pinned strict policy; test-only metadata host; no installation or native host metadata acceptance.'}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('derived-artifact-validation=PASS ' + result['target'] + ' ' + result['role'])
 
 

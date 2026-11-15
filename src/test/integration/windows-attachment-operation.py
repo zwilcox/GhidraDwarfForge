@@ -11,6 +11,7 @@ import shutil
 import struct
 import subprocess
 import zlib
+from integration_coverage import Collection
 
 
 def require(condition, message):
@@ -56,6 +57,10 @@ def main():
     dependencies = [module / "lib/GhidraDwarfForge.jar",
         args.ghidra / "Ghidra/Framework/Pty/lib/jna-5.14.0.jar",
         args.ghidra / "Ghidra/Framework/Generic/lib/gson-2.9.0.jar"]
+    coverage = Collection('windows-attachment', dependencies[0], 'windows', test_classes=(
+        'ghidradwarfforge.output.WindowsFileSecurityProbe',
+        'ghidradwarfforge.output.WindowsAttachmentOperationProbe',
+        'ghidradwarfforge.output.WindowsAttachmentRefreshProbe'))
     sources = [repo / "src/test/java/ghidradwarfforge/output" / name for name in
         ("WindowsFileSecurityProbe.java", "WindowsAttachmentOperationProbe.java", "WindowsAttachmentRefreshProbe.java")]
     scripts = repo / "src/test/integration/ghidra_scripts"
@@ -72,7 +77,7 @@ def main():
     (provenance / "origin.json").write_text(json.dumps(origin, indent=4) + "\n", encoding="utf-8")
     commands = []
 
-    def run(label, command):
+    def execute(label, command):
         command = [str(value) for value in command]
         with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                               creationflags=subprocess.CREATE_NEW_PROCESS_GROUP) as child:
@@ -94,6 +99,12 @@ def main():
         (root / "commands.json").write_text(json.dumps(commands, indent=4) + "\n", encoding="utf-8")
         require(not timed_out and result.returncode == 0, label + " failed; inspect retained logs")
         return result
+
+    def run(label, command):
+        if label in ('operation', 'refresh-attach'):
+            with coverage.session(command, label) as measured:
+                return execute(label, measured)
+        return execute(label, command)
 
     java_bin = Path(os.environ["JAVA_HOME"]) / "bin"
     version = run("java-version", [java_bin / "java.exe", "-version"])
@@ -271,6 +282,7 @@ def main():
         "refreshReceipt": receipt, "preservedGeneration": preserved_generation,
         "refreshValidation": refresh_evidence,
         "scope": "Windows real-export/live-validator initial attachment, rollback and saved-curation changed-CRC refresh; GDB runtime separate"}, indent=4) + "\n", encoding="utf-8")
+    coverage.finish(root / 'result.json')
     print("windows-attachment-operation-harness=PASS")
 
 

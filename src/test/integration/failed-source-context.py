@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate all-failed and mixed native source exports with zero invented line rows."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import importlib.util
 import json
@@ -10,6 +11,7 @@ import shutil
 import struct
 import subprocess
 import tempfile
+from integration_coverage import Collection
 from urllib.parse import unquote, urlsplit
 
 
@@ -58,6 +60,7 @@ def main():
     helper = harness / 'ghidra_scripts/ExportFailedSourceContext.java'
     shutil.copy2(helper, scripts)
     jar = args.ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+    coverage = Collection('failed-source-export', jar, 'headless')
     protected = {str(p.resolve()): digest(p) for p in [helper, Path(__file__), jar,
         harness / 'check-multifile-semantics.py', harness / 'failed-source-context-gdb.py', harness / 'failed-source-context-gdb.sh',
         reference / 'stripped', reference / 'reference', reference / 'labels.json', args.consumer, args.producer]}
@@ -79,9 +82,14 @@ def main():
         command = list(map(str, command))
         commands.append({'label': label, 'argv': command})
         (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (root / (label + '.log')).open('w') as log:
-            result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=300)
-        assert result.returncode == 0, (label, result.returncode)
+        is_launcher = Path(command[0]).name == 'analyzeHeadless'
+        is_java = Path(command[0]).name.lower() in ('java', 'java.exe')
+        session = (coverage.session(command, label, headless=is_launcher)
+            if is_launcher or is_java else nullcontext(command))
+        with session as measured:
+            with (root / (label + '.log')).open('w') as log:
+                result = subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, timeout=300)
+            assert result.returncode == 0, (label, result.returncode)
         return (root / (label + '.log')).read_text()
 
     states, generations = [snapshot(project)], {}
@@ -184,6 +192,7 @@ def main():
         'target': prepared['target'], 'sourceLines': args.source_lines, 'cases': cases, 'generations': generations,
         'semanticComparisons': comparisons, 'artifactDirectory': str(artifact_root),
         'protectedSha256': protected, 'firstReopenBackups': sorted(changed)}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('failed-source-context-harness=PASS ' + prepared['target'])
 
 

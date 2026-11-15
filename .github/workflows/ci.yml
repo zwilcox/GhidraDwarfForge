@@ -703,10 +703,10 @@ jobs:
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
               unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke callSiteEvidenceSmoke tailStateProofSmoke callEntryContractSmoke callValueSmoke callArgumentFlowSmoke boundedSwitchProofSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
-              elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke buildExtension
+              elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke projectOutputProtectionSmoke firmwareImageLifecycleSmoke buildExtension
             python3 -B src/test/coverage/mutation-check.py \
                 --classes build/classes/java/main --tests build/classes/java/test \
-                --java-home "$JAVA_HOME" \
+                --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR" \
                 --output build/test-results/extension-build/high-risk-mutations
             python3 -B src/test/integration/check-call-values.py build/test-results/call-values/vectors.json
             python3 -B src/test/integration/check-call-values.py build/test-results/call-argument-flow/vectors.json --min-count 240
@@ -734,7 +734,11 @@ jobs:
           SOURCE_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          ./gradlew --no-daemon -PtestCoverage=true testCoverageReport
+          ./gradlew --no-daemon -PtestCoverage=true testCoverageReport prepareIntegrationCoverage
+          python3 -B src/test/coverage/integration-coverage-execution.py \
+              --java-home "$JAVA_HOME" --agent build/test-coverage-tools/jacocoagent.jar \
+              --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --output build/test-results/extension-build/integration-coverage-controls
           python3 -B support/test-coverage-report.py \
               --xml build/test-coverage/coverage.xml --tasks build/test-coverage/tasks \
               --output build/test-coverage/public --repository "$SOURCE_REPOSITORY" \
@@ -1231,6 +1235,13 @@ jobs:
                   --ghidra "$GHIDRA_INSTALL_DIR" --package "${extension_archives[0]}" \
                   --probe-report "$probe_report" --dwarfdump "$DWARFDUMP"
           done
+
+      - name: Prepare separate coverage for existing integration JVMs
+        if: matrix.target == 'x86_64'
+        run: |
+          ./gradlew --no-daemon -PtestCoverage=true prepareIntegrationCoverage
+          echo "FORGE_INTEGRATION_COVERAGE_AGENT=$PWD/build/test-coverage-tools/jacocoagent.jar" >> "$GITHUB_ENV"
+          echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"
 
       - name: Check packaged GDB companion with live compiler references
         if: matrix.target == 'x86_64'
@@ -3247,6 +3258,30 @@ jobs:
             --exclude-validator-self-tests \
             --output build/test-results/retained-validator-reports.json
 
+      - name: Verify and report Linux integration coverage by layer
+        if: matrix.target == 'x86_64'
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 -B src/test/coverage/integration-report.py \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --collections build/integration-coverage/collections --output build/integration-coverage/report \
+              --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --sources src/main/java --commit "$SOURCE_COMMIT" \
+              --require-suite gdb-companion --require-suite source-relocation \
+              --require-suite derived-validation \
+              --require-suite build-id-installation --require-suite instruction-context \
+              --require-suite source-context --require-suite annotation-inventory --require-suite equate-evidence \
+              --require-suite annotation-export --require-suite failed-source-export
+
+      - uses: actions/upload-artifact@v7
+        if: always() && matrix.target == 'x86_64'
+        with:
+          name: integration-java-coverage-linux
+          path: build/integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Retain bounded primary fixture diagnostics
         if: always()
         env:
@@ -3340,8 +3375,29 @@ jobs:
               sha256sum -c RELEASE-SHA256SUMS)
           export TMPDIR="$RUNNER_TEMP/cortex-m-tmp"
           mkdir -p "$TMPDIR"
+          ./gradlew --no-daemon -PtestCoverage=true prepareIntegrationCoverage
+          export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
+          export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections"
           python3 src/test/integration/cortex-m-suite.py \
               --ghidra "$GHIDRA_INSTALL_DIR" --results "$PWD/build/test-results/cortex-m"
+
+      - name: Verify and report firmware integration coverage
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 -B src/test/coverage/integration-report.py \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --collections build/integration-coverage/collections --output build/integration-coverage/report \
+              --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite raw-firmware
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: integration-java-coverage-firmware
+          path: build/integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
 
       - uses: actions/upload-artifact@v7
         with:
@@ -3877,6 +3933,21 @@ jobs:
               --results build/test-results/windows-host/raw-firmware
           if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell raw firmware export failed' }
 
+      - name: Prepare separate Windows integration coverage
+        shell: pwsh
+        run: |
+          .\gradlew.bat --no-daemon -PtestCoverage=true prepareIntegrationCoverage
+          if ($LASTEXITCODE -ne 0) { throw 'Integration coverage preparation failed' }
+          $env:FORGE_INTEGRATION_COVERAGE_AGENT = (Resolve-Path 'build/test-coverage-tools/jacocoagent.jar').Path
+          $env:FORGE_INTEGRATION_COVERAGE_OUTPUT = Join-Path $PWD 'build/integration-coverage/collections'
+          python -B src/test/coverage/integration-coverage-execution.py `
+            --java-home "$env:JAVA_HOME" --agent "$env:FORGE_INTEGRATION_COVERAGE_AGENT" `
+            --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt `
+            --output build/test-results/windows-host/integration-coverage-controls
+          if ($LASTEXITCODE -ne 0) { throw 'Windows coverage collector controls failed' }
+          "FORGE_INTEGRATION_COVERAGE_AGENT=$env:FORGE_INTEGRATION_COVERAGE_AGENT" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "FORGE_INTEGRATION_COVERAGE_OUTPUT=$env:FORGE_INTEGRATION_COVERAGE_OUTPUT" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Native Windows attachment rollback and saved-curation refresh
         shell: pwsh
         timeout-minutes: 25
@@ -3915,6 +3986,21 @@ jobs:
             --compiler (Join-Path $mingwBin 'gcc.exe') `
             --results build/test-results/windows-host/build-id-installation
           if ($LASTEXITCODE -ne 0) { throw 'Native Windows build-ID installation failed' }
+          python -B src/test/coverage/integration-report.py `
+            --jar "$env:GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" `
+            --collections "$env:FORGE_INTEGRATION_COVERAGE_OUTPUT" --output build/integration-coverage/report `
+            --java "$env:JAVA_HOME/bin/java.exe" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt `
+            --sources src/main/java --commit "${{ github.sha }}" --require-suite windows-build-id-installation --require-suite windows-attachment
+          if ($LASTEXITCODE -ne 0) { throw 'Windows integration coverage verification failed' }
+
+      - name: Retain separate Windows integration Java coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: integration-java-coverage-windows
+          path: build/integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Native Windows Script Manager export, console, and chooser cancellation
         shell: pwsh

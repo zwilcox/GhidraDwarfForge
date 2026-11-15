@@ -2441,4 +2441,25 @@ tasks.register("ghidraMmioEvidenceSmoke", JavaExec) {
     if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
+tasks.register("projectOutputProtectionSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks saved-project output aliases, cancellation and file preservation"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.GhidraProjectOutputProtectionSmoke"
+    args ghidraInstallDir
+    systemProperty "java.awt.headless", "true"
+    systemProperty "application.settingsdir", layout.buildDirectory.dir("tmp/project-protection/settings").get().asFile.absolutePath
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
+}
+
+tasks.register("firmwareImageLifecycleSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks private firmware carrier cancellation, input identity and cleanup"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.firmware.FirmwareImageLifecycleSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
+}
+
 apply from: "support/test-coverage.gradle"

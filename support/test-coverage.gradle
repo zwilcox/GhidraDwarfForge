@@ -95,6 +95,15 @@ tasks.register("prepareHeadlessCoverage") {
     }
 }
 
+tasks.register("prepareIntegrationCoverage") {
+    dependsOn "prepareHeadlessCoverage"
+    doLast {
+        def destination = layout.buildDirectory.file("test-coverage-tools/jacoco-classpath.txt").get().asFile
+        destination.parentFile.mkdirs()
+        destination.text = configurations.jacocoAnt.asPath + "\n"
+    }
+}
+
 tasks.register("validateHeadlessCoverage") {
     doLast {
         def receiptCheck = providers.exec {
