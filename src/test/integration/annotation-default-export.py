@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise installed default export, stored comments, real types and atomic limit failures."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 from pathlib import Path
@@ -8,6 +9,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -40,6 +42,7 @@ def main():
     project = root / 'project'
     shutil.copytree(curation / 'project', project)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+    coverage = Collection('annotation-export', module / 'lib/GhidraDwarfForge.jar', 'headless')
     protected_paths = [reference / 'stripped', reference / 'reference', reference / 'labels.json',
         curation / 'read1.json', args.consumer, args.producer, module / 'lib/GhidraDwarfForge.jar',
         module / 'ghidra_scripts/GhidraDwarfForge.java', Path(__file__),
@@ -55,9 +58,12 @@ def main():
         command = list(map(str, command))
         commands.append({'label': label, 'argv': command})
         (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (root / (label + '.log')).open('w') as log:
-            result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=300)
-        assert result.returncode == 0, (label, result.returncode)
+        session = (coverage.session(command, label, headless=True)
+            if Path(command[0]).name == 'analyzeHeadless' else nullcontext(command))
+        with session as measured:
+            with (root / (label + '.log')).open('w') as log:
+                result = subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, timeout=300)
+            assert result.returncode == 0, (label, result.returncode)
         return (root / (label + '.log')).read_text()
 
     command = [ghidra / 'support/analyzeHeadless', project, 'Annotations',
@@ -216,6 +222,7 @@ def main():
         'warnings': warnings, 'compilerWarnings': compiler_warnings,
         'placementControl': str(args.placement_control) if args.placement_control else None}
     (root / 'result.json').write_text(json.dumps(result, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('annotation-default-export=PASS ' + receipt['target'])
 
 

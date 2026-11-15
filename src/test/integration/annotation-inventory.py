@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 from urllib.parse import unquote, urlsplit
+from integration_coverage import Collection
 
 
 def main():
@@ -26,6 +27,7 @@ def main():
     for path in ('reference', 'stripped', 'labels.json'):
         assert digest(curation.parent / path) == saved['protectedSha256'][str(curation.parent / path)]
     jar = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+    coverage = Collection('annotation-inventory', jar, 'headless')
     source = Path(__file__).with_name('ghidra_scripts') / 'VerifyAnnotationInventory.java'
     protected = {str(path): digest(path) for path in [jar, source, Path(__file__), curation / 'read1.json',
         curation.parent / 'reference', curation.parent / 'stripped']}
@@ -42,12 +44,13 @@ def main():
             '-postScript', source.name, str(root / (phase + '.json'))]
         commands.append(command)
         (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (root / (phase + '.log')).open('w') as log:
-            result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=240)
-        text = (root / (phase + '.log')).read_text()
-        assert result.returncode == 0 and 'annotation-inventory=PASS' in text, phase
-        assert 'ERROR REPORT SCRIPT ERROR' not in text and 'error: cannot find symbol' not in text
-        states.append(snapshot(curation / 'project'))
+        with coverage.session(command, phase, headless=True) as measured:
+            with (root / (phase + '.log')).open('w') as log:
+                result = subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, timeout=240)
+            text = (root / (phase + '.log')).read_text()
+            assert result.returncode == 0 and 'annotation-inventory=PASS' in text, phase
+            assert 'ERROR REPORT SCRIPT ERROR' not in text and 'error: cannot find symbol' not in text
+            states.append(snapshot(curation / 'project'))
     assert states[0] == states[1] == states[2], 'inventory extraction changed the saved project'
     assert (root / 'read1.json').read_bytes() == (root / 'read2.json').read_bytes()
     actual = json.loads((root / 'read1.json').read_text())
@@ -75,6 +78,7 @@ def main():
         'readbackSha256': digest(root / 'read1.json'),
         'limits': 'Packaged raw extraction only. Display-name/type validation, token association, source emission and debugger constants are not established here.'}
     (root / 'result.json').write_text(json.dumps(receipt, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('annotation-inventory=PASS ' + saved['target'] + ' ' + saved['role'])
 
 

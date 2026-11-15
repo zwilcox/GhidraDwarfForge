@@ -17,6 +17,10 @@ PUBLISH = "ghidradwarfforge/output/CompanionArtifactPublisher.java"
 REPAIR_TEST = "ghidradwarfforge.dwarf.Dwarf32InfoRepairBoundarySmoke"
 RELOCATE_TEST = "ghidradwarfforge.dwarf.SyntheticSourceRelocationBoundarySmoke"
 PUBLISH_TEST = "ghidradwarfforge.output.CompanionPublicationFailureSmoke"
+PROTECT = "ghidradwarfforge/GhidraProjectOutputProtection.java"
+PROTECT_TEST = "ghidradwarfforge.GhidraProjectOutputProtectionSmoke"
+FIRMWARE = "ghidradwarfforge/firmware/FirmwareExportImage.java"
+FIRMWARE_TEST = "ghidradwarfforge.firmware.FirmwareImageLifecycleSmoke"
 
 # Each edit names a specific safety/semantic guarantee. This is not a blanket
 # mutation score: surviving, uncompilable or timed-out mutants fail this harness.
@@ -41,6 +45,26 @@ MUTANTS = [
      "ghidradwarfforge.output.CompanionArtifactPublisherSmoke",
      "hook.afterInstall(index);\n            }\n            check.check();",
      "hook.afterInstall(index);\n            }\n            // Mutant drops the final cancellation check."),
+    ("firmware-ignores-cancellation", FIRMWARE, FIRMWARE_TEST,
+     'if (Objects.requireNonNull(cancelled, "cancelled").getAsBoolean())', 'if (false)'),
+    ("firmware-leaks-failed-carriers", FIRMWARE, FIRMWARE_TEST,
+     "try { remove(directory); }", "try { if (directory == null) remove(directory); }"),
+    ("firmware-ignores-input-provenance", FIRMWARE, FIRMWARE_TEST,
+     "digest.byteCount() != input.size() || !digest.sha256().equals(input.sha256())", "false"),
+    ("firmware-confuses-file-offset", FIRMWARE, FIRMWARE_TEST,
+     "long offset = span.fileOffset();", "long offset = 0;"),
+]
+
+PROJECT_MUTANTS = [
+    ("project-allows-descendant", PROTECT, PROTECT_TEST,
+     "if (path.startsWith(directory))", "if (false)"),
+    ("project-misses-file-alias", PROTECT, PROTECT_TEST,
+     "ghidradwarfforge.output.FileSystemPaths.aliases(output, protectedPath)",
+     "output.equals(protectedPath)"),
+    ("project-skips-linked-file", PROTECT, PROTECT_TEST,
+     "Files.isRegularFile(path)", "Files.isRegularFile(path, java.nio.file.LinkOption.NOFOLLOW_LINKS)"),
+    ("project-ignores-cancellation", PROTECT, PROTECT_TEST,
+     "var file = program.getDomainFile();", "monitor = TaskMonitor.DUMMY; var file = program.getDomainFile();"),
 ]
 
 
@@ -63,13 +87,18 @@ def main():
     parser.add_argument("--tests", type=Path, required=True)
     parser.add_argument("--java-home", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--ghidra", type=Path, help="also check saved-project protection using the Ghidra API")
     args = parser.parse_args()
     classes, tests, output = args.classes.resolve(), args.tests.resolve(), args.output.resolve()
     if not classes.is_dir() or not tests.is_dir():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    sources = {name: REPO / "src/main/java" / name for name in (REPAIR, RELOCATE, PUBLISH)}
+    mutants = MUTANTS + (PROJECT_MUTANTS if args.ghidra else [])
+    dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
+    if args.ghidra and not dependencies:
+        raise ValueError("Ghidra installation libraries are required")
+    sources = {row[1]: REPO / "src/main/java" / row[1] for row in mutants}
     original = {name: path.read_text() for name, path in sources.items()}
     hashes = {name: digest(path) for name, path in sources.items()}
     results = []
@@ -85,12 +114,21 @@ def main():
             path.write_text(source)
             # The production publisher's private exception is never serialized;
             # its existing missing serialVersionUID is unrelated to these mutants.
-            compiled, compile_seconds = execute([javac, "-Xlint:all,-serial", "-Werror", "-cp", classes,
+            selected_dependencies = dependencies if test == PROTECT_TEST else []
+            compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
+            # Distributed Ghidra dependency manifests reference optional jars not
+            # shipped beside them. Suppress only that path warning for API tests;
+            # missing API classes and every other compiler warning remain fatal.
+            lint = "-Xlint:all,-serial,-path" if selected_dependencies else "-Xlint:all,-serial"
+            compiled, compile_seconds = execute([javac, lint, "-proc:none", "-Werror", "-cp", compile_path,
                                                  "-d", root, path])
             if compiled.returncode:
                 raise AssertionError(f"{label}: compilation failed, not a detected mutant\n{compiled.stdout}")
-            classpath = os.pathsep.join(map(str, (root, classes, tests)))
-            run, run_seconds = execute([java, "-Djava.io.tmpdir=" + str(root), "-cp", classpath, test])
+            classpath = os.pathsep.join(map(str, [root, classes, tests, *selected_dependencies]))
+            test_args = [args.ghidra.resolve()] if test == PROTECT_TEST else []
+            run, run_seconds = execute([java, "-Djava.io.tmpdir=" + str(root),
+                "-Dapplication.settingsdir=" + str(root / "settings"), "-Djava.awt.headless=true",
+                "-cp", classpath, test, *test_args])
             (output / (label + ".log")).write_text(run.stdout)
             if mutant:
                 if run.returncode == 0 or "java.lang.AssertionError:" not in run.stdout:
@@ -105,18 +143,18 @@ def main():
                             "exitCode": run.returncode, "compileSeconds": compile_seconds,
                             "testSeconds": run_seconds})
 
-    for index, (name, test) in enumerate(dict.fromkeys((row[1], row[2]) for row in MUTANTS)):
+    for index, (name, test) in enumerate(dict.fromkeys((row[1], row[2]) for row in mutants)):
         check(f"baseline-{index}", name, test, original[name], False)
-    for label, name, test, before, after in MUTANTS:
+    for label, name, test, before, after in mutants:
         if original[name].count(before) != 1:
             raise AssertionError(f"{label}: mutation anchor is not unique; review source change")
         check(label, name, test, original[name].replace(before, after), True)
     if hashes != {name: digest(path) for name, path in sources.items()}:
         raise AssertionError("mutation run changed checkout sources")
-    report = {"status": "PASS", "mutantsDetected": len(MUTANTS), "sourceSha256": hashes,
+    report = {"status": "PASS", "mutantsDetected": len(mutants), "sourceSha256": hashes,
               "elapsedSeconds": round(time.monotonic() - started, 3),
               "peakDisposableClassBytes": peak, "results": results,
-              "scope": "Nine selected faults; not a repository-wide mutation score"}
+              "scope": "Selected faults only; not a repository-wide mutation score"}
     (output / "result.json").write_text(json.dumps(report, indent=4) + "\n")
     print(json.dumps({key: report[key] for key in ("status", "mutantsDetected", "elapsedSeconds", "peakDisposableClassBytes")}))
 

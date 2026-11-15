@@ -8,6 +8,7 @@ The reference is the complete compiler ELF, preserving valid program headers.
 """
 
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 import os
@@ -17,6 +18,7 @@ import struct
 import subprocess
 import tempfile
 from zipfile import ZipFile
+from integration_coverage import Collection
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -101,14 +103,16 @@ def validate_reference(original, sidecar, directory):
         directory / "dwarfdump.txt")
 
 
-def generated_companion(directory, original, reference, source, classpath):
+def generated_companion(directory, original, reference, source, classpath, coverage):
     if classpath is None:
         return reference, None
     sidecar = directory / "matched companion.dbg"
     companion = directory / "matched companion.dbg.gdb.py"
-    run(["java", "-cp", classpath, "ghidradwarfforge.elf.GdbCompanionSmoke",
-        str(original), str(reference), str(source), str(sidecar), str(companion)],
-        directory, directory / "companion-generation.txt")
+    command = ["java", "-cp", classpath, "ghidradwarfforge.elf.GdbCompanionSmoke",
+        str(original), str(reference), str(source), str(sidecar), str(companion)]
+    session = coverage.session(command, directory.name) if coverage else nullcontext(command)
+    with session as measured:
+        run(measured, directory, directory / "companion-generation.txt")
     return sidecar, companion
 
 
@@ -152,7 +156,7 @@ for role in ('target', 'sidecar', 'source', 'checks'):
 print('FORGE_REJECTIONS=PASS')""")
 
 
-def live_check(directory, role, classpath):
+def live_check(directory, role, classpath, coverage):
     source = directory / "mapping fixture.c"
     source.write_text("""volatile int mapping_global = 7;
 __attribute__((noinline)) int mapping_function(int left, int right) {
@@ -171,7 +175,7 @@ int main(void) { return mapping_function(19, 23) == 42 ? 0 : 1; }
         for line in symbols.splitlines() if len(line.split()) == 3}
     shutil.copyfile(original, sidecar)
     run(["strip", "--strip-all", str(original)], directory, directory / "strip.txt")
-    sidecar, companion = generated_companion(directory, original, sidecar, source, classpath)
+    sidecar, companion = generated_companion(directory, original, sidecar, source, classpath, coverage)
     validate_reference(original, sidecar, directory)
     bits, segments, checks = elf_loads(original)
     binding = manifest(original, sidecar, source, bits, segments, checks)
@@ -235,7 +239,7 @@ int main(void) { return mapping_function(19, 23) == 42 ? 0 : 1; }
             if line.startswith("FORGE_MAPPING_RESULT=")))}
 
 
-def shared_check(directory, classpath):
+def shared_check(directory, classpath, coverage):
     source = directory / "library source.c"
     source.write_text("""volatile int shared_value = 7;
 __attribute__((noinline)) int shared_function(int left, int right) {
@@ -273,7 +277,7 @@ int main(int argc, char **argv) {
         for line in symbols.splitlines() if len(line.split()) == 3}
     shutil.copyfile(original, sidecar)
     run(["strip", "--strip-all", str(original)], directory, directory / "strip.txt")
-    sidecar, companion = generated_companion(directory, original, sidecar, source, classpath)
+    sidecar, companion = generated_companion(directory, original, sidecar, source, classpath, coverage)
     validate_reference(original, sidecar, directory)
     bits, segments, checks = elf_loads(original)
     binding = manifest(original, sidecar, source, bits, segments, checks)
@@ -348,8 +352,11 @@ def main():
     RESULTS.mkdir(parents=True, exist_ok=True)
     directory = Path(tempfile.mkdtemp(prefix="run.", dir=RESULTS))
     classpath = None
+    coverage = None
     if args.companion_jar is not None:
         jar = args.companion_jar.resolve(strict=True)
+        coverage = Collection('gdb-companion', jar, 'native-java',
+            test_classes=('ghidradwarfforge.elf.GdbCompanionSmoke',))
         with ZipFile(jar) as archive:
             if archive.read("ghidradwarfforge/gdb/loader.py") != ENGINE.read_bytes():
                 raise AssertionError("packaged runtime does not match selected source")
@@ -363,15 +370,17 @@ def main():
     for role in ("exec", "pie"):
         case = directory / role
         case.mkdir()
-        results.append(live_check(case, role, classpath))
+        results.append(live_check(case, role, classpath, coverage))
     shared = directory / "shared"
     shared.mkdir()
-    results.append(shared_check(shared, classpath))
+    results.append(shared_check(shared, classpath, coverage))
     (directory / "result.json").write_text(json.dumps({"status": "PASS",
         "engineSha256": hashlib.sha256(ENGINE.read_bytes()).hexdigest(),
         "packagedGenerator": classpath is not None,
         "jarSha256": hashlib.sha256(jar.read_bytes()).hexdigest() if classpath else None,
         "cases": results}, indent=4) + "\n")
+    if coverage:
+        coverage.finish(directory / 'result.json')
     print(f"gdb-loader-mappings=PASS {directory}")
 
 

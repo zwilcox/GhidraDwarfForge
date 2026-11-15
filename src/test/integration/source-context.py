@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 from urllib.parse import unquote, urlsplit
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -34,6 +35,7 @@ def main():
     project = args.context_fixture / 'project'
     before = snapshot(project)
     jar = args.ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+    coverage = Collection('source-context', jar, 'headless')
     protected = {str(p.resolve()): digest(p) for p in [helper, Path(__file__), jar, args.context_fixture / 'fixture']}
     commands = []
     for phase in ('first', 'second'):
@@ -43,17 +45,19 @@ def main():
             '-postScript', helper.name, output]))
         commands.append(command)
         (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (root / (phase + '.log')).open('w') as log:
-            result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=600)
-        text = (root / (phase + '.log')).read_text()
-        assert result.returncode == 0 and 'source-context=PASS' in text, phase
-        assert snapshot(project) == before, 'saved project changed'
-        receipt = json.loads((output / 'result.json').read_text())
-        assert Path(unquote(urlsplit(receipt['origin']).path)).resolve() == jar.resolve()
+        with coverage.session(command, phase, headless=True) as measured:
+            with (root / (phase + '.log')).open('w') as log:
+                result = subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, timeout=600)
+            text = (root / (phase + '.log')).read_text()
+            assert result.returncode == 0 and 'source-context=PASS' in text, phase
+            assert snapshot(project) == before, 'saved project changed'
+            receipt = json.loads((output / 'result.json').read_text())
+            assert Path(unquote(urlsplit(receipt['origin']).path)).resolve() == jar.resolve()
     assert snapshot(root / 'first') == snapshot(root / 'second'), 'fresh-process results differ'
     assert protected == {path: digest(Path(path)) for path in protected}, 'protected inputs changed'
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_NATIVE_SOURCE_CONTEXT_COMPONENT',
         'protectedSha256': protected, 'projectSha256': before, 'outputsSha256': snapshot(root / 'first')}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('source-context-harness=PASS')
 
 

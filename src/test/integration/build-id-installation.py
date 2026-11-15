@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Real build-ID transaction/validator tests with an explicitly test-only Linux metadata host."""
 import argparse
+from contextlib import nullcontext
 import fcntl
 import hashlib
 import json
@@ -8,6 +9,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -40,6 +42,14 @@ def main():
     build_id = values[0]['buildId']
     prefix = [args.java, '--enable-native-access=ALL-UNNAMED', '-Djava.io.tmpdir=' + str(root),
         '-Djna.tmpdir=' + str(root), '-Dforge.test.buildId.host=' + args.host, '-cp', args.classpath]
+    jars = [Path(path) for path in args.classpath.split(os.pathsep)
+        if Path(path).name == 'GhidraDwarfForge.jar']
+    if os.environ.get('FORGE_INTEGRATION_COVERAGE_OUTPUT') and len(jars) != 1:
+        raise ValueError('coverage requires one production JAR in the probe classpath')
+    coverage = Collection('build-id-installation', jars[0] if jars else None, 'native-java',
+        test_classes=('ghidradwarfforge.output.BuildIdInstallationProbe',
+            'ghidradwarfforge.output.AttachmentElfTransactionProbe',
+            'ghidradwarfforge.output.AttachmentReceiptStoreSmoke'))
     commands, checks, consumers = [], [], []
     script_root = Path(__file__).resolve().parent
 
@@ -49,15 +59,23 @@ def main():
         row = {'name': name, 'command': command}
         commands.append(row)
         (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        completed = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=240)
-        row['exit'] = completed.returncode
-        (root / (name + '.log')).write_text(completed.stdout)
-        (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        assert completed.returncode == expected, (name, completed.returncode, completed.stdout[-5000:])
-        if contains:
-            assert contains in completed.stdout, (name, completed.stdout[-5000:])
-        result = json.loads(completed.stdout) if expected == 0 else None
-        checks.append({'name': name, 'exit': completed.returncode, 'outcome': result['outcome'] if result else None})
+        forced_halt = any(value.startswith('crash=') for value in properties)
+        if forced_halt:
+            assert expected == 73, 'forced-halt control must verify its exit status'
+        session = nullcontext(command) if forced_halt else coverage.session(command, name)
+        with session as measured:
+            row['executedCommand'] = measured
+            completed = subprocess.run(measured, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=240)
+            row['exit'] = completed.returncode
+            (root / (name + '.log')).write_text(completed.stdout)
+            (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
+            assert completed.returncode == expected, (name, completed.returncode, completed.stdout[-5000:])
+            if contains:
+                assert contains in completed.stdout, (name, completed.stdout[-5000:])
+            result = json.loads(completed.stdout) if expected == 0 else None
+            checks.append({'name': name, 'exit': completed.returncode, 'outcome': result['outcome'] if result else None})
+            if forced_halt:
+                coverage.record_forced_halt(name, completed.returncode)
         return result
 
     def fresh(name):
@@ -378,6 +396,7 @@ qemu_socket_wait
                 'no hidden-metadata or power-loss claim. ') +
             'Public launcher and full consumer acceptance remain required.'}
     (root / 'result.json').write_text(json.dumps(result, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('build-id-installation=PASS checks=' + str(len(checks)) + ' consumers=' + str(len(consumers)), flush=True)
 
 

@@ -19,6 +19,6 @@ case "$TARGET" in
     *) exit 2 ;;
 esac
 gdb-multiarch -nx -q -batch "$case_directory/reference" "${remote[@]}" \
-    -ex "source $repository/src/test/research/scopes/compiler-gdb.py"
+    -ex "source $repository/src/test/scenarios/scopes/compiler-gdb.py"
 test -f "$SCOPE_OUT"
 if [[ $TARGET == aarch64 ]]; then qemu_socket_wait; fi

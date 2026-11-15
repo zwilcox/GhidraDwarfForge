@@ -1,0 +1,225 @@
+"""Receipt/admission controls only; real JaCoCo execution is checked separately."""
+import importlib.util
+import json
+from pathlib import Path
+import tempfile
+import unittest
+from zipfile import ZipFile
+
+
+SPEC = importlib.util.spec_from_file_location('integration_coverage',
+    Path(__file__).resolve().parents[1] / 'integration/integration_coverage.py')
+coverage = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(coverage)
+
+
+class IntegrationCoverageTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix='integration-coverage-test-')
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.jar = self.root / 'production.jar'
+        with ZipFile(self.jar, 'w') as archive:
+            archive.writestr('ghidradwarfforge/Fixture.class', b'receipt fixture, not real bytecode')
+        self.agent = self.root / 'agent.jar'
+        self.agent.write_bytes(b'receipt fixture, not an agent')
+        self.env = {'FORGE_INTEGRATION_COVERAGE_OUTPUT': str(self.root / 'output with spaces'),
+            'FORGE_INTEGRATION_COVERAGE_AGENT': str(self.agent)}
+        self.oracle = self.root / 'result.json'
+        self.oracle.write_text(json.dumps({'status': 'PASS_TEST_ORACLE'}))
+
+    def collection(self):
+        return coverage.Collection('receipt-test', self.jar, 'native-java', environment=self.env)
+
+    def execution(self, collection):
+        row = collection.record['sessions'][-1]
+        return collection.root / row['file']
+
+    def collected(self):
+        collection = self.collection()
+        with collection.session(['java', '-cp', 'unchanged', 'Main'], 'first') as command:
+            self.assertEqual(command[0], 'java')
+            self.assertEqual(command[2:], ['-cp', 'unchanged', 'Main'])
+            self.assertIn('append=false', command[1])
+            self.execution(collection).write_bytes(b'not real execution: receipt checks only')
+        collection.finish(self.oracle)
+        return collection
+
+    def test_disabled_is_noop(self):
+        collection = coverage.Collection('unused', self.root / 'absent.jar', 'unused', environment={})
+        command = ['not-java', 'untouched']
+        with collection.session(command, 'no-op') as actual:
+            self.assertIs(actual, command)
+        collection.finish(self.root / 'absent.json')
+        self.assertFalse((self.root / 'output with spaces').exists())
+
+    def test_partial_configuration_rejected(self):
+        for key in self.env:
+            with self.assertRaisesRegex(ValueError, 'both output and agent'):
+                coverage.Collection('test', self.jar, 'headless', environment={key: self.env[key]})
+
+    def test_production_cannot_be_excluded(self):
+        with ZipFile(self.jar, 'w') as archive:
+            archive.writestr('ghidradwarfforge/ProbeProduction.class', b'fixture')
+        with self.assertRaisesRegex(ValueError, 'remove a production class'):
+            coverage.Collection('receipt-test', self.jar, 'native-java', environment=self.env,
+                test_classes=('ghidradwarfforge.ProbeProduction',))
+
+    def test_production_nested_probe_is_retained(self):
+        with ZipFile(self.jar, 'w') as archive:
+            archive.writestr('ghidradwarfforge/elf/GdbCompanion$Probe.class', b'fixture')
+        collection = coverage.Collection('receipt-test', self.jar, 'native-java', environment=self.env,
+            test_classes=('ghidradwarfforge.output.BuildIdInstallationProbe',))
+        self.assertEqual(collection.record['productionClasses'], 1)
+        self.assertEqual(collection.record['excludes'], ['ghidradwarfforge.output.BuildIdInstallationProbe',
+            'ghidradwarfforge.output.BuildIdInstallationProbe$*'])
+
+    def test_shell_and_existing_agent_rejected(self):
+        collection = self.collection()
+        for command in (['sh', '-c', 'java Main'], ['java', '-javaagent:other.jar', 'Main']):
+            with self.assertRaises(ValueError), collection.session(command, 'invalid'):
+                self.fail('invalid command yielded')
+
+    def test_each_jvm_has_unique_output_and_session(self):
+        collection = self.collection()
+        commands = []
+        for _ in range(2):
+            with collection.session(['java.exe', 'Main'], 'repeated-label') as command:
+                commands.append(command)
+                self.execution(collection).write_bytes(b'fixture')
+        self.assertNotEqual(commands[0][1], commands[1][1])
+        collection.finish(self.oracle)
+        self.assertEqual(len(coverage.validate_collection(collection.root, self.jar)['sessions']), 2)
+
+    def test_failed_behavior_does_not_accept_execution(self):
+        collection = self.collection()
+        with self.assertRaisesRegex(AssertionError, 'oracle failed'):
+            with collection.session(['java', 'Main'], 'failure'):
+                self.execution(collection).write_bytes(b'fixture')
+                raise AssertionError('oracle failed')
+        with self.assertRaisesRegex(ValueError, 'incomplete sessions'):
+            collection.finish(self.oracle)
+        with self.assertRaisesRegex(ValueError, 'incomplete'):
+            coverage.validate_collection(collection.root, self.jar)
+
+    def test_missing_execution_rejected(self):
+        collection = self.collection()
+        with self.assertRaisesRegex(ValueError, 'missing or excessive'):
+            with collection.session(['java', 'Main'], 'no-data'):
+                pass
+
+    def test_production_change_rejected(self):
+        collection = self.collection()
+        with self.assertRaisesRegex(ValueError, 'production classes changed'):
+            with collection.session(['java', 'Main'], 'change'):
+                self.execution(collection).write_bytes(b'fixture')
+                self.jar.write_bytes(b'replaced production')
+
+    def test_entire_harness_must_pass(self):
+        collection = self.collection()
+        with collection.session(['java', 'Main'], 'one-process'):
+            self.execution(collection).write_bytes(b'fixture')
+        self.oracle.write_text('{"status": "FAIL"}')
+        with self.assertRaisesRegex(ValueError, 'no passing receipt'):
+            collection.finish(self.oracle)
+
+    def test_tampered_or_unrecorded_execution_rejected(self):
+        for mutation in ('bytes', 'extra', 'missing', 'duplicate', 'traversal'):
+            with self.subTest(mutation=mutation):
+                collection = self.collected()
+                path = self.execution(collection)
+                if mutation == 'bytes':
+                    path.write_bytes(b'changed')
+                elif mutation == 'extra':
+                    (collection.root / 'unknown.exec').write_bytes(b'extra')
+                elif mutation == 'missing':
+                    path.unlink()
+                elif mutation == 'duplicate':
+                    collection.record['sessions'].append(collection.record['sessions'][0].copy())
+                    collection._save()
+                else:
+                    collection.record['sessions'][0]['file'] = '../outside.exec'
+                    collection._save()
+                with self.assertRaises(ValueError):
+                    coverage.validate_collection(collection.root, self.jar)
+
+    def test_wrong_jar_and_changed_oracle_rejected(self):
+        collection = self.collected()
+        other = self.root / 'other.jar'
+        other.write_bytes(b'wrong jar')
+        with self.assertRaisesRegex(ValueError, 'different production classes'):
+            coverage.validate_collection(collection.root, other)
+        (collection.root / 'oracle.json').write_text('{"status":"FAIL"}')
+        with self.assertRaisesRegex(ValueError, 'oracle receipt changed'):
+            coverage.validate_collection(collection.root, self.jar)
+
+    def test_closed_collection_cannot_append(self):
+        collection = self.collected()
+        with self.assertRaisesRegex(ValueError, 'already finished'), collection.session(['java', 'Main'], 'late'):
+            self.fail('closed session yielded')
+
+    def test_misleading_pass_status_rejected(self):
+        for status in ('PASS_WITH_FAILURES?', 'PASSED', 'PASS-but-skipped', 'PASS ', None):
+            collection = self.collection()
+            with collection.session(['java', 'Main'], 'valid-process'):
+                self.execution(collection).write_bytes(b'fixture')
+            self.oracle.write_text(json.dumps({'status': status}))
+            with self.assertRaisesRegex(ValueError, 'no passing receipt'):
+                collection.finish(self.oracle)
+
+    def test_forced_halts_explicitly_unmeasured(self):
+        collection = self.collection()
+        with self.assertRaisesRegex(ValueError, 'invalid forced-halt'):
+            collection.record_forced_halt('wrong-exit', 1)
+        collection.record_forced_halt('interrupted-publish', 73)
+        with self.assertRaisesRegex(ValueError, 'incomplete sessions'):
+            collection.finish(self.oracle)
+        with collection.session(['java', 'Main'], 'recovery'):
+            self.execution(collection).write_bytes(b'fixture')
+        collection.finish(self.oracle)
+        record = coverage.validate_collection(collection.root, self.jar)
+        self.assertEqual(len(record['sessions']), 1)
+        self.assertEqual(record['unmeasuredForcedHalts'][0]['exitCode'], 73)
+        with self.assertRaisesRegex(ValueError, 'invalid forced-halt'):
+            collection.record_forced_halt('late', 73)
+
+    def test_metadata_cannot_drop_population_or_hide_crashes(self):
+        for field, value in (('productionClasses', 0), ('excludes', ['ghidradwarfforge.*']),
+                ('excludes', ['ghidradwarfforge.Fixture']), ('layer', 'unknown'),
+                ('unmeasuredForcedHalts', [{'label': 'crash', 'exitCode': 1}])):
+            collection = self.collected()
+            collection.record[field] = value
+            collection._save()
+            with self.assertRaises(ValueError):
+                coverage.validate_collection(collection.root, self.jar)
+
+    def test_pinned_headless_adapter_preserves_arguments(self):
+        install = self.root / 'ghidra'
+        support = install / 'support'
+        support.mkdir(parents=True)
+        launcher = support / 'analyzeHeadless'
+        launcher.write_text('fixture')
+        installed = install / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+        installed.parent.mkdir(parents=True)
+        installed.write_bytes(self.jar.read_bytes())
+        environment = dict(self.env, FORGE_INTEGRATION_COVERAGE_OUTPUT=str(self.root / 'headless'))
+        collection = coverage.Collection('headless-test', installed, 'headless', environment=environment)
+        arguments = ['project directory', 'project', '-readOnly', '-postScript', 'Check.java']
+        with collection.session([launcher, *arguments], 'readback', headless=True) as command:
+            self.assertEqual(command[:5], [str(support / 'launch.sh'), 'fg', 'jdk', 'Ghidra-Headless', '2G'])
+            self.assertIn('-javaagent:', command[5])
+            self.assertEqual(command[6:], ['ghidra.app.util.headless.AnalyzeHeadless', *arguments])
+            self.execution(collection).write_bytes(b'fixture')
+        collection.finish(self.oracle)
+        foreign = coverage.Collection('wrong-install', self.jar, 'headless', environment=environment)
+        with self.assertRaisesRegex(ValueError, 'measured installation'):
+            with foreign.session([launcher, *arguments], 'wrong', headless=True):
+                self.fail('foreign installation accepted')
+        spaces = coverage.Collection('spaces', installed, 'headless', environment=self.env)
+        with self.assertRaisesRegex(ValueError, 'without whitespace'):
+            with spaces.session([launcher, *arguments], 'spaces', headless=True):
+                self.fail('unsafe headless option splitting accepted')
+
+
+if __name__ == '__main__':
+    unittest.main()

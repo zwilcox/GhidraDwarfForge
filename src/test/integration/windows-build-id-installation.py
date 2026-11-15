@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Native NTFS installer/PowerShell acceptance using two actual Windows exports."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 import os
@@ -8,6 +9,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -43,6 +45,8 @@ def main():
     dependencies = [module / 'lib/GhidraDwarfForge.jar',
         args.ghidra.resolve() / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar',
         args.ghidra.resolve() / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar']
+    coverage = Collection('windows-build-id-installation', dependencies[0], 'windows',
+        test_classes=('ghidradwarfforge.output.BuildIdInstallationProbe',))
     launcher = module / 'support/ghidra-dwarf-forge-build-id.ps1'
     protected = {p: digest(p) for files in selected for p in files.values()}
     protected.update({str(p): digest(p) for p in [*dependencies, launcher, Path(__file__)]})
@@ -61,27 +65,36 @@ def main():
         row = {'name': name, 'command': command}
         commands.append(row)
         save(root / 'commands.json', commands)
-        with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP) as child:
-            try:
-                stdout, stderr = child.communicate(timeout=300)
-            except subprocess.TimeoutExpired:
-                # This is an isolated test transaction over owned fixture copies.
-                cleanup = subprocess.run([str(Path(os.environ['SystemRoot']) / 'System32/taskkill.exe'),
-                    '/PID', str(child.pid), '/T', '/F'], capture_output=True, timeout=30)
-                (root / (name + '.cleanup.log')).write_bytes(cleanup.stdout + cleanup.stderr)
-                stdout, stderr = child.communicate(timeout=30)
-                (root / (name + '.stdout')).write_bytes(stdout)
-                (root / (name + '.stderr')).write_bytes(stderr)
-                raise
-        (root / (name + '.stdout')).write_bytes(stdout)
-        (root / (name + '.stderr')).write_bytes(stderr)
-        row['exit'] = child.returncode
-        save(root / 'commands.json', commands)
-        text = (stdout + stderr).decode('utf-8', errors='replace')
-        assert child.returncode == expected, (name, child.returncode, text[-4000:])
-        if contains:
-            assert contains in text, (name, text[-4000:])
+        forced_halt = any(value.startswith('-Dforge.test.buildId.crash=') for value in command)
+        if forced_halt:
+            assert expected == 73, 'forced-halt control must verify its exit status'
+        session = (coverage.session(command, name)
+            if Path(command[0]).name.lower() == 'java.exe' and not forced_halt else nullcontext(command))
+        with session as measured:
+            row['executedCommand'] = measured
+            with subprocess.Popen(measured, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP) as child:
+                try:
+                    stdout, stderr = child.communicate(timeout=300)
+                except subprocess.TimeoutExpired:
+                    # This is an isolated test transaction over owned fixture copies.
+                    cleanup = subprocess.run([str(Path(os.environ['SystemRoot']) / 'System32/taskkill.exe'),
+                        '/PID', str(child.pid), '/T', '/F'], capture_output=True, timeout=30)
+                    (root / (name + '.cleanup.log')).write_bytes(cleanup.stdout + cleanup.stderr)
+                    stdout, stderr = child.communicate(timeout=30)
+                    (root / (name + '.stdout')).write_bytes(stdout)
+                    (root / (name + '.stderr')).write_bytes(stderr)
+                    raise
+            (root / (name + '.stdout')).write_bytes(stdout)
+            (root / (name + '.stderr')).write_bytes(stderr)
+            row['exit'] = child.returncode
+            save(root / 'commands.json', commands)
+            text = (stdout + stderr).decode('utf-8', errors='replace')
+            assert child.returncode == expected, (name, child.returncode, text[-4000:])
+            if contains:
+                assert contains in text, (name, text[-4000:])
+            if forced_halt:
+                coverage.record_forced_halt(name, child.returncode)
         return stdout.decode('utf-8')
 
     note = execute('original-notes', [tools['readelf'], '-n', selected[0]['original']])
@@ -308,6 +321,7 @@ def main():
         'scope': 'Native Windows NTFS host and packaged PowerShell launcher, real original and analyst-refreshed exports, '
             'fresh structural validation, metadata preservation, interrupted lifecycle/recovery, lock, cancellation, '
             'foreign registration and junction controls. No Windows GDB runtime or consumer-discovery claim.'})
+    coverage.finish(root / 'result.json')
     print('windows-build-id-installation=PASS checks=' + str(len(checks)))
 
 

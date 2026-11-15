@@ -23,7 +23,7 @@ javac --release 21 -d "$work/classes" \
     "$repository/src/main/java/ghidradwarfforge/elf/ExecutableProgramBytes.java" \
     "$repository/src/main/java/ghidradwarfforge/elf/DebuglinkCandidateContent.java" \
     "$repository/src/main/java/ghidradwarfforge/output/FileDigests.java" \
-    "$repository/src/test/research/debuglink/DebuglinkToolProbe.java"
+    "$repository/src/test/scenarios/debuglink/DebuglinkToolProbe.java"
 printf 'target\trole\ttool_exit\tcandidate_content_probe\n' > "$work/summary.tsv"
 for target in "${targets[@]}"; do
     case "$target" in

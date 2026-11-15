@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Export a raw Cortex-M fixture through the installed production exporter."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 import os
@@ -9,6 +10,7 @@ import runpy
 import shutil
 import subprocess
 import tempfile
+from integration_coverage import Collection
 
 HERE = Path(__file__).resolve().parent
 
@@ -41,6 +43,10 @@ def main():
     print('raw-firmware-results=' + str(root), flush=True)
     original = root / 'firmware.bin'
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+    # Windows collection is handled by its direct-JVM metadata/installation
+    # probes. The Linux analyzer adapter does not rewrite a PowerShell launcher.
+    coverage = Collection('raw-firmware', module / 'lib/GhidraDwarfForge.jar', 'headless',
+        environment={} if os.name == 'nt' or args.mmio else None)
     package = inventory(module)
     commands = []
     prepared = None
@@ -60,9 +66,12 @@ def main():
             command = list(map(str, argv))
             commands.append({'label': label, 'argv': command})
             (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-            with (root / (label + '.log')).open('w') as output:
-                subprocess.run(command, stdout=output, stderr=subprocess.STDOUT,
-                    check=True, timeout=240, env=environment)
+            session = (coverage.session(command, label, headless=True)
+                if Path(command[0]).name == 'analyzeHeadless' else nullcontext(command))
+            with session as measured:
+                with (root / (label + '.log')).open('w') as output:
+                    subprocess.run(measured, stdout=output, stderr=subprocess.STDOUT,
+                        check=True, timeout=240, env=environment)
             return (root / (label + '.log')).read_text()
 
         if prepared:
@@ -151,7 +160,7 @@ def main():
                     {'regionOffset': 0, 'size': ram.stat().st_size, 'inputId': 'ram', 'fileOffset': 0}]
         if args.mmio:
             import sys
-            text = run('controls', [sys.executable, '-B', HERE.parent / 'research/mmio-access/failures.py',
+            text = run('controls', [sys.executable, '-B', HERE.parent / 'scenarios/mmio-access/failures.py',
                 '--ghidra', ghidra, '--project', project, '--original', original, '--sidecar', sidecar,
                 '--results', root / 'mmio-failures', '--raw-firmware'])
             failure_controls = 22
@@ -193,6 +202,7 @@ def main():
             (transport / 'producer.json').write_text(json.dumps(producer, indent=4) + '\n')
             portable['seal'](transport)
             (root / 'result.json').write_text(json.dumps(producer, indent=4) + '\n')
+            coverage.finish(root / 'result.json')
             print('raw-firmware-producer=PASS ' + str(root))
             return
         for label, command in [
@@ -212,6 +222,7 @@ def main():
             'failureControls': failure_controls, 'inputFiles': len(record['inputs']),
             'mmio': args.mmio,
             'scope': 'one raw runtime layout per invocation'}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('raw-firmware-export=PASS ' + str(root))
 
 

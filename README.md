@@ -2,6 +2,7 @@
 
 [![Production CI status for main](https://github.com/zwilcox/GhidraDwarfForge/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/zwilcox/GhidraDwarfForge/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
 [![Java test line coverage — last validated main](https://raw.githubusercontent.com/zwilcox/GhidraDwarfForge/reports/test-coverage/test-coverage.svg)](https://github.com/zwilcox/GhidraDwarfForge/blob/reports/test-coverage/README.md)
+[![Buy Me a Coffee](https://raw.githubusercontent.com/pachadotdev/buymeacoffee-badges/main/bmc-donate-yellow.svg)](https://buymeacoffee.com/zwilcox)
 
 See [test coverage scope and limitations](docs/TEST-CODE-COVERAGE.md). This metric is separate from exported evidence coverage.
 
