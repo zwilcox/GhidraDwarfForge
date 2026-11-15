@@ -2,14 +2,14 @@
     "schema": 1,
     "scope": "Production Java line coverage from extension-build JavaExec tests",
     "repository": "zwilcox/GhidraDwarfForge",
-    "commit": "f8ee3b7a83bbf857faa8aae43c61669537f3e4bb",
-    "runId": 43566698124,
+    "commit": "664f8076a7ffdd7fe261e9d439d6a4254dcb1071",
+    "runId": 43654611110,
     "metric": "LINE",
-    "covered": 22865,
-    "missed": 6915,
-    "percent": "76.8",
+    "covered": 23118,
+    "missed": 6664,
+    "percent": "77.6",
     "jacocoVersion": "0.8.16",
-    "xmlSha256": "06e9d1bba6778d079f4177ea25df5df0fcb823ab4681a2d14f4e6ed997742c81",
+    "xmlSha256": "30b3aff8406dad99deba1cd6e77a6fcc590e4b8b893f8f4e05b7d98e2c9a2164",
     "tasks": [
         "aarch64AbiSelectionSmoke",
         "aarch64ParameterAllocationSmoke",
@@ -53,6 +53,7 @@
         "classScopeNamesSmoke",
         "classScopeSmoke",
         "companionArtifactPublisherSmoke",
+        "companionPublicationFailureSmoke",
         "compilerCallPolicySmoke",
         "compositeRegisterPrefixSmoke",
         "compositeValueFlowSmoke",
@@ -76,6 +77,7 @@
         "delayedReturnPrefixSmoke",
         "directLeafCallSmoke",
         "dwarfAddressRangesSmoke",
+        "dwarfInfoRepairBoundarySmoke",
         "dwarfInfoRepairSmoke",
         "dwarfLineTableSmoke",
         "dwarfLocationListsSmoke",
@@ -185,6 +187,7 @@
         "sourceCoverageInventorySmoke",
         "sourceCoverageSmoke",
         "sourcePartitionSmoke",
+        "sourceRelocationBoundarySmoke",
         "stackControlFlowSmoke",
         "stackFirstUseSmoke",
         "stackLocalIdentitySmoke",
@@ -664,9 +667,9 @@
         },
         {
             "source": "ghidradwarfforge/dwarf/Dwarf32InfoRepair.java",
-            "covered": 112,
-            "missed": 57,
-            "percent": "66.3"
+            "covered": 171,
+            "missed": 0,
+            "percent": "100.0"
         },
         {
             "source": "ghidradwarfforge/dwarf/Dwarf5LineTable.java",
@@ -712,9 +715,9 @@
         },
         {
             "source": "ghidradwarfforge/dwarf/SyntheticSourceRelocation.java",
-            "covered": 0,
-            "missed": 182,
-            "percent": "0.0"
+            "covered": 181,
+            "missed": 1,
+            "percent": "99.5"
         },
         {
             "source": "ghidradwarfforge/elf/Arm32CallAbi.java",
@@ -1234,9 +1237,9 @@
         },
         {
             "source": "ghidradwarfforge/output/CompanionArtifactPublisher.java",
-            "covered": 138,
-            "missed": 26,
-            "percent": "84.1"
+            "covered": 151,
+            "missed": 13,
+            "percent": "92.1"
         },
         {
             "source": "ghidradwarfforge/output/CoverageComparison.java",
