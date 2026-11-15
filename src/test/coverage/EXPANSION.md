@@ -107,6 +107,11 @@ to the published JavaExec percentage.
 - **PRESENT, UNVERIFIED:** CI collection/reporting for Linux native Java,
   headless firmware/analyst tests, Windows attachment and build-ID installation.
   Native Windows execution and the complete protected matrix remain required.
+  The Windows sample also runs the existing privilege/host/transaction/lock
+  probes against the installed JAR. Its four direct JVMs are measured; nested
+  lock contenders and eight intentional halt children are not. Their native
+  behavior and recovery assertions still run. This avoids treating installer
+  success as sufficient coverage of privilege restoration or sharing failures.
 
 The raw-firmware attempt with the old local installation failed because its
 native pair metadata was missing. It is retained separately and is not admitted

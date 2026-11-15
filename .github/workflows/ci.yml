@@ -3948,6 +3948,13 @@ jobs:
           "FORGE_INTEGRATION_COVERAGE_AGENT=$env:FORGE_INTEGRATION_COVERAGE_AGENT" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "FORGE_INTEGRATION_COVERAGE_OUTPUT=$env:FORGE_INTEGRATION_COVERAGE_OUTPUT" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Measure native Windows privilege, rollback and recovery probes
+        shell: pwsh
+        run: |
+          python -B src/test/integration/windows-host-primitives.py `
+            --ghidra "$env:GHIDRA_INSTALL_DIR" --results build/test-results/windows-host/host-primitives
+          if ($LASTEXITCODE -ne 0) { throw 'Native Windows primitive coverage probes failed' }
+
       - name: Native Windows attachment rollback and saved-curation refresh
         shell: pwsh
         timeout-minutes: 25
@@ -3990,7 +3997,7 @@ jobs:
             --jar "$env:GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" `
             --collections "$env:FORGE_INTEGRATION_COVERAGE_OUTPUT" --output build/integration-coverage/report `
             --java "$env:JAVA_HOME/bin/java.exe" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt `
-            --sources src/main/java --commit "${{ github.sha }}" --require-suite windows-build-id-installation --require-suite windows-attachment
+            --sources src/main/java --commit "${{ github.sha }}" --require-suite windows-build-id-installation --require-suite windows-attachment --require-suite windows-host-primitives
           if ($LASTEXITCODE -ne 0) { throw 'Windows integration coverage verification failed' }
 
       - name: Retain separate Windows integration Java coverage
