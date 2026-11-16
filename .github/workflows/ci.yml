@@ -210,6 +210,9 @@ jobs:
       - name: Validate GNU vector flag forms and invalid metadata rejection
         run: python3 src/test/integration/dwarfdump-gnu-vector.py "$PWD/validation-tool/bin/dwarfdump"
 
+      - name: Validate DWARF 5 atomic type references and reject non-types
+        run: python3 -B src/test/integration/dwarfdump-atomic-type.py "$PWD/validation-tool/bin/dwarfdump"
+
       - name: Validate complete bounded diagnostics and allocation rollback
         run: |
           sources=(build/test-results/validation-tool-build/build.*/libdwarf-2.3.2)
@@ -236,11 +239,13 @@ jobs:
             build/test-results/validation-tool-build/**/locviews-patch.log
             build/test-results/validation-tool-build/**/bounds-patch.log
             build/test-results/validation-tool-build/**/vector-patch.log
+            build/test-results/validation-tool-build/**/atomic-patch.log
             build/test-results/validation-tool-build/**/config.log
             build/test-results/validation-tool-build/**/make.log
             build/test-results/validation-tool-build/**/dependencies.txt
             build/test-results/validation-tool-build/**/version.txt
             build/test-results/dwarfdump-diagnostic-capacity/
+            build/test-results/dwarfdump-atomic-type/
             build/test-results/dwarfdump-configuration/
             build/test-results/dwarfdump-eh-terminators/
             build/test-results/dwarfdump-locviews/
