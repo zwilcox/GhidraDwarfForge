@@ -9,6 +9,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from contextlib import nullcontext
+
+from integration_coverage import Collection
+import static_coverage
 
 case, ghidra = (Path(value).resolve(strict=True) for value in sys.argv[1:])
 harness = Path(__file__).resolve().parent
@@ -31,14 +35,19 @@ def unchanged_project(project, before):
 
 
 commands = []
+source_hashes = static_coverage.sources()
+module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+collection = Collection('lexical-statics-controls', module, 'headless')
 
 
 def run(label, command):
     command = list(map(str, command))
     commands.append({'label': label, 'argv': command})
     (case / 'controls-commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-    with (case / (label + '.log')).open('w') as log:
-        subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=240, check=True)
+    context = collection.session(command, label, headless=True) \
+        if command[0] == str(ghidra / 'support/analyzeHeadless') else nullcontext(command)
+    with context as measured, (case / (label + '.log')).open('w') as log:
+        subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, timeout=240, check=True)
     return (case / (label + '.log')).read_text()
 
 
@@ -100,7 +109,10 @@ run('baseline-reopen', [*launcher, '-postScript', 'GhidraDwarfForge.java', '--pa
 assert protected == {p: digest(p) for p in protected}
 unchanged_project(project, before)
 assert not any(p.name.startswith('.') for p in case.iterdir()), 'temporary output residue'
-(case / 'controls-acceptance.json').write_text(json.dumps({'status': 'STATIC_SCOPE_CONTROLS_PASS',
+result = {'status': 'STATIC_SCOPE_CONTROLS_PASS',
     'target': baseline['target'], 'role': baseline['role'], 'exports': 9, 'cancelledExports': 1,
-    'protected': protected, 'controls': receipts}, indent=4) + '\n')
+    'protected': protected, 'controls': receipts}
+(case / 'controls-acceptance.json').write_text(json.dumps(result, indent=4) + '\n')
+static_coverage.finish(collection, case, result, source_hashes, 'PASS_STATIC_SCOPE_CONTROLS_MEASUREMENT',
+    {'directAnalyzerSessions': 11, 'modes': ['stale', 'conflict', 'coalesced', 'failed']})
 print('lexical-statics-controls=PASS')

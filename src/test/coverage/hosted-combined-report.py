@@ -16,6 +16,7 @@ SPEC.loader.exec_module(combined)
 changed = combined.module('changed_code', HERE / 'changed-code.py')
 files = combined.javaexec
 call_sites = combined.module('call_site_admission', HERE / 'call-site-admission.py')
+static_scopes = combined.module('static_scope_admission', HERE / 'static-scope-admission.py')
 REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation',
@@ -26,7 +27,8 @@ REQUIRED = {
         'linux-attachment-exec', 'linux-attachment-pie', 'linux-attachment-exec-no-build-id',
         'gui-script-manager', 'gui-script-manager-loader', 'gui-script-manager-compressed',
         'gui-script-manager-unwind', 'lexical-shadow', 'object-parameter', 'object-return', 'formatter-export',
-        'calling-convention', 'custom-call-storage', 'call-site-packaged'}),
+        'calling-convention', 'custom-call-storage', 'call-site-packaged',
+        'lexical-statics', 'lexical-statics-controls', 'recovered-statics-positive', 'recovered-statics-controls'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -283,7 +285,7 @@ def load_job(root, jar, kind, commit, run):
             or set(summary.get('layers', {})) != expected_layers):
         raise ValueError('missing or mismatched CI integration cohort: ' + kind)
     rows, suites, known, unmeasured, lexical_cases, object_cases, formatter_cases = [], set(), set(), [], [], [], []
-    call_abi_cases, call_site_cases = [], []
+    call_abi_cases, call_site_cases, static_cases = [], [], []
     for layer, measured in sorted(summary['layers'].items()):
         xml = files.regular(root / 'report' / (layer + '.xml'), 32 * 1024 * 1024)
         if files.digest(xml) != measured.get('xmlSha256'):
@@ -321,6 +323,8 @@ def load_job(root, jar, kind, commit, run):
                 call_abi_cases.append(call_abi_oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'call-site-packaged':
                 call_site_cases.append(call_sites.oracle(record, files.read(directory / 'oracle.json')))
+            if record['suite'] in static_scopes.SUITES:
+                static_cases.append(static_scopes.oracle(record, files.read(directory / 'oracle.json')))
             layer_suites.add(record['suite'])
             layer_rows.extend((layer, row['session'], directory / row['file']) for row in record['sessions'])
             layer_halts.extend({'suite': record['suite'], **row} for row in record.get('unmeasuredForcedHalts', []))
@@ -339,6 +343,7 @@ def load_job(root, jar, kind, commit, run):
         formatter_cohort(formatter_cases)
         call_abi_cohort(call_abi_cases)
         call_sites.cohort(call_site_cases)
+        static_scopes.cohort(static_cases)
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,
         'summarySha256': files.digest(root / 'report/summary.json'),
         'receipts': {name: files.digest(root / 'collections' / name / 'receipt.json') for name in sorted(known)},

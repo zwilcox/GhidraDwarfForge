@@ -321,3 +321,31 @@ but do not use `integration_coverage.Collection`. The already-measured
 `lexical-shadow-export.py` is a separate harness. Instrument existing recovered
 static modes and preservation/cancellation oracles before treating their missing
 HighFunction probes as evidence of missing behavior tests.
+
+## Static-scope integration measurement
+
+The existing lexical-static and recovered-static harnesses now collect separate
+headless and native-Java probes without changing their exporter or debugger
+assertions. All three x86-64 roles (non-PIE, PIE and rebased PIE) passed locally:
+15 complete collections, 96 analyzer sessions and three isolated native-Java
+sessions. These exercise curated, inferred and memory-backed static variables,
+stale/conflicting/coalesced evidence, decompilation failures, cancellation,
+repeatable output and project/input preservation. The admission checks rederive
+the expected object, value, lexical scope and relocated instruction address at
+every debugger boundary, and require every mode and JVM session.
+
+All 137 coverage-tool tests passed, including rejection of missing, reordered,
+duplicated or semantically inconsistent static evidence. Hosted Linux acceptance
+now requires these four additional suites for all three roles. Current CI run
+43814174541 predates this instrumentation; its original 33-suite verifier is
+retained by exact source hash only for historical local measurement verification,
+not to satisfy the new 37-suite acceptance contract.
+
+The first rebased attempt failed during import because the local Ghidra script
+cache contained Java 25 bytecode while the test uses Java 21. Its incomplete
+collections are excluded. A retry using a task-owned Java user cache passed;
+the user's cache was preserved. The validation installation's original extension
+was restored after every driver. Raw receipts remain under
+`.forge-work/scratch/coverage-expansion/statics-measured-collections/`.
+Combined counters are pending raw-probe union; these sessions alone do not prove
+that the overall or critical-group targets are met.
