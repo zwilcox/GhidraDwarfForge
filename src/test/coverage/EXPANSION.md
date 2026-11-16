@@ -1055,3 +1055,50 @@ Reports and original cohort provenance are retained in
 `verified-hosted-{linux_host,windows,firmware}-43856734959/` under the coverage
 workspace. The current Windows host and Windows attachment/GDB jobs pass; the
 five architecture jobs were still running at this checkpoint.
+
+## Generation semantics beyond outer hashes
+
+Commits `04adb58f` and `cf16ea77` extend the production Linux lifecycle to
+173 passing operations and four GDB consumer checks (75.8 seconds). Twenty-eight
+additional operations cover generation semantics, tree objects and build-ID
+admission. Malformed manifests have their outer observation's hash, byte count
+and CRC rebound while preserving their actual inode and supported metadata.
+This forces recovery to check the manifest's meaning rather than merely reject
+an obsolete hash. Cases include mismatched generation identity, original-image
+identity, retained-file inventories, directory identities, source paths, content
+keys and registration digests. Separately rebinding changed retained source
+content still cannot make it agree with the reported export.
+
+A bounded 132,000-entry JSON inventory tests the file-count limit without creating
+a large filesystem tree. Noncanonical/overlength build IDs create no managed
+paths. Symlinks and FIFOs in a generation are preserved and rejected; the FIFO
+test completes without opening it or waiting for a writer. Each refusal preserves
+registered/retained file contents, identities and supported metadata. Restoring
+the original records and source permits normal unchanged recovery. No production
+code, native binding or emitted ELF/DWARF changed.
+
+A separate isolated mutation removes generation build-ID agreement. It compiles,
+then the new semantic assertion catches incorrect `UNCHANGED` recovery of a
+different-build manifest. The final expanded harness reproduces that detection.
+Production source and JAR remain unchanged, and mutant classes contribute no
+coverage. This is one further selected fault, separate from the 157-control suite
+and the previous host-contract mutation.
+
+Strict raw verification accepts 157 completed native-Java sessions and keeps
+16 forced halts unmeasured. A same-cohort comparison with/without the 28 added
+operations attributes 13 additional branch outcomes to `BuildIdInstallation`.
+With the verified current host artifacts, that class measures 408/417 lines and
+199/224 branches (88.8%). The full **partial** union now has 499 sessions:
+26,688/29,786 lines (89.6%) and 19,751/25,878 branches (76.3%). File transactions
+and validation measures 91.2% lines / 77.4% branches. The production denominator,
+targets and all measurement limitations above remain unchanged.
+
+Latest evidence is under `build-id-generation-bounds/`,
+`build-id-generation-bounds-collections/`, `build-id-generation-bounds-attribution/`,
+`build-id-generation-bounds-union-verified/`,
+`generation-bounds-hosted-partial-union-43856734959/` and
+`build-id-generation-bounds-mutation-result.json` in the coverage workspace.
+The latest full installation tree is retained. Superseded installation/mutation
+trees were removed while keeping reports, commands, relevant logs and raw
+coverage collections; `build-id-generation-cleanup.json` records those exact
+owned paths. Architecture CI and fresh-head acceptance remain outstanding.
