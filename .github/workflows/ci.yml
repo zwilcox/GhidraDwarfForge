@@ -3355,7 +3355,10 @@ jobs:
               --require-suite gui-script-manager-compressed --require-suite gui-script-manager-unwind \
               --require-suite lexical-shadow --require-suite object-parameter --require-suite object-return \
               --require-suite formatter-export --require-suite calling-convention --require-suite custom-call-storage \
-              --require-suite call-site-packaged
+              --require-suite call-site-packaged \
+              --require-suite lexical-statics --require-suite lexical-statics-controls \
+              --require-suite recovered-statics-positive --require-suite recovered-statics-controls \
+              --require-suite stack-control-flow
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'

@@ -30,13 +30,13 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`597873f9c2e27c8d50c3578ca75c6256f979b3f4` in 265.5 seconds. The combined local report
+`75e4e2b473f40e7bb683083d3b1b09b00a782412` in 265.2 seconds. The combined local report
 contains 965 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.7% | 79.1% | 85% / 80% |
-| Binary and location correctness | 94.9% | 78.8% | 95% / 90% |
+| All production Java | 94.7% | 79.2% | 85% / 80% |
+| Binary and location correctness | 94.9% | 79.0% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.5% | Included in overall |
 
@@ -44,7 +44,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-stack-flow-measurement-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-arm-inventory-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -395,5 +395,7 @@ All 93 selected mutation controls passed, including three new faults: accepting
 conflicting instruction modes, rejecting a valid section-end marker, and using
 non-executable section mappings. Compilation and class-loading failures do not
 count as detection. These are ELF inventory tests, not a new runtime architecture
-support claim. Production code is unchanged. A complete JavaExec rerun and updated
-combined counters are pending for this test-source snapshot.
+support claim. Production code is unchanged. All 210 JavaExec tasks passed at this test-source snapshot. The verified
+combined report retains 965 sessions, 901 production classes and all 255 sources.
+Overall coverage is 94.7% lines / 79.2% branches.
+The accepted critical-group targets and hosted acceptance remain incomplete.
