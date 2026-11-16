@@ -33,6 +33,23 @@ assertion fixes that weakness; the final five-fault run passes in 4.17 seconds.
 This is separate from the previous full 177-fault and two native-fault results.
 No production classes, targets or coverage exclusions changed.
 
+At `ca16ccdc`, all 211 JavaExec tasks pass in 274.43 seconds, with 53,432
+independent DWARF-expression vectors. All 187 coverage-tool tests and actionlint
+pass. Raw verification retains 901 production classes / 255 sources and verifies
+608 test classes. JavaExec covers 23,788/29,786 lines and 18,470/25,878 branches.
+
+The 1,230-session matching-bytecode diagnostic union covers 28,434/29,786 lines
+(95.5%) and 20,942/25,878 branches (80.9%). File operations reach 6,381/6,677
+lines (95.6%) and 3,455/4,250 branches (81.3%). Binary/location remains
+18,331/19,197 lines (95.5%) and 15,115/18,726 branches (80.7%). This adds two
+lines and 25 branch outcomes beyond the previous union. `BuildIdHelper` itself
+now covers 165/179 lines and 111/126 branches. These are diagnostic results,
+not a current hosted acceptance or published badge; critical branch targets
+remain unmet. The first local verification driver incorrectly used the
+four-layer aggregator for JavaExec alone; raw verification passed but that
+driver failed on the absent headless report. The corrected driver verifies
+JavaExec separately before regenerating the complete matching-bytecode union.
+
 ## Isolated native-producer failure controls
 
 CONFIRMED: `producer-failures.py` builds a test-only forwarding library against
