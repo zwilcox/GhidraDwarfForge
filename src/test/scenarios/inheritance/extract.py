@@ -10,6 +10,8 @@ import re
 import shutil
 import subprocess
 
+import headless_measurement as measurement
+
 HERE = Path(__file__).resolve().parent
 REPOSITORY = HERE.parents[3]
 spec = importlib.util.spec_from_file_location('object_checker', HERE.parents[1] / 'integration/check-object-parameters.py')
@@ -86,6 +88,7 @@ def main():
     temporary.mkdir(parents=True, exist_ok=True)
     env = {**os.environ, 'TMPDIR': str(temporary), 'JAVA_TOOL_OPTIONS':
         f'-Duser.home={settings} -Djava.io.tmpdir={temporary}'}
+    source_hashes = measurement.sources()
 
     def run(label, command, timeout=240, extra_env=None):
         argv = list(map(str, command))
@@ -101,12 +104,16 @@ def main():
             label = target + '-' + role
             case = root / label
             case.mkdir()
+            measured = measurement.collection(args.ghidra.resolve())
             model_dir = args.models.resolve() / label
             model = json.loads((model_dir / 'model.json').read_text())
             ref = args.references.resolve() / label
             runtime = case / 'runtime.elf'
             shutil.copy2(ref / 'runtime.elf', runtime)
             tables = json.loads((model_dir / 'vtables.json').read_text())
+            protected = {str(path): digest(path) for path in (
+                model_dir / 'model.json', model_dir / 'vtables.json', ref / 'reference.elf',
+                ref / 'runtime.elf', ref / 'c11-vtables.gdb.json')}
             if args.variant == 'retained':
                 command = ['objcopy' if target == 'x86_64' else 'aarch64-linux-gnu-objcopy']
                 for table in tables:
@@ -142,6 +149,7 @@ def main():
             output_args = [
                 '--libdwarf=' + os.environ['LIBDWARF'], '--libdwarfp=' + os.environ['LIBDWARFP'],
                 '--output=' + str(produced)]
+            phase_outputs, phase_reports = [], []
             for phase in ('curate', 'reopen'):
                 command = [headless, project, 'Inheritance', '-scriptPath', scripts, '-noanalysis']
                 if phase == 'curate':
@@ -168,12 +176,22 @@ def main():
                     command = [REPOSITORY / 'support/ghidra-dwarf-forge-headless',
                         '--ghidra-dir=' + str(args.ghidra.resolve()), '--project-dir=' + str(project),
                         '--project-name=Inheritance', '--program=runtime.elf', *output_args]
-                log = run(label + '-' + phase, command)
+                if phase == 'curate':
+                    with measured.session(command, label + '-' + phase, headless=True) as invocation:
+                        log = run(label + '-' + phase, invocation)
+                else:
+                    with measured.launcher_headless(args.ghidra.resolve(), label + '-' + phase) as selected_ghidra:
+                        command = [('--ghidra-dir=' + selected_ghidra) if str(arg).startswith('--ghidra-dir=')
+                            else arg for arg in command]
+                        log = run(label + '-' + phase, command)
                 reports = re.findall(r'GhidraDwarfForge report: (\{.*\})', log)
                 assert len(reports) == 1, label + '-' + phase
                 report = json.loads(reports[0])
                 assert report['status'] in ('SUCCESS', 'PARTIAL'), report['status']
                 assert report['counts']['functionsFailed'] == 0, report['failedFunctions']
+                phase_reports.append({'phase': phase, 'status': report['status'],
+                    'functionsFailed': report['counts']['functionsFailed']})
+                phase_outputs.append([digest(produced), digest(Path(str(produced) + '.c'))])
                 assert not re.search(r'REPORT SCRIPT ERROR|Error running script|Exception in thread', log), label + '-' + phase
                 assert 'Omitted explicit inheritance' not in log, label
                 if args.variant in ('stale', 'conflict'):
@@ -276,9 +294,24 @@ def main():
                     thunk_observations.append(observed)
                 assert thunk_observations[0]['thunks'] == thunk_observations[1]['thunks'], 'Forge changed adjustment behavior'
             assert digest(runtime) == original
+            assert all(digest(Path(path)) == value for path, value in protected.items()), 'compiler evidence changed'
             cases.append({'target': target, 'role': role, 'variant': args.variant, 'rebased': args.rebase, 'observed': actual, 'inputSha256': original,
                 'sidecarSha256': digest(produced), 'sourceSha256': first[1], 'savedProgramUnchanged': True,
                 'projectMetadataChanges': changed, 'adjustmentThunks': thunk_observations})
+            selection = json.loads((case / 'selection.json').read_text())
+            measurement.finish(measured, case, cases[-1], source_hashes, {
+                'phaseReports': phase_reports, 'phaseOutputs': phase_outputs,
+                'inputAfterSha256': digest(runtime), 'protected': protected,
+                'projectBefore': database, 'projectAfter': after,
+                'configuration': {'counts': {name: len(selection[name]) for name in (
+                    'classes', 'declarations', 'bases', 'virtual_methods', 'vtables')},
+                    'actions': [row['saved'] for row in selections],
+                    'selectionSha256': digest(case / 'selection.json'),
+                    'recordSnapshotSha256': digest(case / 'selection.json.expected.json')},
+                'modelCounts': {name: len(model[name]) for name in ('classes', 'bases', 'methods')},
+                'tableCount': len(tables), 'adjustmentThunksRequested': args.adjustment_thunks,
+                'compilerObservation': json.loads((ref / 'c11-vtables.gdb.json').read_text()),
+                'expectedNames': fixture_names(model, args.variant), 'thunkEvidence': thunk_evidence})
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_SAVED_INHERITANCE_EXPORT', 'cases': cases,
         'scope': 'ordinary export of curated saved programs with persisted vtable evidence and original-ELF admission'}, indent=4) + '\n')
     print('inheritance-extraction=PASS', root)

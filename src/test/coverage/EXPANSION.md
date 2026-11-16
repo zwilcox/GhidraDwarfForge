@@ -487,3 +487,27 @@ compilation and loading failures do not count. Production code is unchanged.
 All 210 JavaExec tasks and 141 coverage-tool tests passed. The combined
 union adds 2 lines and 13 branch outcomes, with all 965 sessions
 and the production denominator retained. Hosted acceptance remains pending.
+
+## Saved C++ configuration measurement
+
+The existing saved-inheritance harness now measures its actual curation/export
+JVM and its production-wrapper reopen JVM. All 34 existing x86-64 cases passed:
+four exec/PIE and RTTI/no-RTTI profiles, two rebased PIE profiles with adjustment
+thunks, and all four profiles for each of seven name/evidence variants. The
+result is 34 complete collections and 68 headless sessions, with no production
+Java change. The original installed extension was restored after validation.
+
+Admission requires the complete 11-class, eight-base, 15-method, seven-vtable
+configuration, its declaration, preview/apply/preview round-trip, both JVM
+sessions, identical reopened sidecar/source, unchanged executable/project,
+readelf/LLVM/libdwarf validation and the existing GDB observations. Those include
+dynamic identities, physical base offsets, inherited values, vtable lookup and
+compiler-agreed adjustment-thunk stepping/returns. Missing, stale and conflicting
+evidence must retain the existing static-name behavior. Source hashes and both
+compiler/reference and current observations remain in the receipts.
+
+The normal hosted gate now requires 39 suites, including this complete cohort.
+All 146 coverage-tool tests and actionlint passed; corruption tests reject lost
+sessions, omitted profiles, modified inputs/projects/outputs, incomplete metadata,
+changed values/layouts/thunks and lost debugger-call restrictions. The new raw
+collections still need class/probe union verification before counters are updated.
