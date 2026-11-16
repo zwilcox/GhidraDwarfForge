@@ -33,6 +33,8 @@ CXX_SELECTION = "ghidradwarfforge/output/CxxSelection.java"
 CXX_SELECTION_TEST = "ghidradwarfforge.output.CxxSelectionBoundarySmoke"
 PROGRAM_TYPES = "ghidradwarfforge/types/ProgramTypeModel.java"
 PROGRAM_TYPES_TEST = "ghidradwarfforge.types.ProgramTypeModelBoundarySmoke"
+SECTIONLESS = "ghidradwarfforge/elf/SectionlessDynamicSymbols.java"
+SECTIONLESS_TEST = "ghidradwarfforge.elf.SectionlessDynamicSymbolsSmoke"
 
 # Each edit names a specific safety/semantic guarantee. This is not a blanket
 # mutation score: surviving, uncompilable or timed-out mutants fail this harness.
@@ -134,6 +136,15 @@ PROGRAM_TYPE_MUTANTS = [
      "variable.name())) > 1).collect", "variable.name())) > 2).collect"),
 ]
 
+SECTIONLESS_MUTANTS = [
+    ("sectionless-sign-extends-relocation-size", SECTIONLESS, SECTIONLESS_TEST,
+     "Integer.toUnsignedLong(data.getInt(at + 8))", "(long) data.getInt(at + 8)"),
+    ("sectionless-accepts-empty-sysv-buckets", SECTIONLESS, SECTIONLESS_TEST,
+     "buckets > 0 && buckets <= MAX_SYMBOLS", "buckets >= 0 && buckets <= MAX_SYMBOLS"),
+    ("sectionless-loses-zero-sized-end-marker", SECTIONLESS, SECTIONLESS_TEST,
+     "if (selected == 0 && size == 0)", "if (false)"),
+]
+
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -161,7 +172,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")

@@ -22,9 +22,19 @@ public final class SectionlessDynamicSymbolsSmoke {
     private static int checks;
 
     public static void main(String[] args) throws Exception {
+        try {
+            run();
+        }
+        catch (IllegalArgumentException unexpected) {
+            throw new AssertionError("valid sectionless symbol fixture was rejected", unexpected);
+        }
+    }
+
+    private static void run() throws Exception {
         Path root = Files.createTempDirectory("forge-sectionless-symbols-");
         for (boolean wide : List.of(false, true)) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+                recordAndBoundaryCases(root, wide, order);
                 requirementsCases(root, wide, order);
                 for (int hashes : List.of(1, 2, 3)) {
                     for (boolean versioned : List.of(false, true)) {
@@ -129,6 +139,122 @@ public final class SectionlessDynamicSymbolsSmoke {
             b.putInt(0xd80 + 2 * 4, 5);
         }
         return data;
+    }
+
+    private static void recordAndBoundaryCases(Path root, boolean wide, ByteOrder order) throws Exception {
+        byte[] valid = fixture(wide, order, 3, true, true);
+        Path input = root.resolve("original-records");
+        Files.write(input, valid);
+        var image = ElfImage.read(input);
+        var expected = List.of(new SectionlessDynamicSymbols.RawSymbol(0, 0, 0, 0, 0),
+            new SectionlessDynamicSymbols.RawSymbol(0x8080, 8, 1, 0, 7),
+            new SectionlessDynamicSymbols.RawSymbol(0x4010, 16, 0x12, 0, 0xffff),
+            new SectionlessDynamicSymbols.RawSymbol(0x4030, 16, 0x22, 0, 5));
+        AtomicInteger calls = new AtomicInteger();
+        require(SectionlessDynamicSymbols.originalRecords(image, () -> {
+            calls.incrementAndGet(); return false;
+        }).equals(expected), "relocation inventory remapped original symbol indices or fields");
+        int complete = calls.get();
+        for (int stop : List.of(1, complete / 2, complete)) {
+            calls.set(0);
+            try {
+                SectionlessDynamicSymbols.originalRecords(image, () -> calls.incrementAndGet() >= stop);
+                throw new AssertionError("raw relocation inventory ignored cancellation");
+            }
+            catch (CancellationException cancelled) {
+                require(calls.get() == stop, "raw inventory continued after cancellation");
+            }
+        }
+        require(Arrays.equals(valid, Files.readAllBytes(input)), "raw inventory changed input");
+        for (String mutation : List.of("absent-dynamic", "second-dynamic", "absent-symbols", "absent-width", "width")) {
+            byte[] bad = valid.clone();
+            switch (mutation) {
+                case "absent-dynamic" -> segment(bad, 2, 0, 6, 0x900, 0x8100, 0x100, 0x100);
+                case "second-dynamic" -> segment(bad, 3, 2, 6, 0x900, 0x8100, 0x100, 0x100);
+                case "absent-symbols" -> replaceTag(bad, 6, 1);
+                case "absent-width" -> replaceTag(bad, 11, 1);
+                case "width" -> tag(bad, 11, wide ? 16 : 24);
+                default -> throw new AssertionError(mutation);
+            }
+            rejectRaw(input, bad, mutation);
+        }
+        for (long size : List.of(0L, 1L, (wide ? 16L : 8L) - 1)) {
+            byte[] bad = valid.clone();
+            segment(bad, 2, 2, 6, 0x900, 0x8100, size, size);
+            reject(root, bad, "partial dynamic record " + size);
+        }
+        // Hash counts must be independently bounded before allocating or walking
+        // their tables. These are corrupt on-disk fields, not mocked readers.
+        for (int offset : List.of(0xb80, 0xb84, 0xc00, 0xc04, 0xc08)) {
+            for (int value : List.of(0, 262145)) {
+                byte[] bad = valid.clone();
+                bytes(bad).putInt(offset, value);
+                reject(root, bad, "invalid hash count at " + offset + ": " + value);
+            }
+        }
+        for (int value : List.of(32, -1)) {
+            byte[] bad = valid.clone();
+            bytes(bad).putInt(0xc0c, value);
+            reject(root, bad, "GNU bloom shift " + Integer.toUnsignedLong(value));
+        }
+        byte[] bad = valid.clone();
+        bytes(bad).putInt(0xc08, 3);
+        reject(root, bad, "non-power-of-two bloom count");
+        bad = valid.clone();
+        bytes(bad).putInt(wide ? 0xc18 : 0xc14, 1);
+        reject(root, bad, "GNU bucket precedes first hashed symbol");
+        bad = valid.clone();
+        replaceTag(bad, 0x6ffffff0L, 1);
+        reject(root, bad, "version definitions without version indices");
+        bad = valid.clone();
+        tag(bad, 0x6ffffffdL, 262145);
+        reject(root, bad, "excessive version-definition count");
+        bad = valid.clone();
+        bytes(bad).putInt(0xd80, 1);
+        reject(root, bad, "extended section index attached to ordinary null symbol");
+        for (long address : List.of(0x4000L, 0x4010L, 0x4080L)) {
+            byte[] zero = fixture(wide, order, 3, false, false);
+            symbol(zero, 2, NAMES.indexOf("global"), 0x12, 5, address, 0);
+            positive(root, zero, false);
+        }
+        for (long[] range : List.of(new long[] {0x3ff8, 16}, new long[] {0x4078, 16},
+                new long[] {0x4080, 1}, new long[] {0x4081, 0})) {
+            bad = fixture(wide, order, 3, false, false);
+            symbol(bad, 2, NAMES.indexOf("global"), 0x12, 5, range[0], range[1]);
+            reject(root, bad, "definition crosses or falls outside its load range");
+        }
+        if (wide) {
+            for (boolean negativeValue : List.of(false, true)) {
+                bad = valid.clone();
+                bytes(bad).putLong(0xa00 + 2 * 24 + (negativeValue ? 8 : 16), Long.MIN_VALUE);
+                rejectRaw(input, bad, "unsigned 64-bit value outside supported signed domain");
+                reject(root, bad, "negative symbol value or size");
+            }
+            bad = valid.clone();
+            tag(bad, 5, Long.MIN_VALUE);
+            reject(root, bad, "negative dynamic pointer");
+        }
+        else {
+            byte[] unsigned = valid.clone();
+            symbol(unsigned, 2, NAMES.indexOf("global"), 0x12, 5, 0xffffffffL, 0xffffffffL);
+            Files.write(input, unsigned);
+            var record = SectionlessDynamicSymbols.originalRecords(ElfImage.read(input), () -> false).get(2);
+            require(record.value() == 0xffffffffL && record.size() == 0xffffffffL,
+                "ELF32 relocation inventory sign-extended unsigned fields");
+            require(Arrays.equals(unsigned, Files.readAllBytes(input)), "unsigned record read changed input");
+        }
+    }
+
+    private static void rejectRaw(Path input, byte[] data, String label) throws Exception {
+        Files.write(input, data);
+        try {
+            SectionlessDynamicSymbols.originalRecords(ElfImage.read(input), () -> false);
+            throw new AssertionError("raw relocation inventory accepted " + label);
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage() != null, "missing raw rejection diagnostic");
+        }
+        require(Arrays.equals(data, Files.readAllBytes(input)), "raw rejection changed input");
     }
 
     private static void requirementsCases(Path root, boolean wide, ByteOrder order) throws Exception {
