@@ -6,6 +6,28 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Report lexical boundaries through the streaming API
+
+CONFIRMED: the existing report-value task now checks valid and malformed text
+with 1/2/7-byte input chunks and 1/2/7/1024-character destination slices. It
+rejects misspelled/extended/incomplete null tokens, unmatched or unfinished
+containers, malformed UTF-8, unpaired escaped surrogates, oversized/noncanonical
+integers and nonpositive resource budgets. Exact byte/UTF-16 ceilings remain
+accepted. Empty reads must neither consume input nor change the destination;
+all reads preserve slice boundaries and close their owned stream on failure.
+This is lexical admission, not a replacement for full Gson/schema validation.
+
+The focused task passes 2,364 new assertions. All twelve selected compiled faults
+are detected by assertions (7.286s). The first mutation run was not credited:
+a broken empty-read path threw IOException on valid input without an explicit
+assertion. The positive-input helper now asserts that valid Reader operations
+must succeed, and the complete mutation run passes. Production code is unchanged.
+No private-reader internals or fabricated Ghidra states are used.
+
+Evidence: `report-lexical-focused.log`, `report-lexical-verification.log` and
+`report-lexical-mutations-2/` in the bounded workspace. The initial uncredited
+mutation log remains retained. Full-suite coverage attribution follows.
+
 ## Primary QEMU oracle TCP collision
 
 CONFIRMED: hosted run `43952501473`, MIPS32 big-endian job `133614218953`,
