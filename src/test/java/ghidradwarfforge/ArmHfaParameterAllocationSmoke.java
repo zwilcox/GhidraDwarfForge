@@ -25,6 +25,7 @@ import ghidradwarfforge.targets.ArmHfaParameterAllocation;
 /** Actual dynamic HFA joins, exhausted banks, analyst storage and rejected type shapes. */
 public final class ArmHfaParameterAllocationSmoke {
     private static int checks;
+    private static int scenarios;
 
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
@@ -41,9 +42,17 @@ public final class ArmHfaParameterAllocationSmoke {
                 for (String shape : List.of("mixed", "padded", "union", "custom", "base", "variadic")) {
                     check(big, width, 2, 0, shape);
                 }
+                for (String shape : List.of("mixed-width", "trailing-padding", "hole", "bitfield",
+                        "nested-overfull", "deep-alias", "deep-structure", "extended-float")) {
+                    check(big, width, 2, 0, shape);
+                }
+                for (String shape : List.of("flat", "array")) {
+                    check(big, width, 1, 0, shape);
+                    check(big, width, 5, 0, shape);
+                }
             }
         }
-        System.out.println("arm-hfa-parameter-allocation=PASS checks=" + checks);
+        System.out.println("arm-hfa-parameter-allocation=PASS checks=" + checks + " scenarios=" + scenarios);
     }
 
     private static void check(boolean big, int width, int count, int leading, String shape) throws Exception {
@@ -72,6 +81,48 @@ public final class ArmHfaParameterAllocationSmoke {
                         "field" + index, null);
                 }
                 DataType type = structure;
+                if (shape.equals("mixed-width")) {
+                    structure.replace(1, width == 4 ? DoubleDataType.dataType : FloatDataType.dataType,
+                        width == 4 ? 8 : 4, "differentWidth", null);
+                }
+                if (shape.equals("trailing-padding")) structure.growStructure(1);
+                if (shape.equals("hole")) {
+                    var hole = new StructureDataType("Hole", width * 2 + 4, program.getDataTypeManager());
+                    hole.replaceAtOffset(0, element, width, "first", null);
+                    hole.replaceAtOffset(width + 4, element, width, "last", null);
+                    type = hole;
+                }
+                if (shape.equals("bitfield")) {
+                    var bits = new StructureDataType("Bits", 0, program.getDataTypeManager());
+                    bits.addBitField(IntegerDataType.dataType, 3, "flags", null);
+                    bits.add(element, "value", null);
+                    type = bits;
+                }
+                if (shape.equals("nested-overfull")) {
+                    var outer = new StructureDataType("TooManyMembers", 0, program.getDataTypeManager());
+                    outer.add(new ArrayDataType(element, 3, width), "first", null);
+                    outer.add(new ArrayDataType(element, 3, width), "last", null);
+                    type = outer;
+                }
+                if (shape.equals("extended-float")) {
+                    var extended = new StructureDataType("Extended", 0, program.getDataTypeManager());
+                    extended.add(Float16DataType.dataType, "first", null);
+                    extended.add(Float16DataType.dataType, "last", null);
+                    type = extended;
+                }
+                if (shape.equals("deep-alias")) {
+                    for (int depth = 0; depth < 65; depth++) {
+                        type = new TypedefDataType(CategoryPath.ROOT, "Alias" + depth, type,
+                            program.getDataTypeManager());
+                    }
+                }
+                if (shape.equals("deep-structure")) {
+                    for (int depth = 0; depth < 65; depth++) {
+                        var outer = new StructureDataType("Level" + depth, 0, program.getDataTypeManager());
+                        outer.add(type, "inner", null);
+                        type = outer;
+                    }
+                }
                 if (shape.equals("array")) type = new ArrayDataType(element, count, width, program.getDataTypeManager());
                 if (shape.equals("nested")) {
                     var outer = new StructureDataType("Outer", 0, program.getDataTypeManager());
@@ -96,9 +147,14 @@ public final class ArmHfaParameterAllocationSmoke {
                 if (shape.equals("custom")) function.setCustomVariableStorage(true);
                 if (shape.equals("variadic")) function.setVarArgs(true);
                 var parameter = function.getParameter(leading);
+                if (shape.equals("deep-alias")) {
+                    require(parameter.getFormalDataType() instanceof TypeDef alias &&
+                        alias.getBaseDataType() instanceof Structure, "Ghidra did not flatten the typedef chain");
+                }
                 String before = parameter.getVariableStorage().toString();
                 var actual = policy.corrections(function, TaskMonitor.DUMMY, ignored -> {});
-                boolean positive = leading < 8 && List.of("flat", "array", "nested", "alias").contains(shape);
+                boolean positive = leading < 8 && count >= 2 && count <= 4 &&
+                    List.of("flat", "array", "nested", "alias", "deep-alias").contains(shape);
                 if (positive) {
                     var storage = actual.getOrDefault(leading, parameter.getVariableStorage());
                     require(storage.size() == width * count && storage.getVarnodeCount() == count,
@@ -119,6 +175,7 @@ public final class ArmHfaParameterAllocationSmoke {
                     throw new AssertionError("ignored cancellation");
                 }
                 catch (CancelledException expected) { checks++; }
+                scenarios++;
             }
             finally { program.endTransaction(tx, false); }
         }
