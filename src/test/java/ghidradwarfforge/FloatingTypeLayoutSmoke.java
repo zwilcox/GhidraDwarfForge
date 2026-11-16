@@ -16,20 +16,20 @@ import ghidradwarfforge.types.TypeGraph;
 
 /** Actual Ghidra type extraction: sizeof differs from floating value storage on padded targets. */
 public final class FloatingTypeLayoutSmoke {
-    private record Target(String language, String compiler, String map, int encoded, int object) { }
+    private record Target(String language, String compiler, String map, int encoded, int object, int wideChar) { }
     private static int checks;
 
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
         for (var target : List.of(
-                new Target("x86:LE:32:default", "gcc", "x86", 10, 12),
-                new Target("x86:LE:64:default", "gcc", "x86_64", 10, 16),
-                new Target("x86:LE:32:default", "windows", "x86", 8, 8),
-                new Target("AARCH64:LE:64:v8A", "default", "aarch64", 8, 8),
-                new Target("ARM:LE:32:v8", "default", "arm", 8, 8),
-                new Target("MIPS:BE:32:default", "default", "mips", 8, 8),
-                new Target("MIPS:LE:32:default", "default", "mipsel", 8, 8))) {
+                new Target("x86:LE:32:default", "gcc", "x86", 10, 12, 4),
+                new Target("x86:LE:64:default", "gcc", "x86_64", 10, 16, 4),
+                new Target("x86:LE:32:default", "windows", "x86", 8, 8, 2),
+                new Target("AARCH64:LE:64:v8A", "default", "aarch64", 8, 8, 4),
+                new Target("ARM:LE:32:v8", "default", "arm", 8, 8, 4),
+                new Target("MIPS:BE:32:default", "default", "mips", 8, 8, 2),
+                new Target("MIPS:LE:32:default", "default", "mipsel", 8, 8, 2))) {
             Object owner = new Object();
             var language = DefaultLanguageService.getLanguageService().getLanguage(new LanguageID(target.language()));
             var program = new ProgramDB("floating-layout", language,
@@ -71,6 +71,7 @@ public final class FloatingTypeLayoutSmoke {
                         require(scalar.byteSize() == (name.equals("float") ? 4 : 8), "ordinary floating sizeof changed");
                         require(scalar.valueByteSize() == scalar.byteSize(), "ordinary floating payload changed");
                     }
+                    CuratedTypeBoundarySmoke.run(program, target.map(), target.wideChar());
                 }
                 finally { program.endTransaction(tx, true); }
             }

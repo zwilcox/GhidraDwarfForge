@@ -399,3 +399,27 @@ support claim. Production code is unchanged. All 210 JavaExec tasks passed at th
 combined report retains 965 sessions, 901 production classes and all 255 sources.
 Overall coverage is 94.7% lines / 79.2% branches.
 The accepted critical-group targets and hosted acceptance remain incomplete.
+
+## Curated type extraction boundaries
+
+Real saved-program extraction now passes 266 additional checks across seven
+selected Ghidra language/compiler profiles, alongside the existing 73 floating
+layout checks. Tests preserve wide-character UTF encodings and profile sizes,
+default member names, constant/volatile members without altering shared base
+types, and one-byte storage for three-bit fields in both byte orders. Zero-width
+bitfields affect alignment without becoming readable members. Function-owned
+statics are omitted with diagnostics when their owner is not exported; negative
+and overflowing global address translations cannot invent output variables.
+Repeated extraction is deterministic and leaves the program modification number
+unchanged.
+
+The initial test incorrectly assumed four-byte wchar in the MIPS32 default
+profiles. Inspection of the pinned compiler specs and DataOrganizationImpl
+confirmed that those profiles inherit Ghidra's two-byte default; explicit test
+expectations now preserve the selected saved data organization. This is not a
+runtime ABI claim or a Windows-host test. The failed fixture attempt is excluded.
+
+All 96 selected mutation controls passed, including three new faults: changing
+UTF to unsigned integer encoding, changing member const to volatile, and emitting
+a zero-width field as a value. Complete JavaExec counters for this source snapshot
+are pending. No production Java or denominator changes were made.
