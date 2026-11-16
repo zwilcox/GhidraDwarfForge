@@ -21,7 +21,8 @@ REQUIRED = {
         'instruction-context', 'source-context', 'annotation-inventory', 'equate-evidence',
         'annotation-export', 'failed-source-export', 'class-scopes', 'inheritance-producer',
         'inheritance-names', 'build-id-command', 'cfi-encoder', 'cfi-composition-explicit',
-        'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu'}),
+        'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu',
+        'linux-attachment-exec', 'linux-attachment-pie', 'linux-attachment-exec-no-build-id'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -47,6 +48,26 @@ def tools_classpath(bundle):
             raise ValueError('changed or excessive report dependencies')
         paths.append(str(path.resolve()))
     return os.pathsep.join(paths)
+
+
+def attachment_oracle(record, oracle):
+    expected_role = record['suite'].removeprefix('linux-attachment-').replace('-no-build-id', '.no-build-id')
+    if (oracle.get('host') != 'production Linux ext4 host' or oracle.get('target') != 'x86_64'
+            or expected_role not in ('exec', 'pie', 'exec.no-build-id') or oracle.get('role') != expected_role
+            or oracle.get('entryPoint') != 'AttachmentHelper'
+            or oracle.get('validator') != 'production-live' or oracle.get('runtime') is not True):
+        raise ValueError('hosted attachment coverage requires the real privileged host and debugger oracle')
+    expected_cases = sorted(mode + '-' + boundary for mode in ('initial', 'refresh')
+        for boundary in ('PREPARED', 'TARGET_REPLACED', 'BEFORE_COMMIT', 'COMMITTED')) if expected_role == 'exec' else []
+    children = oracle.get('unmeasuredNestedChildren')
+    halts = record.get('unmeasuredForcedHalts', [])
+    if (not isinstance(children, list) or len(children) != len(expected_cases)
+            or any(not isinstance(row, dict) or row.get('crashExit') != 89
+                   or row.get('recoveryHelperMeasured') is not False for row in children)
+            or sorted(row.get('case', '') for row in children) != expected_cases
+            or sorted(row['label'] for row in halts) != expected_cases
+            or any(row['exitCode'] != 89 for row in halts)):
+        raise ValueError('hosted attachment coverage must disclose unmeasured recovery children')
 
 
 def load_job(root, jar, kind, commit, run):
@@ -82,6 +103,8 @@ def load_job(root, jar, kind, commit, run):
                 oracle = files.read(directory / 'oracle.json')
                 if oracle.get('privileged') != 'PASS' or oracle.get('unprivileged') != 'PASS':
                     raise ValueError('hosted visibility coverage requires both real privilege modes')
+            if record['suite'].startswith('linux-attachment-'):
+                attachment_oracle(record, files.read(directory / 'oracle.json'))
             layer_suites.add(record['suite'])
             layer_rows.extend((layer, row['session'], directory / row['file']) for row in record['sessions'])
             layer_halts.extend({'suite': record['suite'], **row} for row in record.get('unmeasuredForcedHalts', []))

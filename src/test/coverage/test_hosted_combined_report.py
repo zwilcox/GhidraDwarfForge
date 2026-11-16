@@ -1,5 +1,6 @@
 """Synthetic receipt controls; these fixtures are not evidence of host execution."""
 import importlib.util
+import copy
 import json
 from pathlib import Path
 import tempfile
@@ -120,6 +121,52 @@ class CohortAdmission(unittest.TestCase):
         (self.job / 'report/native-java.xml').write_text('<changed/>')
         with self.assertRaisesRegex(ValueError, 'layer report changed'):
             self.load()
+
+
+class AttachmentOracleAdmission(unittest.TestCase):
+    def fixture(self, role):
+        # Receipt-shape controls only; never evidence of actual privileged execution.
+        cases = [mode + '-' + boundary for mode in ('initial', 'refresh')
+            for boundary in ('PREPARED', 'TARGET_REPLACED', 'BEFORE_COMMIT', 'COMMITTED')] if role == 'exec' else []
+        record = {'suite': 'linux-attachment-' + role.replace('.', '-'),
+            'unmeasuredForcedHalts': [{'label': case, 'exitCode': 89} for case in cases]}
+        oracle = {'host': 'production Linux ext4 host', 'target': 'x86_64', 'role': role,
+            'entryPoint': 'AttachmentHelper', 'validator': 'production-live', 'runtime': True,
+            'unmeasuredNestedChildren': [{'case': case, 'crashExit': 89, 'recoveryHelperMeasured': False}
+                for case in cases]}
+        return record, oracle
+
+    def test_requires_real_host_helper_validator_and_debugger_for_each_role(self):
+        for role in ('exec', 'pie', 'exec.no-build-id'):
+            record, oracle = self.fixture(role)
+            hosted.attachment_oracle(record, oracle)
+            for field, value in (('host', 'limited Linux test host'), ('target', 'aarch64'),
+                    ('role', 'unrelated'), ('entryPoint', 'test bridge'),
+                    ('validator', 'captured-test-adapter'), ('runtime', False)):
+                with self.subTest(role=role, field=field):
+                    with self.assertRaisesRegex(ValueError, 'real privileged host'):
+                        hosted.attachment_oracle(record, {**oracle, field: value})
+
+    def test_missing_duplicate_or_claimed_measured_children_rejected(self):
+        record, oracle = self.fixture('exec')
+        for fault in ('missing', 'duplicate', 'exit', 'measured', 'missing-halt', 'wrong-halt'):
+            changed_record, changed_oracle = copy.deepcopy((record, oracle))
+            rows = changed_oracle['unmeasuredNestedChildren']
+            if fault == 'missing':
+                rows.pop()
+            elif fault == 'duplicate':
+                rows[1] = rows[0]
+            elif fault == 'exit':
+                rows[0]['crashExit'] = 0
+            elif fault == 'measured':
+                rows[0]['recoveryHelperMeasured'] = True
+            elif fault == 'missing-halt':
+                changed_record['unmeasuredForcedHalts'].pop()
+            else:
+                changed_record['unmeasuredForcedHalts'][0]['exitCode'] = 0
+            with self.subTest(fault=fault):
+                with self.assertRaisesRegex(ValueError, 'unmeasured recovery children'):
+                    hosted.attachment_oracle(changed_record, changed_oracle)
 
 
 class TargetGate(unittest.TestCase):

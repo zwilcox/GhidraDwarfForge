@@ -237,7 +237,9 @@ class Collection:
         """
         if not self.enabled:
             return
-        if self.closed or exit_code != 73:
+        # 73 is the existing build-ID crash sentinel; 89 is the attachment
+        # recovery probe sentinel. Arbitrary failures are never admitted here.
+        if self.closed or exit_code not in (73, 89):
             raise ValueError('invalid forced-halt observation')
         self.record['unmeasuredForcedHalts'].append({'label': str(label), 'exitCode': exit_code,
             'reason': 'intentional Runtime.halt bypasses JaCoCo shutdown; behavioral control only'})
@@ -274,7 +276,7 @@ def validate_collection(root, jar):
         raise ValueError('invalid or production-matching test exclusion')
     halts = record.get('unmeasuredForcedHalts', [])
     if (not isinstance(halts, list) or any(not isinstance(row, dict)
-            or row.get('exitCode') != 73 or not isinstance(row.get('label'), str)
+            or row.get('exitCode') not in (73, 89) or not isinstance(row.get('label'), str)
             or row.get('reason') != 'intentional Runtime.halt bypasses JaCoCo shutdown; behavioral control only'
             for row in halts)):
         raise ValueError('invalid unmeasured forced-halt record')

@@ -90,7 +90,7 @@ def report(args):
     for layer, value in summary['layers'].items():
         lines.extend(['## ' + layer, '',
             f'{value["sessions"]} measured JVM sessions; {value["productionClasses"]} production classes. '
-            f'{len(value["unmeasuredForcedHalts"])} explicitly unmeasured direct halt controls. '
+            f'{len(value["unmeasuredForcedHalts"])} explicitly unmeasured halt controls. '
             'See each oracle receipt for additional unmeasured nested processes.', '',
             'Suites: ' + ', '.join('`' + name + '`' for name in value['suites']) + '.', '',
             '| Source | Covered / total lines | Covered / total branches |',

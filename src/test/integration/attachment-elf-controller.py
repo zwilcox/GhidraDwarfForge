@@ -6,6 +6,7 @@ runs the isolated product helper; rollback injection uses the test-only bridge.
 The historical default bridge retains its explicitly limited test host.
 """
 import argparse
+from contextlib import contextmanager
 import hashlib
 import importlib.util
 import json
@@ -18,6 +19,8 @@ import subprocess
 import tempfile
 import time
 import zlib
+
+from integration_coverage import Collection
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -99,30 +102,52 @@ def main():
     sources = [ROOT / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in
                ['AttachmentProtocolSmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe',
                 'StrictDwarfCheckProbe', 'AttachmentValidatorProbe', 'LinuxAttachmentRecoveryProbe']]
+    coverage_sources = [ROOT / 'src/test/integration/integration_coverage.py',
+                        ROOT / 'src/test/coverage/launcher-java.py']
     oracle = ROOT / 'src/test/integration/automatic-association-gdb.py'
     policy_controls = ROOT / 'src/test/integration/attachment-validator-controls.py'
     protected = {str(p): digest(p) for p in [original, sidecar, source, reference, jar, gson, jna,
-                                           args.report_log, args.strict_validator, Path(__file__), oracle, policy_controls, *launcher_sources, *sources]}
+                                           args.report_log, args.strict_validator, Path(__file__), oracle, policy_controls,
+                                           *coverage_sources, *launcher_sources, *sources]}
     provenance = work / 'provenance'
     provenance.mkdir()
-    for path in [jar, gson, jna, Path(__file__), oracle, policy_controls, *launcher_sources, *sources]:
+    for path in [jar, gson, jna, Path(__file__), oracle, policy_controls, *coverage_sources, *launcher_sources, *sources]:
         shutil.copyfile(path, provenance / path.name)
         require(digest(provenance / path.name) == protected[str(path)], 'retained runtime/source differs')
     # Test probes run the retained JAR/dependencies. The public launcher uses
     # their protected installed originals; both copies must retain these hashes.
     runtime_files = [provenance / path.name for path in [jar, gson, jna]]
     (provenance / 'origin.json').write_text(json.dumps({str(path): protected[str(path)]
-        for path in [jar, gson, jna, Path(__file__), oracle, policy_controls, *launcher_sources, *sources]}, indent=4) + '\n')
+        for path in [jar, gson, jna, Path(__file__), oracle, policy_controls, *coverage_sources, *launcher_sources, *sources]}, indent=4) + '\n')
+    coverage = Collection(('linux-attachment-' if args.production_linux_host else 'attachment-bridge-') +
+        args.role.replace('.', '-'), jar, 'native-java',
+        test_classes=tuple('ghidradwarfforge.output.' + path.stem for path in sources))
+    java = os.environ.get('JAVA', 'java')
+    selected_java = str(Path(shutil.which(java) or java).resolve())
     commands = []
+
+    @contextmanager
+    def measured(command, label):
+        if command[0] == java and '-cp' in command:
+            with coverage.session(command, label) as invocation:
+                yield invocation
+        elif command[0] == str(launcher):
+            option = '--java=' + selected_java
+            require(command.count(option) == 1, 'launcher must select the measured Java exactly once')
+            with coverage.launcher_java(selected_java, label) as adapter:
+                yield ['--java=' + adapter if argument == option else argument for argument in command]
+        else:
+            yield command
 
     def run(label, argv, env=None, timeout=60, success=True, input_bytes=None):
         command = list(map(str, argv))
-        completed = subprocess.run(command, capture_output=True, timeout=timeout, env=env, cwd=work, input=input_bytes)
-        (work / (label + '.stdout')).write_bytes(completed.stdout)
-        (work / (label + '.stderr')).write_bytes(completed.stderr)
-        commands.append({'label': label, 'argv': command, 'exit': completed.returncode})
-        (work / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        require((completed.returncode == 0) == success, label + ' had unexpected status; inspect retained stdout/stderr')
+        with measured(command, label) as invocation:
+            completed = subprocess.run(invocation, capture_output=True, timeout=timeout, env=env, cwd=work, input=input_bytes)
+            (work / (label + '.stdout')).write_bytes(completed.stdout)
+            (work / (label + '.stderr')).write_bytes(completed.stderr)
+            commands.append({'label': label, 'argv': invocation, 'exit': completed.returncode})
+            (work / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
+            require((completed.returncode == 0) == success, label + ' had unexpected status; inspect retained stdout/stderr')
         return completed
 
     for tool in ['readelf', 'llvm-dwarfdump', 'gdb-multiarch']:
@@ -173,7 +198,6 @@ def main():
     dependencies = os.pathsep.join(map(str, runtime_files))
     run('compile', [os.environ.get('JAVAC', 'javac'), '--release', '21', '-cp', dependencies,
                     '-d', classes, *sources])
-    java = os.environ.get('JAVA', 'java')
     version = run('java-version', [java, '-version'])
     require(b'version "21.' in version.stderr, 'this harness requires actual Java 21')
     runtime = os.pathsep.join([str(classes), dependencies])
@@ -300,7 +324,7 @@ def main():
             command = [java, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
                 'ghidradwarfforge.output.AttachmentHelper', '--request', request_file,
                 '--request-sha256', digest(request_file)]
-            public_command = [launcher, '--ghidra-dir=' + str(args.ghidra.resolve()), '--java=' + str(Path(shutil.which(java) or java).resolve()),
+            public_command = [launcher, '--ghidra-dir=' + str(args.ghidra.resolve()), '--java=' + selected_java,
                 '--extension-dir=' + str(jar.parent.parent), '--request=' + str(request_file),
                 '--request-sha256=' + digest(request_file)]
             before_admission = {str(path): file_state(path) for path in directory.iterdir()}
@@ -380,6 +404,7 @@ def main():
         after = run(action + '-installed-programs', ['readelf', '-lW', directory / original.name])
         require(before.stdout == after.stdout, 'installed program headers or section mapping differs')
 
+    nested_children = []
     if args.production_linux_host and args.target == 'x86_64' and args.role == 'exec':
         recovered = run('native-recovery', [java, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
             'ghidradwarfforge.output.LinuxAttachmentRecoveryProbe', work / 'native-recovery'], timeout=300)
@@ -388,6 +413,11 @@ def main():
         recovery = json.loads((work / 'native-recovery/result.json').read_text())
         require(len(recovery['outcomes']) == 8 and recovery['retainedCrashCanaries'] == 8,
                 'missing crash outcomes or incorrect canary lifecycle')
+        for row in recovery['outcomes']:
+            require(row['childExit'] == 89, 'missing deliberate recovery crash')
+            coverage.record_forced_halt(row['case'], row['childExit'])
+            nested_children.append({'case': row['case'], 'crashExit': row['childExit'],
+                                    'recoveryHelperMeasured': False})
     generations = {str(path): file_state(path) for action in ['commit', 'rollback']
                    for path in (work / action).rglob('*') if path.is_file()}
     (work / 'generation-state.json').write_text(json.dumps(generations, indent=4) + '\n')
@@ -499,7 +529,11 @@ def main():
         'entryPoint': 'AttachmentHelper' if args.production_linux_host else 'test bridge',
         'runtime': True, 'debuglinkBasename': installed_sidecar.name, 'debuglinkPayloadHex': payload.hex(),
         'validator': 'production-live' if live_validator_arguments else 'captured-test-adapter',
+        'unmeasuredNestedChildren': nested_children,
+        'measurementScope': 'Direct probe JVMs and public launcher preview/action JVMs only. '
+            'Nested recovery helper and deliberate halt JVMs are not instrumented; their behavior is still required.',
         'scope': 'real ELF initial commit/rollback and GDB discovery/runtime/CRC rejection; public UI and refresh acceptance remain separate'}, indent=4) + '\n')
+    coverage.finish(work / 'result.json')
     print('attachment-elf-controller=PASS target=' + args.target + ' role=' + args.role)
 
 

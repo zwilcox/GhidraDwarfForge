@@ -252,6 +252,7 @@ class IntegrationCoverageTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'invalid forced-halt'):
             collection.record_forced_halt('wrong-exit', 1)
         collection.record_forced_halt('interrupted-publish', 73)
+        collection.record_forced_halt('attachment-recovery-child', 89)
         with self.assertRaisesRegex(ValueError, 'incomplete sessions'):
             collection.finish(self.oracle)
         with collection.session(['java', 'Main'], 'recovery'):
@@ -260,6 +261,7 @@ class IntegrationCoverageTest(unittest.TestCase):
         record = coverage.validate_collection(collection.root, self.jar)
         self.assertEqual(len(record['sessions']), 1)
         self.assertEqual(record['unmeasuredForcedHalts'][0]['exitCode'], 73)
+        self.assertEqual(record['unmeasuredForcedHalts'][1]['exitCode'], 89)
         with self.assertRaisesRegex(ValueError, 'invalid forced-halt'):
             collection.record_forced_halt('late', 73)
 

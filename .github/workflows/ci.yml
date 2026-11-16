@@ -1794,7 +1794,13 @@ jobs:
                   fi
                   attachment_results="$RUNNER_TEMP/forge-attachment-production/$TARGET.$role"
                   attachment_status=0
+                  attachment_coverage=()
+                  if [[ "$TARGET" == x86_64 ]]; then
+                      attachment_coverage=("FORGE_INTEGRATION_COVERAGE_AGENT=$FORGE_INTEGRATION_COVERAGE_AGENT"
+                          "FORGE_INTEGRATION_COVERAGE_OUTPUT=$attachment_results/coverage")
+                  fi
                   sudo -n env JAVA_HOME="$JAVA_HOME" JAVA="$JAVA_HOME/bin/java" JAVAC="$JAVA_HOME/bin/javac" \
+                      "${attachment_coverage[@]}" \
                       python3 src/test/integration/attachment-elf-controller.py --production-linux-host \
                       --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
                       --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" \
@@ -1809,6 +1815,12 @@ jobs:
                           tee "$PWD/build/test-results/attachment-elf-controller/$TARGET.$role.tar.gz" > /dev/null
                   fi
                   if [[ "$attachment_status" -ne 0 ]]; then exit "$attachment_status"; fi
+                  if [[ "$TARGET" == x86_64 ]]; then
+                      # Transfer only bounded collector receipts/probes. Extraction as
+                      # the runner avoids root-owned collection directories in the report.
+                      sudo -n tar -cf - -C "$attachment_results/coverage" . |
+                          tar --no-same-owner -xf - -C "$FORGE_INTEGRATION_COVERAGE_OUTPUT"
+                  fi
               fi
               if [[ "$role" == "exec.no-sections" ]]; then
                   python3 -B src/test/integration/attachment-sectionless-validator.py \
@@ -3329,7 +3341,9 @@ jobs:
               --require-suite class-scopes --require-suite inheritance-producer --require-suite inheritance-names \
               --require-suite build-id-command --require-suite cfi-encoder \
               --require-suite cfi-composition-explicit --require-suite cfi-composition-plain \
-              --require-suite cfi-composition-gabi --require-suite cfi-composition-gnu
+              --require-suite cfi-composition-gabi --require-suite cfi-composition-gnu \
+              --require-suite linux-attachment-exec --require-suite linux-attachment-pie \
+              --require-suite linux-attachment-exec-no-build-id
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'
