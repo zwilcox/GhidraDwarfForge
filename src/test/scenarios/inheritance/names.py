@@ -103,9 +103,11 @@ def main():
                 run(label + '-package', [java, '-cp', classpath, 'ghidradwarfforge.elf.VtablePackagingProbe',
                     runtime, debug, table_file, artifact])
                 assert 'No errors.' in run(label + '-llvm', ['llvm-dwarfdump', '--verify', artifact])
-                for tool, command in [('gnu', ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline']),
-                        ('strict', [os.environ['DWARFDUMP']])]:
-                    assert not re.search(r'warning:|error:', run(label + '-' + tool, [*command, artifact]), re.I)
+                assert not re.search(r'warning:|error:', run(label + '-gnu',
+                    ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline', artifact]), re.I)
+                assert 'strict-dwarfdump=PASS' in run(label + '-strict',
+                    ['python3', HERE.parents[1] / 'integration/check-dwarfdump.py', artifact,
+                        case / 'strict.log', '--tool', os.environ['DWARFDUMP'], '--original', runtime])
                 run(label + '-gdb', ['bash', HERE / 'gdb.sh', case, target, 'forge-vtables', HERE / 'name-gdb.py'],
                     {'INHERITANCE_NAMES': str(names_file), 'INHERITANCE_EXPECT_STATIC': '1' if variant == 'readable-control' else '0'})
                 observed = json.loads((case / 'forge-vtables.gdb.json').read_text())

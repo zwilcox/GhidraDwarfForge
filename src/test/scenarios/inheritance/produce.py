@@ -153,8 +153,9 @@ def main():
                 runtime, produced, table_path, artifact])
             verified = run(label + '-llvm', ['llvm-dwarfdump', '--verify', artifact])
             assert 'No errors.' in verified
-            checked = run(label + '-strict', [os.environ['DWARFDUMP'], artifact])
-            assert not re.search(r'warning:|error:', checked, re.I)
+            checked = run(label + '-strict', ['python3', HERE.parents[1] / 'integration/check-dwarfdump.py',
+                artifact, case / 'strict.log', '--tool', os.environ['DWARFDUMP'], '--original', runtime])
+            assert 'strict-dwarfdump=PASS' in checked
             decoded = run(label + '-gnu', ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline', artifact])
             assert not re.search(r'warning:|error:', decoded, re.I)
             emitted = checker.read_dies(decoded)

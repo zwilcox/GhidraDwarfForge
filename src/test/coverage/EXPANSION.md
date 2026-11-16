@@ -6,6 +6,26 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current producer inheritance and vtable-name evidence
+
+CONFIRMED: the existing compiler-backed inheritance and renamed-class harnesses
+pass against the current production JAR on x86-64 and QEMU AArch64. Eight target/
+role combinations cover executable/PIE, with and without RTTI. Forty name cases
+cover readable controls, renamed mangled names, aliases, qualified aliases and
+duplicate short names. The compiler reference supplies 48 separate debugger
+observations. All six deliberately incorrect fixed/virtual-base models remain
+structurally valid and are rejected by runtime GDB assertions.
+
+The production-artifact checks now use `check-dwarfdump.py` with its full native
+checker options and original-input corroboration, replacing ordinary dump-output
+scans. All 48 positive production artifacts pass strict libdwarf, LLVM, GNU and
+GDB checks. The strict parser's regression controls also pass, including its
+historical zero-exit error output. Original input hashes remain unchanged.
+This validates a compiler-supplied model through the producer and ELF writer;
+it does not claim new Ghidra extraction coverage. The 108 measured JVM sessions
+await raw matching-bytecode union verification. Evidence in bounded scratch:
+`inheritance-current-2f181/` and `inheritance-current-2f181-run.log`.
+
 ## Measured equate constants and retained names
 
 CONFIRMED: both existing equate harnesses now collect their production JVM
