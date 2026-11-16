@@ -5,7 +5,9 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
+import sys
 import tempfile
 import time
 
@@ -71,6 +73,25 @@ CALL_MEMORY_TEST = "ghidradwarfforge.CallMemoryEffectsSmoke"
 
 CXX_PROFILE = "ghidradwarfforge/GhidraCxxProfile.java"
 CXX_PROFILE_TEST = "ghidradwarfforge.CxxProfileSmoke"
+CALL_VALUE = "ghidradwarfforge/calls/CallValue.java"
+CALL_VALUE_TEST = "ghidradwarfforge.calls.CallValueSmoke"
+CALL_VALUE_ORACLE = REPO / "src/test/integration/check-call-values.py"
+
+CALL_VALUE_MUTANTS = [
+    ("call-value-folds-unsigned-shift-as-signed", CALL_VALUE, CALL_VALUE_TEST,
+     "a.value() >>> b.value()", "a.value() >> b.value()"),
+    ("call-value-uses-signed-shift-count-bound", CALL_VALUE, CALL_VALUE_TEST,
+     "Long.compareUnsigned(b.value(), left.bytes() * 8L) >= 0 ? 0 : a.value() << b.value()",
+     "b.value() >= left.bytes() * 8L ? 0 : a.value() << b.value()"),
+    ("call-value-loses-nested-slice-offset", CALL_VALUE, CALL_VALUE_TEST,
+     "part.lowBit() + lowBit", "lowBit"),
+    ("call-value-loses-constant-sign-extension", CALL_VALUE, CALL_VALUE_TEST,
+     "if (signed) value = signExtend(value, source.bytes());", "if (false) value = signExtend(value, source.bytes());"),
+    ("call-value-reverses-constant-selection", CALL_VALUE, CALL_VALUE_TEST,
+     "literal.value() != 0 ? yes : no", "literal.value() == 0 ? yes : no"),
+    ("call-value-rejects-exact-node-budget", CALL_VALUE, CALL_VALUE_TEST,
+     "nodes > 256", "nodes >= 256"),
+]
 
 CXX_PROFILE_MUTANTS = [
     ("cxx-profile-commits-preview", CXX_PROFILE, CXX_PROFILE_TEST,
@@ -407,6 +428,28 @@ def execute(argv):
     return result, round(time.monotonic() - start, 3)
 
 
+def verify_outcome(label, run, mutant, oracle=None):
+    """Only a behavioral assertion detects a fault; setup and oracle I/O failures do not."""
+    outputs = [run] + ([] if oracle is None else [oracle])
+    if any(word in result.stdout for result in outputs
+           for word in ("ClassNotFoundException", "NoClassDefFoundError", "LinkageError")):
+        raise AssertionError(f"{label}: class-loading failure is not a behavioral detection")
+    if mutant:
+        if run.returncode != 0 and "java.lang.AssertionError:" in run.stdout and oracle is None:
+            return "java-assertion"
+        if (run.returncode == 0 and oracle is not None and oracle.returncode != 0
+                and re.search(r"(?m)^AssertionError(?::|$)", oracle.stdout)
+                and "missing boundary/random profiles" not in oracle.stdout):
+            return "independent-dwarf-oracle-assertion"
+        raise AssertionError(f"{label}: no behavioral assertion detected mutation\n" +
+                             "\n".join(result.stdout for result in outputs))
+    if run.returncode != 0 or "=PASS" not in run.stdout:
+        raise AssertionError(f"{label}: unchanged-source baseline failed\n{run.stdout}")
+    if oracle is not None and (oracle.returncode != 0 or "call-value-dwarf-vm=PASS" not in oracle.stdout):
+        raise AssertionError(f"{label}: independent DWARF baseline failed\n{oracle.stdout}")
+    return "baseline-pass"
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--classes", type=Path, required=True)
@@ -420,7 +463,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -443,7 +486,7 @@ def main():
             selected_dependencies = dependencies if test in (
                 PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
-                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST) else []
+                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
@@ -467,22 +510,26 @@ def main():
             test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST) else []
             if test == BOUNDED_SWITCH_TEST:
                 test_args.append(root / "fixtures")
+            if test == CALL_VALUE_TEST:
+                test_args.append(root / "vectors.json")
             run, run_seconds = execute([java, "-Djava.io.tmpdir=" + str(root),
                 "-Dapplication.settingsdir=" + str(root / "settings"), "-Djava.awt.headless=true",
                 "-cp", classpath, test, *test_args])
-            (output / (label + ".log")).write_text(run.stdout)
-            if mutant:
-                if run.returncode == 0 or "java.lang.AssertionError:" not in run.stdout:
-                    raise AssertionError(f"{label}: no behavioral assertion detected mutation\n{run.stdout}")
-                if any(word in run.stdout for word in ("ClassNotFoundException", "NoClassDefFoundError", "LinkageError")):
-                    raise AssertionError(f"{label}: class-loading failure is not a behavioral detection")
-            elif run.returncode != 0 or "=PASS" not in run.stdout:
-                raise AssertionError(f"{label}: unchanged-source baseline failed\n{run.stdout}")
+            oracle, oracle_evidence = None, None
+            if test == CALL_VALUE_TEST and run.returncode == 0:
+                oracle, oracle_seconds = execute([sys.executable, "-B", CALL_VALUE_ORACLE, root / "vectors.json"])
+                oracle_evidence = {"source": str(CALL_VALUE_ORACLE.relative_to(REPO)),
+                    "sha256": digest(CALL_VALUE_ORACLE), "vectorsSha256": digest(root / "vectors.json"),
+                    "exitCode": oracle.returncode, "seconds": oracle_seconds}
+                run_seconds += oracle_seconds
+            (output / (label + ".log")).write_text(run.stdout + ("\nIndependent DWARF oracle:\n" + oracle.stdout if oracle else ""))
+            detection = verify_outcome(label, run, mutant, oracle)
             peak = max(peak, sum(p.stat().st_size for p in root.rglob("*") if p.is_file()))
             results.append({"label": label, "source": name, "test": test,
                             "status": "DETECTED" if mutant else "BASELINE_PASS",
-                            "exitCode": run.returncode, "compileSeconds": compile_seconds,
-                            "testSeconds": run_seconds})
+                            "exitCode": run.returncode if oracle is None else oracle.returncode,
+                            "detection": detection, "independentOracle": oracle_evidence,
+                            "compileSeconds": compile_seconds, "testSeconds": run_seconds})
 
     for index, (name, test) in enumerate(dict.fromkeys((row[1], row[2]) for row in mutants)):
         check(f"baseline-{index}", name, test, original[name], False)

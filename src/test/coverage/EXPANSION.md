@@ -590,3 +590,32 @@ coverage-tool tests passed. The verified raw union adds one line and
 six branch outcomes. GhidraCxxProfile now measures 159/160 lines and
 118/124 branches. The full goal and hosted acceptance remain pending.
 No production code, emitted format or architecture support claim changes in this batch.
+
+## Call-value folding and expression boundaries
+
+`callValueSmoke` now generates 53,432 expression vectors, including 45,452 new
+boundary cases from `CallValueBoundarySmoke`. The independent Python DWARF VM
+passed every vector in the focused run. Expected values use BigInteger arithmetic
+and explicit machine-width masks; they do not evaluate the production expression
+tree. Both 32/64-bit DWARF stacks and both byte orders are exercised.
+
+The vectors compare folded and raw constant operations, including high unsigned
+values and shift counts of zero, one, width-minus-one, width, width-plus-one and
+the maximum unsigned stack value. Dynamic cases cover same operands, zero/one
+on either side, literal/equal-arm selections, unaligned nested slices, slices
+through bitwise operations, and slices crossing into signed/unsigned extensions.
+Real expression trees at depth32 and node256 must serialize and evaluate; the
+next depth/node is rejected. Twenty-nine new invalid cases also check that width
+and tree limits are enforced before simplification can discard invalid input.
+
+The mutation harness now runs the existing independent VM after successful
+CallValue vector generation and records the evaluator and vector hashes. Five
+new faults alter unsigned shifts, shift-count bounds, nested slice offsets,
+constant sign extension or selection; a sixth rejects the exact node budget.
+Only behavioral Java or independent-VM assertions count as detection. Missing
+files, incomplete vector sets, compilation/class-loading errors and failed
+fixture generation remain failures of the run. Eight outcome-classification
+tests passed; these synthetic outcomes are not claimed as real mutation evidence.
+
+All 123 selected mutants pass; the combined coverage refresh is pending.
+Production code and coverage scope are unchanged.
