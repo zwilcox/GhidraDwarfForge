@@ -654,3 +654,30 @@ Overall coverage is 28,276/29,782 lines and 20,696/25,872 branches. Although the
 branch display rounds to 80.0%, the exact gate remains two outcomes short and
 correctly reports failure. Hosted acceptance and the stronger critical-group
 targets remain pending.
+
+## Validator status and launch boundaries
+
+The existing `validatorSupervisorSmoke` now invokes two focused boundary suites.
+`ValidatorStatusBoundarySmoke` passes 270 checks for malformed or incomplete
+process-owner records: missing/duplicate fields, wrong token types, numeric
+syntax and overflow, unknown schema/reason, counter consistency, ASCII and the
+exact 4096-byte input limit. Valid failure reasons and incomplete cleanup remain
+failures in the parsed record. Full-width observed counts and unsigned Windows
+exit codes retain their exact numeric values; parsing those values on Linux does
+not prove Windows process execution. Rejection preserves the input evidence.
+
+`ValidatorLaunchBoundarySmoke` passed 40 checks with the real Linux native helper
+and Python tool. Invalid bounds/arguments, early cancellation and directory,
+empty, oversize or nonexecutable tools create no evidence. Valid minimum stream
+and maximum stream/deadline bounds work; a 1 ms deadline either completes with
+cleanup or reports a clean timeout. The longest permitted argument reaches the
+actual tool unchanged on Linux; Windows aggregate command limits are explicitly
+not inferred from that test. Saved command arguments are immutable snapshots.
+The sparse oversize fixture is deleted immediately after rejection. Existing
+real descendant cleanup, interruption, callback failure, timeout and output-limit
+checks still pass. No production Java changed.
+
+Six selected mutation controls test the record-size boundary, duplicate fields,
+stderr counter consistency, exit-code and signal bounds, and wide-count
+preservation. All 136 selected mutants passed in 303.6 seconds
+with unchanged-source baselines. The full combined coverage refresh is pending.
