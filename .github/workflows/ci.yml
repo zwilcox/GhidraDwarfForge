@@ -1159,26 +1159,6 @@ jobs:
               echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"
           fi
 
-      - name: Isolated producer failure cleanup and validated retries
-        if: matrix.target == 'x86_64'
-        run: |
-          python3 -B src/test/integration/producer-failures.py \
-              --output "$PWD/build/test-results/producer-failures" \
-              --source-archive "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/third_party/libdwarf/source/libdwarf-2.3.2.tar.xz" \
-              --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
-              --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
-              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
-              --test-classes "$PWD/build/classes/java/test" --ghidra "$GHIDRA_INSTALL_DIR" \
-              --java "$JAVA_HOME/bin/java" --dwarfdump "$DWARFDUMP"
-
-      - name: Producer cleanup and buffer-bound mutation controls
-        if: matrix.target == 'x86_64'
-        run: |
-          python3 -B src/test/coverage/producer-failure-mutations.py \
-              --baseline "$PWD/build/test-results/producer-failures" \
-              --output "$PWD/build/test-results/producer-failure-mutations" \
-              --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR"
-
       - name: Compiler inheritance references and native exporter runtime controls
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1248,6 +1228,26 @@ jobs:
 
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
+
+      - name: Isolated producer failure cleanup and validated retries
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 -B src/test/integration/producer-failures.py \
+              --output "$PWD/build/test-results/producer-failures" \
+              --source-archive "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/third_party/libdwarf/source/libdwarf-2.3.2.tar.xz" \
+              --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --test-classes "$PWD/build/classes/java/test" --ghidra "$GHIDRA_INSTALL_DIR" \
+              --java "$JAVA_HOME/bin/java" --dwarfdump "$DWARFDUMP"
+
+      - name: Producer cleanup and buffer-bound mutation controls
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 -B src/test/coverage/producer-failure-mutations.py \
+              --baseline "$PWD/build/test-results/producer-failures" \
+              --output "$PWD/build/test-results/producer-failure-mutations" \
+              --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR"
 
       - name: Saved inheritance through ordinary export and read-only reopening
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'

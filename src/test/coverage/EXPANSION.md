@@ -6,6 +6,23 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Installed producer test ordering
+
+CONFIRMED: hosted run 43926490219 at `117b6c66` failed its x86-64 producer-failure
+step before invoking Java. The step resolved the installed source archive and
+production JAR before the job's `Install extension` step had run, yielding
+`FileNotFoundError` for the extension directory. Later missing-artifact upload
+errors were consequences of that early failure, not validator failures.
+
+The producer-failure and dependent mutation steps now follow installation.
+Coverage preparation remains earlier; all assertions and mandatory suites remain
+enabled. Actionlint and a dependency-order audit pass, including the absence of
+installed-extension path consumers before installation in the target job.
+Production source and test harnesses are unchanged. Hosted replay is pending;
+the still-running earlier revision cannot validate this workflow correction.
+Evidence: `ci-43926490219-x86.log` (215,514 bytes) and
+`producer-ci-order-result.json` in the bounded coverage workspace.
+
 ## Windows directory failure and lifetime controls
 
 PRESENT, UNVERIFIED on Windows: `WindowsDirectoryFailureControls` adds 47
