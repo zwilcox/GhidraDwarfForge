@@ -21,6 +21,7 @@ stack_flow = combined.module('stack_flow_admission', HERE / 'stack-flow-admissio
 saved_inheritance = combined.module('saved_inheritance_admission', HERE / 'saved-inheritance-admission.py')
 external_declarations = combined.module('external_declaration_admission', HERE / 'external-declaration-admission.py')
 recovered_signatures = combined.module('recovered_signature_admission', HERE / 'recovered-signature-admission.py')
+stack_transitions = combined.module('stack_transition_admission', HERE / 'stack-transition-admission.py')
 REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation',
@@ -33,7 +34,9 @@ REQUIRED = {
         'gui-script-manager-unwind', 'lexical-shadow', 'object-parameter', 'object-return', 'formatter-export',
         'calling-convention', 'custom-call-storage', 'call-site-packaged',
         'lexical-statics', 'lexical-statics-controls', 'recovered-statics-positive', 'recovered-statics-controls',
-        'stack-control-flow', 'saved-inheritance', 'external-declarations', 'recovered-returns', 'recovered-parameters'}),
+        'stack-control-flow', 'saved-inheritance', 'external-declarations', 'recovered-returns', 'recovered-parameters',
+        'stack-value-transitions'}),
+    'linux_aarch64': ('target-preflight', {'headless'}, {'stack-value-transitions'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -295,6 +298,7 @@ def load_job(root, jar, kind, commit, run):
     saved_inheritance_cases = []
     external_declaration_cases = []
     recovered_signature_cases = []
+    stack_transition_cases = []
     for layer, measured in sorted(summary['layers'].items()):
         xml = files.regular(root / 'report' / (layer + '.xml'), 32 * 1024 * 1024)
         if files.digest(xml) != measured.get('xmlSha256'):
@@ -342,6 +346,8 @@ def load_job(root, jar, kind, commit, run):
                 external_declaration_cases.append(external_declarations.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] in ('recovered-returns', 'recovered-parameters'):
                 recovered_signature_cases.append(recovered_signatures.oracle(record, files.read(directory / 'oracle.json')))
+            if record['suite'] == 'stack-value-transitions':
+                stack_transition_cases.append(stack_transitions.oracle(record, files.read(directory / 'oracle.json')))
             layer_suites.add(record['suite'])
             layer_rows.extend((layer, row['session'], directory / row['file']) for row in record['sessions'])
             layer_halts.extend({'suite': record['suite'], **row} for row in record.get('unmeasuredForcedHalts', []))
@@ -365,6 +371,8 @@ def load_job(root, jar, kind, commit, run):
         saved_inheritance.cohort(saved_inheritance_cases)
         external_declarations.cohort(external_declaration_cases)
         recovered_signatures.cohort(recovered_signature_cases)
+    if kind in ('linux', 'linux_aarch64'):
+        stack_transitions.cohort(stack_transition_cases, ['x86_64' if kind == 'linux' else 'aarch64'])
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,
         'summarySha256': files.digest(root / 'report/summary.json'),
         'receipts': {name: files.digest(root / 'collections' / name / 'receipt.json') for name in sorted(known)},
@@ -419,7 +427,7 @@ def finish_report(args, result):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('bundle', 'expected-tasks', 'linux', 'linux-host', 'firmware', 'windows',
+    for name in ('bundle', 'expected-tasks', 'linux', 'linux-host', 'linux-aarch64', 'firmware', 'windows',
             'inventory', 'sources', 'java', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--commit', required=True)

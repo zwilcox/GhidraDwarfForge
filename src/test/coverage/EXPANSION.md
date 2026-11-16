@@ -932,3 +932,41 @@ only a candidate list: imported adapters and parent wrappers must be inspected
 before declaring any particular workflow unmeasured. Stack-value transitions
 are a useful next candidate because their existing x86-64/AArch64 exec/PIE/rebase
 oracles check whole storage transitions, reuse, aliasing and final value loss.
+
+## Stack-value transitions on both target architectures
+
+The existing stack-transition workflow now measures import, curation and both
+read-only exports on x86-64 and AArch64. All six exec/PIE/rebased-PIE profiles
+pass locally: 24 analyzer sessions, 12 exports and 432 compiler/Forge debugger
+returns. The underlying oracle checks 12 function shapes at three positive and
+negative input values, every instruction boundary, independent physical register
+and stack values, exact serialized location lists, source navigation, slot reuse,
+alias invalidation and final value loss. Inputs and saved program databases remain
+unchanged apart from the disclosed Ghidra index/journal backups. Rebased PIE
+retains the same input hash and link-time location semantics as its PIE reference.
+
+An initial rebased run failed because the local Ghidra settings cache contained
+a script compiled with Java 25; the selected runtime is Java 21. That incomplete
+collection is retained separately and never admitted. A dedicated Java 21 settings
+cache inside the accounted workspace resolves the mismatch. The remaining four
+profiles pass with the same source and production bytes. Both architectures also
+pass rebased export without instrumentation. Cached installed-module hashes are
+restored after every wrapper run.
+
+CI retains the AArch64 stack-transition collection as a separate required input;
+its agent environment applies only to this workflow. The x86-64 suite inventory
+is now 43, and AArch64 independently requires all three address modes. Hosted
+admission rejects an x86-64 collection substituted for the AArch64 matrix input,
+missing/duplicated roles, changed rebased semantics, mismatched serialized ranges,
+lost runtime checks and incomplete session/input/model provenance. Eleven new
+metadata test methods bring the coverage-tool suite to 181 passing tests. Their
+synthetic receipts are explicitly not execution evidence. Workflow lint and diff
+checks pass. The new hosted artifact and combined-input wiring remain pending CI.
+
+Independent raw class/session/probe verification passes for all six real profiles.
+The partial local union now has 242 sessions, with all 901 classes and 255 sources:
+24,681/29,786 lines (82.9%) and 18,840/25,878 branches (72.8%). This adds 41 lines
+and 23 branch outcomes to the preceding partial union; it is still not the complete
+hosted measurement. No frozen inventory, threshold or production bytecode changed.
+Evidence is under `.forge-work/scratch/coverage-expansion/stack-transition-verified/`,
+with the failed Java-cache attempt retained in `stack-transition-failed-collections/`.

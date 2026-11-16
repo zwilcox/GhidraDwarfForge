@@ -1149,11 +1149,15 @@ jobs:
             --sections "$results/sections" --output "$results/validation"
 
       - name: Prepare separate coverage for existing integration JVMs
-        if: matrix.target == 'x86_64'
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        env:
+          TARGET: ${{ matrix.target }}
         run: |
           ./gradlew --no-daemon -PtestCoverage=true prepareIntegrationCoverage
-          echo "FORGE_INTEGRATION_COVERAGE_AGENT=$PWD/build/test-coverage-tools/jacocoagent.jar" >> "$GITHUB_ENV"
-          echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"
+          if [[ "$TARGET" == x86_64 ]]; then
+              echo "FORGE_INTEGRATION_COVERAGE_AGENT=$PWD/build/test-coverage-tools/jacocoagent.jar" >> "$GITHUB_ENV"
+              echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"
+          fi
 
       - name: Compiler inheritance references and native exporter runtime controls
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
@@ -2331,6 +2335,10 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
+          if [[ "$TARGET" == aarch64 ]]; then
+              export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
+              export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections"
+          fi
           for role in exec pie pie-rebased; do
               python3 src/test/integration/stack-value-transitions-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
@@ -3365,7 +3373,26 @@ jobs:
               --require-suite lexical-statics --require-suite lexical-statics-controls \
               --require-suite recovered-statics-positive --require-suite recovered-statics-controls \
               --require-suite stack-control-flow --require-suite saved-inheritance --require-suite external-declarations \
-              --require-suite recovered-returns --require-suite recovered-parameters
+              --require-suite recovered-returns --require-suite recovered-parameters --require-suite stack-value-transitions
+
+      - name: Verify and report AArch64 transition coverage
+        if: matrix.target == 'aarch64'
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 -B src/test/coverage/integration-report.py \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --collections build/integration-coverage/collections --output build/integration-coverage/report \
+              --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite stack-value-transitions
+
+      - uses: actions/upload-artifact@v7
+        if: always() && matrix.target == 'aarch64'
+        with:
+          name: integration-java-coverage-linux-aarch64
+          path: build/integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'
@@ -4321,6 +4348,10 @@ jobs:
           path: build/combined-inputs/linux-host
       - uses: actions/download-artifact@v8
         with:
+          name: integration-java-coverage-linux-aarch64
+          path: build/combined-inputs/linux-aarch64
+      - uses: actions/download-artifact@v8
+        with:
           name: integration-java-coverage-windows
           path: build/combined-inputs/windows
       - uses: actions/download-artifact@v8
@@ -4341,6 +4372,7 @@ jobs:
           python3 -B src/test/coverage/hosted-combined-report.py \
               --bundle build/combined-inputs/javaexec --expected-tasks src/test/coverage/javaexec-tasks.json \
               --linux build/combined-inputs/linux --linux-host build/combined-inputs/linux-host \
+              --linux-aarch64 build/combined-inputs/linux-aarch64 \
               --windows build/combined-inputs/windows --firmware build/combined-inputs/firmware \
               --inventory src/test/coverage/critical-sources.json --sources src/main/java \
               --java "$JAVA_HOME/bin/java" --output build/combined-java-coverage \
