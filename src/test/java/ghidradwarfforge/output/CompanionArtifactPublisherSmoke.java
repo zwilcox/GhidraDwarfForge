@@ -26,6 +26,7 @@ public final class CompanionArtifactPublisherSmoke {
             }
             preserveConcurrentChange(root);
             checkedCancellation(root);
+            timestampOrdering(root);
             System.out.println("companion-artifact-publisher-smoke=PASS");
         }
         finally {
@@ -33,6 +34,42 @@ public final class CompanionArtifactPublisherSmoke {
                 for (Path path : files.sorted(Comparator.reverseOrder()).toList()) {
                     Files.delete(path);
                 }
+            }
+        }
+    }
+
+    private static void timestampOrdering(Path root) throws Exception {
+        long epoch = 1700000000000L;
+        for (long difference : new long[] {-2000, 0, 2000}) {
+            Path directory = Files.createDirectory(root.resolve("timestamp-" + difference));
+            Path input = Files.writeString(directory.resolve("original"), "untouched");
+            var originalTime = java.nio.file.attribute.FileTime.fromMillis(epoch - 10000);
+            Files.setLastModifiedTime(input, originalTime);
+            var sourceTime = java.nio.file.attribute.FileTime.fromMillis(epoch);
+            var companionTime = java.nio.file.attribute.FileTime.fromMillis(epoch + 10000);
+            List<Path> targets = List.of(directory.resolve("debug"), directory.resolve("source"), directory.resolve("loader"));
+            CompanionArtifactPublisher.stageAndPublish(input, targets, stages -> {
+                for (int index = 0; index < stages.size(); index++) Files.writeString(stages.get(index), "payload-" + index);
+                Files.setLastModifiedTime(stages.get(0), java.nio.file.attribute.FileTime.fromMillis(epoch + difference));
+                Files.setLastModifiedTime(stages.get(1), sourceTime);
+                Files.setLastModifiedTime(stages.get(2), companionTime);
+            }, () -> { }, index -> { });
+            long expectedDebugTime = difference > 0 ? epoch + difference : epoch;
+            if (Files.getLastModifiedTime(targets.get(0)).toMillis() != expectedDebugTime ||
+                    !Files.getLastModifiedTime(targets.get(1)).equals(sourceTime) ||
+                    !Files.getLastModifiedTime(targets.get(2)).equals(companionTime)) {
+                throw new AssertionError("publication lost deterministic source/debug timestamp ordering: " + difference);
+            }
+            if (!Files.getLastModifiedTime(input).equals(originalTime) || !Files.readString(input).equals("untouched")) {
+                throw new AssertionError("timestamp normalization changed the original executable");
+            }
+            for (int index = 0; index < targets.size(); index++) {
+                if (!Files.readString(targets.get(index)).equals("payload-" + index)) {
+                    throw new AssertionError("timestamp normalization changed output bytes");
+                }
+            }
+            try (var files = Files.list(directory)) {
+                if (files.count() != 4) throw new AssertionError("timestamp publication left temporary files");
             }
         }
     }

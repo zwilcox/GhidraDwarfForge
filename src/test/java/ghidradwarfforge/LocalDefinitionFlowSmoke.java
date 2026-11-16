@@ -12,17 +12,24 @@ import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
+import ghidra.program.model.data.ByteDataType;
 import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.listing.LocalVariableImpl;
 import ghidra.program.model.listing.LocalVariable;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.listing.FlowOverride;
 import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.SourceType;
+import ghidra.program.model.pcode.Varnode;
 import ghidra.program.util.DefaultLanguageService;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
 import ghidradwarfforge.locations.TargetRegisterMap;
+import ghidradwarfforge.locations.VariableStorageModel.Storage;
+import ghidradwarfforge.locations.VariableStorageModel.OmissionReason;
+import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
 
 /** Real decoded diamonds, loops and split bodies; no fabricated instruction graph. */
 public final class LocalDefinitionFlowSmoke {
@@ -102,6 +109,9 @@ public final class LocalDefinitionFlowSmoke {
                     return;
                 }
                 require(!intervals.isEmpty(), "missing proof " + context);
+                if (shape.equals("diamond") && !kill) {
+                    ownership(program, function, local, map, rejected, intervals);
+                }
                 require(!available(intervals, 0x1000), "stale entry value " + context);
                 require(!available(intervals, 0x1000 + firstUse), "unfinished definition " + context);
                 require(available(intervals, 0x1000 + join) == (!kill && !shape.equals("bypass")),
@@ -156,6 +166,18 @@ public final class LocalDefinitionFlowSmoke {
                 instruction.setFlowOverride(FlowOverride.NONE);
                 require(RegisterDefinitionFlow.prove(program, function, local, map, rejected,
                     TaskMonitor.DUMMY).equals(intervals), "controls did not restore proof " + context);
+                if (shape.equals("diamond") && !kill) {
+                    // Keep the intentionally bad row until this owned ProgramDB
+                    // is released. Deleting it in this Ghidra version leaves a
+                    // deleted variable in the function's cached variable list.
+                    var bad = function.addLocalVariable(new LocalVariableImpl("bad_storage", firstUse + 1,
+                        IntegerDataType.dataType, VariableStorage.BAD_STORAGE, true, program, SourceType.USER_DEFINED),
+                        SourceType.USER_DEFINED);
+                    require(bad.hasAssignedStorage() && !bad.getVariableStorage().isValid(),
+                        "fixture must retain a saved invalid storage row");
+                    require(RegisterDefinitionFlow.prove(program, function, local, map, rejected,
+                        TaskMonitor.DUMMY).isEmpty(), "invalid saved ownership acquired a register lifetime");
+                }
             }
             finally {
                 program.endTransaction(tx, true);
@@ -164,6 +186,87 @@ public final class LocalDefinitionFlowSmoke {
         finally {
             program.release(owner);
         }
+    }
+
+    private static void ownership(ProgramDB program, Function function, LocalVariable local,
+            TargetRegisterMap map, Storage rejected, List<GhidraVariableStorage.StorageInterval> expected)
+            throws Exception {
+        var register = local.getRegister();
+        var base = register.getBaseRegister();
+        int firstUse = local.getFirstUseOffset();
+        var originalBody = new AddressSet(function.getBody());
+        byte[] before = new byte[Math.toIntExact(originalBody.getNumAddresses())];
+        program.getMemory().getBytes(originalBody.getMinAddress(), before);
+        for (OmissionReason reason : OmissionReason.values()) {
+            if (reason == OmissionReason.UNKNOWN_LIFETIME) continue;
+            require(RegisterDefinitionFlow.prove(program, function, local, map,
+                new UnavailableStorage(reason, "independent rejection reason"), TaskMonitor.DUMMY).isEmpty(),
+                "definition proof overrode an unrelated rejection: " + reason);
+        }
+        Storage established = expected.stream().filter(row -> row.storage().available()).findFirst().orElseThrow().storage();
+        require(RegisterDefinitionFlow.prove(program, function, local, map, established, TaskMonitor.DUMMY).isEmpty(),
+            "definition fallback replaced an established location");
+        var unsaved = new LocalVariableImpl("unsaved", firstUse, local.getDataType(), register,
+            program, SourceType.USER_DEFINED);
+        require(RegisterDefinitionFlow.prove(program, function, unsaved, map, rejected, TaskMonitor.DUMMY).isEmpty(),
+            "unsaved local acquired a lifetime from another saved variable");
+        for (SourceType provenance : List.of(SourceType.ANALYSIS, SourceType.IMPORTED)) {
+            local.setName("noncurated_" + provenance.name(), provenance);
+            require(local.getSource() == provenance, "fixture did not change saved provenance: " + local.getSource());
+            require(RegisterDefinitionFlow.prove(program, function, local, map, rejected, TaskMonitor.DUMMY).isEmpty(),
+                "noncurated definition was promoted to analyst evidence");
+        }
+        local.setName("held", SourceType.USER_DEFINED);
+        local.setFirstUseOffset(0);
+        require(RegisterDefinitionFlow.prove(program, function, local, map, rejected, TaskMonitor.DUMMY).isEmpty(),
+            "entry local acquired an unproved initial value");
+        local.setFirstUseOffset(firstUse);
+        require(RegisterDefinitionFlow.prove(program, function, local, TargetRegisterMap.forTarget("mips"),
+            rejected, TaskMonitor.DUMMY).isEmpty(), "unmapped register acquired a location");
+
+        // Saved variables may reuse storage at different first-use offsets. A
+        // second identity anywhere in the physical base register is ambiguous,
+        // including an unnamed high byte outside the selected 32-bit alias.
+        for (int offset : new int[] {-1, 0, 1, base.getMinimumByteSize() - 1, base.getMinimumByteSize()}) {
+            var node = new Varnode(base.getAddress().add(offset), 1);
+            var storage = new VariableStorage(program, node);
+            var other = function.addLocalVariable(new LocalVariableImpl("other", firstUse + 1,
+                ByteDataType.dataType, storage, false, program, SourceType.USER_DEFINED), SourceType.USER_DEFINED);
+            try {
+                require(other != local && other.getVariableStorage().equals(storage),
+                    "fixture must preserve distinct identity and exact register byte");
+                boolean overlaps = offset >= 0 && offset < base.getMinimumByteSize();
+                var actual = RegisterDefinitionFlow.prove(program, function, local, map, rejected, TaskMonitor.DUMMY);
+                require(overlaps ? actual.isEmpty() : actual.equals(expected),
+                    "physical register ownership disagrees at byte " + offset);
+            }
+            finally { function.removeVariable(other); }
+        }
+        var stack = function.addLocalVariable(new LocalVariableImpl("separate_stack", IntegerDataType.dataType,
+            -16, program, SourceType.USER_DEFINED), SourceType.USER_DEFINED);
+        try {
+            require(RegisterDefinitionFlow.prove(program, function, local, map, rejected, TaskMonitor.DUMMY).equals(expected),
+                "unrelated stack storage invalidated the register proof");
+        }
+        finally { function.removeVariable(stack); }
+        var unknown = function.addLocalVariable(new LocalVariableImpl("unknown", firstUse + 1,
+            IntegerDataType.dataType, VariableStorage.UNASSIGNED_STORAGE, true, program, SourceType.USER_DEFINED),
+            SourceType.USER_DEFINED);
+        try {
+            require(unknown.getVariableStorage().isUnassignedStorage(), "saved fixture changed unknown storage");
+            var actual = RegisterDefinitionFlow.prove(program, function, local, map, rejected, TaskMonitor.DUMMY);
+            require(actual.equals(expected), "unassigned storage invalidated the register proof");
+        }
+        finally { function.removeVariable(unknown); }
+        long modifications = program.getModificationNumber();
+        require(RegisterDefinitionFlow.prove(program, function, local, map, rejected, TaskMonitor.DUMMY).equals(expected),
+            "ownership controls did not restore the original proof: " + java.util.Arrays.stream(function.getAllVariables())
+                .map(value -> value.getName() + ":" + value.getVariableStorage() + ":same=" + (value == local)).toList());
+        require(program.getModificationNumber() == modifications && function.getBody().equals(originalBody),
+            "definition proof changed the saved program");
+        byte[] after = new byte[before.length];
+        program.getMemory().getBytes(originalBody.getMinAddress(), after);
+        require(java.util.Arrays.equals(before, after), "ownership proof changed machine instructions");
     }
 
     private static boolean available(List<GhidraVariableStorage.StorageInterval> intervals, long address) {
