@@ -6,6 +6,35 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Verified privileged Linux attachment sessions
+
+CONFIRMED: 51 measured production attachment/recovery sessions from CI run
+`43952501473`, artifact `14277061512`, pass current receipt, class-identity and
+raw-probe verification. These are completed steps of the still-running x86-64
+job at `74436b6e`; they are not acceptance of the full job or newer local tests.
+The authenticated artifact digest and merge-tree/source provenance are retained
+under `hosted-attachment-43952501473/` in bounded scratch. Its source merge tree
+matches the recorded head, and its production JAR matches the current 901-class,
+255-source denominator. No percentages were added or averaged.
+
+Real privileged Linux execution verifies live validators, debugger discovery,
+CRC rejection, consent refusal, cancellation, unchanged backups and rollback
+restoration. Eight measured recovery children follow deliberate unmeasured
+`Runtime.halt` processes. Their missing shutdown probes are not fabricated.
+Strict validator receipts contain no uncorroborated errors; inherited frame
+diagnostics retain their original-byte corroboration. The no-build-ID case uses
+an intentionally unusual installed basename, `literal λ ;$[quoted].dbg`. The
+first verifier incorrectly assumed that basename matched the source artifact;
+its failed attempt is retained and excluded. The corrected verifier binds the
+installed name to the existing oracle receipt and passes.
+
+The 999-session diagnostic union measures **28,168/29,790 lines (94.6%) and
+21,197/25,884 branches (81.9%)**. Binary/location remains 95.3% lines / 81.5%
+branches. File/validation reaches **6,433/6,677 lines (96.3%) and 3,652/4,250
+branches (85.9%)**. Both critical line targets are now met locally; both 90%
+branch targets and the updated full hosted cohort remain outstanding. These
+results do not update the published main badge or establish issue completion.
+
 ## Validator helper evidence refusals
 
 CONFIRMED: fifteen new Linux executable-helper protocol controls exercise
