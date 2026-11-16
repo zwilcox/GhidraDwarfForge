@@ -82,7 +82,7 @@ class WindowsMetadataFailureAdmission(unittest.TestCase):
                 with self.subTest(key=key, value=value), self.assertRaisesRegex(ValueError, 'stable process handle'):
                     admission.oracle(record, changed)
 
-    def test_five_completed_isolated_sessions_required(self):
+    def test_six_completed_isolated_sessions_required(self):
         record, evidence = self.fixture()
         for fault in ('missing', 'duplicate', 'wrong-label', 'incomplete', 'nested', 'halt'):
             changed = copy.deepcopy(record)
@@ -96,7 +96,7 @@ class WindowsMetadataFailureAdmission(unittest.TestCase):
                 changed['sessions'][0]['status'] = 'INCOMPLETE'
             else:
                 changed['launcherInvocations' if fault == 'nested' else 'unmeasuredForcedHalts'] = [{}]
-            with self.subTest(fault=fault), self.assertRaisesRegex(ValueError, 'five completed'):
+            with self.subTest(fault=fault), self.assertRaisesRegex(ValueError, 'six completed'):
                 admission.oracle(changed, evidence)
 
     def test_nested_process_disclosure_retained(self):

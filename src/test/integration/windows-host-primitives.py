@@ -28,7 +28,7 @@ def main():
         ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar']
     names = ('WindowsFileSecurityProbe', 'WindowsAttachmentPrivilegeProbe',
         'WindowsAttachmentHostSmoke', 'WindowsAttachmentTransactionSmoke', 'BuildIdFileLockSmoke',
-        'WindowsMetadataFailureControls')
+        'WindowsMetadataFailureControls', 'WindowsDirectoryFailureControls')
     sources = [Path(__file__).resolve().parents[1] / 'java/ghidradwarfforge/output' / (name + '.java')
         for name in names]
     protected = {str(path): digest(path) for path in [*dependencies, *sources]}
@@ -77,6 +77,8 @@ def main():
         marker='build-id-file-lock=PASS host=windows')
     run('controlled-native-failures', [*stable, 'ghidradwarfforge.output.WindowsMetadataFailureControls',
         root / 'metadata-failures'], marker='windows-metadata-failures=PASS cases=40')
+    run('controlled-directory-failures', [*stable, 'ghidradwarfforge.output.WindowsDirectoryFailureControls',
+        root / 'directory-failures'], marker='windows-directory-failures=PASS cases=47')
     host = json.loads((root / 'owned/result.json').read_text(encoding='utf-8'))
     transactions = json.loads((root / 'transactions/result.json').read_text(encoding='utf-8'))
     abrupt = [row for row in transactions['outcomes'] if 'childExit' in row]
@@ -87,15 +89,16 @@ def main():
     save(root / 'result.json', {'status': 'PASS_NATIVE_WINDOWS_HOST_PRIMITIVES',
         'hostChecks': host['checks'], 'transactionChecks': transactions['checks'],
         'controlledFailures': json.loads((root / 'metadata-failures/result.json').read_text(encoding='utf-8')),
+        'directoryFailures': json.loads((root / 'directory-failures/result.json').read_text(encoding='utf-8')),
         'protectedSha256': protected,
         'unmeasuredNestedChildren': [{'case': row['case'], 'exitCode': row['childExit']} for row in abrupt],
         'lockContendersMeasured': False,
         'scope': 'Existing native Windows privilege/host/transaction/lock assertions over owned fixtures. '
-            'Five direct JVMs measured, including controlled native metadata failures; '
+            'Six direct JVMs measured, including controlled native metadata and directory failures; '
             'nested lock contenders and eight deliberate halt children remain unmeasured. '
             'No real ELF or power-loss claim; those require separate integration oracles.'})
     coverage.finish(root / 'result.json')
-    print('windows-host-primitives=PASS sessions=5 abrupt-process-exits=8')
+    print('windows-host-primitives=PASS sessions=6 abrupt-process-exits=8')
 
 
 if __name__ == '__main__':

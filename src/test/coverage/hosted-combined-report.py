@@ -25,6 +25,7 @@ stack_transitions = combined.module('stack_transition_admission', HERE / 'stack-
 producer_failures = combined.module('producer_failure_admission', HERE / 'producer-failure-admission.py')
 metadata_failures = combined.module('metadata_failure_admission', HERE / 'linux-metadata-failure-admission.py')
 windows_metadata_failures = combined.module('windows_metadata_failure_admission', HERE / 'windows-metadata-failure-admission.py')
+windows_directory_failures = combined.module('windows_directory_failure_admission', HERE / 'windows-directory-failure-admission.py')
 REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation',
@@ -353,6 +354,7 @@ def load_job(root, jar, kind, commit, run):
                 metadata_failures.oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'windows-host-primitives':
                 windows_metadata_failures.oracle(record, files.read(directory / 'oracle.json'))
+                windows_directory_failures.oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'].startswith('linux-attachment-'):
                 attachment_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'].startswith('gui-script-manager'):

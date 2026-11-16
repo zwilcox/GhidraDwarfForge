@@ -6,6 +6,49 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Windows directory failure and lifetime controls
+
+PRESENT, UNVERIFIED on Windows: `WindowsDirectoryFailureControls` adds 47
+controlled failures around actual Windows directory handles. The production
+adapter admits the real Windows Intel 64-bit host before fixture creation.
+Test-only forwarding wraps its existing native interface; production source,
+bindings and bytecode are unchanged. Failed opens are intercepted before any
+native allocation; close-error reporting follows an actual successful release.
+
+Cases cover native open/information/flush errors; disk, directory and reparse
+checks; filesystem-name and unsigned component limits; final-path size changes,
+termination, UTF-16 and GUID validation; volume-root identity; and differing
+file identities at each of five observations. Malformed replies are controlled
+test inputs, not claims that the kernel produced those replies. Identity cases
+2–5 run through inspection and exercise its revalidation points; they do not
+claim a physical concurrent rename or a flush. Only the expected-identity and
+flush-error cases request writable handles during injection.
+
+Every case requires its specific diagnostic, exactly one injection, exact
+successful-open and close counts, unchanged directory identity and sentinel
+bytes, and an uninjected inspection/sync retry. A full warmup precedes repeating
+all cases under stable process-handle accounting. Root directory handles remain
+read-only and are never flushed. These tests do not establish power-loss durability.
+
+The Windows host suite now requires six completed direct JVM sessions and retains
+its eight unmeasured crash-child disclosures. The hosted collector requires all
+47 ordered cases, cleanup counts, preservation, retry and stable handle counts;
+missing, partial, reordered and corrupt evidence is rejected. The separate 40
+metadata controls remain mandatory.
+
+CONFIRMED locally: Java 21 compilation, actual non-Windows rejection before
+fixture creation, all 212 coverage-tool tests (8.885 seconds), actionlint and
+unchanged production JAR hash. Evidence is in
+`windows-directory-controls-local/` under the bounded coverage workspace; command:
+`python3 support/storage-guard.py run --cwd /home/ziggy/GhidraDwarfForge -- python3 .forge-work/scratch/coverage-expansion/verify-windows-directory-controls.py`.
+Native Windows execution is **NOT_RUN locally**. No added production coverage
+is claimed until matching Windows probes and their behavior evidence validate.
+
+API contract references checked for this batch:
+[final path lengths and GUID flags](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew),
+[volume information and WCHAR component lengths](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumeinformationbyhandlew),
+[flush return values and write access](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers).
+
 ## Known-zero facts at conditional value-flow joins
 
 CONFIRMED at `39a8bc2d`: 96 raw-p-code cases exercise both branch arms, eight

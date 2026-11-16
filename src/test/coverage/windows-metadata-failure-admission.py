@@ -10,7 +10,8 @@ CASES = (
     'stream-unaligned', 'stream-short-next', 'stream-long-next', 'stream-excess-count',
     'stream-invalid-utf16', 'free-error-after-release', 'close-error-after-release')
 NO_ALLOCATION = frozenset(CASES[:7] + CASES[8:16])
-SESSIONS = frozenset(('privilege', 'host', 'transactions', 'lock', 'controlled-native-failures'))
+SESSIONS = frozenset(('privilege', 'host', 'transactions', 'lock', 'controlled-native-failures',
+    'controlled-directory-failures'))
 
 
 def oracle(record, evidence):
@@ -44,7 +45,7 @@ def oracle(record, evidence):
             or any(not isinstance(row, dict) or row.get('status') != 'ORACLE_PASSED' for row in sessions)
             or {row.get('label') for row in sessions} != SESSIONS
             or record.get('unmeasuredForcedHalts') or record.get('launcherInvocations')):
-        raise ValueError('Windows metadata failures lack the five completed isolated sessions')
+        raise ValueError('Windows metadata failures lack the six completed isolated sessions')
     children = evidence.get('unmeasuredNestedChildren')
     if (not isinstance(children, list) or len(children) != 8
             or any(not isinstance(row, dict) or type(row.get('exitCode')) is not int or row['exitCode'] != 89
