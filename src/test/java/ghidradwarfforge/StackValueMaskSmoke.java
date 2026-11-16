@@ -93,9 +93,70 @@ final class StackValueMaskSmoke {
                 }
             }
         }
-        System.out.println("stack-value-mask=PASS cases=" + cases.size() * 4 + " checks=" + checks +
+        int wideCases = wideCarriers(program, template, registers);
+        System.out.println("stack-value-mask=PASS cases=" + cases.size() * 4 + " wide-cases=" + wideCases + " checks=" + checks +
             " evaluator=BigInteger raw-pcode=true target=ARM-LE");
         return checks;
+    }
+
+    private static int wideCarriers(ProgramDB program, Instruction template, TargetRegisterMap registers) throws Exception {
+        int cases = 0;
+        for (int width : new int[] {8, 9, 16, 32}) {
+            for (int position : new java.util.LinkedHashSet<>(List.of(0, 7, width - 1))) {
+                for (String shape : List.of("copy", "signed", "piece-high", "piece-low", "or-zero", "drop")) {
+                    // Concatenation needs room for its extra high or low byte.
+                    if ((shape.startsWith("piece") && position == width - 1) ||
+                            shape.equals("piece-high") && position == 0) continue;
+                    var code = new Code(program, template);
+                    int initialWidth = shape.startsWith("piece") ? width - 1 : width;
+                    var initial = code.unique(initialWidth);
+                    int initialPosition = shape.equals("piece-high") ? position - 1 : position;
+                    code.op(shape.equals("signed") ? PcodeOp.INT_SEXT : PcodeOp.INT_ZEXT, initial, code.source);
+                    code.op(PcodeOp.INT_LEFT, initial, initial, code.constant(initialPosition * 8L, 4));
+                    var carrier = code.unique(width);
+                    if (shape.equals("piece-high")) code.op(PcodeOp.PIECE, carrier, initial, code.constant(0, 1));
+                    else if (shape.equals("piece-low")) code.op(PcodeOp.PIECE, carrier, code.constant(0, 1), initial);
+                    else code.op(PcodeOp.COPY, carrier, initial);
+                    if (shape.equals("or-zero")) {
+                        // Build a wide zero using a valid extension, not a >64-bit literal.
+                        var zero = code.unique(width);
+                        code.op(PcodeOp.INT_ZEXT, zero, code.constant(0, 1));
+                        code.op(PcodeOp.INT_OR, carrier, carrier, zero);
+                    }
+                    int extraction = Math.min(position, width - 8);
+                    if (shape.equals("drop")) {
+                        // Shift the tracked byte completely out of its container.
+                        code.op(PcodeOp.INT_LEFT, carrier, carrier, code.constant((width - position) * 8L, 4));
+                    }
+                    code.op(PcodeOp.SUBPIECE, code.destination, carrier, code.constant(extraction, 4));
+                    code.op(PcodeOp.COPY, code.source, code.constant(0, 4));
+                    var state = StackValueFlow.forIncomingPiece(program, new Varnode(code.source.getAddress(), 1));
+                    String context = "wide=" + width + "/position=" + position + "/shape=" + shape;
+                    require(state != null && state.advance(code.instruction(), false, TaskMonitor.DUMMY), context);
+                    var location = state.location(registers);
+                    boolean conservative = shape.equals("or-zero") && width > Long.BYTES;
+                    boolean available = !shape.equals("drop") && !conservative;
+                    require(location.available() == available, "wide availability " + context + ": " + location);
+                    int offset = (position - extraction) * 8;
+                    if (available) require(location instanceof RegisterStorage register &&
+                        register.register().dwarfNumber() == 256 && register.valueBitOffset() == offset &&
+                        register.bitSize() == 8, "wide surviving byte " + context + ": " + location);
+                    boolean counterexample = false;
+                    for (int value = 0; value <= 255; value++) {
+                        for (long noise : NOISE) {
+                            int observed = evaluate(code, value, noise).shiftRight(offset).and(BigInteger.valueOf(255)).intValue();
+                            if (!shape.equals("drop")) require(observed == value, "wide concrete value changed " + context);
+                            else counterexample |= observed != value;
+                        }
+                    }
+                    if (shape.equals("drop")) require(counterexample, "wide drop has no destructive example " + context);
+                    // A wide OR is deliberately outside the long-sized zero-mask proof.
+                    // Its concrete identity above is not permission to invent a location.
+                    cases++;
+                }
+            }
+        }
+        return cases;
     }
 
     private static final class Code {
@@ -178,6 +239,8 @@ final class StackValueMaskSmoke {
                 case PcodeOp.INT_ADD -> first.add(second);
                 case PcodeOp.INT_SUB -> first.subtract(second);
                 case PcodeOp.INT_MULT -> first.multiply(second);
+                case PcodeOp.PIECE -> first.shiftLeft(op.getInput(1).getSize() * 8).or(second);
+                case PcodeOp.SUBPIECE -> first.shiftRight(second.intValueExact() * 8);
                 default -> throw new AssertionError("unexpected evaluator opcode");
             };
             values.put(op.getOutput(), result.and(mask(width)));

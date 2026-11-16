@@ -365,6 +365,10 @@ VTABLE_BINDING_MUTANTS = [
 ]
 
 STACK_FLOW_MUTANTS = [
+    ("value-flow-caps-wide-shifts-at-host-long", STACK_FLOW, STACK_FLOW_TEST,
+     "bits >= (long) output.getSize() * Byte.SIZE", "bits >= Long.SIZE"),
+    ("value-flow-wraps-wide-carrier-byte-offset", STACK_FLOW, STACK_FLOW_TEST,
+     "long offset = value.offset() + displacement;", "long offset = (value.offset() + displacement) & 7;"),
     ("value-flow-invents-zero-sign-extension", STACK_FLOW, STACK_FLOW_TEST,
      "operation.getOpcode() == PcodeOp.INT_SEXT && (known & (1L << (first.getSize() * Byte.SIZE - 1))) != 0",
      "operation.getOpcode() == PcodeOp.INT_SEXT"),

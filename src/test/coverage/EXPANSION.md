@@ -6,6 +6,28 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Wide p-code value carriers
+
+CONFIRMED: 54 additional raw p-code cases check tracked bytes in 8-, 9-, 16- and
+32-byte temporaries, including byte positions on both sides of the 64-bit boundary.
+Copies, sign/zero extension, high/low concatenation, extraction and destructive
+shifts are checked using the independent finite-width `BigInteger` evaluator.
+Each case enumerates all 256 tracked-byte values and seven sign/carry-boundary
+nuisance values (96,768 additional concrete executions). Surviving locations must
+name the expected register byte; dropped bytes must have a destructive example.
+
+Wide OR with zero is deliberately distinguished from those supported transfers:
+the independent evaluator proves its concrete identity, while the current
+long-sized known-zero proof conservatively omits a location for widths above
+eight bytes. This test does not expand production support or equate absence of a
+location with a changed concrete value. The cases use raw p-code and real ARM-LE
+register definitions; they do not establish a new machine-instruction or ABI lane.
+
+The existing register-byte-slice task passes with the added cases. Two selected
+mutations are detected with an unchanged baseline in 17.73 seconds: capping shifts
+at the host's 64-bit width and wrapping tracked-byte offsets modulo eight. They
+are separate from the previous full mutation run. Production code is unchanged.
+
 ## Nested Linux attachment recovery measurement
 
 PRESENT, UNVERIFIED: the production-host attachment controller now allocates a
