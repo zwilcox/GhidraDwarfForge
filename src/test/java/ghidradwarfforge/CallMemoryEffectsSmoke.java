@@ -3,6 +3,8 @@ package ghidradwarfforge;
 import java.io.File;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import ghidra.GhidraApplicationLayout;
 import ghidra.app.cmd.disassemble.DisassembleCommand;
 import ghidra.framework.Application;
@@ -23,6 +25,7 @@ public final class CallMemoryEffectsSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        CallMemoryEffectsBoundarySmoke.run();
         for (boolean x86 : new boolean[] {true, false}) {
             for (String mode : List.of("return", "frame", "caller-slot", "unknown-store", "unequal-return",
                     "branch", "drift-loop", "unknown-sp", "nested", "recursive")) check(x86, mode);
@@ -55,7 +58,10 @@ public final class CallMemoryEffectsSmoke {
                 var block = program.getMemory().createInitializedBlock("code", entry, 0x2100,
                     (byte) 0, TaskMonitor.DUMMY, false);
                 block.setExecute(true);
-                String[] bodies = {(x86 ? "e8fb0f0000" : "00040094") + ret, callee, ret};
+                // Nested child writes SP+16; the parent must translate this from
+                // the child's entry SP, not copy the child's relative offset.
+                String childBody = mode.equals("nested") ? (x86 ? "c644241000" : "ff430039") + ret : ret;
+                String[] bodies = {(x86 ? "e8fb0f0000" : "00040094") + ret, callee, childBody};
                 for (int index = 0; index < bodies.length; index++) {
                     var address = entry.add(index * 0x1000);
                     byte[] bytes = HexFormat.of().parseHex(bodies[index]);
@@ -78,13 +84,52 @@ public final class CallMemoryEffectsSmoke {
                 require((memory != null) == known, (x86 ? "x86/" : "arm/") + mode + " " + memory);
                 if (known) {
                     require(memory.stackDelta() == (x86 ? 8 : 0), mode + " raw return delta");
+                    var expectedWrites = new LinkedHashSet<CallMemoryEffects.Range>();
+                    if (x86) expectedWrites.add(new CallMemoryEffects.Range(0, 8));
+                    if (mode.equals("caller-slot")) expectedWrites.add(new CallMemoryEffects.Range(16, 17));
+                    if (mode.equals("frame")) expectedWrites.add(new CallMemoryEffects.Range(-24, -23));
+                    if (mode.equals("frame") || mode.equals("branch")) {
+                        expectedWrites.add(new CallMemoryEffects.Range(-32, 0));
+                    }
+                    if (mode.equals("nested")) {
+                        if (x86) {
+                            expectedWrites.add(new CallMemoryEffects.Range(-8, 0));
+                            expectedWrites.add(new CallMemoryEffects.Range(8, 9));
+                        }
+                        else {
+                            expectedWrites.add(new CallMemoryEffects.Range(-16, -8));
+                            expectedWrites.add(new CallMemoryEffects.Range(-8, 0));
+                            expectedWrites.add(new CallMemoryEffects.Range(-16, 0));
+                            expectedWrites.add(new CallMemoryEffects.Range(0, 1));
+                        }
+                    }
+                    require(memory.writes().equals(expectedWrites), mode + " exact possible writes/releases: " + memory.writes());
                     if (x86) require(memory.writes().contains(new CallMemoryEffects.Range(0, 8)), "return releases its slot");
                     if (mode.equals("caller-slot")) require(memory.writes().contains(new CallMemoryEffects.Range(16, 17)), "exact partial write");
                     if (mode.equals("frame")) require(memory.writes().contains(new CallMemoryEffects.Range(-24, -23)), "exact frame write");
                     if (mode.equals("frame") || mode.equals("branch")) {
                         require(memory.writes().contains(new CallMemoryEffects.Range(-32, 0)), "possible frame release");
                     }
-                    if (mode.equals("nested")) require(memory.writes().stream().anyMatch(range -> range.start() < 0), "nested frame effects");
+                    if (mode.equals("nested")) {
+                        require(memory.writes().stream().anyMatch(range -> range.start() < 0), "nested frame effects");
+                        var parentEntry = entry.add(0x1000);
+                        var childEntry = entry.add(0x2000);
+                        var parent = calls.get(entry).instructions();
+                        var children = DirectLeafCalls.inspect(program, parent, TaskMonitor.DUMMY);
+                        require(children != null && children.size() == 1, "nested register and memory proof");
+                        var child = children.values().iterator().next();
+                        var childMemory = Map.of(childEntry, child.memory());
+                        var childRegisters = Map.of(childEntry, child);
+                        require(memory.equals(CallMemoryEffects.summarize(program, parentEntry, parent,
+                            childMemory, childRegisters, TaskMonitor.DUMMY)), "nested summary agrees with composed direct calls");
+                        require(CallMemoryEffects.summarize(program, parentEntry, parent,
+                            Map.of(), childRegisters, TaskMonitor.DUMMY) == null, "register evidence cannot replace missing memory proof");
+                        require(CallMemoryEffects.summarize(program, parentEntry, parent,
+                            childMemory, Map.of(), TaskMonitor.DUMMY) == null, "memory evidence cannot replace missing register proof");
+                        require(CallMemoryEffects.summarize(program, parentEntry, parent,
+                            Map.of(childEntry.add(1), child.memory()), childRegisters, TaskMonitor.DUMMY) == null,
+                            "memory proof from a different entry must not be borrowed");
+                    }
                 }
                 var cancelled = new TaskMonitorAdapter(true);
                 cancelled.cancel();

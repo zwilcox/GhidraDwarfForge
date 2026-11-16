@@ -456,3 +456,32 @@ runtime architecture claim. All 210 JavaExec tasks and 141 coverage-tool tests
 passed. The verified combined union adds six lines and eight branch outcomes
 across the same 965 sessions. Production code and the denominator are unchanged.
 Hosted acceptance remains pending.
+
+## Call memory effects and nested frame boundaries
+
+`callMemoryEffectsSmoke` now includes 42 independently assembled instruction
+fixtures across x86-32, x86-64 and AArch64 (442 checks), plus 165 checks of the
+existing composed call-graph scenarios. Saved Ghidra programs decode the real
+bytes; assembly comments beside each fixture describe the independent input.
+These are analysis tests, not new runtime architecture-support claims.
+
+Assertions compare the complete possible-write/release set and return stack
+delta. They cover copied stack pointers, commuted and constant arithmetic,
+negative offsets, stack-pointer differences, absolute/unknown stores, partial
+register clobbers, signed offset overflow and agreeing/conflicting joins.
+Reversed instruction enumeration must produce the same proof. Duplicate rows,
+missing entries and open successor graphs cannot establish a memory contract.
+Cancellation at the beginning, middle and end stops immediately; bytes and
+the saved-program modification number remain unchanged.
+
+Nested callees write at SP+16. Their callers must translate those writes to
+SP+8 on x86-64 and SP+0 on the selected AArch64 frame, including all frame
+releases. A missing memory summary, missing register proof or evidence for a
+different callee entry is rejected rather than treated as unaffected memory.
+
+All 105 selected mutation controls passed. Five new faults accept absolute
+stores as stack-relative, retain stack identity after subtracting two stack
+pointers, accept narrow signed-offset overflow, fail to translate nested writes,
+or retain released stack storage. Behavioral assertions detect each fault;
+compilation and loading failures do not count. Production code is unchanged.
+The complete JavaExec and combined coverage refresh is pending for this snapshot.
