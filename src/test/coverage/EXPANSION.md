@@ -30,17 +30,17 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`3acf0556ea0d7afc3d69fd38c07ed953997ef830` in 271.0 seconds. The combined local report
+`ed6fad4efc8283be3c3c6baabfcec632fcad3370` in 272.2 seconds. The combined local report
 contains 1,033 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.9% | 79.8% | 85% / 80% |
-| Binary and location correctness | 95.2% | 79.8% | 95% / 90% |
-| File transactions and validation | 93.9% | 78.5% | 95% / 90% |
+| All production Java | 94.9% | 80.0% | 85% / 80% |
+| Binary and location correctness | 95.3% | 80.1% | 95% / 90% |
+| File transactions and validation | 93.9% | 78.6% | 95% / 90% |
 | Remaining production | 95.1% | 81.6% | Included in overall |
 
-The binary/location line count is 18,279/19,193, meeting its exact 95%
+The binary/location line count is 18,285/19,193, meeting its exact 95%
 line gate. Both critical branch targets and the file-transaction line target
 remain unmet, as does the overall 80% branch target.
 
@@ -48,7 +48,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-call-value-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-program-declaration-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -641,4 +641,16 @@ their first-use and assigned-storage hints without inventing a variable location
 Seven mutation controls check namespace ownership, blank identities, zero-sized
 locals, first-use ordering, immutable globals and ABI parameter order. All 130
 selected mutants passed with behavioral assertion failures and unchanged-source
-baselines. The full combined coverage refresh is pending.
+baselines. The complete refreshed results are recorded below.
+
+All 210 JavaExec tasks passed in 272.2 seconds; all 154 coverage-tool tests
+passed. The raw union adds 6 lines and 57 branch outcomes. The declaration tests
+account for 6 lines and 55 branches in ProgramTypeModel, now covering 226/226
+lines and 236/236 branches. The existing real supervisor lifecycle test covered
+two additional branch outcomes in this run; no new supervisor tests are included
+in this checkpoint.
+
+Overall coverage is 28,276/29,782 lines and 20,696/25,872 branches. Although the
+branch display rounds to 80.0%, the exact gate remains two outcomes short and
+correctly reports failure. Hosted acceptance and the stronger critical-group
+targets remain pending.
