@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate call-site behavior through the installed production script and native package."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 import os
@@ -10,6 +11,8 @@ import runpy
 import shlex
 import subprocess
 import zipfile
+
+from integration_coverage import Collection
 
 
 SCRIPTS = Path(__file__).resolve().parent
@@ -102,6 +105,12 @@ def main():
     module = (ghidra / "Ghidra/Extensions/GhidraDwarfForge").resolve(strict=True)
     archive = args.package.resolve(strict=True)
     expected = installed_package(archive, module)
+    collection = Collection('call-site-packaged', module / 'lib/GhidraDwarfForge.jar', 'headless')
+    proof_paths = [Path(__file__).resolve(), *[SCRIPTS / name for name in (
+        'integration_coverage.py', 'call-site-reference.py', 'call-site-evidence.py', 'call-site-recovered.py',
+        'call-site-reference-gdb.py', 'synthetic-cfi-reference.py', 'check-dwarfdump.py', 'check-call-values.py',
+        'ghidra_scripts/CheckCallSitePackagedExport.java')], ROOT / 'src/test/fixtures/call-site-reference.c']
+    tested_sources = {str(path): digest(path) for path in proof_paths}
     package_hash = digest(archive)
     work = args.output.resolve()
     work.mkdir(parents=True, exist_ok=False)
@@ -122,10 +131,14 @@ def main():
 
     def run(label, command, *, headless=False):
         command = list(map(str, command))
-        (work / (label + ".command.json")).write_text(json.dumps(command, indent=4) + "\n")
-        with (work / (label + ".stdout")).open("wb") as out, (work / (label + ".stderr")).open("wb") as err:
-            result = subprocess.run(command, cwd=ROOT, env=env, stdout=out, stderr=err,
-                                    timeout=600 if headless else 120)
+        context = collection.session(command, label, headless=True) if headless else nullcontext(command)
+        with context as measured:
+            (work / (label + ".command.json")).write_text(json.dumps(measured, indent=4) + "\n")
+            with (work / (label + ".stdout")).open("wb") as out, (work / (label + ".stderr")).open("wb") as err:
+                result = subprocess.run(measured, cwd=ROOT, env=env, stdout=out, stderr=err,
+                                        timeout=600 if headless else 120)
+            assert result.returncode == 0, failure_diagnostic(label, result.returncode,
+                (work / (label + '.stdout')).read_text(), (work / (label + '.stderr')).read_text())
         stdout = (work / (label + ".stdout")).read_text()
         stderr = (work / (label + ".stderr")).read_text()
         # Headless can report script errors yet return zero. Keep those errors
@@ -212,11 +225,24 @@ def main():
     assert reports[1]["rebaseDelta"] - reports[0]["rebaseDelta"] == 0x400000
     assert capture["program_hashes"](project) == saved
     assert digest(archive) == package_hash and installed_package(archive, module) == expected
+    assert tested_sources == {str(path): digest(path) for path in proof_paths}, 'call-site oracle sources changed'
     report = {"status": "FAIL_PACKAGED_CALL_SITES" if failures else "PASS_PACKAGED_CALL_SITES",
               "target": compiler["target"], "role": compiler["role"], "packageSha256": package_hash,
               "installedInventory": expected, "inputSha256": protected, "savedProgramSha256": saved,
-              "exports": reports, "sessions": sessions, "failures": failures}
+              "exports": reports, "sessions": sessions, "failures": failures, 'testedSources': tested_sources}
     (work / "result.json").write_text(json.dumps(report, indent=4) + "\n")
+    if collection.enabled and not failures:
+        structural = json.loads((args.capture / args.probe_report / 'result.json').read_text())
+        runtime = json.loads((args.capture / args.probe_report / 'runtime-result.json').read_text())
+        assert structural['status'] == 'PASS_RECOVERED_PLAN_STRUCTURAL'
+        assert runtime['status'] == 'PASS_RECOVERED_RUNTIME' and not runtime['failures']
+        assert structural['inputSha256'] == protected and structural['savedProgramSha256'] == saved
+        assert runtime['target'] == compiler['target'] and runtime['role'] == compiler['role']
+        oracle = {**report, 'measurement': {'directAnalyzerSessions': 2, 'exportsPerSession': 2,
+            'prerequisitesMeasured': False}, 'probeReport': args.probe_report,
+            'prerequisites': {'compiler': compiler, 'structural': structural, 'runtime': runtime}}
+        (work / 'coverage-oracle.json').write_text(json.dumps(oracle, indent=4) + '\n')
+        collection.finish(work / 'coverage-oracle.json')
     print(f"packaged-call-sites={report['status']} target={compiler['target']} role={compiler['role']} sessions={len(sessions)} failures={len(failures)}")
     raise SystemExit(1 if failures else 0)
 
