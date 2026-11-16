@@ -100,6 +100,21 @@ MIXED_PREFIX_MUTANTS = [
      "Math.subtractExact(stack.byteOffset(), (long) interval.depth()))\n                        : piece.storage();",
      "Math.addExact(stack.byteOffset(), (long) interval.depth()))\n                        : piece.storage();"),
 ]
+FRAME_REREAD = "ghidradwarfforge/elf/OriginalFrameSources.java"
+FRAME_REREAD_TEST = "ghidradwarfforge.elf.OriginalFrameSourcesSmoke"
+FRAME_REREAD_MUTANTS = [
+    ("frame-reread-ignores-stored-hash", FRAME_REREAD, FRAME_REREAD_TEST,
+     'require(hash(stored, cancelled).equals(selected.storedSha256()), "original stored frame bytes changed");',
+     ''),
+    ("frame-reread-ignores-decoded-hash", FRAME_REREAD, FRAME_REREAD_TEST,
+     'hash(plain, cancelled).equals(selected.decodedSha256())', 'true'),
+    ("frame-reread-ignores-decoded-size", FRAME_REREAD, FRAME_REREAD_TEST,
+     'plain.length == selected.decodedBytes() &&', ''),
+    ("frame-reread-accepts-ambiguous-section", FRAME_REREAD, FRAME_REREAD_TEST,
+     'require(section == null, "ambiguous original debug-frame section");', ''),
+    ("frame-reread-accepts-duplicate-inventory", FRAME_REREAD, FRAME_REREAD_TEST,
+     'require(selected == null, "multiple original debug-frame sources");', ''),
+]
 REGISTER_PROFILE_MUTANTS = [
     ("register-slice-ignores-parent-width", REGISTER_PROFILE, REGISTER_PROFILE_TEST,
      "parent.getBitLength() != logicalSlice.parentBits() ||", ""),
@@ -582,7 +597,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")

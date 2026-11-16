@@ -6,6 +6,31 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Retained frame inventory identity checks
+
+CONFIRMED: `OriginalFrameSourcesSmoke` now calls the inventoried debug-frame reader
+directly for ELF32/ELF64, both byte orders, and plain, GABI-compressed and
+GNU-compressed frames. The complete expanded test passes 1,772 assertions.
+It compares decoded bytes against the original supplied frame bytes, rejects
+mismatched section offsets/sizes and stored/decoded identities, and rejects both
+duplicate source records and two real section headers aliasing the same payload.
+An authentic EH-only inventory must not supply a debug-frame section.
+
+The content-change control keeps file size, modification time and file key fixed
+while changing a stored byte, so metadata checks cannot mask the content-hash
+requirement. Rejection leaves the supplied bytes unchanged. Cancellation at every
+observed reader boundary also preserves the file; restoring the exact input
+allows an identical successful read. These tests add no production behavior or
+architecture-support claims.
+
+The unchanged baseline and five selected mutation checks pass in 2.2 seconds.
+Removing stored-hash, decoded-hash, decoded-size, section-ambiguity or duplicate-
+inventory checks produces the intended behavioral assertion failure. The full
+165-fault suite from the preceding checkpoint remains separate evidence; the
+configuration now includes 170 faults and still needs a complete current-head
+CI replay. Evidence is under `.forge-work/scratch/coverage-expansion/`:
+`frame-reread-focused-final.log` and `frame-reread-selected-mutations/result.json`.
+
 ## Mixed incoming register/stack proof controls
 
 CONFIRMED: `MixedParameterPrefixSmoke` now runs the six decoded ARM scenarios in
