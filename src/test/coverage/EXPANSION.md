@@ -624,3 +624,21 @@ independent VM checks and 154 coverage-tool tests. The verified raw union adds
 five lines and 46 branch outcomes. CallValue covers 152/152 lines and 195/200
 branches. Full critical targets and hosted main acceptance remain pending.
 Production code and coverage scope are unchanged.
+
+## Saved declaration boundaries
+
+`ProgramDeclarationBoundarySmoke` runs through the existing `typeGraphSmoke`
+task and adds 115 checks before native producer admission. It rejects missing
+identities, namespace components, types, provenance and model components; tests
+zero/negative extents; and preserves valid wide addresses without narrowing.
+These are model-field checks, not new runtime architecture claims.
+
+Caller-owned lists cannot alter saved declarations, and canonical ordering does
+not reorder ABI parameters or mutate the caller's lists. Duplicate external
+spellings retain their distinct identities. Saved local declarations retain
+their first-use and assigned-storage hints without inventing a variable location.
+
+Seven mutation controls check namespace ownership, blank identities, zero-sized
+locals, first-use ordering, immutable globals and ABI parameter order. All 130
+selected mutants passed with behavioral assertion failures and unchanged-source
+baselines. The full combined coverage refresh is pending.

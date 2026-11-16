@@ -27,6 +27,7 @@ public final class ProgramTypeModelBoundarySmoke {
     public static void run() {
         checks = 0;
         try {
+            ProgramDeclarationBoundarySmoke.run();
             danglingReferences();
             objectParameters();
             storageAgreement();

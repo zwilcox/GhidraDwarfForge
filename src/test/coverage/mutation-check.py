@@ -388,6 +388,23 @@ PROGRAM_TYPE_MUTANTS = [
      "declaredSize > 0 && declaredSize != location.byteSize()", "false"),
     ("type-model-accepts-ambiguous-static-names", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
      "variable.name())) > 1).collect", "variable.name())) > 2).collect"),
+    ("type-model-borrows-namespace-list", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
+     "namespace = List.copyOf(namespace);", ""),
+    ("type-model-allows-blank-namespace", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
+     "part -> part == null || part.isBlank()", "part -> part == null"),
+    ("type-model-allows-blank-external-identity", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
+     "key == null || key.isBlank() || name == null", "key == null || name == null"),
+    ("type-model-allows-zero-sized-local", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
+     "byteSize <= 0", "byteSize < 0"),
+    ("type-model-loses-local-first-use-order", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
+     "Comparator.comparingInt(LocalVariable::firstUseOffset)\n                    .thenComparing(LocalVariable::name)",
+     "Comparator.comparing(LocalVariable::name)"),
+    ("type-model-exposes-mutable-global-list", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
+     ".thenComparing(GlobalVariable::name))\n            .toList();",
+     ".thenComparing(GlobalVariable::name))\n            .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));"),
+    ("type-model-sorts-abi-parameters-by-name", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
+     "parameters = List.copyOf(parameters);\n            validateObjectParameterCount(parameters);\n            locals = locals.stream()",
+     "parameters = parameters.stream().sorted(Comparator.comparing(Parameter::name)).toList();\n            validateObjectParameterCount(parameters);\n            locals = locals.stream()"),
 ]
 
 SECTIONLESS_MUTANTS = [
