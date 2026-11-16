@@ -315,6 +315,60 @@ class ObjectOracleAdmission(unittest.TestCase):
                 hosted.object_oracle(record, oracle)
 
 
+class FormatterOracleAdmission(unittest.TestCase):
+    def fixture(self, role='exec', compression='none', companions=True, lines=None):
+        labels = ['prepare', 'default-before', 'enabled', 'repeat', 'default-after',
+            'restored-enabled', 'cancellation', 'missing-key', 'wrong-kind']
+        record = {'suite': 'formatter-export', 'layer': 'headless',
+            'sessions': [{'label': label, 'session': 'fixture-' + label} for label in labels],
+            'launcherInvocations': [{'label': label, 'sessions': ['fixture-' + label]}
+                for label in labels if label not in ('prepare', 'cancellation')]}
+        oracle = {'status': 'PASS_BASIC_PRODUCTION_FORMATTERS', 'target': 'x86_64',
+            'role': role, 'compression': compression, 'allCompanions': companions, 'sourceLines': lines,
+            'lldb': True, 'gdbVersion': 'GNU gdb fixture; no real execution claimed',
+            'measurement': {'directAnalyzerSessions': 2, 'wrapperAnalyzerSessions': 7,
+                'exportRoute': 'production-wrapper'},
+            'enabledSha256': ['a' * 64, 'b' * 64, 'c' * 64], 'defaultSha256': ['d' * 64, 'b' * 64],
+            'testedSources': {'fixture': 'e' * 64}, 'originalSha256': 'f' * 64, 'selectionSha256': '0' * 64}
+        return record, oracle
+
+    def test_every_existing_formatter_profile_required(self):
+        cases = [hosted.formatter_oracle(*self.fixture(*args)) for args in [
+            ('exec', 'none', True, None), ('pie', 'zlib', False, None), ('pie', 'zlib', True, 8)]]
+        hosted.formatter_cohort(cases)
+        for index in range(3):
+            with self.assertRaises(ValueError):
+                hosted.formatter_cohort(cases[:index] + cases[index + 1:])
+        with self.assertRaises(ValueError):
+            hosted.formatter_cohort(cases[:-1] + cases[:1])
+
+    def test_local_or_changed_workflow_cannot_claim_hosted_acceptance(self):
+        record, oracle = self.fixture()
+        for field, value in [('lldb', False), ('lldb', 1), ('target', 'arm32'), ('status', 'PASS'),
+                ('role', 'shared'), ('compression', 'unknown'), ('sourceLines', 8.0),
+                ('allCompanions', 1), ('measurement', {'directAnalyzerSessions': 9}),
+                ('enabledSha256', []), ('defaultSha256', ['a' * 64, 'x' * 64]),
+                ('testedSources', {}), ('originalSha256', None), ('gdbVersion', 'unavailable')]:
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                hosted.formatter_oracle(record, {**oracle, field: value})
+        with self.assertRaises(ValueError):
+            hosted.formatter_oracle({**record, 'layer': 'native-java'}, oracle)
+
+    def test_wrapper_invocations_cannot_be_missing_duplicated_or_misattributed(self):
+        for mutation in ('missing-session', 'missing-wrapper', 'duplicate-wrapper', 'foreign-session'):
+            record, oracle = self.fixture()
+            if mutation == 'missing-session':
+                record['sessions'].pop()
+            elif mutation == 'missing-wrapper':
+                record['launcherInvocations'].pop()
+            elif mutation == 'duplicate-wrapper':
+                record['launcherInvocations'][-1] = record['launcherInvocations'][0]
+            else:
+                record['launcherInvocations'][0]['sessions'] = ['fixture-prepare']
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                hosted.formatter_oracle(record, oracle)
+
+
 class ReportDependencies(unittest.TestCase):
     def test_changed_or_unrecorded_tool_jars_rejected(self):
         with tempfile.TemporaryDirectory(prefix='forge-report-tools-') as temporary:

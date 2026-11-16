@@ -3,6 +3,8 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from zipfile import ZipFile
@@ -55,6 +57,70 @@ class IntegrationCoverageTest(unittest.TestCase):
         self.assertFalse((self.root / 'output with spaces').exists())
         with collection.launcher_java('unchanged-java', 'disabled') as selected:
             self.assertEqual(selected, 'unchanged-java')
+        with collection.launcher_headless('unchanged-ghidra', 'disabled') as selected:
+            self.assertEqual(selected, 'unchanged-ghidra')
+
+    def headless_collection(self):
+        ghidra = self.root / 'ghidra'
+        installed = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+        installed.parent.mkdir(parents=True, exist_ok=True)
+        installed.write_bytes(self.jar.read_bytes())
+        support = ghidra / 'support'
+        support.mkdir(exist_ok=True)
+        (support / 'analyzeHeadless').touch()
+        launcher = support / 'launch.sh'
+        # This executable validates process plumbing only, never Java coverage.
+        launcher.write_text('#!' + sys.executable + '\n'
+            'import json,os,re,sys\n'
+            'from pathlib import Path\n'
+            'Path(re.search(r"destfile=([^,]+)", sys.argv[5])[1]).write_bytes(b"receipt fixture only")\n'
+            'print(json.dumps({"pid":os.getpid(),"argv":sys.argv[1:]}))\n'
+            'raise SystemExit(int(os.environ.get("FIXTURE_EXIT", "0")))\n')
+        launcher.chmod(0o700)
+        env = dict(self.env, FORGE_INTEGRATION_COVERAGE_OUTPUT=str(self.root / 'headless'))
+        return ghidra, coverage.Collection('wrapper-test', installed, 'headless', environment=env)
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux headless wrapper adapter')
+    def test_headless_wrapper_preserves_arguments_pid_and_exit(self):
+        ghidra, collection = self.headless_collection()
+        arguments = ['project with spaces', 'Formatters', '-readOnly', '-postScript',
+            'GhidraDwarfForgeReadOnly.java', 'λ "quoted"', '', '$(never-execute)', 'line\nbreak']
+        with collection.launcher_headless(ghidra, 'expected-failure') as selected:
+            adapter = Path(selected) / 'support/analyzeHeadless'
+            process = subprocess.Popen([adapter, *arguments], stdout=subprocess.PIPE, text=True,
+                env=dict(os.environ, FIXTURE_EXIT='10'))
+            output, _ = process.communicate(timeout=10)
+            self.assertEqual(process.returncode, 10)
+            observed = json.loads(output)
+            self.assertEqual(observed['pid'], process.pid)
+            self.assertEqual(observed['argv'][6:], arguments)
+            self.assertEqual(observed['argv'][:4], ['fg', 'jdk', 'Ghidra-Headless', '2G'])
+        self.assertFalse(adapter.exists())
+        collection.finish(self.oracle)
+        record = coverage.validate_collection(collection.root, collection.jar)
+        self.assertEqual(len(record['sessions']), 1)
+        self.assertEqual(len(record['launcherInvocations']), 1)
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux headless wrapper adapter')
+    def test_headless_wrapper_rejects_missing_duplicate_data_and_failed_oracle(self):
+        for failure in ('missing', 'duplicate', 'no-data', 'oracle'):
+            with self.subTest(failure=failure):
+                ghidra, collection = self.headless_collection()
+                with self.assertRaises((ValueError, AssertionError)):
+                    with collection.launcher_headless(ghidra, failure) as selected:
+                        adapter = Path(selected) / 'support/analyzeHeadless'
+                        if failure != 'missing':
+                            subprocess.run([adapter], check=True, stdout=subprocess.PIPE, timeout=10)
+                        if failure == 'duplicate':
+                            result = subprocess.run([adapter], capture_output=True, timeout=10)
+                            self.assertNotEqual(result.returncode, 0)
+                        elif failure == 'no-data':
+                            self.execution(collection).unlink()
+                        elif failure == 'oracle':
+                            raise AssertionError('wrapper behavior failed')
+                self.assertFalse(adapter.exists())
+                with self.assertRaisesRegex(ValueError, 'incomplete'):
+                    collection.finish(self.oracle)
 
     def launcher_record(self, wrapper, collection, session):
         request = Path(wrapper).parent / 'requests' / (session + '.json')

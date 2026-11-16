@@ -229,6 +229,39 @@ class Collection:
                 finally:
                     self._save()
 
+    @contextmanager
+    def launcher_headless(self, ghidra, label):
+        """Measure the production shell wrapper without replacing its export route.
+
+        Only its selected analyzeHeadless executable is adapted. The real pinned
+        launch.sh runs in the original installation, with the wrapper's exact
+        arguments, process identity and streams. The caller owns the process and
+        must check its outcome before returning from this context.
+        """
+        if not self.enabled:
+            yield str(ghidra)
+            return
+        if re.search(r'\s', sys.executable):
+            raise ValueError('headless adapter requires a Python interpreter path without whitespace')
+        template = Path(__file__).resolve().parents[1] / 'coverage/launcher-headless.py'
+        with self.session([Path(ghidra) / 'support/analyzeHeadless'], label, headless=True) as command:
+            invocation = {'label': str(label), 'status': 'INCOMPLETE',
+                'sessions': [self.record['sessions'][-1]['session']]}
+            self.record.setdefault('launcherInvocations', []).append(invocation)
+            self._save()
+            with tempfile.TemporaryDirectory(prefix='headless-', dir=self.root) as temporary:
+                directory = Path(temporary)
+                (directory / 'support').mkdir()
+                adapter = directory / 'support/analyzeHeadless'
+                adapter.write_text('#!' + sys.executable + '\n' + template.read_text(encoding='utf-8'), encoding='utf-8')
+                adapter.chmod(0o700)
+                save(directory / 'command.json', command)
+                yield str(directory)
+                if ((directory / 'duplicate').exists() or not (directory / 'invoked').is_file()
+                        or (directory / 'invoked').read_text() != 'analyzeHeadless\n'):
+                    raise ValueError('headless adapter requires exactly one analyzer invocation')
+                invocation.update(status='ORACLE_PASSED', adapterSha256=digest(template))
+
     def record_forced_halt(self, label, exit_code):
         """Runtime.halt deliberately bypasses the agent's shutdown dump.
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Real saved-program export, generation determinism, validators and formatter consumers."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 import os
@@ -12,6 +13,7 @@ import subprocess
 import time
 
 import lldb_consumer
+from integration_coverage import Collection
 
 TARGETS = {
     'x86_64': ('gcc', 'strip', None, None, []),
@@ -28,15 +30,25 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
-def run(command, log, timeout=300, env=None, input_text=None, expected_status=0):
-    log.with_suffix(log.suffix + '.command.json').write_text(json.dumps(command, indent=4) + '\n')
-    with log.open('w') as output:
-        result = subprocess.run(command, stdout=output, stderr=subprocess.STDOUT, timeout=timeout, env=env,
-            input=input_text, text=True)
-    text = log.read_text()
-    assert result.returncode == expected_status, (command[0], result.returncode, text[-6000:])
-    assert 'Traceback' not in text and 'Python Exception' not in text and 'Error occurred in Python' not in text, text[-6000:]
-    return text
+def run(command, log, timeout=300, env=None, input_text=None, expected_status=0,
+        collection=None, wrapper_ghidra=None):
+    context = nullcontext(command)
+    if collection is not None:
+        context = collection.launcher_headless(wrapper_ghidra, log.stem) if wrapper_ghidra is not None else \
+            collection.session(command, log.stem, headless=Path(command[0]).name == 'analyzeHeadless')
+    with context as measured:
+        if wrapper_ghidra is not None:
+            original_option = '--ghidra-dir=' + str(wrapper_ghidra)
+            assert command.count(original_option) == 1
+            measured = ['--ghidra-dir=' + measured if arg == original_option else arg for arg in command]
+        log.with_suffix(log.suffix + '.command.json').write_text(json.dumps(measured, indent=4) + '\n')
+        with log.open('w') as output:
+            result = subprocess.run(measured, stdout=output, stderr=subprocess.STDOUT, timeout=timeout, env=env,
+                input=input_text, text=True)
+        text = log.read_text()
+        assert result.returncode == expected_status, (measured[0], result.returncode, text[-6000:])
+        assert 'Traceback' not in text and 'Python Exception' not in text and 'Error occurred in Python' not in text, text[-6000:]
+        return text
 
 
 def gdb(original, sidecar, companion, root, emulator, sysroot, reference=None, mi=False,
@@ -147,6 +159,7 @@ def main():
     project.mkdir()
     ghidra = args.ghidra.resolve()
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+    collection = Collection('formatter-export', module / 'lib/GhidraDwarfForge.jar', 'headless')
     headless = [str(ghidra / 'support/analyzeHeadless')]
     if args.java:
         java = args.java.resolve(strict=True)
@@ -160,10 +173,15 @@ def main():
             ghidra / 'Ghidra/Framework/Utility/lib/Utility.jar', 'ghidra.Ghidra',
             'ghidra.app.util.headless.AnalyzeHeadless']))
     proof_paths = [Path(__file__).resolve(), Path(__file__).resolve().with_name('formatter_checks.py'),
+        Path(__file__).resolve().with_name('integration_coverage.py'),
+        Path(__file__).resolve().with_name('lldb_consumer.py'),
+        Path(__file__).resolve().with_name('check-dwarfdump.py'),
+        repo / 'src/test/coverage/launcher-headless.py',
         repo / 'src/test/fixtures/formatter-values.c',
         repo / 'src/test/integration/ghidra_scripts/ApplyFormatterFixture.java',
         repo / 'src/test/integration/ghidra_scripts/CancelDuringFormatters.java',
         module / 'lib/GhidraDwarfForge.jar', module / 'ghidra_scripts/GhidraDwarfForge.java',
+        module / 'ghidra_scripts/GhidraDwarfForgeReadOnly.java',
         module / 'support/ghidra-dwarf-forge-headless']
     tested_sources = {str(path): digest(path) for path in proof_paths}
     compiler, strip, emulator, sysroot, extra = TARGETS[args.target]
@@ -194,7 +212,8 @@ def main():
     env = dict(os.environ, LC_ALL='C.UTF-8')
     text = run([*headless, str(project), 'Formatters', '-import', str(original),
         '-analysisTimeoutPerFile', '120', '-scriptPath', str(repo / 'src/test/integration/ghidra_scripts'),
-        '-postScript', 'ApplyFormatterFixture.java', str(selection), str(symbol_map), str(original)], root / 'prepare.log', env=env)
+        '-postScript', 'ApplyFormatterFixture.java', str(selection), str(symbol_map), str(original)], root / 'prepare.log', env=env,
+        collection=collection)
     assert 'formatter-fixture=PASS' in text and selection.is_file(), text[-5000:]
     selection_hash = digest(selection)
     sidecar = root / 'original.λ "quoted".dbg'
@@ -235,7 +254,8 @@ def main():
             command.append('--formatters=' + str(selection))
             if args.companions:
                 command.extend(['--gdb-loader', '--synthesize-unwind=strict'])
-        text = run(command, root / (label + '.log'), env=env)
+        text = run(command, root / (label + '.log'), env=env, collection=collection,
+            wrapper_ghidra=None if args.java else ghidra)
         assert 'GhidraDwarfForge symbol export PASS' in text, text[-5000:]
         assert digest(original) == original_hash and digest(selection) == selection_hash
         current = source_dependencies()
@@ -256,7 +276,7 @@ def main():
         '-readOnly', '-noanalysis', '-scriptPath', str(repo / 'src/test/integration/ghidra_scripts'),
         '-postScript', 'CancelDuringFormatters.java', str(original), str(sidecar), str(selection), args.compression,
         'all' if args.companions else 'formatters', *([] if args.source_lines is None else [str(args.source_lines)])],
-        root / 'cancellation.log', env=env)
+        root / 'cancellation.log', env=env, collection=collection)
     assert 'formatter-cancellation-recovery=PASS' in text, text[-5000:]
     if args.companions:
         assert Path(str(sidecar) + '.gdb.py').is_file() and Path(str(sidecar) + '.unwind.json').is_file()
@@ -267,7 +287,8 @@ def main():
         command = ['bash', str(wrapper), '--ghidra-dir=' + str(ghidra), '--project-dir=' + str(project),
             '--project-name=Formatters', '--program=original', '--input=' + str(original),
             '--output=' + str(sidecar), '--formatters=' + str(invalid)]
-        text = run(command, root / (label + '.log'), env=env, expected_status=10)
+        text = run(command, root / (label + '.log'), env=env, expected_status=10,
+            collection=collection, wrapper_ghidra=ghidra)
         assert 'formatter selection requires an emitted' in text
         assert [digest(path) for path in enabled_outputs] == enabled
         assert digest(original) == original_hash and digest(selection) == selection_hash
@@ -317,9 +338,13 @@ def main():
         'selectionSha256': selection_hash, 'enabledSha256': enabled, 'defaultSha256': baseline,
         'lldb': bool(args.lldb), 'allCompanions': args.companions, 'testedSources': tested_sources,
         'sourceLines': args.source_lines,
+        'measurement': {'directAnalyzerSessions': 7 if args.java else 2,
+            'wrapperAnalyzerSessions': 2 if args.java else 7,
+            'exportRoute': 'direct-java' if args.java else 'production-wrapper'},
         'portableArtifacts': {'role': args.role, 'sidecar': sidecar.name, 'companion': companion.name,
             'sha256': {path.name: digest(path) for path in [original, reference, selection, *enabled_outputs]}},
         'gdbVersion': subprocess.check_output(['gdb-multiarch', '--version'], text=True).splitlines()[0]}, indent=4) + '\n')
+    collection.finish(root / 'result.json')
     print('formatter-export=PASS', args.target, args.role)
 
 

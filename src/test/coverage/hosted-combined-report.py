@@ -24,7 +24,7 @@ REQUIRED = {
         'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu',
         'linux-attachment-exec', 'linux-attachment-pie', 'linux-attachment-exec-no-build-id',
         'gui-script-manager', 'gui-script-manager-loader', 'gui-script-manager-compressed',
-        'gui-script-manager-unwind', 'lexical-shadow', 'object-parameter', 'object-return'}),
+        'gui-script-manager-unwind', 'lexical-shadow', 'object-parameter', 'object-return', 'formatter-export'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -174,6 +174,44 @@ def object_cohort(cases):
         raise ValueError('object coverage requires every existing return, binding and ELF role case')
 
 
+def formatter_oracle(record, oracle):
+    labels = ['prepare', 'default-before', 'enabled', 'repeat', 'default-after',
+        'restored-enabled', 'cancellation', 'missing-key', 'wrong-kind']
+    wrapper_labels = [label for label in labels if label not in ('prepare', 'cancellation')]
+    if (record.get('suite') != 'formatter-export' or record.get('layer') != 'headless'
+            or oracle.get('status') != 'PASS_BASIC_PRODUCTION_FORMATTERS'
+            or oracle.get('target') != 'x86_64' or oracle.get('lldb') is not True
+            or type(oracle.get('allCompanions')) is not bool
+            or oracle.get('role') not in ('exec', 'pie') or oracle.get('compression') not in ('none', 'zlib')
+            or (oracle.get('sourceLines') is not None and type(oracle['sourceLines']) is not int)
+            or [row.get('label') for row in record['sessions']] != labels
+            or oracle.get('measurement') != {'directAnalyzerSessions': 2, 'wrapperAnalyzerSessions': 7,
+                'exportRoute': 'production-wrapper'}):
+        raise ValueError('formatter coverage requires production wrapper, cancellation and both debuggers')
+    invocations = record.get('launcherInvocations', [])
+    by_label = {row['label']: row['session'] for row in record['sessions']}
+    if ([row.get('label') for row in invocations] != wrapper_labels
+            or any(row.get('sessions') != [by_label[row['label']]] for row in invocations)):
+        raise ValueError('formatter wrapper sessions do not match the actual analyzer invocations')
+    enabled, default = oracle.get('enabledSha256'), oracle.get('defaultSha256')
+    protected = oracle.get('testedSources')
+    if (not isinstance(enabled, list) or len(enabled) < 3
+            or not isinstance(default, list) or len(default) < 2 or enabled[1] != default[1]
+            or not isinstance(protected, dict) or not protected
+            or any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value)
+                for value in [*enabled, *default, *protected.values(),
+                    oracle.get('originalSha256'), oracle.get('selectionSha256')])
+            or not isinstance(oracle.get('gdbVersion'), str) or not oracle['gdbVersion'].startswith('GNU gdb')):
+        raise ValueError('formatter coverage lacks artifact preservation and debugger evidence')
+    return (oracle.get('role'), oracle.get('compression'), oracle['allCompanions'], oracle.get('sourceLines'))
+
+
+def formatter_cohort(cases):
+    expected = {('exec', 'none', True, None), ('pie', 'zlib', False, None), ('pie', 'zlib', True, 8)}
+    if len(cases) != len(expected) or set(cases) != expected:
+        raise ValueError('formatter coverage requires all three production wrapper profiles')
+
+
 def load_job(root, jar, kind, commit, run):
     job, expected_layers, expected_suites = REQUIRED[kind]
     files.exact_files(root, {'collections', 'report'})
@@ -183,7 +221,7 @@ def load_job(root, jar, kind, commit, run):
             or summary.get('cohort') != {'commit': commit, 'run': run, 'job': job}
             or set(summary.get('layers', {})) != expected_layers):
         raise ValueError('missing or mismatched CI integration cohort: ' + kind)
-    rows, suites, known, unmeasured, lexical_cases, object_cases = [], set(), set(), [], [], []
+    rows, suites, known, unmeasured, lexical_cases, object_cases, formatter_cases = [], set(), set(), [], [], [], []
     for layer, measured in sorted(summary['layers'].items()):
         xml = files.regular(root / 'report' / (layer + '.xml'), 32 * 1024 * 1024)
         if files.digest(xml) != measured.get('xmlSha256'):
@@ -215,6 +253,8 @@ def load_job(root, jar, kind, commit, run):
                 lexical_cases.append(lexical_oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] in ('object-parameter', 'object-return'):
                 object_cases.append(object_oracle(record, files.read(directory / 'oracle.json')))
+            if record['suite'] == 'formatter-export':
+                formatter_cases.append(formatter_oracle(record, files.read(directory / 'oracle.json')))
             layer_suites.add(record['suite'])
             layer_rows.extend((layer, row['session'], directory / row['file']) for row in record['sessions'])
             layer_halts.extend({'suite': record['suite'], **row} for row in record.get('unmeasuredForcedHalts', []))
@@ -230,6 +270,7 @@ def load_job(root, jar, kind, commit, run):
     if kind == 'linux':
         lexical_cohort(lexical_cases)
         object_cohort(object_cases)
+        formatter_cohort(formatter_cases)
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,
         'summarySha256': files.digest(root / 'report/summary.json'),
         'receipts': {name: files.digest(root / 'collections' / name / 'receipt.json') for name in sorted(known)},
