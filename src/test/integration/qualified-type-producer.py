@@ -149,6 +149,55 @@ def type_oracle(info, symbols, parser_path):
         'constVoidHasNoTarget': True}
 
 
+def untyped_oracle(info, symbol, parser_path, source):
+    spec = importlib.util.spec_from_file_location('untyped_die_parser', parser_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    nodes = module.read_dies(info)
+
+    def check(actual):
+        assert len(actual) == 2, 'untyped export invented types, variables or declarations'
+        unit, = [node for node in actual.values() if node['tag'] == 'DW_TAG_compile_unit']
+        function, = [node for node in actual.values() if node['tag'] == 'DW_TAG_subprogram']
+        assert function['parent'] == unit['offset'] and function['name'] == symbol['name']
+        attributes = function['attributes']
+        assert int(attributes['DW_AT_low_pc'], 0) == symbol['address'], ('untyped', 'low-pc')
+        assert int(attributes['DW_AT_high_pc'], 0) == symbol['size'], ('untyped', 'high-pc')
+        for field in ('DW_AT_type', 'DW_AT_prototyped', 'DW_AT_calling_convention', 'DW_AT_noreturn', 'DW_AT_location'):
+            assert field not in attributes, ('invented signature/storage', field)
+        assert ('DW_AT_stmt_list' in unit['attributes']) == (source is not None)
+        if source is None:
+            assert 'DW_AT_decl_file' not in attributes and 'DW_AT_decl_line' not in attributes
+        else:
+            assert attributes['DW_AT_decl_file'] == '0'
+            line = int(attributes['DW_AT_decl_line'])
+            assert source.read_text().splitlines()[line - 1] == 'int forge_types_probe(void)'
+        return unit, function
+
+    unit, function = check(nodes)
+    controls = []
+
+    def reject(label, edit):
+        changed = copy.deepcopy(nodes)
+        edit(changed)
+        try:
+            check(changed)
+        except AssertionError:
+            controls.append(label)
+        else:
+            raise AssertionError('untyped oracle accepted corruption: ' + label)
+
+    reject('name', lambda n: n[function['offset']].update(name='wrong_function'))
+    for field in ('DW_AT_low_pc', 'DW_AT_high_pc'):
+        reject(field, lambda n, field=field: n[function['offset']]['attributes'].update({field: '0'}))
+    for field in ('DW_AT_type', 'DW_AT_prototyped', 'DW_AT_calling_convention', 'DW_AT_noreturn', 'DW_AT_location'):
+        reject(field, lambda n, field=field: n[function['offset']]['attributes'].update({field: '1'}))
+    reject('extra-variable', lambda n: n.update({max(n) + 1: {'tag': 'DW_TAG_variable'}}))
+    reject('source-presence', lambda n: n[unit['offset']]['attributes'].pop('DW_AT_stmt_list')
+        if source is not None else n[unit['offset']]['attributes'].update(DW_AT_stmt_list='0'))
+    return controls
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('jar', 'consumer', 'producer', 'ghidra', 'results', 'java-home'):
@@ -178,7 +227,7 @@ def main():
             commands.append({'label': label, 'command': measured, 'exit': completed.returncode})
             (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
             assert completed.returncode == 0, (label, completed.stderr)
-            if label in ('readelf', 'compile', 'javac'):
+            if label in ('readelf', 'compile', 'javac') or label.endswith(('-readelf', '-sections')):
                 assert not completed.stderr.strip(), (label, completed.stderr)
             return completed.stdout
 
@@ -215,6 +264,7 @@ def main():
         'ghidradwarfforge.nativeapi.QualifiedTypeProducerProbe', args.consumer.resolve(), args.producer.resolve(),
         binary, sidecar, request], coverage)
     assert 'qualified-type-producer=PASS globals=13 deterministic=true original-preserved=true' in marker
+    assert 'untyped-producer=PASS variants=2 invalid-source-names=5 deterministic=true retry=true' in marker
     info = run('readelf', ['readelf', '-h', '-S', '--debug-dump=info', '--debug-dump=abbrev',
         '--debug-dump=aranges', '--debug-dump=decodedline', sidecar])
     type_checks = type_oracle(info, symbols, parser_path)
@@ -236,6 +286,38 @@ def main():
             + 'python assert exit_codes == [0]\necho QUALIFIED_TYPE_GDB_PASS\\n\n')
         output = run(label + '-gdb', ['gdb-multiarch', '-nx', '-q', '-batch', '-x', script])
         assert 'QUALIFIED_TYPE_GDB_PASS' in output
+    untyped = []
+    for mode in ('symbols', 'source-only'):
+        debug = Path(str(sidecar) + '.' + mode)
+        source = Path(str(debug) + '.c') if mode == 'source-only' else None
+        info = run(mode + '-readelf', ['readelf', '-h', '-S', '--debug-dump=info', '--debug-dump=abbrev',
+            '--debug-dump=aranges', '--debug-dump=decodedline', debug])
+        controls = untyped_oracle(info, symbols['forge_types_probe'], parser_path, source)
+        sections = run(mode + '-sections', ['readelf', '-SW', debug])
+        assert ('.debug_line ' in sections) == (source is not None)
+        assert '.debug_loclists ' not in sections and '.debug_rnglists ' not in sections
+        run(mode + '-llvm', ['llvm-dwarfdump', '--verify', debug])
+        run(mode + '-strict', [sys.executable, '-B', repo / 'src/test/integration/check-dwarfdump.py', debug,
+            root / (mode + '-strict.log'), '--original', binary, '--tool', args.dwarfdump])
+        script = root / (mode + '.gdb')
+        script.write_text('set pagination off\nset confirm off\nset debuginfod enabled off\n'
+            'set auto-solib-add off\nset disable-randomization off\nfile ' + json.dumps(str(binary)) + '\n'
+            + 'symbol-file ' + json.dumps(str(debug)) + '\n'
+            + 'python exit_codes = []; gdb.events.exited.connect(lambda e: exit_codes.append(getattr(e,"exit_code",None)))\n'
+            + 'break *forge_types_probe\nrun\npython\n'
+            + 'assert int(gdb.parse_and_eval("$pc")) == ' + str(symbols['forge_types_probe']['address']) + '\n'
+            + 'assert all(gdb.lookup_global_symbol(name) is None for name in ' + repr(list(GLOBALS)) + ')\n'
+            + ('assert gdb.selected_frame().find_sal().symtab is None\n' if source is None else
+                'assert gdb.selected_frame().find_sal().symtab.fullname() == ' + repr(str(source)) + '\n'
+                + 'assert "return forge_base + forge_atomic;" in gdb.execute("list forge_types_probe", to_string=True)\n')
+            + 'end\nfinish\npython assert int(gdb.parse_and_eval("$eax")) == 42\ncontinue\n'
+            + 'python assert exit_codes == [0]\necho UNTYPED_GDB_PASS\\n\n')
+        transcript = run(mode + '-gdb', ['gdb-multiarch', '-nx', '-q', '-batch', '-x', script])
+        assert 'UNTYPED_GDB_PASS' in transcript
+        untyped.append({'mode': mode, 'validators': ['readelf', 'llvm', 'strict'], 'gdb': 'PASS',
+            'negativeControls': controls, 'sidecarSha256': digest(debug),
+            'sourceSha256': digest(source) if source is not None else None,
+            'deterministic': True, 'noInventedTypesOrLocations': True})
     assert all(digest(p) == sha for p, sha in protected.items())
     result = {'status': 'PASS_QUALIFIED_TYPE_PRODUCER', 'host': 'linux', 'target': 'x86_64', 'role': 'exec',
         'globals': list(GLOBALS), 'compilerGdb': 'PASS', 'exportedGdb': 'PASS',
@@ -243,6 +325,8 @@ def main():
         'validators': ['readelf', 'llvm', 'strict'], 'deterministic': True, 'inputPreserved': True,
         'productionJarSha256': digest(args.jar), 'sidecarSha256': digest(sidecar),
         'sourceSha256': digest(Path(str(sidecar) + '.c')), 'protected': protected,
+        'untypedExports': untyped, 'invalidSourceNames': [None, '', ' ', 'nested/file.c', 'nested\\file.c'],
+        'typedRetryAfterUntypedAndFailures': True,
         'harnessSha256': {str(p.resolve().relative_to(repo)): digest(p) for p in harnesses},
         'nativeSha256': {'consumer': digest(args.consumer), 'producer': digest(args.producer)},
         'scope': 'explicit compiler fixture type model; native serialization and debugger values, not Ghidra extraction'}

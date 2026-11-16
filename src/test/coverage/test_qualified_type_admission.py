@@ -19,6 +19,12 @@ def fixture():
         'deterministic': True, 'inputPreserved': True, 'sidecarSha256': 'b' * 64, 'sourceSha256': 'c' * 64,
         'typeOracle': {'globals': list(admission.GLOBALS), 'negativeControls': admission.expected_controls(),
             'constVoidChain': ['DW_TAG_pointer_type', 'DW_TAG_const_type'], 'constVoidHasNoTarget': True},
+        'untypedExports': [{'mode': mode, 'gdb': 'PASS', 'validators': ['readelf', 'llvm', 'strict'],
+            'negativeControls': list(admission.UNTYPED_CONTROLS), 'deterministic': True,
+            'noInventedTypesOrLocations': True, 'sidecarSha256': '7' * 64,
+            'sourceSha256': None if mode == 'symbols' else '8' * 64} for mode in ('symbols', 'source-only')],
+        'invalidSourceNames': [None, '', ' ', 'nested/file.c', 'nested\\file.c'],
+        'typedRetryAfterUntypedAndFailures': True,
         'nativeSha256': {'consumer': 'd' * 64, 'producer': 'e' * 64},
         'harnessSha256': {name: 'f' * 64 for name in admission.SOURCES},
         'protected': {'jar': 'a' * 64, 'consumer': 'd' * 64, 'producer': 'e' * 64,
@@ -74,6 +80,31 @@ class Admission(unittest.TestCase):
         for name in ('consumer', 'producer'):
             self.reject(lambda r, e: e['nativeSha256'].pop(name))
             self.reject(lambda r, e: e['nativeSha256'].update({name: '9' * 64}))
+
+    def test_untyped_export_inventory(self):
+        for value in (None, [], [{}], [{}, {}, {}]):
+            self.reject(lambda r, e: e.update(untypedExports=value))
+        self.reject(lambda r, e: e['untypedExports'].reverse())
+        self.reject(lambda r, e: e['untypedExports'][0].update(mode='source-only'))
+        self.reject(lambda r, e: e['untypedExports'][0].update(sourceSha256='8' * 64))
+        self.reject(lambda r, e: e['untypedExports'][1].update(sourceSha256=None))
+        for index in range(2):
+            for key, value in [('gdb', 'SKIPPED'), ('validators', ['llvm']), ('negativeControls', []),
+                    ('deterministic', False), ('noInventedTypesOrLocations', False), ('sidecarSha256', '')]:
+                with self.subTest(mode=index, key=key):
+                    self.reject(lambda r, e: e['untypedExports'][index].update({key: value}))
+
+    def test_untyped_negative_controls(self):
+        for variant in range(2):
+            for index in range(len(admission.UNTYPED_CONTROLS)):
+                with self.subTest(variant=variant, index=index):
+                    self.reject(lambda r, e: e['untypedExports'][variant]['negativeControls'].pop(index))
+
+    def test_source_admission_and_retry(self):
+        self.reject(lambda r, e: e.pop('invalidSourceNames'))
+        self.reject(lambda r, e: e.update(typedRetryAfterUntypedAndFailures=False))
+        for index in range(5):
+            self.reject(lambda r, e: e['invalidSourceNames'].pop(index))
 
 
 if __name__ == '__main__':

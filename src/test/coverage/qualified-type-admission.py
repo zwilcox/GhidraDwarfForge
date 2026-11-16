@@ -9,6 +9,9 @@ SOURCES = {'src/test/integration/qualified-type-producer.py',
     'src/test/java/ghidradwarfforge/nativeapi/QualifiedTypeProducerProbe.java',
     'src/test/integration/check-object-parameters.py', 'src/test/integration/check-dwarfdump.py',
     'src/test/integration/integration_coverage.py'}
+UNTYPED_CONTROLS = ['name', 'DW_AT_low_pc', 'DW_AT_high_pc', 'DW_AT_type',
+    'DW_AT_prototyped', 'DW_AT_calling_convention', 'DW_AT_noreturn', 'DW_AT_location',
+    'extra-variable', 'source-presence']
 
 
 def expected_controls():
@@ -53,6 +56,18 @@ def oracle(record, evidence):
     require(checks.get('globals') == list(GLOBALS) and checks.get('negativeControls') == expected_controls()
         and checks.get('constVoidChain') == ['DW_TAG_pointer_type', 'DW_TAG_const_type']
         and checks.get('constVoidHasNoTarget') is True, 'qualified type DIE oracle is incomplete')
+    variants = evidence.get('untypedExports')
+    require(isinstance(variants, list) and len(variants) == 2, 'optional model export inventory differs')
+    for variant, mode in zip(variants, ('symbols', 'source-only')):
+        require(isinstance(variant, dict) and variant.get('mode') == mode
+            and variant.get('gdb') == 'PASS' and variant.get('validators') == ['readelf', 'llvm', 'strict']
+            and variant.get('negativeControls') == UNTYPED_CONTROLS
+            and variant.get('deterministic') is True and variant.get('noInventedTypesOrLocations') is True
+            and hash_value(variant.get('sidecarSha256'))
+            and (variant.get('sourceSha256') is None if mode == 'symbols' else hash_value(variant.get('sourceSha256'))),
+            'optional model export behavior is incomplete')
+    require(evidence.get('invalidSourceNames') == [None, '', ' ', 'nested/file.c', 'nested\\file.c']
+        and evidence.get('typedRetryAfterUntypedAndFailures') is True, 'source admission and typed retry are incomplete')
     harnesses, native, protected = [evidence.get(key) for key in ('harnessSha256', 'nativeSha256', 'protected')]
     require(isinstance(harnesses, dict) and set(harnesses) == SOURCES
         and all(hash_value(value) for value in harnesses.values()), 'qualified type harness inventory differs')

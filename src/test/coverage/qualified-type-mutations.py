@@ -17,6 +17,13 @@ MUTANTS = (
         'case UTF -> DW_ATE_UNSIGNED;', ('forge_utf16', 'base encoding')),
     ('signed-char-as-unsigned', 'case SIGNED_CHAR -> DW_ATE_SIGNED_CHAR;',
         'case SIGNED_CHAR -> DW_ATE_UNSIGNED_CHAR;', ('forge_schar', 'base encoding')),
+    ('untyped-high-pc-off-by-one', 'DW_AT_HIGH_PC, function.size(),',
+        'DW_AT_HIGH_PC, function.size() + 1,', ('untyped', 'high-pc')),
+    ('untyped-invents-prototype',
+        'if (sourceFailed) sourceFailedFunctions.add(function.address());',
+        'if (signature == null) addFlag(producer, consumer, debug, die, DW_AT_PROTOTYPED, true, errorOut);\n'
+        '                if (sourceFailed) sourceFailedFunctions.add(function.address());',
+        ('invented signature/storage', 'DW_AT_prototyped')),
 )
 
 
@@ -70,12 +77,17 @@ def main():
             (output / (label + '-producer.log')).write_text(exported.stdout + exported.stderr)
             assert exported.returncode == 0 and 'qualified-type-producer=PASS' in exported.stdout, \
                 'producer crash or exception is not output-oracle detection'
-            readelf = subprocess.run(['readelf', '--debug-dump=info', root / 'input.dbg'],
+            untyped = label.startswith('untyped-')
+            artifact = root / ('input.dbg.symbols' if untyped else 'input.dbg')
+            readelf = subprocess.run(['readelf', '--debug-dump=info', artifact],
                 capture_output=True, text=True, timeout=30)
             assert readelf.returncode == 0 and not readelf.stderr.strip()
             (output / (label + '-info.log')).write_text(readelf.stdout)
             try:
-                oracle.type_oracle(readelf.stdout, symbols, parser_path)
+                if untyped:
+                    oracle.untyped_oracle(readelf.stdout, request['function'], parser_path, None)
+                else:
+                    oracle.type_oracle(readelf.stdout, symbols, parser_path)
             except AssertionError as error:
                 assert expected is not None and error.args == (expected,), (label, error.args)
                 detection = repr(error.args[0])
@@ -89,7 +101,7 @@ def main():
     (output / 'result.json').write_text(json.dumps({'status': 'PASS', 'mutantsDetected': len(MUTANTS),
         'coverageCollected': False, 'productionSourceSha256': oracle.digest(source),
         'baselineResultSha256': oracle.digest(baseline / 'result.json'), 'results': outcomes,
-        'scope': 'Three selected modifier/encoding faults; no repository-wide mutation score'}, indent=4) + '\n')
+        'scope': 'Five selected modifier/encoding/untyped-symbol faults; no repository-wide mutation score'}, indent=4) + '\n')
     print('qualified-type-mutations=PASS faults=' + str(len(MUTANTS)))
 
 

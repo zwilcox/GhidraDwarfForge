@@ -82,8 +82,42 @@ public final class QualifiedTypeProducerProbe {
         byte[] first = Files.readAllBytes(output);
         exporter.export(input, output, Path.of(args[0]), Path.of(args[1]), functions, text, model);
         require(Arrays.equals(first, Files.readAllBytes(output)), "type export is not deterministic");
+        for (boolean withSource : new boolean[] {false, true}) {
+            Path untyped = Path.of(output + (withSource ? ".source-only" : ".symbols"));
+            Path untypedSource = Path.of(untyped + ".c");
+            if (withSource) Files.write(untypedSource, text.utf8());
+            byte[] initial = null;
+            for (int attempt = 0; attempt < 2; attempt++) {
+                if (withSource) {
+                    exporter.export(input, untyped, Path.of(args[0]), Path.of(args[1]), functions, text);
+                }
+                else {
+                    exporter.export(input, untyped, Path.of(args[0]), Path.of(args[1]), functions);
+                }
+                byte[] actual = Files.readAllBytes(untyped);
+                if (initial == null) initial = actual;
+                else require(Arrays.equals(initial, actual), "untyped export is not deterministic");
+                require(Files.exists(untypedSource) == withSource, "symbol-only export invented a source file");
+                if (withSource) require(Arrays.equals(text.utf8(), Files.readAllBytes(untypedSource)),
+                    "source-only companion changed");
+            }
+        }
+        for (String invalid : new String[] {null, "", " ", "nested/file.c", "nested\\file.c"}) {
+            try {
+                exporter.export(input, output, Path.of(args[0]), Path.of(args[1]), functions, text, model, invalid);
+                throw new AssertionError("invalid synthetic source filename accepted");
+            }
+            catch (IllegalArgumentException expected) {
+                require(expected.getMessage().equals("synthetic source filename is invalid"),
+                    "source filename rejected for a different reason");
+            }
+            require(Arrays.equals(first, Files.readAllBytes(output)), "invalid source name changed prior output");
+        }
+        exporter.export(input, output, Path.of(args[0]), Path.of(args[1]), functions, text, model);
+        require(Arrays.equals(first, Files.readAllBytes(output)), "valid typed retry changed after optional exports");
         require(Arrays.equals(original, Files.readAllBytes(input)), "original changed");
         require(Arrays.equals(text.utf8(), Files.readAllBytes(source)), "source changed");
+        System.out.println("untyped-producer=PASS variants=2 invalid-source-names=5 deterministic=true retry=true");
         System.out.println("qualified-type-producer=PASS globals=13 deterministic=true original-preserved=true");
     }
 

@@ -6,6 +6,37 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Native export with optional source and type models
+
+CONFIRMED: the compiler-backed qualified-type fixture now also calls the public
+symbol-only and source-without-types exporter overloads. Each is exported twice
+with the real pinned producer. Independent DIE checks require exactly one CU
+and one correctly addressed/sized function, without invented signatures,
+variables or locations. Symbol-only output has no source/line table; source-only
+output retains the expected file and declaration. GDB resolves the exact entry,
+finds no invented globals, observes source presence/absence and the real return
+value, and exits normally. GNU readelf, LLVM and the strict checker accept both.
+
+Five invalid source names are rejected without changing the prior typed sidecar.
+The final valid typed retry is byte-identical, and executable/source hashes are
+preserved. All existing 13 typed C11 globals and their 59 DIE corruption controls
+remain checked. Each untyped oracle rejects ten additional controlled output
+corruptions. The admission policy now requires both variants, every debugger and
+validator result, all 20 controls, source-name rejection and typed retry evidence.
+Eight admission unit tests pass, including missing/reordered/falsified evidence.
+
+All five compiled native mutations pass: the existing three qualifier/encoding
+faults plus an incorrect subprogram extent and an invented prototype on the
+untyped path. The new faults produce artifacts successfully and are detected by
+the independent output oracle; compilation/native crashes are not credited and
+mutant execution is excluded from coverage. Production code/JAR are unchanged.
+This is explicit compiler-fixture serialization, not Ghidra extraction coverage.
+
+Evidence in the bounded workspace: `qualified-type-optional-checked-2f181/`,
+its `-collections/` directory, `qualified-type-optional-mutations/` and
+`qualified-type-optional-full.log`. Raw admission and full-suite attribution
+follow. Older qualifier-only collections do not satisfy the expanded policy.
+
 ## Report lexical boundaries through the streaming API
 
 CONFIRMED: the existing report-value task now checks valid and malformed text
