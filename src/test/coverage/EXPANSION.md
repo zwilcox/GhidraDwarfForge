@@ -6,6 +6,36 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Mixed incoming register/stack proof controls
+
+CONFIRMED: `MixedParameterPrefixSmoke` now runs the six decoded ARM scenarios in
+both `ARM:LE:32:v8` and `ARM:BE:32:v8`, with 224 assertions. Actual compiler-assigned
+and analyst-custom parameter storage must retain the expected object-memory piece
+order, DWARF registers, stack-depth adjustment and unavailable tail. This is a
+Java extraction test, not a new advertised big-endian ARM end-to-end support claim.
+
+The former wrong-size Parameter proxy did not isolate size validation: its object
+identity differed from the saved parameter, so ownership rejected it first. The
+replacement uses the actual attached eight-byte formal with a valid twelve-byte
+carrier. Additional real ProgramDB controls reject foreign programs/functions,
+unsaved parameters, returns used as incoming formals, foreign-program storage,
+forced indirection, missing value/stack-base mappings and unsupported function
+body shapes. Rejections and immediate/mid-proof cancellation preserve bytes and
+curated metadata, preserve the cancellation exception identity, and leave a
+subsequent valid proof unchanged. Fixture transactions roll back.
+
+The focused unchanged baseline and four selected mutations pass: dropping foreign
+storage admission, dropping saved-parameter admission, forgetting indirection and
+reversing stack-depth subtraction each cause the intended Java assertion failure.
+Local selected replay took 12.8 seconds. The earlier attempt stopped on a nonunique
+stack-depth mutation anchor; it is not a successful full run. The corrected anchor
+selects only mixed-piece translation. The repository's full mutation configuration
+now contains 165 faults; its complete current-head run remains outstanding.
+
+Evidence: `.forge-work/scratch/coverage-expansion/mixed-prefix-focused-final.log`
+and `mixed-prefix-selected-mutations-final/result.json`. No production code,
+production inventory, coverage threshold or target mapping changed.
+
 ## Measurement contract
 
 [critical-sources.json](critical-sources.json) freezes the responsibility inventory:
