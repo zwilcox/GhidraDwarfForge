@@ -6,6 +6,33 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Measured build-ID identity refusal controls
+
+CONFIRMED: the existing identity harness now records its 13 child JVM sessions
+through the shared collector. Production classes remain included; only explicit
+test probe classes are excluded. The positive installation and missing, malformed,
+conflicting, reused, aliased and noncanonical identity controls pass on the real
+Linux host. Original input hashes remain unchanged. This adds measurement to
+existing behavioral checks, not new target support.
+
+CI report generation and hosted cohort admission now require `build-id-identity`.
+Admission rejects a model-host claim, missing/unmeasured refusals, failed positive
+baseline, unexpected errors and missing input-preservation evidence. Five new
+receipt controls join the existing suite: all 230 coverage-tool tests pass in
+8.956s, and actionlint passes. The actual 13-session collection also passes this
+admission policy and raw matching-bytecode verification.
+
+The 826-session diagnostic union adds three branch outcomes and no new lines:
+27,847/29,790 lines (93.5%), 21,025/25,884 branches (81.2%). Critical binary/location
+is 94.3% lines / 80.9% branches; file/validation is 94.4% / 84.8%. These remain
+below the critical 95% / 90% targets. Hosted run `43952501473` predates this new
+required measurement and cannot establish acceptance of the updated policy.
+Evidence: `buildid-identity-measured-2f181/`,
+`buildid-identity-measured-2f181-verification.log` and
+`buildid-identity-instrumentation-tests.log` in the bounded workspace. The manifest
+preserves the measured checkout and binds the subsequently committed harness
+snapshot `79237f42` separately.
+
 ## Current-bytecode Linux build-ID lifecycle and launcher
 
 CONFIRMED: real Linux-host installation, identity and public-launcher checks now
