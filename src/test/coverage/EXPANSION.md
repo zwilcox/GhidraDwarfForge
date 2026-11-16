@@ -18,7 +18,9 @@ address limit. Positive inventories check roles, formats, file/virtual addresses
 entry sizes, exact decoded records and empty-table SHA-256. Every inspection,
 including rejection, must preserve the fixture bytes.
 
-The expected tag dependencies follow the [gABI dynamic section](https://gabi.xinuos.com/elf/09-dynamic.html).
+The expected tag dependencies follow section 8.3 and table 8.1 of the
+[gABI 4.3 draft, September 4, 2025](https://gabi.xinuos.com/elf.pdf), including
+RELR; the older HTML dynamic-section page omits that extension.
 These are format-reader controls, not execution claims for every fixture machine
 and byte-order combination. The task passes 1,612 total assertions. All nine
 compiled selected faults are detected (4.245s). Initially the removed negative
@@ -37,6 +39,27 @@ detected (1.930s); no compilation failure is counted.
 Evidence in the bounded workspace: `relocation-metadata-verification-2.log`,
 `relocation-metadata-selected-mutations-2/`, `elf-header-verification.log` and
 `elf-header-selected-mutations/`. Full coverage measurement follows this batch.
+
+CONFIRMED: baseline57 at `2624cc3b` passes all 211 JavaExec tasks in 276.533s,
+53,432 independent expression vectors and all 222 coverage-tool tests (8.897s).
+Raw verification retains 255 production sources / 901 classes. Against the
+same production JAR, JavaExec gains four lines and 32 branches over baseline56:
+`ElfImage` reaches 268/271 lines and 186/198 branches; `ElfRuntimeRelocations`
+reaches 165/166 lines and 206/230 branches. No production behavior changed.
+
+The real Linux metadata suite was rerun against this JAR. Its 18 independent
+filesystem observations and complete controlled read/application failure cases
+pass, with all 39 JVM sessions admitted and their raw probes verified. The
+current 362-session partial collection now measures 24,937/29,790 lines (83.7%)
+and 19,380/25,884 branches (74.9%). The additional native execution is a refreshed
+measurement of existing tests, separate from the new ELF test gain. Windows and
+other required integration suites remain absent; this is not a complete cohort
+or published badge. The full acceptance targets remain unchanged.
+
+Evidence: `javaexec-baseline-57/`, `elf-metadata-javaexec-checked-57/`,
+`metadata-current-2f181/`, `metadata-current-2f181-collections/`,
+`metadata-current-2f181-verified/`, `elf-metadata-current-partial/` and
+`elf-metadata-final-verification.log` under the bounded coverage workspace.
 
 ## Independent export-report outcomes
 

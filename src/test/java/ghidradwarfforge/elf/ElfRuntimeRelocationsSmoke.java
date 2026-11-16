@@ -106,7 +106,7 @@ public final class ElfRuntimeRelocationsSmoke {
     private static void metadataMatrix(Path path, boolean wide, ByteOrder order) throws Exception {
         int width = wide ? 8 : 4;
         // gABI dynamic-section dependencies and table shapes:
-        // https://gabi.xinuos.com/elf/09-dynamic.html
+        // https://gabi.xinuos.com/elf.pdf (4.3 draft, 2025-09-04, section 8.3)
         // Each general table needs pointer, byte size and entry size together.
         // An entry-size descriptor alone does not invent a general table.
         long[][] layouts = {{17, 18, 19, 0x1400, 2}, {7, 8, 9, 0x1440, 3}, {36, 35, 37, 0x1480, 1}};
