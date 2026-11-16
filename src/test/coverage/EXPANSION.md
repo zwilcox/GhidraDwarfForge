@@ -31,12 +31,12 @@ branches (67.0%). That badge's scope remains unchanged.
 
 The latest complete JavaExec run executed all 210 tasks at
 `597873f9c2e27c8d50c3578ca75c6256f979b3f4` in 265.5 seconds. The combined local report
-contains 848 sessions with the full unchanged denominator:
+contains 947 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.6% | 78.9% | 85% / 80% |
-| Binary and location correctness | 94.7% | 78.6% | 95% / 90% |
+| All production Java | 94.7% | 79.1% | 85% / 80% |
+| Binary and location correctness | 94.9% | 78.8% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.5% | Included in overall |
 
@@ -44,7 +44,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-switch-boundaries-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-statics-measurement-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -347,5 +347,7 @@ collections are excluded. A retry using a task-owned Java user cache passed;
 the user's cache was preserved. The validation installation's original extension
 was restored after every driver. Raw receipts remain under
 `.forge-work/scratch/coverage-expansion/statics-measured-collections/`.
-Combined counters are pending raw-probe union; these sessions alone do not prove
-that the overall or critical-group targets are met.
+The verified raw-probe union adds 37 lines and 37 branch outcomes: overall
+28,206/29,782 lines (94.7%) and 20,452/25,872 branches (79.1%). The overall branch
+and critical-group targets remain unmet. The local preview remains ineligible
+for hosted publication; all original session provenance is retained.
