@@ -139,6 +139,7 @@ public final class RegisterByteSliceFlowSmoke {
                 if (target.equals("arm") && width == 3 && shape.equals("adjacent")) {
                     joinedTransfers(program, program.getListing().getInstructionAt(entry.add(backup)), map);
                     carryFreeJoins(program, program.getListing().getInstructionAt(entry.add(backup)), map);
+                    checks += StackValueMaskSmoke.check(program, program.getListing().getInstructionAt(entry.add(backup)), map);
                 }
                 var cancelled = new TaskMonitorAdapter(true); cancelled.cancel();
                 try {
