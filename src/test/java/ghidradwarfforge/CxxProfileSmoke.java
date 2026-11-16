@@ -33,6 +33,7 @@ public final class CxxProfileSmoke {
     private static int checks;
 
     public static void main(String[] args) throws Exception {
+        ghidradwarfforge.output.CxxSelectionBoundarySmoke.main(args);
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
         check("x86:LE:64:default", CxxAbiProfile.ITANIUM_X86_64);

@@ -27,6 +27,7 @@ public final class GhidraMmioEvidenceSmoke {
     private static int checks;
 
     public static void main(String[] args) throws Exception {
+        ghidradwarfforge.output.MmioSelectionBoundarySmoke.main(args);
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
         for (String id : List.of("x86:LE:64:default", "ARM:LE:32:Cortex", "MIPS:BE:32:default")) {

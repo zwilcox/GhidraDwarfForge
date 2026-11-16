@@ -27,6 +27,10 @@ RECORDS = "ghidradwarfforge/output/BuildIdRecords.java"
 RECORDS_TEST = "ghidradwarfforge.output.BuildIdRecordsSmoke"
 UNWIND_REPORT = "ghidradwarfforge/output/UnwindEvidenceJson.java"
 UNWIND_REPORT_TEST = "ghidradwarfforge.output.UnwindEvidenceJsonBoundarySmoke"
+MMIO = "ghidradwarfforge/output/MmioSelection.java"
+MMIO_TEST = "ghidradwarfforge.output.MmioSelectionBoundarySmoke"
+CXX_SELECTION = "ghidradwarfforge/output/CxxSelection.java"
+CXX_SELECTION_TEST = "ghidradwarfforge.output.CxxSelectionBoundarySmoke"
 
 # Each edit names a specific safety/semantic guarantee. This is not a blanket
 # mutation score: surviving, uncompilable or timed-out mutants fail this harness.
@@ -99,6 +103,24 @@ UNWIND_REPORT_MUTANTS = [
      "require(image.is64Bit() || Long.compareUnsigned(value, 0xffff_ffffL) <= 0,", "require(true,"),
 ]
 
+MMIO_MUTANTS = [
+    ("mmio-accepts-unsupported-access-width", MMIO, MMIO_TEST,
+     "Set.of(1, 2, 4, 8).contains(r.width())", "true"),
+    ("mmio-loses-analyst-read-effect", MMIO, MMIO_TEST,
+     'words.get("read_effect"), views', '"none", views'),
+    ("mmio-accepts-outside-register-view", MMIO, MMIO_TEST,
+     "v.offset() >= 0 && v.offset() < r.width()", "v.offset() >= 0 && v.offset() <= r.width()"),
+]
+
+CXX_SELECTION_MUTANTS = [
+    ("cxx-selection-rounds-decimal-identity", CXX_SELECTION, CXX_SELECTION_TEST,
+     "return Long.parseLong(spelling);", "return (long) Double.parseDouble(spelling);"),
+    ("cxx-selection-applies-removed-table", CXX_SELECTION, CXX_SELECTION_TEST,
+     "!Collections.disjoint(tableIds, remove.vtables())", "false"),
+    ("cxx-selection-exceeds-table-budget", CXX_SELECTION, CXX_SELECTION_TEST,
+     ".sum() > 64L * 1024 * 1024", ".sum() > 65L * 1024 * 1024"),
+]
+
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -119,14 +141,14 @@ def main():
     parser.add_argument("--tests", type=Path, required=True)
     parser.add_argument("--java-home", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--ghidra", type=Path, help="also check project protection, records and unwind evidence using Ghidra's API/Gson")
+    parser.add_argument("--ghidra", type=Path, help="also check project protection, records, unwind and analyst selections using Ghidra's API/Gson")
     args = parser.parse_args()
     classes, tests, output = args.classes.resolve(), args.tests.resolve(), args.output.resolve()
     if not classes.is_dir() or not tests.is_dir():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -146,7 +168,8 @@ def main():
             path.write_text(source)
             # The production publisher's private exception is never serialized;
             # its existing missing serialVersionUID is unrelated to these mutants.
-            selected_dependencies = dependencies if test in (PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST) else []
+            selected_dependencies = dependencies if test in (
+                PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
