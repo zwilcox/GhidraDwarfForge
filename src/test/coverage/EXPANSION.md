@@ -6,6 +6,40 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Linux metadata failure controls
+
+CONFIRMED: the real Linux LP64 metadata suite now includes 28 controlled libc
+failure/result cases. A test-only forwarding proxy calls the actual native
+library and injects a single selected error or malformed reply. Cases cover
+open/stat/attribute/inode/close failures, inconsistent identity and inode policy,
+invalid timestamps, malformed attribute lists and bounded attribute counts and
+sizes. The close-error case releases the real descriptor before returning the
+injected error; actual Linux close errors are never retried.
+
+Each case first passes an unmodified forwarding baseline, reaches its fault
+exactly once, checks the expected IOException, proves all opened descriptors
+were released, and compares real source metadata and bytes afterward. Python
+independently compares the file before and after the whole failure suite. The
+existing native header/layout contract and 18 metadata observations also pass.
+These controls prove handling of injected API replies, not kernel failures,
+complete privileged host admission or hidden namespace preservation.
+
+The final suite produces 38 native-Java sessions. Provenance hashes, collection
+receipts and raw JaCoCo data verify against the unchanged production JAR and
+255-source / 901-class denominator. Their union with prior matching-bytecode
+evidence contains 1,268 sessions: 28,434/29,786 lines (95.5%) and 20,959/25,878
+branches (81.0%). File operations gain 16 branch outcomes, reaching 3,471/4,250
+(81.7%); binary/location remains 15,116/18,726 (80.7%). This diagnostic union is
+not current hosted acceptance or a published badge. The critical 90% targets
+still require 354 file-operation and 1,738 binary/location branch outcomes.
+
+Two selected mutations are detected in 2.11 seconds with an unchanged baseline:
+omitting descriptor cleanup after an open-time failure and skipping final path
+identity comparison. All 197 coverage-tool tests pass, including rejection of
+an omitted fault case even when receipt hashes are rebound. Synthetic receipt
+fixtures are schema tests only. New hosted admission requires the complete
+failure inventory and its measured process; old receipts cannot satisfy it.
+
 ## Wide p-code value carriers
 
 CONFIRMED: 54 additional raw p-code cases check tracked bytes in 8-, 9-, 16- and

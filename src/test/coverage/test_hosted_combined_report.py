@@ -34,10 +34,20 @@ class CohortAdmission(unittest.TestCase):
                 'FORGE_INTEGRATION_COVERAGE_OUTPUT': str(self.job / 'collections'),
                 'FORGE_INTEGRATION_COVERAGE_AGENT': str(agent)})
             collection.record['host'] = 'posix'  # Encoding fixture, never a claim about this test host.
-            with collection.session(['java', 'Main'], suite):
+            label = 'controlled-native-failures' if suite == 'linux-file-metadata' else suite
+            with collection.session(['java', 'Main'], label):
                 (collection.root / collection.record['sessions'][0]['file']).write_bytes(b'not real probes')
             oracle = self.root / (suite + '.json')
-            coverage.save(oracle, {'status': 'PASS_FIXTURE', 'privileged': 'PASS', 'unprivileged': 'PASS'})
+            evidence = {'status': 'PASS_FIXTURE', 'privileged': 'PASS', 'unprivileged': 'PASS'}
+            if suite == 'linux-file-metadata':
+                # Schema fixture only: these replies never represent native execution.
+                evidence = {'status': 'PASS', 'observations': ['synthetic schema control'],
+                    'controlledFailures': {'status': 'PASS_CONTROLLED_LIBC_FAILURES', 'cases': [
+                        {'name': name, 'faultHits': 1,
+                            'opened': 0 if index < 2 else 1, 'closed': 0 if index < 2 else 1,
+                            'sourceUnchanged': True, 'diagnostic': 'synthetic failure diagnostic'}
+                        for index, name in enumerate(hosted.metadata_failures.CASES)]}}
+            coverage.save(oracle, evidence)
             collection.finish(oracle)
             self.records[suite] = collection
         report = self.job / 'report'
@@ -92,6 +102,17 @@ class CohortAdmission(unittest.TestCase):
         record.record['host'] = 'nt'
         self.rebind(record)
         with self.assertRaisesRegex(ValueError, 'execution host'):
+            self.load()
+
+    def test_metadata_failure_case_cannot_be_omitted_from_rebound_receipt(self):
+        record = self.records['linux-file-metadata']
+        oracle = record.root / 'oracle.json'
+        evidence = hosted.files.read(oracle)
+        evidence['controlledFailures']['cases'].pop()
+        hosted.files.save(oracle, evidence)
+        record.record['evidenceSha256'] = hosted.files.digest(oracle)
+        self.rebind(record)
+        with self.assertRaisesRegex(ValueError, 'complete controlled failure cases'):
             self.load()
 
     def test_missing_collection_rejected(self):

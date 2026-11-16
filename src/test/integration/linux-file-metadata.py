@@ -67,17 +67,19 @@ def main():
     provenance = root / 'provenance'
     provenance.mkdir()
     source = ROOT / 'src/test/java/ghidradwarfforge/output/LinuxFileMetadataProbe.java'
+    failure_controls = source.with_name('LinuxMetadataFailureControls.java')
     contract = ROOT / 'src/test/native/linux-metadata-contract.c'
     files = [args.jar.resolve(), args.ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar',
              args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar', source, contract, Path(__file__),
-             ROOT / 'src/main/java/ghidradwarfforge/output/LinuxFileMetadata.java']
+             ROOT / 'src/main/java/ghidradwarfforge/output/LinuxFileMetadata.java', failure_controls]
     original_hashes = {str(path): sha(path) for path in files}
     for path in files:
         shutil.copyfile(path, provenance / path.name)
         assert sha(provenance / path.name) == original_hashes[str(path)]
     (provenance / 'origin.json').write_text(json.dumps(original_hashes, indent=4) + '\n')
     coverage = Collection('linux-file-metadata', provenance / args.jar.name, 'native-java',
-        test_classes=('ghidradwarfforge.output.LinuxFileMetadataProbe',))
+        test_classes=('ghidradwarfforge.output.LinuxFileMetadataProbe',
+            'ghidradwarfforge.output.LinuxMetadataFailureControls'))
     commands = []
 
     def run(label, command, success=True):
@@ -99,7 +101,7 @@ def main():
     classes.mkdir()
     dependencies = os.pathsep.join(str(provenance / path.name) for path in files[:3])
     run('compile-java', [os.environ.get('JAVAC', 'javac'), '--release', '21', '-cp', dependencies,
-                        '-d', classes, provenance / source.name])
+                        '-d', classes, provenance / source.name, provenance / failure_controls.name])
     java = os.environ.get('JAVA', 'java')
     assert b'version "21.' in run('java-version', [java, '-version']).stderr
     prefix = [java, '-cp', str(classes) + os.pathsep + dependencies, 'ghidradwarfforge.output.LinuxFileMetadataProbe']
@@ -232,9 +234,18 @@ def main():
         refused = run(label, [*prefix, 'inspect', path], False)
         assert b'regular non-link file' in refused.stderr
     run('native-descriptor-lifetime', [*prefix, 'leak-controls', original, fifo])
+    before_failures = facts(original)
+    failure_result = root / 'failure-controls.json'
+    run('controlled-native-failures', [*prefix, 'failure-controls', original, failure_result])
+    failures = json.loads(failure_result.read_text())
+    assert failures['status'] == 'PASS_CONTROLLED_LIBC_FAILURES' and len(failures['cases']) == 28
+    assert len({row['name'] for row in failures['cases']}) == 28
+    assert all(row['faultHits'] == 1 and row['opened'] == row['closed'] and row['sourceUnchanged'] is True
+        for row in failures['cases'])
+    assert facts(original) == before_failures
     assert all(sha(path) == expected for path, expected in original_hashes.items())
     (root / 'result.json').write_text(json.dumps({'status': 'PASS', 'observations': observations,
-        'supplementaryGroupApplication': bool(other_groups),
+        'supplementaryGroupApplication': bool(other_groups), 'controlledFailures': failures,
         'scope': 'visible metadata and private-stage application; not complete host admission or hidden namespace proof'}, indent=4) + '\n')
     coverage.finish(root / 'result.json')
     print('linux-file-metadata=PASS')
