@@ -40,6 +40,25 @@ remain unchanged. Evidence is under `metadata-application-pilot/`,
 `metadata-application-selected-mutations/` and the corresponding logs in the
 bounded coverage workspace. Exact-commit measurement follows separately.
 
+CONFIRMED exact-commit measurement at `a29cf82c`: the complete native harness
+passes with 39 completed sessions. Receipts, preserved provenance, production
+class identities and raw probes validate. Adding those sessions to the prior
+verified union yields 1,310 sessions, 28,458/29,786 lines (95.5%) and
+21,124/25,878 branches (81.6%). File-operation branches increase by three to
+3,507/4,250 (82.5%); binary/location branches remain 15,245/18,726 (81.4%).
+No lines, production classes, source denominator or production JAR changed.
+The remaining critical branch gaps are 318 file-operation and 1,609
+binary/location outcomes. Existing coverage overlaps most new failure cases;
+no larger gain is inferred from case count. This diagnostic union is not
+current hosted acceptance or published main coverage.
+
+Exact-commit evidence: `metadata-application-final/`,
+`metadata-application-final-collections/`,
+`metadata-application-final-verified/union/`, and
+`metadata-application-verification.log`. The prior JavaExec baseline50 is
+retained; the new standalone native session is measured separately rather than
+claiming a fresh full JavaExec run.
+
 ## Installed producer test ordering
 
 CONFIRMED: hosted run 43926490219 at `117b6c66` failed its x86-64 producer-failure
