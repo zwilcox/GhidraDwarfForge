@@ -3,10 +3,9 @@ set -euo pipefail
 
 repository_dir=$(realpath "$(dirname "$0")/../../..")
 fixture_dir="$repository_dir/build/fixtures"
-result_dir="$repository_dir/build/test-results/qemu-gdb-oracle"
+result_dir=${FORGE_QEMU_ORACLE_RESULT_DIR:-"$repository_dir/build/test-results/qemu-gdb-oracle"}
 source_dir="$repository_dir/src/test/fixtures"
-base_port=$((20000 + ($$ % 20000)))
-active_emulator_pid=""
+source "$repository_dir/src/test/integration/qemu-socket.sh"
 fixture_role=${FIXTURE_ROLE:-exec}
 debug_artifact_suffix=${DEBUG_ARTIFACT_SUFFIX:-reference}
 if [[ $# -eq 0 ]]; then
@@ -15,13 +14,7 @@ else
     targets=("$@")
 fi
 
-cleanup() {
-    if [[ -n "$active_emulator_pid" ]] && kill -0 "$active_emulator_pid" 2>/dev/null; then
-        kill "$active_emulator_pid" 2>/dev/null || true
-        wait "$active_emulator_pid" 2>/dev/null || true
-    fi
-}
-trap cleanup EXIT
+trap qemu_socket_cleanup EXIT
 
 mkdir -p "$result_dir"
 
@@ -38,7 +31,6 @@ run_emulated_case() {
     local target=$1
     local emulator=$2
     local sysroot=$3
-    local port=$4
     local debug_artifact="$fixture_dir/$target/semantic.$fixture_role.$debug_artifact_suffix"
     local stripped="$fixture_dir/$target/semantic.$fixture_role.stripped"
     local transcript="$result_dir/$target.$fixture_role.$debug_artifact_suffix.gdb.txt"
@@ -50,13 +42,8 @@ run_emulated_case() {
         fi
     done
 
-    "$emulator" -L "$sysroot" -g "$port" "$stripped" &
-    active_emulator_pid=$!
-    sleep 0.2
-    if ! kill -0 "$active_emulator_pid" 2>/dev/null; then
-        echo "emulator failed before GDB connected: $target" >&2
-        wait "$active_emulator_pid"
-    fi
+    qemu_socket_start "$result_dir/$target.$fixture_role.$debug_artifact_suffix.emulator" \
+        "$emulator" "$sysroot" "$stripped"
 
     timeout 30s gdb-multiarch -q -batch \
         -ex "set debuginfod enabled off" \
@@ -65,7 +52,7 @@ run_emulated_case() {
         -ex "set substitute-path /ghidra-dwarf-forge-fixture $source_dir" \
         -ex "file $stripped" \
         -ex "symbol-file $debug_artifact" \
-        -ex "target remote :$port" \
+        -ex "target remote $qemu_socket_path" \
         -ex "break recovered_add" \
         -ex "continue" \
         -ex "info args" \
@@ -74,8 +61,7 @@ run_emulated_case() {
         -ex "print sum" \
         -ex "continue" 2>&1 | tee "$transcript"
 
-    wait "$active_emulator_pid"
-    active_emulator_pid=""
+    qemu_socket_wait
 
     validate_transcript "$transcript"
 }
@@ -113,19 +99,19 @@ for target in "${targets[@]}"; do
             ;;
         aarch64)
             run_emulated_case aarch64 /usr/bin/qemu-aarch64-static \
-                /usr/aarch64-linux-gnu "$base_port"
+                /usr/aarch64-linux-gnu
             ;;
         arm32)
             run_emulated_case arm32 /usr/bin/qemu-arm-static \
-                /usr/arm-linux-gnueabihf "$((base_port + 3))"
+                /usr/arm-linux-gnueabihf
             ;;
         mips32be)
             run_emulated_case mips32be /usr/bin/qemu-mips-static \
-                /usr/mips-linux-gnu "$((base_port + 1))"
+                /usr/mips-linux-gnu
             ;;
         mips32le)
             run_emulated_case mips32le /usr/bin/qemu-mipsel-static \
-                /usr/mipsel-linux-gnu "$((base_port + 2))"
+                /usr/mipsel-linux-gnu
             ;;
         *)
             echo "unknown target: $target" >&2

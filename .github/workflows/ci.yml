@@ -1767,8 +1767,13 @@ jobs:
         run: |
           set -euo pipefail
           for role in exec exec.no-sections pie; do
-            FIXTURE_ROLE="$role" DEBUG_ARTIFACT_SUFFIX=forge-container.dbg \
-              src/test/integration/qemu-gdb-oracle.sh "$TARGET"
+            if [[ "$TARGET" == mips32be ]]; then
+              FIXTURE_ROLE="$role" DEBUG_ARTIFACT_SUFFIX=forge-container.dbg \
+                python3 src/test/integration/qemu-gdb-port-collision.py "$TARGET"
+            else
+              FIXTURE_ROLE="$role" DEBUG_ARTIFACT_SUFFIX=forge-container.dbg \
+                src/test/integration/qemu-gdb-oracle.sh "$TARGET"
+            fi
           done
 
       - name: Extended ELF section tables through export and GDB

@@ -6,6 +6,37 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Primary QEMU oracle TCP collision
+
+CONFIRMED: hosted run `43952501473`, MIPS32 big-endian job `133614218953`,
+passed ordinary and sectionless GDB sidecar cases, then failed before the PIE
+case could connect: QEMU could not bind TCP port 33530. This was a listener
+collision, not an observed DWARF/debugger-value failure. Other live jobs were
+left running. The old PID-derived-port harness reproduces the same refusal
+locally while a controlled listener holds its exact historical port.
+
+The primary oracle now uses the existing private UNIX-socket helper, including
+bounded startup, child exit and cleanup checks. A new regression holds the old
+TCP port throughout the actual GDB run, checks no connection reaches that
+listener, preserves input hashes, and checks private endpoint cleanup and normal
+QEMU exit. Every regression run owns a fresh log directory, so stale endpoint
+records cannot satisfy its assertions. CI runs this control for all three
+MIPS32 big-endian roles. GDB value/source/breakpoint/stepping assertions remain.
+
+Local validation passes 12 real cases: x86-64, AArch64 and both MIPS byte orders,
+each with ordinary, sectionless and PIE inputs. All 12 LLVM verifications pass;
+the nine emulated cases run with their historical TCP port occupied. Existing
+real socket startup, missing-executable, timeout and ready-child cleanup tests
+pass, as does workflow lint. ARM32 was not run locally because
+`arm-linux-gnueabihf-gcc` is unavailable; its hosted lane remains required.
+This tests matched containers holding compiler DWARF, as in the failing CI step;
+it does not replace production headless exporter acceptance.
+
+Evidence in the bounded workspace: `mipsbe-43952501473-job.log`,
+`qemu-oracle-old-collision-final.log`, `qemu-oracle-collision-final-result.json`,
+`qemu-oracle-collision-final.log`, per-case `qemu-oracle-final-*` logs and
+`qemu-oracle-socket-startup-final.log`. Hosted validation of this fix is pending.
+
 ## ELF changes during allocation observation
 
 CONFIRMED: real-file controls change each input at public cancellation
