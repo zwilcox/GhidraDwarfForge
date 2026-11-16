@@ -207,6 +207,7 @@ public final class VtableBindingEvidenceSmoke {
             rejects(() -> GhidraVtableBindings.save(program, request, MONITOR));
             requestBoundaries(program, request, expected);
             relocationBoundaries(program, request, expected);
+            checks += VtableInventorySmoke.check(program, request, expected);
             program.getDBHandle().saveAs(saved.toFile(), true, MONITOR);
             byte[] hash = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(saved));
             var timestamp = Files.getLastModifiedTime(saved);

@@ -70,6 +70,17 @@ VTABLE_BINDING_MUTANTS = [
      "values.length > 4096", "values.length > 4097"),
     ("vtable-accepts-excessive-relocation-bytes", VTABLE_BINDINGS, VTABLE_BINDINGS_TEST,
      "bytes.length > MAX_TABLE_BYTES", "bytes.length > MAX_TABLE_BYTES + 1"),
+    ("vtable-accepts-excessive-inventory", VTABLE_BINDINGS, VTABLE_BINDINGS_TEST,
+     "keys.size() > 4096", "keys.size() > 4097"),
+    ("vtable-undercharges-encoded-records", VTABLE_BINDINGS, VTABLE_BINDINGS_TEST,
+     'encodedBytes += Objects.toString(options.getString(key, ""), "").length();', "encodedBytes += 1;"),
+    ("vtable-undercharges-byte-witnesses", VTABLE_BINDINGS, VTABLE_BINDINGS_TEST,
+     "inspectedBytes[0] += size;", "inspectedBytes[0] += 1;"),
+    ("vtable-accepts-discontiguous-file-offsets", VTABLE_BINDINGS, VTABLE_BINDINGS_TEST,
+     "if (file != first || absolute != Math.addExact(firstOffset, index))", "if (file != first)"),
+    ("vtable-merges-distinct-file-identities", VTABLE_BINDINGS, VTABLE_BINDINGS_TEST,
+     "if (file != first || absolute != Math.addExact(firstOffset, index))",
+     "if (absolute != Math.addExact(firstOffset, index))"),
 ]
 
 STACK_FLOW_MUTANTS = [
