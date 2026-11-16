@@ -30,7 +30,7 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`ad323f2008d271c003d8793348173f01f0dfb3f3` in 272.9 seconds. The combined local report
+`e40fabd6375e848ea41e2b08991346242b2139c0` in 273.5 seconds. The combined local report
 contains 1,550 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
@@ -40,7 +40,7 @@ contains 1,550 sessions with the full unchanged denominator:
 | File transactions and validation | 95.3% | 79.6% | 95% / 90% |
 | Remaining production | 95.1% | 81.7% | Included in overall |
 
-The binary/location line count is 18,285/19,193, meeting its exact 95%
+The binary/location line count is 18,290/19,193, meeting its exact 95%
 line gate. File transactions/validation also meets its line gate at
 6,365/6,677. Both critical branch targets remain unmet. The exact overall
 85% line and 80% branch targets are met locally.
@@ -49,7 +49,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-validator-current-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-i386-boundaries-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -712,7 +712,7 @@ This historical cohort requires 33 suites; current hosted acceptance requires
 39. It is admitted with its original provenance only for local analysis. It does
 not satisfy the current single-run gate or authorize publication. The whole run
 failed on Windows-host and big-endian MIPS; their local fixes require a fresh
-hosted run. Remaining exact branch outcomes for the critical 90% targets are
+hosted run. At that checkpoint, remaining exact branch outcomes for the critical 90% targets were
 1,859 in binary/location code and 440 in file transactions/validation.
 
 ## i386 allocation admission and compiler limits
@@ -745,5 +745,9 @@ at observed traversal boundaries preserves saved definitions and call signatures
 All focused checks pass alongside the existing 1246 assertions. Seven mutation
 controls cover ABI revision, ELF role, both count guards, ST0 return, automatic
 parameter omission and preservation of genuinely unassigned aggregate storage.
-All 143 selected mutants passed in 320.6 seconds with
-unchanged-source baselines. The full combined coverage refresh is pending.
+All 143 selected mutants passed in 320.6 seconds with unchanged-source baselines.
+The complete refresh passed all 210 JavaExec tasks in 273.5 seconds and all 154
+coverage-tool tests. The raw combined union adds 5 lines and 15 branch outcomes.
+I386ParameterAllocation covers 94/101 lines and 99/134 branches. The exact
+remaining critical branch gaps are now 1,844 and 440, respectively. Both critical
+branch targets and current hosted acceptance remain pending.
