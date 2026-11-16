@@ -13,6 +13,8 @@ import ghidra.framework.HeadlessGhidraApplicationConfiguration;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.CategoryPath;
+import ghidra.program.model.data.TypedefDataType;
 import ghidra.program.model.data.DoubleDataType;
 import ghidra.program.model.data.FloatDataType;
 import ghidra.program.model.data.IntegerDataType;
@@ -157,6 +159,8 @@ public final class MipsN32ParameterAllocationSmoke {
                         var manager = program.getDataTypeManager();
                         var word = new LongLongDataType(manager);
                         var real = new DoubleDataType(manager);
+                        profileBoundaries(program, path, n64, big);
+                        shapeBoundaries(program, policy, big);
                         var array = new StructureDataType("ArrayDoubles", 0, manager);
                         array.add(new ghidra.program.model.data.ArrayDataType(real, 2, 8, manager), "elements", null);
                         var choice = new ghidra.program.model.data.UnionDataType(
@@ -294,6 +298,148 @@ public final class MipsN32ParameterAllocationSmoke {
         bytes.putShort((short) 0).put((byte) 64).put((byte) 2).put((byte) 2).put((byte) 2).put((byte) 0).put((byte) 1);
         bytes.putInt(0).putInt(0).putInt(1).putInt(0);
         return bytes.array();
+    }
+
+    private static void shapeBoundaries(ProgramDB program, GhidraParameterAllocation policy,
+            boolean big) throws Exception {
+        var manager = program.getDataTypeManager();
+        var word = new LongLongDataType(manager);
+        var real = new DoubleDataType(manager);
+        DataType alias = new TypedefDataType(CategoryPath.ROOT, "RealAlias", real, manager);
+        alias = new TypedefDataType(CategoryPath.ROOT, "RealAliasAgain", alias, manager);
+        var pair = new StructureDataType("AliasFieldPair", 0, manager);
+        pair.add(alias, "floating", null);
+        pair.add(word, "integer", null);
+        DataType wrapped = new TypedefDataType(CategoryPath.ROOT, "PairAlias", pair, manager);
+        wrapped = new TypedefDataType(CategoryPath.ROOT, "PairAliasAgain", wrapped, manager);
+        for (var type : List.of(pair, wrapped)) {
+            var function = function(program, word, type, word);
+            String saved = snapshot(function), layout = type.toString();
+            var corrections = policy.corrections(function, TaskMonitor.DUMMY, ignored -> { });
+            var value = corrections.getOrDefault(0, function.getParameter(0).getVariableStorage());
+            require(value.toString().equals(big ? "f12:8,a1:8" : "a1:8,f12:8"),
+                "typedef must preserve direct double-field allocation: " + value);
+            require(corrections.getOrDefault(1, function.getParameter(1).getVariableStorage()).toString().equals("a2:8"),
+                "typedef aggregate consumes two argument slots");
+            require(saved.equals(snapshot(function)) && layout.equals(type.toString()),
+                "typedef correction modified saved signature or type");
+        }
+        var shortFloat = new StructureDataType("ShortFloatSlot", 0, manager);
+        shortFloat.add(new FloatDataType(manager), "first", null);
+        shortFloat.add(new IntegerDataType(manager), "second", null);
+        var unaligned = new StructureDataType("CrossSlotDouble", 16, manager);
+        unaligned.replaceAtOffset(4, real, 8, "floating", null);
+        var partial = new StructureDataType("PartialIntegerSlot", 0, manager);
+        partial.add(word, "first", null);
+        partial.add(new IntegerDataType(manager), "tail", null);
+        for (var type : List.of(shortFloat, unaligned, partial)) {
+            var function = function(program, word, type, word);
+            String saved = snapshot(function), layout = type.toString();
+            var corrections = policy.corrections(function, TaskMonitor.DUMMY, ignored -> { });
+            var value = corrections.getOrDefault(0, function.getParameter(0).getVariableStorage());
+            require(value.size() == type.getLength(), "partial aggregate changed represented byte count");
+            var registers = new java.util.HashSet<String>();
+            for (var node : value.getVarnodes()) {
+                var register = program.getRegister(node.getAddress(), node.getSize());
+                require(register != null, "small aggregate unexpectedly spilled");
+                registers.add(register.getBaseRegister().getName());
+            }
+            require(registers.equals(type == shortFloat ? java.util.Set.of("a0") : java.util.Set.of("a0", "a1")),
+                "nested or partial floating field must not claim a direct-double register: " + value);
+            String tail = type == shortFloat ? "a1:8" : "a2:8";
+            require(corrections.getOrDefault(1, function.getParameter(1).getVariableStorage()).toString().equals(tail),
+                "partial aggregate consumed the wrong number of slots");
+            require(saved.equals(snapshot(function)) && layout.equals(type.toString()),
+                "allocation-only shape escaped into saved type or signature");
+        }
+    }
+
+    /** Each changed field is a real ELF/ABI record, with the other admission facts intact. */
+    private static void profileBoundaries(ProgramDB program, java.nio.file.Path path,
+            boolean n64, boolean big) throws Exception {
+        record Case(String name, boolean accepted, java.util.function.Consumer<ByteBuffer> edit) { }
+        var cases = new ArrayList<Case>();
+        cases.add(new Case("wrong machine", false, bytes -> bytes.putShort(18, (short) 62)));
+        cases.add(new Case("relocatable object", false, bytes -> bytes.putShort(16, (short) 1)));
+        cases.add(new Case("shared object", true, bytes -> bytes.putShort(16, (short) 3)));
+        cases.add(new Case("unsupported OS ABI", false, bytes -> bytes.put(7, (byte) 9)));
+        cases.add(new Case("Linux OS ABI", true, bytes -> bytes.put(7, (byte) 3)));
+        cases.add(new Case("ABI revision zero", true, bytes -> bytes.put(8, (byte) 0)));
+        cases.add(new Case("unsupported ABI revision", false, bytes -> bytes.put(8, (byte) 2)));
+        int flagOffset = n64 ? 48 : 36;
+        int profileFlags = n64 ? 0x80000000 : 0x80000020;
+        for (int flags = 0; flags < 8; flags++) {
+            int selected = flags;
+            cases.add(new Case("ordinary ELF flags " + selected, true,
+                bytes -> bytes.putInt(flagOffset, profileFlags | selected)));
+        }
+        cases.add(new Case("unknown ELF flags", false, bytes -> bytes.putInt(flagOffset, profileFlags | 8)));
+        cases.add(new Case("no typed ABI record", false, bytes -> bytes.putInt(n64 ? 64 : 52, 0)));
+        cases.add(new Case("record version", false, bytes -> bytes.putShort(128, (short) 1)));
+        cases.add(new Case("ISA level", false, bytes -> bytes.put(130, (byte) 32)));
+        cases.add(new Case("ISA revision", false, bytes -> bytes.put(131, (byte) 1)));
+        cases.add(new Case("general register width", false, bytes -> bytes.put(132, (byte) 1)));
+        cases.add(new Case("floating register width", false, bytes -> bytes.put(133, (byte) 1)));
+        cases.add(new Case("second coprocessor", false, bytes -> bytes.put(134, (byte) 1)));
+        cases.add(new Case("floating ABI", false, bytes -> bytes.put(135, (byte) 2)));
+        cases.add(new Case("ISA extension", false, bytes -> bytes.putInt(136, 1)));
+        cases.add(new Case("application extension", false, bytes -> bytes.putInt(140, 1)));
+        cases.add(new Case("record flags zero", true, bytes -> bytes.putInt(144, 0)));
+        cases.add(new Case("unknown record flags1", false, bytes -> bytes.putInt(144, 2)));
+        cases.add(new Case("unknown record flags2", false, bytes -> bytes.putInt(148, 1)));
+        var word = new LongLongDataType(program.getDataTypeManager());
+        var real = new DoubleDataType(program.getDataTypeManager());
+        var function = function(program, word, word, real);
+        String saved = snapshot(function);
+        for (var test : cases) {
+            byte[] fixture = n64 ? wideImage(big) : image(big, 0x80000025, 2);
+            test.edit().accept(ByteBuffer.wrap(fixture).order(big ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN));
+            Files.write(path, fixture);
+            var diagnostics = new ArrayList<String>();
+            var policy = MipsWideParameterAllocation.forProgram(program, ElfImage.read(path),
+                TaskMonitor.DUMMY, diagnostics::add);
+            require((policy != GhidraParameterAllocation.UNCHANGED) == test.accepted(),
+                (n64 ? "N64 " : "N32 ") + (big ? "BE " : "LE ") + test.name());
+            if (!test.accepted()) {
+                require(policy.corrections(function, TaskMonitor.DUMMY, diagnostics::add).isEmpty(),
+                    "unsupported profile supplied storage corrections: " + test.name());
+            }
+            require(saved.equals(snapshot(function)), "profile admission changed saved signature: " + test.name());
+            require(Arrays.equals(fixture, Files.readAllBytes(path)), "profile admission changed input ELF");
+        }
+        Files.write(path, n64 ? wideImage(big) : image(big, 0x80000025, 2));
+        var cancelled = new TaskMonitorAdapter(true);
+        cancelled.cancel();
+        try {
+            MipsWideParameterAllocation.forProgram(program, ElfImage.read(path), cancelled, ignored -> { });
+            throw new AssertionError("profile initialization ignored cancellation");
+        }
+        catch (CancelledException expected) { checks++; }
+        require(saved.equals(snapshot(function)), "cancelled initialization changed signature");
+        var policy = MipsWideParameterAllocation.forProgram(program, ElfImage.read(path),
+            TaskMonitor.DUMMY, ignored -> { });
+        function.setCallingConvention(Function.UNKNOWN_CALLING_CONVENTION_STRING);
+        String unknown = snapshot(function);
+        require(policy.corrections(function, TaskMonitor.DUMMY, ignored -> { }).isEmpty(),
+            "unknown calling convention received an audited-default correction");
+        require(unknown.equals(snapshot(function)), "unknown convention was overwritten");
+        Object owner = new Object();
+        var foreign = new ProgramDB("different-program", program.getLanguage(),
+            program.getLanguage().getCompilerSpecByID(program.getCompilerSpec().getCompilerSpecID()), owner);
+        int transaction = foreign.startTransaction("owned foreign signature");
+        try {
+            var foreignWord = new LongLongDataType(foreign.getDataTypeManager());
+            var foreignFunction = function(foreign, foreignWord, foreignWord,
+                new DoubleDataType(foreign.getDataTypeManager()));
+            String before = snapshot(foreignFunction);
+            require(policy.corrections(foreignFunction, TaskMonitor.DUMMY, ignored -> { }).isEmpty(),
+                "correction policy crossed program ownership");
+            require(before.equals(snapshot(foreignFunction)), "foreign program signature changed");
+        }
+        finally {
+            foreign.endTransaction(transaction, true);
+            foreign.release(owner);
+        }
     }
 
     private static Function function(ProgramDB program, DataType result, DataType... inputs) throws Exception {

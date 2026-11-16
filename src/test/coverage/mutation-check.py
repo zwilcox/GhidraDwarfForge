@@ -52,6 +52,18 @@ REPORT_CLAIMS_TEST = "ghidradwarfforge.output.CoverageReportClaimsBoundarySmoke"
 TYPE_CLAIMS_TEST = "ghidradwarfforge.output.CoverageTypeEvidenceSmoke"
 TRANSACTION = "ghidradwarfforge/output/AttachmentTransaction.java"
 TRANSACTION_TEST = "ghidradwarfforge.output.AttachmentTransactionSmoke"
+MIPS_ALLOCATION = "ghidradwarfforge/targets/MipsWideParameterAllocation.java"
+MIPS_ALLOCATION_TEST = "ghidradwarfforge.MipsN32ParameterAllocationSmoke"
+
+MIPS_ALLOCATION_MUTANTS = [
+    ("mips-allocation-accepts-unknown-record-flags", MIPS_ALLOCATION, MIPS_ALLOCATION_TEST,
+     "(fields.flags1() & ~1L) != 0", "false"),
+    ("mips-allocation-loses-direct-field-alias", MIPS_ALLOCATION, MIPS_ALLOCATION_TEST,
+     "while (field instanceof TypeDef alias && aliases.add(field) && aliases.size() <= 64)",
+     "while (field instanceof TypeDef alias && false && aliases.add(field) && aliases.size() <= 64)"),
+    ("mips-allocation-drops-aligned-argument-hole", MIPS_ALLOCATION, MIPS_ALLOCATION_TEST,
+     "if (aligned && (slots & 1) != 0)", "if (false)"),
+]
 
 TRANSACTION_MUTANTS = [
     ("transaction-accepts-mismatched-sidecar-crc", TRANSACTION, TRANSACTION_TEST,
@@ -263,7 +275,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -286,7 +298,7 @@ def main():
             selected_dependencies = dependencies if test in (
                 PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
-                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST) else []
+                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
@@ -302,7 +314,7 @@ def main():
             if compiled.returncode:
                 raise AssertionError(f"{label}: compilation failed, not a detected mutant\n{compiled.stdout}")
             classpath = os.pathsep.join(map(str, [root, classes, tests, *selected_dependencies]))
-            test_args = [args.ghidra.resolve()] if test == PROTECT_TEST else []
+            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST) else []
             run, run_seconds = execute([java, "-Djava.io.tmpdir=" + str(root),
                 "-Dapplication.settingsdir=" + str(root / "settings"), "-Djava.awt.headless=true",
                 "-cp", classpath, test, *test_args])
