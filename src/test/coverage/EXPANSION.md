@@ -844,5 +844,20 @@ All 154 selected mutation controls pass in 348.0 seconds. The eight new controls
 test lost provenance, changed formal types, missing machine definitions, absent
 canonical ownership and falsely claiming disjoint stack storage. Each fails its
 intended behavioral assertion. All 154 coverage-tool tests pass. A fresh complete
-coverage run remains pending at this checkpoint; production Java and its
-measurement inventory are unchanged.
+JavaExec run at `3a49ce87d3cd74d076febb98bcf7497688fe4872` passes all 210 tasks in
+273.6 seconds and all 53,432 independently evaluated DWARF vectors. Raw class and
+probe verification retains all 901 production classes and 255 sources.
+`MergedLocalLifetime` increases from 135/212 to 163/212 covered branch outcomes
+and from 162/163 to 163/163 executable lines. The JavaExec-only total is now
+23,626/29,786 lines (79.3%) and 18,303/25,878 branches (70.7%). Production JAR
+`3021d43ef8bcede78a4a87a7fe2c3f49bc15bb3b8cafb5121fb97fcd3a0cd8f6` is unchanged.
+These are JavaExec measurements; current combined coverage still awaits matching
+integration/Windows evidence.
+
+The next audit found an existing measurement gap: the external-declaration
+integration harness already checks variadic/no-return and aggregate-return
+declarations, strict validators, compiler/Forge GDB, deterministic reopen and
+input/model preservation, but invokes headless Ghidra without collection and is
+absent from the required coverage suites. Instrument that complete existing
+workflow before adding duplicate declaration fixtures. Other existing ABI,
+function-type and variable-flow suites should receive the same audit.
