@@ -43,6 +43,25 @@ RECEIPT_STORE = "ghidradwarfforge/output/AttachmentReceiptStore.java"
 RECEIPT_STORE_TEST = "ghidradwarfforge.output.AttachmentReceiptStoreSmoke"
 OPERATION = "ghidradwarfforge/output/AttachmentOperation.java"
 OPERATION_TEST = "ghidradwarfforge.output.AttachmentOperationSmoke"
+SOURCE_FILES = "ghidradwarfforge/output/SourceBundleFiles.java"
+SOURCE_FILES_TEST = "ghidradwarfforge.output.SourceBundleFilesSmoke"
+SOURCE_BUNDLE = "ghidradwarfforge/output/SourceBundle.java"
+SOURCE_BUNDLE_TEST = "ghidradwarfforge.output.SourceBundleSmoke"
+
+SOURCE_FILES_MUTANTS = [
+    ("source-bundle-accepts-wrong-dwarf-file-order", SOURCE_FILES, SOURCE_FILES_TEST,
+     "if (!sourceNames().equals(dwarfFiles))", "if (false)"),
+    ("source-bundle-misses-replaced-inventory", SOURCE_FILES, SOURCE_FILES_TEST,
+     "!java.util.Objects.equals(before.fileKey(), state.key())", "false"),
+    ("source-bundle-ignores-part-time-change", SOURCE_FILES, SOURCE_FILES_TEST,
+     "!before.lastModifiedTime().equals(after.lastModifiedTime())", "false"),
+    ("source-bundle-accepts-duplicate-function-identity", SOURCE_BUNDLE, SOURCE_BUNDLE_TEST,
+     '!keys.add(function.address() + ":" + function.name())', "false"),
+    ("source-bundle-accepts-function-outside-part", SOURCE_BUNDLE, SOURCE_BUNDLE_TEST,
+     "last > part.last()", "false"),
+    ("source-bundle-exceeds-function-budget", SOURCE_BUNDLE, SOURCE_BUNDLE_TEST,
+     "functions.size() > 250000", "functions.size() > 250001"),
+]
 
 RECEIPT_MUTANTS = [
     ("receipt-accepts-shared-backup-identity", RECEIPT, RECEIPT_TEST,
@@ -212,7 +231,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -234,7 +253,7 @@ def main():
             # its existing missing serialVersionUID is unrelated to these mutants.
             selected_dependencies = dependencies if test in (
                 PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
-                RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST) else []
+                RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
