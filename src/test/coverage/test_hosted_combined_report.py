@@ -282,6 +282,56 @@ class AttachmentOracleAdmission(unittest.TestCase):
                         hosted.attachment_oracle({**record, field: children[field]}, oracle)
 
 
+class SectionlessValidationAdmission(unittest.TestCase):
+    """Receipt schema controls only; actual native checks come from integration."""
+
+    def setUp(self):
+        self.record = {'sessions': [{'label': label} for label in ('live-validator', 'exclusive-evidence')]}
+        self.checks = ['gnuReadelfVersion', 'llvmDwarfdumpVersion', 'strictDwarfdumpVersion',
+            'gnuReadelf', 'llvmDwarfdump', 'strictSidecar']
+        self.oracle = {'status': 'PASS_SECTIONLESS_VALIDATION', 'scope': 'live policy; limited Linux test host',
+            'machine': 62, 'frameDiagnostics': 0, 'originalUnchanged': True, 'exclusiveEvidenceRefused': True,
+            'validationSha256': 'a' * 64, 'checks': sorted(self.checks),
+            'fromProgramHeaders': None, 'originalFrameViewSha256': None}
+
+    def corroborated(self):
+        return dict(self.oracle, frameDiagnostics=3, fromProgramHeaders=True,
+            originalFrameViewSha256='b' * 64, checks=sorted(self.checks +
+                ['strictOriginal', 'originalFrameViewGnu', 'originalFrameViewLlvm']))
+
+    def test_complete_paths(self):
+        hosted.sectionless_validation_oracle(self.record, self.oracle)
+        hosted.sectionless_validation_oracle(self.record, self.corroborated())
+
+    def test_required_success_preservation_and_refusal(self):
+        for key, value in [('status', 'PASS'), ('scope', 'production privileged host'), ('machine', 183),
+                ('frameDiagnostics', -1), ('frameDiagnostics', True), ('originalUnchanged', False),
+                ('exclusiveEvidenceRefused', False), ('validationSha256', 'invalid')]:
+            with self.subTest(key=key, value=value), self.assertRaisesRegex(ValueError, 'measured live checks'):
+                hosted.sectionless_validation_oracle(self.record, dict(self.oracle, **{key: value}))
+
+    def test_missing_or_reordered_sessions(self):
+        for sessions in ([], self.record['sessions'][:1], self.record['sessions'][::-1]):
+            with self.subTest(sessions=sessions), self.assertRaisesRegex(ValueError, 'measured live checks'):
+                hosted.sectionless_validation_oracle({'sessions': sessions}, self.oracle)
+
+    def test_frame_diagnostics_need_original_proof(self):
+        for key, value in [('fromProgramHeaders', False), ('originalFrameViewSha256', None)]:
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'original-frame corroboration'):
+                hosted.sectionless_validation_oracle(self.record, dict(self.corroborated(), **{key: value}))
+
+    def test_independent_checkers_cannot_be_omitted(self):
+        for oracle in (self.oracle, self.corroborated()):
+            for missing in oracle['checks']:
+                with self.subTest(missing=missing), self.assertRaisesRegex(ValueError, 'independent checker'):
+                    hosted.sectionless_validation_oracle(self.record,
+                        dict(oracle, checks=[check for check in oracle['checks'] if check != missing]))
+
+    def test_unnecessary_original_claim_refused(self):
+        with self.assertRaisesRegex(ValueError, 'unneeded original-frame'):
+            hosted.sectionless_validation_oracle(self.record, dict(self.oracle, originalFrameViewSha256='b' * 64))
+
+
 class GuiOracleAdmission(unittest.TestCase):
     def test_headless_or_incomplete_gui_claims_rejected(self):
         record = {'suite': 'gui-script-manager', 'sessions': [{}]}

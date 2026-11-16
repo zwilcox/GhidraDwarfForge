@@ -36,6 +36,7 @@ REQUIRED = {
         'inheritance-names', 'build-id-command', 'cfi-encoder', 'cfi-composition-explicit',
         'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu',
         'linux-attachment-exec', 'linux-attachment-pie', 'linux-attachment-exec-no-build-id',
+        'sectionless-validation',
         'gui-script-manager', 'gui-script-manager-loader', 'gui-script-manager-compressed',
         'gui-script-manager-unwind', 'lexical-shadow', 'object-parameter', 'object-return', 'formatter-export',
         'calling-convention', 'custom-call-storage', 'call-site-packaged',
@@ -208,6 +209,30 @@ def attachment_oracle(record, oracle):
         identities.append(identity)
     if len(set(identities)) != len(identities) or any(row.get('session') in identities for row in parents):
         raise ValueError('recovery children reuse another process session')
+
+
+def sectionless_validation_oracle(record, oracle):
+    checks = {'gnuReadelfVersion', 'llvmDwarfdumpVersion', 'strictDwarfdumpVersion',
+        'gnuReadelf', 'llvmDwarfdump', 'strictSidecar'}
+    diagnostics = oracle.get('frameDiagnostics')
+    if (oracle.get('status') != 'PASS_SECTIONLESS_VALIDATION'
+            or oracle.get('scope') != 'live policy; limited Linux test host'
+            or oracle.get('machine') != 62
+            or type(diagnostics) is not int or diagnostics < 0
+            or oracle.get('originalUnchanged') is not True
+            or oracle.get('exclusiveEvidenceRefused') is not True
+            or not re.fullmatch(r'[0-9a-f]{64}', oracle.get('validationSha256', ''))
+            or [row['label'] for row in record['sessions']] != ['live-validator', 'exclusive-evidence']):
+        raise ValueError('sectionless validation lacks measured live checks, refusal or preservation')
+    if diagnostics:
+        checks.update(('strictOriginal', 'originalFrameViewGnu', 'originalFrameViewLlvm'))
+        if (oracle.get('fromProgramHeaders') is not True
+                or not re.fullmatch(r'[0-9a-f]{64}', oracle.get('originalFrameViewSha256') or '')):
+            raise ValueError('sectionless validation lacks independent original-frame corroboration')
+    elif oracle.get('fromProgramHeaders') is not None or oracle.get('originalFrameViewSha256') is not None:
+        raise ValueError('sectionless validation has an unneeded original-frame claim')
+    if oracle.get('checks') != sorted(checks):
+        raise ValueError('sectionless validation omitted a required independent checker')
 
 
 def gui_oracle(record, oracle):
@@ -466,6 +491,8 @@ def load_job(root, jar, kind, commit, run):
                 windows_directory_failures.oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'].startswith('linux-attachment-'):
                 attachment_oracle(record, files.read(directory / 'oracle.json'))
+            if record['suite'] == 'sectionless-validation':
+                sectionless_validation_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'].startswith('gui-script-manager'):
                 gui_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'lexical-shadow':
