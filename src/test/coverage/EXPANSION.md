@@ -6,6 +6,40 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Frame inventory budgets and compression metadata
+
+CONFIRMED at `cee1a0ad`: exact 64 MiB / 262,144-record inventories are accepted,
+while the next byte/record is rejected. Tests cover invalid address widths,
+negative/oversized CIE references, section-address overflow and unexplained CIE
+augmentation bytes. The large byte fixture stays in memory; no 64 MiB fixture
+is retained on disk. This inventories extents, not CFI execution.
+
+GNU/gABI tests cover every magic byte, negative decoded sizes and alignment,
+zero alignment and unsigned ELF32 alignment, both ELF classes and byte orders.
+Accepted metadata preserves the exact decoded frame bytes and original ELF.
+Compressed EH frames are rejected before record interpretation. Focused tests
+pass 18,914 parser and 1,884 source checks. Twelve selected mutation controls
+pass, including four new off-by-one/alignment controls (5.532 seconds).
+
+All 211 JavaExec tasks pass (275.746 seconds), 53,432 independent DWARF vectors
+pass, and all 197 coverage-tool checks plus actionlint pass. Baseline 44 verifies
+255 sources / 901 production classes / 615 test classes. The 1,268-session
+matching-bytecode diagnostic union measures 28,437/29,786 lines (95.5%) and
+21,027/25,878 branches (81.3%). Binary/location branches are 15,184/18,726
+(81.1%); file-operation branches remain 3,471/4,250 (81.7%). This adds 14 union
+branch outcomes; critical 90% targets remain unmet. This is not current hosted
+acceptance or published main coverage.
+
+JavaExec-only results are 23,793 lines / 18,543 branches. The one-line decrease
+from baseline 43 is the timestamp normalization at CompanionArtifactPublisher
+118–119: ordinary fixture write timestamps may be equal. The union retains
+that path; deterministic timestamp controls remain useful follow-up work.
+
+Local evidence: `frame-limits-focused.log`, `frame-limits-selected-mutations/`,
+`javaexec-baseline-44/`, `frame-limits-javaexec-checked/`,
+`frame-limits-union-verified/` and `frame-limits-verification.log` under the
+bounded coverage workspace. Production JAR SHA-256 is unchanged.
+
 ## Exception-frame encoding and LEB128 boundaries
 
 CONFIRMED: `OriginalFrameRangesSmoke` checks all 256 encoding bytes for each
