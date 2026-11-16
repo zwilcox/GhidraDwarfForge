@@ -6,6 +6,70 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current matching-bytecode measurement after the Linux job
+
+CONFIRMED: implementation `326326eb` adds a backup control that changes bytes
+while applying metadata but preserves inode, size and metadata. It must fail
+before publication, preserve the source and remove its owned stage. The test
+passes 181 checks and four abrupt-exit controls. Export reports round-trip 35
+cases covering every C0 control, Unicode, quotes/backslashes and injection-like
+text, including valid POSIX path spellings. The strict report reader preserves
+those strings; terminal failures preserve status and exception identity.
+
+Seven selected mutations pass with two passing unchanged baselines: the five
+backup readback faults and two report text faults. Removing the final backup
+digest comparison now fails its intended rejection assertion. Unescaped control
+characters fail the JSON assertion; dropping backspace fails the round-trip
+assertion. An initial local runner attempt had a Python quoting error and ran no
+mutants; the corrected replay detects all seven. The subsequent full configuration
+passes **all 177 faults and 41 unchanged baselines in 394.0 seconds**. Every fault
+is detected by its behavioral assertion or independent oracle, not setup failure.
+
+The complete 210-task JavaExec baseline38 passes in 274.3 seconds, as do 53,432
+independent DWARF expression vectors and all 181 coverage-tool tests. Production
+JAR SHA-256 remains `3021d43ef8bcede78a4a87a7fe2c3f49bc15bb3b8cafb5121fb97fcd3a0cd8f6`.
+
+Hosted run [43856734959](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43856734959)
+completed its architecture/host jobs successfully. Its coverage gate correctly
+fails the critical branch targets: the older hosted cohort reports 95.3% lines /
+80.3% branches overall, with 80.2% binary/location branches and 79.6% file-operation
+branches. It does not include the newer local commits.
+
+Linux artifact `14234446311` was authenticated against its API SHA-256 and run/job
+identity. Its 39-suite policy was loaded unchanged from `078691f2`; the complete
+source tree matches the authenticated merge commit `e84c5206`. All session and
+oracle receipts were checked under that historical policy and its per-layer
+reports regenerated from raw probes. This does **not** satisfy the current
+43-suite Linux policy or its new AArch64 measurement lane. No current admission
+rule was changed to accept this older artifact.
+
+Combining that verified artifact with baseline38 and the previously verified
+matching-bytecode local/host measurements yields 1,201 sessions:
+
+| Stable scope | Lines | Branches |
+| --- | --- | --- |
+| All 255 sources / 901 classes | 28,411/29,786 (95.4%) | 20,891/25,878 (80.7%) |
+| Binary and location correctness, 152 sources | 18,310/19,197 (95.4%) | 15,089/18,726 (80.6%) |
+| File transactions and validation, 61 sources | 6,379/6,677 (95.5%) | 3,430/4,250 (80.7%) |
+
+This is a mixed-commit diagnostic union, not hosted acceptance or publication.
+The branch targets still require at least 1,765 additional binary/location
+outcomes and 395 file-operation outcomes on the unchanged denominator. Prioritize
+variable-location proofs, stack value transfers and native-exporter error paths;
+then host metadata/security failures and helper/transaction rejection paths.
+Missing counters do not alone prove missing assertions or reachable behavior.
+Inspect their existing tests and supported APIs before adding controls.
+
+Evidence is retained in the bounded coverage workspace under
+`javaexec-baseline-38/`, `report-backup-selected-mutations/`,
+`report-backup-javaexec-verified/`, `report-backup-union-verified/`,
+`verified-hosted-linux-43856734959/`, `hosted-43856734959-policy-snapshot/`,
+`report-backup-hosted-partial-union-43856734959/` and
+`report-backup-with-linux-union-43856734959/` and
+`report-backup-all-mutations/`. `critical-branch-gaps-326326eb.json` indexes the
+remaining critical decision lines with source and report hashes. The new hosted
+cohort, protected merge and actual-main publication remain outstanding. Issue #209 stays incomplete.
+
 ## Backup readback and cleanup ownership controls
 
 CONFIRMED: `AttachmentFileStoreSmoke` now passes 171 checks, retaining its four
