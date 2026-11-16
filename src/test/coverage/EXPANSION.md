@@ -6,6 +6,40 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Linux metadata application failures
+
+CONFIRMED locally: twelve additional cases exercise real owned-stage application
+through `LinuxMetadataApplicationFailureControls`. Six controlled libc failures
+cover opening the stage, temporary/final chmod, attribute removal/set and
+timestamps. Three controls actually append to, hard-link, or change the mode of
+the owned stage after timestamp application; independent Java filesystem reads
+check those effects. Two controlled final-path statx identity replies exercise
+source/stage disagreement without modifying the source. A close-error reply
+follows actual descriptor release. These are explicit test faults, not claims
+of observed kernel defects or full host admission.
+
+Each case first proves unarmed forwarding, then requires its exact failure
+diagnostic, one fault and balanced real descriptors (one for failed stage open,
+two otherwise). Source metadata and bytes must remain unchanged. Discarding the
+owned failed stage and retrying on a fresh stage must preserve stage bytes and
+produce the source's supported preservation digest. Real writes are checked to
+target only that owned stage. The Python integration oracle independently
+rechecks source stat/xattrs/inode policy/content and retains its existing suite.
+
+The hosted collector now requires the twelve application outcomes and their
+completed isolated JVM session in addition to the existing 28 inspection
+controls. Receipt/schema tests reject missing cases, altered cleanup or retry
+claims, and omitted sessions, including a rebound-receipt regression.
+
+The native integration pilot passes, test classes compile, all seven selected
+Linux metadata mutations are detected (6.399 seconds), and all 216 coverage-tool
+tests pass (8.884 seconds). The five added mutations remove stage size/link,
+preservation readback, source-path and stage-path checks. This is a selected
+mutation result, not a full repository mutation score. Production source/JAR
+remain unchanged. Evidence is under `metadata-application-pilot/`,
+`metadata-application-selected-mutations/` and the corresponding logs in the
+bounded coverage workspace. Exact-commit measurement follows separately.
+
 ## Installed producer test ordering
 
 CONFIRMED: hosted run 43926490219 at `117b6c66` failed its x86-64 producer-failure

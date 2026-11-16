@@ -40,13 +40,20 @@ class CohortAdmission(unittest.TestCase):
             oracle = self.root / (suite + '.json')
             evidence = {'status': 'PASS_FIXTURE', 'privileged': 'PASS', 'unprivileged': 'PASS'}
             if suite == 'linux-file-metadata':
+                with collection.session(['java', 'Main'], 'controlled-application-failures'):
+                    (collection.root / collection.record['sessions'][-1]['file']).write_bytes(b'not real probes')
                 # Schema fixture only: these replies never represent native execution.
                 evidence = {'status': 'PASS', 'observations': ['synthetic schema control'],
                     'controlledFailures': {'status': 'PASS_CONTROLLED_LIBC_FAILURES', 'cases': [
                         {'name': name, 'faultHits': 1,
                             'opened': 0 if index < 2 else 1, 'closed': 0 if index < 2 else 1,
                             'sourceUnchanged': True, 'diagnostic': 'synthetic failure diagnostic'}
-                        for index, name in enumerate(hosted.metadata_failures.CASES)]}}
+                        for index, name in enumerate(hosted.metadata_failures.CASES)]},
+                    'applicationFailures': {'status': 'PASS_CONTROLLED_LIBC_APPLICATION_FAILURES', 'cases': [
+                        {'name': name, 'faultHits': 1, 'opened': 1 if index == 0 else 2,
+                            'closed': 1 if index == 0 else 2, 'sourceUnchanged': True,
+                            'stageEffectChecked': True, 'retryPassed': True, 'diagnostic': 'synthetic failure'}
+                        for index, name in enumerate(hosted.metadata_failures.APPLICATION_CASES)]}}
             coverage.save(oracle, evidence)
             collection.finish(oracle)
             self.records[suite] = collection
@@ -57,7 +64,7 @@ class CohortAdmission(unittest.TestCase):
         self.summary = {'schema': 1, 'status': 'PASS', 'commit': 'a' * 40,
             'productionJarSha256': coverage.digest(self.jar),
             'cohort': {'commit': 'a' * 40, 'run': '7', 'job': 'extension-build'},
-            'layers': {'native-java': {'xmlSha256': coverage.digest(xml), 'sessions': 3, 'productionClasses': 1,
+            'layers': {'native-java': {'xmlSha256': coverage.digest(xml), 'sessions': 4, 'productionClasses': 1,
                 'suites': sorted(self.records), 'unmeasuredForcedHalts': [],
                 'receipts': {record.root.name: coverage.digest(record.root / 'receipt.json')
                     for record in self.records.values()}}}}
@@ -72,7 +79,7 @@ class CohortAdmission(unittest.TestCase):
 
     def test_complete_same_cohort_inventory(self):
         rows, origin = self.load()
-        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(rows), 4)
         self.assertEqual(origin['run'], '7')
         self.assertEqual(origin['job'], 'extension-build')
 
@@ -121,6 +128,17 @@ class CohortAdmission(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.load()
 
+    def test_application_failure_case_cannot_be_omitted_from_rebound_receipt(self):
+        record = self.records['linux-file-metadata']
+        oracle = record.root / 'oracle.json'
+        evidence = hosted.files.read(oracle)
+        evidence['applicationFailures']['cases'].pop()
+        hosted.files.save(oracle, evidence)
+        record.record['evidenceSha256'] = hosted.files.digest(oracle)
+        self.rebind(record)
+        with self.assertRaisesRegex(ValueError, 'complete application failures'):
+            self.load()
+
     def test_required_suite_cannot_be_replaced(self):
         record = self.records['linux-directory-sync']
         record.record['suite'] = 'unrelated'
@@ -132,7 +150,7 @@ class CohortAdmission(unittest.TestCase):
 
     def test_counts_and_halt_disclosures_must_match_raw_receipts(self):
         layer = self.summary['layers']['native-java']
-        for key, value in (('sessions', 4), ('productionClasses', 99),
+        for key, value in (('sessions', 5), ('productionClasses', 99),
                 ('unmeasuredForcedHalts', [{'exitCode': 73}])):
             with self.subTest(key=key):
                 original = layer[key]

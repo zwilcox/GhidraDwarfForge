@@ -19,6 +19,11 @@ public final class LinuxFileMetadataProbe {
             Files.writeString(Path.of(args[2]), gson.toJson(result), java.nio.file.StandardOpenOption.CREATE_NEW);
             System.out.println("linux-metadata-failures=PASS cases=28");
         }
+        else if (args.length == 4 && args[0].equals("application-failure-controls")) {
+            var result = LinuxMetadataApplicationFailureControls.check(Path.of(args[1]), Path.of(args[2]));
+            Files.writeString(Path.of(args[3]), gson.toJson(result), java.nio.file.StandardOpenOption.CREATE_NEW);
+            System.out.println("linux-metadata-application-failures=PASS cases=12");
+        }
         else if (args.length == 3 && args[0].equals("leak-controls")) {
             Path original = Path.of(args[1]);
             metadata.inspect(original, () -> false);

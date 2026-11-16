@@ -8,6 +8,10 @@ CASES = (
     'reserved-inode-field', 'excess-list-size', 'empty-attribute-name',
     'unterminated-attribute-name', 'long-attribute-name', 'duplicate-attribute-name',
     'excess-value-size', 'excess-attribute-count', 'excess-attribute-bytes')
+APPLICATION_CASES = (
+    'stage-open-error', 'temporary-mode-error', 'remove-attribute-error', 'set-attribute-error',
+    'final-mode-error', 'timestamp-error', 'stage-size-change', 'stage-link-change',
+    'stage-mode-change', 'source-path-reply', 'stage-path-reply', 'close-error-after-release')
 
 
 def oracle(record, evidence):
@@ -35,3 +39,21 @@ def oracle(record, evidence):
     if (len(sessions) != 1 or sessions[0].get('status') != 'ORACLE_PASSED'
             or record.get('unmeasuredForcedHalts') or record.get('launcherInvocations')):
         raise ValueError('metadata failures lack one completed isolated process')
+    applications = evidence.get('applicationFailures')
+    if not isinstance(applications, dict):
+        raise ValueError('metadata coverage lacks complete application failures')
+    rows = applications.get('cases')
+    if (applications.get('status') != 'PASS_CONTROLLED_LIBC_APPLICATION_FAILURES' or not isinstance(rows, list)
+            or any(not isinstance(row, dict) for row in rows)
+            or [row.get('name') for row in rows] != list(APPLICATION_CASES)):
+        raise ValueError('metadata coverage lacks complete application failures')
+    for row in rows:
+        opens = 1 if row['name'] == 'stage-open-error' else 2
+        if (any(type(row.get(key)) is not int or row[key] != count
+                for key, count in (('faultHits', 1), ('opened', opens), ('closed', opens)))
+                or any(row.get(key) is not True for key in ('sourceUnchanged', 'stageEffectChecked', 'retryPassed'))
+                or not isinstance(row.get('diagnostic'), str) or not row['diagnostic'].strip()):
+            raise ValueError('metadata application fault lacks cleanup, preservation or retry evidence')
+    sessions = [row for row in record.get('sessions', []) if row.get('label') == 'controlled-application-failures']
+    if len(sessions) != 1 or sessions[0].get('status') != 'ORACLE_PASSED':
+        raise ValueError('metadata application failures lack one completed isolated process')

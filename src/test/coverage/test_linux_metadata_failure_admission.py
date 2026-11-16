@@ -13,14 +13,22 @@ class MetadataFailureAdmission(unittest.TestCase):
     def fixture(self):
         # Schema fixtures, never native execution or coverage evidence.
         record = {'suite': 'linux-file-metadata', 'layer': 'native-java', 'host': 'posix',
-            'sessions': [{'label': 'controlled-native-failures', 'status': 'ORACLE_PASSED'}]}
+            'sessions': [{'label': 'controlled-native-failures', 'status': 'ORACLE_PASSED'},
+                {'label': 'controlled-application-failures', 'status': 'ORACLE_PASSED'}]}
         rows = []
         for name in admission.CASES:
             descriptors = 0 if name in ('open-error', 'stat-error') else 1
             rows.append({'name': name, 'faultHits': 1, 'opened': descriptors, 'closed': descriptors,
                 'sourceUnchanged': True, 'diagnostic': 'fixture expected failure'})
+        applications = []
+        for name in admission.APPLICATION_CASES:
+            opens = 1 if name == 'stage-open-error' else 2
+            applications.append({'name': name, 'faultHits': 1, 'opened': opens, 'closed': opens,
+                'sourceUnchanged': True, 'stageEffectChecked': True, 'retryPassed': True,
+                'diagnostic': 'fixture expected failure'})
         return record, {'status': 'PASS', 'observations': ['fixture-only'],
-            'controlledFailures': {'status': 'PASS_CONTROLLED_LIBC_FAILURES', 'cases': rows}}
+            'controlledFailures': {'status': 'PASS_CONTROLLED_LIBC_FAILURES', 'cases': rows},
+            'applicationFailures': {'status': 'PASS_CONTROLLED_LIBC_APPLICATION_FAILURES', 'cases': applications}}
 
     def test_complete_shape(self):
         admission.oracle(*self.fixture())
@@ -76,6 +84,55 @@ class MetadataFailureAdmission(unittest.TestCase):
                 ('unmeasuredForcedHalts', [{}]), ('launcherInvocations', [{}])]:
             with self.subTest(field=field), self.assertRaisesRegex(ValueError, 'completed isolated'):
                 admission.oracle({**record, field: value}, evidence)
+
+    def test_application_cases_required(self):
+        record, evidence = self.fixture()
+        for fault in ('missing', 'null', 'short', 'duplicate', 'reorder', 'wrong-status', 'not-a-row'):
+            changed = copy.deepcopy(evidence)
+            result = changed['applicationFailures']
+            if fault == 'missing':
+                changed.pop('applicationFailures')
+            elif fault == 'null':
+                changed['applicationFailures'] = None
+            elif fault == 'short':
+                result['cases'].pop()
+            elif fault == 'duplicate':
+                result['cases'][1] = result['cases'][0]
+            elif fault == 'reorder':
+                result['cases'].reverse()
+            elif fault == 'wrong-status':
+                result['status'] = 'FAIL'
+            else:
+                result['cases'][0] = None
+            with self.subTest(fault=fault), self.assertRaisesRegex(ValueError, 'complete application'):
+                admission.oracle(record, changed)
+
+    def test_application_cleanup_preservation_and_retry(self):
+        record, evidence = self.fixture()
+        for index, row in enumerate(evidence['applicationFailures']['cases']):
+            for key in ('faultHits', 'opened', 'closed', 'sourceUnchanged', 'stageEffectChecked', 'retryPassed', 'diagnostic'):
+                values = [True, row[key] + 1] if type(row[key]) is int else [False, None]
+                for value in values:
+                    changed = copy.deepcopy(evidence)
+                    changed['applicationFailures']['cases'][index][key] = value
+                    with self.subTest(case=row['name'], key=key, value=value):
+                        with self.assertRaisesRegex(ValueError, 'cleanup, preservation or retry'):
+                            admission.oracle(record, changed)
+
+    def test_application_session_required(self):
+        record, evidence = self.fixture()
+        for fault in ('missing', 'incomplete', 'duplicate', 'wrong-label'):
+            changed = copy.deepcopy(record)
+            if fault == 'missing':
+                changed['sessions'].pop()
+            elif fault == 'incomplete':
+                changed['sessions'][1]['status'] = 'INCOMPLETE'
+            elif fault == 'duplicate':
+                changed['sessions'].append(changed['sessions'][1])
+            else:
+                changed['sessions'][1]['label'] = 'wrong'
+            with self.subTest(fault=fault), self.assertRaisesRegex(ValueError, 'application failures lack'):
+                admission.oracle(changed, evidence)
 
 
 if __name__ == '__main__':
