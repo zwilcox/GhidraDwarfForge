@@ -1,8 +1,10 @@
 """GUI receipt admission controls; synthetic files here do not establish desktop execution."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
 
@@ -15,6 +17,46 @@ try:
     spec.loader.exec_module(gui)
 finally:
     sys.path.pop(0)
+
+
+@unittest.skipUnless(os.name == 'posix', 'the GUI shell collector is Linux-only')
+class GuiProcessBounds(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix='forge-gui-process-')
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+
+    def test_exact_output_bound_and_failure_exit(self):
+        log = self.root / 'exact.log'
+        gui.run_script([sys.executable, '-c', 'import sys; sys.stdout.write("x" * 1024)'],
+            os.environ.copy(), log, timeout=5, maximum_bytes=1024)
+        self.assertEqual(log.read_bytes(), b'x' * 1024)
+        with self.assertRaisesRegex(RuntimeError, 'GUI oracle failed'):
+            gui.run_script([sys.executable, '-c', 'import sys; print("failed"); sys.exit(4)'],
+                os.environ.copy(), self.root / 'failure.log', timeout=5)
+        self.assertEqual((self.root / 'failure.log').read_text(), 'failed\n')
+
+    def test_flood_stops_at_live_limit_and_reaps_writer(self):
+        pid = self.root / 'writer.pid'
+        code = 'import os,sys; from pathlib import Path; Path(sys.argv[1]).write_text(str(os.getpid())); '\
+            'sys.stdout.write("x" * 10000000); sys.stdout.flush()'
+        log = self.root / 'flood.log'
+        with self.assertRaisesRegex(RuntimeError, 'live byte limit'):
+            gui.run_script([sys.executable, '-c', code, str(pid)], os.environ.copy(), log,
+                timeout=5, maximum_bytes=1024)
+        self.assertEqual(log.stat().st_size, 1024)
+        with self.assertRaises(ProcessLookupError):
+            os.kill(int(pid.read_text()), 0)
+
+    def test_timeout_stops_and_reaps_owned_process(self):
+        pid = self.root / 'sleeper.pid'
+        code = 'import os,sys,time; from pathlib import Path; '\
+            'Path(sys.argv[1]).write_text(str(os.getpid())); time.sleep(60)'
+        with self.assertRaises(subprocess.TimeoutExpired):
+            gui.run_script([sys.executable, '-c', code, str(pid)], os.environ.copy(),
+                self.root / 'timeout.log', timeout=2)
+        with self.assertRaises(ProcessLookupError):
+            os.kill(int(pid.read_text()), 0)
 
 
 class GuiReceiptAdmission(unittest.TestCase):

@@ -5,10 +5,12 @@ import json
 import os
 from pathlib import Path
 import re
+import selectors
 import shutil
 import signal
 import subprocess
 import tempfile
+import time
 
 from integration_coverage import Collection, digest, save
 
@@ -64,25 +66,53 @@ def verify_outcome(work, output, mode):
             'unwindResultSha256': digest(work / 'unwind-result.json') if mode == 'unwind' else None}
 
 
-def run_script(command, environment, log):
+def run_script(command, environment, log, *, timeout=1200, maximum_bytes=32 * 1024 * 1024):
     # Own the shell, X server and WM together. The shell retains its normal EXIT
     # cleanup; an outer timeout must also reap its process group.
-    with log.open('wb') as stream:
-        child = subprocess.Popen(command, env=environment, stdout=stream, stderr=subprocess.STDOUT,
+    with log.open('xb') as stream:
+        child = subprocess.Popen(command, env=environment, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                  start_new_session=True)
         try:
-            code = child.wait(timeout=1200)
+            deadline = time.monotonic() + timeout
+            size = 0
+            with selectors.DefaultSelector() as selector:
+                selector.register(child.stdout, selectors.EVENT_READ)
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise subprocess.TimeoutExpired(command, timeout)
+                    if not selector.select(min(remaining, 1)):
+                        continue
+                    data = os.read(child.stdout.fileno(), 65536)
+                    if not data:
+                        break
+                    allowed = min(len(data), maximum_bytes - size)
+                    stream.write(data[:allowed])
+                    size += allowed
+                    if allowed != len(data):
+                        raise RuntimeError('GUI diagnostics exceed the live byte limit; inspect ' + str(log))
+            code = child.wait(timeout=max(0.1, deadline - time.monotonic()))
+            if code != 0:
+                raise RuntimeError('GUI oracle failed; inspect ' + str(log))
         except BaseException:
-            if child.poll() is None:
+            try:
                 os.killpg(child.pid, signal.SIGTERM)
-                try:
-                    child.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    os.killpg(child.pid, signal.SIGKILL)
-                    child.wait(timeout=10)
+            except ProcessLookupError:
+                pass
+            try:
+                child.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                pass
+            # The shell may already have exited while a descendant still owns
+            # the pipe or desktop. Retire that owned group even in that case.
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            child.wait(timeout=10)
             raise
-    if code != 0:
-        raise RuntimeError('GUI oracle failed; inspect ' + str(log))
+        finally:
+            child.stdout.close()
 
 
 def main():
