@@ -6,6 +6,38 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current-bytecode verification after optional native exports
+
+CONFIRMED: baseline60 at `889c26bd` passes all 211 JavaExec tasks in
+278.033s, 53,432 independent expression vectors and 225 coverage-tool tests
+(8.248s). Raw verification retains 255 sources / 901 classes and production JAR
+`2f18126bf76e63325bd0af6b006b6ac2a645e1608b21feeea2ab3b58739138b6`.
+The lexical tests add four lines and twelve branches to JavaExec. The new native
+optional-source/type cases add eight lines and 26 branches to the native layer;
+overlap makes the combined gain twelve lines and 36 branches. The 362-session
+local partial result is 24,963/29,790 lines and 19,453/25,884 branches.
+
+Completed Windows, Linux-host and firmware jobs from hosted run `43952501473`
+provide another 104 matching-bytecode sessions (55/45/4). Their downloaded ZIP
+hashes, extraction bounds, run/head/merge provenance, successful jobs, raw
+execution and regenerated reports were checked. All three reports reproduce
+exactly. The Windows primitive collection satisfies both current admission
+policies: 40 metadata faults and 47 directory faults, with balanced resources,
+preserved inputs and successful directory retries. The checked-out Java probe
+hashes match the source commit, accounting explicitly for Windows line endings.
+
+The resulting 466-session diagnostic union covers 26,819/29,790 lines (90.0%)
+and 20,331/25,884 branches (78.5%). Critical binary/location code is 92.9% lines /
+79.7% branches; critical file/validation code is 92.6% / 83.1%. This is NOT the
+complete hosted cohort, protected gate or published badge. Architecture and
+additional headless evidence are still outstanding, and the accepted overall
+85/80 and each-critical-group 95/90 targets remain unchanged.
+
+Evidence in the bounded workspace: `javaexec-baseline-60/`,
+`report-native-javaexec-checked-60/`, `qualified-type-optional-checked-2f181-verified/`,
+`report-native-current-partial/`, `report-native-verification-60.log` and
+`integration-43952501473/` (three regenerated reports and `union/`).
+
 ## Native export with optional source and type models
 
 CONFIRMED: the compiler-backed qualified-type fixture now also calls the public
