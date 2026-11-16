@@ -31,7 +31,8 @@ def check(nodes):
     omitted = {'stale': {'inner'}, 'conflict': {'inner', 'sibling'},
         'coalesced': {'inner', 'outer', 'sibling'}, 'failed': {'root', 'inner', 'outer', 'sibling'},
         'memory-stale': {'root', 'inner', 'outer', 'sibling'}, 'memory-failed': {'root', 'inner', 'outer', 'sibling'},
-        'inferred-stale': {'other'}, 'inferred-namespace': {'other'}, 'inferred-overlap': {'other'}}.get(mode, set())
+        'inferred-stale': {'other'}, 'inferred-namespace': {'other'}, 'inferred-overlap': {'other'},
+        'memory-overlay': {'other'}, 'memory-mapped': {'other'}}.get(mode, set())
     assert len(variables) == 6 - len(omitted)
     for name, owner in owners.items():
         if name in omitted:

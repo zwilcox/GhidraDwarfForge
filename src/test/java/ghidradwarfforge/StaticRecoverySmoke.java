@@ -29,7 +29,10 @@ public final class StaticRecoverySmoke {
             new HeadlessGhidraApplicationConfiguration());
         for (String[] profile : List.of(new String[] {"x86:LE:64:default", "x86_64"},
                 new String[] {"AARCH64:LE:64:v8A", "aarch64"}, new String[] {"ARM:LE:32:v8", "arm"},
-                new String[] {"MIPS:BE:32:default", "mips"}, new String[] {"MIPS:LE:32:default", "mipsel"})) check(profile);
+                new String[] {"MIPS:BE:32:default", "mips"}, new String[] {"MIPS:LE:32:default", "mipsel"})) {
+            check(profile);
+            MemoryLocalExtractionSmoke.check(profile);
+        }
         System.out.println("static-recovery=PASS checks=" + checks);
     }
 

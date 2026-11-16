@@ -30,6 +30,8 @@ def fixture(suite, layer='headless', role='exec'):
             'inferred-stale': normal[:7] + ('global', 'global'),
             'inferred-namespace': normal[:7] + ('global', 'global'),
             'inferred-overlap': normal[:7] + ('global', 'global'),
+            'memory-overlay': normal[:7] + ('global', 'global'),
+            'memory-mapped': normal[:7] + ('global', 'global'),
         }.get(mode, normal)
         bias = 0 if role == 'exec' else 0x400000
         return [{'marker': marker, 'scope': scope, 'value': values[scope], 'address': objects[scope],
@@ -54,7 +56,8 @@ def fixture(suite, layer='headless', role='exec'):
         scope = suite == 'lexical-statics-controls'
         controls = scope or suite == 'recovered-statics-controls'
         modes = ['stale', 'conflict', 'coalesced', 'failed'] if scope else (
-            ['inferred-stale', 'inferred-namespace', 'inferred-overlap', 'inferred-curated', 'memory-stale', 'memory-failed']
+            ['inferred-stale', 'inferred-namespace', 'inferred-overlap', 'inferred-curated',
+                'memory-stale', 'memory-failed', 'memory-overlay', 'memory-mapped']
             if controls else ['inferred', 'memory'])
         evidence.update(status='PASS_STATIC_SCOPE_CONTROLS_MEASUREMENT' if scope else 'PASS_RECOVERED_STATICS_MEASUREMENT',
             oracleStatus='STATIC_SCOPE_CONTROLS_PASS' if scope else (
@@ -165,6 +168,16 @@ class Admission(unittest.TestCase):
             changed[rows_key][0]['outputPair' if suite == 'lexical-statics-controls' else 'pair'] = []
             with self.assertRaises(ValueError):
                 admission.oracle(record, changed)
+
+    def test_unsupported_mapping_cannot_claim_the_original_object(self):
+        for mode in ('memory-overlay', 'memory-mapped'):
+            record, evidence = fixture('recovered-statics-controls')
+            row = next(case for case in evidence['cases'] if case['mode'] == mode)['observations'][7]
+            self.assertEqual(row['marker'], 'other_live')
+            self.assertEqual(row['scope'], 'global')
+            row.update(scope='other', value=51, address=evidence['compilerObjects']['other'])
+            with self.subTest(mode=mode), self.assertRaises(ValueError):
+                admission.oracle(record, evidence)
 
 
 if __name__ == '__main__':

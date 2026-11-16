@@ -44,7 +44,7 @@ public class PrepareRecoveredStatics extends GhidraScript {
             }
             else if (!List.of("inferred", "inferred-stale").contains(mode)) throw new IllegalArgumentException("unknown inferred control");
         }
-        else if (List.of("memory", "memory-stale").contains(mode)) {
+        else if (List.of("memory", "memory-stale", "memory-overlay", "memory-mapped").contains(mode)) {
             var locals = new HashMap<Function, List<GhidraLexicalScopes.Local>>();
             for (var binding : bindings) {
                 var label = binding.symbol();
@@ -53,6 +53,30 @@ public class PrepareRecoveredStatics extends GhidraScript {
                 GhidraStaticBindings.remove(currentProgram, label.getID(), monitor);
                 label.delete();
                 clearListing(address, address.add(3));
+                if (binding.owner().getName().equals("other_statics")) {
+                    if (mode.equals("memory-overlay")) {
+                        var block = currentProgram.getMemory().createInitializedBlock("static_overlay", address,
+                            4, (byte) 0x5a, monitor, true);
+                        address = block.getStart();
+                        if (!block.isOverlay() || address.getAddressSpace().equals(
+                                currentProgram.getAddressFactory().getDefaultAddressSpace())) {
+                            throw new AssertionError("fixture did not retain overlay identity");
+                        }
+                    }
+                    else if (mode.equals("memory-mapped")) {
+                        var start = java.util.Arrays.stream(currentProgram.getMemory().getBlocks())
+                            .filter(block -> block.isLoaded() && block.getStart().getAddressSpace().equals(
+                                currentProgram.getAddressFactory().getDefaultAddressSpace()))
+                            .map(ghidra.program.model.mem.MemoryBlock::getEnd)
+                            .max(ghidra.program.model.address.Address::compareTo).orElseThrow().addNoWrap(0x1000);
+                        var block = currentProgram.getMemory().createByteMappedBlock("static_mapped", start, address, 4, false);
+                        address = block.getStart();
+                        if (!block.isMapped() || !block.isLoaded() || !address.getAddressSpace().equals(
+                                currentProgram.getAddressFactory().getDefaultAddressSpace())) {
+                            throw new AssertionError("fixture did not retain loaded default-space mapped memory");
+                        }
+                    }
+                }
                 var local = binding.owner().addLocalVariable(new LocalVariableImpl(name, 0, IntegerDataType.dataType,
                     address, currentProgram, SourceType.ANALYSIS), SourceType.ANALYSIS);
                 locals.computeIfAbsent(binding.owner(), unused -> new ArrayList<>())

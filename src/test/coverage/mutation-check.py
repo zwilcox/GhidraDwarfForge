@@ -480,6 +480,21 @@ STATIC_RECOVERY_MUTANTS = [
      "exactSize > 0 && candidate.type().getLength() != exactSize", "false"),
     ("static-recovery-crosses-memory-block", STATIC_RECOVERY, STATIC_RECOVERY_TEST,
      "!block.contains(end)", "false"),
+    ("memory-local-crosses-memory-block", "ghidradwarfforge/GhidraTypeGraph.java", STATIC_RECOVERY_TEST,
+     'if (!memoryBlock.contains(memoryAddress.addNoWrap(type.getLength() - 1L))) continue;',
+     'if (!memoryBlock.contains(memoryAddress.addNoWrap(0))) continue;'),
+    ("memory-local-loses-address-normalization", "ghidradwarfforge/GhidraTypeGraph.java", STATIC_RECOVERY_TEST,
+     'long memoryOffset = AddressNormalizer.toElfAddress(memoryAddress.getOffset(), rebaseDelta);',
+     'long memoryOffset = memoryAddress.getOffset();'),
+    ("memory-local-loses-inferred-provenance", "ghidradwarfforge/GhidraTypeGraph.java", STATIC_RECOVERY_TEST,
+     '(inferred ? "DECOMPILER_INFERRED_TYPE; " : "")', '""'),
+    ("memory-local-overrides-saved-type", "ghidradwarfforge/GhidraTypeGraph.java", STATIC_RECOVERY_TEST,
+     'if (inferred) type = GhidraStaticRecovery.accept', 'if (true) type = GhidraStaticRecovery.accept'),
+    ("memory-local-admits-mapped-address", "ghidradwarfforge/GhidraTypeGraph.java", STATIC_RECOVERY_TEST,
+     'memoryBlock.isMapped()', 'false'),
+    ("memory-local-flattens-overlay-address", "ghidradwarfforge/GhidraTypeGraph.java", STATIC_RECOVERY_TEST,
+     'memoryBlock.isOverlay() || memoryBlock.isMapped() ||\n                        !memoryAddress.getAddressSpace().equals(program.getAddressFactory().getDefaultAddressSpace())',
+     'memoryBlock.isMapped()'),
 ]
 
 VTABLE_BINDING_MUTANTS = [

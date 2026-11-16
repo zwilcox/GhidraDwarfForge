@@ -11,7 +11,7 @@ VALUES = dict(zip(SCOPES, (11, 21, 31, 41, 51, 101)))
 CONTROL_MODES = ('stale', 'conflict', 'coalesced', 'failed')
 RECOVERED_MODES = ('inferred', 'memory')
 RECOVERED_CONTROLS = ('inferred-stale', 'inferred-namespace', 'inferred-overlap',
-    'inferred-curated', 'memory-stale', 'memory-failed')
+    'inferred-curated', 'memory-stale', 'memory-failed', 'memory-overlay', 'memory-mapped')
 SUITES = {'lexical-statics', 'lexical-statics-controls',
     'recovered-statics-positive', 'recovered-statics-controls'}
 DEBUGGER = 'GDB batch: values, types, addresses, lexical lookup, instruction stepping and exit 0'
@@ -46,7 +46,7 @@ def observations(rows, mode, objects, labels, role):
             scope = 'root'
         if mode in ('failed', 'memory-stale', 'memory-failed') and scope in ('root', 'outer', 'inner', 'sibling'):
             scope = 'global'
-        if mode in ('inferred-stale', 'inferred-namespace', 'inferred-overlap') and scope == 'other':
+        if mode in ('inferred-stale', 'inferred-namespace', 'inferred-overlap', 'memory-overlay', 'memory-mapped') and scope == 'other':
             scope = 'global'
         require(isinstance(row, dict) and row.get('marker') == marker and row.get('scope') == scope,
             'static debugger lost lexical identity or boundary ordering')

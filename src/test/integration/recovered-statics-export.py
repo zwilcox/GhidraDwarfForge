@@ -62,7 +62,8 @@ def main():
         return (case / (label + '.log')).read_text()
 
     rows = []
-    modes = ['inferred-stale', 'inferred-namespace', 'inferred-overlap', 'inferred-curated', 'memory-stale', 'memory-failed'] \
+    modes = ['inferred-stale', 'inferred-namespace', 'inferred-overlap', 'inferred-curated',
+        'memory-stale', 'memory-failed', 'memory-overlay', 'memory-mapped'] \
         if args.controls_only else ['inferred', 'memory']
     for mode in modes:
         output = case / (mode + '.dbg')
@@ -87,6 +88,8 @@ def main():
                 assert 'Omitted explicit static binding' in log
             if mode == 'memory-stale':
                 assert 'rejected lexical scope' in log
+            if mode in ['memory-overlay', 'memory-mapped']:
+                assert 'Omitted memory local saved_other: unsupported memory mapping' in log
             current = [digest(output), digest(Path(str(output) + '.c'))]
             assert pair is None or current == pair
             pair = current

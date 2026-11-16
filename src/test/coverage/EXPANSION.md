@@ -6,6 +6,50 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Memory-local address spaces
+
+CONFIRMED: the new real-ProgramDB regression fails on the previous exporter
+because a function-owned local in an overlay is reduced to a plain ELF address.
+Memory locals now reject overlay, mapped and non-default address spaces with a
+diagnostic, matching the existing ordinary-global admission policy. Ordinary
+saved and inferred memory locals retain their names, types, normalized addresses
+and ownership. No location is invented for an unsupported mapping.
+
+The existing static-recovery task now includes 90 extraction cases across
+x86-64, AArch64, ARM32 and both MIPS byte orders (850 additional assertions).
+Cases cover saved-type precedence, missing/stale inference, memory boundaries,
+rebasing, first-use restrictions, rejected bindings/scopes, uninitialized objects
+and unsupported mappings. Extraction preserves program state and object bytes,
+is deterministic, and honors cancellation. These explicit recovery candidates
+test extraction; they do not claim execution of the decompiler.
+
+All nine selected mutations are detected in 24.603 seconds, including incorrect
+normalization, extent, provenance, saved-type precedence and mapping admission.
+The first extent mutant failed to compile because it removed the only checked
+address-overflow operation; that attempt is not credited. The corrected mutant
+still performs address arithmetic and fails the intended behavioral assertion.
+
+The real headless static-scope harness adds overlay and loaded mapped-memory
+controls to the existing exec/PIE/rebased-PIE pipeline. It requires deterministic
+output, unchanged inputs/project, independent GNU/LLVM/libdwarf validation and
+GDB's correct fallback to the separate global object. Both controls are mandatory
+for coverage admission, including their JVM sessions and debugger observations.
+CONFIRMED: the complete x86-64 non-PIE replay passes, including the existing
+scope/recovery controls, cancellation, deterministic reruns, input/project
+preservation, independent validators and all debugger boundaries. Five complete
+collections with 37 JVM sessions pass the stricter admission policy. All 222
+coverage-tool tests pass in 8.912 seconds. PIE, rebased PIE and fresh combined
+measurement remain pending at this checkpoint.
+
+The production JAR has changed: previous combined percentages remain historical
+and must not be presented as coverage of this fix or merged with incompatible
+probes. Evidence is in the bounded coverage workspace under
+`memory-local-overlay-before.log`, `memory-local-overlay-fixed-cwd.log`,
+`memory-local-fixed-mutations/` and the `memory-local-*` headless logs. The first
+headless setup lacked package metadata; later fixture corrections distinguish
+the saved name from its display name and ensure mapped storage is actually in
+the loaded default address space. Retain those failures as diagnostic evidence.
+
 ## Straight-line local ownership boundaries
 
 CONFIRMED focused validation: `LaterLocalOwnershipSmoke` extends the existing
