@@ -2150,6 +2150,12 @@ jobs:
           done
           python3 src/test/integration/i386-extended-return-export.py "$GHIDRA_INSTALL_DIR" --target x86_64 --role exec
 
+      - name: i386 x87 return correction at the compiler input-region boundary
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/integration/i386-input-region-export.py "$GHIDRA_INSTALL_DIR" \
+              --results build/test-results/i386-input-region
+
       - name: i386 libc vector aggregate and explicit convention matrix
         if: matrix.target == 'x86_64'
         run: |

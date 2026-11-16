@@ -97,6 +97,14 @@ I386_ALLOCATION_MUTANTS = [
      "new Resolution(changes, Set.of(), adjusted[0])"),
     ("i386-allocation-rejects-unassigned-aggregate", I386_ALLOCATION, I386_ALLOCATION_TEST,
      "if (prior.isUnassignedStorage() && replacement.isUnassignedStorage()) continue;", ""),
+    ("i386-allocation-rejects-freed-input-slot", I386_ALLOCATION, I386_ALLOCATION_TEST,
+     "return !replacement.isForcedIndirect() && formalType.getLength() > 0 &&",
+     "return replacement.isForcedIndirect() && formalType.getLength() > 0 &&"),
+    ("i386-allocation-admits-partial-input-slot", I386_ALLOCATION, I386_ALLOCATION_TEST,
+     "replacement.size() == formalType.getLength();", "replacement.size() <= formalType.getLength();"),
+    ("i386-allocation-invents-unassigned-call-input", I386_ALLOCATION, I386_ALLOCATION_TEST,
+     "if (storage.isUnassignedStorage() && prior.isUnassignedStorage()) return null;",
+     "if (storage.isUnassignedStorage() && prior.isUnassignedStorage()) { inputs.add(storage); continue; }"),
 ]
 
 VALIDATOR_STATUS_MUTANTS = [

@@ -27,9 +27,9 @@ PR #208 was accepted on main at `c6265e1c657c9ffc7a4d9cb71017cca1e1bc5786`:
 Its legacy JavaExec report is 23,305/29,782 lines (78.3%) and 17,330/25,872
 branches (67.0%). That badge's scope remains unchanged.
 
-## Verified local checkpoint
+## Historical local checkpoint before the i386 production fix
 
-The latest complete JavaExec run executed all 210 tasks at
+HISTORICAL: the pre-fix complete JavaExec run executed all 210 tasks at
 `e40fabd6375e848ea41e2b08991346242b2139c0` in 273.5 seconds. The combined local report
 contains 1,550 sessions with the full unchanged denominator:
 
@@ -43,9 +43,9 @@ contains 1,550 sessions with the full unchanged denominator:
 The binary/location line count is 18,290/19,193, meeting its exact 95%
 line gate. File transactions/validation also meets its line gate at
 6,365/6,677. Both critical branch targets remain unmet. The exact overall
-85% line and 80% branch targets are met locally.
+85% line and 80% branch targets were met locally for that production revision.
 
-Production JAR SHA-256 remains
+That production JAR SHA-256 was
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
@@ -715,7 +715,7 @@ failed on Windows-host and big-endian MIPS; their local fixes require a fresh
 hosted run. At that checkpoint, remaining exact branch outcomes for the critical 90% targets were
 1,859 in binary/location code and 440 in file transactions/validation.
 
-## i386 allocation admission and compiler limits
+## Historical i386 allocation admission and compiler limits
 
 The existing `i386ParameterAllocationSmoke` now invokes 367 additional checks
 using actual Ghidra ProgramDBs and the pinned compiler specification. Supported
@@ -751,3 +751,48 @@ coverage-tool tests. The raw combined union adds 5 lines and 15 branch outcomes.
 I386ParameterAllocation covers 94/101 lines and 99/134 branches. The exact
 remaining critical branch gaps are now 1,844 and 440, respectively. Both critical
 branch targets and current hosted acceptance remain pending.
+
+
+## i386 input-region export failure and correction
+
+CONFIRMED: a real headless export with 125 integer arguments and an i386 x87
+extended floating return aborted the entire export with an audited-stack-boundary
+exception. The saved Ghidra compiler model's 500-byte input region included a
+spurious four-byte result pointer. Removing it makes room for the 125th integer,
+but the old proof compared that valid new carrier with previously unassigned
+storage. The original input, saved model and prior output pair survived the
+failed export; unrelated functions did not get exported.
+
+The correction accepts a newly available stack carrier only from the audited
+compiler model and only when it contains the complete formal value with no
+forced indirection. Existing assigned carriers retain their width, indirection
+and offset checks. Inputs still unassigned in both models remain without a
+location. Call overrides requiring a complete input allocation now decline
+incomplete allocations without aborting the export. Count limits and compiler
+identity checks remain in force.
+
+The permanent integration harness covers 124, 125 and 126 arguments in both
+ET_EXEC and PIE binaries. It uses compiler reference DWARF, the installed
+production exporter, independent validators and GDB. Assertions check argument
+values, unavailable storage, preservation of an ordinary function, normal
+execution, unchanged input/model and byte-identical repeat exports. CI runs this
+harness in the x86 target lane. Model tests additionally cover 4095/4096 limits,
+a genuinely unassigned oversized aggregate, cancellation and 17 independent
+storage-proof cases using public Ghidra objects.
+
+All six permanent-harness cases passed in 73.2 seconds, including source lookup,
+the explicit unavailable-location assertion, independent validators and GDB.
+The cached installed module was restored and hash-checked after the experiment.
+All 154 coverage-tool tests and workflow lint pass. The complete JavaExec refresh
+and corrected-version hosted coverage remain pending at this checkpoint.
+
+All 146 selected mutation controls pass in 327.2 seconds. The three new faults
+reject the newly available carrier, accept a partial carrier, and fabricate an
+unassigned call input. Each is caught by its intended behavioral assertion;
+compilation/setup failure is not accepted as detection. These controls do not
+constitute a repository-wide mutation score.
+
+This is a production bytecode change. The historical combined percentages above
+do not establish coverage of this fix. Fresh JavaExec, headless/native-Java and
+Windows execution data must match the corrected classes before a new combined
+report can be admitted. No sources are excluded or moved between critical groups.

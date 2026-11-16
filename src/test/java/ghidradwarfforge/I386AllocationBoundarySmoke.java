@@ -46,6 +46,7 @@ final class I386AllocationBoundarySmoke {
             var image = ElfImage.read(file);
             var policy = I386ParameterAllocation.forProgram(program, image, TaskMonitor.DUMMY, ignored -> { });
             require(policy.hasReturnCorrections(), "audited i386 profile advertises return correction");
+            ghidradwarfforge.targets.I386StackInputProofSmoke.run(program);
             limits(program, policy);
             unassignedAggregate(program, policy);
             ownership(program, foreign, policy);
@@ -96,32 +97,23 @@ final class I386AllocationBoundarySmoke {
         // The pinned x86gcc.cspec input region is 500 bytes. With the saved
         // automatic return pointer it fits 124 explicit four-byte integers.
         // Count admission alone is not proof that all storage was allocated.
-        for (int count : List.of(0, 1, 124, 125, 4095, 4096)) {
+        for (int count : List.of(0, 1, 124, 125, 126, 4095, 4096)) {
             var signature = signature(program, extended, count);
             String before = signature.getPrototypeString();
-            GhidraParameterAllocation.SignatureResolution result = null;
-            if (count > 124 && count <= 4095) {
-                try {
-                    policy.resolveSignature(signature, TaskMonitor.DUMMY);
-                    throw new AssertionError("call correction accepted storage outside audited compiler region");
-                }
-                catch (IllegalStateException expected) {
-                    require(expected.getMessage().equals("Call override escaped audited stack boundary"), "specific storage-proof refusal");
-                }
+            var monitor = new CountingMonitor(Integer.MAX_VALUE);
+            GhidraParameterAllocation.SignatureResolution result;
+            try { result = policy.resolveSignature(signature, monitor); }
+            catch (IllegalStateException unexpected) {
+                throw new AssertionError("bounded real signature must be corrected or conservatively declined", unexpected);
             }
-            else {
-                try { result = policy.resolveSignature(signature, TaskMonitor.DUMMY); }
-                catch (IllegalStateException unexpected) {
-                    throw new AssertionError("admitted small signature or early count refusal must not reach a storage-proof failure", unexpected);
-                }
-            }
-            if (count <= 124) {
-                require(result != null, "admit call signature at documented argument boundary");
+            if (count <= 125) {
+                require(result != null, "admit complete compiler-proven call allocation");
                 carrier(result.returnStorage());
                 require(result.parameters().size() == count, "call signature retains every explicit argument");
                 for (int index = 0; index < count; index++) stack(result.parameters().get(index), index);
             }
-            else if (count == 4096) require(result == null, "next oversized call signature remains uncorrected before allocation");
+            else require(result == null, "incomplete or excessive call signature remains uncorrected");
+            if (count == 4096) require(monitor.visits == 1, "count limit rejects before traversing argument types");
             require(signature.getPrototypeString().equals(before), "call correction does not rewrite formal signature");
 
             var function = function(program, extended, count, "__cdecl");
@@ -129,28 +121,20 @@ final class I386AllocationBoundarySmoke {
             require(function.getParameterCount() == count + 1 && function.getParameters()[0].isAutoParameter(),
                 "actual baseline exposes one automatic result pointer");
             if (count > 124) require(function.getParameters()[count].getVariableStorage().isUnassignedStorage(),
-                "real saved compiler allocation supplies no carrier beyond its bounded input region");
-            if (count > 124 && count <= 4095) {
-                try {
-                    policy.resolve(function, TaskMonitor.DUMMY, ignored -> { });
-                    throw new AssertionError("definition correction accepted storage outside audited compiler region");
-                }
-                catch (IllegalStateException expected) {
-                    require(expected.getMessage().equals("Floating-return correction escaped audited stack boundary"), "specific saved storage-proof refusal");
-                }
-                require(snapshot(function).equals(before), "failed correction preserves saved definition");
-                continue;
-            }
+                "saved compiler allocation supplies no carrier beyond its bounded input region");
             GhidraParameterAllocation.Resolution resolved;
             try { resolved = policy.resolve(function, TaskMonitor.DUMMY, ignored -> { }); }
             catch (IllegalStateException unexpected) {
-                throw new AssertionError("admitted small definition or early count refusal must not reach a storage-proof failure", unexpected);
+                throw new AssertionError("real bounded definition must preserve available and unavailable arguments", unexpected);
             }
-            if (count <= 124) {
+            if (count <= 4095) {
                 carrier(resolved.returnStorage());
-                require(resolved.omittedAutomaticParameters().equals(Set.of(0)) && resolved.storage().size() == count,
-                    "omit only the automatic pointer and retain all explicit ordinals");
-                for (int index = 0; index < count; index++) stack(resolved.storage().get(index + 1), index);
+                int proven = Math.min(count, 125);
+                require(resolved.omittedAutomaticParameters().equals(Set.of(0)) && resolved.storage().size() == proven,
+                    "omit only automatic pointer; map only compiler-proven explicit carriers");
+                for (int index = 0; index < proven; index++) stack(resolved.storage().get(index + 1), index);
+                for (int index = proven; index < count; index++) require(!resolved.storage().containsKey(index + 1),
+                    "arguments outside the adjusted region acquire no fabricated storage");
                 require(policy.corrections(function, TaskMonitor.DUMMY, ignored -> { }).equals(resolved.storage()),
                     "corrections entrypoint agrees with resolved definition");
                 require(policy.resolveDeclaration(function, TaskMonitor.DUMMY, ignored -> { }).equals(resolved),
@@ -195,13 +179,8 @@ final class I386AllocationBoundarySmoke {
         require(snapshot(function).equals(before), "unassigned aggregate declaration and saved storage unchanged");
         var signature = signature(program, extended, 0);
         signature.setArguments(new ParameterDefinition[] { new ParameterDefinitionImpl("large", large, null) });
-        try {
-            policy.resolveSignature(signature, TaskMonitor.DUMMY);
-            throw new AssertionError("call override fabricated an oversized aggregate carrier");
-        }
-        catch (IllegalStateException expected) {
-            require(expected.getMessage().equals("Call override escaped audited stack boundary"), "call override refuses missing aggregate storage");
-        }
+        require(policy.resolveSignature(signature, TaskMonitor.DUMMY) == null,
+            "call override conservatively declines missing aggregate storage");
     }
 
     private static void aliases(ProgramDB program, GhidraParameterAllocation policy) throws Exception {
