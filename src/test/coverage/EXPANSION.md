@@ -6,6 +6,35 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Inherited ARM mapping conflicts and allocation adjacency
+
+CONFIRMED at `3797cb14`: adjacent allocated sections preserve exact mapping
+output; overlapping allocations fail with the expected diagnostic. Inherited
+ARM/Thumb function tags are checked for both ordinary and absolute symbols.
+Markers at the exclusive section end cannot constrain preceding instructions;
+matching inherited data markers suppress only the redundant mapping. Conflicting
+intervals, wrong section/address evidence, misaligned ARM transitions and reserved
+symbol names are rejected. Every fixture preserves its original bytes.
+
+The focused suite passes 290 assertions; all eight selected ARM mutations are
+detected (3.195 seconds). All 211 JavaExec tasks pass (276.567 seconds), as do
+53,432 independent DWARF vectors, 197 coverage-tool checks and actionlint.
+Baseline48 verifies 255 production sources / 901 production classes / 616 test
+classes. JavaExec measures 23,814 lines and 18,614 branches.
+
+The verified 1,271-session matching-bytecode diagnostic union measures
+28,458/29,786 lines (95.5%) and 21,117/25,878 branches (81.6%). Binary/location
+coverage is 18,350/19,197 lines (95.6%) and 15,241/18,726 branches (81.4%);
+file operations remain 6,386/6,677 lines (95.6%) and 3,504/4,250 branches
+(82.4%). This adds 15 branch outcomes and four lines. Critical branch targets,
+current hosted acceptance and main publication remain incomplete. Production
+bytecode and the measurement denominator are unchanged.
+
+Evidence in the bounded coverage workspace: `javaexec-baseline-48/`,
+`arm-conflicts-focused.log`, `arm-conflicts-selected-mutations/`,
+`arm-conflicts-javaexec-checked/`, `arm-conflicts-union-verified/`,
+`arm-conflicts-baseline-result.json` and `arm-conflicts-verification.log`.
+
 ## ARM section-mapping evidence and allocation boundaries
 
 CONFIRMED at `91b4bae4`: evidence checks accept representable unsigned 32-bit
