@@ -6,6 +6,7 @@ substitute a local baseline for the required same-run hosted acceptance gate.
 """
 import argparse
 from decimal import Decimal, ROUND_HALF_UP
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -94,6 +95,7 @@ def load_local(manifest, jar, repository):
     directory = value.get('directory', '')
     receipts = value.get('receipts', {})
     harnesses = value.get('harnessSha256', {})
+    snapshot = value.get('harnessSnapshotCommit')
     if (value.get('schema') != 1 or value.get('kind') != 'local-integration'
             or not re.fullmatch(r'[0-9a-f]{40}', value.get('checkoutCommit', ''))
             or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}', value.get('run', ''))
@@ -101,11 +103,25 @@ def load_local(manifest, jar, repository):
             or not isinstance(receipts, dict) or not 0 < len(receipts) <= 100
             or not isinstance(harnesses, dict) or not 0 < len(harnesses) <= 1000):
         raise ValueError('invalid local integration manifest')
+    if snapshot is not None and not re.fullmatch(r'[0-9a-f]{40}', snapshot):
+        raise ValueError('invalid harness snapshot commit')
     for name, expected in harnesses.items():
         path = Path(name)
         if (path.is_absolute() or '..' in path.parts or path.as_posix() != name
-                or not re.fullmatch(r'[0-9a-f]{64}', expected)
-                or javaexec.digest(repository / path) != expected):
+                or not re.fullmatch(r'[0-9a-f]{64}', expected)):
+            raise ValueError('local measurement harness changed or has an invalid path')
+        if snapshot is None:
+            actual = javaexec.digest(repository / path)
+        else:
+            # A committed snapshot may capture the previously measured worktree.
+            # Its bytes must match every recorded hash; this is not a claim that
+            # the tests ran with that commit checked out or that newer oracles ran.
+            result = subprocess.run(['git', '--no-replace-objects', 'cat-file', 'blob', snapshot + ':' + name],
+                cwd=repository, capture_output=True, timeout=10)
+            if result.returncode or len(result.stdout) > 1024 * 1024:
+                raise ValueError('unavailable or excessive harness snapshot')
+            actual = hashlib.sha256(result.stdout).hexdigest()
+        if actual != expected:
             raise ValueError('local measurement harness changed or has an invalid path')
     collections = manifest.parent / directory
     javaexec.exact_files(collections, receipts)
@@ -122,6 +138,7 @@ def load_local(manifest, jar, repository):
         suites.add(record['suite'])
         rows.extend((record['layer'], row['session'], folder / row['file']) for row in record['sessions'])
     return rows, {'kind': 'local-integration', 'checkoutCommit': value['checkoutCommit'],
+        'harnessSnapshotCommit': snapshot,
         'run': value['run'], 'harnessSha256': harnesses, 'manifestSha256': javaexec.digest(manifest),
         'sessions': len(rows), 'suites': sorted(suites), 'hostedAcceptance': False}
 
@@ -196,13 +213,20 @@ def report(args):
         executions, origin = load_local(manifest, jar, args.sources.resolve().parents[2])
         rows.extend(executions)
         origins.append(origin)
+    return write_combined(args, jar, rows, origins)
+
+
+def write_combined(args, jar, rows, origins, *, cohort=None):
     # Classify the complete source inventory before exposing any combined counters.
     source_names = {path.relative_to(args.sources).as_posix() for path in args.sources.rglob('*.java')}
     classification = inventory(args.inventory, source_names)
     args.output.mkdir(parents=True, exist_ok=False)
-    summary = {'schema': 1, 'status': 'INCOMPLETE', 'scope': 'Local combined Java baseline',
+    summary = {'schema': 1, 'status': 'INCOMPLETE',
+        'scope': 'Local combined Java baseline' if cohort is None else 'Combined Java from one CI commit and run',
         'hostedAcceptance': False, 'origins': origins, 'productionJarSha256': javaexec.digest(jar),
         'inventorySha256': javaexec.digest(args.inventory), 'nativeCMeasured': False}
+    if cohort is not None:
+        summary['cohort'] = cohort
     javaexec.save(args.output / 'summary.json', summary)
     manifest = args.output / 'sessions.tsv'
     lines, hashes = [], {}
@@ -220,7 +244,8 @@ def report(args):
         str(manifest), str(args.sources), str(args.output / 'xml')]
     with (args.output / 'verification.log').open('w') as log:
         subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=240)
-    if any(javaexec.digest(path) != digest for path, digest in hashes.items()):
+    if (javaexec.digest(jar) != summary['productionJarSha256']
+            or any(javaexec.digest(path) != digest for path, digest in hashes.items())):
         raise ValueError('execution data changed while reporting')
     layers = {}
     population = None
@@ -243,10 +268,12 @@ def report(args):
         target = None if group == 'remainingProduction' else classification['targets']['eachCriticalGroup']
         groups[group] = {'sources': len(names),
             'metrics': assessed(add(layers['combined']['sources'][name] for name in names), target)}
-    summary.update(status='LOCAL_BASELINE', sessions=len(rows), layers=layers, groups=groups,
+    summary.update(status='LOCAL_BASELINE' if cohort is None else 'VERIFIED_HOSTED_MEASUREMENT',
+        sessions=len(rows), layers=layers, groups=groups,
         overall=assessed(layers['combined']['counters'], classification['targets']['overall']))
     javaexec.save(args.output / 'summary.json', summary)
     print(json.dumps({key: summary[key] for key in ('status', 'hostedAcceptance', 'sessions', 'overall', 'groups')}))
+    return summary
 
 
 def main():

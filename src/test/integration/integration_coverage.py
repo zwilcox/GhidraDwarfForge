@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 import tempfile
 import uuid
 from zipfile import ZipFile
@@ -146,6 +147,8 @@ class Collection:
         sessions = self.record['sessions']
         if not sessions or any(row['status'] != 'ORACLE_PASSED' for row in sessions):
             raise ValueError('integration coverage contains incomplete sessions')
+        if any(row['status'] != 'ORACLE_PASSED' for row in self.record.get('launcherInvocations', [])):
+            raise ValueError('integration coverage contains incomplete launcher invocations')
         if digest(self.jar) != self.record['productionJarSha256']:
             raise ValueError('production classes changed during integration test')
         self.record.update(status='COLLECTED', evidenceSha256=digest(evidence))
@@ -154,6 +157,77 @@ class Collection:
         self._save()
         validate_collection(self.root, self.jar)
         self.closed = True
+
+    @contextmanager
+    def launcher_java(self, java, label):
+        """Supply a test-only Java executable to a sequential Linux launcher.
+
+        The adapter execs the real JVM, preserving PID, streams and signals. Each
+        preview/action invocation allocates its own session. The caller must wait
+        for the launcher and assert its complete behavioral outcome in this block.
+        """
+        if not self.enabled:
+            yield str(java)
+            return
+        if self.closed:
+            raise ValueError('coverage collection already finished')
+        if os.name != 'posix' or self.record['layer'] != 'native-java':
+            raise ValueError('launcher measurement requires Linux native Java')
+        java = Path(java).resolve(strict=True)
+        if java.name != 'java' or not os.access(java, os.X_OK):
+            raise ValueError('launcher measurement requires an executable Java selection')
+        if re.search(r'\s', sys.executable):
+            raise ValueError('launcher measurement requires a Python interpreter path without whitespace')
+        if digest(self.jar) != self.record['productionJarSha256']:
+            raise ValueError('production classes changed during integration test')
+        invocation = {'label': str(label), 'status': 'INCOMPLETE', 'sessions': []}
+        self.record.setdefault('launcherInvocations', []).append(invocation)
+        self._save()
+        template = Path(__file__).resolve().parents[1] / 'coverage/launcher-java.py'
+        with tempfile.TemporaryDirectory(prefix='launcher-', dir=self.root) as temporary:
+            directory = Path(temporary)
+            requests = directory / 'requests'
+            requests.mkdir()
+            wrapper = directory / 'java'
+            wrapper.write_text('#!' + sys.executable + '\n' + template.read_text(encoding='utf-8'), encoding='utf-8')
+            wrapper.chmod(0o700)
+            save(directory / 'java.json', {'java': str(java), 'agent': str(self.agent),
+                'output': str(self.root), 'excludes': self.record['excludes']})
+            accepted = False
+            try:
+                yield str(wrapper)
+                accepted = True
+            finally:
+                try:
+                    records = sorted(requests.iterdir())
+                    if not 0 < len(records) <= 16 or len(self.record['sessions']) + len(records) > MAX_SESSIONS:
+                        raise ValueError('missing or excessive launcher JVM records')
+                    for path in records:
+                        if (path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= 4096):
+                            raise ValueError('invalid launcher JVM record')
+                        value = json.loads(path.read_text(encoding='utf-8'))
+                        session = value.get('session', '')
+                        if (set(value) != {'session'} or not re.fullmatch(r'forge-integration-[0-9a-f]{32}', session)
+                                or path.name != session + '.json'
+                                or any(row['session'] == session for row in self.record['sessions'])):
+                            raise ValueError('invalid or duplicate launcher session')
+                        execution = self.root / (session + '.exec')
+                        row = {'label': str(label), 'session': session, 'file': execution.name, 'status': 'INCOMPLETE'}
+                        self.record['sessions'].append(row)
+                        invocation['sessions'].append(session)
+                        if (execution.is_symlink() or not execution.is_file()
+                                or not 0 < execution.stat().st_size <= MAX_EXEC_BYTES):
+                            raise ValueError('missing or excessive launcher execution data')
+                        if accepted:
+                            row.update(status='ORACLE_PASSED', sha256=digest(execution))
+                    if sum(p.stat().st_size for p in self.root.glob('*.exec')) > MAX_RUN_BYTES:
+                        raise ValueError('integration coverage run exceeds storage limit')
+                    if digest(self.jar) != self.record['productionJarSha256']:
+                        raise ValueError('production classes changed during integration test')
+                    if accepted:
+                        invocation.update(status='ORACLE_PASSED', adapterSha256=digest(template))
+                finally:
+                    self._save()
 
     def record_forced_halt(self, label, exit_code):
         """Runtime.halt deliberately bypasses the agent's shutdown dump.
@@ -225,4 +299,13 @@ def validate_collection(root, jar):
             raise ValueError('integration execution data changed')
     if size > MAX_RUN_BYTES or names != {p.name for p in root.glob('*.exec')}:
         raise ValueError('excessive or unrecorded integration execution data')
+    assigned = set()
+    for invocation in record.get('launcherInvocations', []):
+        children = invocation.get('sessions', [])
+        if (invocation.get('status') != 'ORACLE_PASSED' or not isinstance(children, list)
+                or not 0 < len(children) <= 16 or len(set(children)) != len(children)
+                or set(children) & assigned or not set(children) <= {row['session'] for row in sessions}
+                or not re.fullmatch(r'[0-9a-f]{64}', invocation.get('adapterSha256', ''))):
+            raise ValueError('invalid or incomplete launcher invocation')
+        assigned.update(children)
     return record

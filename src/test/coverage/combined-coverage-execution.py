@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Real JVM controls for probe union, separate layers and invalid execution rejection."""
 import argparse
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -105,6 +106,38 @@ public final class Harness {
         if int(unloaded.get('covered')) != 0 or int(unloaded.get('missed')) == 0:
             raise AssertionError('unloaded production source was dropped')
 
+    # Bind a real source diff to the actual JaCoCo line rows above. One decision
+    # changed on line 4: one execution must fail the branch gate, the union pass.
+    repository = root / 'changed-code-fixture'
+    changed_source = repository / 'src/main/java/ghidradwarfforge/Branch.java'
+    changed_source.parent.mkdir(parents=True)
+    original = (source / 'Branch.java').read_text()
+    changed_source.write_text(original.replace('return 7', 'return 3'))
+
+    def git(*arguments):
+        return subprocess.check_output(['git', '-c', 'user.name=Coverage fixture',
+            '-c', 'user.email=coverage@example.invalid', '-c', 'commit.gpgsign=false',
+            '-c', 'core.hooksPath=' + str(repository / 'absent-hooks'), *arguments],
+            cwd=repository, text=True).strip()
+
+    git('init', '-q', '--initial-branch=fixture')
+    git('add', 'src')
+    git('commit', '-qm', 'Before decision change')
+    base = git('rev-parse', 'HEAD')
+    changed_source.write_text(original)
+    git('add', 'src')
+    git('commit', '-qm', 'Changed decision')
+    commit = git('rev-parse', 'HEAD')
+    specification = importlib.util.spec_from_file_location('changed_code', HERE / 'changed-code.py')
+    changed = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(changed)
+    for layer, accepted in (('javaexec', False), ('native-java', False), ('combined', True)):
+        measurement = changed.report(repository, base, commit, root / 'valid' / (layer + '.xml'), changed.TARGETS)
+        if (measurement['targetsMet'] != accepted
+                or measurement['files']['ghidradwarfforge/Branch.java']['executableLines'] != [4]):
+            raise AssertionError('changed-code gate did not match actual decision execution: ' + layer)
+        (root / ('changed-' + layer + '.json')).write_text(json.dumps(measurement, indent=4) + '\n')
+
     controls = {'wrong-class': 'unknown or mismatched class', 'foreign': 'unknown or mismatched class',
         'extra-session': 'unexpected or combined coverage sessions', 'no-hits': 'no production execution',
         'short-probes': 'wrong probe count', 'long-probes': 'wrong probe count'}
@@ -143,7 +176,8 @@ public final class Harness {
         'testClasses': 1, 'layers': 2, 'sessions': 2, 'negativeControls': [*controls,
             'duplicate', 'session-id', 'test-collision', 'renamed-class', 'test-leak'],
         'unloadedClassRetained': True, 'testClassesExcluded': True,
-        'oppositeBranchesCombined': True, 'separateLayersUnchanged': True}
+        'oppositeBranchesCombined': True, 'separateLayersUnchanged': True,
+        'changedDecisionGate': True}
     (root / 'result.json').write_text(json.dumps(result, indent=4) + '\n')
     print(json.dumps(result))
 

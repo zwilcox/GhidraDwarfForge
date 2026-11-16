@@ -190,6 +190,19 @@ tasks.register("prepareIntegrationCoverage") {
         def destination = layout.buildDirectory.file("test-coverage-tools/jacoco-classpath.txt").get().asFile
         destination.parentFile.mkdirs()
         destination.text = configurations.jacocoAnt.asPath + "\n"
+        def libraries = layout.buildDirectory.dir("test-coverage-tools/report-libs").get().asFile
+        def inputs = configurations.jacocoAnt.files
+        if (inputs.collect { it.name }.toSet().size() != inputs.size()) {
+            throw new GradleException("Duplicate JaCoCo report dependency filename")
+        }
+        project.sync { specification ->
+            specification.from(inputs)
+            specification.into(libraries)
+        }
+        def manifest = [schema: 1, jacocoVersion: coverageVersion,
+            files: inputs.sort { it.name }.collectEntries { [(it.name): coverageSha256(it)] }]
+        new File(destination.parentFile, "report-libs.json").text =
+            groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(manifest)) + "\n"
     }
 }
 

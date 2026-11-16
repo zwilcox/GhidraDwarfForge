@@ -742,6 +742,23 @@ jobs:
               --java-home "$JAVA_HOME" --agent build/test-coverage-tools/jacocoagent.jar \
               --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
               --output build/test-results/extension-build/integration-coverage-controls
+          python3 -B src/test/coverage/launcher-coverage-execution.py \
+              --java-home "$JAVA_HOME" --agent build/test-coverage-tools/jacocoagent.jar \
+              --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --output build/test-results/extension-build/launcher-coverage-controls
+          python3 -B src/test/coverage/combined-coverage-execution.py \
+              --java-home "$JAVA_HOME" --agent build/test-coverage-tools/jacocoagent.jar \
+              --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --output build/test-results/extension-build/combined-coverage-controls
+          python3 -B src/test/coverage/javaexec-coverage.py \
+              --jar build/libs/GhidraDwarfForge.jar --main-classes build/classes/java/main \
+              --test-classes build/classes/java/test --tasks build/test-coverage/tasks \
+              --sessions build/test-coverage/sessions --executions build/jacoco \
+              --expected-tasks src/test/coverage/javaexec-tasks.json \
+              --output build/combined-javaexec-input/collection --commit "$SOURCE_COMMIT" --run-id "$SOURCE_RUN"
+          cp build/libs/GhidraDwarfForge.jar build/combined-javaexec-input/production.jar
+          cp -R build/test-coverage-tools/report-libs build/combined-javaexec-input/tools
+          cp build/test-coverage-tools/report-libs.json build/combined-javaexec-input/tools.json
           python3 -B support/test-coverage-report.py \
               --xml build/test-coverage/coverage.xml --tasks build/test-coverage/tasks \
               --output build/test-coverage/public --repository "$SOURCE_REPOSITORY" \
@@ -759,6 +776,13 @@ jobs:
         with:
           name: integration-java-coverage-linux-host
           path: build/host-integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: combined-javaexec-input
+          path: build/combined-javaexec-input/
           if-no-files-found: error
           retention-days: 14
 
@@ -3291,7 +3315,8 @@ jobs:
               --require-suite build-id-installation --require-suite instruction-context \
               --require-suite source-context --require-suite annotation-inventory --require-suite equate-evidence \
               --require-suite annotation-export --require-suite failed-source-export \
-              --require-suite class-scopes --require-suite inheritance-producer --require-suite inheritance-names
+              --require-suite class-scopes --require-suite inheritance-producer --require-suite inheritance-names \
+              --require-suite build-id-command
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'
@@ -4222,6 +4247,62 @@ jobs:
           retention-days: 14
           include-hidden-files: true
 
+  combined-java-coverage:
+    needs: [ extension-build, target-preflight, cortex-m-profile, windows-host ]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/download-artifact@v8
+        with:
+          name: combined-javaexec-input
+          path: build/combined-inputs/javaexec
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-linux
+          path: build/combined-inputs/linux
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-linux-host
+          path: build/combined-inputs/linux-host
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-windows
+          path: build/combined-inputs/windows
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-firmware
+          path: build/combined-inputs/firmware
+      - name: Verify combined Java measurement and enforce accepted targets
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+          SOURCE_RUN: ${{ github.run_id }}
+          BASE_COMMIT: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$BASE_COMMIT" ]]; then
+              BASE_COMMIT="$(git rev-parse "$SOURCE_COMMIT^")"
+          fi
+          python3 -B src/test/coverage/hosted-combined-report.py \
+              --bundle build/combined-inputs/javaexec --expected-tasks src/test/coverage/javaexec-tasks.json \
+              --linux build/combined-inputs/linux --linux-host build/combined-inputs/linux-host \
+              --windows build/combined-inputs/windows --firmware build/combined-inputs/firmware \
+              --inventory src/test/coverage/critical-sources.json --sources src/main/java \
+              --java "$JAVA_HOME/bin/java" --output build/combined-java-coverage \
+              --commit "$SOURCE_COMMIT" --base-commit "$BASE_COMMIT" --run-id "$SOURCE_RUN"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: combined-java-coverage
+          path: build/combined-java-coverage/
+          if-no-files-found: error
+          retention-days: 14
+
   required-validation:
     if: always()
     needs:
@@ -4237,6 +4318,7 @@ jobs:
       - windows-host
       - attachment-windows
       - windows-attachment-gdb
+      - combined-java-coverage
     runs-on: ubuntu-24.04
     steps:
       - name: Require every supported validation path
@@ -4253,6 +4335,7 @@ jobs:
           WINDOWS_HOST_RESULT: ${{ needs.windows-host.result }}
           ATTACHMENT_WINDOWS_RESULT: ${{ needs.attachment-windows.result }}
           WINDOWS_ATTACHMENT_GDB_RESULT: ${{ needs.windows-attachment-gdb.result }}
+          COMBINED_COVERAGE_RESULT: ${{ needs.combined-java-coverage.result }}
         run: |
           set -euo pipefail
           failed=0
@@ -4260,7 +4343,8 @@ jobs:
               "$NATIVE_WINDOWS_RESULT" "$EXTENSION_BUILD_RESULT" \
               "$RELEASE_PACKAGE_RESULT" "$TARGET_PREFLIGHT_RESULT" \
               "$LINUX_REFERENCE_RESULT" "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT" \
-              "$WINDOWS_ATTACHMENT_GDB_RESULT" "$PERF_BUILD_ID_RESULT" "$CORTEX_M_RESULT"; do
+              "$WINDOWS_ATTACHMENT_GDB_RESULT" "$PERF_BUILD_ID_RESULT" "$CORTEX_M_RESULT" \
+              "$COMBINED_COVERAGE_RESULT"; do
             if [[ "$result" != success ]]; then
               failed=1
             fi

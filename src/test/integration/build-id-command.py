@@ -2,6 +2,7 @@
 """Exercise the real Linux build-ID launcher, requests, cancellation and GDB setup."""
 import argparse
 import base64
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -11,6 +12,7 @@ import signal
 import stat
 import subprocess
 import time
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -38,6 +40,7 @@ def main():
     extension = root / 'extension'
     (extension / 'lib').mkdir(parents=True)
     shutil.copy2(args.jar, extension / 'lib/GhidraDwarfForge.jar')
+    coverage = Collection('build-id-command', extension / 'lib/GhidraDwarfForge.jar', 'native-java')
     launcher_prefix = [str(launcher), '--java=' + args.java, '--ghidra-dir=' + str(args.ghidra.resolve()),
         '--extension-dir=' + str(extension)]
     classpath = os.pathsep.join([str(extension / 'lib/GhidraDwarfForge.jar'),
@@ -79,9 +82,21 @@ def main():
         checks.append({'name': name, 'exit': result.returncode, 'outcome': last['outcome']})
         return last
 
+    @contextmanager
+    def measured(name, command):
+        if command[0] == args.java:
+            with coverage.session(command, name) as invocation:
+                yield invocation
+        else:
+            option = '--java=' + args.java
+            assert command[0] == str(launcher) and command.count(option) == 1
+            with coverage.launcher_java(args.java, name) as java:
+                yield ['--java=' + java if argument == option else argument for argument in command]
+
     def run(name, command, expected=0, outcome=None, error=None):
-        completed = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=240)
-        return record(name, command, completed, expected, outcome, error)
+        with measured(name, command) as invocation:
+            completed = subprocess.run(invocation, env=environment, capture_output=True, text=True, timeout=240)
+            return record(name, invocation, completed, expected, outcome, error)
 
     debug = root / "debug root λ 'quote' $literal"
     debug.mkdir()
@@ -232,32 +247,34 @@ def main():
         stop = owned / 'stop'
         stop.touch()
         invocation = command(path, ['--cancel-on-stdin'] if mode == 'stdin' else ['--cancel-file=' + str(stop)])
-        process = subprocess.Popen(invocation, env=environment, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
-        try:
-            deadline = time.monotonic() + 45
-            while not marker.exists():
-                assert process.poll() is None and time.monotonic() < deadline, 'validator never started'
-                time.sleep(0.05)
-            if mode == 'stdin':
-                process.stdin.write('cancel\n')
-                process.stdin.flush()
-            else:
-                stop.write_text('cancel\n')
-            stdout, stderr = process.communicate(timeout=30)
-            completed = subprocess.CompletedProcess(invocation, process.returncode, stdout, stderr)
-            record('cancel-' + mode, invocation, completed, expected=130, outcome='CANCELLED')
-            assert not list((debug / '.build-id').glob('*/*.debug'))
-        finally:
-            if process.poll() is None:
-                os.killpg(process.pid, signal.SIGTERM)
-                process.wait(timeout=10)
+        with measured('cancel-' + mode, invocation) as selected_invocation:
+            process = subprocess.Popen(selected_invocation, env=environment, stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+            try:
+                deadline = time.monotonic() + 45
+                while not marker.exists():
+                    assert process.poll() is None and time.monotonic() < deadline, 'validator never started'
+                    time.sleep(0.05)
+                if mode == 'stdin':
+                    process.stdin.write('cancel\n')
+                    process.stdin.flush()
+                else:
+                    stop.write_text('cancel\n')
+                stdout, stderr = process.communicate(timeout=30)
+                completed = subprocess.CompletedProcess(selected_invocation, process.returncode, stdout, stderr)
+                record('cancel-' + mode, selected_invocation, completed, expected=130, outcome='CANCELLED')
+                assert not list((debug / '.build-id').glob('*/*.debug'))
+            finally:
+                if process.poll() is None:
+                    os.killpg(process.pid, signal.SIGTERM)
+                    process.wait(timeout=10)
 
     assert protected == {p: digest(p) for p in protected}
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_LINUX_COMMAND', 'checks': checks,
         'consumers': consumers, 'metadataChecks': metadata_checks, 'protectedInputs': protected,
         'jarSha256': digest(extension / 'lib/GhidraDwarfForge.jar'),
         'scope': 'Production Linux launcher/helper/ext4 adapter with real validators and GDB; Windows unverified.'}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('build-id-command=PASS checks=' + str(len(checks)) + ' GDB=' + str(len(consumers)))
 
 

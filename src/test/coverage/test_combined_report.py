@@ -2,6 +2,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
@@ -127,6 +128,35 @@ class LocalMeasurements(unittest.TestCase):
     def test_changed_harness_rejected(self):
         self.harness.write_text('pass\n')
         with self.assertRaisesRegex(ValueError, 'harness changed'):
+            self.load()
+
+    def snapshot(self):
+        subprocess.run(['git', 'init', '-q', '--initial-branch=fixture'], cwd=self.root, check=True)
+        subprocess.run(['git', 'add', 'harness.py'], cwd=self.root, check=True)
+        subprocess.run(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+            '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=' + str(self.root / 'absent-hooks'),
+            'commit', '-qm', 'Measured harness snapshot'], cwd=self.root, check=True)
+        self.value['harnessSnapshotCommit'] = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=self.root, text=True).strip()
+
+    def test_exact_archived_harness_can_survive_later_source_edits(self):
+        self.snapshot()
+        self.harness.write_text('new oracle, not the one previously measured\n')
+        rows, origin = self.load()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(origin['harnessSnapshotCommit'], self.value['harnessSnapshotCommit'])
+        self.assertFalse(origin['hostedAcceptance'])
+
+    def test_archived_harness_must_match_measured_hashes(self):
+        self.snapshot()
+        self.value['harnessSha256']['harness.py'] = '0' * 64
+        with self.assertRaisesRegex(ValueError, 'harness changed'):
+            self.load()
+
+    def test_missing_harness_snapshot_rejected(self):
+        self.snapshot()
+        self.value['harnessSnapshotCommit'] = '0' * 40
+        with self.assertRaisesRegex(ValueError, 'unavailable'):
             self.load()
 
     def test_changed_receipt_rejected(self):

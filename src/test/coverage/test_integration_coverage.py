@@ -1,6 +1,7 @@
 """Receipt/admission controls only; real JaCoCo execution is checked separately."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -52,6 +53,85 @@ class IntegrationCoverageTest(unittest.TestCase):
             self.assertIs(actual, command)
         collection.finish(self.root / 'absent.json')
         self.assertFalse((self.root / 'output with spaces').exists())
+        with collection.launcher_java('unchanged-java', 'disabled') as selected:
+            self.assertEqual(selected, 'unchanged-java')
+
+    def launcher_record(self, wrapper, collection, session):
+        request = Path(wrapper).parent / 'requests' / (session + '.json')
+        request.write_text(json.dumps({'session': session}))
+        (collection.root / (session + '.exec')).write_bytes(b'receipt fixture, not real execution')
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher adapter')
+    def test_launcher_keeps_preview_and_action_separate(self):
+        java = self.root / 'java'
+        java.write_text('receipt fixture, never executed')
+        java.chmod(0o700)
+        collection = self.collection()
+        with collection.launcher_java(java, 'install') as wrapper:
+            for digit in ('1', '2'):
+                self.launcher_record(wrapper, collection, 'forge-integration-' + digit * 32)
+        self.assertFalse(Path(wrapper).exists())
+        collection.finish(self.oracle)
+        record = coverage.validate_collection(collection.root, self.jar)
+        self.assertEqual(len(record['sessions']), 2)
+        self.assertEqual(len(record['launcherInvocations'][0]['sessions']), 2)
+        with self.assertRaisesRegex(ValueError, 'already finished'):
+            with collection.launcher_java(java, 'late'):
+                self.fail('finished collector yielded')
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher adapter')
+    def test_failed_launcher_oracle_cannot_be_finished(self):
+        java = self.root / 'java'
+        java.touch()
+        java.chmod(0o700)
+        collection = self.collection()
+        with self.assertRaisesRegex(AssertionError, 'behavior failed'):
+            with collection.launcher_java(java, 'install') as wrapper:
+                self.launcher_record(wrapper, collection, 'forge-integration-' + '1' * 32)
+                raise AssertionError('behavior failed')
+        with self.assertRaisesRegex(ValueError, 'incomplete sessions'):
+            collection.finish(self.oracle)
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher adapter')
+    def test_missing_jvm_leaves_an_incomplete_invocation(self):
+        java = self.root / 'java'
+        java.touch()
+        java.chmod(0o700)
+        collection = self.collection()
+        with collection.session(['java', 'Main'], 'earlier-passing-process'):
+            self.execution(collection).write_bytes(b'receipt fixture')
+        # Existing valid data cannot compensate for a launcher that never reaches Java.
+        with self.assertRaisesRegex(ValueError, 'missing or excessive launcher'):
+            with collection.launcher_java(java, 'never-started'):
+                pass
+        with self.assertRaisesRegex(ValueError, 'incomplete launcher'):
+            collection.finish(self.oracle)
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher adapter')
+    def test_launcher_session_integrity(self):
+        java = self.root / 'java'
+        java.touch()
+        java.chmod(0o700)
+        for mutation in ('missing-exec', 'foreign-id', 'renamed-record', 'extra-fields', 'linked-exec'):
+            with self.subTest(mutation=mutation):
+                collection = self.collection()
+                session = 'forge-integration-' + '1' * 32
+                with self.assertRaises(ValueError):
+                    with collection.launcher_java(java, mutation) as wrapper:
+                        self.launcher_record(wrapper, collection, session)
+                        request = Path(wrapper).parent / 'requests' / (session + '.json')
+                        execution = collection.root / (session + '.exec')
+                        if mutation == 'missing-exec':
+                            execution.unlink()
+                        elif mutation == 'foreign-id':
+                            request.write_text('{"session":"foreign"}')
+                        elif mutation == 'renamed-record':
+                            request.rename(request.with_name('wrong.json'))
+                        elif mutation == 'extra-fields':
+                            request.write_text(json.dumps({'session': session, 'status': 'PASSED'}))
+                        else:
+                            execution.unlink()
+                            execution.symlink_to(self.agent)
 
     def test_partial_configuration_rejected(self):
         for key in self.env:
