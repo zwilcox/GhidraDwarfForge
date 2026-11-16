@@ -204,6 +204,15 @@ qemu_socket_wait
         run('empty-remove-refused', configs[0], debug, 'remove', expected=1,
             contains='no managed installation exists to remove')
         assert before == snapshot(debug)
+        debug = fresh('invalid-build-ids')
+        for index, invalid in enumerate(['', 'ABCDEF', 'gg', 'abc', 'ab' * 125, '../outside']):
+            config = copy.deepcopy(values[0])
+            config['buildId'] = invalid
+            config_path = root / ('invalid-build-id-' + str(index) + '.json')
+            config_path.write_text(json.dumps(config, indent=4) + '\n')
+            run('invalid-build-id-' + str(index), config_path, debug, 'recover', expected=1,
+                contains='build ID must be canonical lowercase hex')
+            assert not list(debug.iterdir()), 'invalid ID created installation paths'
         for mode in ['install', 'update', 'remove']:
             boundaries = ['PREPARED', 'BEFORE_PUBLICATION', 'PUBLISHED', 'COMMITTED']
             if mode != 'remove':
@@ -413,6 +422,12 @@ qemu_socket_wait
         changed = copy.deepcopy(manifest)
         changed['files']['unlisted.debug'] = changed['files']['installed.debug']
         malformed['extra-file'] = (changed, 'generation file inventory changed')
+        changed = copy.deepcopy(manifest)
+        # The supported 65,536-part policy has separate exported/retained
+        # inventories plus overhead. This bounded JSON crosses its file-count
+        # limit without creating a large filesystem tree or hitting byte limits.
+        changed['files'].update(('excess-' + str(index), None) for index in range(132000))
+        malformed['oversized-inventory'] = (changed, 'generation inventory is incomplete')
 
         def bind_manifest(changed):
             # Rebind only the changed record's content digest, count and CRC.
@@ -440,6 +455,20 @@ qemu_socket_wait
             rebound['after']['registration']['sha256'] = '0' * 64
             record.write_text(json.dumps(rebound, indent=4) + '\n')
             reject_generation('registration-digest', 'registration does not describe retained sidecar')
+            source = Path(installed['source'])
+            saved_source, source_stamp = source.read_bytes(), source.stat()
+            try:
+                data = saved_source + b'\n/* inconsistent retained source */\n'
+                source.write_bytes(data)
+                os.utime(source, ns=(source_stamp.st_atime_ns, source_stamp.st_mtime_ns))
+                changed = copy.deepcopy(manifest)
+                changed['files']['source/' + manifest['sourceName']].update(
+                    sha256=hashlib.sha256(data).hexdigest(), bytes=str(len(data)), crc32=str(zlib.crc32(data)))
+                bind_manifest(changed)
+                reject_generation('source-content', 'retained source hash differs')
+            finally:
+                source.write_bytes(saved_source)
+                os.utime(source, ns=(source_stamp.st_atime_ns, source_stamp.st_mtime_ns))
         finally:
             manifest_path.write_bytes(saved_manifest)
             record.write_bytes(saved_record)
