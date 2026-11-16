@@ -30,21 +30,25 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`75e4e2b473f40e7bb683083d3b1b09b00a782412` in 265.2 seconds. The combined local report
+`ed880acdaaa7aba83124fadf1c0c1bebd81fe785` in 265.1 seconds. The combined local report
 contains 965 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.7% | 79.2% | 85% / 80% |
-| Binary and location correctness | 94.9% | 79.0% | 95% / 90% |
+| All production Java | 94.8% | 79.2% | 85% / 80% |
+| Binary and location correctness | 95.0% | 79.1% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.5% | Included in overall |
+
+The binary/location line figure rounds to 95.0%, but its exact count is
+18,230/19,193: four further covered lines are required by the 95% gate.
+Both critical branch targets and the file-transaction line target remain unmet.
 
 Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-arm-inventory-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-curated-type-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -421,5 +425,10 @@ runtime ABI claim or a Windows-host test. The failed fixture attempt is excluded
 
 All 96 selected mutation controls passed, including three new faults: changing
 UTF to unsigned integer encoding, changing member const to volatile, and emitting
-a zero-width field as a value. Complete JavaExec counters for this source snapshot
-are pending. No production Java or denominator changes were made.
+a zero-width field as a value. All 210 JavaExec tasks and 141 coverage-tool tests passed. The combined
+union adds 14 lines and 8 branch outcomes, retaining all 965 sessions and
+the unchanged production denominator. The initial mutation baseline compile
+failed on the existing deprecated DataType.VOID reference. Only that source
+receives a deprecation-category warning exception; all other warnings remain
+errors, and failed compilation never counts as a detected fault. No production
+Java changed. Hosted acceptance and the full critical targets remain incomplete.
