@@ -252,3 +252,25 @@ Windows execution of this correction is **PRESENT, UNVERIFIED** until CI runs.
 All 83 selected mutation controls pass after this correction, including the
 removed inventory-key guard and removed part-mtime guard. The Linux checks still
 catch both faults; no Windows mutation result is claimed.
+
+## Static recovery admission boundaries
+
+`staticRecoverySmoke` passes 360 assertions across real x86-64, AArch64, ARM32,
+MIPS big-endian and MIPS little-endian Ghidra programs. Added cases reject stale
+function IDs, symbol IDs, names, source provenance and addresses; null, undefined,
+zero-length and dynamic-length types; and incompatible explicit extents. Valid
+exact or unspecified extents retain the inferred-information diagnostic. Rejections
+preserve saved symbols, bytes and undefined listing data.
+
+Additional cases reject a label moved into another function, existing data that
+starts before the inferred address, a type crossing a memory-block boundary,
+unmapped storage, and address overflow. A saved symbol immediately after the
+extent and a type ending exactly at the memory-block boundary remain valid.
+Per-profile transactions restore the original fixture before the existing saved
+binding and lexical-ownership tests run. These are admission tests using constructed
+candidate evidence, not proof of extraction from a real decompiler `HighFunction`;
+the separate headless tests remain necessary.
+
+All 86 selected mutants are detected, including removal of the saved-symbol ID,
+explicit-extent and containing-memory-block checks. Compilation and class loading
+failures are not counted as detections.

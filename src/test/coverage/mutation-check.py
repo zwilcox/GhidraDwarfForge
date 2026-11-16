@@ -58,6 +58,17 @@ STACK_FLOW = "ghidradwarfforge/StackValueFlow.java"
 STACK_FLOW_TEST = "ghidradwarfforge.RegisterByteSliceFlowSmoke"
 VTABLE_BINDINGS = "ghidradwarfforge/GhidraVtableBindings.java"
 VTABLE_BINDINGS_TEST = "ghidradwarfforge.VtableBindingEvidenceSmoke"
+STATIC_RECOVERY = "ghidradwarfforge/GhidraStaticRecovery.java"
+STATIC_RECOVERY_TEST = "ghidradwarfforge.StaticRecoverySmoke"
+
+STATIC_RECOVERY_MUTANTS = [
+    ("static-recovery-ignores-saved-symbol", STATIC_RECOVERY, STATIC_RECOVERY_TEST,
+     "candidate.symbolId() != symbol.getID()", "false"),
+    ("static-recovery-ignores-exact-extent", STATIC_RECOVERY, STATIC_RECOVERY_TEST,
+     "exactSize > 0 && candidate.type().getLength() != exactSize", "false"),
+    ("static-recovery-crosses-memory-block", STATIC_RECOVERY, STATIC_RECOVERY_TEST,
+     "!block.contains(end)", "false"),
+]
 
 VTABLE_BINDING_MUTANTS = [
     ("vtable-forgets-relocation-type", VTABLE_BINDINGS, VTABLE_BINDINGS_TEST,
@@ -316,7 +327,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -339,7 +350,7 @@ def main():
             selected_dependencies = dependencies if test in (
                 PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
-                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST) else []
+                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
@@ -355,7 +366,7 @@ def main():
             if compiled.returncode:
                 raise AssertionError(f"{label}: compilation failed, not a detected mutant\n{compiled.stdout}")
             classpath = os.pathsep.join(map(str, [root, classes, tests, *selected_dependencies]))
-            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST) else []
+            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST) else []
             run, run_seconds = execute([java, "-Djava.io.tmpdir=" + str(root),
                 "-Dapplication.settingsdir=" + str(root / "settings"), "-Djava.awt.headless=true",
                 "-cp", classpath, test, *test_args])

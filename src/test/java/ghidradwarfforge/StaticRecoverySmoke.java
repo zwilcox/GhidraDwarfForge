@@ -50,6 +50,7 @@ public final class StaticRecoverySmoke {
                 label.setPrimary();
                 var candidate = new GhidraStaticRecovery.Candidate(function.getID(), label.getID(), label.getName(),
                     label.getSource(), object, IntegerDataType.dataType);
+                admissionBoundaries(program, function, label, object, candidate);
                 var recovery = new GhidraStaticRecovery.Result(List.of(candidate), List.of());
                 var symbols = List.of(new FunctionSymbol("owner", entry.getOffset(), 64));
                 var registers = TargetRegisterMap.forTarget(profile[1]);
@@ -112,6 +113,82 @@ public final class StaticRecoverySmoke {
             finally { program.endTransaction(tx, false); }
         }
         finally { program.release(token); }
+    }
+
+    private static void admissionBoundaries(ProgramDB program, ghidra.program.model.listing.Function owner,
+            ghidra.program.model.symbol.Symbol label, ghidra.program.model.address.Address address,
+            GhidraStaticRecovery.Candidate candidate) throws Exception {
+        var diagnostics = new ArrayList<String>();
+        require(GhidraStaticRecovery.recover(null, TaskMonitor.DUMMY).candidates().isEmpty(), "absent decompilation supplies no type");
+        require(GhidraStaticRecovery.accept(program, owner, label, address, 4, null, TaskMonitor.DUMMY, diagnostics::add) == null &&
+            diagnostics.isEmpty(), "absent evidence is not diagnosed as stale evidence");
+        long functionId = owner.getID();
+        long symbolId = label.getID();
+        String name = label.getName();
+        SourceType source = label.getSource();
+        var type = IntegerDataType.dataType;
+        var stale = List.of(
+            new GhidraStaticRecovery.Candidate(functionId + 1, symbolId, name, source, address, type),
+            new GhidraStaticRecovery.Candidate(functionId, symbolId + 1, name, source, address, type),
+            new GhidraStaticRecovery.Candidate(functionId, symbolId, name + "_old", source, address, type),
+            new GhidraStaticRecovery.Candidate(functionId, symbolId, name, SourceType.ANALYSIS, address, type),
+            new GhidraStaticRecovery.Candidate(functionId, symbolId, name, source, address.add(1), type),
+            new GhidraStaticRecovery.Candidate(functionId, symbolId, name, source, address, null),
+            new GhidraStaticRecovery.Candidate(functionId, symbolId, name, source, address, ghidra.program.model.data.Undefined4DataType.dataType),
+            new GhidraStaticRecovery.Candidate(functionId, symbolId, name, source, address, ghidra.program.model.data.VoidDataType.dataType),
+            new GhidraStaticRecovery.Candidate(functionId, symbolId, name, source, address, ghidra.program.model.data.StringDataType.dataType));
+        byte[] before = new byte[4];
+        program.getMemory().getBytes(address, before);
+        for (var changed : stale) {
+            diagnostics.clear();
+            require(GhidraStaticRecovery.accept(program, owner, label, address, 4, changed, TaskMonitor.DUMMY, diagnostics::add) == null,
+                "stale identity or unusable type rejected: " + changed);
+            require(diagnostics.size() == 1 && diagnostics.getFirst().contains("saved identity or extent changed"), "stale evidence diagnostic");
+            require(label.getID() == symbolId && label.getName().equals(name) && label.getSource() == source &&
+                label.getParentNamespace().equals(owner), "rejection preserves saved symbol");
+            byte[] after = new byte[4];
+            program.getMemory().getBytes(address, after);
+            require(java.util.Arrays.equals(before, after) && !program.getListing().getDataAt(address).isDefined(),
+                "rejection preserves bytes and undefined listing");
+        }
+        for (int size : new int[] { 0, 3, 4, 5 }) {
+            diagnostics.clear();
+            var accepted = GhidraStaticRecovery.accept(program, owner, label, address, size, candidate, TaskMonitor.DUMMY, diagnostics::add);
+            require((size == 0 || size == 4) ? accepted == type : accepted == null, "exact extent admission: " + size);
+            require(diagnostics.size() == 1 && diagnostics.getFirst().contains(
+                accepted == null ? "saved identity or extent changed" : "not original compiler facts"), "extent provenance");
+        }
+        int tx = program.startTransaction("static inference admission boundaries");
+        try {
+            var another = program.getFunctionManager().createFunction("other_owner", owner.getEntryPoint().add(128),
+                new AddressSet(owner.getEntryPoint().add(128), owner.getEntryPoint().add(159)), SourceType.USER_DEFINED);
+            label.setNamespace(another);
+            require(GhidraStaticRecovery.accept(program, owner, label, address, 4, candidate, TaskMonitor.DUMMY, diagnostics::add) == null,
+                "different function namespace rejects same spelling and symbol ID");
+            label.setNamespace(owner);
+            var next = program.getSymbolTable().createLabel(address.add(4), "after_inferred_extent", SourceType.USER_DEFINED);
+            require(GhidraStaticRecovery.accept(program, owner, label, address, 4, candidate, TaskMonitor.DUMMY, diagnostics::add) == type,
+                "symbol immediately after extent is not an overlap");
+            next.delete();
+            program.getListing().createData(address.subtract(2), ghidra.program.model.data.LongLongDataType.dataType);
+            require(GhidraStaticRecovery.accept(program, owner, label, address, 4, candidate, TaskMonitor.DUMMY, diagnostics::add) == null,
+                "saved data starting before inferred address blocks recovery");
+            program.getListing().clearCodeUnits(address.subtract(2), address.add(5), false);
+            var block = program.getMemory().getBlock(address);
+            for (var start : List.of(block.getEnd().subtract(3), block.getEnd().subtract(2), block.getEnd().add(1),
+                    address.getAddressSpace().getMaxAddress())) {
+                var edge = program.getSymbolTable().createLabel(start, "boundary_" + start, owner, SourceType.USER_DEFINED);
+                var evidence = new GhidraStaticRecovery.Candidate(owner.getID(), edge.getID(), edge.getName(), edge.getSource(), start, type);
+                var accepted = GhidraStaticRecovery.accept(program, owner, edge, start, 4, evidence, TaskMonitor.DUMMY, diagnostics::add);
+                require(start.equals(block.getEnd().subtract(3)) ? accepted == type : accepted == null,
+                    "block containment, missing block and address overflow: " + start);
+                require(program.getSymbolTable().getSymbol(edge.getID()) != null, "boundary rejection preserves saved label");
+                edge.delete();
+            }
+        }
+        finally { program.endTransaction(tx, false); }
+        require(label.getName().equals(name) && label.getParentNamespace().equals(owner) &&
+            !program.getListing().getDataAt(address).isDefined(), "boundary controls restore original program state");
     }
 
     private static void require(boolean value, String message) {
