@@ -30,17 +30,17 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`1f0de744c4cb533b9344d0db3c3a91656360ab07` in 266.4 seconds. The combined local report
+`f249bab053622bc6e28697e3444bb1cc2445ecf3` in 270.3 seconds. The combined local report
 contains 1,033 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.9% | 79.5% | 85% / 80% |
-| Binary and location correctness | 95.2% | 79.4% | 95% / 90% |
+| All production Java | 94.9% | 79.6% | 85% / 80% |
+| Binary and location correctness | 95.2% | 79.5% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.6% | Included in overall |
 
-The binary/location line count is 18,270/19,193, meeting its exact 95%
+The binary/location line count is 18,273/19,193, meeting its exact 95%
 line gate. Both critical branch targets and the file-transaction line target
 remain unmet, as does the overall 80% branch target.
 
@@ -48,7 +48,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-saved-inheritance-measurement-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-cxx-profile-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -553,6 +553,8 @@ identity/filter checks), the existing 140 profile assertions and 41 parser check
 Six mutation controls exercise committing previews, allowing retained canonical
 type conflicts or stale declarations, and exceeding candidate/count/text limits.
 All 111 selected mutation controls passed in 242.3 seconds, including all six
-new faults. Compilation/loading failures do not count as detection. The refreshed
-combined coverage report is pending for this snapshot.
+new faults. Compilation/loading failures do not count as detection. All 210
+JavaExec tasks passed in 270.3 seconds; all 146 coverage-tool tests passed. The verified raw union adds 3 lines and 22 branch outcomes.
+GhidraCxxProfile now covers 158/160 lines and 112/124 branch outcomes.
+Hosted acceptance and the full critical targets remain pending.
 Production code and the coverage denominator are unchanged.
