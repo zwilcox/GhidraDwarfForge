@@ -714,3 +714,36 @@ not satisfy the current single-run gate or authorize publication. The whole run
 failed on Windows-host and big-endian MIPS; their local fixes require a fresh
 hosted run. Remaining exact branch outcomes for the critical 90% targets are
 1,859 in binary/location code and 440 in file transactions/validation.
+
+## i386 allocation admission and compiler limits
+
+The existing `i386ParameterAllocationSmoke` now invokes 367 additional checks
+using actual Ghidra ProgramDBs and the pinned compiler specification. Supported
+ET_EXEC/ET_DYN System V/Linux profiles remain eligible; relocatable inputs,
+ABI revisions, unsupported ABI/flag combinations, a different supported ELF
+machine and a real language mismatch receive no correction policy. ELF bytes
+are unchanged. Foreign-program and nondefault-convention definitions remain
+uncorrected; normal declaration/corrections entrypoints agree.
+
+The compiler specification has a 500-byte input region. With Ghidra's saved
+automatic result pointer, it fits 124 explicit four-byte integer arguments.
+Those arguments receive exact stack offsets and a ten-byte ST0 return carrier.
+At 125 and 4095 arguments, the allocation proof rejects storage outside that
+region and preserves the saved definition. At 4096 explicit arguments, the
+count guard returns no correction before that proof. These are model-layer
+checks, not a claim that a whole export continues after a storage-proof error.
+That workflow remains an explicit follow-up before advertising such signatures.
+
+An oversized 600-byte by-value aggregate genuinely remains unassigned in the
+real compiler model. Definition correction preserves its missing storage while
+correcting the return; a call-site override requiring a carrier is rejected.
+Real typedef chains of depth 64 and 65 remain eligible because Ghidra's public
+`TypeDef.getBaseDataType()` resolves the whole chain. No fake recursive typedef
+or modified compiler internals are used to reach defensive guards. Cancellation
+at observed traversal boundaries preserves saved definitions and call signatures.
+
+All focused checks pass alongside the existing 1246 assertions. Seven mutation
+controls cover ABI revision, ELF role, both count guards, ST0 return, automatic
+parameter omission and preservation of genuinely unassigned aggregate storage.
+All 143 selected mutants passed in 320.6 seconds with
+unchanged-source baselines. The full combined coverage refresh is pending.

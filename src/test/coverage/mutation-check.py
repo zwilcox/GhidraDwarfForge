@@ -78,6 +78,26 @@ CALL_VALUE_TEST = "ghidradwarfforge.calls.CallValueSmoke"
 CALL_VALUE_ORACLE = REPO / "src/test/integration/check-call-values.py"
 VALIDATOR_STATUS = "ghidradwarfforge/output/ValidatorSupervisor.java"
 VALIDATOR_STATUS_TEST = "ghidradwarfforge.output.ValidatorStatusBoundarySmoke"
+I386_ALLOCATION = "ghidradwarfforge/targets/I386ParameterAllocation.java"
+I386_ALLOCATION_TEST = "ghidradwarfforge.I386ParameterAllocationSmoke"
+
+I386_ALLOCATION_MUTANTS = [
+    ("i386-allocation-ignores-abi-revision", I386_ALLOCATION, I386_ALLOCATION_TEST,
+     "|| header[8] != 0", ""),
+    ("i386-allocation-admits-relocatable-input", I386_ALLOCATION, I386_ALLOCATION_TEST,
+     "(image.type() != 2 && image.type() != 3)", "false"),
+    ("i386-allocation-admits-extra-call-argument", I386_ALLOCATION, I386_ALLOCATION_TEST,
+     "signature.getArguments().length > 4095", "signature.getArguments().length > 4096"),
+    ("i386-allocation-admits-extra-saved-argument", I386_ALLOCATION, I386_ALLOCATION_TEST,
+     "parameters.length > 4096", "parameters.length > 4097"),
+    ("i386-allocation-uses-hidden-pointer-return", I386_ALLOCATION, I386_ALLOCATION_TEST,
+     "new SignatureResolution(adjusted[0], inputs)", "new SignatureResolution(expected[0], inputs)"),
+    ("i386-allocation-loses-automatic-omission", I386_ALLOCATION, I386_ALLOCATION_TEST,
+     "new Resolution(changes, Set.of(parameters[0].getOrdinal()), adjusted[0])",
+     "new Resolution(changes, Set.of(), adjusted[0])"),
+    ("i386-allocation-rejects-unassigned-aggregate", I386_ALLOCATION, I386_ALLOCATION_TEST,
+     "if (prior.isUnassignedStorage() && replacement.isUnassignedStorage()) continue;", ""),
+]
 
 VALIDATOR_STATUS_MUTANTS = [
     ("validator-status-allows-extra-byte", VALIDATOR_STATUS, VALIDATOR_STATUS_TEST,
@@ -498,7 +518,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -521,7 +541,7 @@ def main():
             selected_dependencies = dependencies if test in (
                 PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
-                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST) else []
+                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
@@ -542,7 +562,7 @@ def main():
             if compiled.returncode:
                 raise AssertionError(f"{label}: compilation failed, not a detected mutant\n{compiled.stdout}")
             classpath = os.pathsep.join(map(str, [root, classes, tests, *selected_dependencies]))
-            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST) else []
+            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST) else []
             if test == BOUNDED_SWITCH_TEST:
                 test_args.append(root / "fixtures")
             if test == CALL_VALUE_TEST:
