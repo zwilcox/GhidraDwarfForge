@@ -105,6 +105,11 @@ public final class ElfRuntimeRelocationsSmoke {
 
     private static void metadataMatrix(Path path, boolean wide, ByteOrder order) throws Exception {
         int width = wide ? 8 : 4;
+        for (int size : new int[] {0, width * 2 - 1, width * 2 + 1}) {
+            byte[] bytes = metadata(wide, order);
+            segment(ByteBuffer.wrap(bytes).order(order), wide, 1, 2, 0x200, 0x1200, size, size);
+            reject(() -> inspect(path, bytes), "invalid PT_DYNAMIC entry framing");
+        }
         // gABI dynamic-section dependencies and table shapes:
         // https://gabi.xinuos.com/elf.pdf (4.3 draft, 2025-09-04, section 8.3)
         // Each general table needs pointer, byte size and entry size together.

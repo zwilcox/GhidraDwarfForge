@@ -6,6 +6,31 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## ELF allocation permissions and note boundaries
+
+CONFIRMED: the allocation task checks all eight LOAD permission combinations
+for ELF32/ELF64 and both byte orders. Independent expected section flags and
+wrong-write/wrong-execute candidates check exact mismatch origins. Additional
+cases cover inherited debug/index/link names, empty note views, an expired
+nonallocated note preceding a disjoint segment, and reconstruction of the middle
+of three complete note records in both section orders. Reconstructed address,
+extent, alignment and bytes must agree. Cancellation at every observed checkpoint
+is followed by a successful unchanged-input retry.
+
+These are ELF metadata/relationship fixtures, with deliberately minimal debug
+payloads; they do not claim executable behavior or validated DWARF for the dummy
+payloads. The allocation task passes 1,684 assertions. The relocation task also
+rejects zero and non-entry-aligned PT_DYNAMIC extents in all four encodings,
+passing 1,636 assertions. Production code is unchanged.
+
+All 15 selected compiled allocation/relocation faults are detected by assertion
+failures (8.853s), including five new allocation faults and one dynamic framing
+fault. Compiler/class-loading failures and mutated execution are excluded from
+coverage. Evidence: `allocation-boundaries-focused.log`,
+`allocation-boundary-selected-mutations.log` and
+`allocation-boundary-selected-mutations/result.json` in the bounded workspace.
+Full-suite coverage attribution follows this batch; targets remain unchanged.
+
 ## ELF metadata combinations and malformed headers
 
 CONFIRMED: the runtime relocation task now checks all eight presence combinations

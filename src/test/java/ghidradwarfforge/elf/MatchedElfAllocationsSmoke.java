@@ -39,6 +39,9 @@ public final class MatchedElfAllocationsSmoke {
                     notes(group.resolve("notes"), wide, order);
                     names(group.resolve("names"), wide, order);
                     empty(group.resolve("empty"), wide, order);
+                    loadPermissions(group.resolve("load-permissions"), wide, order);
+                    inheritedNames(group.resolve("inherited-names"), wide, order);
+                    noteBoundaries(group.resolve("note-boundaries"), wide, order);
                 }
             }
             failures(root.resolve("failures"));
@@ -63,6 +66,118 @@ public final class MatchedElfAllocationsSmoke {
 
     private static Pair named(Path path, boolean wide, ByteOrder order) throws IOException {
         return MatchedElfAllocationsFixtures.create(path, wide, order, Shape.NAMED);
+    }
+
+    private static void loadPermissions(Path root, boolean wide, ByteOrder order) throws Exception {
+        // ELF PF_X/PF_W become SHF_EXECINSTR/SHF_WRITE; PF_R has no section counterpart.
+        long[] expectedFlags = {2, 6, 3, 7, 2, 6, 3, 7};
+        for (int flags = 0; flags < 8; flags++) {
+            Pair pair = MatchedElfAllocationsFixtures.create(root.resolve("flags-" + flags), wide, order, Shape.SECTIONLESS);
+            MatchedElfAllocationsFixtures.program(pair.original(), 0, "flags", flags);
+            MatchedElfAllocationsFixtures.rewrite(pair);
+            unchangedMatch(pair);
+            var load = ElfImage.read(pair.candidate()).sections().get(1);
+            require(load.name.equals(".forge.load.0") && load.type == 8 && load.flags == expectedFlags[flags],
+                "LOAD permission conversion changed");
+            for (int bit : new int[] {1, 4}) {
+                Path changed = MatchedElfAllocationsFixtures.copy(pair.candidate(), "wrong-permission-" + bit);
+                MatchedElfAllocationsFixtures.field(changed, 1, "flags", expectedFlags[flags] ^ bit);
+                Result result = MatchedElfAllocations.compare(pair.original(), changed);
+                issue(result, Status.DIFFERENT_METADATA, "sh_flags");
+                require(result.issue().orElseThrow().origin() == MatchedElfAllocations.Origin.ORIGINAL_SEGMENT &&
+                    result.issue().orElseThrow().originalIndex() == 0 && result.issue().orElseThrow().candidateIndex() == 1,
+                    "permission mismatch lost its LOAD origin");
+            }
+        }
+    }
+
+    private static void inheritedNames(Path root, boolean wide, ByteOrder order) throws Exception {
+        String[] names = {".debug_info", ".zdebug_info", ".rel.debug_info", ".rela.debug_info", ".gdb_index",
+            ".gnu_debuglink", ".gnu_debugaltlink", ".gnu_debugdata"};
+        for (int index = 0; index < names.length; index++) {
+            for (long type : new long[] {1, 4, 9}) {
+                Pair pair = named(root.resolve("name-" + index + "-type-" + type), wide, order);
+                MatchedElfAllocationsFixtures.field(pair.original(), 1, "type", type);
+                MatchedElfAllocationsFixtures.appendName(pair.original(), 1, names[index]);
+                MatchedElfAllocationsFixtures.rewrite(pair);
+                if (type == 1 || index == 0) {
+                    issue(observe(pair), Status.UNSUPPORTED_CASE, "sh_flags/sh_name");
+                }
+                else {
+                    // Retired relocations retain an inert allocation placeholder;
+                    // unlike replacement .debug_info, their used name survives.
+                    var section = ElfImage.read(pair.candidate()).sections().get(1);
+                    require(section.type == 8 && section.flags == 2 && section.name.equals(names[index]),
+                        "retired relocation did not retain the indexed allocation placeholder");
+                    unchangedMatch(pair);
+                }
+            }
+        }
+    }
+
+    private static void noteBoundaries(Path root, boolean wide, ByteOrder order) throws Exception {
+        for (int mask = 0; mask < 4; mask++) {
+            Pair pair = named(root.resolve("empty-views-" + mask), wide, order);
+            if ((mask & 1) != 0) MatchedElfAllocationsFixtures.field(pair.original(), 2, "size", 0);
+            if ((mask & 2) != 0) {
+                MatchedElfAllocationsFixtures.program(pair.original(), 1, "fileSize", 0);
+                MatchedElfAllocationsFixtures.program(pair.original(), 1, "memorySize", 0);
+            }
+            MatchedElfAllocationsFixtures.rewrite(pair);
+            unchangedMatch(pair);
+            long added = ElfImage.read(pair.candidate()).sections().stream()
+                .filter(section -> section.name.startsWith(".note.forge.")).count();
+            require(added == (mask == 1 ? 1 : 0), "empty note view invented or hid physical coverage");
+        }
+        Pair disjoint = named(root.resolve("expired-nonallocated"), wide, order);
+        byte[] note = Arrays.copyOfRange(Files.readAllBytes(disjoint.original()), 0x200, 0x224);
+        MatchedElfAllocationsFixtures.field(disjoint.original(), 2, "flags", 0);
+        MatchedElfAllocationsFixtures.write(disjoint.original(), 0x2c0, note);
+        MatchedElfAllocationsFixtures.program(disjoint.original(), 1, "offset", 0x2c0);
+        MatchedElfAllocationsFixtures.program(disjoint.original(), 1, "address", 0x4002c0);
+        MatchedElfAllocationsFixtures.rewrite(disjoint);
+        unchangedMatch(disjoint);
+        var recovered = ElfImage.read(disjoint.candidate()).sections().get(4);
+        require(recovered.type == 7 && recovered.offset == 0x2c0 && recovered.address == 0x4002c0 && recovered.size == 36,
+            "expired nonallocated note poisoned a later disjoint segment");
+
+        // Three adjacent complete note records. The first and third have section
+        // views; PT_NOTE spans all three, so only the middle record is appended.
+        for (boolean reverseSections : new boolean[] {false, true}) {
+            Pair pair = named(root.resolve("bridge-" + reverseSections), wide, order);
+            for (int offset : new int[] {0x200, 0x224, 0x248}) {
+                MatchedElfAllocationsFixtures.write(pair.original(), offset, note);
+            }
+            for (int section = 1; section <= 2; section++) {
+                int offset = ((section == 1) != reverseSections) ? 0x200 : 0x248;
+                MatchedElfAllocationsFixtures.field(pair.original(), section, "type", 7);
+                MatchedElfAllocationsFixtures.field(pair.original(), section, "flags", 2);
+                MatchedElfAllocationsFixtures.field(pair.original(), section, "offset", offset);
+                MatchedElfAllocationsFixtures.field(pair.original(), section, "address", 0x400000 + offset);
+                MatchedElfAllocationsFixtures.field(pair.original(), section, "size", 36);
+                MatchedElfAllocationsFixtures.field(pair.original(), section, "alignment", 4);
+            }
+            MatchedElfAllocationsFixtures.program(pair.original(), 1, "fileSize", 108);
+            MatchedElfAllocationsFixtures.program(pair.original(), 1, "memorySize", 108);
+            MatchedElfAllocationsFixtures.rewrite(pair);
+            unchangedMatch(pair);
+            var image = ElfImage.read(pair.candidate());
+            var added = image.sections().stream().filter(section -> section.name.startsWith(".note.forge.")).toList();
+            require(added.size() == 1, "overlapping coverage duplicated or omitted a note record");
+            var middle = added.getFirst();
+            require(middle.name.equals(".note.forge.0") && middle.offset == 0x224 && middle.size == 36 &&
+                middle.address == 0x400224 && middle.alignment == 4 && Arrays.equals(image.sectionData(middle), note),
+                "reconstructed middle note changed address, extent or bytes");
+            int[] polls = {0};
+            MatchedElfAllocations.compare(pair.original(), pair.candidate(), () -> { polls[0]++; return false; });
+            for (int boundary = 1; boundary <= polls[0]; boundary++) {
+                int stop = boundary;
+                AtomicInteger seen = new AtomicInteger();
+                expect(CancellationException.class, () -> MatchedElfAllocations.compare(pair.original(), pair.candidate(),
+                    () -> seen.incrementAndGet() == stop));
+            }
+            unchangedMatch(pair);
+        }
     }
 
     private static Result observe(Pair pair) throws IOException {
