@@ -35,6 +35,8 @@ PROGRAM_TYPES = "ghidradwarfforge/types/ProgramTypeModel.java"
 PROGRAM_TYPES_TEST = "ghidradwarfforge.types.ProgramTypeModelBoundarySmoke"
 SECTIONLESS = "ghidradwarfforge/elf/SectionlessDynamicSymbols.java"
 SECTIONLESS_TEST = "ghidradwarfforge.elf.SectionlessDynamicSymbolsSmoke"
+DYNAMIC = "ghidradwarfforge/elf/DynamicSymbolMirror.java"
+DYNAMIC_TEST = "ghidradwarfforge.elf.DynamicSymbolMirrorSmoke"
 
 # Each edit names a specific safety/semantic guarantee. This is not a blanket
 # mutation score: surviving, uncompilable or timed-out mutants fail this harness.
@@ -145,6 +147,16 @@ SECTIONLESS_MUTANTS = [
      "if (selected == 0 && size == 0)", "if (false)"),
 ]
 
+DYNAMIC_MUTANTS = [
+    ("dynamic-requalifies-absolute-version-node", DYNAMIC, DYNAMIC_TEST,
+     "if (section == 0xfff1 && value == 0 && Arrays.equals(name, versionName))", "if (false)"),
+    ("dynamic-duplicates-qualified-name", DYNAMIC, DYNAMIC_TEST,
+     "Integer position = appended.get(key);", "Integer position = null;"),
+    ("dynamic-accepts-versioned-null-symbol", DYNAMIC, DYNAMIC_TEST,
+     'require(version == 0, "dynamic null symbol has a version");',
+     'require(true, "dynamic null symbol has a version");'),
+]
+
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -172,7 +184,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -199,6 +211,11 @@ def main():
             # shipped beside them. Suppress only that path warning for API tests;
             # missing API classes and every other compiler warning remain fatal.
             lint = "-Xlint:all,-serial,-path" if selected_dependencies else "-Xlint:all,-serial"
+            # DynamicSymbolMirror already casts its int locals count to int.
+            # That unchanged redundant cast is unrelated to version-identity
+            # mutations; retain all other warnings as errors for this source.
+            if name == DYNAMIC:
+                lint += ",-cast"
             compiled, compile_seconds = execute([javac, lint, "-proc:none", "-Werror", "-cp", compile_path,
                                                  "-d", root, path])
             if compiled.returncode:
