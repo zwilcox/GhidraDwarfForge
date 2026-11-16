@@ -783,8 +783,25 @@ storage-proof cases using public Ghidra objects.
 All six permanent-harness cases passed in 73.2 seconds, including source lookup,
 the explicit unavailable-location assertion, independent validators and GDB.
 The cached installed module was restored and hash-checked after the experiment.
-All 154 coverage-tool tests and workflow lint pass. The complete JavaExec refresh
-and corrected-version hosted coverage remain pending at this checkpoint.
+All 154 coverage-tool tests and workflow lint pass. At fix commit
+`882a4be1573052a0afa2ccc99550e69598c6345d`, all 210 JavaExec tasks pass in 272.9
+seconds, followed by all 53,432 independently evaluated DWARF expression vectors.
+Raw JaCoCo verification confirms every session's production/test class identity
+and probe count, with 901 production classes and all 255 source files retained.
+
+The fresh **JavaExec-only** report measures 23,625/29,786 lines (79.3%) and
+18,275/25,878 branches (70.6%). The executable-line and branch totals increase
+with the production fix; no sources are excluded or reclassified. Changed
+production code covers all 10 executable lines and 26/30 branches (86.7%). This
+passes the 90% line / 85% branch minimum; the preferred 90% changed-branch target
+is not met. The four unexecuted outcomes are on the callers' unavailable-input
+and proof-rejection checks. The storage-proof helper itself exercises both
+accepted and rejected carriers with real Ghidra storage objects.
+
+This JavaExec-only result is not a cross-layer combined report. Its verified
+raw report, hashes and changed-line counters are retained under
+`.forge-work/scratch/coverage-expansion/i386-slot-fix-javaexec-verified/`.
+Corrected-version hosted and combined coverage remain pending.
 
 All 146 selected mutation controls pass in 327.2 seconds. The three new faults
 reject the newly available carrier, accept a partial carrier, and fabricate an
