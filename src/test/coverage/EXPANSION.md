@@ -32,7 +32,20 @@ return ROLLED_BACK and fail the expected RECOVERY_REQUIRED assertion. Native
 Windows behavior and ELF validation are outside this filesystem test's scope.
 Evidence: `recovery-observation-focused.log` (initial failed oracle),
 `recovery-observation-validation.log`, and `recovery-observation-mutations/`.
-Full-suite measurement follows.
+Baseline61 at `70e80ef3` passes all 211 JavaExec tasks in 277.009s,
+53,432 independently interpreted expression vectors and 225 coverage-tool tests
+(8.889s). Raw collection verification retains the unchanged production JAR and
+255 sources / 901 classes. The new cases add one line and six branch outcomes;
+`AttachmentTransaction` now covers 264/269 lines and 178/202 branches.
+
+The 466-session matching-bytecode diagnostic union now covers 26,820/29,790
+lines (90.0%) and 20,337/25,884 branches (78.6%). Critical file/validation
+coverage is 92.6% lines / 83.3% branches. Binary/location coverage is unchanged
+at 92.9% / 79.7%. This remains incomplete hosted acceptance, with all original
+targets and architecture requirements retained. Evidence:
+`javaexec-baseline-61/`, `recovery-observation-javaexec-checked-61/`,
+`recovery-observation-current-partial/`, `recovery-observation-hosted-partial-61/`
+and `recovery-observation-verification-61.log`.
 
 ## Current-bytecode verification after optional native exports
 
