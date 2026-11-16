@@ -35,6 +35,7 @@ public final class Arm32SectionModesSmoke {
     }
 
     public static void main(String[] args) throws Exception {
+        evidenceBoundaries();
         Path root = Files.createTempDirectory("arm-section-modes-");
         Path input = root.resolve("input");
         byte[] bytes = fixture();
@@ -44,6 +45,22 @@ public final class Arm32SectionModesSmoke {
         var messages = new ArrayList<String>();
         var symbols = Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> false, messages::add);
         require(symbols.size() == 4 && messages.isEmpty(), "complete mode/data sequence planned: " + messages);
+        profileAndAllocations(root.resolve("profiles"), bytes, evidence, symbols);
+        int[] visits = {0};
+        require(Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> { visits[0]++; return false; },
+            messages::add).equals(symbols), "counted mapping changed output");
+        for (int stop = 1; stop <= visits[0]; stop++) {
+            int selected = stop;
+            int[] current = {0};
+            try {
+                Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> ++current[0] == selected, messages::add);
+                throw new AssertionError("mapping ignored cancellation at " + stop);
+            }
+            catch (CancellationException expected) { checks++; }
+            require(Arrays.equals(bytes, Files.readAllBytes(input)), "cancelled mapping changed original ELF");
+        }
+        require(Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> false, messages::add).equals(symbols),
+            "cancelled mapping poisoned retry");
         var output = root.resolve("output.dbg");
         new MatchedElfSidecarWriter().write(image, output, Map.of(".debug_info", new byte[] { 1, 2, 3 }), symbols, () -> false);
         var parsed = ElfImage.read(output);
@@ -110,6 +127,90 @@ public final class Arm32SectionModesSmoke {
         }
         catch (IllegalArgumentException actual) { require(actual == failure, "diagnostic failure identity"); }
         System.out.println("arm32-section-modes-smoke=PASS checks=" + checks);
+    }
+
+    private static void evidenceBoundaries() throws Exception {
+        String hash = evidence().sha256();
+        var one = List.of(new Arm32SectionModes.Boundary(0, 2));
+        for (long[] extent : new long[][] {{0, 1}, {0xffffffffL, 1}, {1, 0xffffffffL}}) {
+            try {
+                var accepted = new Arm32SectionModes.Evidence(1, extent[0], extent[1], hash, one);
+                require(accepted.address() == extent[0] && accepted.size() == extent[1], "32-bit extent changed");
+            }
+            catch (IllegalArgumentException failure) { throw new AssertionError("valid 32-bit extent rejected", failure); }
+        }
+        for (long[] invalid : new long[][] {{0, START, 44}, {-1, START, 44}, {1, -1, 44},
+                {1, START, 0}, {1, START, -1}, {1, 0x1_0000_0000L, 1}, {1, 0xffffffffL, 2},
+                {1, START, Long.MAX_VALUE}}) {
+            invalidEvidence((int) invalid[0], invalid[1], invalid[2], hash, one, "invalid complete ARM section evidence");
+        }
+        for (String bad : Arrays.asList(null, "", "0".repeat(63), "0".repeat(65), "g".repeat(64), hash.toUpperCase(java.util.Locale.ROOT))) {
+            invalidEvidence(1, START, 44, bad, one, "invalid complete ARM section evidence");
+        }
+        invalidEvidence(1, START, 44, hash, List.of(), "invalid complete ARM section evidence");
+        invalidEvidence(1, START, 44, hash, List.of(new Arm32SectionModes.Boundary(1, 2)),
+            "invalid complete ARM section evidence");
+        for (long[] second : new long[][] {{0, 1}, {-1, 1}, {44, 1}, {45, 1}, {4, -1}, {4, 3}, {4, 2}}) {
+            invalidEvidence(1, START, 44, hash, List.of(one.getFirst(), new Arm32SectionModes.Boundary(second[0], (int) second[1])),
+                "invalid ARM section boundary sequence");
+        }
+        var boundaries = new ArrayList<Arm32SectionModes.Boundary>();
+        for (int index = 0; index < 65536; index++) boundaries.add(new Arm32SectionModes.Boundary(2L * index, 1 + (index & 1)));
+        Arm32SectionModes.Evidence maximum;
+        try { maximum = new Arm32SectionModes.Evidence(1, START, 131074, hash, boundaries); }
+        catch (IllegalArgumentException failure) { throw new AssertionError("exact boundary-count limit rejected", failure); }
+        boundaries.add(new Arm32SectionModes.Boundary(131072, 1));
+        invalidEvidence(1, START, 131074, hash, boundaries, "invalid complete ARM section evidence");
+        boundaries.clear();
+        require(maximum.boundaries().size() == 65536 && maximum.boundaries().getLast().offset() == 131070,
+            "caller mutation changed retained boundary evidence");
+        try { maximum.boundaries().clear(); throw new AssertionError("mutable boundary inventory"); }
+        catch (UnsupportedOperationException expected) { checks++; }
+    }
+
+    private static void invalidEvidence(int section, long address, long size, String hash,
+            List<Arm32SectionModes.Boundary> boundaries, String diagnostic) {
+        try {
+            new Arm32SectionModes.Evidence(section, address, size, hash, boundaries);
+            throw new AssertionError("invalid mapping evidence accepted");
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage().equals(diagnostic), "wrong evidence rejection: " + expected);
+        }
+    }
+
+    private static void profileAndAllocations(Path input, byte[] original, Arm32SectionModes.Evidence evidence,
+            List<ElfLocalMappingSymbol> expected) throws Exception {
+        for (int[] profile : new int[][] {{18, 3}, {18, 183}, {16, 1}, {16, 4},
+                {36, 0}, {36, 0x04000400}, {36, 0x06000400}, {36, 0x05800400}, {16, 3}}) {
+            byte[] bytes = original.clone();
+            var fields = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
+            if (profile[0] == 36) fields.putInt(36, profile[1]);
+            else fields.putShort(profile[0], (short) profile[1]);
+            Files.write(input, bytes);
+            var image = ElfImage.read(input);
+            var messages = new ArrayList<String>();
+            require(Arm32SectionModes.plan(image, List.of(), List.of(), () -> false, messages::add).isEmpty()
+                && messages.isEmpty(), "empty evidence acquired mappings or diagnostics");
+            if (profile[0] == 16 && profile[1] == 3) {
+                require(Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> false, messages::add).equals(expected)
+                    && messages.isEmpty(), "ET_DYN mapping changed address or mode");
+            }
+            else reject(image, List.of(evidence), List.of(), "requires little-endian ELF32 EABI5");
+            require(Arrays.equals(bytes, Files.readAllBytes(input)), "profile inspection changed ELF");
+        }
+        for (int[] allocation : new int[][] {{8, 0}, {8, 2}, {8, 4}, {8, 0x806}, {20, 0}, {4, 8}}) {
+            byte[] bytes = original.clone();
+            ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).putInt(0x300 + 40 + allocation[0], allocation[1]);
+            Files.write(input, bytes);
+            var image = ElfImage.read(input);
+            var selected = Arm32SectionModes.allocations(image, () -> false);
+            boolean noBacking = allocation[0] == 4;
+            require(noBacking ? selected.size() == 1 && selected.getFirst().fileSize() == 0 : selected.isEmpty(),
+                "incorrect executable allocation admission");
+            reject(image, List.of(evidence), List.of(), noBacking ? "extent or file backing" : "missing unique executable allocation");
+            require(Arrays.equals(bytes, Files.readAllBytes(input)), "allocation inspection changed ELF");
+        }
     }
 
     private static void reject(ElfImage image, List<Arm32SectionModes.Evidence> evidence,
