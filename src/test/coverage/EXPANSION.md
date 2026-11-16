@@ -31,6 +31,18 @@ configuration now includes 170 faults and still needs a complete current-head
 CI replay. Evidence is under `.forge-work/scratch/coverage-expansion/`:
 `frame-reread-focused-final.log` and `frame-reread-selected-mutations/result.json`.
 
+Full JavaExec baseline 36 at `4aad940e` passes all 210 tasks in 274.3 seconds,
+with 53,432 independent expression vectors and 181 coverage-tool tests passing.
+Strict raw verification retains all 901 production classes and 255 sources.
+JavaExec measures 23,653/29,786 lines and 18,353/25,878 branches. The matching-bytecode
+499-session partial union measures 26,714/29,786 lines (89.7%) and 19,793/25,878
+branches (76.5%). Binary/location coverage is 92.8% lines / 78.2% branches; file
+transactions remain 91.2% / 77.4%. Compared with the preceding same-cohort report,
+this adds 23 covered lines and 26 covered branch outcomes, all in the retained
+frame reader. The attribution and verified reports use the `frame-reread-` prefix
+under the same local evidence directory. Hosted acceptance remains unverified;
+the full current-head cohort, critical targets and main publication are pending.
+
 ## Mixed incoming register/stack proof controls
 
 CONFIRMED: `MixedParameterPrefixSmoke` now runs the six decoded ARM scenarios in
