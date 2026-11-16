@@ -30,17 +30,17 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`830d6b6a41b69d13618fac4a2b1b56f7ea02b6d4` in 265.3 seconds. The combined local report
+`1f0de744c4cb533b9344d0db3c3a91656360ab07` in 266.4 seconds. The combined local report
 contains 965 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
 | All production Java | 94.8% | 79.3% | 85% / 80% |
-| Binary and location correctness | 95.0% | 79.1% | 95% / 90% |
+| Binary and location correctness | 95.0% | 79.2% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.5% | Included in overall |
 
-The binary/location line count is 18,236/19,193, meeting its exact 95%
+The binary/location line count is 18,238/19,193 meeting its exact 95%
 line gate. Both critical branch targets and the file-transaction line target
 remain unmet, as does the overall 80% branch target.
 
@@ -48,7 +48,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-arm-mode-budgets-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-call-memory-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -484,4 +484,6 @@ stores as stack-relative, retain stack identity after subtracting two stack
 pointers, accept narrow signed-offset overflow, fail to translate nested writes,
 or retain released stack storage. Behavioral assertions detect each fault;
 compilation and loading failures do not count. Production code is unchanged.
-The complete JavaExec and combined coverage refresh is pending for this snapshot.
+All 210 JavaExec tasks and 141 coverage-tool tests passed. The combined
+union adds 2 lines and 13 branch outcomes, with all 965 sessions
+and the production denominator retained. Hosted acceptance remains pending.
