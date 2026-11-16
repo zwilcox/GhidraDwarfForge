@@ -30,13 +30,13 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`e45cebaab51fc2c38c9056d0f3b120118dc3aa89` in 261.7 seconds. The combined local report
+`30e443c06094542bb9c08de2f63e53db2899a5a0` in 262.6 seconds. The combined local report
 contains 848 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.6% | 78.7% | 85% / 80% |
-| Binary and location correctness | 94.7% | 78.4% | 95% / 90% |
+| All production Java | 94.6% | 78.8% | 85% / 80% |
+| Binary and location correctness | 94.7% | 78.5% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.5% | Included in overall |
 
@@ -44,7 +44,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-vtable-inventory-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-static-admission-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -274,3 +274,8 @@ the separate headless tests remain necessary.
 All 86 selected mutants are detected, including removal of the saved-symbol ID,
 explicit-extent and containing-memory-block checks. Compilation and class loading
 failures are not counted as detections.
+
+Baseline19 adds two covered lines and 17 branch outcomes to the verified local
+union. `GhidraStaticRecovery` now measures 63/87 lines and 66/116 branch outcomes;
+most remaining gaps are in actual HighFunction evidence extraction. The full
+production denominator and the accepted targets are unchanged.
