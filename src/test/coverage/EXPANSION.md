@@ -6,6 +6,42 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Linux mount admission and cancellation
+
+CONFIRMED at `49a7a0aa`: `LinuxAttachmentMountSmoke` adds synthetic parser cases
+for the [kernel mountinfo fields](https://www.kernel.org/doc/html/latest/filesystems/proc.html#proc-pid-mountinfo-information-about-mounts),
+including no optional fields, shared/master/propagate-from/unbindable fields,
+canonical unsigned IDs through 64 bits, overflow and malformed identifiers,
+control bytes, and contradictory/empty write options on both mount and superblock.
+Forge deliberately refuses unreviewed optional fields; these tests do not claim
+that general-purpose mountinfo readers should reject them. The exact 2 MiB
+parser boundary is accepted, the next byte rejected, and rejected bytes remain
+unchanged. Synthetic parser cases do not establish host eligibility.
+
+The default native session additionally uses real ext4 directory observation,
+rejects virtual-thread inspection, cancels at every observed checkpoint, retries
+against the same snapshot and checks file-descriptor balance. The session passes
+341 checks. The harness independently compares mount ID/device with `findmnt`
+and native directory identity with `stat`. Real unprivileged visibility/host
+sessions pass; privileged modes are explicitly NOT_RUN locally. Three selected
+mutations (contradictory read-only flag, empty option, noncanonical ID) are
+caught by behavioral assertions in parser-only mode (2.081 seconds).
+
+The final three native-Java sessions have verified receipts/oracles and original
+provenance hashes. Their unchanged-production-bytecode union with baseline 44
+has 1,271 sessions, 28,438/29,786 lines (95.5%) and 21,048/25,878 branches (81.3%).
+Binary/location branches remain 15,184/18,726 (81.1%); file-operation branches
+increase to 3,492/4,250 (82.2%), adding 21 outcomes and one line. All 197
+coverage-tool checks and actionlint pass. Production scope remains 255 sources /
+901 classes. This diagnostic union is not current hosted acceptance; no full
+JavaExec rerun is claimed for native-only test changes after baseline 44.
+
+Evidence: `mount-parser-final/`, `mount-parser-final-collections/`,
+`mount-parser-final-verified/`, `mount-parser-selected-mutations/`, and
+`mount-parser-verification.log` in the bounded coverage workspace. Initial
+`mount-parser-local/` is focused development evidence, not the final cohort.
+The critical 90% branch targets and issue #209 remain incomplete.
+
 ## Frame inventory budgets and compression metadata
 
 CONFIRMED at `cee1a0ad`: exact 64 MiB / 262,144-record inventories are accepted,
