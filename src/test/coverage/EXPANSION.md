@@ -6,6 +6,44 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Windows native metadata failure controls
+
+PRESENT, UNVERIFIED on Windows: `WindowsMetadataFailureControls` adds 40
+controlled API replies around the actual Windows x64 production adapter. The
+existing Windows host-primitives harness compiles and measures this as a fifth
+isolated JVM, alongside the privilege, host, transaction and lock probes. It
+retains the disclosure of eight unmeasured deliberate-halt children and nested
+lock contenders. Production bindings, bytecode and source scope are unchanged.
+
+The cases cover failed opens/information queries, inconsistent file facts,
+descriptor/control/SID rejection, malformed stream names/chains/counts and
+reported close/free errors. Forwarding without an injected reply must reproduce
+the real snapshot. Every failure must hit once, produce its expected diagnostic,
+balance actual handle/allocation ledgers, preserve source bytes/metadata and
+allow a clean retry. A warmup precedes a second complete pass with unchanged
+process handle counts. Failed allocating calls are intercepted before native
+allocation; close/free error replies follow successful real releases. No invalid
+pointer is passed to a native SID reader: descriptor bounds reject it first.
+These are controlled replies, not claims that Windows returned malformed data.
+
+The buffer layout and ownership audit uses Microsoft's
+[FILE_STREAM_INFO](https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-file_stream_info),
+[FILE_STANDARD_INFO](https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-file_standard_info),
+[GetFileInformationByHandleEx](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getfileinformationbyhandleex),
+[GetSecurityInfo](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getsecurityinfo)
+and [CloseHandle](https://learn.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-closehandle)
+contracts. This batch tests read-only inspection, not stage application or full
+host admission.
+
+CONFIRMED locally: Java 21 standalone compilation, rejection on a non-Windows
+host before fixture creation, 204 coverage-tool tests and actionlint pass.
+Strict hosted admission rejects missing/reordered cases, omitted faults,
+unbalanced resources, changed source, false host claims, incomplete sessions
+and missing nested-process disclosures. Local schema tests are not native
+execution evidence. No coverage increase or Windows runtime pass is claimed
+until the actual Windows job and raw matching-bytecode verifier pass.
+Evidence: `windows-metadata-controls-local/` in the bounded coverage workspace.
+
 ## Inherited ARM mapping conflicts and allocation adjacency
 
 CONFIRMED at `3797cb14`: adjacent allocated sections preserve exact mapping

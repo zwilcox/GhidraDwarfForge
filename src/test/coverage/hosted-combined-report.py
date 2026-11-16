@@ -24,6 +24,7 @@ recovered_signatures = combined.module('recovered_signature_admission', HERE / '
 stack_transitions = combined.module('stack_transition_admission', HERE / 'stack-transition-admission.py')
 producer_failures = combined.module('producer_failure_admission', HERE / 'producer-failure-admission.py')
 metadata_failures = combined.module('metadata_failure_admission', HERE / 'linux-metadata-failure-admission.py')
+windows_metadata_failures = combined.module('windows_metadata_failure_admission', HERE / 'windows-metadata-failure-admission.py')
 REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation',
@@ -350,6 +351,8 @@ def load_job(root, jar, kind, commit, run):
                     raise ValueError('hosted visibility coverage requires both real privilege modes')
             if record['suite'] == 'linux-file-metadata':
                 metadata_failures.oracle(record, files.read(directory / 'oracle.json'))
+            if record['suite'] == 'windows-host-primitives':
+                windows_metadata_failures.oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'].startswith('linux-attachment-'):
                 attachment_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'].startswith('gui-script-manager'):
