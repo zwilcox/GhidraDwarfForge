@@ -63,6 +63,25 @@ duplicate-key map implementations are manufactured. Production code and the
 coverage denominator are unchanged. Evidence: `register-map-contract-verification.log`
 and `register-map-contract-selected-mutations/`; full measurement follows.
 
+CONFIRMED: baseline56 at `74436b6e` passes all 211 tasks in 277.349 seconds,
+the 53,432 independent expression vectors and all 222 coverage-tool tests
+(8.527s). Raw verification preserves all 255 production sources / 901 classes.
+Compared with baseline55, JavaExec gains eight lines and 38 branches;
+`TargetRegisterMap` now covers 164/165 lines and 136/143 branches. Across both
+report and register batches, the same production bytecode gains 15 lines and
+71 branches. No earlier incompatible execution data is reused.
+
+The 323-session current partial collection measures 24,858/29,790 lines (83.4%)
+and 19,286/25,884 branches (74.5%). Windows and other required integration
+collections remain absent; none of the complete-cohort gates is relaxed.
+Evidence: `javaexec-baseline-56/`, `register-contract-javaexec-checked-56/`,
+`register-contract-current-partial/` and `register-contract-final-verification.log`.
+The code commits are pushed and CI run `43952501473` validates `74436b6e`.
+The preceding run completed its ARM32/AArch64/MIPS/Windows lanes; x86-64 failed
+before extension installation, leaving its coverage upload directories absent.
+The new run includes the installation-order fix; hosted acceptance remains
+unverified until it completes.
+
 ## Complete checker-report corruption controls
 
 CONFIRMED: `StrictDwarfReportSmoke` now rejects duplicate categories in each
