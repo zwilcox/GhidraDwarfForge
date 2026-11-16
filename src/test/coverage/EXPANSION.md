@@ -23,7 +23,11 @@ generations and observed runtime stops. Six new receipt tests reject omitted
 measurement, wrong layers, absent consumer/preservation evidence, changed exports
 and incorrect stops. All 236 coverage-tool tests and workflow lint pass.
 These are additional measurements of existing behavior, not broader architecture
-claims. Five collected sessions await the matching-bytecode union below.
+claims. All five collections' sessions pass raw matching-bytecode verification
+and hosted receipt admission. They add 33 covered lines and 27 branch outcomes:
+the 831-session diagnostic union measures 27,880/29,790 lines (93.6%) and
+21,052/25,884 branches (81.3%). Binary/location is 94.4% / 80.9%; file/validation
+remains 94.4% / 84.8%. Critical targets and full hosted acceptance remain unmet.
 Evidence: `equates-measured-2f181/`, `equates-measured-2f181-run.log`,
 `equate-instrumentation-tests.log` and `equate-actionlint.log` in bounded scratch.
 The temporarily installed exporter JAR was restored and its original hash checked.
