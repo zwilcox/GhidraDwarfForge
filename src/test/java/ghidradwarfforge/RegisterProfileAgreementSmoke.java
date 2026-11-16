@@ -30,7 +30,30 @@ final class RegisterProfileAgreementSmoke {
             Language language = language("MIPS:" + endian + ":32:default");
             for (int first : new int[] {0, 12, 30}) pairs(language, first, endian.equals("BE"));
         }
+        oversizedPairChildren();
         System.out.println("register-profile-agreement=PASS checks=" + checks);
+    }
+
+    private static void oversizedPairChildren() throws Exception {
+        // Unlike MIPS's two full-width children, this actual eight-child tree
+        // isolates the child-width check from offset and total-width checks.
+        // This rejection-only fixture is not a PowerPC ABI or export profile.
+        var language = language("PowerPC:BE:32:default");
+        var register = language.getRegister("crall");
+        require(register == register.getBaseRegister() && register.getBitLength() == 64,
+            "pinned condition-register container changed");
+        for (int index = 0; index < 3; index++) {
+            var child = language.getRegister("cr" + (7 - index));
+            require(register.getChildRegisters().contains(child) && child.getBitLength() == 8 &&
+                child.getLeastSignificantBitInBaseRegister() == index * 8, "pinned condition-register child changed");
+        }
+        for (int split : new int[] {8, 16}) {
+            String second = split == 8 ? "cr6" : "cr5";
+            var wrong = new TargetRegisterMap("test-only-profile", "deliberately incompatible child widths",
+                Map.of("cr7", 0, second, 1), Map.of("crall", List.of(
+                    new PairPiece("cr7", 0, split), new PairPiece(second, split, 64 - split))));
+            refused(mapped(register, 8, wrong), "paired child cannot absorb unrelated physical siblings");
+        }
     }
 
     private static void slices(Language language, int index) {
