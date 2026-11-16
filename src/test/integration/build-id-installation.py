@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Real build-ID transaction/validator tests with an explicitly test-only Linux metadata host."""
 import argparse
+import copy
 from contextlib import nullcontext
 import fcntl
 import hashlib
@@ -187,6 +188,16 @@ qemu_socket_wait
     assert run('reinstall', configs[0], debug, 'install')['outcome'] == 'INSTALLED'
 
     if args.controls:
+        debug = fresh('empty-recovery')
+        assert run('empty-recovery', configs[0], debug, 'recover')['outcome'] == 'UNCHANGED'
+        assert not registration(debug).exists() and not state_file(debug).exists()
+        before = snapshot(debug)
+        run('empty-update-refused', configs[1], debug, 'update', expected=1,
+            contains='no managed installation exists to update')
+        assert before == snapshot(debug)
+        run('empty-remove-refused', configs[0], debug, 'remove', expected=1,
+            contains='no managed installation exists to remove')
+        assert before == snapshot(debug)
         for mode in ['install', 'update', 'remove']:
             boundaries = ['PREPARED', 'BEFORE_PUBLICATION', 'PUBLISHED', 'COMMITTED']
             if mode != 'remove':
@@ -322,11 +333,52 @@ qemu_socket_wait
             'unknown': (json.dumps(dict(original_state, unexpected='value')).encode(), 'unknown or missing'),
             'escape': (json.dumps(dict(original_state, operationId='../outside')).encode(), 'installation UUID'),
         }
+        # Mutate a record emitted by a real, validated installation. A refusal
+        # must preserve the registration, retained generations and record itself;
+        # restoring that record must still permit ordinary recovery below.
+        for field, replacement, message in [
+                ('schema', 'foreign-state-v1', 'installation record contract differs'),
+                ('buildId', '00', 'installation record contract differs'),
+                ('hostContract', 'foreign-host', 'installation record contract differs'),
+                ('durability', 'foreign-durability', 'installation record contract differs'),
+                ('originalSha256', 'a' * 63, 'invalid installation content hash'),
+                ('originalSha256', 'A' * 64, 'invalid installation content hash'),
+                ('operationId', '00000000-0000-0000-0000-00000000000A', 'noncanonical installation UUID'),
+                ('phase', 'PUBLISHING', 'unknown installation phase'),
+                ('mode', 'REPLACE', 'invalid installation transition'),
+                ('mode', 'UPDATE', 'invalid installation transition'),
+                ('mode', 'REMOVE', 'invalid installation transition'),
+                ('before', original_state['after'], 'invalid installation transition'),
+                ('after', None, 'invalid installation transition'),
+                ('directories', {}, 'recorded installation directories changed')]:
+            changed = copy.deepcopy(original_state)
+            changed[field] = replacement
+            label = field + '-' + str(len(malformed))
+            malformed[label] = (json.dumps(changed).encode(), message)
+        for field in ['before', 'after']:
+            changed = copy.deepcopy(original_state)
+            del changed[field]
+            malformed['missing-' + field] = (json.dumps(changed).encode(), 'unknown or missing')
+        for mode, after in [('UPDATE', None), ('REMOVE', original_state['after'])]:
+            changed = copy.deepcopy(original_state)
+            changed.update(mode=mode, before=original_state['after'], after=after)
+            malformed[mode.lower() + '-invalid-after'] = (json.dumps(changed).encode(),
+                'invalid installation transition')
+        changed = copy.deepcopy(original_state)
+        changed['after']['generation'] = '00000000-0000-0000-0000-000000000000'
+        assert changed['after']['generation'] != changed['operationId']
+        malformed['wrong-generation'] = (json.dumps(changed).encode(), 'prepared generation differs from operation')
         for kind, (data, message) in malformed.items():
             record.write_bytes(data)
             before = snapshot(debug)
+            metadata = {str(p.relative_to(debug)): (p.stat().st_mode, p.stat().st_uid,
+                p.stat().st_gid, p.stat().st_mtime_ns, p.stat().st_nlink)
+                for p in debug.rglob('*') if p.is_file()}
             run('record-' + kind + '-refused', configs[0], debug, 'recover', expected=1, contains=message)
             assert before == snapshot(debug)
+            assert metadata == {str(p.relative_to(debug)): (p.stat().st_mode, p.stat().st_uid,
+                p.stat().st_gid, p.stat().st_mtime_ns, p.stat().st_nlink)
+                for p in debug.rglob('*') if p.is_file()}
         record.write_bytes(saved)
         os.utime(record, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
         assert run('record-controls-restored', configs[0], debug, 'recover')['outcome'] == 'UNCHANGED'
