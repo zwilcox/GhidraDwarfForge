@@ -30,6 +30,18 @@ Evidence: `allocation-file-changes-focused.log`,
 `allocation-file-change-mutations.log` and `allocation-file-change-mutations/`
 in the bounded workspace. Full-suite measurement follows.
 
+Baseline59 at `ed30f77b` passes all 211 JavaExec tasks in 277.224s,
+53,432 independently interpreted expression vectors and all 222 coverage-tool
+tests (8.531s). Raw verification retains the same 255 sources / 901 classes and
+production JAR. The file-change tests add four lines and eight branch outcomes;
+`MatchedElfAllocations` now covers 377/389 lines and 298/320 branches (93.1%).
+JavaExec covers 23,854/29,790 lines and 18,798/25,884 branches. The current
+362-session partial union covers 24,951/29,790 lines (83.8%) and
+19,417/25,884 branches (75.0%). Full current Windows/headless acceptance and
+publication remain outstanding; accepted targets are unchanged.
+Evidence: `javaexec-baseline-59/`, `allocation-change-javaexec-checked-59/`,
+`allocation-change-current-partial/` and `allocation-change-verification-59.log`.
+
 ## ELF allocation permissions and note boundaries
 
 CONFIRMED: the allocation task checks all eight LOAD permission combinations
