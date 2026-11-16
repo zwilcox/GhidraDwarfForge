@@ -6,6 +6,36 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Known-zero facts at conditional value-flow joins
+
+CONFIRMED at `39a8bc2d`: 96 raw-p-code cases exercise both branch arms, eight
+byte placements and both operand orders for OR/ADD merges. The reference
+interpreter executes bounded forward branches independently; direct BigInteger
+expressions check its results for all 256 byte values and seven sign-boundary
+inputs. Preserving paths retain the exact byte, while each corrupting path has
+a concrete counterexample. An unreachable carrier overwrite must not add a
+false predecessor or invalidate a valid location.
+
+The focused register-byte suite passes 1,216,315 assertions. All ten selected
+stack-value mutations are detected (53.045 seconds), including unioning zero-bit
+facts across paths and retaining only the first path's facts. All 211 JavaExec
+tasks pass (275.878 seconds), as do 53,432 independent DWARF vectors, 206
+coverage-tool tests and actionlint. Baseline50 verifies 255 production sources /
+901 production classes / 619 test classes. JavaExec measures 23,814 lines and
+18,618 branches. Production bytecode and the measurement denominator are unchanged.
+
+The verified 1,271-session diagnostic union adds two branch outcomes:
+28,458/29,786 lines (95.5%), 21,121/25,878 branches (81.6%). Binary/location
+branches are 15,245/18,726 (81.4%); file-operation branches remain 3,504/4,250
+(82.4%). Critical 90% branch gaps remain 1,609 and 321. This is not current hosted
+acceptance or main publication; the active hosted run covers the earlier pushed
+revision `117b6c66`.
+
+Evidence: `javaexec-baseline-50/`, `joined-zero-focused.log`,
+`joined-zero-selected-mutations/`, `joined-zero-javaexec-checked/`,
+`joined-zero-union-verified/`, `joined-zero-baseline-result.json` and
+`joined-zero-verification.log` in the bounded coverage workspace.
+
 ## Complete hosted origins in the public renderer
 
 CONFIRMED: CI run [43888754254](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43888754254)
