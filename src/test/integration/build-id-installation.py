@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import zlib
 from integration_coverage import Collection
 
 
@@ -92,6 +93,11 @@ def main():
 
     def snapshot(debug):
         return {str(p.relative_to(debug)): (digest(p), p.stat().st_ino)
+            for p in debug.rglob('*') if p.is_file()}
+
+    def metadata_snapshot(debug):
+        return {str(p.relative_to(debug)): (p.stat().st_mode, p.stat().st_uid,
+            p.stat().st_gid, p.stat().st_mtime_ns, p.stat().st_nlink)
             for p in debug.rglob('*') if p.is_file()}
 
     def gdb(name, debug, source=None):
@@ -371,17 +377,96 @@ qemu_socket_wait
         for kind, (data, message) in malformed.items():
             record.write_bytes(data)
             before = snapshot(debug)
-            metadata = {str(p.relative_to(debug)): (p.stat().st_mode, p.stat().st_uid,
-                p.stat().st_gid, p.stat().st_mtime_ns, p.stat().st_nlink)
-                for p in debug.rglob('*') if p.is_file()}
+            metadata = metadata_snapshot(debug)
             run('record-' + kind + '-refused', configs[0], debug, 'recover', expected=1, contains=message)
             assert before == snapshot(debug)
-            assert metadata == {str(p.relative_to(debug)): (p.stat().st_mode, p.stat().st_uid,
-                p.stat().st_gid, p.stat().st_mtime_ns, p.stat().st_nlink)
-                for p in debug.rglob('*') if p.is_file()}
+            assert metadata == metadata_snapshot(debug)
         record.write_bytes(saved)
         os.utime(record, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
         assert run('record-controls-restored', configs[0], debug, 'recover')['outcome'] == 'UNCHANGED'
+
+        debug = fresh('generation-controls')
+        installed = run('generation-controls-baseline', configs[0], debug, 'install')
+        generation = Path(installed['source']).parent.parent
+        manifest_path, record = generation / 'generation.json', state_file(debug)
+        saved_manifest, saved_record = manifest_path.read_bytes(), record.read_bytes()
+        manifest_stamp, record_stamp = manifest_path.stat(), record.stat()
+        manifest, state = json.loads(saved_manifest), json.loads(saved_record)
+        malformed = {}
+        for field, replacement, message in [
+                ('schema', 'foreign-generation-v1', 'generation identity differs'),
+                ('buildId', '00', 'generation identity differs'),
+                ('originalSha256', '0' * 64, 'generation original differs from installation state'),
+                ('contentKey', '0' * 64, 'generation key differs from retained inputs'),
+                ('sourceName', 'nested/source.c', 'retained source must be a leaf'),
+                ('sourceName', '../outside.c', 'normalized relative path'),
+                ('directories', {}, 'generation directories changed')]:
+            changed = copy.deepcopy(manifest)
+            assert changed[field] != replacement
+            changed[field] = replacement
+            malformed[field + '-' + str(len(malformed))] = (changed, message)
+        for name in ['export.json', 'export.dbg', 'export.source', 'installed.debug',
+                'validation.json', 'source/' + manifest['sourceName']]:
+            changed = copy.deepcopy(manifest)
+            del changed['files'][name]
+            malformed['missing-' + name.replace('/', '-')] = (changed, 'generation inventory is incomplete')
+        changed = copy.deepcopy(manifest)
+        changed['files']['unlisted.debug'] = changed['files']['installed.debug']
+        malformed['extra-file'] = (changed, 'generation file inventory changed')
+
+        def bind_manifest(changed):
+            # Rebind only the changed record's content digest, count and CRC.
+            # Preserve the real inode and supported metadata, including mtime,
+            # so recovery must inspect semantics beyond the outer file hash.
+            data = (json.dumps(changed, indent=4) + '\n').encode()
+            manifest_path.write_bytes(data)
+            os.utime(manifest_path, ns=(manifest_stamp.st_atime_ns, manifest_stamp.st_mtime_ns))
+            rebound = copy.deepcopy(state)
+            rebound['after']['manifest'].update(sha256=hashlib.sha256(data).hexdigest(),
+                bytes=str(len(data)), crc32=str(zlib.crc32(data)))
+            record.write_text(json.dumps(rebound, indent=4) + '\n')
+            return rebound
+
+        def reject_generation(name, message):
+            before, metadata = snapshot(debug), metadata_snapshot(debug)
+            run('generation-' + name + '-refused', configs[0], debug, 'recover', expected=1, contains=message)
+            assert before == snapshot(debug) and metadata == metadata_snapshot(debug)
+
+        try:
+            for kind, (changed, message) in malformed.items():
+                bind_manifest(changed)
+                reject_generation(kind, message)
+            rebound = bind_manifest(manifest)
+            rebound['after']['registration']['sha256'] = '0' * 64
+            record.write_text(json.dumps(rebound, indent=4) + '\n')
+            reject_generation('registration-digest', 'registration does not describe retained sidecar')
+        finally:
+            manifest_path.write_bytes(saved_manifest)
+            record.write_bytes(saved_record)
+            os.utime(manifest_path, ns=(manifest_stamp.st_atime_ns, manifest_stamp.st_mtime_ns))
+            os.utime(record, ns=(record_stamp.st_atime_ns, record_stamp.st_mtime_ns))
+        assert run('generation-controls-restored', configs[0], debug, 'recover')['outcome'] == 'UNCHANGED'
+
+        # Neither a link nor a FIFO is a retained regular artifact. A FIFO must
+        # be rejected without opening it and waiting for a writer.
+        for kind in ['symlink', 'fifo']:
+            extra = generation / ('unsupported-' + kind)
+            if kind == 'symlink':
+                extra.symlink_to(Path(installed['source']))
+            else:
+                os.mkfifo(extra)
+            identity = extra.lstat()
+            try:
+                reject_generation(kind, 'generation contains a ' + (
+                    'symbolic link' if kind == 'symlink' else 'non-regular file'))
+                after = extra.lstat()
+                assert (identity.st_dev, identity.st_ino, identity.st_mode, identity.st_nlink) == (
+                    after.st_dev, after.st_ino, after.st_mode, after.st_nlink)
+                if kind == 'symlink':
+                    assert extra.readlink() == Path(installed['source'])
+            finally:
+                extra.unlink()
+        assert run('generation-tree-restored', configs[0], debug, 'recover')['outcome'] == 'UNCHANGED'
 
         debug = fresh('recovery-conflict')
         run('recovery-conflict-baseline', configs[0], debug, 'install')
