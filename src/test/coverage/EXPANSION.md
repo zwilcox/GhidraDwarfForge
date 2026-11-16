@@ -6,6 +6,40 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## ARM section-mapping evidence and allocation boundaries
+
+CONFIRMED at `91b4bae4`: evidence checks accept representable unsigned 32-bit
+addresses/sizes whose exclusive end is 2^32, and exactly 65,536 ordered mode
+boundaries. They reject invalid indices, negative/overflowing extents, malformed
+hashes, missing/excessive boundaries, duplicate/nonincreasing offsets and invalid
+or repeated mode values. Caller changes cannot mutate retained evidence.
+Constructor acceptance alone does not prove matching ELF bytes or instruction modes.
+
+Tiny ELF fixtures separately check unsupported machine/type/EABI/flag profiles,
+ET_DYN mode/address stability, non-executable or compressed section exclusion,
+zero-sized sections and executable NOBITS rejection. Planning cancels at every
+observed checkpoint, preserves original bytes and retries with identical results.
+These tests do not expand the supported architecture/ABI claims.
+
+Focused ARM mapping smoke passes 213 assertions. Four selected address-overflow,
+exact-limit, duplicate-offset and executable-flag mutations are caught in 1.761
+seconds. All 211 JavaExec tasks pass in 275.891 seconds, 53,432 independent DWARF
+vectors pass, and 197 coverage-tool checks plus actionlint pass. Baseline47
+verifies 255 production sources / 901 production classes / 616 test classes;
+JavaExec measures 23,810 lines / 18,599 branches.
+
+The verified 1,271-session matching-bytecode diagnostic union measures
+28,454/29,786 lines (95.5%) and 21,102/25,878 branches (81.5%). Binary/location
+coverage is 18,346/19,197 lines (95.6%) and 15,226/18,726 branches (81.3%), adding
+26 outcomes and four lines. File-operation branches remain 3,504/4,250 (82.4%).
+Critical 90% branch targets, current hosted acceptance and main publication
+remain incomplete. Production bytecode and scope are unchanged.
+
+Evidence: `javaexec-baseline-47/`, `arm-mapping-focused-final.log`,
+`arm-mapping-selected-mutations/`, `arm-mapping-javaexec-checked/`,
+`arm-mapping-union-verified/`, `arm-mapping-baseline-result.json` and
+`arm-mapping-verification.log` in the bounded coverage workspace.
+
 ## Attachment preview request, cancellation and response boundaries
 
 CONFIRMED at `ffda4bf8`: the read-only helper test cancels at each of 1,931
