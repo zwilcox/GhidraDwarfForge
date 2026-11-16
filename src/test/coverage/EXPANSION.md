@@ -30,25 +30,25 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`ed880acdaaa7aba83124fadf1c0c1bebd81fe785` in 265.1 seconds. The combined local report
+`830d6b6a41b69d13618fac4a2b1b56f7ea02b6d4` in 265.3 seconds. The combined local report
 contains 965 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.8% | 79.2% | 85% / 80% |
+| All production Java | 94.8% | 79.3% | 85% / 80% |
 | Binary and location correctness | 95.0% | 79.1% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.5% | Included in overall |
 
-The binary/location line figure rounds to 95.0%, but its exact count is
-18,230/19,193: four further covered lines are required by the 95% gate.
-Both critical branch targets and the file-transaction line target remain unmet.
+The binary/location line count is 18,236/19,193, meeting its exact 95%
+line gate. Both critical branch targets and the file-transaction line target
+remain unmet, as does the overall 80% branch target.
 
 Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-curated-type-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-arm-mode-budgets-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -452,5 +452,7 @@ mirror, reject the maximum permitted cue count, ignore the comparison budget,
 and substitute a bitfield's base integer width for its actual storage width.
 The latter is detected by the curated type checks, including the one-byte
 three-bit field. These are parser/planner and saved-model tests, not a new
-runtime architecture claim. Production code is unchanged; complete refreshed
-JavaExec/combined counters are pending for this snapshot.
+runtime architecture claim. All 210 JavaExec tasks and 141 coverage-tool tests
+passed. The verified combined union adds six lines and eight branch outcomes
+across the same 965 sessions. Production code and the denominator are unchanged.
+Hosted acceptance remains pending.
