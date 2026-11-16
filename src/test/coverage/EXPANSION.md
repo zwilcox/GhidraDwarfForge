@@ -43,8 +43,17 @@ DIE oracle with the expected semantic mismatch. The unmodified compiled
 baseline passes. Compilation errors, crashes and unrelated assertions cannot
 count as detection; mutation executions contribute no coverage. Evidence:
 `qualified-type-mutations/result.json`. Production sources remain unchanged.
-Exact-commit measurement and hosted acceptance follow separately; no coverage
-increase is claimed from the test count.
+CONFIRMED exact-commit measurement at `1816a8f9`: the final harness passes and
+its completed native JVM session, source provenance, production class identities
+and raw probes validate. The matching-bytecode union now contains 1,311 sessions:
+28,463/29,786 lines (95.6%) and 21,131/25,878 branches (81.7%). This adds five
+lines and seven branches, all in binary/location correctness, whose branches
+are now 15,252/18,726 (81.4%). File-operation branches remain 3,507/4,250 (82.5%).
+The critical 90% gaps remain 1,602 binary and 318 file outcomes. Production JAR,
+255-source/901-class denominator and previous JavaExec baseline50 are unchanged.
+This diagnostic union is not current hosted acceptance or published main coverage.
+Evidence: `qualified-type-final/`, `qualified-type-final-collections/`,
+`qualified-type-final-verified/union/` and `qualified-type-final-verification.log`.
 
 ## Linux metadata application failures
 
