@@ -482,6 +482,10 @@ VTABLE_BINDING_MUTANTS = [
 ]
 
 STACK_FLOW_MUTANTS = [
+    ("value-flow-loses-first-byte-with-unrelated-overlap", STACK_FLOW, STACK_FLOW_TEST,
+     "if (disjoint || (secondZeros & mask) == mask) values.add(value);", "if (disjoint) values.add(value);"),
+    ("value-flow-loses-second-byte-with-unrelated-overlap", STACK_FLOW, STACK_FLOW_TEST,
+     "if (disjoint || (firstZeros & mask) == mask) values.add(value);", "if (disjoint) values.add(value);"),
     ("value-flow-caps-wide-shifts-at-host-long", STACK_FLOW, STACK_FLOW_TEST,
      "bits >= (long) output.getSize() * Byte.SIZE", "bits >= Long.SIZE"),
     ("value-flow-wraps-wide-carrier-byte-offset", STACK_FLOW, STACK_FLOW_TEST,

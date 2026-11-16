@@ -94,9 +94,65 @@ final class StackValueMaskSmoke {
             }
         }
         int wideCases = wideCarriers(program, template, registers);
+        int overlappingCases = overlappingMerges(program, template, registers);
         System.out.println("stack-value-mask=PASS cases=" + cases.size() * 4 + " wide-cases=" + wideCases + " checks=" + checks +
-            " evaluator=BigInteger raw-pcode=true target=ARM-LE");
+            " overlapping-cases=" + overlappingCases + " evaluator=BigInteger raw-pcode=true target=ARM-LE");
         return checks;
+    }
+
+    private static int overlappingMerges(ProgramDB program, Instruction template, TargetRegisterMap registers)
+            throws Exception {
+        int cases = 0;
+        for (int sourceByte = 0; sourceByte < 4; sourceByte++) {
+            for (int shift : new int[] {0, 8, 16, 24, 32}) {
+                for (int merge : new int[] {PcodeOp.INT_OR, PcodeOp.INT_ADD}) {
+                    for (boolean reversed : new boolean[] {false, true}) {
+                        var code = new Code(program, template);
+                        // Both operands contain unknown bits outside the tracked byte.
+                        // OR can preserve that byte even when the complete operands
+                        // overlap. ADD can carry into it from their lower bytes.
+                        code.op(PcodeOp.INT_ZEXT, code.carrier, code.source);
+                        code.op(PcodeOp.INT_LEFT, code.carrier, code.carrier, code.constant(shift, 4));
+                        code.op(PcodeOp.INT_ZEXT, code.nuisance, code.other);
+                        code.op(PcodeOp.INT_AND, code.nuisance, code.nuisance,
+                            code.constant(~(0xffL << (sourceByte * 8)), 8));
+                        code.op(PcodeOp.INT_LEFT, code.nuisance, code.nuisance, code.constant(shift, 4));
+                        code.op(merge, code.destination, reversed ? code.nuisance : code.carrier,
+                            reversed ? code.carrier : code.nuisance);
+                        code.op(PcodeOp.COPY, code.source, code.constant(0, 4));
+                        var incoming = new Varnode(code.source.getAddress().add(sourceByte), 1);
+                        var state = StackValueFlow.forIncomingPiece(program, incoming);
+                        String context = "overlapping/source-byte=" + sourceByte + "/shift=" + shift +
+                            "/merge=" + merge + "/reversed=" + reversed;
+                        require(state != null && state.advance(code.instruction(), false, TaskMonitor.DUMMY), context);
+                        var location = state.location(registers);
+                        boolean available = merge == PcodeOp.INT_OR;
+                        int offset = sourceByte * 8 + shift;
+                        require(location.available() == available, "overlapping merge availability " + context + ": " + location);
+                        if (available) require(location instanceof RegisterStorage register &&
+                            register.register().dwarfNumber() == 256 && register.valueBitOffset() == offset &&
+                            register.bitSize() == 8, "wrong merged byte " + context + ": " + location);
+                        boolean counterexample = false;
+                        for (int value = 0; value <= 255; value++) {
+                            for (long noise : NOISE) {
+                                int observed = evaluate(code, value, noise, sourceByte).shiftRight(offset)
+                                    .and(BigInteger.valueOf(255)).intValue();
+                                if (available || sourceByte == 0) require(observed == value,
+                                    "byte expected unchanged was modified " + context);
+                                else counterexample |= observed != value;
+                            }
+                        }
+                        if (!available && sourceByte != 0) require(counterexample,
+                            "carry rejection lacks a destructive example " + context);
+                        // The least-significant-byte ADD is concretely safe, but the
+                        // current disjoint-operand proof deliberately omits it. Do not
+                        // mislabel that omission as evidence that its value changed.
+                        cases++;
+                    }
+                }
+            }
+        }
+        return cases;
     }
 
     private static int wideCarriers(ProgramDB program, Instruction template, TargetRegisterMap registers) throws Exception {
@@ -218,8 +274,14 @@ final class StackValueMaskSmoke {
     }
 
     private static BigInteger evaluate(Code code, int value, long noise) {
+        return evaluate(code, value, noise, 0);
+    }
+
+    private static BigInteger evaluate(Code code, int value, long noise, int sourceByte) {
         Map<Varnode, BigInteger> values = new HashMap<>();
-        values.put(code.source, BigInteger.valueOf((noise & 0xffffff00L) | value));
+        BigInteger selected = BigInteger.valueOf(255).shiftLeft(sourceByte * 8);
+        values.put(code.source, BigInteger.valueOf(noise).and(mask(32).xor(selected))
+            .or(BigInteger.valueOf(value).shiftLeft(sourceByte * 8)));
         values.put(code.other, BigInteger.valueOf(noise));
         for (PcodeOp op : code.operations) {
             var first = read(values, op.getInput(0));
