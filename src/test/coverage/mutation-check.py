@@ -25,6 +25,8 @@ INHERITANCE = "ghidradwarfforge/dwarf/DwarfInheritanceExpression.java"
 INHERITANCE_TEST = "ghidradwarfforge.dwarf.DwarfInheritanceExpressionSmoke"
 RECORDS = "ghidradwarfforge/output/BuildIdRecords.java"
 RECORDS_TEST = "ghidradwarfforge.output.BuildIdRecordsSmoke"
+UNWIND_REPORT = "ghidradwarfforge/output/UnwindEvidenceJson.java"
+UNWIND_REPORT_TEST = "ghidradwarfforge.output.UnwindEvidenceJsonBoundarySmoke"
 
 # Each edit names a specific safety/semantic guarantee. This is not a blanket
 # mutation score: surviving, uncompilable or timed-out mutants fail this harness.
@@ -88,6 +90,15 @@ RECORD_MUTANTS = [
      "++count[0] <= maximumValues", "++count[0] <= maximumValues + 1"),
 ]
 
+UNWIND_REPORT_MUTANTS = [
+    ("unwind-report-accepts-wrong-byte-address", UNWIND_REPORT, UNWIND_REPORT_TEST,
+     "bytes.address() == normalized && bytes.fileOffset() >= 0", "bytes.fileOffset() >= 0"),
+    ("unwind-report-shifts-file-offset", UNWIND_REPORT, UNWIND_REPORT_TEST,
+     "hex(bytes.fileOffset())", "hex(bytes.fileOffset() + 1)"),
+    ("unwind-report-accepts-pointer-overflow", UNWIND_REPORT, UNWIND_REPORT_TEST,
+     "require(image.is64Bit() || Long.compareUnsigned(value, 0xffff_ffffL) <= 0,", "require(true,"),
+]
+
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -108,14 +119,14 @@ def main():
     parser.add_argument("--tests", type=Path, required=True)
     parser.add_argument("--java-home", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--ghidra", type=Path, help="also check project protection and records using Ghidra's API/Gson")
+    parser.add_argument("--ghidra", type=Path, help="also check project protection, records and unwind evidence using Ghidra's API/Gson")
     args = parser.parse_args()
     classes, tests, output = args.classes.resolve(), args.tests.resolve(), args.output.resolve()
     if not classes.is_dir() or not tests.is_dir():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -135,7 +146,7 @@ def main():
             path.write_text(source)
             # The production publisher's private exception is never serialized;
             # its existing missing serialVersionUID is unrelated to these mutants.
-            selected_dependencies = dependencies if test in (PROTECT_TEST, RECORDS_TEST) else []
+            selected_dependencies = dependencies if test in (PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;

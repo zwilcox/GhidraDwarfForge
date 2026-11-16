@@ -37,6 +37,7 @@ public final class UnwindEvidenceJsonSmoke {
         return UnwindEvidenceJson.describe(image, recovered, delta, HASH, HASH, HASH, () -> false);
     }
     public static void main(String[] args) throws Exception {
+        UnwindEvidenceJsonBoundarySmoke.main(args);
         var path = Files.createTempFile("forge-unwind-report-", ".elf");
         try {
             var bytes = ByteBuffer.allocate(64).order(ByteOrder.LITTLE_ENDIAN);
