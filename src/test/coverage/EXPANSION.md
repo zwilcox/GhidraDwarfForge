@@ -6,6 +6,30 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Exhaustive location refinement over finite address domains
+
+CONFIRMED: a pointwise oracle now checks how additional storage evidence refines
+unavailable lifetime spans. Both input maps are valid, ordered, nonoverlapping
+interval lists. Each of four cells can be absent, unavailable, register-backed or
+stack-relative; differing cell boundaries exercise clipping and partial overlap.
+All 256 by 256 map pairs run at ordinary addresses, above 4 GiB and near the
+signed 64-bit boundary: 196,608 cases and 5,535,745 assertions.
+
+The oracle selects expected storage independently at each address. Existing
+available locations must win; new unavailable evidence must not replace the
+original omission reason; gaps outside the original lifetime must stay absent.
+Outputs must remain ordered, disjoint, coalesced and deterministic. This checks
+the interval-refinement rule, not new architecture extraction or debugger support.
+It runs within the existing stackValueFlowSmoke task; production is unchanged.
+
+All nine selected compiled mutations are detected in 6.835s: overwrite existing
+locations, accept unavailable evidence, extend before/after the original span,
+drop unavailable prefixes/suffixes, retain a stale cursor, erase existing ranges
+when extra evidence is empty, or discard newly proved storage. Mutated execution
+is excluded from coverage. Evidence: `storage-refinement-focused.log`,
+`storage-refinement-mutations.log` and `storage-refinement-mutations/result.json`
+in the bounded workspace. Full-suite attribution follows.
+
 ## Recovery record changes between independent observations
 
 CONFIRMED: the attachment transaction task now changes actual receipt bytes,

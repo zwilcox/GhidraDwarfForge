@@ -59,6 +59,7 @@ MIPS_ALLOCATION_TEST = "ghidradwarfforge.MipsN32ParameterAllocationSmoke"
 STACK_FLOW = "ghidradwarfforge/StackValueFlow.java"
 STACK_FLOW_TEST = "ghidradwarfforge.RegisterByteSliceFlowSmoke"
 STACK_CARRIER_TEST = "ghidradwarfforge.StackValueFlowSmoke"
+STORAGE_REFINEMENT_TEST = "ghidradwarfforge.StorageRefinementSmoke"
 VTABLE_BINDINGS = "ghidradwarfforge/GhidraVtableBindings.java"
 VTABLE_BINDINGS_TEST = "ghidradwarfforge.VtableBindingEvidenceSmoke"
 STATIC_RECOVERY = "ghidradwarfforge/GhidraStaticRecovery.java"
@@ -698,6 +699,27 @@ MIPS_ALLOCATION_MUTANTS = [
      "if (aligned && (slots & 1) != 0)", "if (false)"),
 ]
 
+STORAGE_REFINEMENT_MUTANTS = [
+    ("storage-refinement-overwrites-established-location", STACK_FLOW, STORAGE_REFINEMENT_TEST,
+     'if (interval.storage().available()) {', 'if (false) {'),
+    ("storage-refinement-accepts-unavailable-evidence", STACK_FLOW, STORAGE_REFINEMENT_TEST,
+     '!extra.storage().available() || extra.end() <= cursor', 'extra.end() <= cursor'),
+    ("storage-refinement-extends-before-original", STACK_FLOW, STORAGE_REFINEMENT_TEST,
+     'long low = Math.max(cursor, extra.start());', 'long low = Math.min(cursor, extra.start());'),
+    ("storage-refinement-extends-after-original", STACK_FLOW, STORAGE_REFINEMENT_TEST,
+     'long high = Math.min(interval.end(), extra.end());', 'long high = Math.max(interval.end(), extra.end());'),
+    ("storage-refinement-drops-unavailable-prefix", STACK_FLOW, STORAGE_REFINEMENT_TEST,
+     'if (cursor < low) append(result, cursor, low, interval.storage());', ''),
+    ("storage-refinement-drops-unavailable-suffix", STACK_FLOW, STORAGE_REFINEMENT_TEST,
+     'if (cursor < interval.end()) append(result, cursor, interval.end(), interval.storage());', ''),
+    ("storage-refinement-retains-stale-cursor", STACK_FLOW, STORAGE_REFINEMENT_TEST,
+     'cursor = high;', 'cursor = low;'),
+    ("storage-refinement-empty-proof-erases-existing", STACK_FLOW, STORAGE_REFINEMENT_TEST,
+     'if (proven.isEmpty()) return List.copyOf(existing);', 'if (proven.isEmpty()) return List.of();'),
+    ("storage-refinement-discards-new-proof", STACK_FLOW, STORAGE_REFINEMENT_TEST,
+     'append(result, low, high, extra.storage());', 'append(result, low, high, interval.storage());'),
+]
+
 TRANSACTION_MUTANTS = [
     ("transaction-accepts-mismatched-sidecar-crc", TRANSACTION, TRANSACTION_TEST,
      'request.prepared().debuglinkCrc32() != snapshots.get("sidecar").digest().gnuDebuglinkCrc32()', "false"),
@@ -959,7 +981,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + ALLOCATION_CHANGE_MUTANTS + ALLOCATION_BOUNDARY_MUTANTS + ELF_READER_MUTANTS + RUNTIME_RELOCATION_MUTANTS + REGISTER_MAP_MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (REPORT_LEXICAL_MUTANTS + PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + ALLOCATION_CHANGE_MUTANTS + ALLOCATION_BOUNDARY_MUTANTS + ELF_READER_MUTANTS + RUNTIME_RELOCATION_MUTANTS + REGISTER_MAP_MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (STORAGE_REFINEMENT_MUTANTS + REPORT_LEXICAL_MUTANTS + PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -980,7 +1002,7 @@ def main():
             # The production publisher's private exception is never serialized;
             # its existing missing serialVersionUID is unrelated to these mutants.
             selected_dependencies = dependencies if test in (
-                REPORT_LEXICAL_TEST, PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
+                STORAGE_REFINEMENT_TEST, REPORT_LEXICAL_TEST, PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
                 REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, MIXED_PREFIX_TEST, BACKUP_READBACK_TEST, REPORT_TEXT_TEST, BUILD_ID_HELPER_TEST, LINUX_METADATA_TEST, LINUX_APPLICATION_TEST, LINUX_MOUNT_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST, ATTACHMENT_PREVIEW_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
