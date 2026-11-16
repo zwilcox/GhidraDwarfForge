@@ -970,3 +970,34 @@ and 23 branch outcomes to the preceding partial union; it is still not the compl
 hosted measurement. No frozen inventory, threshold or production bytecode changed.
 Evidence is under `.forge-work/scratch/coverage-expansion/stack-transition-verified/`,
 with the failed Java-cache attempt retained in `stack-transition-failed-collections/`.
+
+## Saved-parameter and carrier ownership
+
+At `de8378a6`, `StackCarrierOwnershipSmoke` adds 92 assertions using actual
+x86-64/AArch64 ProgramDB fixtures with four- and eight-byte saved parameters.
+Detached or foreign parameters, foreign storage, split/partial/memory carriers,
+stack-pointer values and inconsistent indirection cannot supply a scalar location.
+Valid incoming locations remain exact, cancellation preserves the original
+exception, and fixture instructions and analyst metadata remain unchanged. The
+existing stack-value-flow task now passes 424 assertions.
+
+All 157 selected mutation controls pass, including three new controls that remove
+saved-parameter ownership, foreign-storage rejection and indirection agreement.
+Each new control fails its intended behavioral assertion; compilation or loading
+failures are not accepted as detections. This is not a repository-wide mutation
+score. The full 210-task JavaExec baseline passes in 272.4 seconds, along with
+53,432 independent DWARF-expression vectors and 181 coverage-tool tests.
+
+Strict raw verification retains all 901 production classes and 255 source files.
+JavaExec alone measures 23,627/29,786 lines and 18,311/25,878 branches. Its union
+with the 32 current signature/stack-transition analyzer sessions measures
+24,682/29,786 lines (82.9%) and 18,848/25,878 branches (72.8%). These ownership
+tests add one line and eight branch outcomes to the preceding partial union.
+The production JAR remains `3021d43ef8bcede78a4a87a7fe2c3f49bc15bb3b8cafb5121fb97fcd3a0cd8f6`.
+Changed production Java remains 100% lines / 86.7% branches, meeting the minimum
+changed-code gate. Full current-hosted acceptance and critical branch targets
+remain outstanding; this partial local measurement cannot publish the badge.
+
+Evidence is under `.forge-work/scratch/coverage-expansion/` in
+`javaexec-baseline-33/`, `carrier-ownership-mutation-checks/`,
+`carrier-ownership-javaexec-verified/` and `carrier-ownership-union-verified/`.
