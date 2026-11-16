@@ -28,7 +28,20 @@ drop unavailable prefixes/suffixes, retain a stale cursor, erase existing ranges
 when extra evidence is empty, or discard newly proved storage. Mutated execution
 is excluded from coverage. Evidence: `storage-refinement-focused.log`,
 `storage-refinement-mutations.log` and `storage-refinement-mutations/result.json`
-in the bounded workspace. Full-suite attribution follows.
+in the bounded workspace.
+
+Baseline62 at `56ef319a` passes 211 JavaExec tasks in 276.770s, 53,432
+independent DWARF-expression vectors and 225 coverage-tool tests in 9.031s.
+The denominator and production JAR are unchanged. Raw verification attributes
+two additional branch outcomes and no additional lines to this matrix; the
+independent oracle and mutation detections provide the broader behavioral value.
+JavaExec covers 23,859/29,790 lines and 18,818/25,884 branches. The 466-session
+diagnostic union covers 26,820/29,790 lines (90.0%) and 20,339/25,884 branches
+(78.6%). Binary/location coverage is 92.9% lines / 79.8% branches; file/validation
+coverage remains 92.6% / 83.3%. Accepted targets and full hosted acceptance remain
+outstanding. Evidence: `javaexec-baseline-62/`, `storage-refinement-javaexec-checked-62/`,
+`storage-refinement-current-partial/`, `storage-refinement-hosted-partial-62/`
+and `storage-refinement-verification-62.log`.
 
 ## Recovery record changes between independent observations
 
