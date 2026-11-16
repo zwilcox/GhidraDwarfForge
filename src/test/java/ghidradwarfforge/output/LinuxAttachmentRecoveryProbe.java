@@ -67,7 +67,11 @@ public final class LinuxAttachmentRecoveryProbe {
                         var before = AttachmentReceiptStore.read(fixture.request().receipt(), recoveryHost, () -> false);
                         AttachmentFileStore.unchanged(savedRequest, recoveryHost, () -> false);
                         Path helperOutput = directory.resolve("helper-recovery.stdout");
-                        var recoveryChild = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin/java").toString(),
+                        // Only normal recovery children use the optional measurement adapter.
+                        // Deliberate halt children above must never acquire its coverage session.
+                        String recoveryJava = System.getProperty("forge.test.recoveryJava." + directory.getFileName(),
+                            Path.of(System.getProperty("java.home"), "bin/java").toString());
+                        var recoveryChild = new ProcessBuilder(recoveryJava,
                             "--enable-native-access=ALL-UNNAMED", "-cp", System.getProperty("java.class.path"),
                             AttachmentHelper.class.getName(), "--recover", "--request", requestFile.toString(),
                             "--request-sha256", FileDigests.read(requestFile, () -> false).sha256(), "--confirm-target-change")
@@ -105,6 +109,7 @@ public final class LinuxAttachmentRecoveryProbe {
                             }
                         }
                         outcomes.add(Map.of("case", directory.getFileName().toString(), "childExit", 89,
+                            "recoveryHelperExit", recoveryChild.exitValue(), "recoveryOutcome", response.get("outcome").getAsString(),
                             "prior", prior, "interruptedReceipt", before, "result", recovered));
                         Files.writeString(root.resolve("progress.json"), json(outcomes));
                     }

@@ -132,11 +132,22 @@ class AttachmentOracleAdmission(unittest.TestCase):
         cases = [mode + '-' + boundary for mode in ('initial', 'refresh')
             for boundary in ('PREPARED', 'TARGET_REPLACED', 'BEFORE_COMMIT', 'COMMITTED')] if role == 'exec' else []
         record = {'suite': 'linux-attachment-' + role.replace('.', '-'),
-            'unmeasuredForcedHalts': [{'label': case, 'exitCode': 89} for case in cases]}
+            'unmeasuredForcedHalts': [{'label': case, 'exitCode': 89} for case in cases],
+            'sessions': [], 'launcherInvocations': []}
+        children = []
+        for index, case in enumerate(cases):
+            identity = 'forge-integration-' + format(index + 1, '032x')
+            label = 'native-recovery-helper-' + case
+            record['sessions'].append({'label': label, 'session': identity, 'status': 'ORACLE_PASSED'})
+            record['launcherInvocations'].append({'label': label, 'sessions': [identity], 'status': 'ORACLE_PASSED'})
+            children.append({'case': case, 'crashExit': 89, 'recoveryHelperMeasured': True,
+                'recoveryHelperExit': 0, 'recoveryOutcome': 'ROLLED_BACK', 'recoverySession': identity})
+        if cases:
+            record['sessions'].append({'label': 'native-recovery', 'session': 'forge-integration-' + 'f' * 32,
+                'status': 'ORACLE_PASSED'})
         oracle = {'host': 'production Linux ext4 host', 'target': 'x86_64', 'role': role,
             'entryPoint': 'AttachmentHelper', 'validator': 'production-live', 'runtime': True,
-            'unmeasuredNestedChildren': [{'case': case, 'crashExit': 89, 'recoveryHelperMeasured': False}
-                for case in cases]}
+            'recoveryChildren': children}
         return record, oracle
 
     def test_requires_real_host_helper_validator_and_debugger_for_each_role(self):
@@ -150,26 +161,86 @@ class AttachmentOracleAdmission(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, 'real privileged host'):
                         hosted.attachment_oracle(record, {**oracle, field: value})
 
-    def test_missing_duplicate_or_claimed_measured_children_rejected(self):
+    def test_missing_duplicate_or_unmeasured_children_rejected(self):
         record, oracle = self.fixture('exec')
-        for fault in ('missing', 'duplicate', 'exit', 'measured', 'missing-halt', 'wrong-halt'):
+        for fault in ('missing', 'duplicate', 'exit', 'unmeasured', 'helper-failed', 'helper-halted',
+                'helper-boolean', 'wrong-outcome', 'missing-halt', 'wrong-halt', 'historical-schema'):
             changed_record, changed_oracle = copy.deepcopy((record, oracle))
-            rows = changed_oracle['unmeasuredNestedChildren']
+            rows = changed_oracle['recoveryChildren']
             if fault == 'missing':
                 rows.pop()
             elif fault == 'duplicate':
                 rows[1] = rows[0]
             elif fault == 'exit':
                 rows[0]['crashExit'] = 0
-            elif fault == 'measured':
-                rows[0]['recoveryHelperMeasured'] = True
+            elif fault == 'unmeasured':
+                rows[0]['recoveryHelperMeasured'] = False
+            elif fault in ('helper-failed', 'helper-halted', 'helper-boolean'):
+                rows[0]['recoveryHelperExit'] = {'helper-failed': 1, 'helper-halted': 89, 'helper-boolean': False}[fault]
+            elif fault == 'wrong-outcome':
+                rows[0]['recoveryOutcome'] = 'COMMITTED'
             elif fault == 'missing-halt':
                 changed_record['unmeasuredForcedHalts'].pop()
-            else:
+            elif fault == 'wrong-halt':
                 changed_record['unmeasuredForcedHalts'][0]['exitCode'] = 0
+            else:
+                changed_oracle['unmeasuredNestedChildren'] = changed_oracle.pop('recoveryChildren')
             with self.subTest(fault=fault):
-                with self.assertRaisesRegex(ValueError, 'unmeasured recovery children'):
+                with self.assertRaisesRegex(ValueError, 'measured recovery helpers'):
                     hosted.attachment_oracle(changed_record, changed_oracle)
+
+    def test_recovery_measurement_requires_distinct_completed_bound_sessions(self):
+        record, oracle = self.fixture('exec')
+        for fault in ('missing-session', 'duplicate-session-label', 'missing-launcher', 'duplicate-launcher',
+                'session-incomplete', 'launcher-incomplete', 'parent-missing', 'parent-incomplete',
+                'parent-reused', 'no-binding', 'wrong-binding', 'wrong-launcher-binding', 'two-launcher-sessions',
+                'shared-session', 'invalid-session', 'unexpected-helper'):
+            r, o = copy.deepcopy((record, oracle))
+            if fault == 'missing-session':
+                r['sessions'].pop(0)
+            elif fault == 'duplicate-session-label':
+                r['sessions'][1]['label'] = r['sessions'][0]['label']
+            elif fault == 'missing-launcher':
+                r['launcherInvocations'].pop()
+            elif fault == 'duplicate-launcher':
+                r['launcherInvocations'].append(r['launcherInvocations'][0])
+            elif fault == 'session-incomplete':
+                r['sessions'][0]['status'] = 'INCOMPLETE'
+            elif fault == 'launcher-incomplete':
+                r['launcherInvocations'][0]['status'] = 'INCOMPLETE'
+            elif fault == 'parent-missing':
+                r['sessions'].pop()
+            elif fault == 'parent-incomplete':
+                r['sessions'][-1]['status'] = 'INCOMPLETE'
+            elif fault == 'parent-reused':
+                r['sessions'][-1]['session'] = r['sessions'][0]['session']
+            elif fault == 'no-binding':
+                o['recoveryChildren'][0].pop('recoverySession')
+            elif fault == 'wrong-binding':
+                o['recoveryChildren'][0]['recoverySession'] = r['sessions'][1]['session']
+            elif fault == 'wrong-launcher-binding':
+                r['launcherInvocations'][0]['sessions'] = [r['sessions'][1]['session']]
+            elif fault == 'two-launcher-sessions':
+                r['launcherInvocations'][0]['sessions'].append(r['sessions'][1]['session'])
+            elif fault == 'unexpected-helper':
+                r['sessions'].append(dict(r['sessions'][0], label='native-recovery-helper-unexpected'))
+            else:
+                identity = r['sessions'][1]['session'] if fault == 'shared-session' else 'not-a-session'
+                r['sessions'][0]['session'] = identity
+                r['launcherInvocations'][0]['sessions'] = [identity]
+                o['recoveryChildren'][0]['recoverySession'] = identity
+            with self.subTest(fault=fault):
+                with self.assertRaisesRegex(ValueError, 'recovery'):
+                    hosted.attachment_oracle(r, o)
+
+    def test_non_exec_roles_cannot_claim_recovery_sessions(self):
+        for role in ('pie', 'exec.no-build-id'):
+            record, oracle = self.fixture(role)
+            children, _ = self.fixture('exec')
+            for field in ('sessions', 'launcherInvocations', 'unmeasuredForcedHalts'):
+                with self.subTest(role=role, field=field):
+                    with self.assertRaisesRegex(ValueError, 'recovery'):
+                        hosted.attachment_oracle({**record, field: children[field]}, oracle)
 
 
 class GuiOracleAdmission(unittest.TestCase):

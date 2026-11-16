@@ -6,6 +6,31 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Nested Linux attachment recovery measurement
+
+PRESENT, UNVERIFIED: the production-host attachment controller now allocates a
+separate Java measurement adapter for each of the eight existing recovery cases
+(initial/refresh at prepared, replaced, before-commit and committed boundaries).
+Only the normal `AttachmentHelper --recover` child selects the adapter. Each
+deliberate `halt(89)` child retains the real JVM path and remains unmeasured.
+The existing assertions for restored bytes/metadata, durable receipts, retained
+inputs and exactly eight crash canaries are unchanged. Helper exit and rollback
+outcome are also recorded per case.
+
+Hosted admission now requires one completed parent, eight distinct completed
+child sessions, one matching launcher invocation per child, exact case/session
+bindings, successful rollback outcomes and all eight disclosed crashes. Missing,
+duplicate, shared, mismatched, incomplete or merely claimed measurements are
+rejected. Historical unmeasured attachment reports cannot satisfy this new
+cohort policy; they remain historical evidence under their original policy.
+
+CONFIRMED locally: updated Java test sources compile; all 191 coverage-tool tests
+pass in 8.53 seconds, including nested-adapter receipt controls and negative
+admission cases. Those receipt fixtures are not evidence of privileged native
+recovery. The production JAR is unchanged. Local execution is unprivileged;
+actual privileged recovery and new coverage gains await the next hosted run.
+No additional sessions or percentages are claimed from this change yet.
+
 ## Build-ID command admission and cancellation
 
 CONFIRMED: `buildIdHelperSmoke` checks real pinned request files without invoking

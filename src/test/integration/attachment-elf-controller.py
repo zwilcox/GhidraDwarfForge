@@ -6,7 +6,7 @@ runs the isolated product helper; rollback injection uses the test-only bridge.
 The historical default bridge retains its explicitly limited test host.
 """
 import argparse
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 import hashlib
 import importlib.util
 import json
@@ -406,18 +406,32 @@ def main():
 
     nested_children = []
     if args.production_linux_host and args.target == 'x86_64' and args.role == 'exec':
-        recovered = run('native-recovery', [java, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
-            'ghidradwarfforge.output.LinuxAttachmentRecoveryProbe', work / 'native-recovery'], timeout=300)
-        require(b'linux-attachment-recovery=PASS cases=8 abrupt-exits=8' in recovered.stdout,
-                'native initial/refresh recovery did not complete')
-        recovery = json.loads((work / 'native-recovery/result.json').read_text())
-        require(len(recovery['outcomes']) == 8 and recovery['retainedCrashCanaries'] == 8,
-                'missing crash outcomes or incorrect canary lifecycle')
+        cases = [mode + '-' + boundary for mode in ('initial', 'refresh')
+            for boundary in ('PREPARED', 'TARGET_REPLACED', 'BEFORE_COMMIT', 'COMMITTED')]
+        # A distinct adapter per case ties each nested JVM to its recovery oracle.
+        # Only normal recovery gets these selections; halt(89) children stay unmeasured.
+        with ExitStack() as adapters:
+            options = ['-Dforge.test.recoveryJava.' + case + '=' + adapters.enter_context(
+                coverage.launcher_java(selected_java, 'native-recovery-helper-' + case)) for case in cases]
+            recovered = run('native-recovery', [java, *options, '--enable-native-access=ALL-UNNAMED', '-cp', runtime,
+                'ghidradwarfforge.output.LinuxAttachmentRecoveryProbe', work / 'native-recovery'], timeout=300)
+            require(b'linux-attachment-recovery=PASS cases=8 abrupt-exits=8' in recovered.stdout,
+                    'native initial/refresh recovery did not complete')
+            recovery = json.loads((work / 'native-recovery/result.json').read_text())
+            require(sorted(row['case'] for row in recovery['outcomes']) == sorted(cases)
+                    and recovery['retainedCrashCanaries'] == 8,
+                    'missing crash outcomes or incorrect canary lifecycle')
+            require(all(row['recoveryHelperExit'] == 0 and row['recoveryOutcome'] == 'ROLLED_BACK'
+                    and row['childExit'] == 89 for row in recovery['outcomes']),
+                    'recovery helper exit/outcome or deliberate crash differs')
         for row in recovery['outcomes']:
-            require(row['childExit'] == 89, 'missing deliberate recovery crash')
             coverage.record_forced_halt(row['case'], row['childExit'])
+            sessions = [session['session'] for session in coverage.record['sessions']
+                if session['label'] == 'native-recovery-helper-' + row['case']] if coverage.enabled else []
+            require(len(sessions) == (1 if coverage.enabled else 0), 'recovery case lacks exactly one measured JVM')
             nested_children.append({'case': row['case'], 'crashExit': row['childExit'],
-                                    'recoveryHelperMeasured': False})
+                'recoveryHelperExit': row['recoveryHelperExit'], 'recoveryOutcome': row['recoveryOutcome'],
+                'recoveryHelperMeasured': coverage.enabled, 'recoverySession': sessions[0] if sessions else None})
     generations = {str(path): file_state(path) for action in ['commit', 'rollback']
                    for path in (work / action).rglob('*') if path.is_file()}
     (work / 'generation-state.json').write_text(json.dumps(generations, indent=4) + '\n')
@@ -529,9 +543,9 @@ def main():
         'entryPoint': 'AttachmentHelper' if args.production_linux_host else 'test bridge',
         'runtime': True, 'debuglinkBasename': installed_sidecar.name, 'debuglinkPayloadHex': payload.hex(),
         'validator': 'production-live' if live_validator_arguments else 'captured-test-adapter',
-        'unmeasuredNestedChildren': nested_children,
-        'measurementScope': 'Direct probe JVMs and public launcher preview/action JVMs only. '
-            'Nested recovery helper and deliberate halt JVMs are not instrumented; their behavior is still required.',
+        'recoveryChildren': nested_children,
+        'measurementScope': 'Direct probe JVMs, public launcher preview/action JVMs and normal nested recovery helpers. '
+            'Deliberate halt JVMs are not instrumented; their behavior is still required.',
         'scope': 'real ELF initial commit/rollback and GDB discovery/runtime/CRC rejection; public UI and refresh acceptance remain separate'}, indent=4) + '\n')
     coverage.finish(work / 'result.json')
     print('attachment-elf-controller=PASS target=' + args.target + ' role=' + args.role)

@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import ExitStack
 from zipfile import ZipFile
 
 
@@ -146,6 +147,46 @@ class IntegrationCoverageTest(unittest.TestCase):
                 self.fail('finished collector yielded')
 
     @unittest.skipUnless(os.name == 'posix', 'Linux launcher adapter')
+    def test_nested_case_adapters_keep_each_child_separate_from_parent(self):
+        # Receipt fixtures only: no claim of actual JVM or privileged recovery.
+        collection = self.collection()
+        java = self.root / 'java'
+        java.write_text('not executed: receipt fixture')
+        java.chmod(0o700)
+        labels = ['native-recovery-helper-' + mode + '-' + boundary for mode in ('initial', 'refresh')
+            for boundary in ('PREPARED', 'TARGET_REPLACED', 'BEFORE_COMMIT', 'COMMITTED')]
+        with ExitStack() as stack:
+            wrappers = [stack.enter_context(collection.launcher_java(java, label)) for label in labels]
+            with collection.session([str(java), '-cp', 'fixture', 'Parent'], 'native-recovery'):
+                self.execution(collection).write_bytes(b'parent receipt fixture, not execution')
+                for index, wrapper in enumerate(wrappers):
+                    self.launcher_record(wrapper, collection, 'forge-integration-' + format(index + 1, '032x'))
+        collection.finish(self.oracle)
+        record = coverage.validate_collection(collection.root, self.jar)
+        self.assertEqual(len(record['sessions']), 9)
+        self.assertEqual(len(record['launcherInvocations']), 8)
+        self.assertEqual(len({row['session'] for row in record['sessions']}), 9)
+        for label in labels:
+            process, = [row for row in record['sessions'] if row['label'] == label]
+            launcher, = [row for row in record['launcherInvocations'] if row['label'] == label]
+            self.assertEqual(launcher['sessions'], [process['session']])
+            self.assertEqual(launcher['status'], 'ORACLE_PASSED')
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher measurement only')
+    def test_nested_case_adapter_missing_child_cannot_finish(self):
+        collection = self.collection()
+        java = self.root / 'java'
+        java.write_text('not executed: receipt fixture')
+        java.chmod(0o700)
+        with self.assertRaisesRegex(ValueError, 'missing or excessive launcher JVM records'):
+            with ExitStack() as stack:
+                first = stack.enter_context(collection.launcher_java(java, 'first'))
+                stack.enter_context(collection.launcher_java(java, 'missing'))
+                self.launcher_record(first, collection, 'forge-integration-' + '1' * 32)
+        with self.assertRaisesRegex(ValueError, 'incomplete'):
+            collection.finish(self.oracle)
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher measurement only')
     def test_failed_launcher_oracle_cannot_be_finished(self):
         java = self.root / 'java'
         java.touch()

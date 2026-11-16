@@ -74,15 +74,38 @@ def attachment_oracle(record, oracle):
         raise ValueError('hosted attachment coverage requires the real privileged host and debugger oracle')
     expected_cases = sorted(mode + '-' + boundary for mode in ('initial', 'refresh')
         for boundary in ('PREPARED', 'TARGET_REPLACED', 'BEFORE_COMMIT', 'COMMITTED')) if expected_role == 'exec' else []
-    children = oracle.get('unmeasuredNestedChildren')
+    children = oracle.get('recoveryChildren')
     halts = record.get('unmeasuredForcedHalts', [])
     if (not isinstance(children, list) or len(children) != len(expected_cases)
             or any(not isinstance(row, dict) or row.get('crashExit') != 89
-                   or row.get('recoveryHelperMeasured') is not False for row in children)
+                   or row.get('recoveryHelperMeasured') is not True
+                   or type(row.get('recoveryHelperExit')) is not int or row['recoveryHelperExit'] != 0
+                   or row.get('recoveryOutcome') != 'ROLLED_BACK' for row in children)
             or sorted(row.get('case', '') for row in children) != expected_cases
             or sorted(row['label'] for row in halts) != expected_cases
             or any(row['exitCode'] != 89 for row in halts)):
-        raise ValueError('hosted attachment coverage must disclose unmeasured recovery children')
+        raise ValueError('hosted attachment coverage requires measured recovery helpers and disclosed crashes')
+    prefix = 'native-recovery-helper-'
+    sessions = [row for row in record.get('sessions', []) if row.get('label', '').startswith(prefix)]
+    launchers = [row for row in record.get('launcherInvocations', []) if row.get('label', '').startswith(prefix)]
+    parents = [row for row in record.get('sessions', []) if row.get('label') == 'native-recovery']
+    labels = sorted(prefix + case for case in expected_cases)
+    if (sorted(row['label'] for row in sessions) != labels or sorted(row['label'] for row in launchers) != labels
+            or len(parents) != (1 if expected_cases else 0)
+            or any(row.get('status') != 'ORACLE_PASSED' for row in [*sessions, *launchers, *parents])):
+        raise ValueError('recovery helpers lack distinct completed launcher/process sessions')
+    identities = []
+    for child in children:
+        label = prefix + child['case']
+        session = next(row for row in sessions if row['label'] == label)
+        launcher = next(row for row in launchers if row['label'] == label)
+        identity = child.get('recoverySession')
+        if (not isinstance(identity, str) or not re.fullmatch(r'forge-integration-[0-9a-f]{32}', identity)
+                or identity != session.get('session') or launcher.get('sessions') != [identity]):
+            raise ValueError('recovery oracle is not bound to its measured child session')
+        identities.append(identity)
+    if len(set(identities)) != len(identities) or any(row.get('session') in identities for row in parents):
+        raise ValueError('recovery children reuse another process session')
 
 
 def gui_oracle(record, oracle):
