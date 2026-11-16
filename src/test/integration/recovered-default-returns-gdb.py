@@ -11,6 +11,8 @@ expected = {'recovered_signed': (gdb.TYPE_CODE_INT, 4, -41),
     'recovered_unsigned': (gdb.TYPE_CODE_INT, 4, 41),
     'recovered_double': (gdb.TYPE_CODE_FLT, 8, 1.75)}
 rows = {}
+exits = []
+source_steps = []
 
 
 def function_symbol(name):
@@ -60,10 +62,12 @@ if variant != 'previous':
         assert actual == expected_value, (name, actual)
         rows[name]['returnedValue'] = actual
     gdb.execute('next')
+    source_steps.append('next')
     if not exits:
         gdb.execute('step')
+        source_steps.append('step')
     if not exits:
         gdb.execute('continue')
     assert exits == [0]
-(case / (variant + '-gdb.json')).write_text(json.dumps({'variant': variant, 'status': 'PASS', 'functions': rows}, indent=4) + '\n')
+(case / (variant + '-gdb.json')).write_text(json.dumps({'variant': variant, 'status': 'PASS', 'functions': rows, 'exitCodes': exits, 'sourceSteps': source_steps}, indent=4) + '\n')
 print('recovered-return-gdb=' + variant + ' PASS')

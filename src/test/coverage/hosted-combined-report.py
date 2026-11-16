@@ -20,6 +20,7 @@ static_scopes = combined.module('static_scope_admission', HERE / 'static-scope-a
 stack_flow = combined.module('stack_flow_admission', HERE / 'stack-flow-admission.py')
 saved_inheritance = combined.module('saved_inheritance_admission', HERE / 'saved-inheritance-admission.py')
 external_declarations = combined.module('external_declaration_admission', HERE / 'external-declaration-admission.py')
+recovered_signatures = combined.module('recovered_signature_admission', HERE / 'recovered-signature-admission.py')
 REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation',
@@ -32,7 +33,7 @@ REQUIRED = {
         'gui-script-manager-unwind', 'lexical-shadow', 'object-parameter', 'object-return', 'formatter-export',
         'calling-convention', 'custom-call-storage', 'call-site-packaged',
         'lexical-statics', 'lexical-statics-controls', 'recovered-statics-positive', 'recovered-statics-controls',
-        'stack-control-flow', 'saved-inheritance', 'external-declarations'}),
+        'stack-control-flow', 'saved-inheritance', 'external-declarations', 'recovered-returns', 'recovered-parameters'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -293,6 +294,7 @@ def load_job(root, jar, kind, commit, run):
     stack_flow_cases = []
     saved_inheritance_cases = []
     external_declaration_cases = []
+    recovered_signature_cases = []
     for layer, measured in sorted(summary['layers'].items()):
         xml = files.regular(root / 'report' / (layer + '.xml'), 32 * 1024 * 1024)
         if files.digest(xml) != measured.get('xmlSha256'):
@@ -338,6 +340,8 @@ def load_job(root, jar, kind, commit, run):
                 saved_inheritance_cases.append(saved_inheritance.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'external-declarations':
                 external_declaration_cases.append(external_declarations.oracle(record, files.read(directory / 'oracle.json')))
+            if record['suite'] in ('recovered-returns', 'recovered-parameters'):
+                recovered_signature_cases.append(recovered_signatures.oracle(record, files.read(directory / 'oracle.json')))
             layer_suites.add(record['suite'])
             layer_rows.extend((layer, row['session'], directory / row['file']) for row in record['sessions'])
             layer_halts.extend({'suite': record['suite'], **row} for row in record.get('unmeasuredForcedHalts', []))
@@ -360,6 +364,7 @@ def load_job(root, jar, kind, commit, run):
         stack_flow.cohort(stack_flow_cases)
         saved_inheritance.cohort(saved_inheritance_cases)
         external_declarations.cohort(external_declaration_cases)
+        recovered_signatures.cohort(recovered_signature_cases)
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,
         'summarySha256': files.digest(root / 'report/summary.json'),
         'receipts': {name: files.digest(root / 'collections' / name / 'receipt.json') for name in sorted(known)},

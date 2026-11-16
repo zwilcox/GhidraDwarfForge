@@ -892,3 +892,43 @@ separate measured and unmeasured logs. Critical-group targets, the complete
 hosted cohort, normal integration and main publication remain outstanding.
 Other existing ABI, function-type and variable-flow workflows still need the
 same measurement audit before adding duplicate fixtures.
+
+## Recovered scalar signatures and decompiler pass controls
+
+The existing recovered-return and recovered-parameter workflows now collect
+their import and two read-only export JVMs. Historical-package comparisons,
+when explicitly requested, remain outside the collection. The full oracles run
+before receipt completion: real decompiler failure isolation, single-attempt
+behavior, cancellation, immutable evidence, analyst precedence, deterministic
+outputs, saved-program preservation, raw DWARF, independent validators and
+compiler/Forge debugger behavior. Inferred parameter names/types remain useful
+without fabricating locations; the unresolved parameter list remains omitted.
+The inferred unsigned return retains its observed eight-byte width while the
+compiler reference records four bytes. Neither is relabeled to hide that
+distinction.
+
+Both workflows pass locally with and without measurement, and the cached
+installed module is restored with identical hashes after each run. All six new
+sessions pass raw class/session/probe verification against corrected JAR
+`3021d43e`. Their admission checks require both profiles, all three phases,
+exact source/input/JAR hashes, unchanged model/database evidence, both output
+reports, compiler return values and normal debugger exits/source steps. Eight
+new rejection test methods bring the coverage-tool suite to 170 passing tests.
+Workflow lint and whitespace checks pass. These two suites bring the required
+Linux coverage inventory to 42.
+
+Adding the six sessions to the partial local union above gives 218 sessions:
+24,640/29,786 lines (82.7%) and 18,817/25,878 branches (72.7%). The incremental
+gain is 37 lines and 31 branch outcomes; the exporter now contributes 785/1,196
+lines and 350/728 branches in this partial union. All 901 production classes
+and 255 sources remain in its denominator. This still excludes the rest of the
+current hosted integration/Windows cohort and is not full goal acceptance.
+Reports and input hashes are under
+`.forge-work/scratch/coverage-expansion/recovered-signature-verified/`.
+
+A static audit lists 64 further direct-headless harness candidates in
+`unmeasured-direct-harness-audit.json` under the same local workspace. This is
+only a candidate list: imported adapters and parent wrappers must be inspected
+before declaring any particular workflow unmeasured. Stack-value transitions
+are a useful next candidate because their existing x86-64/AArch64 exec/PIE/rebase
+oracles check whole storage transitions, reuse, aliasing and final value loss.
