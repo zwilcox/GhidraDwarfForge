@@ -62,6 +62,9 @@ public final class AttachmentReceiptStoreSmoke {
             crashRecovery(root, host);
             lastMomentCollision(root);
             metadataAndReadControls(root, host);
+            admissionAndReadBoundaries(root, host);
+            stagedAndPublishedChanges(root, host);
+            cleanupAfterPublication(root);
             equal(true, host.syncs > 0);
             System.out.println("attachment-receipt-store-smoke=PASS checks=" + checks +
                 " real-directory-fsyncs=" + host.syncs);
@@ -338,6 +341,147 @@ public final class AttachmentReceiptStoreSmoke {
             }));
         equal(false, Files.exists(path));
         equal("unrelated staged replacement", Files.readString(preserved[0]));
+    }
+
+    private static void admissionAndReadBoundaries(Path root, Host host) throws Exception {
+        Path path = root.resolve("admission.json");
+        var claims = prepared(path);
+        var committed = claims.advance(AttachmentReceipt.Phase.COMMITTED, null);
+        rejectMessage(() -> AttachmentReceiptStore.prepare(path, committed, host, () -> false), "must be PREPARED");
+        equal(false, Files.exists(path));
+        var state = AttachmentReceiptStore.prepare(path, claims, host, () -> false);
+        byte[] saved = Files.readAllBytes(path);
+        var otherPath = new AttachmentReceiptStore.State(root.resolve("other.json"), claims, state.sha256(), state.fingerprint());
+        rejectMessage(() -> AttachmentReceiptStore.publish(path, otherPath, committed, host, () -> false,
+            (point, stage, destination) -> { }), "immutable transaction claims");
+        var altered = new AttachmentReceipt(committed.operationId(), committed.mode(), committed.phase(), committed.receiptPath(),
+            committed.backend(), committed.hostContract(), committed.durability(), 0, committed.files(), null);
+        rejectMessage(() -> AttachmentReceiptStore.publish(path, state, altered, host, () -> false,
+            (point, stage, destination) -> { }), "immutable transaction claims");
+        for (String digest : new String[] { null, "", "A".repeat(64), "0".repeat(63) }) {
+            rejectArgument(() -> new AttachmentReceiptStore.State(path, claims, digest, state.fingerprint()));
+        }
+        for (String identity : new String[] { null, "" }) {
+            rejectArgument(() -> new AttachmentReceiptStore.Fingerprint(identity, "a".repeat(64), 1));
+        }
+        for (String metadata : new String[] { null, "", "A".repeat(64) }) {
+            rejectArgument(() -> new AttachmentReceiptStore.Fingerprint("id", metadata, 1));
+        }
+        rejectArgument(() -> new AttachmentReceiptStore.Fingerprint("id", "a".repeat(64), 0));
+        rejectMessage(() -> AttachmentReceiptStore.prepare(root.resolve("different-path.json"), claims, host, () -> false), "path or host contract mismatch");
+        Host wrongDurability = new Host() {
+            @Override public String durability() { return "different-durability"; }
+        };
+        rejectMessage(() -> AttachmentReceiptStore.read(path, wrongDurability, () -> false), "path or host contract mismatch");
+        Host changing = new Host() {
+            private int reads;
+            @Override public AttachmentReceiptStore.Fingerprint inspect(Path selected) throws IOException {
+                if (++reads == 2) Files.setLastModifiedTime(selected,
+                    java.nio.file.attribute.FileTime.fromMillis(1234000000000L));
+                return super.inspect(selected);
+            }
+        };
+        rejectMessage(() -> AttachmentReceiptStore.read(path, changing, () -> false), "changed while reading");
+        equal(true, java.util.Arrays.equals(saved, Files.readAllBytes(path)));
+        equal(claims, AttachmentReceiptStore.read(path, host, () -> false).receipt());
+    }
+
+    private static void stagedAndPublishedChanges(Path root, Host host) throws Exception {
+        for (String fault : List.of("early-bytes", "early-inode", "early-oversize", "late-bytes",
+                "published-claims", "published-whitespace", "published-metadata", "directory-replacement")) {
+            Path directory = Files.createDirectory(root.resolve(fault));
+            Path path = directory.resolve("receipt.json");
+            Host selectedHost = new Host() {
+                private int stageReads;
+                @Override public AttachmentReceiptStore.Fingerprint inspect(Path selected) throws IOException {
+                    if (selected.getFileName().toString().equals("record.json") && ++stageReads == 2 && fault.startsWith("early-")) {
+                        if (fault.equals("early-inode")) {
+                            Files.move(selected, selected.resolveSibling("owned-original.json"));
+                            Files.writeString(selected, "replacement sentinel", StandardOpenOption.CREATE_NEW);
+                        }
+                        else if (fault.equals("early-oversize")) Files.write(selected, new byte[1024 * 1024 + 1]);
+                        else Files.writeString(selected, " ", StandardOpenOption.APPEND);
+                    }
+                    return super.inspect(selected);
+                }
+            };
+            var failure = reject(() -> AttachmentReceiptStore.publish(path, null, prepared(path), selectedHost, () -> false,
+                (point, stage, destination) -> {
+                    if (point == AttachmentReceiptStore.Boundary.STAGED && fault.equals("late-bytes")) {
+                        var timestamp = Files.getLastModifiedTime(stage);
+                        Files.writeString(stage, " ", StandardOpenOption.APPEND);
+                        Files.setLastModifiedTime(stage, timestamp);
+                    }
+                    if (point == AttachmentReceiptStore.Boundary.STAGED && fault.equals("directory-replacement")) {
+                        Files.move(stage.getParent(), directory.resolve("retained-owned-directory"));
+                        Files.createDirectory(stage.getParent());
+                        Files.writeString(stage.getParent().resolve("replacement"), "directory sentinel");
+                    }
+                    if (point == AttachmentReceiptStore.Boundary.AFTER_PUBLICATION && fault.startsWith("published-")) {
+                        if (fault.equals("published-whitespace")) Files.writeString(destination, " ", StandardOpenOption.APPEND);
+                        else if (fault.equals("published-metadata")) Files.setPosixFilePermissions(destination,
+                            java.nio.file.attribute.PosixFilePermissions.fromString("r--r-----"));
+                        else Files.writeString(destination, prepared(path).toJson().replace("4294967295", "0"));
+                    }
+                }));
+            boolean published = fault.startsWith("published-");
+            equal(published, failure instanceof AttachmentReceiptStore.PublicationFailure);
+            equal(published, Files.exists(path));
+            if (published) {
+                equal(path, ((AttachmentReceiptStore.PublicationFailure) failure).receiptPath());
+                equal(true, failure.getMessage().contains("published receipt differs"));
+                equal(AttachmentReceipt.Phase.PREPARED, AttachmentReceiptStore.read(path, host, () -> false).receipt().phase());
+            }
+            else if (fault.equals("early-inode")) {
+                try (var children = Files.list(directory)) {
+                    Path retained = children.filter(Files::isDirectory).findFirst().orElseThrow();
+                    equal("replacement sentinel", Files.readString(retained.resolve("record.json")));
+                    equal(prepared(path).toJson(), Files.readString(retained.resolve("owned-original.json")));
+                }
+                equal(true, failure.getSuppressed().length > 0);
+            }
+            else if (fault.equals("directory-replacement")) {
+                equal(prepared(path).toJson(), Files.readString(directory.resolve("retained-owned-directory/record.json")));
+                try (var children = Files.list(directory)) {
+                    Path replacement = children.filter(p -> p.getFileName().toString().startsWith(".forge-receipt-")).findFirst().orElseThrow();
+                    equal("directory sentinel", Files.readString(replacement.resolve("replacement")));
+                }
+                equal(true, failure.getSuppressed().length > 0);
+            }
+            else {
+                String diagnostic = fault.equals("early-oversize") ? "exceeds 1 MiB" :
+                    fault.equals("late-bytes") ? "changed before publication" : "identity or bytes changed";
+                equal(true, failure.getMessage().contains(diagnostic));
+                try (var children = Files.list(directory)) { equal(0L, children.count()); }
+            }
+        }
+    }
+
+    private static void cleanupAfterPublication(Path root) throws Exception {
+        Path directory = Files.createDirectory(root.resolve("cleanup-after-publication"));
+        Path path = directory.resolve("receipt.json");
+        Host host = new Host() {
+            private int parentSyncs;
+            @Override public void syncDirectory(Path selected) throws IOException {
+                if (selected.equals(directory) && ++parentSyncs == 2) throw new IOException("injected final cleanup fsync");
+                super.syncDirectory(selected);
+            }
+        };
+        var failure = reject(() -> AttachmentReceiptStore.prepare(path, prepared(path), host, () -> false));
+        equal(true, failure instanceof AttachmentReceiptStore.PublicationFailure);
+        equal(path, ((AttachmentReceiptStore.PublicationFailure) failure).receiptPath());
+        equal(true, failure.getMessage().contains("injected final cleanup fsync"));
+        equal(prepared(path), AttachmentReceiptStore.read(path, new Host(), () -> false).receipt());
+        try (var children = Files.list(directory)) { equal(List.of(path), children.toList()); }
+    }
+
+    private static void rejectMessage(Checked action, String message) throws Exception {
+        equal(true, reject(action).getMessage().contains(message));
+    }
+
+    private static void rejectArgument(Checked action) throws Exception {
+        try { action.run(); throw new AssertionError("invalid receipt metadata accepted"); }
+        catch (IllegalArgumentException expected) { checks++; }
     }
 
     static class Host implements AttachmentReceiptStore.Host {

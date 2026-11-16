@@ -37,6 +37,20 @@ SECTIONLESS = "ghidradwarfforge/elf/SectionlessDynamicSymbols.java"
 SECTIONLESS_TEST = "ghidradwarfforge.elf.SectionlessDynamicSymbolsSmoke"
 DYNAMIC = "ghidradwarfforge/elf/DynamicSymbolMirror.java"
 DYNAMIC_TEST = "ghidradwarfforge.elf.DynamicSymbolMirrorSmoke"
+RECEIPT = "ghidradwarfforge/output/AttachmentReceipt.java"
+RECEIPT_TEST = "ghidradwarfforge.output.AttachmentProtocolSmoke"
+RECEIPT_STORE = "ghidradwarfforge/output/AttachmentReceiptStore.java"
+RECEIPT_STORE_TEST = "ghidradwarfforge.output.AttachmentReceiptStoreSmoke"
+
+RECEIPT_MUTANTS = [
+    ("receipt-accepts-shared-backup-identity", RECEIPT, RECEIPT_TEST,
+     "before.identity().equals(backup.identity())", "false"),
+    ("receipt-accepts-incomplete-restored-metadata", RECEIPT, RECEIPT_TEST,
+     "!recovery.observedTarget().metadataSha256().equals(before.metadataSha256())", "false"),
+    ("receipt-publishes-changed-stage-bytes", RECEIPT_STORE, RECEIPT_STORE_TEST,
+     "if (!stagedFingerprint.equals(host.inspect(stage)) ||\n                    !sha256(bytes).equals(sha256(bounded(stage)))) {",
+     "if (!stagedFingerprint.equals(host.inspect(stage))) {"),
+]
 
 # Each edit names a specific safety/semantic guarantee. This is not a blanket
 # mutation score: surviving, uncompilable or timed-out mutants fail this harness.
@@ -189,7 +203,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -210,7 +224,8 @@ def main():
             # The production publisher's private exception is never serialized;
             # its existing missing serialVersionUID is unrelated to these mutants.
             selected_dependencies = dependencies if test in (
-                PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST) else []
+                PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
+                RECEIPT_TEST, RECEIPT_STORE_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
