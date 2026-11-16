@@ -30,13 +30,13 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`3cdbb239ca978097f2778cbd66cb09637eadcc5a` in 261.0 seconds. The combined local report
+`e45cebaab51fc2c38c9056d0f3b120118dc3aa89` in 261.7 seconds. The combined local report
 contains 848 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.5% | 78.7% | 85% / 80% |
-| Binary and location correctness | 94.6% | 78.3% | 95% / 90% |
+| All production Java | 94.6% | 78.7% | 85% / 80% |
+| Binary and location correctness | 94.7% | 78.4% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.5% | Included in overall |
 
@@ -44,7 +44,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-vtable-boundaries-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-vtable-inventory-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -91,7 +91,7 @@ including the existing eight abrupt-process exits. Added scenarios verify:
 172/202 branch outcomes. These are filesystem-controller tests with an
 explicit test host, not ELF/DWARF validation or native Windows evidence.
 
-All 78 selected mutation checks pass with unchanged-source baselines. Four new
+All 83 selected mutation checks pass with unchanged-source baselines. Four new
 mutants remove the CRC check, permit reused operation identity, accept unrecorded
 recovery paths or reject a correctly restored prior image. Detection requires a
 behavioral assertion failure; compilation, loading and timeout failures do not count.
@@ -140,7 +140,7 @@ lines and 19 branch outcomes there. Four targeted faults are detected: invented
 zero sign-extension bits, an incorrectly zeroed oversized arithmetic shift,
 unsafe overlapping addition, and loss of the second operand's preserved byte.
 
-`vtableBindingEvidenceSmoke` passes 492 checks using real x86-64 and AArch64
+`vtableBindingEvidenceSmoke` passes 690 checks using real x86-64 and AArch64
 Ghidra programs and relocation records. One-field relocation changes (address,
 type, status, values, bytes and symbol name) must change the context fingerprint
 while preserving the original and loaded byte hashes. Explicit resaving admits
@@ -153,16 +153,54 @@ own transaction and verifies exact restoration before the immutable reopen test.
 Malformed requests cover invalid identities, text, extents, point counts and
 complete-object geometry. Persisted-record controls include version, count,
 trailing bytes and the decoded-size limit independently of Base64 length.
-`GhidraVtableBindings` measures 230/242 executable
-lines and 185/234 branch outcomes. Five selected
+`GhidraVtableBindings` measures 238/242 executable
+lines and 209/234 branch outcomes. Five selected
 mutants detect omitted relocation type/status/values and weakened value/byte
 bounds. These are saved-program evidence tests, not new emitted-DWARF claims.
 
-The last hosted run at `aca32e4d`,
+The prior hosted run at `aca32e4d`,
 [43810870428](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43810870428),
 failed when Maven Central returned HTTP 429 while resolving JaCoCo. Both native
 builds passed; downstream integration jobs did not run. This infrastructure
 failure is not passing validation and does not establish an exporter regression.
+
+## Vtable inventory and file-mapping admission
+
+The additional saved-program controls cover malformed option keys/types,
+restricted export class models, and cancellation without changing saved evidence.
+Explicit tables are omitted when the canonical class is absent, the ABI differs,
+or the export only has an inferred class binding. A base relationship can establish
+membership without local virtual methods; unrelated class graphs and function
+symbols cannot establish a table association.
+
+The exact inventory limits (4,096 keys, 16 MiB encoded records and 64 MiB declared
+byte witnesses) retain the valid table among rejected records. Exceeding each
+limit rejects the whole inventory with a diagnostic; it never returns an accepted
+prefix or repairs the original record. These tests use real ProgramDB options,
+including malformed persisted records, rather than mocked Program APIs.
+
+Adjacent memory blocks backed by contiguous offsets in one FileBytes object are
+accepted. A file-offset gap, a switch to another FileBytes identity, disagreement
+between original and loaded offset-to-top bytes, a misaligned label or an overlay
+address is rejected. Every test rolls back its own transaction and rechecks the
+original encoded record and snapshot before immutable database reopen.
+
+Five additional mutants are detected: a relaxed key count, undercharged encoded
+records, undercharged byte witnesses, ignored file-offset discontinuity, and
+merged FileBytes identities. These model tests preserve the existing independent
+ELF/DWARF, debugger and supported-host acceptance requirements.
+
+Residual gaps include defensive checks after inheritance admission, unobserved
+relocation representations and demangler exceptions. The aggregate relocation
+budget rejects records before the separate maximum-record-count guard can be
+reached. These gaps remain in the denominator; no invalid Program API behavior
+was fabricated to execute them.
+
+CI [43814174541](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43814174541)
+was started for pushed commit `f26eb1a1`. The next local test checkpoint is held
+while that run completes, so frequent pushes do not repeatedly replace the
+hosted integration measurement. Local measurements retain their own commit and
+do not claim that the pending hosted run contains these additional tests.
 
 ## Remaining acceptance
 
