@@ -432,3 +432,25 @@ failed on the existing deprecated DataType.VOID reference. Only that source
 receives a deprecation-category warning exception; all other warnings remain
 errors, and failed compilation never counts as a detected fault. No production
 Java changed. Hosted acceptance and the full critical targets remain incomplete.
+
+## Sectionless ARM mode evidence and resource boundaries
+
+The ARM alias suite now passes 756 checks. A sectionless ELF32 little-endian
+EABI5 fixture independently proves the ARM/Thumb entry map synthesized from
+PT_LOAD allocations and dynamic symbols. Planning preserves a Thumb alias at
+the allocation boundary and rejects contradictory ARM evidence. Cancellation
+at the beginning, middle and end leaves the original bytes intact. Unsupported
+machine, ELF class and byte order are rejected by the direct ARM policy.
+
+Actual collection sizes test the 65,536/65,537 mode-cue boundary and the
+16,777,216 alias/reserved-symbol comparison-product limit. At the admitted limit,
+ambiguous aliases still receive their normal individual rejection; exceeding it
+fails before those comparisons. Fixtures remain small and unchanged.
+
+All 100 selected mutation controls passed. New faults drop the sectionless mode
+mirror, reject the maximum permitted cue count, ignore the comparison budget,
+and substitute a bitfield's base integer width for its actual storage width.
+The latter is detected by the curated type checks, including the one-byte
+three-bit field. These are parser/planner and saved-model tests, not a new
+runtime architecture claim. Production code is unchanged; complete refreshed
+JavaExec/combined counters are pending for this snapshot.

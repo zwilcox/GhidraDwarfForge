@@ -75,6 +75,8 @@ CURATED_TYPE_MUTANTS = [
      "case MutabilitySettingsDefinition.CONSTANT -> TypeGraph.Qualifier.VOLATILE;"),
     ("curated-type-emits-zero-width-value", CURATED_TYPES, CURATED_TYPES_TEST,
      "if (bitSize == 0)", "if (false)"),
+    ("curated-type-uses-base-bitfield-storage", CURATED_TYPES, CURATED_TYPES_TEST,
+     "storageByteSize = bitField.getStorageSize();", "storageByteSize = memberType.getLength();"),
 ]
 
 ARM_MODE_INVENTORY_MUTANTS = [
@@ -84,6 +86,12 @@ ARM_MODE_INVENTORY_MUTANTS = [
      "value - section.address <= section.size", "value - section.address < section.size"),
     ("arm-inventory-uses-nonexecutable-mappings", ARM_MODE_INVENTORY, ARM_MODE_INVENTORY_TEST,
      "if ((section.flags & 6) == 6)", "if (true)"),
+    ("arm-inventory-drops-sectionless-mirror", ARM_MODE_INVENTORY, ARM_MODE_INVENTORY_TEST,
+     "if (mirror != null)", "if (false)"),
+    ("arm-inventory-rejects-maximum-cue-count", ARM_MODE_INVENTORY, ARM_MODE_INVENTORY_TEST,
+     "cues.size() > 65536", "cues.size() > 65535"),
+    ("arm-inventory-ignores-comparison-budget", ARM_MODE_INVENTORY, ARM_MODE_INVENTORY_TEST,
+     "(long) aliases.size() * reserved.size()", "0L"),
 ]
 
 BOUNDED_SWITCH_MUTANTS = [
