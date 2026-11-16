@@ -24,6 +24,7 @@ public final class LocalSymbolMergeSmoke {
         for (boolean wide : List.of(false, true)) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                 byte[] original = fixture(wide, order, false, false);
+                checkOriginalObjects(root, wide, order);
                 List<ElfLocalFunctionSymbol> additions = List.of(
                     new ElfLocalFunctionSymbol("curated::alias", 0x1040, 16, 1),
                     new ElfLocalFunctionSymbol("curated::\u03bb", 0x1050, 16, 1));
@@ -167,6 +168,109 @@ public final class LocalSymbolMergeSmoke {
             }
         }
         System.out.println("local-symbol-merge-smoke=PASS checks=" + checks);
+    }
+
+    /** Compare exact identities in independently encoded ELF32/64 symbol records. */
+    private static void checkOriginalObjects(Path root, boolean wide, ByteOrder order) throws Exception {
+        var match = MatchedElfSidecarWriter.OriginalObjectMatch.MATCH;
+        var conflict = MatchedElfSidecarWriter.OriginalObjectMatch.CONFLICT;
+        var absent = MatchedElfSidecarWriter.OriginalObjectMatch.ABSENT;
+        byte[] original = fixture(wide, order, false, false);
+        setObject(original, 2, 11, 0x1010, 4, 1);
+        var requested = List.of(new ElfLocalObjectSymbol("old_global", 0x1010, 4, 1),
+            new ElfLocalObjectSymbol("absent_object", 0x1010, 4, 1));
+        Map<String, MatchedElfSidecarWriter.OriginalObjectMatch> wanted = Map.of("old_global", match, "absent_object", absent);
+        checkObjectMatch(root, original, requested, wanted);
+        for (String field : List.of("type", "value", "size", "section")) {
+            byte[] changed = original.clone();
+            int at = symbolOffset(changed, 2);
+            switch (field) {
+                case "type" -> symbolByte(changed, 2, wide ? 4 : 12, 0x12);
+                case "value" -> setObject(changed, 2, 11, 0x1011, 4, 1);
+                case "size" -> setObject(changed, 2, 11, 0x1010, 5, 1);
+                case "section" -> bytes(changed).putShort(at + (wide ? 6 : 14), (short) 4);
+                default -> throw new AssertionError(field);
+            }
+            checkObjectMatch(root, changed, requested, Map.of("old_global", conflict, "absent_object", absent));
+        }
+        // Repeated name offsets exercise the cache. A conflicting identity must
+        // survive both later matches and changes in static symbol binding/order.
+        for (boolean firstConflict : List.of(false, true)) {
+            for (boolean lastConflict : List.of(false, true)) {
+                byte[] duplicate = original.clone();
+                setObject(duplicate, 1, 11, firstConflict ? 0x1011 : 0x1010, 4, 1);
+                setObject(duplicate, 3, 11, lastConflict ? 0x1011 : 0x1010, 4, 1);
+                checkObjectMatch(root, duplicate, requested, Map.of("old_global",
+                    firstConflict || lastConflict ? conflict : match, "absent_object", absent));
+            }
+        }
+        byte[] extended = fixture(wide, order, true, true);
+        setObject(extended, 2, 11, 0x2000, 4, 0xffff);
+        checkObjectMatch(root, extended, List.of(new ElfLocalObjectSymbol("old_global", 0x2000, 4, 0xff01)),
+            Map.of("old_global", match));
+        checkObjectMatch(root, extended, List.of(new ElfLocalObjectSymbol("old_global", 0x2000, 4, 1)),
+            Map.of("old_global", conflict));
+
+        // ELF32 values are unsigned; an address above INT_MAX must compare losslessly.
+        byte[] highAddress = original.clone();
+        field(highAddress, 1, "address", 0x80001000L);
+        setObject(highAddress, 2, 11, 0x80001010L, 4, 1);
+        checkObjectMatch(root, highAddress, List.of(new ElfLocalObjectSymbol("old_global", 0x80001010L, 4, 1)),
+            Map.of("old_global", match));
+
+        String longName = "long_object_" + "x".repeat(2048);
+        byte[] names = ("\0" + longName + "\0").getBytes(StandardCharsets.UTF_8);
+        byte[] longTable = Arrays.copyOf(original, 0x1000 + names.length);
+        System.arraycopy(names, 0, longTable, 0x1000, names.length);
+        field(longTable, 2, "offset", 0x1000);
+        field(longTable, 2, "size", names.length);
+        for (int index = 1; index <= 3; index++) setObject(longTable, index, 1, 0x1010, 4, 1);
+        Path dir = Files.createTempDirectory(root, "object-cancellation-");
+        Path input = dir.resolve("input");
+        Files.write(input, longTable);
+        var image = ElfImage.read(input);
+        var objects = List.of(new ElfLocalObjectSymbol(longName, 0x1010, 4, 1));
+        var expected = Map.of(longName, match);
+        AtomicInteger count = new AtomicInteger();
+        require(MatchedElfSidecarWriter.originalObjectMatches(image, objects, () -> { count.incrementAndGet(); return false; })
+            .equals(expected), "long repeated object name did not match");
+        for (int boundary = 1; boundary <= count.get(); boundary++) {
+            int stop = boundary;
+            AtomicInteger calls = new AtomicInteger();
+            try {
+                MatchedElfSidecarWriter.originalObjectMatches(image, objects, () -> calls.incrementAndGet() == stop);
+                throw new AssertionError("object matching ignored cancellation at " + stop);
+            }
+            catch (CancellationException expectedCancellation) {
+                require(calls.get() == stop, "object matching passed cancellation boundary");
+            }
+            require(Arrays.equals(Files.readAllBytes(input), longTable), "cancelled matching changed input");
+            require(MatchedElfSidecarWriter.originalObjectMatches(image, objects, () -> false).equals(expected),
+                "cancelled matching corrupted a fresh retry");
+        }
+        try (var files = Files.list(dir)) { require(files.count() == 1, "object matching created unexpected files"); }
+    }
+
+    private static void checkObjectMatch(Path root, byte[] inputBytes, List<ElfLocalObjectSymbol> requested,
+            Map<String, MatchedElfSidecarWriter.OriginalObjectMatch> expected) throws Exception {
+        Path dir = Files.createTempDirectory(root, "object-match-");
+        Path input = dir.resolve("input");
+        Files.write(input, inputBytes);
+        require(MatchedElfSidecarWriter.originalObjectMatches(ElfImage.read(input), requested, () -> false).equals(expected),
+            "wrong original object identities: " + expected);
+        require(Arrays.equals(Files.readAllBytes(input), inputBytes), "object matching changed input");
+        try (var files = Files.list(dir)) { require(files.count() == 1, "object matching wrote an artifact"); }
+    }
+
+    private static void setObject(byte[] data, int index, int name, long value, long size, int section) {
+        boolean wide = data[4] == 2;
+        ByteBuffer b = bytes(data);
+        int at = symbolOffset(data, index);
+        b.putInt(at, name);
+        b.put(at + (wide ? 4 : 12), (byte) ((index == 1 ? 0 : index == 2 ? 0x10 : 0x20) | 1));
+        b.putShort(at + (wide ? 6 : 14), (short) section);
+        if (wide) { b.putLong(at + 8, value); b.putLong(at + 16, size); }
+        else { b.putInt(at + 4, (int) value); b.putInt(at + 8, (int) size); }
     }
 
     private static void checkMerge(Path root, byte[] inputBytes, List<? extends ElfLocalSymbol> additions,
