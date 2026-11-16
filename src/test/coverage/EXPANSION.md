@@ -6,6 +6,40 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current-bytecode frame encoder and composition verification
+
+CONFIRMED: the existing CFI integration harnesses now have verified execution
+against production JAR `2f18126bf76e63325bd0af6b006b6ac2a645e1608b21feeea2ab3b58739138b6`.
+Ten encoder cases cover 32/64-bit little/big-endian layouts, large row deltas,
+and x86-64/AArch64 non-PIE and PIE. Sixteen composition cases preserve compiler
+frame records with explicit, plain, GABI and GNU-compressed inputs. Output is
+checked independently by the Python decoder, GNU/LLVM tools, strict libdwarf
+validation and compiler-reference GDB backtraces, with deterministic reruns and
+input hashes. Missing-frame controls check unwinder selection; AArch64 can still
+unwind through debugger heuristics, so missing frames are not claimed to make
+every backtrace fail. These tests exercise explicit frame plans and packaging,
+not new Ghidra unwind extraction behavior.
+
+The first refresh failed because the selected atomic-capable validator had no
+zlib/zstd support. Its incomplete collection is excluded. The successful refresh
+uses the existing pinned, compression-capable validation-only libdwarf build;
+its source revision, binary/configuration hashes and dependencies are recorded.
+No validation warning was waived and no production code changed.
+
+All 104 sessions from five collections pass behavioral and raw-bytecode checks.
+The 570-session diagnostic union covers 26,851/29,790 lines (90.1%) and
+20,373/25,884 branches (78.7%): 31 lines and 34 branch outcomes beyond the
+previous 466-session union. Binary/location coverage is 93.1% lines / 79.9%
+branches; file/validation remains 92.6% / 83.3%. All 255 sources / 901 classes
+remain in scope. This is not a completed hosted cohort or published acceptance.
+Evidence under `.forge-work/scratch/coverage-expansion/`:
+`cfi-current-compressed-2f181-{encoder,explicit,plain,gabi,gnu}/`,
+`cfi-current-compressed-2f181-collections/`,
+`cfi-current-compressed-2f181-provenance/verification.json`,
+`cfi-current-compressed-2f181-verified/`,
+`cfi-current-compressed-2f181-union/` and
+`cfi-current-compressed-2f181-verification.log`.
+
 ## Exhaustive location refinement over finite address domains
 
 CONFIRMED: a pointwise oracle now checks how additional storage evidence refines
