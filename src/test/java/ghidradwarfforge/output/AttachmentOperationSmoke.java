@@ -50,6 +50,7 @@ public final class AttachmentOperationSmoke {
             initialAndRefresh(root, seed, false);
             initialAndRefresh(root, seed, true);
             savedSelectionFailure(root, seed);
+            recoverySelectionPublicationFailures(root, seed);
             validationFailures(root, seed);
             preflight(root, seed);
             basenameRefusal(root, seed);
@@ -167,6 +168,100 @@ public final class AttachmentOperationSmoke {
         AttachmentFileStore.unchanged(previous, HOST, () -> false);
         equal(false, Files.exists(request.receipt()));
         equal(original.digest(), AttachmentFileStore.observe(request.originalBackup(), HOST, () -> false).digest());
+    }
+
+    private static void recoverySelectionPublicationFailures(Path root, Path seed) throws Exception {
+        int beforeChecks = checks;
+        for (String fault : List.of("identity", "cancel", "changed-stage", "replaced-directory", "replaced-stage")) {
+            var request = fixture(root, seed, "recovery-publication-" + fault);
+            var original = AttachmentFileStore.observe(request.target(), HOST, () -> false);
+            Path saved = request.target().resolveSibling("saved-recovery.json");
+            Path[] directory = {null}, retained = {null};
+            var observations = new AtomicInteger();
+            var cancelled = new java.util.concurrent.atomic.AtomicBoolean();
+            var altered = new java.util.concurrent.atomic.AtomicBoolean();
+            var selected = new java.util.concurrent.atomic.AtomicReference<AttachmentRecoveryInvocation>();
+            // Real owned filesystem mutations at host observation boundaries.
+            // The host/validator remain the existing explicit test seams.
+            Host host = new Host() {
+                @Override public String directoryIdentity(Path path) throws IOException {
+                    if (path.getFileName().toString().startsWith(".forge-recovery-selection-")) {
+                        directory[0] = path;
+                        int observation = observations.incrementAndGet();
+                        if (fault.equals("identity") && observation == 1) {
+                            throw new IOException("injected recovery directory observation failure");
+                        }
+                        if (fault.equals("cancel") && observation == 1) cancelled.set(true);
+                        if (fault.equals("replaced-directory") && observation == 2) {
+                            retained[0] = path.resolveSibling(path.getFileName() + "-retained");
+                            Files.move(path, retained[0]);
+                            Files.createDirectory(path);
+                            Files.writeString(path.resolve("selection.json"), "concurrent private directory bytes");
+                        }
+                        if (fault.equals("replaced-stage") && observation == 2) {
+                            retained[0] = path.resolve("retained-selection.json");
+                            Files.move(path.resolve("selection.json"), retained[0]);
+                            Files.writeString(path.resolve("selection.json"), "concurrent private file bytes");
+                        }
+                    }
+                    return super.directoryIdentity(path);
+                }
+
+                @Override public AttachmentReceiptStore.Fingerprint inspect(Path path) throws IOException {
+                    if (fault.equals("changed-stage") && directory[0] != null &&
+                            path.equals(directory[0].resolve("selection.json")) && altered.compareAndSet(false, true)) {
+                        Files.writeString(path, "changed before the first content observation");
+                    }
+                    return super.inspect(path);
+                }
+            };
+            var failure = reject(() -> AttachmentOperation.execute(request, HOST, VALIDATOR, () -> false,
+                boundary -> { throw new AssertionError("failed recovery publication reached transaction: " + fault); },
+                prepared -> {
+                    selected.set(AttachmentRecoveryFile.selection(prepared));
+                    AttachmentRecoveryFile.publish(saved, prepared, host, cancelled::get);
+                }));
+            equal(true, failure instanceof AttachmentOperation.PreparationFailure);
+            equal(fault.equals("cancel"), ((AttachmentOperation.PreparationFailure) failure).cancelled());
+            if (fault.equals("replaced-stage")) {
+                if (!Files.isRegularFile(directory[0].resolve("selection.json"))) {
+                    throw new AssertionError("cleanup deleted a replaced recovery selection");
+                }
+                equal("concurrent private file bytes", Files.readString(directory[0].resolve("selection.json")));
+                equal(selected.get().toJson(), Files.readString(retained[0]));
+                equal(selected.get().toJson(), Files.readString(saved));
+            }
+            Throwable cause = failure.getCause();
+            String expected = switch (fault) {
+                case "identity" -> "injected recovery directory observation failure";
+                case "cancel" -> "recovery selection cancelled";
+                case "changed-stage" -> "staged recovery selection changed";
+                case "replaced-stage" -> "attachment recovery file no longer matches its observation";
+                default -> "unverified recovery selection stage retained";
+            };
+            equal(true, cause.getMessage().contains(expected));
+            if (fault.equals("identity") || fault.equals("cancel")) {
+                equal(1, cause.getSuppressed().length);
+                equal(true, cause.getSuppressed()[0].getMessage().contains("unverified recovery selection stage retained"));
+                equal(true, Files.isDirectory(directory[0]));
+                if (fault.equals("cancel")) equal(0L, Files.size(directory[0].resolve("selection.json")));
+            }
+            else equal(0, cause.getSuppressed().length);
+            if (fault.equals("changed-stage")) {
+                equal(true, altered.get());
+                equal(false, Files.exists(directory[0]));
+            }
+            if (fault.equals("replaced-directory")) {
+                equal("concurrent private directory bytes", Files.readString(directory[0].resolve("selection.json")));
+                equal(selected.get().toJson(), Files.readString(retained[0].resolve("selection.json")));
+                equal(selected.get().toJson(), Files.readString(saved));
+            }
+            else if (!fault.equals("replaced-stage")) equal(false, Files.exists(saved));
+            AttachmentFileStore.unchanged(original, HOST, () -> false);
+            equal(false, Files.exists(request.receipt()));
+            equal(original.digest(), AttachmentFileStore.observe(request.originalBackup(), HOST, () -> false).digest());
+        }
+        System.out.println("recovery-selection-publication-failures=PASS cases=5 checks=" + (checks - beforeChecks));
     }
 
     private static void validationFailures(Path root, Path seed) throws Exception {
