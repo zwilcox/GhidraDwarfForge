@@ -28,6 +28,17 @@ mutations are detected with an unchanged baseline in 17.73 seconds: capping shif
 at the host's 64-bit width and wrapping tracked-byte offsets modulo eight. They
 are separate from the previous full mutation run. Production code is unchanged.
 
+At `32121f3f`, all 211 JavaExec tasks pass in 273.85 seconds and the independent
+DWARF evaluator passes 53,432 vectors. All 191 coverage-tool tests and actionlint
+pass. Raw verification preserves 255 sources / 901 production classes / 608 test
+classes. JavaExec covers 23,788/29,786 lines and 18,473/25,878 branches.
+The 1,230-session diagnostic union covers 28,434/29,786 lines and 20,943/25,878
+branches: 95.5% / 80.9%, with **one** additional branch outcome beyond the previous
+union. Binary/location branch coverage is 15,116/18,726 (80.7%); file operations
+remain 3,455/4,250 (81.3%). The wide-value tests strengthen fault detection but
+do not materially close the remaining branch-target gap. Hosted acceptance,
+the new nested recovery measurements and final publication remain pending.
+
 ## Nested Linux attachment recovery measurement
 
 PRESENT, UNVERIFIED: the production-host attachment controller now allocates a
