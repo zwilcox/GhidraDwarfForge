@@ -30,17 +30,17 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`72783e838f614d01a0adb06c77885595e32bbfea` in 271.5 seconds. The combined local report
+`3acf0556ea0d7afc3d69fd38c07ed953997ef830` in 271.0 seconds. The combined local report
 contains 1,033 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.9% | 79.6% | 85% / 80% |
-| Binary and location correctness | 95.2% | 79.5% | 95% / 90% |
+| All production Java | 94.9% | 79.8% | 85% / 80% |
+| Binary and location correctness | 95.2% | 79.8% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.6% | Included in overall |
 
-The binary/location line count is 18,274/19,193, meeting its exact 95%
+The binary/location line count is 18,279/19,193, meeting its exact 95%
 line gate. Both critical branch targets and the file-transaction line target
 remain unmet, as does the overall 80% branch target.
 
@@ -48,7 +48,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-cxx-vtable-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-call-value-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -617,5 +617,10 @@ files, incomplete vector sets, compilation/class-loading errors and failed
 fixture generation remain failures of the run. Eight outcome-classification
 tests passed; these synthetic outcomes are not claimed as real mutation evidence.
 
-All 123 selected mutants pass; the combined coverage refresh is pending.
+All 123 selected mutants passed in 294.9 seconds. Five new numeric faults were
+detected by the independent DWARF VM; the node-limit fault failed a Java behavioral
+assertion. All 210 JavaExec tasks passed in 271.0 seconds, followed by all 53,432
+independent VM checks and 154 coverage-tool tests. The verified raw union adds
+five lines and 46 branch outcomes. CallValue covers 152/152 lines and 195/200
+branches. Full critical targets and hosted main acceptance remain pending.
 Production code and coverage scope are unchanged.
