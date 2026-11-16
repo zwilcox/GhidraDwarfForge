@@ -250,7 +250,9 @@ public final class SourceBundleFilesSmoke {
                 role.equals("manifest") ? plan.manifestName() : plan.manifest().parts().getFirst().fileName();
             Path selected = base.resolve(name);
             byte[] original = Files.readAllBytes(selected);
-            for (String change : List.of("grow", "truncate", "mtime", "replace")) {
+            boolean hasFileKeys = Files.readAttributes(selected, BasicFileAttributes.class,
+                LinkOption.NOFOLLOW_LINKS).fileKey() != null;
+            for (String change : List.of("grow", "truncate", "mtime", "replace", "replace-content")) {
                 var diagnostics = new java.util.HashSet<String>();
                 for (int point = 1; point <= callbacks.get(); point++) {
                     Files.write(selected, original);
@@ -270,11 +272,22 @@ public final class SourceBundleFilesSmoke {
                                         }
                                         case "mtime" -> Files.setLastModifiedTime(selected,
                                             FileTime.fromMillis(Files.getLastModifiedTime(selected).toMillis() + 60000));
-                                        case "replace" -> {
+                                        case "replace", "replace-content" -> {
                                             FileTime time = Files.getLastModifiedTime(selected);
                                             Files.move(selected, retained);
-                                            Files.write(selected, original);
+                                            byte[] replacement = original.clone();
+                                            if (change.equals("replace-content")) {
+                                                // Preserve length, timestamp and the index's detection prefix.
+                                                // Hash/content checks must catch this even without file keys.
+                                                replacement[replacement.length - 1] ^= 1;
+                                            }
+                                            Files.write(selected, replacement);
                                             Files.setLastModifiedTime(selected, time);
+                                            require(!Files.isSameFile(selected, retained), "replacement is a distinct file");
+                                            var beforeKey = Files.readAttributes(retained, BasicFileAttributes.class).fileKey();
+                                            var afterKey = Files.readAttributes(selected, BasicFileAttributes.class).fileKey();
+                                            require(hasFileKeys ? beforeKey != null && afterKey != null && !beforeKey.equals(afterKey) :
+                                                beforeKey == null && afterKey == null, "provider file-key capability is stable");
                                         }
                                         default -> throw new AssertionError(change);
                                     }
@@ -285,11 +298,13 @@ public final class SourceBundleFilesSmoke {
                         }).orElseThrow();
                         // A change before acquisition or after an earlier file's final observation can
                         // legitimately finish open(). Publication must recheck the retained binding.
-                        if (change.equals("grow") || change.equals("truncate")) reject(() -> opened.verify(() -> false));
+                        if (change.equals("grow") || change.equals("truncate") || change.equals("replace-content")) {
+                            reject(() -> opened.verify(() -> false));
+                        }
                     }
                     catch (IOException rejected) { diagnostics.add(rejected.getMessage().split(":", 2)[0]); }
                     require(reached.get() >= trigger, "scheduled filesystem change actually ran");
-                    if (change.equals("replace")) {
+                    if (change.startsWith("replace")) {
                         require(Arrays.equals(Files.readAllBytes(retained), original), "reader preserves replaced original inode");
                         Files.delete(retained);
                     }
@@ -298,10 +313,20 @@ public final class SourceBundleFilesSmoke {
                     (change.equals("grow") ? "source part size changed" : "source part contents or line bounds disagree with manifest") :
                     (change.equals("grow") ? "source inventory size changed" : "source inventory changed during observation");
                 // Truncation of an inventory can instead fail its exact-size digest observation.
-                if (!change.equals("truncate") || role.equals("part")) {
+                if (change.equals("replace") && !hasFileKeys) {
+                    // BasicFileAttributes.fileKey is null on the supported Windows JDK.
+                    // Identical content/size/mtime cannot establish replacement there.
+                    // Keep this exercised and reported; do not claim inode protection.
+                    require(diagnostics.isEmpty(), "identical replacement without file keys retains content binding");
+                }
+                else if ((!change.equals("truncate") || role.equals("part")) && !change.equals("replace-content")) {
                     require(diagnostics.contains(diagnostic), role + " " + change + " observed unstable read: " + diagnostics);
                 }
-                require(!diagnostics.isEmpty(), "changing " + role + " was rejected: " + change);
+                if (!change.equals("replace") || hasFileKeys) {
+                    require(!diagnostics.isEmpty(), "changing " + role + " was rejected: " + change);
+                }
+                System.out.println("source-observation role=" + role + " change=" + change +
+                    " fileKeys=" + hasFileKeys + " diagnostics=" + new java.util.TreeSet<>(diagnostics));
                 Files.write(selected, original);
             }
         }

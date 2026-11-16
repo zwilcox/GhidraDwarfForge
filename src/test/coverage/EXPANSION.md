@@ -223,3 +223,32 @@ Run builds/tests through `python3 support/storage-guard.py run -- COMMAND`, with
 Ghidra 12.0.3, Java 21 and Gradle `--no-daemon`. Mutation runs delete their owned
 compiled variants; retain concise reports and raw measurements within the existing
 budgets. No new worktree or `/dev/shm` workspace is needed.
+
+## Source observation portability correction
+
+CI run 43814174541's Windows-host job 133128527297 failed the new
+`SourceBundleFilesSmoke` identical-replacement assertion. The test assumed
+`BasicFileAttributes.fileKey()` was available. OpenJDK 21's Windows implementation
+returns null ([upstream implementation](https://github.com/openjdk/jdk21u/blob/master/src/java.base/windows/classes/sun/nio/fs/WindowsFileAttributes.java#L379)).
+This is a test portability error and an explicit limit of the existing reader:
+its size/hash/mtime binding cannot distinguish two files with identical values
+when the provider supplies no identity key. It is not evidence that Windows
+provides inode-change protection. Native attachment identity checks are separate.
+
+The test still performs every identical replacement on every host and checks
+that the replacement is a different file using `Files.isSameFile`. Providers
+with file keys must expose distinct keys and reject the unstable observation;
+providers without keys must report that limitation and preserve the identical
+content binding. No production behavior or coverage denominator changed.
+
+A new replacement case preserves size and mtime but alters the last byte, keeping
+the index detection prefix intact. Index, manifest and source-part replacements
+are swept across every observed cancellation checkpoint. Changed content must
+be rejected during acquisition or by the retained bundle's verification on
+**all** hosts. Every retained original is checked byte-for-byte. Linux focused
+validation passes 65,352 assertions with 1,913 cancellation points; actual
+Windows execution of this correction is **PRESENT, UNVERIFIED** until CI runs.
+
+All 83 selected mutation controls pass after this correction, including the
+removed inventory-key guard and removed part-mtime guard. The Linux checks still
+catch both faults; no Windows mutation result is claimed.
