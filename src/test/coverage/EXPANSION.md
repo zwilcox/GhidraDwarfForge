@@ -6,6 +6,30 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## ELF changes during allocation observation
+
+CONFIRMED: real-file controls change each input at public cancellation
+checkpoints after attribute capture, after metadata parsing, or after the last
+raw read. Across ELF32/ELF64 and both byte orders, growth with restored mtime,
+mtime-only changes, same-bytes/same-mtime replacement, and broken first/last
+section-name table bytes must produce the intended refusal. Assertions verify
+the scheduled change occurred, the observer preserved both files, and restoration
+permits deterministic successful retries. Both directory-input positions are
+also rejected before parsing.
+
+The file-identity control retains the old inode while creating its replacement.
+It is explicitly unavailable when the host exposes no basic file key; Linux
+exercised every case here. This is a controlled interleaving test, not a claim
+that attribute checks provide a snapshot or detect every concurrent rewrite.
+The focused allocation task passes 2,200 assertions. Seven selected compiled
+faults are detected by assertions in 5.509s. Several layered guards can ultimately
+reject the same input; exact diagnostics also enforce the intended early check.
+No production code changed, and mutation execution does not enter coverage.
+
+Evidence: `allocation-file-changes-focused.log`,
+`allocation-file-change-mutations.log` and `allocation-file-change-mutations/`
+in the bounded workspace. Full-suite measurement follows.
+
 ## ELF allocation permissions and note boundaries
 
 CONFIRMED: the allocation task checks all eight LOAD permission combinations

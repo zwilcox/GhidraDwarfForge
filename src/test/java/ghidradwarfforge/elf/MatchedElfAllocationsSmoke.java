@@ -42,6 +42,7 @@ public final class MatchedElfAllocationsSmoke {
                     loadPermissions(group.resolve("load-permissions"), wide, order);
                     inheritedNames(group.resolve("inherited-names"), wide, order);
                     noteBoundaries(group.resolve("note-boundaries"), wide, order);
+                    changedFiles(group.resolve("changed-files"), wide, order);
                 }
             }
             failures(root.resolve("failures"));
@@ -178,6 +179,112 @@ public final class MatchedElfAllocationsSmoke {
             }
             unchangedMatch(pair);
         }
+    }
+
+    private static void changedFiles(Path root, boolean wide, ByteOrder order) throws Exception {
+        for (boolean candidate : new boolean[] {false, true}) {
+            for (String mode : new String[] {"grow-before-parse", "grow-after-reads", "mtime", "identity",
+                    "name-first-byte", "name-last-byte"}) {
+                Pair pair = named(root.resolve((candidate ? "candidate-" : "original-") + mode), wide, order);
+                unchangedMatch(pair);
+                Path target = candidate ? pair.candidate() : pair.original();
+                Path peer = candidate ? pair.original() : pair.candidate();
+                byte[] original = Files.readAllBytes(target), peerBytes = Files.readAllBytes(peer);
+                FileTime time = Files.getLastModifiedTime(target), peerTime = Files.getLastModifiedTime(peer);
+                Object key = Files.readAttributes(target, java.nio.file.attribute.BasicFileAttributes.class).fileKey();
+                if (mode.equals("identity") && key == null) {
+                    System.out.println("allocation-file-key-control=UNAVAILABLE host returns no basic file key");
+                    continue;
+                }
+                var image = ElfImage.read(target);
+                var names = image.sections().get(image.sectionNameIndex());
+                AtomicInteger baselinePolls = new AtomicInteger();
+                MatchedElfAllocations.compare(pair.original(), pair.candidate(), () -> {
+                    baselinePolls.incrementAndGet();
+                    return false;
+                });
+                // The public cancellation callback schedules a real filesystem change.
+                // Polls 2/4 precede the original/candidate parse after attribute capture;
+                // poll 5 follows both parses. The penultimate poll follows all rereads
+                // and precedes the final attribute checks. Exact diagnostics distinguish
+                // these checks from incidental parser or I/O failures.
+                int trigger = mode.equals("grow-before-parse") ? (candidate ? 4 : 2)
+                    : mode.startsWith("name-") ? 5 : baselinePolls.get() - 1;
+                String message = mode.equals("grow-before-parse") ? "ELF size changed during allocation observation"
+                    : mode.startsWith("name-") ? "section-name framing changed during allocation observation"
+                    : "ELF changed during allocation observation: " + target;
+                Path backup = target.resolveSibling("held-original-inode");
+                AtomicInteger polls = new AtomicInteger();
+                byte[][] changedBytes = {null};
+                FileTime[] changedTime = {null};
+                try {
+                    IOException failure = (IOException) expect(IOException.class,
+                        () -> MatchedElfAllocations.compare(pair.original(), pair.candidate(), () -> {
+                            if (polls.incrementAndGet() == trigger) {
+                                try {
+                                    switch (mode) {
+                                        case "grow-before-parse", "grow-after-reads" -> {
+                                            Files.write(target, new byte[] {42}, java.nio.file.StandardOpenOption.APPEND);
+                                            Files.setLastModifiedTime(target, time);
+                                        }
+                                        case "mtime" -> Files.setLastModifiedTime(target,
+                                            FileTime.fromMillis(time.toMillis() + 10000));
+                                        case "identity" -> {
+                                            // Retaining the old inode prevents reuse from making this vacuous.
+                                            Files.move(target, backup);
+                                            Files.copy(backup, target);
+                                            Files.setLastModifiedTime(target, time);
+                                            Object replacement = Files.readAttributes(target,
+                                                java.nio.file.attribute.BasicFileAttributes.class).fileKey();
+                                            require(replacement != null && !key.equals(replacement),
+                                                "identity control did not replace the file");
+                                        }
+                                        case "name-first-byte", "name-last-byte" -> {
+                                            long offset = names.offset + (mode.equals("name-first-byte") ? 0 : names.size - 1);
+                                            MatchedElfAllocationsFixtures.write(target, offset, new byte[] {'x'});
+                                            // Equal size/time exercises the second raw-name validation.
+                                            Files.setLastModifiedTime(target, time);
+                                        }
+                                        default -> throw new AssertionError(mode);
+                                    }
+                                    changedBytes[0] = Files.readAllBytes(target);
+                                    changedTime[0] = Files.getLastModifiedTime(target);
+                                }
+                                catch (IOException problem) {
+                                    throw new AssertionError(problem);
+                                }
+                            }
+                            return false;
+                        }));
+                    require(changedBytes[0] != null && failure.getMessage().equals(message) && failure.getCause() == null,
+                        "wrong concurrent-change rejection: " + failure);
+                    require(Arrays.equals(changedBytes[0], Files.readAllBytes(target)) &&
+                        changedTime[0].equals(Files.getLastModifiedTime(target)), "observer rewrote changed input");
+                    require(Arrays.equals(peerBytes, Files.readAllBytes(peer)) &&
+                        peerTime.equals(Files.getLastModifiedTime(peer)), "observer changed the other input");
+                }
+                finally {
+                    if (Files.exists(backup)) {
+                        Files.delete(target);
+                        Files.move(backup, target);
+                    }
+                    else {
+                        Files.write(target, original);
+                        Files.setLastModifiedTime(target, time);
+                    }
+                }
+                unchangedMatch(pair);
+            }
+        }
+        Pair pair = named(root.resolve("directories"), wide, order);
+        for (boolean candidate : new boolean[] {false, true}) {
+            IOException failure = (IOException) expect(IOException.class,
+                () -> MatchedElfAllocations.compare(candidate ? pair.original() : root,
+                    candidate ? root : pair.candidate()));
+            require(failure.getMessage().equals("allocation observation requires a regular ELF file: " + root),
+                "directory refusal came from an unrelated failure");
+        }
+        unchangedMatch(pair);
     }
 
     private static Result observe(Pair pair) throws IOException {
