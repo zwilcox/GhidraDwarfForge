@@ -6,6 +6,32 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current-bytecode source relocation boundary checks
+
+CONFIRMED: four current-JAR sessions exercise source relocation for x86-64
+non-PIE/PIE with plain/zlib debug sections. The existing Java fixture checks
+malformed section attributes and compression envelopes, exact planned bytes,
+deterministic/idempotent output, refusal of nonempty stages and cancellation
+through planning, writing and candidate comparison. Independent GNU/LLVM/strict
+validation and all eight call-site runtime scenarios pass for each combination.
+GDB resolves `cs_leaf` to the new retained-source path and lists its contents.
+Input ELF, sidecar and source hashes remain unchanged.
+
+The first added source-path assertion incorrectly used global-symbol lookup for
+a file-local function. That attempt failed and is excluded. The passing assertion
+uses GDB's line resolution; no production behavior was changed. Retained artifacts
+are inputs to current transformation tests, not old execution probes or a claim
+that the current Ghidra exporter generated those inputs.
+
+Four verified native-Java sessions add 52 lines and 63 branch outcomes. The
+606-session diagnostic union is 27,727/29,790 lines (93.1%) and
+20,961/25,884 branches (81.0%). Binary/location is 18,104/19,201 lines (94.3%)
+and 15,144/18,732 branches (80.8%); file/validation remains 92.6% / 83.3%.
+Both critical targets and full hosted acceptance remain outstanding.
+Evidence: `source-sidecar-current-checked-2f181/`,
+`source-sidecar-current-checked-2f181-run.log` and
+`source-sidecar-current-checked-2f181-verification.log` in the bounded workspace.
+
 ## Strict companion validation and current loader measurement
 
 CONFIRMED: `gdb-loader-mappings.py` now runs the strict checker instead of invoking
