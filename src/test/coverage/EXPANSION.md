@@ -34,8 +34,14 @@ contributes coverage. The successful run temporarily used the exact retained
 release manifest/metadata after verifying every native binary hash, then restored
 the previous installation state and production JAR. Evidence in bounded scratch:
 `bitfields-packaged-2f181/`, `bitfields-packaged-2f181-run.log` and
-`bitfield-measurement-tests-passing.log`. Eight measured sessions await raw union
-verification. Full hosted acceptance and critical coverage targets remain open.
+`bitfield-measurement-tests-passing.log`. All eight sessions pass raw union
+verification. They add 13 lines and 15 branch outcomes: the 947-session local
+union measures 28,037/29,790 lines (94.1%) and 21,147/25,884 branches (81.7%).
+Binary/location is 95.3% lines / 81.5% branches, with file/validation unchanged at
+94.4% / 84.8%. The measured harness snapshot is `2cc92e88`; the earlier checkout
+identity remains recorded separately. The local verifier explicitly excludes
+any LLDB/hosted-acceptance claim. Full hosted acceptance and critical coverage
+targets remain open.
 
 ## Current producer inheritance and vtable-name evidence
 
