@@ -31,6 +31,7 @@ REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation', 'build-id-identity',
         'instruction-context', 'source-context', 'annotation-inventory', 'equate-evidence',
+        'equate-constants', 'equate-retained-names',
         'annotation-export', 'failed-source-export', 'class-scopes', 'inheritance-producer',
         'inheritance-names', 'build-id-command', 'cfi-encoder', 'cfi-composition-explicit',
         'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu',
@@ -94,6 +95,42 @@ def build_id_identity_oracle(record, oracle):
             or any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value)
                 for value in protected.values())):
         raise ValueError('build-ID identity coverage requires every measured Linux refusal and preserved input')
+
+
+def equate_oracle(record, oracle):
+    suite = record.get('suite')
+    retained = suite == 'equate-retained-names'
+    expected_labels = ['setup', 'read1', 'read2'] if retained else ['one', 'two']
+    protected = oracle.get('protected')
+    def sha(value):
+        return isinstance(value, str) and re.fullmatch(r'[0-9a-f]{64}', value) is not None
+    if (suite not in ('equate-constants', 'equate-retained-names')
+            or record.get('layer') != ('headless' if retained else 'native-java')
+            or [row.get('label') for row in record.get('sessions', [])] != expected_labels
+            or not sha(oracle.get('gdbSha256'))
+            or type(oracle.get('gdbChecks')) is not int
+            or not isinstance(protected, dict) or len(protected) != (7 if retained else 4)
+            or not all(sha(value) for value in protected.values())):
+        raise ValueError('equate coverage requires measured exports, GDB checks and preserved inputs')
+    if not retained:
+        if (oracle.get('status') != 'PASS_ISOLATED_PRODUCTION_CONSTANTS'
+                or oracle.get('constants') != 52 or oracle['gdbChecks'] != 104
+                or oracle.get('deterministic') is not True or not sha(oracle.get('artifactSha256'))):
+            raise ValueError('equate constants require deterministic production output and all GDB lookups')
+        return
+    generations = oracle.get('generations')
+    changes = oracle.get('projectBackupChanges')
+    if (oracle.get('status') != 'PASS_RETAINED_DEMANGLED_EQUATES' or oracle['gdbChecks'] != 20
+            or oracle.get('runtime') != {'exitCodes': [0],
+                'stoppedFunctions': ['curated_retained_function', 'curated_type_named_function']}
+            or not isinstance(generations, list) or len(generations) != 2
+            or not all(isinstance(row, dict) and set(row) == {'forge.dbg', 'forge.dbg.c'}
+                and all(sha(value) for value in row.values()) for row in generations)
+            or generations[0] != generations[1]
+            or not isinstance(changes, list)
+            or any(value not in ('Retained.rep/idata/~index.bak', 'Retained.rep/idata/~journal.bak')
+                for value in changes)):
+        raise ValueError('retained equates require repeatable exports, preserved project and live GDB stops')
 
 
 def attachment_oracle(record, oracle):
@@ -383,6 +420,8 @@ def load_job(root, jar, kind, commit, run):
                 metadata_failures.oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'build-id-identity':
                 build_id_identity_oracle(record, files.read(directory / 'oracle.json'))
+            if record['suite'] in ('equate-constants', 'equate-retained-names'):
+                equate_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'windows-host-primitives':
                 windows_metadata_failures.oracle(record, files.read(directory / 'oracle.json'))
                 windows_directory_failures.oracle(record, files.read(directory / 'oracle.json'))

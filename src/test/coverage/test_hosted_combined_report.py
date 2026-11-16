@@ -700,5 +700,75 @@ class BuildIdIdentityAdmission(unittest.TestCase):
                     hosted.build_id_identity_oracle(self.record, self.oracle)
 
 
+class EquateAdmission(unittest.TestCase):
+    """Schema controls; real producer/debugger evidence comes from integration."""
+
+    def setUp(self):
+        self.constants = ({'suite': 'equate-constants', 'layer': 'native-java',
+            'sessions': [{'label': name} for name in ('one', 'two')]},
+            {'status': 'PASS_ISOLATED_PRODUCTION_CONSTANTS', 'constants': 52, 'gdbChecks': 104,
+                'gdbSha256': 'a' * 64, 'artifactSha256': 'b' * 64, 'deterministic': True,
+                'protected': {str(i): 'c' * 64 for i in range(4)}})
+        self.retained = ({'suite': 'equate-retained-names', 'layer': 'headless',
+            'sessions': [{'label': name} for name in ('setup', 'read1', 'read2')]},
+            {'status': 'PASS_RETAINED_DEMANGLED_EQUATES', 'gdbChecks': 20, 'gdbSha256': 'a' * 64,
+                'runtime': {'exitCodes': [0],
+                    'stoppedFunctions': ['curated_retained_function', 'curated_type_named_function']},
+                'generations': [{'forge.dbg': 'b' * 64, 'forge.dbg.c': 'c' * 64} for _ in range(2)],
+                'projectBackupChanges': ['Retained.rep/idata/~index.bak'],
+                'protected': {str(i): 'd' * 64 for i in range(7)}})
+
+    def test_complete_receipts(self):
+        for record, oracle in (self.constants, self.retained):
+            hosted.equate_oracle(record, oracle)
+
+    def test_unmeasured_or_wrong_layer(self):
+        for pair in (self.constants, self.retained):
+            for key, value in [('sessions', []), ('layer', 'javaexec')]:
+                with self.subTest(suite=pair[0]['suite'], key=key):
+                    record, oracle = copy.deepcopy(pair)
+                    record[key] = value
+                    with self.assertRaisesRegex(ValueError, 'measured exports'):
+                        hosted.equate_oracle(record, oracle)
+
+    def test_missing_consumer_or_preservation(self):
+        for pair in (self.constants, self.retained):
+            for key, value in [('gdbSha256', 'invalid'), ('gdbChecks', True), ('protected', {})]:
+                with self.subTest(suite=pair[0]['suite'], key=key):
+                    record, oracle = copy.deepcopy(pair)
+                    oracle[key] = value
+                    with self.assertRaisesRegex(ValueError, 'GDB checks and preserved inputs'):
+                        hosted.equate_oracle(record, oracle)
+
+    def test_constants_require_all_lookups_and_determinism(self):
+        for key, value in [('constants', 51), ('gdbChecks', 102), ('deterministic', False),
+                ('artifactSha256', None)]:
+            with self.subTest(key=key):
+                record, oracle = copy.deepcopy(self.constants)
+                oracle[key] = value
+                with self.assertRaisesRegex(ValueError, 'deterministic production output'):
+                    hosted.equate_oracle(record, oracle)
+
+    def test_retained_requires_actual_stops_and_exit(self):
+        for runtime in [{}, {'exitCodes': [1], 'stoppedFunctions': self.retained[1]['runtime']['stoppedFunctions']},
+                {'exitCodes': [0], 'stoppedFunctions': ['retained_lookup', 'forge_equate_type_u64']}]:
+            with self.subTest(runtime=runtime):
+                record, oracle = copy.deepcopy(self.retained)
+                oracle['runtime'] = runtime
+                with self.assertRaisesRegex(ValueError, 'live GDB stops'):
+                    hosted.equate_oracle(record, oracle)
+
+    def test_retained_rejects_changed_generation_or_project(self):
+        for key, value in [('generations', []), ('generations', [{'forge.dbg': 'a' * 64}] * 2),
+                ('generations', [self.retained[1]['generations'][0],
+                    {'forge.dbg': 'e' * 64, 'forge.dbg.c': 'c' * 64}]),
+                ('projectBackupChanges', ['Retained.rep/idata/analyst-data'])]:
+            with self.subTest(key=key, value=value):
+                record, oracle = copy.deepcopy(self.retained)
+                oracle[key] = value
+                with self.assertRaisesRegex(ValueError, 'preserved project'):
+                    hosted.equate_oracle(record, oracle)
+
+
 if __name__ == '__main__':
     unittest.main()

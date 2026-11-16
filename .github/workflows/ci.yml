@@ -3402,6 +3402,7 @@ jobs:
               --require-suite derived-validation \
               --require-suite build-id-installation --require-suite build-id-identity --require-suite instruction-context \
               --require-suite source-context --require-suite annotation-inventory --require-suite equate-evidence \
+              --require-suite equate-constants --require-suite equate-retained-names \
               --require-suite annotation-export --require-suite failed-source-export \
               --require-suite class-scopes --require-suite inheritance-producer --require-suite inheritance-names \
               --require-suite build-id-command --require-suite cfi-encoder \

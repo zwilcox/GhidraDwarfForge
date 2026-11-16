@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Retained C++ symbols must survive analyst renames and synthetic equate lookup."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 from pathlib import Path
@@ -8,6 +9,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -34,6 +36,7 @@ def main():
     script = harness / 'ghidra_scripts/VerifyRetainedEquateNames.java'
     shutil.copy2(script, scripts / script.name)
     module = args.ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+    coverage = Collection('equate-retained-names', module / 'lib/GhidraDwarfForge.jar', 'headless')
     source = harness.parent / 'fixtures/equate-retained-names.cpp'
     protected = {str(p): digest(p) for p in [source, script, Path(__file__),
         module / 'lib/GhidraDwarfForge.jar', module / 'ghidra_scripts/GhidraDwarfForge.java']}
@@ -43,10 +46,13 @@ def main():
         command = list(map(str, command))
         commands.append({'label': label, 'argv': command})
         (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        result = subprocess.run(command, capture_output=True, text=True, timeout=300)
-        (root / (label + '.stdout')).write_text(result.stdout)
-        (root / (label + '.stderr')).write_text(result.stderr)
-        assert result.returncode == 0, (label, root, result.stderr[-1500:])
+        session = (coverage.session(command, label, headless=True)
+            if Path(command[0]).name == 'analyzeHeadless' else nullcontext(command))
+        with session as measured:
+            result = subprocess.run(measured, capture_output=True, text=True, timeout=300)
+            (root / (label + '.stdout')).write_text(result.stdout)
+            (root / (label + '.stderr')).write_text(result.stderr)
+            assert result.returncode == 0, (label, root, result.stderr[-1500:])
         return result.stdout + result.stderr
 
     run('compile', ['g++', '-O0', '-g', '-gdwarf-5', '-fno-pie', '-no-pie',
@@ -98,7 +104,8 @@ for original, curated in (('retained_lookup', 'curated_retained_function'),
     assert gdb.lookup_global_symbol(original) is None
 point = gdb.Breakpoint('retained_lookup', temporary=True)
 gdb.execute('run')
-assert gdb.newest_frame().name() == 'curated_retained_function'
+stopped = [gdb.newest_frame().name()]
+assert stopped[-1] == 'curated_retained_function'
 checks = []
 for constant in constants:
     value = constant['value']
@@ -112,12 +119,14 @@ for constant in constants:
         checks.append({'expression': expression, 'value': int(actual), 'type': str(actual.type)})
 gdb.Breakpoint('forge_equate_type_u64', temporary=True)
 gdb.execute('continue')
-assert gdb.newest_frame().name() == 'curated_type_named_function'
+stopped.append(gdb.newest_frame().name())
+assert stopped[-1] == 'curated_type_named_function'
 exits = []
 gdb.events.exited.connect(lambda e: exits.append(e.exit_code))
 gdb.execute('continue')
 assert exits == [0]
 (root / 'gdb-result.json').write_text(json.dumps(checks, indent=4) + '\\n')
+(root / 'gdb-runtime.json').write_text(json.dumps({'exitCodes': exits, 'stoppedFunctions': stopped}, indent=4) + '\\n')
 print('retained-equates-gdb=PASS')
 '''
     (root / 'check.py').write_text(check)
@@ -126,10 +135,16 @@ print('retained-equates-gdb=PASS')
         str(sidecar) + '\nsource ' + str(root / 'check.py') + '\nquit\n')
     assert 'retained-equates-gdb=PASS' in run('gdb', ['gdb-multiarch', '-nx', '-batch', '-x', root / 'check.gdb'])
     assert not (root / 'gdb.stderr').read_text().strip()
+    gdb_result = json.loads((root / 'gdb-result.json').read_text())
+    runtime = json.loads((root / 'gdb-runtime.json').read_text())
+    assert len(gdb_result) == 20 and runtime == {'exitCodes': [0],
+        'stoppedFunctions': ['curated_retained_function', 'curated_type_named_function']}
     assert protected == {p: digest(Path(p)) for p in protected}
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_RETAINED_DEMANGLED_EQUATES',
         'protected': protected, 'generations': generations, 'projectBackupChanges': changes,
+        'gdbChecks': len(gdb_result), 'gdbSha256': digest(root / 'gdb-result.json'), 'runtime': runtime,
         'scope': 'Native x86-64 GNU C++ fixture; actual saved renames, default export, retained function breakpoints and synthetic value/type collision.'}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('retained-equates=PASS')
 
 

@@ -6,6 +6,28 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Measured equate constants and retained names
+
+CONFIRMED: both existing equate harnesses now collect their production JVM
+sessions. The isolated producer runs twice and checks 52 constants with 104 GDB
+lookups, including signed/unsigned extrema, unusual widths, type-name collisions
+and absence of fabricated addresses. The headless C++ fixture records setup and
+two exports, preserves saved analyst renames, and checks 20 constant lookups plus
+actual stops at both retained function names and process exit zero. Repeated
+sidecars/source are identical; input and saved-project preservation checks pass.
+GNU readelf, LLVM verification and the strict libdwarf validator pass.
+
+CI now requires both measured suites. Hosted admission checks session identities
+by label and layer, debugger-result hashes, preserved-input hashes, deterministic
+generations and observed runtime stops. Six new receipt tests reject omitted
+measurement, wrong layers, absent consumer/preservation evidence, changed exports
+and incorrect stops. All 236 coverage-tool tests and workflow lint pass.
+These are additional measurements of existing behavior, not broader architecture
+claims. Five collected sessions await the matching-bytecode union below.
+Evidence: `equates-measured-2f181/`, `equates-measured-2f181-run.log`,
+`equate-instrumentation-tests.log` and `equate-actionlint.log` in bounded scratch.
+The temporarily installed exporter JAR was restored and its original hash checked.
+
 ## Measured build-ID identity refusal controls
 
 CONFIRMED: the existing identity harness now records its 13 child JVM sessions
