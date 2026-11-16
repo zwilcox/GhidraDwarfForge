@@ -279,3 +279,34 @@ Baseline19 adds two covered lines and 17 branch outcomes to the verified local
 union. `GhidraStaticRecovery` now measures 63/87 lines and 66/116 branch outcomes;
 most remaining gaps are in actual HighFunction evidence extraction. The full
 production denominator and the accepted targets are unchanged.
+
+## Bounded switch proof controls
+
+`boundedSwitchProofSmoke` passes 98 cases / 927 assertions at original and rebased
+addresses. All cases use real decoded x86-64 instructions and source-built ELF
+bytes; there are no fabricated p-code/prototype overrides. New valid shapes
+exercise byte/word/dword/qword index registers, addition/subtraction, AND/OR/XOR,
+left/right shifts, repeated identical table reads, and the maximum accepted
+unsigned guard. The expected target list and each original table address, width
+and raw value are specified independently, including signed relative offsets.
+The original ELF bytes remain unchanged and successful proofs repeat exactly.
+
+Negative controls require the specific rejection reason for conflicting table
+read widths, zero/excess guard limits, negative or undecoded targets, missing
+ownership/instructions, another function entry, interior incoming flow, and
+saved instruction length/flow/fallthrough overrides. Non-flow references and an
+incoming edge from the expected predecessor remain valid. Exactly 32 dispatch
+instructions are accepted; 33 are rejected. The test explicitly disassembles the
+long NOP run because automatic Ghidra flow disassembly stops before its end.
+
+Fixture development exposed two assumptions, not production defects: a direct
+absolute memory operand lifts to COPY rather than LOAD, and Ghidra names the
+strict unsigned guard `jnc`, outside the current audited profile. Register-indirect
+loads now exercise the read consistency guard; `jnc` rejection is recorded as a
+current profile limitation. No architecture-support expansion is claimed, and
+failed fixture attempts are not included in passing coverage collections.
+
+All 90 selected mutants are detected. The four new faults accept conflicting
+read widths, exceed the dispatch-window budget, add instead of subtracting an
+index, or shift the index in the wrong direction. Each is caught by a behavioral
+assertion; unchanged-source baselines pass first.
