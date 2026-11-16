@@ -158,6 +158,14 @@ FRAME_RANGES = "ghidradwarfforge/unwind/OriginalFrameRanges.java"
 ARM_MAPPING = "ghidradwarfforge/elf/Arm32SectionModes.java"
 ARM_MAPPING_TEST = "ghidradwarfforge.elf.Arm32SectionModesSmoke"
 ARM_MAPPING_MUTANTS = [
+    ("arm-mapping-ignores-inherited-function-tag", ARM_MAPPING, ARM_MAPPING_TEST,
+     'modes.floorEntry(entry.getKey()).getValue().equals(entry.getValue())', 'true'),
+    ("arm-mapping-applies-end-marker-to-earlier-bytes", ARM_MAPPING, ARM_MAPPING_TEST,
+     'if (b.getKey() == item.address() + item.size()) continue;', ''),
+    ("arm-mapping-rejects-adjacent-allocation", ARM_MAPPING, ARM_MAPPING_TEST,
+     'item.address() - other.address >= other.size', 'item.address() - other.address > other.size'),
+    ("arm-mapping-ignores-reserved-name", ARM_MAPPING, ARM_MAPPING_TEST,
+     '!reservedNames.contains(name) && ', ''),
     ("arm-mapping-allows-address-extent-overflow", ARM_MAPPING, ARM_MAPPING_TEST,
      'size > 0x1_0000_0000L - address', 'size > 0x1_0000_0000L'),
     ("arm-mapping-rejects-exact-boundary-count", ARM_MAPPING, ARM_MAPPING_TEST,

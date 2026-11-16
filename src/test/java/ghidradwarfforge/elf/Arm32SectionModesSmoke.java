@@ -46,6 +46,7 @@ public final class Arm32SectionModesSmoke {
         var symbols = Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> false, messages::add);
         require(symbols.size() == 4 && messages.isEmpty(), "complete mode/data sequence planned: " + messages);
         profileAndAllocations(root.resolve("profiles"), bytes, evidence, symbols);
+        inheritedConflicts(root.resolve("inherited"), bytes, evidence, symbols);
         int[] visits = {0};
         require(Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> { visits[0]++; return false; },
             messages::add).equals(symbols), "counted mapping changed output");
@@ -211,6 +212,82 @@ public final class Arm32SectionModesSmoke {
             reject(image, List.of(evidence), List.of(), noBacking ? "extent or file backing" : "missing unique executable allocation");
             require(Arrays.equals(bytes, Files.readAllBytes(input)), "allocation inspection changed ELF");
         }
+    }
+
+    private static void inheritedConflicts(Path input, byte[] original, Arm32SectionModes.Evidence evidence,
+            List<ElfLocalMappingSymbol> expected) throws Exception {
+        for (long address : new long[] {START - 32, START - 16, START + 44, START + 43}) {
+            byte[] bytes = original.clone();
+            ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+                .putInt(0x300 + 2 * 40 + 8, 2).putInt(0x300 + 2 * 40 + 12, (int) address);
+            Files.write(input, bytes);
+            var image = ElfImage.read(input);
+            if (address == START - 32 || address == START + 44) exactPlan(image, evidence, expected);
+            else reject(image, List.of(evidence), List.of(), "overlapping allocated sections");
+            require(Arrays.equals(bytes, Files.readAllBytes(input)), "allocation comparison changed input");
+        }
+        for (int section : new int[] {1, 0xfff1}) {
+            for (int offset : new int[] {0, 17, 24, 16, 25, 41}) {
+                byte[] bytes = inheritedSymbol(original, "x", START + offset, 4, 2, section);
+                Files.write(input, bytes);
+                var image = ElfImage.read(input);
+                if (offset == 0 || offset == 17 || offset == 24) exactPlan(image, evidence, expected);
+                else reject(image, List.of(evidence), List.of(), "inherited function tag contradicts listing");
+                require(Arrays.equals(bytes, Files.readAllBytes(input)), "function-tag inspection changed input");
+            }
+        }
+        // An inherited marker at the exclusive end supplies no earlier mode.
+        // A data marker at +40, in contrast, owns exactly the final interval.
+        for (String tag : List.of("$a", "$t", "$d")) {
+            byte[] bytes = inheritedSymbol(original, tag, START + 44, 0, 0, 1);
+            Files.write(input, bytes);
+            exactPlan(ElfImage.read(input), evidence, expected);
+            require(Arrays.equals(bytes, Files.readAllBytes(input)), "end-marker inspection changed input");
+        }
+        byte[] bytes = inheritedSymbol(original, "$d", START + 40, 0, 0, 1);
+        Files.write(input, bytes);
+        exactPlan(ElfImage.read(input), evidence, expected.subList(0, 3));
+        require(Arrays.equals(bytes, Files.readAllBytes(input)), "retained data marker changed input");
+        bytes = inheritedSymbol(original, "$t", START + 20, 0, 0, 1);
+        Files.write(input, bytes);
+        reject(ElfImage.read(input), List.of(evidence), List.of(), "inherited mapping interval contradicts listing");
+        require(Arrays.equals(bytes, Files.readAllBytes(input)), "interval conflict changed input");
+
+        Files.write(input, original);
+        var image = ElfImage.read(input);
+        reject(image, List.of(new Arm32SectionModes.Evidence(2, START, 44, evidence.sha256(), evidence.boundaries())),
+            List.of(), "missing unique executable allocation");
+        reject(image, List.of(new Arm32SectionModes.Evidence(1, START + 4, 44, evidence.sha256(), evidence.boundaries())),
+            List.of(), "allocation extent or file backing disagrees");
+        reject(image, List.of(evidence), List.of(new ElfLocalFunctionSymbol(expected.getFirst().name(), START, 4, 1)),
+            "mapping name conflicts with existing symbol");
+        var misaligned = List.of(new Arm32SectionModes.Boundary(0, 0), new Arm32SectionModes.Boundary(16, 1),
+            new Arm32SectionModes.Boundary(18, 0), new Arm32SectionModes.Boundary(42, 2));
+        reject(image, List.of(new Arm32SectionModes.Evidence(1, START, 44, evidence.sha256(), misaligned)),
+            List.of(), "unaligned code mapping extent");
+        require(Arrays.equals(original, Files.readAllBytes(input)), "conflicting evidence changed original");
+    }
+
+    private static byte[] inheritedSymbol(byte[] original, String name, long value, int size, int info, int section) {
+        byte[] bytes = original.clone();
+        var fields = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
+        // Convert the existing 32-byte opaque allocation to two ELF32 symbol
+        // rows: the null symbol and one local symbol, linked to the string table.
+        fields.putInt(0x300 + 2 * 40 + 4, 2).putInt(0x300 + 2 * 40 + 24, 3)
+            .putInt(0x300 + 2 * 40 + 28, 2).putInt(0x300 + 2 * 40 + 36, 16);
+        fields.putInt(0x190, 1).putInt(0x194, (int) value).putInt(0x198, size)
+            .put(0x19c, (byte) info).putShort(0x19e, (short) section);
+        byte[] encoded = (name + "\0").getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        require(encoded.length <= 7, "fixture string-table capacity");
+        System.arraycopy(encoded, 0, bytes, 0x1c1, encoded.length);
+        return bytes;
+    }
+
+    private static void exactPlan(ElfImage image, Arm32SectionModes.Evidence evidence,
+            List<ElfLocalMappingSymbol> expected) throws Exception {
+        var messages = new ArrayList<String>();
+        var actual = Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> false, messages::add);
+        require(actual.equals(expected) && messages.isEmpty(), "valid inherited evidence changed mappings: " + messages);
     }
 
     private static void reject(ElfImage image, List<Arm32SectionModes.Evidence> evidence,
