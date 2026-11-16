@@ -6,6 +6,52 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current interactive GUI and ARM aggregate boundaries
+
+CONFIRMED: the existing Linux Script Manager journey passes with the current
+production JAR in a local validation package, using actual Swing interactions
+on owned Xvfb/Openbox. It verifies script discovery, export choices, cancellation,
+report presentation, all four source-context choices, split/repeated/default
+source layouts, attachment preparation and original preservation. Nine output
+pairs pass structural checks and GDB name/type/source lookup, next/step and
+normal-exit assertions. Inherited frame diagnostics remain separately
+corroborated; none is silently ignored. This run does not claim Windows, the
+privileged GUI attachment mode, or a published release package.
+
+The first attempt stopped during geometry setup because the cached headless JDK
+lacks `libawt_xawt.so`. The successful run uses the installed desktop Java
+21.0.13.0.3, retains its version, verifies the exact current production JAR and
+restores the original cached installation byte-for-byte. Its one main-JVM
+collection passes raw class/session verification; geometry, report CLI and
+attachment-helper children remain explicitly unmeasured. Evidence is under
+`gui-desktop-current-2f181/`, with raw desktop outcomes in
+`build/test-results/gui-script-manager/run.gWy9yZCF/` and the bound oracle log in
+`build/test-results/gui-coverage/gui-script-manager-twrswbkv/`. The failed
+headless-JDK attempt contributes no coverage. This adds 278 lines and 86 branch
+outcomes to the preceding verified union.
+
+The existing ARM HFA allocation task now adds 48 real ProgramDB scenarios:
+mixed floating widths, interior/trailing padding, bit fields, extended floats,
+one/five-member aggregates, nested excessive member counts, deep typedefs and
+deep structures. Both byte orders and four/eight-byte floating members retain
+exact accepted register pieces, unchanged saved storage and prompt cancellation.
+All 216 scenarios and 948 assertions pass on Java 21. The first fixture wrongly
+expected deep typedefs to exhaust recursive member traversal; Ghidra flattens
+their base type. The corrected fixture asserts that API behavior and preserves
+the accepted HFA. Actual nested structures separately test the traversal limit.
+An isolated mutation omitting that limit compiles and is rejected by the
+deep-structure behavioral assertion. It contributes no coverage, and production
+source/JAR hashes are unchanged. Evidence is under
+`arm-hfa-boundaries-final-2f181/` and `arm-hfa-depth-mutation-2f181/`; earlier
+driver/fixture failures are retained separately and excluded.
+
+The verified 1,001-session diagnostic union measures **28,446/29,790 lines
+(95.5%) and 21,292/25,884 branches (82.3%)**. Binary/location is 18,290/19,201
+lines (95.3%) and 15,272/18,732 branches (81.5%). File/validation is 6,434/6,677
+lines (96.4%) and 3,652/4,250 branches (85.9%). All 255 production sources and
+901 classes remain included. The two critical 90% branch targets, full updated
+hosted validation, protected integration and main publication are still pending.
+
 ## Verified privileged Linux attachment sessions
 
 CONFIRMED: 51 measured production attachment/recovery sessions from CI run
