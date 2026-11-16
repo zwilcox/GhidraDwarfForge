@@ -31,7 +31,7 @@ branches (67.0%). That badge's scope remains unchanged.
 
 The latest complete JavaExec run executed all 210 tasks at
 `597873f9c2e27c8d50c3578ca75c6256f979b3f4` in 265.5 seconds. The combined local report
-contains 947 sessions with the full unchanged denominator:
+contains 965 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
@@ -44,7 +44,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-statics-measurement-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-stack-flow-measurement-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -375,4 +375,25 @@ Linux suites total). Comparative old-package runs cannot contribute to this
 single-package collection. This adds measurement to existing integration tests;
 it does not change production behavior or broaden the advertised target set.
 Raw data is retained under `stack-flow-measured-collections` in the bounded
-coverage workspace. Combined counters are pending raw-probe verification.
+coverage workspace. The verified union adds two covered branch outcomes in `StackValueFlow`: overall
+28,206/29,782 lines and 20,454/25,872 branches, still 94.7% / 79.1%. This shows
+most of this behavior was already measured by the Java tests. The next work
+therefore targets genuinely missing boundary cases rather than more similar runs.
+
+## ARM original mode-inventory boundaries
+
+The ARM alias suite now passes 732 checks. New cases inspect real ELF section
+and symbol bytes for invalid symbol-table/string-table framing, missing or invalid
+extended section indices, malformed mapping records, unsupported code flags,
+misaligned/out-of-section entries and contradictory mapping/function modes.
+Positive controls retain absolute entries and valid visibility, coalesce equal
+mapping duplicates, ignore unresolved/non-code symbols and non-executable
+sections, and accept an end-of-section mapping marker. Independent expected maps,
+deterministic results and unchanged input bytes/timestamps are asserted.
+
+All 93 selected mutation controls passed, including three new faults: accepting
+conflicting instruction modes, rejecting a valid section-end marker, and using
+non-executable section mappings. Compilation and class-loading failures do not
+count as detection. These are ELF inventory tests, not a new runtime architecture
+support claim. Production code is unchanged. A complete JavaExec rerun and updated
+combined counters are pending for this test-source snapshot.
