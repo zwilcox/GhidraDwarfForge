@@ -30,7 +30,7 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`f249bab053622bc6e28697e3444bb1cc2445ecf3` in 270.3 seconds. The combined local report
+`72783e838f614d01a0adb06c77885595e32bbfea` in 271.5 seconds. The combined local report
 contains 1,033 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
@@ -40,7 +40,7 @@ contains 1,033 sessions with the full unchanged denominator:
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.6% | Included in overall |
 
-The binary/location line count is 18,273/19,193, meeting its exact 95%
+The binary/location line count is 18,274/19,193, meeting its exact 95%
 line gate. Both critical branch targets and the file-transaction line target
 remain unmet, as does the overall 80% branch target.
 
@@ -48,7 +48,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-cxx-profile-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-cxx-vtable-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -584,6 +584,9 @@ is deterministic and explicit removal restores the baseline exactly.
 
 Six new selected mutations omit either overlap test, change either comparison to
 reject touching ranges, accept duplicate mangled names, or accept ambiguous
-lookup ownership. Focused tests and all 117 selected mutations pass; the complete combined
-coverage refresh is pending. No production code, emitted format or architecture
-support claim changes in this batch.
+lookup ownership. All 117 selected mutation controls passed in 288.6 seconds.
+All 210 JavaExec tasks passed in 271.5 seconds, and all 146
+coverage-tool tests passed. The verified raw union adds one line and
+six branch outcomes. GhidraCxxProfile now measures 159/160 lines and
+118/124 branches. The full goal and hosted acceptance remain pending.
+No production code, emitted format or architecture support claim changes in this batch.
