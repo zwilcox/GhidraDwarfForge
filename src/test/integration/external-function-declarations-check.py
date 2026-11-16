@@ -1,5 +1,6 @@
 """Compiler, raw declaration DIE, immutable model and actual caller oracle."""
 from collections import Counter
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -39,7 +40,9 @@ if stage == 'labels':
     paths = [case / name for name in ('decl.reference', 'decl.stripped', 'libexternal.so')]
     paths += [repository / 'src/test/fixtures/external-function-declarations.c', module / 'lib/GhidraDwarfForge.jar',
         module / 'ghidra_scripts/GhidraDwarfForge.java']
+    paths += [repository / 'ghidra_scripts/GhidraDwarfForge.java']
     paths += [source / name for name in ('external-function-declarations-check.py', 'external-function-declarations-export.sh',
+        'external-function-declarations-export.py', 'integration_coverage.py',
         'external-function-declarations-gdb.py', 'ghidra_scripts/PrepareExternalDeclarations.java',
         'dynamic-composite-storage-check.py', 'dynamic-parameter-storage-check.py', 'check-dwarfdump.py',
         'retained-function-aliases-export.py')]
@@ -59,6 +62,7 @@ for name in ('decl.dbg', 'decl.dbg.c'):
     assert (case / name).read_bytes() == (case / ('first.' + name)).read_bytes()
 reports = [facts.facts.transcript(case / ('export-' + phase + '.log'), 'GhidraDwarfForge report: ') for phase in ('curate', 'reopen')]
 assert reports[0] == reports[1]
+assert all(report['counts']['functionsFailed'] == 0 for report in reports)
 strict = read('strict.log.check.json')
 assert strict['status'] == 'PASS' and strict['uncorroborated_errors'] == 0
 model_declarations = current['model']['functionDeclarations']
@@ -142,8 +146,27 @@ write('protected-after.json', after)
 assert protected == after
 for role, name in [('input', 'decl.stripped'), ('output', 'decl.dbg'), ('source', 'decl.dbg.c')]:
     assert reports[0]['artifacts'][role + 'Sha256'] == facts.facts.snapshot(case / name)['sha256']
+assert facts.facts.snapshot(module / 'ghidra_scripts/GhidraDwarfForge.java')['sha256'] == facts.facts.snapshot(
+    repository / 'ghidra_scripts/GhidraDwarfForge.java')['sha256']
+models = [hashlib.sha256(json.dumps({k: v for k, v in row.items() if k != 'phase'},
+    sort_keys=True).encode()).hexdigest() for row in (current, reopened)]
+declaration_dies = [{'name': facts.facts.die_name(row), 'attributes': sorted(row['attrs']),
+    'noReturn': row['attrs'].get('DW_AT_noreturn') == '1',
+    'children': [{'tag': child['tag'], 'name': facts.facts.die_name(child),
+        'attributes': sorted(child['attrs']), 'artificial': child['attrs'].get('DW_AT_artificial') == '1'}
+        for child in facts.children(dies, dies.index(row)) if child['tag'] is not None]}
+    for row in declarations]
+harness_hashes = {}
+for name, snapshot in protected.items():
+    path = Path(name)
+    if path.is_relative_to(repository) and path.relative_to(repository).parts[0] in ('src', 'ghidra_scripts'):
+        harness_hashes[str(path.relative_to(repository))] = snapshot['sha256']
 write('result.json', {'status': 'PASS', 'declarations': model_declarations, 'callOrigins': call_origins,
     'gdb': runs, 'strict': strict,
+    'declarationDIEs': declaration_dies, 'modelHashes': models, 'harnessSha256': harness_hashes,
+    'protected': protected, 'phaseReports': [{'phase': phase, 'functionsFailed': report['counts']['functionsFailed'],
+        'artifacts': report['artifacts']} for phase, report in zip(('curate', 'reopen'), reports)],
+    'compilerPrototype': {'returnBytes': 8, 'argumentBytes': [4], 'signed': True},
     'javaVersion': current['javaVersion'], 'protectedUnchanged': True,
     'scope': 'Declaration metadata only. GDB ignores unlocated declarations in compiler and Forge artifacts; real definition and runtime remain usable.'})
 print('external-function-declarations=PASS ' + str(case))

@@ -854,10 +854,41 @@ and from 162/163 to 163/163 executable lines. The JavaExec-only total is now
 These are JavaExec measurements; current combined coverage still awaits matching
 integration/Windows evidence.
 
-The next audit found an existing measurement gap: the external-declaration
-integration harness already checks variadic/no-return and aggregate-return
-declarations, strict validators, compiler/Forge GDB, deterministic reopen and
-input/model preservation, but invokes headless Ghidra without collection and is
-absent from the required coverage suites. Instrument that complete existing
-workflow before adding duplicate declaration fixtures. Other existing ABI,
-function-type and variable-flow suites should receive the same audit.
+## External-declaration integration measurement
+
+The existing external-declaration workflow now measures both analyzer JVMs:
+curation/export and read-only reopen/export. Its shell entry point delegates to
+a Python driver that preserves compilation, raw DWARF checks, independent
+validators, compiler/Forge GDB, deterministic output and protected-input checks.
+The driver bounds command time and log size. It completes the coverage receipt
+only after all behavioral checks pass. Both the measured and unmeasured paths
+pass locally against the corrected production JAR above; the cached installed
+extension is restored and its hashes verified after each run.
+
+Admission requires the two sessions, exact harness hashes, equal saved-model
+and output hashes, unchanged program database bytes, successful export reports,
+and independent compiler/Forge GDB observations. Only disclosed Ghidra index
+and journal backup changes are allowed. The three curated declarations must
+retain their formal/variadic/no-return/artificial-carrier inventory without
+invented runtime locations. Eight new metadata-rejection test methods bring the
+coverage-tool suite to 162 passing tests. These synthetic receipts test admission;
+they are not counted as exporter execution evidence. Workflow lint, shell syntax
+and whitespace checks pass. CI and hosted admission now require this workflow,
+bringing the Linux coverage suite inventory to 40.
+
+The two real sessions pass independent class/session/probe verification. A local
+union with the 210 JavaExec sessions at `3a49ce87` retains all 901 classes and 255
+sources: 24,603/29,786 lines (82.6%) and 18,786/25,878 branches (72.6%). This adds
+977 lines and 483 branch outcomes beyond that JavaExec baseline. In this partial
+union, `MinimalDwarfSidecarExporter` reaches 756/1,196 lines and 336/728 branches.
+Both outcomes of its declaration no-return, return-storage and variadic decisions
+are observed in the new headless sample.
+
+This is explicitly a partial local union, not the full combined acceptance
+report or a published badge. It uses only corrected-JAR execution data; no
+historical production version is mixed in. Evidence is retained under
+`.forge-work/scratch/coverage-expansion/external-declaration-verified/`, with
+separate measured and unmeasured logs. Critical-group targets, the complete
+hosted cohort, normal integration and main publication remain outstanding.
+Other existing ABI, function-type and variable-flow workflows still need the
+same measurement audit before adding duplicate fixtures.

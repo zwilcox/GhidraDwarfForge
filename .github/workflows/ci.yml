@@ -3364,7 +3364,7 @@ jobs:
               --require-suite call-site-packaged \
               --require-suite lexical-statics --require-suite lexical-statics-controls \
               --require-suite recovered-statics-positive --require-suite recovered-statics-controls \
-              --require-suite stack-control-flow --require-suite saved-inheritance
+              --require-suite stack-control-flow --require-suite saved-inheritance --require-suite external-declarations
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'
