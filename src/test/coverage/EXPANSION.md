@@ -6,6 +6,43 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Exception-frame encoding and LEB128 boundaries
+
+CONFIRMED: `OriginalFrameRangesSmoke` checks all 256 encoding bytes for each
+LSDA, personality and FDE-pointer role, in both byte orders, both pointer widths
+and both DWARF record widths: 6,144 cases. Scalar/application values follow
+[LSB 5.0, tables 10-5/10-6](https://refspecs.linuxfoundation.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic.pdf).
+Expected admission is explicit for this bounded reader: it skips supported
+personality/LSDA fields, resolves only supported absolute/PC-relative FDE pointers,
+and rejects aligned/reserved encodings. This is an extent inventory, not proof
+of personality resolution, LSDA contents, CFI correctness or runtime unwinding.
+
+Raw byte fixtures check every possible tenth LEB128 byte for signed and unsigned
+values in both byte orders (1,024 cases). They distinguish overflow, unterminated
+input and out-of-domain addresses, while accepting valid padded encodings and
+signed negative PC-relative offsets. Additional controls cover maximum addresses,
+negative sizes, relative/extent overflow, oversized augmentation lengths,
+non-ASCII/excessive augmentation strings and unsupported augmentation contexts.
+Cancellation is swept through a valid ten-byte scan; input bytes and fresh retry
+results remain unchanged. The full parser suite passes 18,882 checks.
+
+Three selected mutations are detected with a passing unchanged baseline in
+1.45 seconds: admitting an unsupported aligned pointer, dropping the tenth-byte
+overflow check and reading signed LEB128 as unsigned. The initial mutation run
+correctly refused to count an uncaught rejection of valid input as an assertion
+detection. The test now explicitly asserts that valid raw LEB frames are accepted;
+the final three-fault run passes without weakening the mutation harness.
+
+At `2576b7ea`, all 211 JavaExec tasks pass in 275.98 seconds, as do 53,432
+independent DWARF-expression vectors, all 197 coverage-tool tests and actionlint.
+Production code and the 255-source / 901-class denominator are unchanged.
+JavaExec covers 23,794/29,786 lines and 18,530/25,878 branches. The verified
+1,268-session diagnostic union covers 28,437/29,786 lines (95.5%) and
+21,013/25,878 branches (81.2%), adding one line and 31 branch outcomes.
+Binary/location branches reach 15,170/18,726 (81.0%); file operations remain
+3,471/4,250 (81.7%). The remaining 90% gaps are 1,684 and 354 branch outcomes.
+Current hosted acceptance and actual-main publication remain incomplete.
+
 ## Decoded MIPS stack arithmetic and original ELF object identities
 
 CONFIRMED: `TruncatedStackDepthSmoke` now covers 17 middle instructions in each
