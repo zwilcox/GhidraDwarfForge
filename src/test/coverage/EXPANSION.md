@@ -6,6 +6,38 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Backup readback and cleanup ownership controls
+
+CONFIRMED: `AttachmentFileStoreSmoke` now passes 171 checks, retaining its four
+abrupt-process-exit controls. New real filesystem operations change source size
+after observation, corrupt or replace a copied stage, replace a staging directory,
+replace a stage while applying metadata, and replace a published backup with an
+independent byte/metadata-identical file. Rejected copied stages must not reach
+the metadata adapter. Independent files with equal contents must not impersonate
+the owned stage.
+
+After publication, replacement of the staging directory (empty or occupied) must
+produce a reconciliation-required failure, retain the complete backup and preserve
+the foreign directory. Explicit adapter I/O failures before capturing directory or
+file identity retain the unverified path and preserve the original exception with
+cleanup diagnostics. Metadata changes during observation must also be refused.
+All controls retain the source/concurrent bytes appropriate to that scenario and
+check whether publication occurred. The fixture uses actual Linux files and atomic
+renames with its existing test-only metadata contract; it does not substitute for
+the separate production Linux/Windows metadata evidence.
+
+The unchanged baseline and four selected mutations pass in 4.8 seconds. Ignoring
+observation changes accepts an invalid snapshot; ignoring copied-stage verification
+allows an unwanted metadata write; ignoring metadata-stage replacement publishes
+an unowned file; ignoring published identity reports success for a replacement.
+Each fault causes the corresponding Java assertion failure. The configuration now
+contains 174 selected faults; the preceding full165 replay and subsequent selected
+batches are separate evidence until current-head CI runs the full configuration.
+
+Evidence: `.forge-work/scratch/coverage-expansion/backup-readback-focused-complete.log`
+and `backup-readback-selected-mutations/result.json`. No production bytecode,
+coverage threshold, inventory classification or host-support claim changed.
+
 ## Retained frame inventory identity checks
 
 CONFIRMED: `OriginalFrameSourcesSmoke` now calls the inventoried debug-frame reader
