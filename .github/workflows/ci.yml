@@ -713,6 +713,9 @@ jobs:
             python3 -B src/test/integration/debuglink-basename.py \
                 --jar "$PWD/build/libs/GhidraDwarfForge.jar" \
                 --results "$PWD/build/test-results/extension-build/debuglink-basename"
+            ./gradlew --no-daemon prepareIntegrationCoverage
+            export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
+            export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/host-integration-coverage/collections"
             python3 -B src/test/integration/linux-file-metadata.py \
                 --jar "$PWD/build/libs/GhidraDwarfForge.jar" --ghidra "$GHIDRA_INSTALL_DIR" \
                 --results "$PWD/build/test-results/extension-build/linux-file-metadata"
@@ -743,6 +746,21 @@ jobs:
               --xml build/test-coverage/coverage.xml --tasks build/test-coverage/tasks \
               --output build/test-coverage/public --repository "$SOURCE_REPOSITORY" \
               --commit "$SOURCE_COMMIT" --run-id "$SOURCE_RUN"
+          python3 -B src/test/coverage/integration-report.py \
+              --jar build/libs/GhidraDwarfForge.jar \
+              --collections build/host-integration-coverage/collections --output build/host-integration-coverage/report \
+              --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --sources src/main/java --commit "$SOURCE_COMMIT" \
+              --require-suite linux-file-metadata --require-suite linux-directory-sync \
+              --require-suite linux-metadata-visibility
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: integration-java-coverage-linux-host
+          path: build/host-integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
 
       - uses: actions/upload-artifact@v7
         with:

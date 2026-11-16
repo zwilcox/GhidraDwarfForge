@@ -2,12 +2,14 @@
 """Isolate the production directory calls and retain an independent C oracle."""
 
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 import os
 from pathlib import Path
 import shutil
 import subprocess
+from integration_coverage import Collection
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -33,18 +35,21 @@ def main():
         shutil.copyfile(path, provenance / path.name)
         assert hashlib.sha256((provenance / path.name).read_bytes()).hexdigest() == digests[str(path)]
     (provenance / 'origin.json').write_text(json.dumps(digests, indent=4) + '\n')
+    coverage = Collection('linux-directory-sync', provenance / args.jar.name, 'native-java',
+        test_classes=('ghidradwarfforge.output.LinuxDirectorySyncSmoke',))
     commands = []
 
     def run(label, command, version=False):
         command = list(map(str, command))
-        result = subprocess.run(command, capture_output=True, timeout=45)
-        (root / (label + '.stdout')).write_bytes(result.stdout)
-        (root / (label + '.stderr')).write_bytes(result.stderr)
-        commands.append({'label': label, 'argv': command, 'exit': result.returncode})
-        (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        assert result.returncode == 0, (label, result.stderr)
-        assert version or not result.stderr, (label, result.stderr)
-        return result
+        with coverage.session(command, label) if label == 'probe' else nullcontext(command) as measured:
+            result = subprocess.run(measured, capture_output=True, timeout=45)
+            (root / (label + '.stdout')).write_bytes(result.stdout)
+            (root / (label + '.stderr')).write_bytes(result.stderr)
+            commands.append({'label': label, 'argv': command, 'executedCommand': measured, 'exit': result.returncode})
+            (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
+            assert result.returncode == 0, (label, result.stderr)
+            assert version or not result.stderr, (label, result.stderr)
+            return result
 
     observer = root / 'native-contract'
     run('compile-native', ['cc', '-std=c11', '-Wall', '-Wextra', '-Werror',
@@ -66,6 +71,7 @@ def main():
         'observed': json.loads((root / 'owned/java.json').read_text()),
         'checks': (root / 'owned/result.txt').read_text().strip(),
         'scope': 'native directory/mount identity and fsync; not filesystem admission or power-loss testing'}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('linux-directory-sync-harness=PASS')
 
 

@@ -2,6 +2,7 @@
 """Isolated Java21 visibility lifecycle tests; optional explicit sudo on owned fixtures."""
 
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 import os
@@ -9,6 +10,7 @@ from pathlib import Path
 import shutil
 import stat
 import subprocess
+from integration_coverage import Collection
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -41,17 +43,27 @@ def main():
         shutil.copyfile(path, provenance / path.name)
         assert hashlib.sha256((provenance / path.name).read_bytes()).hexdigest() == hashes[str(path)]
     (provenance / 'origin.json').write_text(json.dumps(hashes, indent=4) + '\n')
+    probe_names = tuple('ghidradwarfforge.output.' + name for name in
+        ('LinuxMetadataVisibilitySmoke', 'LinuxAttachmentMountSmoke', 'LinuxAttachmentHostSmoke'))
+    coverage = Collection('linux-metadata-visibility', provenance / args.jar.name, 'native-java',
+        test_classes=probe_names)
     commands = []
 
     def run(label, command):
         command = list(map(str, command))
-        outcome = subprocess.run(command, capture_output=True, timeout=90)
-        (results / f'{label}.stdout').write_bytes(outcome.stdout)
-        (results / f'{label}.stderr').write_bytes(outcome.stderr)
-        commands.append({'label': label, 'argv': command, 'exit': outcome.returncode})
-        (results / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        assert outcome.returncode == 0, (label, outcome.stderr.decode(errors='replace'))
-        return outcome
+        # Preserve the explicit privileged mode; inject only into its actual JVM.
+        sudo = command[:2] if command[:2] == ['sudo', '-n'] else []
+        invocation = command[len(sudo):]
+        session = coverage.session(invocation, label) if any(name in invocation for name in probe_names) else nullcontext(invocation)
+        with session as measured:
+            executed = sudo + measured
+            outcome = subprocess.run(executed, capture_output=True, timeout=90)
+            (results / f'{label}.stdout').write_bytes(outcome.stdout)
+            (results / f'{label}.stderr').write_bytes(outcome.stderr)
+            commands.append({'label': label, 'argv': command, 'executedCommand': executed, 'exit': outcome.returncode})
+            (results / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
+            assert outcome.returncode == 0, (label, outcome.stderr.decode(errors='replace'))
+            return outcome
 
     run('compile-contract', ['cc', '-std=c11', '-Wall', '-Wextra', '-Werror',
                              provenance / contract.name, '-o', results / 'contract'])
@@ -98,9 +110,11 @@ def main():
         (results / 'host-independent.json').write_text(json.dumps(observed, indent=4) + '\n')
     for path in inputs:
         assert hashlib.sha256(path.read_bytes()).hexdigest() == hashes[str(path)]
-    result = {'unprivileged': 'PASS', 'privileged': 'PASS' if args.privileged else 'NOT_RUN',
+    result = {'status': 'PASS_LINUX_METADATA_VISIBILITY',
+              'unprivileged': 'PASS', 'privileged': 'PASS' if args.privileged else 'NOT_RUN',
               'scope': 'isolated session; not full host or public attachment acceptance'}
     (results / 'result.json').write_text(json.dumps(result, indent=4) + '\n')
+    coverage.finish(results / 'result.json')
     print(json.dumps(result))
 
 
