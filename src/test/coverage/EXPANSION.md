@@ -6,6 +6,31 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Straight-line local ownership boundaries
+
+CONFIRMED focused validation: `LaterLocalOwnershipSmoke` extends the existing
+later-register-local task using actual decoded x86-64/AArch64 ProgramDB objects
+and 32/64-bit locals. Every physical register byte conflicts with a second saved
+owner, including bytes outside a narrower local; immediately adjacent bytes
+must preserve the original proof. Separate stack objects and unassigned locals
+cannot claim register ownership. A two-register composite whose second piece
+overlaps must reject, and saved invalid storage must suppress the proof.
+
+Unrelated omission reasons and already-proven locations cannot be replaced by
+this fallback. A discontiguous body remains outside its straight-line contract.
+After each reversible ownership change, the original exact intervals must return;
+the proof leaves machine bytes, function body and program modification count
+unchanged. No fake instruction graph or impossible variable-storage object is
+used. Ghidra rejected the first attempted compound fixture's unnamed byte
+varnodes; the final fixture uses two actual named registers of the required width.
+
+Focused later/defined-local tasks pass. All six selected ownership mutants are
+detected (17.954 seconds), including the three new straight-line mutations that
+ignore overlap, confuse adjacency and ignore an invalid saved owner. Production
+code is unchanged. Evidence under the bounded coverage workspace:
+`later-local-focused-valid-pieces.log`, `later-local-selected-mutations/` and
+`later-local-mutations.log`. Full JavaExec measurement follows separately.
+
 ## Qualified types and scalar encodings
 
 CONFIRMED pilot: `qualified-type-producer.py` compiles a tiny Linux x86-64 C11

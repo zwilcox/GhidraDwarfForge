@@ -190,6 +190,7 @@ ARM_MAPPING_MUTANTS = [
 ]
 LOCAL_OWNERSHIP = "ghidradwarfforge/RegisterDefinitionFlow.java"
 LOCAL_OWNERSHIP_TEST = "ghidradwarfforge.LocalDefinitionFlowSmoke"
+LOCAL_PREFIX_TEST = "ghidradwarfforge.LaterRegisterLocalSmoke"
 LOCAL_OWNERSHIP_MUTANTS = [
     ("local-definition-ignores-curated-provenance", LOCAL_OWNERSHIP, LOCAL_OWNERSHIP_TEST,
      'variable.getSource() != SourceType.USER_DEFINED ||', ''),
@@ -199,6 +200,17 @@ LOCAL_OWNERSHIP_MUTANTS = [
     ("local-definition-confuses-adjacent-register", LOCAL_OWNERSHIP, LOCAL_OWNERSHIP_TEST,
      'node.getOffset() < Math.addExact(base.getOffset(), base.getMinimumByteSize())',
      'node.getOffset() <= Math.addExact(base.getOffset(), base.getMinimumByteSize())'),
+    ("local-prefix-ignores-overlapping-register-identity", "ghidradwarfforge/GhidraVariableStorage.java",
+     LOCAL_PREFIX_TEST,
+     'if (node.getAddress().getAddressSpace().equals(base.getAddress().getAddressSpace()) &&',
+     'if (false && node.getAddress().getAddressSpace().equals(base.getAddress().getAddressSpace()) &&'),
+    ("local-prefix-confuses-adjacent-register", "ghidradwarfforge/GhidraVariableStorage.java",
+     LOCAL_PREFIX_TEST,
+     'node.getOffset() < Math.addExact(base.getOffset(), base.getMinimumByteSize())',
+     'node.getOffset() <= Math.addExact(base.getOffset(), base.getMinimumByteSize())'),
+    ("local-prefix-ignores-invalid-saved-owner", "ghidradwarfforge/GhidraVariableStorage.java",
+     LOCAL_PREFIX_TEST,
+     'if (!otherStorage.isValid()) {', 'if (false) {'),
 ]
 PUBLICATION_TIME_MUTANTS = [
     ("publication-loses-source-freshness", PUBLISH,
@@ -803,7 +815,7 @@ def main():
             selected_dependencies = dependencies if test in (
                 PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
-                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, MIXED_PREFIX_TEST, BACKUP_READBACK_TEST, REPORT_TEXT_TEST, BUILD_ID_HELPER_TEST, LINUX_METADATA_TEST, LINUX_APPLICATION_TEST, LINUX_MOUNT_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, ATTACHMENT_PREVIEW_TEST) else []
+                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, MIXED_PREFIX_TEST, BACKUP_READBACK_TEST, REPORT_TEXT_TEST, BUILD_ID_HELPER_TEST, LINUX_METADATA_TEST, LINUX_APPLICATION_TEST, LINUX_MOUNT_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST, ATTACHMENT_PREVIEW_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
@@ -824,7 +836,7 @@ def main():
             if compiled.returncode:
                 raise AssertionError(f"{label}: compilation failed, not a detected mutant\n{compiled.stdout}")
             classpath = os.pathsep.join(map(str, [root, classes, tests, *selected_dependencies]))
-            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, MIXED_PREFIX_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST) else []
+            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, MIXED_PREFIX_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST) else []
             if test == LINUX_MOUNT_TEST:
                 test_args.append("--parser-only")
             if test == BOUNDED_SWITCH_TEST:
