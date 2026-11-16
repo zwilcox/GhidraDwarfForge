@@ -6,6 +6,54 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Complete hosted origins in the public renderer
+
+CONFIRMED: CI run [43888754254](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43888754254)
+passed every architecture/host lane, then failed while rendering the combined
+report. The collector required the separate `linux_aarch64` origin, but the
+renderer still expected the former five-origin inventory. The renderer now
+requires all six origins, retaining exact commit/run/session checks. This does
+not relax coverage targets or make a missing lane acceptable.
+
+The collector-to-renderer contract test failed before the fix with the same
+`mixed or incomplete origins` error. After the fix, all 206 coverage-tool tests
+and actionlint pass. Each required origin is individually removed, duplicated,
+replaced or assigned a different commit/run/session count in negative controls.
+
+The actual CI report (1,094 sessions at merge commit `f1f3d0b8`) also renders
+successfully using an exact-commit temporary checkout. Publication remains
+rejected because critical targets are unmet. This check validates the retained
+CI report and source history; it does not independently download/replay all raw
+CI probes or publish anything. The temporary checkout was verified clean and
+removed. Evidence: `ci-43888754254-combined/render-result.json`,
+`aarch64-origin-regression-before.log`, `aarch64-origin-regression-after.log`
+and `aarch64-origin-actual-report-verified.log` in the bounded coverage workspace.
+
+## Byte preservation with overlapping untracked operand bits
+
+CONFIRMED at `2cd66867`: 80 additional raw-p-code cases check both operand
+orders, four input bytes and five byte placements against independent BigInteger
+arithmetic. OR preserves the tracked byte despite overlap elsewhere. Higher-byte
+ADD omissions have concrete carry counterexamples. Least-significant-byte ADD
+is concretely safe here but remains outside the current disjoint-operand proof;
+the test records that conservative omission without claiming value corruption.
+
+The register-byte suite passes 642,363 assertions. All eight selected stack-value
+mutations are detected (44.015 seconds), including losing either operand's byte
+because unrelated bits overlap. All 211 JavaExec tasks pass (277.125 seconds),
+as do 53,432 independent DWARF vectors. Baseline49 raw verification retains
+255 production sources / 901 production classes; 619 test classes include the
+new Windows-only probe. JavaExec measures 23,814 lines and 18,616 branches.
+
+The verified 1,271-session diagnostic union adds two branch outcomes:
+28,458/29,786 lines (95.5%), 21,119/25,878 branches (81.6%). Binary/location
+branches are 15,243/18,726 (81.4%); file-operation branches remain 3,504/4,250
+(82.4%). Critical branch gaps remain 1,611 and 321 respectively. Production
+bytecode is unchanged. This is not current hosted acceptance or main publication.
+Evidence: `javaexec-baseline-49/`, `overlapping-value-focused.log`,
+`overlapping-value-selected-mutations/`, `overlapping-value-javaexec-checked/`,
+`overlapping-value-union-verified/` and `overlapping-value-verification.log`.
+
 ## Windows native metadata failure controls
 
 PRESENT, UNVERIFIED on Windows: `WindowsMetadataFailureControls` adds 40

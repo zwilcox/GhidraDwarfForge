@@ -23,6 +23,7 @@ def load(name, path):
 render = load('combined_render_test', ROOT / 'support/combined-coverage-report.py')
 publish = load('combined_publish_test', ROOT / 'support/publish-test-coverage.py')
 legacy = load('legacy_render_test', ROOT / 'support/test-coverage-report.py')
+hosted = load('hosted_render_contract_test', ROOT / 'src/test/coverage/hosted-combined-report.py')
 REPOSITORY = 'zwilcox/GhidraDwarfForge'
 
 
@@ -59,10 +60,10 @@ class CombinedPublication(unittest.TestCase):
             self.xml(layer, complete=layer == 'combined')
             layers[layer], _ = render.read_xml(self.directory / 'xml' / (layer + '.xml'))
         self.record = {'schema': 1, 'status': 'VERIFIED_HOSTED_MEASUREMENT', 'nativeCMeasured': False,
-            'cohort': {'commit': self.commit, 'run': '7'}, 'sessions': 5,
+            'cohort': {'commit': self.commit, 'run': '7'}, 'sessions': 6,
             'productionJarSha256': 'a' * 64, 'inventorySha256': render.policy.javaexec.digest(self.inventory),
             'origins': [{'kind': kind, 'commit': self.commit, 'run': '7', 'sessions': 1}
-                for kind in ('javaexec', 'linux', 'linux_host', 'windows', 'firmware')], 'layers': layers}
+                for kind in ('javaexec', 'linux', 'linux_aarch64', 'linux_host', 'windows', 'firmware')], 'layers': layers}
         self.reassess()
 
     def git(self, *arguments):
@@ -122,6 +123,36 @@ class CombinedPublication(unittest.TestCase):
         self.assertIn('50.0% (3/6)', files['combined/README.md'])
         self.assertIn('/blob/' + self.commit, files['combined/combined.md'])
         self.assertIn('exception', files['combined/README.md'])
+
+    def test_hosted_origin_inventory_matches_collection(self):
+        # Exercise the contract between the collector and renderer. Their two
+        # independently maintained inventories previously disagreed on AArch64.
+        kinds = ['javaexec', *hosted.REQUIRED]
+        self.record['origins'] = [{'kind': kind, 'commit': self.commit, 'run': '7', 'sessions': 1}
+            for kind in kinds]
+        self.record['sessions'] = len(kinds)
+        self.save()
+        result = self.generate()
+        self.assertTrue(result['publicationEligible'])
+        self.assertEqual({row['kind'] for row in result['origins']}, set(kinds))
+
+    def test_every_required_origin_remains_mandatory(self):
+        originals = self.record['origins'][:]
+        for removed in originals:
+            self.record['origins'] = [row for row in originals if row is not removed]
+            self.record['sessions'] = len(self.record['origins'])
+            with self.subTest(kind=removed['kind']), self.assertRaisesRegex(ValueError, 'incomplete origins'):
+                self.verify()
+        self.record['origins'] = originals
+        self.record['sessions'] = len(originals)
+        for index, origin in enumerate(originals):
+            for key, value in [('run', '8'), ('commit', 'b' * 40), ('kind', 'unrecognized'),
+                    ('kind', originals[(index + 1) % len(originals)]['kind']), ('sessions', 2)]:
+                self.record['origins'] = [dict(row) for row in originals]
+                self.record['origins'][index][key] = value
+                with self.subTest(kind=origin['kind'], key=key, value=value):
+                    with self.assertRaisesRegex(ValueError, 'incomplete origins'):
+                        self.verify()
 
     def test_local_preview_cannot_publish(self):
         self.record['status'] = 'LOCAL_BASELINE'
