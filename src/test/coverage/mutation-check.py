@@ -86,6 +86,18 @@ CXX_PROFILE_MUTANTS = [
      "private static final int MAX_RECORDS = 4096;", "private static final int MAX_RECORDS = 4097;"),
     ("cxx-profile-accepts-excess-saved-text", CXX_PROFILE, CXX_PROFILE_TEST,
      "chars > 16L * 1024 * 1024", "chars > 17L * 1024 * 1024"),
+    ("cxx-table-ignores-lower-overlap", CXX_PROFILE, CXX_PROFILE_TEST,
+     "lower != null && lower.getValue().compareTo(start) > 0", "false"),
+    ("cxx-table-ignores-upper-overlap", CXX_PROFILE, CXX_PROFILE_TEST,
+     "upper != null && upper.getKey().compareTo(end) < 0", "false"),
+    ("cxx-table-rejects-touching-lower-boundary", CXX_PROFILE, CXX_PROFILE_TEST,
+     "lower.getValue().compareTo(start) > 0", "lower.getValue().compareTo(start) >= 0"),
+    ("cxx-table-rejects-touching-upper-boundary", CXX_PROFILE, CXX_PROFILE_TEST,
+     "upper.getKey().compareTo(end) < 0", "upper.getKey().compareTo(end) <= 0"),
+    ("cxx-table-allows-duplicate-mangled-name", CXX_PROFILE, CXX_PROFILE_TEST,
+     "!mangled.add(table.mangledName())", "false"),
+    ("cxx-table-allows-ambiguous-lookup-owner", CXX_PROFILE, CXX_PROFILE_TEST,
+     "prior != null && prior != table.classId()", "false"),
 ]
 
 CALL_MEMORY_MUTANTS = [

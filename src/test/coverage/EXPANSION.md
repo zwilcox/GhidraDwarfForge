@@ -558,3 +558,32 @@ JavaExec tasks passed in 270.3 seconds; all 146 coverage-tool tests passed. The 
 GhidraCxxProfile now covers 158/160 lines and 112/124 branch outcomes.
 Hosted acceptance and the full critical targets remain pending.
 Production code and the coverage denominator are unchanged.
+
+## Saved vtable range and lookup conflicts
+
+`CxxVtableConflictSmoke`, invoked by `cxxProfileSmoke`, adds 150 assertions on
+real x86-64 and AArch64 ProgramDB instances with original FileBytes-backed memory.
+An explicit saved class/base graph admits the baseline table. Its original
+virtual address and file offset are checked independently against the fixture.
+
+The controller rejects a second table overlapping from either side, an identical
+extent under another label, a duplicate mangled name at a disjoint address, and
+two different classes with the same debugger lookup name. A passive monitor
+observes that both the selected class evidence and new table record were written
+before the rejection. Exact record comparisons prove rollback, including restored
+class evidence and the original table witness; all memory and independent tail
+bytes remain unchanged.
+
+Positive controls accept tables ending exactly at the baseline start or starting
+exactly at its end, and disjoint tables. Ghidra's demangler accepts both
+`_ZTV5Child` and `_ZTVN5ChildE` as `vtable for Child`: distinct spellings can share
+a lookup name only when their saved class identity agrees. Successful previews
+restore the original configuration; commits retain exact identities; filtered
+inventory includes both saved tables without mutating the program. Repeat apply
+is deterministic and explicit removal restores the baseline exactly.
+
+Six new selected mutations omit either overlap test, change either comparison to
+reject touching ranges, accept duplicate mangled names, or accept ambiguous
+lookup ownership. Focused tests and all 117 selected mutations pass; the complete combined
+coverage refresh is pending. No production code, emitted format or architecture
+support claim changes in this batch.
