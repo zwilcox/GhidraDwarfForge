@@ -133,6 +133,9 @@ def report(args):
         args.commit, args.output / 'xml/combined.xml', files.read(args.inventory)['targets']['changedCode'])
     result['targetsMet'] = targets_met(result) and result['changedCode']['targetsMet']
     files.save(args.output / 'summary.json', result)
+    renderer = combined.module('combined_public_report', HERE.parents[2] / 'support/combined-coverage-report.py')
+    renderer.generate(args.output, args.output / 'public', args.inventory, args.sources,
+        args.repository, args.commit, int(args.run_id))
     # Preserve diagnostics when targets fail. An unmet goal is never a passing gate.
     print(json.dumps({'status': 'COVERAGE_TARGETS_MET' if result['targetsMet'] else 'COVERAGE_TARGETS_UNMET'}))
     return 0 if result['targetsMet'] else 1
@@ -146,6 +149,7 @@ def main():
     parser.add_argument('--commit', required=True)
     parser.add_argument('--base-commit', required=True)
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--repository', required=True)
     raise SystemExit(report(parser.parse_args()))
 
 
