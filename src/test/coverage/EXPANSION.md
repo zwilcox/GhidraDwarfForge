@@ -6,6 +6,26 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current-bytecode instruction and native source context
+
+CONFIRMED: five headless sessions rerun the existing instruction/source-context
+pipeline against the same current production JAR. Saved instruction fixtures cover
+split, truncated, overridden, unmapped, uninitialized and undecoded observations,
+with cancellation at every checked point and identical independent readbacks.
+A real instruction-limit decompiler failure exercises native diagnostic collection.
+Assembly/p-code modes and trigger/function/export limits preserve executable line
+mappings, function inventory and omission diagnostics. Fresh-process source
+composition is byte-identical. The cached extension JAR is restored afterward.
+
+Raw collection verification adds 328 lines and 202 branch outcomes. The diagnostic
+575-session union covers 27,179/29,790 lines (91.2%) and 20,575/25,884 branches
+(79.5%). Binary/location counters are 17,870/19,201 lines and 14,977/18,732
+branches; file/validation counters remain 6,182/6,677 and 3,539/4,250. This is
+component evidence, not a new production-export or cross-architecture claim.
+The broader hosted cohort and critical-group targets remain incomplete.
+Evidence: `context-current-2f181/{results,provenance,collections,verified,union}/`
+and `context-current-2f181-verification.log` in the bounded coverage workspace.
+
 ## Current-bytecode frame encoder and composition verification
 
 CONFIRMED: the existing CFI integration harnesses now have verified execution
