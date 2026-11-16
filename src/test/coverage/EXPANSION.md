@@ -31,16 +31,16 @@ branches (67.0%). That badge's scope remains unchanged.
 
 The latest complete JavaExec run executed all 210 tasks at
 `1f0de744c4cb533b9344d0db3c3a91656360ab07` in 266.4 seconds. The combined local report
-contains 965 sessions with the full unchanged denominator:
+contains 1,033 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.8% | 79.3% | 85% / 80% |
-| Binary and location correctness | 95.0% | 79.2% | 95% / 90% |
+| All production Java | 94.9% | 79.5% | 85% / 80% |
+| Binary and location correctness | 95.2% | 79.4% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
-| Remaining production | 95.1% | 81.5% | Included in overall |
+| Remaining production | 95.1% | 81.6% | Included in overall |
 
-The binary/location line count is 18,238/19,193 meeting its exact 95%
+The binary/location line count is 18,270/19,193, meeting its exact 95%
 line gate. Both critical branch targets and the file-transaction line target
 remain unmet, as does the overall 80% branch target.
 
@@ -48,7 +48,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-call-memory-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-saved-inheritance-measurement-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -509,5 +509,16 @@ compiler/reference and current observations remain in the receipts.
 The normal hosted gate now requires 39 suites, including this complete cohort.
 All 146 coverage-tool tests and actionlint passed; corruption tests reject lost
 sessions, omitted profiles, modified inputs/projects/outputs, incomplete metadata,
-changed values/layouts/thunks and lost debugger-call restrictions. The new raw
-collections still need class/probe union verification before counters are updated.
+changed values/layouts/thunks and lost debugger-call restrictions. The raw
+class/probe union passed with all 901 production classes and 255 source files.
+These existing integration tests add 33 covered lines and 42 branch outcomes to
+the combined measurement. `GhidraCxxProfile` now measures 155/160 lines and
+90/124 branch outcomes. The JavaExec baseline retains its actual `1f0de744`
+identity; the new measurement records checkout `54f4285e` and harness snapshot
+`2de1c651`. An initial local union attempt was correctly rejected for assigning
+the newer commit to the older JavaExec receipts; the retry preserves all original
+identities. This remains a mixed-run local report, not hosted acceptance.
+
+After verification, 28 task-owned variant projects were retired with file hashes
+recorded, reclaiming 37,044,224 physical bytes. Six selected positive projects,
+all probes/oracles, debugger logs and ELF/source artifacts remain available.
