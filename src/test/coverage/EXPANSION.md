@@ -6,6 +6,34 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current-bytecode saved annotations and failure isolation
+
+CONFIRMED: the complete existing x86-64 non-PIE annotation pipeline passes with
+the current production JAR. Independent saved-program reopens retain all 50
+comments and 14 equates. Default and source-context exports retain 35 synthetic
+lookup constants, preserve executable line mappings, pass GNU/LLVM/strict
+validation and GDB source/value checks, and produce identical repeated artifacts.
+Seven default and eleven context cancellation stages preserve the previous
+outputs and permit recovery. Four invalid/over-budget annotation requests in
+each mode also preserve those artifacts.
+
+Real native decompilation failures are checked in all-failed, mixed and empty
+selection cases, including single/multiple source files. Failed functions acquire
+no invented signature, local or executable source row. Mixed exports retain
+usable successful functions; single/multiple source artifacts compare
+semantically, and GDB verifies their behavior. Separate constant-width and
+retained C++ name checks pass but their child JVMs are not instrumented by these
+existing harnesses and are not credited as measured coverage.
+
+All 24 measured sessions in six collections pass raw-bytecode verification.
+The 599-session diagnostic union reaches 27,553/29,790 lines (92.5%) and
+20,829/25,884 branches (80.5%), meeting the overall numerical targets locally.
+Binary/location remains 17,930/19,201 lines (93.4%) and 15,012/18,732 branches
+(80.1%); file/validation remains 92.6% / 83.3%. Each critical group's 95% / 90%
+target, complete hosted acceptance, protected integration and actual-main
+publication remain outstanding. Evidence: `annotations-current-2f181/` and
+`annotations-current-2f181-verification.log` in the bounded workspace.
+
 ## Current-bytecode instruction and native source context
 
 CONFIRMED: five headless sessions rerun the existing instruction/source-context
