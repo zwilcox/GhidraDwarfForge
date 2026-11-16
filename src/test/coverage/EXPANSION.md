@@ -6,6 +6,44 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Decoded MIPS stack arithmetic and original ELF object identities
+
+CONFIRMED: `TruncatedStackDepthSmoke` now covers 17 middle instructions in each
+MIPS byte order, with both the declared 32-bit address space and the ordinary
+64-bit space. Twelve new encodings cover word/wide subtraction, commuted addition,
+copies, reversed subtraction and shifts. Pinned Ghidra decoding was inspected
+before defining the cases. Supported identities are compared with independent
+low-address ISA arithmetic at carry/sign boundaries; unproved depths remain
+unknown in the public profile. Zero-bit shifts are explicitly conservative
+omissions, not claims that the concrete address changed.
+
+Real function bodies with holes or instructions before the entry are rejected
+by the bounded proof. Cancellation is swept across every observed checkpoint in
+both byte orders; the exception identity, analyzed program and subsequent result
+are preserved. The suite passes 996 checks. Two selected mutations are detected
+in 8.16 seconds: commuting subtraction and ignoring the big-endian low-word
+offset. These tests do not establish a new ABI or debugger support profile.
+
+`LocalSymbolMergeSmoke` adds 48 original-object identity fixtures across ELF32,
+ELF64 and both byte orders, plus long-name cancellation controls in all four
+formats. They compare independently encoded symbol records with exact expected
+matches/conflicts/absences, exercise repeated names and extended section indexes,
+and retain an unsigned ELF32 address above `INT_MAX`. Earlier conflicting identities
+must survive later matching entries. Reads and cancelled reads preserve input
+bytes and create no artifacts; fresh retries reproduce the expected map.
+The whole suite passes 2,288 checks. Two selected mutations are detected in
+2.86 seconds: forgetting an earlier conflict and sign-extending an ELF32 address.
+
+At `05487719`, all 211 JavaExec tasks pass in 276.50 seconds, as do 53,432
+independent DWARF-expression vectors, all 197 coverage-tool tests and actionlint.
+The production JAR and 255-source / 901-class denominator are unchanged.
+JavaExec covers 23,792/29,786 lines and 18,498/25,878 branches. The verified
+1,268-session diagnostic union covers 28,436/29,786 lines (95.5%) and
+20,982/25,878 branches (81.1%), adding one line and 17 branch outcomes.
+Binary/location branches reach 15,139/18,726 (80.8%); file operations remain
+3,471/4,250 (81.7%). Their remaining 90% gaps are 1,715 and 354 branch outcomes.
+Current hosted acceptance and actual-main publication remain incomplete.
+
 ## Stack-spill pointer expressions
 
 CONFIRMED: `StackSpillSmoke` adds 48 raw-pcode expression cases across real x86-64
