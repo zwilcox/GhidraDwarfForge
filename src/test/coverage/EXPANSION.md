@@ -6,6 +6,41 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Saved register ownership and deterministic source timestamps
+
+CONFIRMED at `108311ab`: real x86-64/AArch64 ProgramDB fixtures with 4/8-byte
+locals reject unsaved/noncurated identities, unrelated omission reasons,
+unmapped registers and entry-time definitions. Saved byte aliases inside the
+physical base register invalidate a lifetime, including a high byte outside a
+32-bit alias; immediately adjacent bytes, separate stack storage and unassigned
+variables preserve the existing proof. Invalid saved storage is rejected.
+Restored controls preserve instructions, function body and modification count.
+The intentionally bad row remains until its owned program is released: deleting
+it in the pinned Ghidra version left a deleted row in the function's cached list.
+This was a fixture-cleanup finding, not a passing restoration assertion.
+
+Focused local-definition tests pass 508 checks. Publication checks set explicit
+older/equal/newer sidecar times and verify exact source/loader times, unchanged
+input/output bytes and no retained temporary files. Four selected provenance,
+overlap, adjacency and source-freshness mutations are caught (9.850 seconds).
+Initial constructor/provenance/cleanup development failures are not counted as
+passing evidence. Final focused and full runs pass.
+
+All 211 JavaExec tasks pass in 276.056 seconds, 53,432 independent DWARF vectors
+pass, and 197 coverage-tool checks plus actionlint pass. Baseline45 verifies
+255 sources / 901 production classes / 615 test classes; JavaExec measures
+23,802 lines / 18,560 branches. The verified 1,271-session diagnostic union is
+28,446/29,786 lines (95.5%) and 21,064/25,878 branches (81.4%). Binary/location
+branches increase to 15,200/18,726 (81.2%), adding 16 outcomes and eight lines;
+file-operation branches remain 3,492/4,250 (82.2%). RegisterDefinitionFlow itself
+has 205/263 branches and 170/172 lines. No production bytecode changed.
+
+Evidence: `javaexec-baseline-45/`, `local-ownership-focused-all.log`,
+`local-ownership-selected-mutations/`, `local-ownership-javaexec-checked/`,
+`local-ownership-union-verified/`, `local-ownership-baseline-result.json` and
+`local-ownership-verification.log`. This is not current hosted/main acceptance;
+critical 90% branch targets and issue #209 remain incomplete.
+
 ## Linux mount admission and cancellation
 
 CONFIRMED at `49a7a0aa`: `LinuxAttachmentMountSmoke` adds synthetic parser cases
