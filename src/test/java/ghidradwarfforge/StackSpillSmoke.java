@@ -2,6 +2,7 @@ package ghidradwarfforge;
 
 import java.io.File;
 import java.lang.reflect.Proxy;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
@@ -106,6 +107,7 @@ public final class StackSpillSmoke {
                 Instruction spill = instructions.get(spillIndex);
                 PcodeOp store = Arrays.stream(spill.getPcode()).filter(op -> op.getOpcode() == PcodeOp.STORE)
                     .findFirst().orElseThrow();
+                pointerExpressions(program, instructions, spillIndex, incoming, width, mapping, end, expectedEnd);
                 for (int kind = 0; kind < 9; kind++) {
                     var operations = new ArrayList<>(Arrays.asList(spill.getPcode()));
                     int storeIndex = 0;
@@ -206,6 +208,102 @@ public final class StackSpillSmoke {
         finally {
             program.release(owner);
         }
+    }
+
+    private record SpillExpression(String name, Long offset, PcodeOp[] operations) { }
+
+    /** Raw-pcode transfer tests on real register definitions; not new decoded instruction claims. */
+    private static void pointerExpressions(ProgramDB program, List<Instruction> instructions,
+            int spillIndex, Varnode incoming, int width, TargetRegisterMap mapping,
+            long end, long expectedEnd) throws Exception {
+        Instruction spill = instructions.get(spillIndex);
+        var pointer = program.getCompilerSpec().getStackPointer();
+        var sp = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
+        var unique = program.getAddressFactory().getUniqueSpace();
+        var destination = new Varnode(unique.getAddress(0x200000), 8);
+        var intermediate = new Varnode(unique.getAddress(0x200100), 8);
+        var value = new Varnode(unique.getAddress(0x200200), width);
+        var memory = constant(program, program.getLanguage().getDefaultDataSpace().getSpaceID(), 4);
+        var twelve = constant(program, 12, 8);
+        var negative = constant(program, -12, 8);
+        var store = op(spill, PcodeOp.STORE, null, memory, destination, value);
+        var expressions = List.of(
+            new SpillExpression("pointer-copy", 0L, new PcodeOp[] {op(spill, PcodeOp.COPY, destination, sp)}),
+            new SpillExpression("add", 12L, new PcodeOp[] {op(spill, PcodeOp.INT_ADD, destination, sp, twelve)}),
+            new SpillExpression("commuted-add", 12L, new PcodeOp[] {op(spill, PcodeOp.INT_ADD, destination, twelve, sp)}),
+            new SpillExpression("subtract", -12L, new PcodeOp[] {op(spill, PcodeOp.INT_SUB, destination, sp, twelve)}),
+            new SpillExpression("add-negative", -12L, new PcodeOp[] {op(spill, PcodeOp.INT_ADD, destination, sp, negative)}),
+            new SpillExpression("subtract-negative", 12L, new PcodeOp[] {op(spill, PcodeOp.INT_SUB, destination, sp, negative)}),
+            new SpillExpression("chained", 12L, new PcodeOp[] {
+                op(spill, PcodeOp.INT_ADD, intermediate, sp, constant(program, 20, 8)),
+                op(spill, PcodeOp.INT_SUB, destination, intermediate, constant(program, 8, 8))}),
+            new SpillExpression("copied-address", 12L, new PcodeOp[] {
+                op(spill, PcodeOp.INT_ADD, intermediate, twelve, sp),
+                op(spill, PcodeOp.COPY, destination, intermediate)}),
+            new SpillExpression("absolute-address", null, new PcodeOp[] {
+                op(spill, PcodeOp.COPY, destination, constant(program, 0x7000, 8))}),
+            new SpillExpression("constant-minus-pointer", null, new PcodeOp[] {
+                op(spill, PcodeOp.INT_SUB, destination, twelve, sp)}),
+            new SpillExpression("two-pointers", null, new PcodeOp[] {
+                op(spill, PcodeOp.INT_ADD, destination, sp, sp)}),
+            // XOR zero is a concrete identity, but outside this bounded proof's supported transfers.
+            new SpillExpression("unsupported-identity", null, new PcodeOp[] {
+                op(spill, PcodeOp.INT_XOR, destination, sp, constant(program, 0, 8))}));
+        for (var expression : expressions) {
+            var operations = new ArrayList<PcodeOp>();
+            operations.add(op(spill, PcodeOp.COPY, value, incoming));
+            operations.addAll(Arrays.asList(expression.operations()));
+            operations.add(store);
+            var backup = StackSpillLifetime.prove(program, 0x1000, end,
+                replace(instructions, spillIndex, decorate(spill, "getPcode", operations.toArray(PcodeOp[]::new))),
+                incoming, width, mapping, TaskMonitor.DUMMY);
+            if (expression.offset() == null) {
+                require(backup == null, "unproven pointer expression acquired a location: " + expression.name());
+                continue;
+            }
+            require(backup != null && backup.end() == expectedEnd &&
+                backup.storage().byteOffset() == expression.offset() &&
+                backup.storage().equals(mapping.registerRelative(pointer.getName(), expression.offset())),
+                "wrong spill expression location: " + expression.name() + " " + backup);
+            // Independently execute finite-width pcode. Include sign and unsigned-wrap boundaries.
+            for (String initial : List.of("10000", "7ffffffffffffff0", "fffffffffffffff0")) {
+                for (long input : new long[] {0, 1, 0x12345678, -1}) {
+                    var state = new java.util.HashMap<Varnode, BigInteger>();
+                    BigInteger stack = new BigInteger(initial, 16);
+                    BigInteger argument = finite(BigInteger.valueOf(input), width);
+                    state.put(sp, stack);
+                    state.put(incoming, argument);
+                    for (var operation : operations) {
+                        if (operation.getOpcode() == PcodeOp.STORE) {
+                            require(readConcrete(operation.getInput(1), state).equals(
+                                finite(stack.add(BigInteger.valueOf(expression.offset())), 8)),
+                                "independent address mismatch: " + expression.name());
+                            require(readConcrete(operation.getInput(2), state).equals(argument),
+                                "independent spill lost parameter bytes: " + expression.name());
+                            continue;
+                        }
+                        BigInteger first = readConcrete(operation.getInput(0), state);
+                        BigInteger result = switch (operation.getOpcode()) {
+                            case PcodeOp.COPY -> first;
+                            case PcodeOp.INT_ADD -> first.add(readConcrete(operation.getInput(1), state));
+                            case PcodeOp.INT_SUB -> first.subtract(readConcrete(operation.getInput(1), state));
+                            default -> throw new AssertionError("unsupported independent pcode evaluator");
+                        };
+                        state.put(operation.getOutput(), finite(result, operation.getOutput().getSize()));
+                    }
+                }
+            }
+        }
+    }
+
+    private static BigInteger readConcrete(Varnode node, java.util.Map<Varnode, BigInteger> state) {
+        BigInteger result = node.isConstant() ? finite(BigInteger.valueOf(node.getOffset()), node.getSize()) : state.get(node);
+        if (result == null) throw new AssertionError("independent evaluator read undefined varnode " + node);
+        return result;
+    }
+
+    private static BigInteger finite(BigInteger value, int bytes) {
+        return value.mod(BigInteger.ONE.shiftLeft(bytes * 8));
     }
 
     private static Varnode constant(ProgramDB program, long value, int size) {
