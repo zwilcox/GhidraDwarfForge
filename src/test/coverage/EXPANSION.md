@@ -6,6 +6,31 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Independent export-report outcomes
+
+CONFIRMED: the existing report tasks now exercise all 32 combinations of five
+independent partial-export causes for both 64-bit little-endian and 32-bit
+big-endian report metadata. A failed decompilation, skipped function, unavailable
+location, opaque type or diagnostic must each prevent `SUCCESS` on its own.
+Every combination checks all 15 serialized counts, strict reader round-trip,
+`NOT_RUN` validation status and immutable snapshots of caller-owned inventories.
+These are report-model tests, not new architecture execution claims.
+
+Boundary cases reject negative counts in every field, malformed artifact hashes,
+empty/reversed omitted ranges, unsupported address sizes and missing completed
+report inputs. Completed/terminal writers reject incompatible coverage inputs.
+The focused tasks pass 1,470 new contract assertions across 64 status cases plus
+the existing text/coverage checks. The first fixture expected one source mapping;
+the actual builder correctly maps both its declaration and return statement.
+The corrected expectation is two mappings; production behavior is unchanged.
+
+All 11 selected report mutations compile and are detected by behavioral
+assertions (9.072 seconds), including each hidden partial cause, invalid count,
+hash, range and address-size admission, plus the existing JSON control-character
+faults. Mutation output is excluded from coverage. Evidence is retained under
+`report-contracts-focused-2.log` and `report-contract-selected-mutations/` in the
+bounded workspace. A fresh full-suite measurement follows this test batch.
+
 ## Complete checker-report corruption controls
 
 CONFIRMED: `StrictDwarfReportSmoke` now rejects duplicate categories in each

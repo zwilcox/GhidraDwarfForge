@@ -157,6 +157,7 @@ public final class ExportReportSmoke {
             unresolved.toAbsolutePath().toString().replace("\\", "\\\\") + "\"");
         textRoundTrips(cleanModel, cleanSource);
         terminalMessages();
+        ExportReportContractSmoke.check();
         System.out.println("export-report-smoke=PASS");
     }
 
