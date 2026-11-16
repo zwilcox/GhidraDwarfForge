@@ -26,6 +26,7 @@
     "attachmentTransactionSmoke",
     "boundedSwitchProofSmoke",
     "buildIdFileLockSmoke",
+    "buildIdHelperSmoke",
     "buildIdRecordsSmoke",
     "callArgumentFlowSmoke",
     "callEntryContractSmoke",

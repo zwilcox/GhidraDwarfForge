@@ -518,6 +518,15 @@ tasks.register("buildIdRecordsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.BuildIdRecordsSmoke"
 }
 
+tasks.register("buildIdHelperSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks pinned build-ID requests, preview isolation, cancellation and response failures"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.BuildIdHelperSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
+}
+
 tasks.register("buildIdFileLockSmoke", JavaExec) {
     group = "verification"
     description = "Exercises real host build-ID lease exclusion across metadata reads and competing processes"

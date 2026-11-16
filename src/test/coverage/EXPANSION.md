@@ -6,6 +6,33 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Build-ID command admission and cancellation
+
+CONFIRMED: `buildIdHelperSmoke` checks real pinned request files without invoking
+installation. It rejects malformed/duplicate options, invalid or encoded hashes,
+unsafe debug-root names, aliased selections, malformed records, changed request
+content and oversized input. Exactly 1 MiB remains accepted for a valid padded
+request. Install/update/remove/recover previews stay explicitly unvalidated and
+leave the debug root empty; selected input/tool bytes are preserved.
+
+Cancellation is sampled at every observed request-read/parse checkpoint. A
+pending cancellation also wins before opening a missing request. Changed
+cancellation files and caller cancellation both stop preview. Closed response
+pipes produce failure for help and preview. Linux tests use actual POSIX filenames
+with line breaks; Windows does not pretend to support those forbidden filenames.
+The task is registered in both host workflows; its Windows run is PRESENT,
+UNVERIFIED until the next exact-head hosted execution.
+
+Five selected mutations are detected with an unchanged baseline: ignored request
+pin, omitted final request recheck, admitted carriage return in the debug root,
+ignored response failure and skipped early cancellation. The initial mutation
+attempt failed compilation because its dependency selection was incomplete; it
+is not detection evidence. After that setup correction, the early-cancellation
+mutant exposed a test weakness and survived. The missing-request cancellation
+assertion fixes that weakness; the final five-fault run passes in 4.17 seconds.
+This is separate from the previous full 177-fault and two native-fault results.
+No production classes, targets or coverage exclusions changed.
+
 ## Isolated native-producer failure controls
 
 CONFIRMED: `producer-failures.py` builds a test-only forwarding library against
