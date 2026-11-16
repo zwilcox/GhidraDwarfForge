@@ -1102,3 +1102,45 @@ The latest full installation tree is retained. Superseded installation/mutation
 trees were removed while keeping reports, commands, relevant logs and raw
 coverage collections; `build-id-generation-cleanup.json` records those exact
 owned paths. Architecture CI and fresh-head acceptance remain outstanding.
+
+## Register descriptions must match physical hierarchies
+
+At `93b40b97`, the existing register-alias task passes 150 new agreement
+assertions against pinned Ghidra register hierarchies. ARM and ARM BE8 cases
+require logical parent widths, physical offsets and requested extents to agree.
+MIPS BE/LE cases require the declared children, bit positions and widths to
+describe the real pair. Accepted controls preserve exact register numbers,
+logical offsets and memory-order pieces; rejection leaves those controls intact.
+No production code or target map changed.
+
+The initial 161-control mutation attempt failed: removing the paired-child width
+check survived because MIPS's offset and complete-width checks still rejected
+the malformed descriptions. That run is not a passing mutation result. An actual
+PowerPC `crall` hierarchy supplies a rejection-only fixture with eight physical
+children. Two declared pieces can match offsets and total width while wrongly
+absorbing unrelated siblings. This isolates child-width validation without
+inventing register objects or claiming PowerPC export support.
+
+The unchanged baseline and all four new register-profile mutations then pass a
+targeted replay in 11.0 seconds: parent width, physical slice offset, paired-child
+offset and paired-child width omissions each fail their intended assertion.
+The existing 157-control passing result remains separate evidence; the full
+161-control configuration still needs fresh-head CI. Compilation or class-loading
+failures are never credited as mutation detection.
+
+The complete 210-task JavaExec baseline34 passes in 272.8 seconds, including
+53,432 independently interpreted DWARF-expression vectors. All 181 coverage-tool
+tests pass. Strict raw class/session/probe verification retains 901 production
+classes and 255 sources. JavaExec measures 23,628/29,786 lines and
+18,319/25,878 branches. Its partial union with the current matching integration
+and host data contains 499 sessions: **26,689/29,786 lines (89.6%) and
+19,759/25,878 branches (76.4%)**. This adds one line and eight branch outcomes to
+the preceding partial measurement. Critical-group targets and full hosted
+acceptance remain unmet; no thresholds, inventory or badge scope changed.
+
+Evidence is under `javaexec-baseline-34/`, `register-profile-selected-mutations/`,
+`register-profile-javaexec-verified/`, `register-profile-union-verified/` and
+`register-profile-hosted-partial-union-43856734959/` in the coverage workspace.
+The initial surviving-mutant evidence remains in `register-profile-mutation-checks/`
+and `register-profile-mutations.log`. Both MIPS target CI jobs now pass; x86-64,
+AArch64 and ARM32 were still running at this checkpoint.
