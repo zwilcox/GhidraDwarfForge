@@ -115,7 +115,7 @@ def verify(directory, inventory, sources, repository, commit, run_id, local_prev
     if not local_preview:
         declared = record.get('changedCode', {})
         code = changed.report(sources.resolve().parents[2], declared.get('baseCommit', ''), commit,
-            directory / 'xml/combined.xml', classification['targets']['changedCode'])
+            directory / 'xml/combined.xml', classification['targets']['substantialChangedLogic'])
         if code != declared:
             raise ValueError('changed-code measurement does not match source history and XML')
     applicable = list(overall.values())

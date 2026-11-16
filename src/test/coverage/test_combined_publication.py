@@ -50,8 +50,7 @@ class CombinedPublication(unittest.TestCase):
             'binaryAndLocationCorrectness': ['ghidradwarfforge/A.java'],
             'fileTransactionsAndValidation': ['ghidradwarfforge/B.java'],
             'remainingProduction': ['ghidradwarfforge/C.java']},
-            'targets': {'overall': {'line': 85, 'branch': 80},
-                'eachCriticalGroup': {'line': 95, 'branch': 90}, 'changedCode': render.changed.TARGETS}}
+            'targets': json.loads((ROOT / 'src/test/coverage/critical-sources.json').read_text())['targets']}
         render.policy.javaexec.save(self.inventory, self.policy)
         self.directory = self.root / 'combined'
         (self.directory / 'xml').mkdir(parents=True)

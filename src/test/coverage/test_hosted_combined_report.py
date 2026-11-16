@@ -5,6 +5,9 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import Mock, patch
+from types import SimpleNamespace
+import subprocess
 from zipfile import ZipFile
 
 
@@ -200,6 +203,86 @@ class TargetGate(unittest.TestCase):
                     metric['targetMet'] = failure
                     self.assertFalse(hosted.targets_met(summary))
                 metric['targetMet'] = True
+
+
+class ReportFinalization(unittest.TestCase):
+    """Real policy/Git/XML wiring; synthetic counters are not JVM execution evidence."""
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix='forge-hosted-policy-')
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.source = self.root / 'src/main/java/ghidradwarfforge/Fixture.java'
+        self.source.parent.mkdir(parents=True)
+        self.source.write_text('package ghidradwarfforge;\nclass Fixture {\n    int value = 1;\n}\n')
+        self.git('init', '-q', '--initial-branch=fixture')
+        self.git('add', 'src')
+        self.git('commit', '-qm', 'fixture baseline')
+        base = self.git('rev-parse', 'HEAD')
+        self.source.write_text(self.source.read_text().replace('value = 1', 'value = flag ? 2 : 3'))
+        self.git('add', 'src')
+        self.git('commit', '-qm', 'fixture changed decision')
+        self.args = SimpleNamespace(sources=self.root / 'src/main/java', base_commit=base,
+            commit=self.git('rev-parse', 'HEAD'), run_id='7', repository='fixture/fixture',
+            inventory=Path(__file__).with_name('critical-sources.json'), output=self.root / 'report')
+        (self.args.output / 'xml').mkdir(parents=True)
+        self.write_xml(0, 2)
+
+    def git(self, *args):
+        return subprocess.check_output(['git', '-c', 'user.name=Coverage fixture',
+            '-c', 'user.email=coverage@example.invalid', '-c', 'commit.gpgsign=false',
+            '-c', 'core.hooksPath=' + str(self.root / 'absent-hooks'), *args], cwd=self.root, text=True).strip()
+
+    def write_xml(self, missed, covered):
+        (self.args.output / 'xml/combined.xml').write_text(
+            '<report><package name="ghidradwarfforge"><sourcefile name="Fixture.java">'
+            f'<line nr="3" mi="0" ci="1" mb="{missed}" cb="{covered}"/>'
+            '</sourcefile></package></report>')
+
+    def finish(self, overall=True, critical=True):
+        def metrics(value):
+            return {'LINE': {'targetMet': value}, 'BRANCH': {'targetMet': value}}
+        result = {'overall': metrics(overall), 'groups': {name: {'metrics': metrics(critical)} for name in
+            ('binaryAndLocationCorrectness', 'fileTransactionsAndValidation')}}
+        renderer = Mock()
+        with patch.object(hosted.combined, 'module', return_value=renderer):
+            status = hosted.finish_report(self.args, result)
+        renderer.generate.assert_called_once_with(self.args.output, self.args.output / 'public',
+            self.args.inventory, self.args.sources, self.args.repository, self.args.commit, 7)
+        saved = json.loads((self.args.output / 'summary.json').read_text())
+        self.assertEqual(saved, result)
+        return status, saved
+
+    def test_checked_in_inventory_drives_real_changed_code_gate(self):
+        status, saved = self.finish()
+        self.assertEqual(status, 0)
+        self.assertTrue(saved['targetsMet'])
+        self.assertEqual(saved['changedCode']['LINE']['target'], 90)
+        self.assertEqual(saved['changedCode']['BRANCH']['target'], 85)
+        self.assertEqual(saved['changedCode']['preferredBranchTarget'], 90)
+        self.assertEqual(saved['changedCode']['files']['ghidradwarfforge/Fixture.java']['changedLines'], [3])
+
+    def test_unmet_overall_or_critical_targets_keep_reports_but_fail(self):
+        for overall, critical in ((False, True), (True, False)):
+            with self.subTest(overall=overall, critical=critical):
+                status, saved = self.finish(overall, critical)
+                self.assertEqual(status, 1)
+                self.assertFalse(saved['targetsMet'])
+                self.assertTrue(saved['changedCode']['targetsMet'])
+
+    def test_changed_branch_gap_fails_even_when_aggregate_targets_pass(self):
+        self.write_xml(1, 1)
+        status, saved = self.finish()
+        self.assertEqual(status, 1)
+        self.assertFalse(saved['targetsMet'])
+        self.assertEqual(saved['changedCode']['BRANCH']['percent'], '50.0')
+
+    def test_weakened_checked_in_policy_is_rejected(self):
+        policy = json.loads(self.args.inventory.read_text())
+        policy['targets']['substantialChangedLogic']['branchMinimum'] = 80
+        self.args.inventory = self.root / 'weakened.json'
+        self.args.inventory.write_text(json.dumps(policy))
+        with self.assertRaisesRegex(ValueError, 'accepted milestone'):
+            self.finish()
 
 
 class LexicalOracleAdmission(unittest.TestCase):

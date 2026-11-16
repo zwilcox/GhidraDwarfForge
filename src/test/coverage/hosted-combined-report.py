@@ -374,8 +374,13 @@ def report(args):
         args.jacoco_classpath.write_text(classpath)
         result = combined.write_combined(args, jar, rows, origins,
             cohort={'commit': args.commit, 'run': args.run_id})
+    return finish_report(args, result)
+
+
+def finish_report(args, result):
+    """Apply the checked-in policy and retain diagnostics even when its gate fails."""
     result['changedCode'] = changed.report(args.sources.resolve().parents[2], args.base_commit,
-        args.commit, args.output / 'xml/combined.xml', files.read(args.inventory)['targets']['changedCode'])
+        args.commit, args.output / 'xml/combined.xml', files.read(args.inventory)['targets']['substantialChangedLogic'])
     result['targetsMet'] = targets_met(result) and result['changedCode']['targetsMet']
     files.save(args.output / 'summary.json', result)
     renderer = combined.module('combined_public_report', HERE.parents[2] / 'support/combined-coverage-report.py')
