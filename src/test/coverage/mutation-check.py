@@ -47,6 +47,25 @@ SOURCE_FILES = "ghidradwarfforge/output/SourceBundleFiles.java"
 SOURCE_FILES_TEST = "ghidradwarfforge.output.SourceBundleFilesSmoke"
 SOURCE_BUNDLE = "ghidradwarfforge/output/SourceBundle.java"
 SOURCE_BUNDLE_TEST = "ghidradwarfforge.output.SourceBundleSmoke"
+REPORT_CLAIMS = "ghidradwarfforge/output/CoverageReportClaims.java"
+REPORT_CLAIMS_TEST = "ghidradwarfforge.output.CoverageReportClaimsBoundarySmoke"
+TYPE_CLAIMS_TEST = "ghidradwarfforge.output.CoverageTypeEvidenceSmoke"
+
+REPORT_CLAIMS_MUTANTS = [
+    ("coverage-accepts-variable-across-function-gap", REPORT_CLAIMS, REPORT_CLAIMS_TEST,
+     "outer.get(cursor).address() != end", "false"),
+    ("coverage-invents-root-static-visibility", REPORT_CLAIMS, REPORT_CLAIMS_TEST,
+     'require(!variable.location().scopeComplete(), "root static invents visibility");',
+     'require(true, "root static invents visibility");'),
+    ("coverage-emits-unrecovered-signature", REPORT_CLAIMS, REPORT_CLAIMS_TEST,
+     'require(!emitted || recovered, "emitted signature has no recovered population");',
+     'require(true, "emitted signature has no recovered population");'),
+    ("coverage-wraps-type-union-upper-bound", REPORT_CLAIMS, REPORT_CLAIMS_TEST,
+     "counts[i] > Long.MAX_VALUE - upper[i] ? Long.MAX_VALUE : upper[i] + counts[i]", "upper[i] + counts[i]"),
+    ("coverage-accepts-duplicate-type-edge", REPORT_CLAIMS, TYPE_CLAIMS_TEST,
+     'require(result.put(get(edge, "key"), (int) count) == null, "duplicate type edge");',
+     'result.put(get(edge, "key"), (int) count);'),
+]
 
 SOURCE_FILES_MUTANTS = [
     ("source-bundle-accepts-wrong-dwarf-file-order", SOURCE_FILES, SOURCE_FILES_TEST,
@@ -231,7 +250,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -253,7 +272,8 @@ def main():
             # its existing missing serialVersionUID is unrelated to these mutants.
             selected_dependencies = dependencies if test in (
                 PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
-                RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST) else []
+                RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
+                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
