@@ -101,6 +101,43 @@ REGISTER_PROFILE = "ghidradwarfforge/GhidraVariableStorage.java"
 REGISTER_PROFILE_TEST = "ghidradwarfforge.RegisterAliasSmoke"
 REGISTER_MAP = "ghidradwarfforge/locations/TargetRegisterMap.java"
 REGISTER_MAP_TEST = "ghidradwarfforge.locations.VariableStorageSmoke"
+RUNTIME_RELOCATIONS = "ghidradwarfforge/elf/ElfRuntimeRelocations.java"
+RUNTIME_RELOCATIONS_TEST = "ghidradwarfforge.elf.ElfRuntimeRelocationsSmoke"
+ELF_READER = "ghidradwarfforge/elf/ElfImage.java"
+ELF_READER_TEST = "ghidradwarfforge.elf.ElfImageReaderSmoke"
+ELF_READER_MUTANTS = [
+    ("elf-reader-ignores-magic-byte", ELF_READER, ELF_READER_TEST,
+     "ident[2] != 'L'", 'false'),
+    ("elf-reader-allows-header-overlap", ELF_READER, ELF_READER_TEST,
+     'sectionOffset < encodedHeaderSize', 'false'),
+    ("elf-reader-allows-dangling-name-index", ELF_READER, ELF_READER_TEST,
+     'encodedCount != 0 || encodedNameIndex != 0', 'encodedCount != 0'),
+]
+RUNTIME_RELOCATION_MUTANTS = [
+    ("runtime-relocation-ignores-standalone-entry-size", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
+     'require(tags.get(entry) == reader.entrySize(format), "wrong standalone relocation entry size");',
+     'require(true, "wrong standalone relocation entry size");'),
+    ("runtime-relocation-treats-plt-rel-as-rela", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
+     'format == 7 ? Format.RELA : Format.REL', 'Format.RELA'),
+    ("runtime-relocation-discards-empty-general-table", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
+     'tables.add(reader.table(role, format, tags.get(pointer), tags.get(size)));',
+     'if (tags.get(size) != 0) tables.add(reader.table(role, format, tags.get(pointer), tags.get(size)));'),
+    ("runtime-relocation-fabricates-empty-file-offset", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
+     'long offset = size == 0 ? 0 : locate(address, size);',
+     'long offset = size == 0 ? address : locate(address, size);'),
+    ("runtime-relocation-ignores-first-overlap-framing", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
+     '(start - a.offset()) % a.entrySize() == 0', 'true'),
+    ("runtime-relocation-ignores-second-overlap-framing", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
+     '(start - b.offset()) % b.entrySize() == 0', 'true'),
+    ("runtime-relocation-accepts-negative-rel-target", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
+     'require(value >= 0, "relocation target exceeds signed address domain");',
+     'require(true, "relocation target exceeds signed address domain");'),
+    ("runtime-relocation-accepts-negative-relr-target", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
+     'require(value >= 0, "RELR target exceeds signed address domain");',
+     'require(true, "RELR target exceeds signed address domain");'),
+    ("runtime-relocation-overflows-elf32-bitmap", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
+     'width == 8 || target <= 0x1_0000_0000L - width', 'true'),
+]
 REGISTER_MAP_MUTANTS = [
     ("register-slice-overflows-physical-extent", REGISTER_MAP, REGISTER_MAP_TEST,
      '(long) byteOffset * 8 + bitSize', 'byteOffset * 8 + bitSize'),
@@ -860,7 +897,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + REGISTER_MAP_MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + ELF_READER_MUTANTS + RUNTIME_RELOCATION_MUTANTS + REGISTER_MAP_MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")

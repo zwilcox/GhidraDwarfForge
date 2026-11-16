@@ -6,6 +6,38 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## ELF metadata combinations and malformed headers
+
+CONFIRMED: the runtime relocation task now checks all eight presence combinations
+of pointer/size/entry metadata for REL, RELA and RELR, plus all eight PLT metadata
+combinations for both REL and RELA. Across ELF32/ELF64 and both byte orders this
+is 160 presence cases. Additional controls cover standalone entry widths,
+zero-sized and mixed empty/nonempty tables, overlapping roles with mismatched
+record boundaries, negative ELF64 targets and an ELF32 RELR bitmap past the
+address limit. Positive inventories check roles, formats, file/virtual addresses,
+entry sizes, exact decoded records and empty-table SHA-256. Every inspection,
+including rejection, must preserve the fixture bytes.
+
+The expected tag dependencies follow the [gABI dynamic section](https://gabi.xinuos.com/elf/09-dynamic.html).
+These are format-reader controls, not execution claims for every fixture machine
+and byte-order combination. The task passes 1,612 total assertions. All nine
+compiled selected faults are detected (4.245s). Initially the removed negative
+RELR-address check was masked by a later bitmap rejection; a one-entry fixture
+now tests that check independently. The first surviving-mutation result remains
+retained and is not credited as a detection. Production code is unchanged.
+
+The ELF reader task also adds 53 malformed-input controls: each magic byte,
+unsupported class/byte-order values, section/program tables overlapping the
+ELF header, absent section tables retaining a name index, and directory inputs.
+Header rejection preserves the corrupted input bytes. The full focused reader
+task passes, including existing large sparse/extended-count, source-identity,
+writer-preservation and symlink cases. Three compiled header mutations are
+detected (1.930s); no compilation failure is counted.
+
+Evidence in the bounded workspace: `relocation-metadata-verification-2.log`,
+`relocation-metadata-selected-mutations-2/`, `elf-header-verification.log` and
+`elf-header-selected-mutations/`. Full coverage measurement follows this batch.
+
 ## Independent export-report outcomes
 
 CONFIRMED: the existing report tasks now exercise all 32 combinations of five

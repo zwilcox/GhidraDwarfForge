@@ -26,6 +26,7 @@ public final class ElfImageReaderSmoke {
     public static void main(String[] arguments) throws Exception {
         Path directory = Files.createTempDirectory("forge-elf-reader-");
         try {
+            expectFailure(() -> ElfImage.read(directory), "not a regular file");
             for (boolean elf64 : new boolean[] { false, true }) {
                 for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                     Path input = directory.resolve((elf64 ? "elf64-" : "elf32-") + order);
@@ -103,6 +104,13 @@ public final class ElfImageReaderSmoke {
             throws Exception {
         Fixture fixture = create(input, elf64, order, 2, 3, true, 0, 0, 0, NAMES.length);
         byte[] valid = Files.readAllBytes(input);
+        for (int index = 0; index < 4; index++) {
+            expectBadHeader(input, fixture, valid, index, 1, 0, "not an ELF file");
+        }
+        for (int unsupported : new int[] {0, 3, 255}) {
+            expectBadHeader(input, fixture, valid, 4, 1, unsupported, "unsupported ELF class");
+            expectBadHeader(input, fixture, valid, 5, 1, unsupported, "unsupported ELF byte order");
+        }
         expectBadHeader(input, fixture, valid, 6, 1, 0, "version");
         expectBadHeader(input, fixture, valid, 20, 4, 0, "version");
         expectBadHeader(input, fixture, valid, elf64 ? 52 : 40, 2, 1, "header size");
@@ -131,6 +139,15 @@ public final class ElfImageReaderSmoke {
             valid.length - 1L, "section header zero range");
         expectBadHeader(input, fixture, valid, elf64 ? 40 : 32, elf64 ? 8 : 4,
             0, "missing ELF section table");
+        expectBadHeader(input, fixture, valid, elf64 ? 40 : 32, elf64 ? 8 : 4,
+            (elf64 ? 64 : 52) - 1, "section table metadata");
+        expectBadHeader(input, fixture, valid, elf64 ? 32 : 28, elf64 ? 8 : 4,
+            (elf64 ? 64 : 52) - 1, "program table metadata");
+        // A zero count does not make a dangling section-name index legitimate.
+        Files.write(input, valid);
+        fixture.address(elf64 ? 40 : 32, 0);
+        fixture.half(elf64 ? 60 : 48, 0);
+        expectFailure(() -> ElfImage.read(input), "missing ELF section table");
         expectBadHeader(input, fixture, valid, elf64 ? 56 : 44, 2, 0,
             "program table offset has zero");
         if (elf64) {
@@ -544,7 +561,9 @@ public final class ElfImageReaderSmoke {
         else {
             fixture.address(offset, value);
         }
+        byte[] corrupted = Files.readAllBytes(input);
         expectFailure(() -> ElfImage.read(input), message);
+        require(Arrays.equals(corrupted, Files.readAllBytes(input)), "header rejection changed original bytes");
     }
 
     @FunctionalInterface

@@ -5,6 +5,7 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -76,7 +77,155 @@ public final class ElfRuntimeRelocationsSmoke {
         return out.array();
     }
     private static ElfRuntimeRelocations.Inventory inspect(Path path, byte[] bytes) throws Exception {
-        Files.write(path, bytes); return ElfRuntimeRelocations.inspect(ElfImage.read(path), () -> false);
+        Files.write(path, bytes);
+        try { return ElfRuntimeRelocations.inspect(ElfImage.read(path), () -> false); }
+        finally { require(Arrays.equals(bytes, Files.readAllBytes(path)), "relocation inspection changed its input"); }
+    }
+
+    private static byte[] metadata(boolean wide, ByteOrder order, long[]... tags) {
+        byte[] bytes = fixture(wide, order, false);
+        Arrays.fill(bytes, 0x200, 0x400, (byte) 0);
+        var out = ByteBuffer.wrap(bytes).order(order);
+        int width = wide ? 8 : 4;
+        for (int index = 0; index < tags.length; index++) {
+            word(out, 0x200 + index * width * 2, wide, tags[index][0]);
+            word(out, 0x200 + index * width * 2 + width, wide, tags[index][1]);
+        }
+        long size = (tags.length + 1L) * width * 2; // Includes the terminating DT_NULL.
+        segment(out, wide, 1, 2, 0x200, 0x1200, size, size);
+        return bytes;
+    }
+
+    private static ElfRuntimeRelocations.Inventory accepted(Path path, byte[] bytes) throws Exception {
+        try { return inspect(path, bytes); }
+        catch (IllegalArgumentException failure) {
+            throw new AssertionError("valid relocation metadata was rejected", failure);
+        }
+    }
+
+    private static void metadataMatrix(Path path, boolean wide, ByteOrder order) throws Exception {
+        int width = wide ? 8 : 4;
+        // gABI dynamic-section dependencies and table shapes:
+        // https://gabi.xinuos.com/elf/09-dynamic.html
+        // Each general table needs pointer, byte size and entry size together.
+        // An entry-size descriptor alone does not invent a general table.
+        long[][] layouts = {{17, 18, 19, 0x1400, 2}, {7, 8, 9, 0x1440, 3}, {36, 35, 37, 0x1480, 1}};
+        var formats = List.of(ElfRuntimeRelocations.Format.REL, ElfRuntimeRelocations.Format.RELA,
+            ElfRuntimeRelocations.Format.RELR);
+        var roles = List.of("DT_REL", "DT_RELA", "DT_RELR");
+        for (int layout = 0; layout < layouts.length; layout++) {
+            long[] row = layouts[layout];
+            int entrySize = (int) row[4] * width;
+            for (int mask = 0; mask < 8; mask++) {
+                var tags = new ArrayList<long[]>();
+                if ((mask & 1) != 0) tags.add(new long[] {row[0], row[3]});
+                if ((mask & 2) != 0) tags.add(new long[] {row[1], entrySize});
+                if ((mask & 4) != 0) tags.add(new long[] {row[2], entrySize});
+                byte[] bytes = metadata(wide, order, tags.toArray(long[][]::new));
+                if (mask != 0 && mask != 4 && mask != 7) {
+                    reject(() -> inspect(path, bytes), roles.get(layout) + " incomplete tag mask " + mask);
+                    continue;
+                }
+                var inventory = accepted(path, bytes);
+                require(inventory.tags().equals(tags.stream().map(tag ->
+                    new ElfRuntimeRelocations.Tag(tag[0], tag[1])).toList()), "raw metadata tags changed");
+                require(inventory.tables().size() == (mask == 7 ? 1 : 0), "descriptor invented or hid a table");
+                if (mask == 7) {
+                    var table = inventory.tables().getFirst();
+                    require(table.role().equals(roles.get(layout)) && table.format() == formats.get(layout) &&
+                        table.address() == row[3] && table.offset() == row[3] - 0x1000 &&
+                        table.size() == entrySize && table.entrySize() == entrySize, "general table identity changed");
+                    long address = layout == 0 ? 0x1700 : layout == 1 ? 0x1710 : 0x1702;
+                    Long info = layout == 0 ? Long.valueOf(wide ? 0xfedcba9876543210L : 0xfedcba98L) :
+                        layout == 1 ? Long.valueOf(0x1234) : null;
+                    Long addend = layout == 1 ? Long.valueOf(-17) : null;
+                    require(table.relocations().equals(List.of(new ElfRuntimeRelocations.Relocation(
+                        row[3] - 0x1000, address, info, addend))), "decoded general relocation changed");
+                }
+            }
+            for (long bad : new long[] {0, entrySize - 1, entrySize + 1}) {
+                byte[] bytes = metadata(wide, order, new long[] {row[2], bad});
+                reject(() -> inspect(path, bytes), "wrong standalone " + roles.get(layout) + " width");
+            }
+        }
+        // PLT-only REL and RELA tables, with and without the standalone width.
+        for (boolean explicitAddend : List.of(false, true)) {
+            int entrySize = width * (explicitAddend ? 3 : 2);
+            int type = explicitAddend ? 7 : 17;
+            long pointer = explicitAddend ? 0x1440 : 0x1400;
+            for (int mask = 0; mask < 8; mask++) {
+                var tags = new ArrayList<long[]>();
+                if ((mask & 1) != 0) tags.add(new long[] {23, pointer});
+                if ((mask & 2) != 0) tags.add(new long[] {2, entrySize});
+                if ((mask & 4) != 0) tags.add(new long[] {20, type});
+                byte[] bytes = metadata(wide, order, tags.toArray(long[][]::new));
+                if (mask != 0 && mask != 7) {
+                    reject(() -> inspect(path, bytes), "incomplete PLT tag mask " + mask);
+                    continue;
+                }
+                var inventory = accepted(path, bytes);
+                if (mask == 0) {
+                    require(inventory.tables().isEmpty(), "absent PLT acquired relocations");
+                    continue;
+                }
+                require(inventory.tables().size() == 1, "PLT-only fixture acquired a general table");
+                var table = inventory.tables().getFirst();
+                require(table.role().equals("DT_JMPREL") && table.format() ==
+                    (explicitAddend ? ElfRuntimeRelocations.Format.RELA : ElfRuntimeRelocations.Format.REL) &&
+                    table.address() == pointer && table.offset() == pointer - 0x1000 &&
+                    table.size() == entrySize && table.entrySize() == entrySize, "PLT format or extent changed");
+                require(table.relocations().equals(List.of(new ElfRuntimeRelocations.Relocation(
+                    pointer - 0x1000, explicitAddend ? 0x1710 : 0x1700,
+                    explicitAddend ? 0x1234L : wide ? 0xfedcba9876543210L : 0xfedcba98L,
+                    explicitAddend ? Long.valueOf(-17) : null))), "PLT relocation changed");
+                tags.add(new long[] {explicitAddend ? 9 : 19, entrySize});
+                require(accepted(path, metadata(wide, order, tags.toArray(long[][]::new))).tables().equals(inventory.tables()),
+                    "standalone width changed PLT-only relocation inventory");
+            }
+        }
+        for (long address : new long[] {0, 0x9000}) {
+            var empty = accepted(path, metadata(wide, order,
+                new long[] {17, address}, new long[] {18, 0}, new long[] {19, width * 2},
+                new long[] {7, address}, new long[] {8, 0}, new long[] {9, width * 3},
+                new long[] {36, address}, new long[] {35, 0}, new long[] {37, width},
+                new long[] {23, address}, new long[] {2, 0}, new long[] {20, 7}));
+            require(empty.tables().stream().map(ElfRuntimeRelocations.Table::role).toList()
+                .equals(List.of("DT_RELR", "DT_REL", "DT_RELA", "DT_JMPREL")), "empty table roles were discarded");
+            require(empty.tables().stream().allMatch(table -> table.address() == address && table.offset() == 0 &&
+                table.size() == 0 && table.relocations().isEmpty() &&
+                table.sha256().equals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")),
+                "empty table accessed unmapped bytes or invented a relocation");
+        }
+        var mixed = accepted(path, metadata(wide, order,
+            new long[] {36, 0x1480}, new long[] {35, width}, new long[] {37, width},
+            new long[] {17, 0x9000}, new long[] {18, 0}, new long[] {19, width * 2},
+            new long[] {7, 0x1440}, new long[] {8, width * 3}, new long[] {9, width * 3},
+            new long[] {23, 0x9000}, new long[] {2, 0}, new long[] {20, 7}));
+        require(mixed.tables().stream().map(table -> table.relocations().size()).toList().equals(List.of(1, 0, 1, 0)),
+            "empty roles conflicted with or erased nonempty tables");
+        for (boolean generalFirst : List.of(false, true)) {
+            long general = 0x1440 + (generalFirst ? 0 : width);
+            long plt = 0x1440 + (generalFirst ? width : 0);
+            byte[] bytes = metadata(wide, order,
+                new long[] {7, general}, new long[] {8, width * 6}, new long[] {9, width * 3},
+                new long[] {23, plt}, new long[] {2, width * 6}, new long[] {20, 7});
+            reject(() -> inspect(path, bytes), "overlapping roles with misaligned record boundaries");
+        }
+        if (wide) {
+            for (long[] row : layouts) {
+                // Isolate the direct entry: a later RELR bitmap would reject
+                // the negative running address independently and mask this guard.
+                byte[] bytes = metadata(true, order, new long[] {row[0], row[3]},
+                    new long[] {row[1], row[4] * 8}, new long[] {row[2], row[4] * 8});
+                ByteBuffer.wrap(bytes).order(order).putLong((int) row[3] - 0x1000, Long.MIN_VALUE);
+                reject(() -> inspect(path, bytes), "relocation target outside supported signed address domain");
+            }
+        }
+        else {
+            byte[] bytes = metadata(false, order, new long[] {36, 0x1480}, new long[] {35, 8}, new long[] {37, 4});
+            ByteBuffer.wrap(bytes).order(order).putInt(0x480, 0xffff_fffc).putInt(0x484, 3);
+            reject(() -> inspect(path, bytes), "RELR bitmap target beyond ELF32");
+        }
     }
     private static void variants(Path path, boolean wide, ByteOrder order) throws Exception {
         int width = wide ? 8 : 4;
@@ -210,6 +359,7 @@ public final class ElfRuntimeRelocationsSmoke {
         try {
             for (boolean wide : List.of(false, true)) for (var order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                 variants(path, wide, order);
+                metadataMatrix(path, wide, order);
             }
         }
         finally { Files.deleteIfExists(path); }
