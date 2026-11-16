@@ -41,6 +41,7 @@ public final class TypeGraphSmoke {
     }
 
     public static void main(String[] args) {
+        ProgramTypeModelBoundarySmoke.run();
         TypeRef voidType = new TypeRef("builtin:void");
         TypeRef signedInt = new TypeRef("builtin:int32");
         TypeRef node = new TypeRef("fixture:node");

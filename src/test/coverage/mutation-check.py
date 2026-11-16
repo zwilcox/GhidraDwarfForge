@@ -31,6 +31,8 @@ MMIO = "ghidradwarfforge/output/MmioSelection.java"
 MMIO_TEST = "ghidradwarfforge.output.MmioSelectionBoundarySmoke"
 CXX_SELECTION = "ghidradwarfforge/output/CxxSelection.java"
 CXX_SELECTION_TEST = "ghidradwarfforge.output.CxxSelectionBoundarySmoke"
+PROGRAM_TYPES = "ghidradwarfforge/types/ProgramTypeModel.java"
+PROGRAM_TYPES_TEST = "ghidradwarfforge.types.ProgramTypeModelBoundarySmoke"
 
 # Each edit names a specific safety/semantic guarantee. This is not a blanket
 # mutation score: surviving, uncompilable or timed-out mutants fail this harness.
@@ -121,6 +123,17 @@ CXX_SELECTION_MUTANTS = [
      ".sum() > 64L * 1024 * 1024", ".sum() > 65L * 1024 * 1024"),
 ]
 
+PROGRAM_TYPE_MUTANTS = [
+    ("type-model-leaks-location-outside-block", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
+     "? location : scope.restrict(location)", "? location : location"),
+    ("type-model-matches-owner-by-name-only", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
+     "candidate.address() == location.functionAddress() &&", "true &&"),
+    ("type-model-accepts-wrong-value-width", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
+     "declaredSize > 0 && declaredSize != location.byteSize()", "false"),
+    ("type-model-accepts-ambiguous-static-names", PROGRAM_TYPES, PROGRAM_TYPES_TEST,
+     "variable.name())) > 1).collect", "variable.name())) > 2).collect"),
+]
+
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -148,7 +161,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
