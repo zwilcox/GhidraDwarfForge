@@ -3347,7 +3347,7 @@ jobs:
               --require-suite gui-script-manager --require-suite gui-script-manager-loader \
               --require-suite gui-script-manager-compressed --require-suite gui-script-manager-unwind \
               --require-suite lexical-shadow --require-suite object-parameter --require-suite object-return \
-              --require-suite formatter-export
+              --require-suite formatter-export --require-suite calling-convention --require-suite custom-call-storage
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'

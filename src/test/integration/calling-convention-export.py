@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate explicit alternate conventions without inventing debugger ABI mappings."""
 import argparse
+from contextlib import nullcontext
 import importlib.util
 import json
 import os
@@ -9,6 +10,9 @@ import re
 import shutil
 import tempfile
 from urllib.parse import unquote, urlsplit
+
+from integration_coverage import Collection
+
 
 source = Path(__file__).resolve().parent
 repository = source.parents[2]
@@ -30,11 +34,16 @@ def main():
     case = Path(tempfile.mkdtemp(prefix=args.role + '.', dir=root))
     print(case, flush=True)
 
+    collection = Collection('calling-convention', module / 'lib/GhidraDwarfForge.jar', 'headless')
+
     def write(name, value):
         (case / name).write_text(json.dumps(value, indent=4) + '\n')
 
     def run(name, command, **kwargs):
-        result = support.run(command, case / (name + '.log'), **kwargs)
+        context = collection.session(command, name, headless=True) if name != 'previous' and \
+            Path(command[0]).name == 'analyzeHeadless' else nullcontext(command)
+        with context as measured:
+            result = support.run(measured, case / (name + '.log'), **kwargs)
         if Path(command[0]).name != 'analyzeHeadless' and name != 'gdb-driver':
             support.require_clean(case / (name + '.log'))
         return result
@@ -42,6 +51,9 @@ def main():
     fixture = source.parent / 'fixtures/calling-convention.c'
     protected = [fixture, Path(__file__).resolve(), source / 'calling-convention-gdb.py',
         source / 'ghidra_scripts/PrepareCallingConvention.java', source / 'ghidra_scripts/RebaseFixtureProgram.java']
+    protected += [source / 'integration_coverage.py', source / 'elf-layout-gdb-oracle.sh',
+        source / 'check-dwarfdump.py', source.parent / 'performance/export-benchmark.py',
+        source / 'calling-convention-gdb.sh']
     protected += [p for p in module.rglob('*') if p.is_file()]
     before = {str(p): support.digest(p) for p in protected}
     write('protected-before.json', before)
@@ -143,6 +155,15 @@ def main():
     assert before == after
     write('result.json', {'status': 'PASS', 'role': args.role, 'inputSha256': before[str(binary)],
         'hashes': hashes, 'protectedUnchanged': True, 'previousPackageCompared': bool(args.previous_ghidra)})
+    if collection.enabled:
+        oracle = json.loads((case / 'result.json').read_text())
+        oracle.update(status='PASS_CALL_ABI_MEASUREMENT', target='x86_64',
+            protected=before, rebaseDelta=observed['rebaseDelta'],
+            observations=[json.loads((case / (variant + '-gdb.json')).read_text()) for variant in ('compiler', 'fixed')],
+            measurement={'directAnalyzerSessions': 3,
+                'unmeasuredPreviousComparisons': ['previous'] if args.previous_ghidra else []})
+        write('coverage-oracle.json', oracle)
+        collection.finish(case / 'coverage-oracle.json')
     print('calling-convention-export=PASS ' + str(case), flush=True)
 
 

@@ -24,7 +24,8 @@ REQUIRED = {
         'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu',
         'linux-attachment-exec', 'linux-attachment-pie', 'linux-attachment-exec-no-build-id',
         'gui-script-manager', 'gui-script-manager-loader', 'gui-script-manager-compressed',
-        'gui-script-manager-unwind', 'lexical-shadow', 'object-parameter', 'object-return', 'formatter-export'}),
+        'gui-script-manager-unwind', 'lexical-shadow', 'object-parameter', 'object-return', 'formatter-export',
+        'calling-convention', 'custom-call-storage'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -212,6 +213,65 @@ def formatter_cohort(cases):
         raise ValueError('formatter coverage requires all three production wrapper profiles')
 
 
+def call_abi_oracle(record, oracle):
+    custom = record.get('suite') == 'custom-call-storage'
+    profile = oracle.get('compilerProfile') if custom else 'gcc'
+    role = oracle.get('role')
+    hashes, protected = oracle.get('hashes'), oracle.get('protected')
+    if (record.get('suite') not in ('calling-convention', 'custom-call-storage')
+            or record.get('layer') != 'headless' or oracle.get('status') != 'PASS_CALL_ABI_MEASUREMENT'
+            or oracle.get('target') != 'x86_64' or role not in ('exec', 'pie', 'pie-rebased')
+            or profile not in ('gcc', 'windows') or oracle.get('previousPackageCompared') is not False
+            or oracle.get('protectedUnchanged') is not True
+            or type(oracle.get('rebaseDelta')) is not int
+            or (role == 'pie-rebased' and oracle['rebaseDelta'] < 0x2000000)
+            or [row.get('label') for row in record['sessions']] != ['import', 'fixed', 'repeat']
+            or oracle.get('measurement') != {'directAnalyzerSessions': 3, 'unmeasuredPreviousComparisons': []}
+            or not isinstance(hashes, list) or len(hashes) != 2
+            or not isinstance(protected, dict) or not protected
+            or any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value)
+                for value in [*hashes, *protected.values(), oracle.get('inputSha256')])):
+        raise ValueError('call ABI coverage lacks exact current-package analyzer and preservation evidence')
+    observations = oracle.get('observations')
+    if (not isinstance(observations, list) or len(observations) != 2
+            or any(not isinstance(row, dict) for row in observations)
+            or [row.get('variant') for row in observations] != ['compiler', 'fixed']):
+        raise ValueError('call ABI coverage requires both debugger observations')
+    for observed in observations:
+        fixed = observed['variant'] == 'fixed'
+        expected = {'sysv_function', 'microsoft_function'} | ({'custom_return'} if custom else set())
+        calls = observed.get('ordinaryCalls')
+        if (observed.get('status') != 'PASS' or observed.get('exitCodes') != [0]
+                or not isinstance(calls, list) or len(calls) != len(expected)
+                or any(not isinstance(row, dict) for row in calls)
+                or {row.get('name') for row in calls} != expected):
+            raise ValueError('call ABI coverage lacks successful ordinary execution')
+        for call in calls:
+            name = call['name']
+            blocked = fixed and (name != 'sysv_function' or profile == 'windows')
+            if (call.get('entryValues') != ([1227] if name == 'custom_return' else [1, 2, 3, 4])
+                    or call.get('returnedRegisterValue') != 1234 or call.get('gdbReturnUnavailable') is not blocked):
+                raise ValueError('call ABI coverage lost arguments, return value or honest debugger restriction')
+        injections = [('Microsoft', fixed, 4389)]
+        if custom:
+            injections += [('Sysv', fixed and profile == 'windows', 1234), ('Return', fixed, 7)]
+        for name, blocked, value in injections:
+            error, actual = observed.get('injected' + name + 'Error'), observed.get('injected' + name + 'Value')
+            if ((blocked and (actual is not None or not isinstance(error, str)
+                    or 'does not follow the target calling convention' not in error))
+                    or (not blocked and (error is not None or actual != value))):
+                raise ValueError('call ABI coverage lacks rejected injected-call and compiler-reference controls')
+    return record['suite'], role, profile
+
+
+def call_abi_cohort(cases):
+    expected = {(suite, role, profile) for role in ('exec', 'pie', 'pie-rebased')
+        for suite, profile in [('calling-convention', 'gcc'), ('custom-call-storage', 'gcc'),
+            ('custom-call-storage', 'windows')]}
+    if len(cases) != len(expected) or set(cases) != expected:
+        raise ValueError('call ABI coverage requires all nine existing ELF and compiler profiles')
+
+
 def load_job(root, jar, kind, commit, run):
     job, expected_layers, expected_suites = REQUIRED[kind]
     files.exact_files(root, {'collections', 'report'})
@@ -222,6 +282,7 @@ def load_job(root, jar, kind, commit, run):
             or set(summary.get('layers', {})) != expected_layers):
         raise ValueError('missing or mismatched CI integration cohort: ' + kind)
     rows, suites, known, unmeasured, lexical_cases, object_cases, formatter_cases = [], set(), set(), [], [], [], []
+    call_abi_cases = []
     for layer, measured in sorted(summary['layers'].items()):
         xml = files.regular(root / 'report' / (layer + '.xml'), 32 * 1024 * 1024)
         if files.digest(xml) != measured.get('xmlSha256'):
@@ -255,6 +316,8 @@ def load_job(root, jar, kind, commit, run):
                 object_cases.append(object_oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'formatter-export':
                 formatter_cases.append(formatter_oracle(record, files.read(directory / 'oracle.json')))
+            if record['suite'] in ('calling-convention', 'custom-call-storage'):
+                call_abi_cases.append(call_abi_oracle(record, files.read(directory / 'oracle.json')))
             layer_suites.add(record['suite'])
             layer_rows.extend((layer, row['session'], directory / row['file']) for row in record['sessions'])
             layer_halts.extend({'suite': record['suite'], **row} for row in record.get('unmeasuredForcedHalts', []))
@@ -271,6 +334,7 @@ def load_job(root, jar, kind, commit, run):
         lexical_cohort(lexical_cases)
         object_cohort(object_cases)
         formatter_cohort(formatter_cases)
+        call_abi_cohort(call_abi_cases)
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,
         'summarySha256': files.digest(root / 'report/summary.json'),
         'receipts': {name: files.digest(root / 'collections' / name / 'receipt.json') for name in sorted(known)},

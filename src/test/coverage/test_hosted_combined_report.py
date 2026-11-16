@@ -369,6 +369,73 @@ class FormatterOracleAdmission(unittest.TestCase):
                 hosted.formatter_oracle(record, oracle)
 
 
+class CallAbiOracleAdmission(unittest.TestCase):
+    def fixture(self, suite='calling-convention', role='exec', profile='gcc'):
+        custom = suite == 'custom-call-storage'
+        record = {'suite': suite, 'layer': 'headless',
+            'sessions': [{'label': label} for label in ('import', 'fixed', 'repeat')]}
+        oracle = {'status': 'PASS_CALL_ABI_MEASUREMENT', 'target': 'x86_64', 'role': role,
+            'compilerProfile': profile, 'previousPackageCompared': False, 'protectedUnchanged': True,
+            'rebaseDelta': 0x2000000 if role == 'pie-rebased' else 0,
+            'hashes': ['a' * 64, 'b' * 64], 'inputSha256': 'c' * 64, 'protected': {'fixture': 'd' * 64},
+            'measurement': {'directAnalyzerSessions': 3, 'unmeasuredPreviousComparisons': []}, 'observations': []}
+        for variant in ('compiler', 'fixed'):
+            fixed = variant == 'fixed'
+            observation = {'status': 'PASS', 'variant': variant, 'exitCodes': [0], 'ordinaryCalls': []}
+            for name in ['sysv_function', 'microsoft_function', *(['custom_return'] if custom else [])]:
+                observation['ordinaryCalls'].append({'name': name,
+                    'entryValues': [1227] if name == 'custom_return' else [1, 2, 3, 4],
+                    'returnedRegisterValue': 1234,
+                    'gdbReturnUnavailable': fixed and (name != 'sysv_function' or profile == 'windows')})
+            for name, blocked, value in [('Microsoft', fixed, 4389),
+                    ('Sysv', fixed and profile == 'windows', 1234), ('Return', fixed, 7)]:
+                observation['injected' + name + 'Value'] = None if blocked else value
+                observation['injected' + name + 'Error'] = 'does not follow the target calling convention' if blocked else None
+            oracle['observations'].append(observation)
+        return record, oracle
+
+    def test_all_nine_existing_profiles_required(self):
+        cases = [hosted.call_abi_oracle(*self.fixture(suite, role, profile))
+            for role in ('exec', 'pie', 'pie-rebased') for suite, profile in (
+                ('calling-convention', 'gcc'), ('custom-call-storage', 'gcc'), ('custom-call-storage', 'windows'))]
+        hosted.call_abi_cohort(cases)
+        for index in range(len(cases)):
+            with self.assertRaises(ValueError):
+                hosted.call_abi_cohort(cases[:index] + cases[index + 1:])
+        with self.assertRaises(ValueError):
+            hosted.call_abi_cohort(cases[:-1] + cases[:1])
+
+    def test_missing_provenance_and_previous_package_comparison_rejected(self):
+        record, oracle = self.fixture(role='pie-rebased')
+        for field, value in [('status', 'PASS'), ('target', 'aarch64'), ('role', 'shared'),
+                ('previousPackageCompared', True), ('protectedUnchanged', False), ('rebaseDelta', 0),
+                ('rebaseDelta', float(0x2000000)), ('hashes', []), ('protected', {}), ('inputSha256', None),
+                ('observations', []), ('measurement', {'directAnalyzerSessions': 4, 'unmeasuredPreviousComparisons': []})]:
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                hosted.call_abi_oracle(record, {**oracle, field: value})
+        with self.assertRaises(ValueError):
+            hosted.call_abi_oracle({**record, 'sessions': record['sessions'][:-1]}, oracle)
+        with self.assertRaises(ValueError):
+            hosted.call_abi_oracle({**record, 'layer': 'windows'}, oracle)
+
+    def test_ordinary_calls_must_keep_arguments_returns_and_restrictions(self):
+        for field, value in [('entryValues', [0, 0, 0, 0]), ('returnedRegisterValue', 7),
+                ('gdbReturnUnavailable', False), ('name', 'other')]:
+            record, oracle = self.fixture('custom-call-storage', 'pie', 'windows')
+            oracle['observations'][1]['ordinaryCalls'][0][field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                hosted.call_abi_oracle(record, oracle)
+
+    def test_injected_call_restrictions_and_compiler_limitations_are_required(self):
+        for variant, field, value in [(1, 'injectedMicrosoftError', None), (1, 'injectedReturnValue', 7),
+                (1, 'injectedSysvError', 'unrelated error'), (0, 'injectedMicrosoftValue', 1234),
+                (0, 'injectedReturnError', 'unexpected failure'), (1, 'exitCodes', [1])]:
+            record, oracle = self.fixture('custom-call-storage', 'exec', 'windows')
+            oracle['observations'][variant][field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                hosted.call_abi_oracle(record, oracle)
+
+
 class ReportDependencies(unittest.TestCase):
     def test_changed_or_unrecorded_tool_jars_rejected(self):
         with tempfile.TemporaryDirectory(prefix='forge-report-tools-') as temporary:
