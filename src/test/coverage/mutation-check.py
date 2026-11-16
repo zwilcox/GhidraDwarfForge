@@ -50,6 +50,19 @@ SOURCE_BUNDLE_TEST = "ghidradwarfforge.output.SourceBundleSmoke"
 REPORT_CLAIMS = "ghidradwarfforge/output/CoverageReportClaims.java"
 REPORT_CLAIMS_TEST = "ghidradwarfforge.output.CoverageReportClaimsBoundarySmoke"
 TYPE_CLAIMS_TEST = "ghidradwarfforge.output.CoverageTypeEvidenceSmoke"
+TRANSACTION = "ghidradwarfforge/output/AttachmentTransaction.java"
+TRANSACTION_TEST = "ghidradwarfforge.output.AttachmentTransactionSmoke"
+
+TRANSACTION_MUTANTS = [
+    ("transaction-accepts-mismatched-sidecar-crc", TRANSACTION, TRANSACTION_TEST,
+     'request.prepared().debuglinkCrc32() != snapshots.get("sidecar").digest().gnuDebuglinkCrc32()', "false"),
+    ("transaction-refresh-reuses-operation-identity", TRANSACTION, TRANSACTION_TEST,
+     "previous.operationId().equals(current.operationId())", "false"),
+    ("transaction-recovery-follows-unrecorded-role", TRANSACTION, TRANSACTION_TEST,
+     '!entry.getKey().equals("targetAfter") && !selectedPath.toString().equals(artifact.path())', "false"),
+    ("transaction-rejects-already-restored-owned-image", TRANSACTION, TRANSACTION_TEST,
+     "sameImage(observed, before) || allowAlreadyRestored &&", "sameImage(observed, before) || false &&"),
+]
 
 REPORT_CLAIMS_MUTANTS = [
     ("coverage-accepts-variable-across-function-gap", REPORT_CLAIMS, REPORT_CLAIMS_TEST,
@@ -250,7 +263,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -273,7 +286,7 @@ def main():
             selected_dependencies = dependencies if test in (
                 PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
-                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST) else []
+                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
