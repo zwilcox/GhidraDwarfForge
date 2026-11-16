@@ -58,6 +58,7 @@ MIPS_ALLOCATION = "ghidradwarfforge/targets/MipsWideParameterAllocation.java"
 MIPS_ALLOCATION_TEST = "ghidradwarfforge.MipsN32ParameterAllocationSmoke"
 STACK_FLOW = "ghidradwarfforge/StackValueFlow.java"
 STACK_FLOW_TEST = "ghidradwarfforge.RegisterByteSliceFlowSmoke"
+STACK_CARRIER_TEST = "ghidradwarfforge.StackValueFlowSmoke"
 VTABLE_BINDINGS = "ghidradwarfforge/GhidraVtableBindings.java"
 VTABLE_BINDINGS_TEST = "ghidradwarfforge.VtableBindingEvidenceSmoke"
 STATIC_RECOVERY = "ghidradwarfforge/GhidraStaticRecovery.java"
@@ -83,6 +84,14 @@ I386_ALLOCATION_TEST = "ghidradwarfforge.I386ParameterAllocationSmoke"
 
 MERGED_LIFETIME = "ghidradwarfforge/MergedLocalLifetime.java"
 MERGED_LIFETIME_TEST = "ghidradwarfforge.MergedLocalLifetimeSmoke"
+STACK_CARRIER_MUTANTS = [
+    ("stack-carrier-admits-unsaved-parameter", STACK_FLOW, STACK_CARRIER_TEST,
+     "parameter.getFunction() != function ||\n                parameter.getOrdinal() < 0 || function.getParameter(parameter.getOrdinal()) != parameter ||", ""),
+    ("stack-carrier-admits-foreign-storage", STACK_FLOW, STACK_CARRIER_TEST,
+     "storage.getProgramArchitecture() != program || !storage.isValid()", "!storage.isValid()"),
+    ("stack-carrier-forgets-indirection", STACK_FLOW, STACK_CARRIER_TEST,
+     "storage.isForcedIndirect() != indirect ||", ""),
+]
 MERGED_LIFETIME_MUTANTS = [
     ("merged-stack-ignores-curated-provenance", MERGED_LIFETIME, MERGED_LIFETIME_TEST,
      "variable.getSource() != SourceType.USER_DEFINED || !variable.isValid() ||\n                    !variable.hasAssignedStorage() || assigned == null || !assigned.isValid() ||", "!variable.isValid() ||\n                    !variable.hasAssignedStorage() || assigned == null || !assigned.isValid() ||"),
@@ -547,7 +556,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -570,7 +579,7 @@ def main():
             selected_dependencies = dependencies if test in (
                 PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
-                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST) else []
+                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
@@ -591,7 +600,7 @@ def main():
             if compiled.returncode:
                 raise AssertionError(f"{label}: compilation failed, not a detected mutant\n{compiled.stdout}")
             classpath = os.pathsep.join(map(str, [root, classes, tests, *selected_dependencies]))
-            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST) else []
+            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST) else []
             if test == BOUNDED_SWITCH_TEST:
                 test_args.append(root / "fixtures")
             if test == CALL_VALUE_TEST:

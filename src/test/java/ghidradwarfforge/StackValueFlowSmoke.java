@@ -38,6 +38,7 @@ public final class StackValueFlowSmoke {
                 }
             }
         }
+        checks += StackCarrierOwnershipSmoke.check();
         System.out.println("stack-value-flow-smoke=PASS checks=" + checks);
     }
 
