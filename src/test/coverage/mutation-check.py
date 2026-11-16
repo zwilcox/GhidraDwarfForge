@@ -155,6 +155,11 @@ DYNAMIC_MUTANTS = [
     ("dynamic-accepts-versioned-null-symbol", DYNAMIC, DYNAMIC_TEST,
      'require(version == 0, "dynamic null symbol has a version");',
      'require(true, "dynamic null symbol has a version");'),
+    ("dynamic-accepts-unexpected-extended-index", DYNAMIC, DYNAMIC_TEST,
+     'escaped < input.sectionCount() : escaped == 0', 'escaped < input.sectionCount() : true'),
+    ("dynamic-accepts-duplicate-version-table", DYNAMIC, DYNAMIC_TEST,
+     'require(versionSection == null && section.size == count * 2L',
+     'require(true && section.size == count * 2L'),
 ]
 
 
