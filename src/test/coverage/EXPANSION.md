@@ -6,6 +6,55 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Sectionless validation, hosted AArch64 and recovery publication
+
+CONFIRMED: the diagnostic union now contains 1,017 verified sessions with
+**28,471/29,790 lines (95.6%) and 21,307/25,884 branches (82.3%)**.
+Binary/location has 18,291/19,201 lines (95.3%) and 15,275/18,732 branches
+(81.5%). File/validation has 6,458/6,677 lines (96.7%) and 3,664/4,250
+branches (86.2%). All 255 sources and 901 production classes remain included.
+Both critical branch targets and updated hosted/main acceptance remain pending.
+Evidence paths below are relative to the guarded coverage-expansion scratch root.
+
+The existing sectionless attachment-validator harness now measures its two native
+Java processes and checks their independent validator receipts before completing
+collection. A current x86-64 sectionless fixture passes two deterministic headless
+exports, unchanged-input checks, strict/GNU/LLVM validation and actual GDB source,
+type, breakpoint and stepping checks. Three inherited frame diagnostics are
+corroborated against original program-header bytes. Exclusive evidence publication
+refuses an existing destination without changing it. Parameters are optimized out;
+no variable-value claim is made. The metadata host is a test host, not privileged
+attachment approval. The two measured validator sessions add 15 lines and six
+branches. `sectionless-validation-2f181/` retains results and verified raw data;
+247 coverage-tool tests pass. Updated hosted policy requires this collection;
+older hosted runs cannot satisfy the new requirement.
+
+The completed AArch64 job in run `43952501473` supplies artifact `14282028785`.
+Its authenticated ZIP digest, successful job, historical source merge/harness
+hashes and current production class identities verify. Twelve measured sessions
+cover stack transitions in executable, PIE and rebased PIE cases, with compiler
+and exported GDB values, stepping, complete range/availability assertions,
+input preservation and deterministic repeat output. Regeneration matches the
+published artifact report. This adds one line and one branch; the historical
+artifact lacks the newly required bitfield collection and does not establish
+current full hosted acceptance. Evidence: `integration-aarch64-43952501473/`.
+
+Five new real-filesystem recovery-selection failure cases cover directory identity
+failure, cancellation before writing, changed staging bytes, replacement of the
+staging directory and replacement of the staged file during cleanup. Each refuses
+transaction entry and preserves the original target/backup; unverified replacement
+files survive, and cleanup failures remain attached to the primary failure.
+These cases use the existing test host/validator seam, not a privileged host
+claim. The operation smoke passes 274 assertions including 51 new assertions.
+Two separately compiled mutations are caught by behavioral assertions: accepting
+changed staged content and deleting a replacement without rechecking identity.
+Mutants contribute no probes. Production source and JAR hashes are unchanged.
+`recovery-publication-final-2f181/` contains the final one-session collection and
+verified union; `recovery-publication-mutations-2f181/` retains the mutation
+results. This session adds nine lines and eight branches. Earlier superseded
+four-case runs are excluded. No full JavaExec rerun is claimed; the tests remain
+wired into the existing operation smoke task for the next hosted cycle.
+
 ## Current interactive GUI and ARM aggregate boundaries
 
 CONFIRMED: the existing Linux Script Manager journey passes with the current
