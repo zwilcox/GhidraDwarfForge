@@ -24,7 +24,7 @@ REQUIRED = {
         'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu',
         'linux-attachment-exec', 'linux-attachment-pie', 'linux-attachment-exec-no-build-id',
         'gui-script-manager', 'gui-script-manager-loader', 'gui-script-manager-compressed',
-        'gui-script-manager-unwind', 'lexical-shadow'}),
+        'gui-script-manager-unwind', 'lexical-shadow', 'object-parameter', 'object-return'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -127,6 +127,53 @@ def lexical_cohort(cases):
         raise ValueError('lexical coverage requires every existing role, gap, call and partitioned-source case')
 
 
+def object_oracle(record, oracle):
+    suite, role = record['suite'], oracle.get('role')
+    returning = suite == 'object-return'
+    marker = 'OBJECT_RETURN' if returning else 'OBJECT_PARAMETER'
+    pair, protected = oracle.get('outputPair'), oracle.get('protected')
+    if (suite not in ('object-parameter', 'object-return') or record.get('layer') != 'headless'
+            or oracle.get('status') != 'PASS_' + marker + '_MEASUREMENT'
+            or oracle.get('oracleStatus') != marker + '_PASS'
+            or oracle.get('target') != 'x86_64' or oracle.get('javaRuntime') != 21
+            or role not in ('exec', 'pie', 'pie-rebased')
+            or [row.get('label') for row in record['sessions']] != ['import', 'export-first', 'export-repeat']
+            or not isinstance(pair, list) or len(pair) != 2
+            or any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value) for value in pair)
+            or not isinstance(protected, dict) or not protected
+            or any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value) for value in protected.values())):
+        raise ValueError('object measurement lacks exact analyzer, preservation or cohort evidence')
+    observations = oracle.get('observations')
+    if not isinstance(observations, list) or len(observations) != 2 or any(not isinstance(row, dict) for row in observations):
+        raise ValueError('object measurement lacks both debugger observations')
+    if returning:
+        if any(row.get('status') != 'PASS' or row.get('aggregate') != [10, 4, 21]
+                or row.get('ordinaryReturn') != 42 or row.get('exitCodes') != [0]
+                or (role != 'exec' and (type(row.get('bias')) is not int or row['bias'] == 0)) for row in observations):
+            raise ValueError('object-return measurement lacks compiler-correlated aggregate values')
+        mode, children = 'return', []
+    else:
+        explicit, control = oracle.get('explicitBinding'), oracle.get('bindingControl')
+        if type(explicit) is not bool or control not in (None, 'stale', 'conflict') or (explicit and control is not None):
+            raise ValueError('object parameter measurement has invalid binding profile')
+        mode = control or ('explicit' if explicit else 'inferred')
+        children = ['failure'] if explicit else ['cancellation'] if control else []
+        if (observations[0].get('objectValue') != 7 or observations[0].get('amount') != 3
+                or observations[1].get('ordinaryValue') != 41 or observations[1].get('ordinaryName') != 'this'):
+            raise ValueError('object parameter measurement lacks real object and ordinary-name values')
+    if oracle.get('measurement') != {'directAnalyzerSessions': 3, 'unmeasuredNestedDrivers': children}:
+        raise ValueError('object measurement must disclose its unmeasured failure/cancellation drivers')
+    return suite, role, mode
+
+
+def object_cohort(cases):
+    expected = {('object-parameter', role, mode) for role in ('exec', 'pie', 'pie-rebased')
+        for mode in ('inferred', 'explicit', 'stale', 'conflict')}
+    expected.update(('object-return', role, 'return') for role in ('exec', 'pie', 'pie-rebased'))
+    if len(cases) != len(expected) or set(cases) != expected:
+        raise ValueError('object coverage requires every existing return, binding and ELF role case')
+
+
 def load_job(root, jar, kind, commit, run):
     job, expected_layers, expected_suites = REQUIRED[kind]
     files.exact_files(root, {'collections', 'report'})
@@ -136,7 +183,7 @@ def load_job(root, jar, kind, commit, run):
             or summary.get('cohort') != {'commit': commit, 'run': run, 'job': job}
             or set(summary.get('layers', {})) != expected_layers):
         raise ValueError('missing or mismatched CI integration cohort: ' + kind)
-    rows, suites, known, unmeasured, lexical_cases = [], set(), set(), [], []
+    rows, suites, known, unmeasured, lexical_cases, object_cases = [], set(), set(), [], [], []
     for layer, measured in sorted(summary['layers'].items()):
         xml = files.regular(root / 'report' / (layer + '.xml'), 32 * 1024 * 1024)
         if files.digest(xml) != measured.get('xmlSha256'):
@@ -166,6 +213,8 @@ def load_job(root, jar, kind, commit, run):
                 gui_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'lexical-shadow':
                 lexical_cases.append(lexical_oracle(record, files.read(directory / 'oracle.json')))
+            if record['suite'] in ('object-parameter', 'object-return'):
+                object_cases.append(object_oracle(record, files.read(directory / 'oracle.json')))
             layer_suites.add(record['suite'])
             layer_rows.extend((layer, row['session'], directory / row['file']) for row in record['sessions'])
             layer_halts.extend({'suite': record['suite'], **row} for row in record.get('unmeasuredForcedHalts', []))
@@ -180,6 +229,7 @@ def load_job(root, jar, kind, commit, run):
         raise ValueError('missing or unexpected required CI integration suite: ' + kind)
     if kind == 'linux':
         lexical_cohort(lexical_cases)
+        object_cohort(object_cases)
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,
         'summarySha256': files.digest(root / 'report/summary.json'),
         'receipts': {name: files.digest(root / 'collections' / name / 'receipt.json') for name in sorted(known)},

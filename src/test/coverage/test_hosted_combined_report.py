@@ -259,6 +259,62 @@ class LexicalOracleAdmission(unittest.TestCase):
                 hosted.lexical_oracle(record, oracle)
 
 
+class ObjectOracleAdmission(unittest.TestCase):
+    def fixture(self, role='exec', mode='inferred'):
+        returning = mode == 'return'
+        suite = 'object-return' if returning else 'object-parameter'
+        marker = 'OBJECT_RETURN' if returning else 'OBJECT_PARAMETER'
+        record = {'suite': suite, 'layer': 'headless',
+            'sessions': [{'label': label} for label in ('import', 'export-first', 'export-repeat')]}
+        children = ['failure'] if mode == 'explicit' else ['cancellation'] if mode in ('stale', 'conflict') else []
+        oracle = {'status': 'PASS_' + marker + '_MEASUREMENT', 'oracleStatus': marker + '_PASS',
+            'target': 'x86_64', 'javaRuntime': 21, 'role': role, 'outputPair': ['a' * 64, 'b' * 64],
+            'protected': {'fixture': 'c' * 64}, 'explicitBinding': mode == 'explicit',
+            'bindingControl': mode if mode in ('stale', 'conflict') else None,
+            'measurement': {'directAnalyzerSessions': 3, 'unmeasuredNestedDrivers': children},
+            'observations': [{'status': 'PASS', 'aggregate': [10, 4, 21], 'ordinaryReturn': 42,
+                'exitCodes': [0], 'bias': 0x100000} for _ in range(2)] if returning else [
+                {'objectValue': 7, 'amount': 3}, {'ordinaryName': 'this', 'ordinaryValue': 41}]}
+        return record, oracle
+
+    def test_full_existing_matrix_required(self):
+        cases = [hosted.object_oracle(*self.fixture(role, mode)) for role in ('exec', 'pie', 'pie-rebased')
+            for mode in ('inferred', 'explicit', 'stale', 'conflict', 'return')]
+        hosted.object_cohort(cases)
+        for missing in range(len(cases)):
+            with self.subTest(missing=cases[missing]), self.assertRaisesRegex(ValueError, 'every existing'):
+                hosted.object_cohort(cases[:missing] + cases[missing + 1:])
+        with self.assertRaises(ValueError):
+            hosted.object_cohort(cases[:-1] + cases[:1])
+
+    def test_incomplete_or_changed_analyzer_evidence_rejected(self):
+        record, oracle = self.fixture()
+        for field, value in (('status', 'PASS'), ('oracleStatus', 'PASS'), ('target', 'aarch64'),
+                ('javaRuntime', 25), ('role', 'shared'), ('outputPair', []), ('protected', {}),
+                ('explicitBinding', 1), ('bindingControl', 'unknown'), ('observations', [])):
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                hosted.object_oracle(record, {**oracle, field: value})
+        with self.assertRaises(ValueError):
+            hosted.object_oracle({**record, 'layer': 'native-java'}, oracle)
+        with self.assertRaises(ValueError):
+            hosted.object_oracle({**record, 'sessions': record['sessions'][1:]}, oracle)
+
+    def test_debugger_values_and_pie_bias_are_required(self):
+        for mode, field, value in (('inferred', 'objectValue', 8), ('return', 'aggregate', [0, 0, 0]),
+                ('return', 'ordinaryReturn', 0), ('return', 'exitCodes', [1]), ('return', 'bias', 0)):
+            record, oracle = self.fixture('pie', mode)
+            oracle['observations'][0][field] = value
+            with self.subTest(mode=mode, field=field), self.assertRaises(ValueError):
+                hosted.object_oracle(record, oracle)
+
+    def test_failure_and_cancellation_children_cannot_be_claimed_measured(self):
+        for mode in ('explicit', 'stale', 'conflict'):
+            record, oracle = self.fixture(mode=mode)
+            oracle['measurement']['unmeasuredNestedDrivers'] = []
+            with self.subTest(mode=mode), self.assertRaises(ValueError):
+                hosted.object_oracle(record, oracle)
+
+
 class ReportDependencies(unittest.TestCase):
     def test_changed_or_unrecorded_tool_jars_rejected(self):
         with tempfile.TemporaryDirectory(prefix='forge-report-tools-') as temporary:

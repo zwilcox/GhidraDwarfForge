@@ -3346,7 +3346,7 @@ jobs:
               --require-suite linux-attachment-exec-no-build-id \
               --require-suite gui-script-manager --require-suite gui-script-manager-loader \
               --require-suite gui-script-manager-compressed --require-suite gui-script-manager-unwind \
-              --require-suite lexical-shadow
+              --require-suite lexical-shadow --require-suite object-parameter --require-suite object-return
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'
