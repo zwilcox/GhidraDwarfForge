@@ -22,6 +22,7 @@ saved_inheritance = combined.module('saved_inheritance_admission', HERE / 'saved
 external_declarations = combined.module('external_declaration_admission', HERE / 'external-declaration-admission.py')
 recovered_signatures = combined.module('recovered_signature_admission', HERE / 'recovered-signature-admission.py')
 stack_transitions = combined.module('stack_transition_admission', HERE / 'stack-transition-admission.py')
+producer_failures = combined.module('producer_failure_admission', HERE / 'producer-failure-admission.py')
 REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation',
@@ -35,7 +36,7 @@ REQUIRED = {
         'calling-convention', 'custom-call-storage', 'call-site-packaged',
         'lexical-statics', 'lexical-statics-controls', 'recovered-statics-positive', 'recovered-statics-controls',
         'stack-control-flow', 'saved-inheritance', 'external-declarations', 'recovered-returns', 'recovered-parameters',
-        'stack-value-transitions'}),
+        'stack-value-transitions', 'producer-failures'}),
     'linux_aarch64': ('target-preflight', {'headless'}, {'stack-value-transitions'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
@@ -299,6 +300,7 @@ def load_job(root, jar, kind, commit, run):
     external_declaration_cases = []
     recovered_signature_cases = []
     stack_transition_cases = []
+    producer_failure_cases = []
     for layer, measured in sorted(summary['layers'].items()):
         xml = files.regular(root / 'report' / (layer + '.xml'), 32 * 1024 * 1024)
         if files.digest(xml) != measured.get('xmlSha256'):
@@ -346,6 +348,8 @@ def load_job(root, jar, kind, commit, run):
                 external_declaration_cases.append(external_declarations.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] in ('recovered-returns', 'recovered-parameters'):
                 recovered_signature_cases.append(recovered_signatures.oracle(record, files.read(directory / 'oracle.json')))
+            if record['suite'] == 'producer-failures':
+                producer_failure_cases.append(producer_failures.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'stack-value-transitions':
                 stack_transition_cases.append(stack_transitions.oracle(record, files.read(directory / 'oracle.json')))
             layer_suites.add(record['suite'])
@@ -371,6 +375,7 @@ def load_job(root, jar, kind, commit, run):
         saved_inheritance.cohort(saved_inheritance_cases)
         external_declarations.cohort(external_declaration_cases)
         recovered_signatures.cohort(recovered_signature_cases)
+        producer_failures.cohort(producer_failure_cases)
     if kind in ('linux', 'linux_aarch64'):
         stack_transitions.cohort(stack_transition_cases, ['x86_64' if kind == 'linux' else 'aarch64'])
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,

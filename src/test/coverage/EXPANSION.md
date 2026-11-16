@@ -6,6 +6,71 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Isolated native-producer failure controls
+
+CONFIRMED: `producer-failures.py` builds a test-only forwarding library against
+headers extracted from the checksum-verified libdwarf 2.3.2 release archive. The
+real pinned producer still allocates handles, emits the baseline and successful
+retry, and releases its own state. The shim changes one API result at a time;
+these controlled corruptions are **not** reports of upstream libdwarf defects.
+Production code, JNA declarations and the packaged native libraries are unchanged.
+
+All 28 fault profiles pass: initialization status/null handle, actual producer
+string-form error and no-entry status, null DIE, transform status and buffer-count
+bounds, section index/length/null/missing/duplicate data, relocation metadata,
+group and record bounds, symbolic address completeness, and finish failure.
+For each profile, the isolated JVM first exports a control, rejects two attempts
+(existing sidecar and absent output), and exports a byte-identical retry in the
+same JVM. Assertions require unchanged input bytes/identity and source bytes, no
+partial final output or staging file, each fault actually reached, and matching
+successful producer-init/finish counts. A finish failure is injected *before*
+release, requiring the cleanup attempt; no freed handle is intentionally reused.
+Handle counts do not constitute an ASan/Valgrind memory-leak audit.
+
+Every resulting retry passes readelf, LLVM, the strict DWARF checker and GDB.
+GDB checks recovered function/type/source lookup, an exact entry breakpoint,
+the fixture's incoming argument register, return value and normal exit. The test
+does not invent parameter locations. Initial harness setup attempts exposed an
+ambiguous JNA glob, missing loader SONAME aliases, and a GDB prologue-skipping
+breakpoint; those failed attempts are retained and are not passing evidence.
+The corrected final run passes all 28 profiles and admits all 28 native-Java
+sessions. Readelf stderr is also rejected rather than treated as harmless.
+
+Two selected Java mutations pass with two unchanged baselines in 3.52 seconds:
+removing failure cleanup leaves an unfinished real producer handle; removing the
+buffer-count upper bound reaches an unexpected native read instead of the bounded
+rejection. Both are detected by the intended Java assertion. Mutant classes and
+JVMs contribute no coverage. The previous 177-fault suite remains separate
+passing evidence; these are two additional controls, not a full179 replay.
+
+CI now invokes the suite and its mutation checks on the x86-64 lane. The Linux
+coverage contract requires 44 suites, including all producer failure profiles,
+exact pinned header hashes, matched native identities, complete successful
+session labels and independently validated retries. Six new admission tests reject
+missing/reordered cases, unfinished lifecycles, skipped validators, changed
+headers/native identities and incomplete preservation evidence. All **187**
+coverage-tool tests and workflow lint pass. Hosted execution of this batch remains
+PRESENT, UNVERIFIED; the running PR matrix predates it.
+
+Strict raw verification adds 28 sessions to the matching-bytecode diagnostic union,
+retaining all 255 sources / 901 classes and the unchanged production JAR. The new
+1,229-session result is **28,432/29,786 lines (95.5%)** and
+**20,917/25,878 branches (80.8%)**. Binary/location correctness measures
+18,331/19,197 lines (95.5%) and 15,115/18,726 branches (80.7%); file transactions
+remain 6,379/6,677 lines (95.5%) and 3,430/4,250 branches (80.7%). The exporter itself
+moves from 1,110 to 1,127 covered lines and from 567 to 593 covered branch outcomes.
+The accepted critical branch targets still require 1,739 and 395 additional
+outcomes. Nothing was excluded or reclassified, and no threshold changed.
+
+The existing JavaExec baseline38 remains unchanged; the new native probe's two
+test classes are explicitly excluded from that integration JVM's instrumentation,
+not from the production denominator. Its own execution therefore does not require
+fabricating JavaExec sessions for a new test task. Evidence is under
+`producer-failures-checked/`, `producer-failures-checked-collections/`,
+`producer-failure-mutations-checked/` and `producer-failures-checked-verified/` in the bounded
+coverage workspace. This mixed-commit union is diagnostic, not hosted acceptance
+or publication. Issue #209 remains incomplete.
+
 ## Current matching-bytecode measurement after the Linux job
 
 CONFIRMED: implementation `326326eb` adds a backup control that changes bytes
