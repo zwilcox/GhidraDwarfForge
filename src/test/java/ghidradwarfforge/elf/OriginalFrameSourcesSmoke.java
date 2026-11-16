@@ -203,7 +203,77 @@ public final class OriginalFrameSourcesSmoke {
         require(Arrays.equals(original, Files.readAllBytes(image.sourcePath())), "re-read controls changed original");
     }
 
+    private static void compressionMetadata(Path path, boolean wide, ByteOrder order) throws Exception {
+        byte[] frame = plain(wide ? 8 : 4, order);
+        for (boolean gnu : List.of(false, true)) {
+            String name = gnu ? ".zdebug_frame" : ".debug_frame";
+            byte[] packed = compressed(frame, wide, order, gnu, false);
+            // Every magic byte matters; GNU lengths are always big endian,
+            // independently of the containing ELF's byte order and class.
+            for (int fault = 0; fault < (gnu ? 5 : wide ? 2 : 0); fault++) {
+                byte[] bad = packed.clone();
+                var fields = ByteBuffer.wrap(bad).order(gnu ? ByteOrder.BIG_ENDIAN : order);
+                String diagnostic;
+                if (gnu && fault < 4) {
+                    bad[fault] ^= 1;
+                    diagnostic = "invalid GNU compressed frame header";
+                }
+                else if (gnu || fault == 0) {
+                    fields.putLong(gnu ? 4 : 8, Long.MIN_VALUE);
+                    diagnostic = "original frame decoded-byte budget exceeded";
+                }
+                else {
+                    fields.putLong(16, Long.MIN_VALUE);
+                    diagnostic = "invalid original frame uncompressed alignment";
+                }
+                var image = fixture(path, wide, order, List.of(new Section(name, 1, gnu ? 0 : 0x800, bad)));
+                byte[] before = Files.readAllBytes(path);
+                try {
+                    OriginalFrameSources.inspect(image, () -> false);
+                    throw new AssertionError("accepted invalid compression metadata: " + diagnostic);
+                }
+                catch (IllegalArgumentException expected) {
+                    require(expected.getMessage().contains(diagnostic), "wrong metadata refusal: " + expected);
+                }
+                require(Arrays.equals(before, Files.readAllBytes(path)), "metadata refusal changed original ELF");
+            }
+        }
+        // Zero requests no alignment. ELF32 ch_addralign is unsigned, so its
+        // highest power of two must not become a negative Java integer.
+        for (long alignment : new long[] {0, 1, 2, 0x80000000L, wide ? 1L << 62 : 1L << 30}) {
+            byte[] packed = compressed(frame, wide, order, false, false);
+            var fields = ByteBuffer.wrap(packed).order(order);
+            if (wide) fields.putLong(16, alignment);
+            else fields.putInt(8, (int) alignment);
+            var image = fixture(path, wide, order, List.of(new Section(".debug_frame", 1, 0x800, packed)));
+            byte[] before = Files.readAllBytes(path);
+            try {
+                var inventory = OriginalFrameSources.inspect(image, () -> false);
+                var records = inventory.sources().getFirst().records().frames();
+                require(records.size() == 1 && records.getFirst().address() == 0x1000 &&
+                    records.getFirst().size() == 32, "alignment changed frame inventory");
+                require(Arrays.equals(frame, OriginalFrameSources.debugFrameBytes(image, inventory, () -> false)),
+                    "alignment changed decoded frame bytes");
+            }
+            catch (IllegalArgumentException rejected) {
+                throw new AssertionError("valid compression alignment rejected: " + alignment, rejected);
+            }
+            require(Arrays.equals(before, Files.readAllBytes(path)), "alignment inspection changed original ELF");
+        }
+        var eh = fixture(path, wide, order, List.of(new Section(".eh_frame", 1, 0x800,
+            compressed(frame, wide, order, false, false))));
+        try {
+            OriginalFrameSources.inspect(eh, () -> false);
+            throw new AssertionError("accepted compressed EH frame");
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage().contains("compressed allocated/EH frame source is unsupported"),
+                "compressed EH frame reached record parsing: " + expected);
+        }
+    }
+
     private static void check(Path path, boolean wide, ByteOrder order) throws Exception {
+        compressionMetadata(path, wide, order);
         byte[] plain = plain(wide ? 8 : 4, order);
         for (String mode : List.of("plain", "gabi", "gnu")) {
             boolean gnu = mode.equals("gnu"), packed = !mode.equals("plain");

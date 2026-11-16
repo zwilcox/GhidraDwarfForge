@@ -357,6 +357,71 @@ public final class OriginalFrameRangesSmoke {
         System.out.println("original-frame-leb-boundaries=PASS cases=" + cases);
     }
 
+    private static void parserLimits() throws Exception {
+        var order = ByteOrder.LITTLE_ENDIAN;
+        var ordinary = fixture(false, order, 8, Format.EH_FRAME, 1, "", 0, 0x1000, 1);
+        byte[] cie = Arrays.copyOf(ordinary.bytes(), ordinary.fde());
+        require(cie.length == 16, "limit fixture must be one complete 16-byte CIE");
+        int records = 262144;
+        byte[] many = new byte[records * cie.length];
+        for (int offset = 0; offset < many.length; offset += cie.length) System.arraycopy(cie, 0, many, offset, cie.length);
+        Inventory accepted;
+        try { accepted = read(many, order, 8, Format.EH_FRAME); }
+        catch (IllegalArgumentException failure) { throw new AssertionError("record limit rejected the supported boundary", failure); }
+        require(accepted.cies() == records && accepted.frames().isEmpty(), "wrong inventory at record limit");
+        byte[] excessive = Arrays.copyOf(many, many.length + cie.length);
+        System.arraycopy(cie, 0, excessive, many.length, cie.length);
+        expectFailure(() -> read(excessive, order, 8, Format.EH_FRAME), "frame record budget exceeded");
+
+        byteLimit(cie);
+        for (int width : new int[] {0, 1, 2, 3, 5, 16}) {
+            expectFailure(() -> read(ordinary.bytes(), order, width, Format.EH_FRAME), "address width");
+        }
+        for (ByteOrder byteOrder : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+            var frame = fixture(true, byteOrder, 8, Format.DEBUG_FRAME, 4, "", 0, 0x1000, 1);
+            for (long reference : new long[] {Long.MIN_VALUE, 0x80000000L, Long.MAX_VALUE}) {
+                rejectedFrame(new Fixture(change(frame, byteOrder, frame.pointer(), 8, reference), frame.fde(),
+                    frame.pointer(), frame.address(), frame.size(), frame.cieAugmentation(), frame.fdeAugmentation(), 8),
+                    byteOrder, 8, Format.DEBUG_FRAME, "CIE reference outside section");
+            }
+            expectFailure(() -> OriginalFrameRanges.read(frame.bytes(), byteOrder, 8, Format.DEBUG_FRAME,
+                -1, () -> false), "frame section address exceeds");
+            expectFailure(() -> OriginalFrameRanges.read(frame.bytes(), byteOrder, 8, Format.DEBUG_FRAME,
+                Long.MAX_VALUE, () -> false), "encoded pointer field overflows");
+            var augmented = fixture(false, byteOrder, 8, Format.EH_FRAME, 1, "zR", 0, 0x6000, 1);
+            rejectedFrame(new Fixture(change(augmented, byteOrder, augmented.cieAugmentation(), 1, 2),
+                augmented.fde(), augmented.pointer(), augmented.address(), augmented.size(),
+                augmented.cieAugmentation(), augmented.fdeAugmentation(), augmented.idWidth()),
+                byteOrder, 8, Format.EH_FRAME, "unexplained CIE augmentation bytes");
+        }
+        System.out.println("original-frame-parser-limits=PASS records=" + records + " bytes=" + (64 * 1024 * 1024));
+    }
+
+    private static void byteLimit(byte[] cie) throws Exception {
+        // One CIE with padded initial instructions: the extent reader does not
+        // interpret CFI. Keep the 64 MiB safety boundary in memory, not on disk.
+        int bytes = 64 * 1024 * 1024;
+        byte[] boundary = new byte[bytes];
+        System.arraycopy(cie, 0, boundary, 0, cie.length);
+        ByteBuffer.wrap(boundary).order(ByteOrder.LITTLE_ENDIAN).putInt(0, bytes - 4);
+        var digest = java.security.MessageDigest.getInstance("SHA-256");
+        byte[] original = digest.digest(boundary);
+        Inventory accepted;
+        try { accepted = read(boundary, ByteOrder.LITTLE_ENDIAN, 8, Format.EH_FRAME); }
+        catch (IllegalArgumentException failure) { throw new AssertionError("byte limit rejected the supported boundary", failure); }
+        require(accepted.cies() == 1 && accepted.frames().isEmpty(), "wrong inventory at byte limit");
+        require(Arrays.equals(original, digest.digest(boundary)), "byte-limit scan modified input");
+        byte[] excessive = Arrays.copyOf(boundary, bytes + 1);
+        expectFailure(() -> read(excessive, ByteOrder.LITTLE_ENDIAN, 8, Format.EH_FRAME), "frame section size");
+    }
+
+    private static void expectFailure(Runnable action, String diagnostic) {
+        try { action.run(); throw new AssertionError("accepted invalid frame: " + diagnostic); }
+        catch (IllegalArgumentException failure) {
+            require(failure.getMessage().contains(diagnostic), "unexpected frame rejection: " + failure);
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         if (args.length != 0) {
             var result = OriginalFrameRanges.read(Files.readAllBytes(Path.of(args[0])),
@@ -369,6 +434,7 @@ public final class OriginalFrameRangesSmoke {
         }
         augmentationEncodings();
         lebBoundaries();
+        parserLimits();
         for (boolean wide : List.of(false, true)) for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
             for (int width : List.of(4, 8)) for (Format format : Format.values()) for (int version : List.of(1, 3, 4)) {
                 check(wide, order, width, format, version);

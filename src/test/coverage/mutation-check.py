@@ -157,6 +157,10 @@ ORIGINAL_OBJECT_MUTANTS = [
 FRAME_RANGES = "ghidradwarfforge/unwind/OriginalFrameRanges.java"
 FRAME_RANGES_TEST = "ghidradwarfforge.unwind.OriginalFrameRangesSmoke"
 FRAME_RANGE_MUTANTS = [
+    ("frame-rejects-exact-byte-budget", FRAME_RANGES, FRAME_RANGES_TEST,
+     'data.length <= MAX_BYTES', 'data.length < MAX_BYTES'),
+    ("frame-allows-extra-record", FRAME_RANGES, FRAME_RANGES_TEST,
+     'records.size() < MAX_RECORDS', 'records.size() <= MAX_RECORDS'),
     ("frame-admits-unsupported-aligned-pointer", FRAME_RANGES, FRAME_RANGES_TEST,
      'application == 0x30 || application == 0x40',
      'application == 0x30 || application == 0x40 || application == 0x50'),
@@ -191,6 +195,11 @@ REPORT_TEXT_MUTANTS = [
      'case \'\\b\' -> json.append("\\\\b");', "case '\\b' -> { }"),
 ]
 FRAME_REREAD_MUTANTS = [
+    ("frame-compression-sign-extends-alignment", FRAME_REREAD, FRAME_REREAD_TEST,
+     'long alignment = wide ? fields.getLong() : Integer.toUnsignedLong(fields.getInt());',
+     'long alignment = wide ? fields.getLong() : fields.getInt();'),
+    ("frame-compression-rejects-zero-alignment", FRAME_REREAD, FRAME_REREAD_TEST,
+     'alignment >= 0 && (alignment == 0 ||', 'alignment > 0 && (alignment == 0 ||'),
     ("frame-reread-ignores-stored-hash", FRAME_REREAD, FRAME_REREAD_TEST,
      'require(hash(stored, cancelled).equals(selected.storedSha256()), "original stored frame bytes changed");',
      ''),
