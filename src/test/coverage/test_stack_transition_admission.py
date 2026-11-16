@@ -182,6 +182,29 @@ class HostedMatrixAdmission(unittest.TestCase):
             coverage.save(oracle, evidence)
             collection.finish(oracle)
             records.append(collection)
+        # This lane also requires bitfield evidence. These remain synthetic
+        # receipt fixtures, never assertions of actual debugger execution.
+        collection = coverage.Collection('bitfield-values', self.jar, 'headless', environment={
+            'FORGE_INTEGRATION_COVERAGE_OUTPUT': str(root / 'collections'),
+            'FORGE_INTEGRATION_COVERAGE_AGENT': str(agent)})
+        for label in ('export', 'repeat'):
+            with collection.session(['java', 'Fake'], label):
+                (collection.root / collection.record['sessions'][-1]['file']).write_bytes(b'not real JaCoCo probes')
+        fields = [{'name': 'a', 'value': 5, 'bits': 3, 'offset': 0},
+            {'name': 'b', 'value': 17, 'bits': 5, 'offset': 3}]
+        observed = [{'name': name, 'size': size, 'fields': fields}
+            for name, size in [('word_value', 4), ('byte_value', 1)]]
+        oracle = self.root / (target + '-bitfields.json')
+        coverage.save(oracle, {'status': 'PASS_MEASURED_BITFIELDS', 'target': 'aarch64',
+            'deterministic': True, 'strictUncorroboratedErrors': 0,
+            'inputSha256': 'a' * 64, 'artifactSha256': 'b' * 64, 'sourceSha256': 'c' * 64,
+            'protected': {str(i): 'd' * 64 for i in range(6)},
+            'gdb': [{'values': ['word={a=5,b=17}', 'byte={a=5,b=17}'],
+                'logSha256': 'e' * 64, 'exit': 'normal'} for _ in range(2)],
+            'lldb': {'status': 'PASS_LLDB_BITFIELDS', 'target': 'aarch64',
+                'cases': [{'mode': mode, 'observations': observed} for mode in ('compiler', 'forge')]}})
+        collection.finish(oracle)
+        records.append(collection)
         report = root / 'report'
         report.mkdir()
         xml = report / 'headless.xml'
@@ -189,8 +212,8 @@ class HostedMatrixAdmission(unittest.TestCase):
         summary = {'schema': 1, 'status': 'PASS', 'commit': 'a' * 40,
             'productionJarSha256': coverage.digest(self.jar),
             'cohort': {'commit': 'a' * 40, 'run': '7', 'job': 'target-preflight'},
-            'layers': {'headless': {'xmlSha256': coverage.digest(xml), 'sessions': 12, 'productionClasses': 1,
-                'suites': ['stack-value-transitions'], 'unmeasuredForcedHalts': [],
+            'layers': {'headless': {'xmlSha256': coverage.digest(xml), 'sessions': 14, 'productionClasses': 1,
+                'suites': ['bitfield-values', 'stack-value-transitions'], 'unmeasuredForcedHalts': [],
                 'receipts': {c.root.name: coverage.digest(c.root / 'receipt.json') for c in records}}}}
         coverage.save(report / 'summary.json', summary)
         return root, records, summary
@@ -198,7 +221,7 @@ class HostedMatrixAdmission(unittest.TestCase):
     def test_aarch64_receipt_layer_and_full_inventory(self):
         root, _, _ = self.bundle('aarch64')
         rows, origin = self.hosted.load_job(root, self.jar, 'linux_aarch64', 'a' * 40, '7')
-        self.assertEqual(len(rows), 12)
+        self.assertEqual(len(rows), 14)
         self.assertEqual(origin['kind'], 'linux_aarch64')
 
     def test_x86_receipts_cannot_fill_the_aarch64_matrix_input(self):
@@ -208,11 +231,11 @@ class HostedMatrixAdmission(unittest.TestCase):
 
     def test_rebound_report_still_cannot_omit_a_profile(self):
         root, records, summary = self.bundle('aarch64')
-        removed = records[-1]
+        removed = records[-2]
         # Retain omitted synthetic data outside the input rather than erasing it.
         removed.root.rename(self.root / 'omitted')
         summary['layers']['headless']['receipts'].pop(removed.root.name)
-        summary['layers']['headless']['sessions'] = 8
+        summary['layers']['headless']['sessions'] = 10
         self.hosted.files.save(root / 'report/summary.json', summary)
         with self.assertRaisesRegex(ValueError, 'target profile'):
             self.hosted.load_job(root, self.jar, 'linux_aarch64', 'a' * 40, '7')

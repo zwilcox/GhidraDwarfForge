@@ -16,19 +16,15 @@ targets=("$@")
 if [[ ${#targets[@]} -eq 0 ]]; then
     targets=(x86_64 mips32be)
 fi
-result_root="$repository_dir/build/test-results/bitfield-values"
+result_root=${FORGE_BITFIELD_RESULTS:-"$repository_dir/build/test-results/bitfield-values"}
 mkdir -p "$result_root"
 result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
-emulator_pid=
+source "$repository_dir/src/test/integration/qemu-socket.sh"
 cleanup() {
-    if [[ -n "$emulator_pid" ]]; then
-        kill "$emulator_pid" 2>/dev/null || true
-        wait "$emulator_pid" 2>/dev/null || true
-    fi
+    qemu_socket_cleanup
     echo "bitfield-values results: $result_dir"
 }
 trap cleanup EXIT
-port=$((27000 + ($$ % 10000)))
 
 symbol_address() {
     readelf -Ws "$1" | awk -v symbol="$2" '$8 == symbol { print "0x" $2; exit }'
@@ -41,11 +37,8 @@ run_gdb() {
         load_symbols=(-ex "symbol-file \"$sidecar\"")
     fi
     if [[ -n "$emulator" ]]; then
-        "$emulator" -L "$sysroot" -g "$port" "$executable" \
-            > "$log.emulator" 2>&1 &
-        emulator_pid=$!
-        sleep 0.2
-        run_command=(-ex "set sysroot $sysroot" -ex "target remote :$port" -ex continue)
+        qemu_socket_start "$log.emulator" "$emulator" "$sysroot" "$executable"
+        run_command=(-ex "set sysroot $sysroot" -ex "target remote $qemu_socket_path" -ex continue)
     fi
     timeout 45 gdb-multiarch -q -nx -batch \
         -ex 'set pagination off' -ex 'set confirm off' \
@@ -59,9 +52,8 @@ run_gdb() {
         -ex 'printf "byte={a=%u,b=%u}\n", byte_value.a, byte_value.b' \
         -ex 'print sizeof(word_value)' -ex 'print sizeof(byte_value)' \
         -ex continue > "$log" 2> "$log.stderr"
-    if [[ -n "$emulator_pid" ]]; then
-        wait "$emulator_pid"
-        emulator_pid=
+    if [[ -n "$emulator" ]]; then
+        qemu_socket_wait
     fi
     if [[ -s "$log.stderr" ]]; then
         # Some QEMU ARM32/AArch64/GDB combinations diagnose QEMU's synthetic vDSO even
@@ -164,16 +156,17 @@ for target in "${targets[@]}"; do
         END { finish_member(); exit bad || count != 4 }
     ' "$case_dir/info.txt"
     sha256sum -c "$case_dir/input.sha256" > "$case_dir/input-preservation.txt"
+    cp "$output" "$case_dir/first.dbg"
+    cp "$output.c" "$case_dir/first.dbg.c"
+    export_command[0]="${FORGE_BITFIELD_REPEAT_GHIDRA:-$ghidra_dir}/support/analyzeHeadless"
+    "${export_command[@]}" > "$case_dir/repeat-export.log" 2>&1
+    grep -Fq 'GhidraDwarfForge symbol export PASS' "$case_dir/repeat-export.log"
+    cmp "$output" "$case_dir/first.dbg"
+    cmp "$output.c" "$case_dir/first.dbg.c"
+    sha256sum -c "$case_dir/input.sha256" > "$case_dir/repeat-input-preservation.txt"
     if [[ -n "${FORGE_LLDB:-}" ]]; then
         case "$target" in
             x86_64|aarch64)
-                cp "$output" "$case_dir/first.dbg"
-                cp "$output.c" "$case_dir/first.dbg.c"
-                "${export_command[@]}" > "$case_dir/repeat-export.log" 2>&1
-                grep -Fq 'GhidraDwarfForge symbol export PASS' "$case_dir/repeat-export.log"
-                cmp "$output" "$case_dir/first.dbg"
-                cmp "$output.c" "$case_dir/first.dbg.c"
-                sha256sum -c "$case_dir/input.sha256" > "$case_dir/repeat-input-preservation.txt"
                 python3 "$repository_dir/src/test/integration/bitfield-lldb.py" \
                     "$case_dir" --target "$target" --lldb "$FORGE_LLDB"
                 ;;

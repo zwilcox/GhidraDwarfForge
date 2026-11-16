@@ -6,6 +6,37 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Measured packed bit fields through the installed exporter
+
+CONFIRMED: the existing real Ghidra bit-field fixture now measures two exports
+per target. The shell oracle still checks one-byte component storage with a
+four-byte base integer, exclusive `DW_AT_data_bit_offset`, independent compiler
+and Forge GDB values `{a=5,b=17}`, aggregate sizes, normal exits and unchanged
+input bytes. Repeat sidecar/source equality is now required for every target.
+The harness uses the shared private QEMU socket helper instead of a PID-derived
+TCP port. The measurement wrapper changes only launcher selection, preserving
+the installed exporter and packaged-native route.
+
+Local x86-64, AArch64, MIPS32 big-endian and MIPS32 little-endian runs pass GNU,
+LLVM, strict libdwarf, GDB and repeatability checks. All emulator sockets are
+removed after successful runs. These local runs do not claim LLDB results:
+LLDB 18 is unavailable locally. Hosted x86-64/AArch64 admission still requires
+the actual compiler/Forge LLDB value and layout observations. Both lanes now
+require the bit-field collection. Five new receipt tests reject missing
+measurement/preservation, nondeterminism, wrong GDB values/exits and matching
+but incorrect LLDB offsets. The AArch64 cohort fixture includes both suites;
+all 241 coverage-tool tests, actionlint and shell syntax checks pass.
+
+The cached installation lacked its native checksum manifest and held different
+supervisor build metadata. The first export correctly refused missing metadata;
+a subsequent pre-run check refused the metadata mismatch. Neither failed attempt
+contributes coverage. The successful run temporarily used the exact retained
+release manifest/metadata after verifying every native binary hash, then restored
+the previous installation state and production JAR. Evidence in bounded scratch:
+`bitfields-packaged-2f181/`, `bitfields-packaged-2f181-run.log` and
+`bitfield-measurement-tests-passing.log`. Eight measured sessions await raw union
+verification. Full hosted acceptance and critical coverage targets remain open.
+
 ## Current producer inheritance and vtable-name evidence
 
 CONFIRMED: the existing compiler-backed inheritance and renamed-class harnesses

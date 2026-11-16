@@ -2145,7 +2145,11 @@ jobs:
           if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
               export FORGE_LLDB=lldb-18
           fi
-          src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+          if [[ "$TARGET" == aarch64 ]]; then
+              export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
+              export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections"
+          fi
+          python3 src/test/integration/bitfield-values.py "$GHIDRA_INSTALL_DIR" "$TARGET"
 
       - name: Validate saved MMIO layouts and qualifier preservation
         if: matrix.target == 'x86_64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
@@ -3403,6 +3407,7 @@ jobs:
               --require-suite build-id-installation --require-suite build-id-identity --require-suite instruction-context \
               --require-suite source-context --require-suite annotation-inventory --require-suite equate-evidence \
               --require-suite equate-constants --require-suite equate-retained-names \
+              --require-suite bitfield-values \
               --require-suite annotation-export --require-suite failed-source-export \
               --require-suite class-scopes --require-suite inheritance-producer --require-suite inheritance-names \
               --require-suite build-id-command --require-suite cfi-encoder \
@@ -3430,7 +3435,8 @@ jobs:
               --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
               --collections build/integration-coverage/collections --output build/integration-coverage/report \
               --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
-              --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite stack-value-transitions
+              --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite stack-value-transitions \
+              --require-suite bitfield-values
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'aarch64'

@@ -770,5 +770,57 @@ class EquateAdmission(unittest.TestCase):
                     hosted.equate_oracle(record, oracle)
 
 
+class BitfieldAdmission(unittest.TestCase):
+    def setUp(self):
+        self.record = {'suite': 'bitfield-values', 'layer': 'headless',
+            'sessions': [{'label': label} for label in ('export', 'repeat')]}
+        observations = [{'name': name, 'size': size, 'fields': [
+            {'name': 'a', 'value': 5, 'bits': 3, 'offset': 0},
+            {'name': 'b', 'value': 17, 'bits': 5, 'offset': 3}]}
+            for name, size in [('word_value', 4), ('byte_value', 1)]]
+        self.oracle = {'status': 'PASS_MEASURED_BITFIELDS', 'target': 'x86_64',
+            'deterministic': True, 'strictUncorroboratedErrors': 0,
+            'inputSha256': 'a' * 64, 'artifactSha256': 'b' * 64, 'sourceSha256': 'c' * 64,
+            'protected': {str(i): 'd' * 64 for i in range(6)},
+            'gdb': [{'values': ['word={a=5,b=17}', 'byte={a=5,b=17}'],
+                'logSha256': 'e' * 64, 'exit': 'normal'} for _ in range(2)],
+            'lldb': {'status': 'PASS_LLDB_BITFIELDS', 'target': 'x86_64',
+                'cases': [{'mode': mode, 'observations': copy.deepcopy(observations)}
+                    for mode in ('compiler', 'forge')]}}
+
+    def test_complete_receipt(self):
+        hosted.bitfield_oracle(self.record, self.oracle)
+
+    def test_gdb_only_evidence_is_not_hosted_acceptance(self):
+        self.oracle['lldb'] = None
+        hosted.bitfield_oracle(self.record, self.oracle, require_lldb=False)
+        with self.assertRaisesRegex(ValueError, 'LLDB'):
+            hosted.bitfield_oracle(self.record, self.oracle)
+
+    def test_measurement_preservation_and_determinism_required(self):
+        for owner, key, value in [('record', 'sessions', []), ('record', 'layer', 'native-java'),
+                ('oracle', 'protected', {}), ('oracle', 'inputSha256', 'invalid'),
+                ('oracle', 'deterministic', False), ('oracle', 'strictUncorroboratedErrors', 1)]:
+            with self.subTest(owner=owner, key=key):
+                record, oracle = copy.deepcopy(self.record), copy.deepcopy(self.oracle)
+                (record if owner == 'record' else oracle)[key] = value
+                with self.assertRaisesRegex(ValueError, 'repeated measured exports'):
+                    hosted.bitfield_oracle(record, oracle)
+
+    def test_wrong_bitfield_value_or_failed_exit_rejected(self):
+        for key, value in [('values', ['word={a=5,b=13}', 'byte={a=5,b=17}']), ('exit', 'signal')]:
+            with self.subTest(key=key):
+                oracle = copy.deepcopy(self.oracle)
+                oracle['gdb'][1][key] = value
+                with self.assertRaisesRegex(ValueError, 'GDB values'):
+                    hosted.bitfield_oracle(self.record, oracle)
+
+    def test_matching_but_wrong_lldb_offsets_rejected(self):
+        for row in self.oracle['lldb']['cases']:
+            row['observations'][1]['fields'][0]['offset'] = 24
+        with self.assertRaisesRegex(ValueError, 'LLDB'):
+            hosted.bitfield_oracle(self.record, self.oracle)
+
+
 if __name__ == '__main__':
     unittest.main()

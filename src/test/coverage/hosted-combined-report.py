@@ -31,7 +31,7 @@ REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation', 'build-id-identity',
         'instruction-context', 'source-context', 'annotation-inventory', 'equate-evidence',
-        'equate-constants', 'equate-retained-names',
+        'equate-constants', 'equate-retained-names', 'bitfield-values',
         'annotation-export', 'failed-source-export', 'class-scopes', 'inheritance-producer',
         'inheritance-names', 'build-id-command', 'cfi-encoder', 'cfi-composition-explicit',
         'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu',
@@ -42,7 +42,7 @@ REQUIRED = {
         'lexical-statics', 'lexical-statics-controls', 'recovered-statics-positive', 'recovered-statics-controls',
         'stack-control-flow', 'saved-inheritance', 'external-declarations', 'recovered-returns', 'recovered-parameters',
         'stack-value-transitions', 'producer-failures', 'qualified-type-producer'}),
-    'linux_aarch64': ('target-preflight', {'headless'}, {'stack-value-transitions'}),
+    'linux_aarch64': ('target-preflight', {'headless'}, {'stack-value-transitions', 'bitfield-values'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -131,6 +131,40 @@ def equate_oracle(record, oracle):
             or any(value not in ('Retained.rep/idata/~index.bak', 'Retained.rep/idata/~journal.bak')
                 for value in changes)):
         raise ValueError('retained equates require repeatable exports, preserved project and live GDB stops')
+
+
+def bitfield_oracle(record, oracle, *, require_lldb=True):
+    def sha(value):
+        return isinstance(value, str) and re.fullmatch(r'[0-9a-f]{64}', value) is not None
+    observations = oracle.get('gdb')
+    protected = oracle.get('protected')
+    if (record.get('suite') != 'bitfield-values' or record.get('layer') != 'headless'
+            or [row.get('label') for row in record.get('sessions', [])] != ['export', 'repeat']
+            or oracle.get('status') != 'PASS_MEASURED_BITFIELDS'
+            or oracle.get('target') not in ('x86_64', 'aarch64', 'arm32', 'mips32be', 'mips32le')
+            or oracle.get('deterministic') is not True
+            or type(oracle.get('strictUncorroboratedErrors')) is not int
+            or oracle['strictUncorroboratedErrors'] != 0
+            or not all(sha(oracle.get(name)) for name in ('inputSha256', 'artifactSha256', 'sourceSha256'))
+            or not isinstance(protected, dict) or len(protected) != 6
+            or not all(sha(value) for value in protected.values())
+            or not isinstance(observations, list) or len(observations) != 2
+            or any(not isinstance(row, dict) or row.get('values') != ['word={a=5,b=17}', 'byte={a=5,b=17}']
+                or row.get('exit') != 'normal' or not sha(row.get('logSha256')) for row in observations)):
+        raise ValueError('bitfield coverage requires repeated measured exports and compiler/Forge GDB values')
+    if require_lldb:
+        lldb = oracle.get('lldb')
+        expected = [{'name': name, 'size': size, 'fields': [
+            {'name': 'a', 'value': 5, 'bits': 3, 'offset': 0},
+            {'name': 'b', 'value': 17, 'bits': 5, 'offset': 3}]}
+            for name, size in [('word_value', 4), ('byte_value', 1)]]
+        if (not isinstance(lldb, dict) or lldb.get('status') != 'PASS_LLDB_BITFIELDS'
+                or lldb.get('target') != oracle['target']
+                or not isinstance(lldb.get('cases'), list) or len(lldb['cases']) != 2
+                or any(not isinstance(row, dict) for row in lldb['cases'])
+                or [row.get('mode') for row in lldb['cases']] != ['compiler', 'forge']
+                or any(row.get('observations') != expected for row in lldb['cases'])):
+            raise ValueError('hosted bitfield coverage requires matching real LLDB observations')
 
 
 def attachment_oracle(record, oracle):
@@ -422,6 +456,11 @@ def load_job(root, jar, kind, commit, run):
                 build_id_identity_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] in ('equate-constants', 'equate-retained-names'):
                 equate_oracle(record, files.read(directory / 'oracle.json'))
+            if record['suite'] == 'bitfield-values':
+                oracle = files.read(directory / 'oracle.json')
+                bitfield_oracle(record, oracle)
+                if oracle['target'] != ('aarch64' if kind == 'linux_aarch64' else 'x86_64'):
+                    raise ValueError('bitfield target differs from hosted lane')
             if record['suite'] == 'windows-host-primitives':
                 windows_metadata_failures.oracle(record, files.read(directory / 'oracle.json'))
                 windows_directory_failures.oracle(record, files.read(directory / 'oracle.json'))
