@@ -41,6 +41,8 @@ RECEIPT = "ghidradwarfforge/output/AttachmentReceipt.java"
 RECEIPT_TEST = "ghidradwarfforge.output.AttachmentProtocolSmoke"
 RECEIPT_STORE = "ghidradwarfforge/output/AttachmentReceiptStore.java"
 RECEIPT_STORE_TEST = "ghidradwarfforge.output.AttachmentReceiptStoreSmoke"
+OPERATION = "ghidradwarfforge/output/AttachmentOperation.java"
+OPERATION_TEST = "ghidradwarfforge.output.AttachmentOperationSmoke"
 
 RECEIPT_MUTANTS = [
     ("receipt-accepts-shared-backup-identity", RECEIPT, RECEIPT_TEST,
@@ -50,6 +52,13 @@ RECEIPT_MUTANTS = [
     ("receipt-publishes-changed-stage-bytes", RECEIPT_STORE, RECEIPT_STORE_TEST,
      "if (!stagedFingerprint.equals(host.inspect(stage)) ||\n                    !sha256(bytes).equals(sha256(bounded(stage)))) {",
      "if (!stagedFingerprint.equals(host.inspect(stage))) {"),
+    ("refresh-ignores-retained-debuglink-crc", OPERATION, OPERATION_TEST,
+     "content.sidecarDigest().gnuDebuglinkCrc32() != previous.debuglinkCrc32()", "false"),
+    ("refresh-accepts-unrelated-source-bundle", OPERATION, OPERATION_TEST,
+     'if (!previousBundle.manifest().inputSha256().equals(snapshots.get("originalBackup").digest().sha256()))',
+     "if (false)"),
+    ("attachment-ignores-replaced-output-parent", OPERATION, OPERATION_TEST,
+     "if (!parent.getValue().equals(host.directoryIdentity(parent.getKey())))", "if (false)"),
 ]
 
 # Each edit names a specific safety/semantic guarantee. This is not a blanket
@@ -225,7 +234,7 @@ def main():
             # its existing missing serialVersionUID is unrelated to these mutants.
             selected_dependencies = dependencies if test in (
                 PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
-                RECEIPT_TEST, RECEIPT_STORE_TEST) else []
+                RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
