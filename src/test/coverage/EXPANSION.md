@@ -6,6 +6,22 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Complete checker-report corruption controls
+
+CONFIRMED: `StrictDwarfReportSmoke` now rejects duplicate categories in each
+of the two retained real check tables, duplicate compiler/total/tag sections,
+misordered summaries, contradictory arithmetic, zero completed checks, empty
+tag inventories, unexplained trailing records and oversized/null reports.
+Every text corruption starts from retained real libdwarf output; the unchanged
+report must still pass after all corruptions. No parser behavior was changed.
+
+The focused task passes 323 assertions. Four compiled behavioral mutations are
+detected in 1.962 seconds: accepting duplicate categories, zero checks, trailing
+records and duplicate final tag reports. Compiler failures are not detections.
+Evidence: `strict-report-complete.log` and `strict-report-selected-mutations/`
+in the bounded coverage workspace. Fresh full coverage measurement is pending;
+this is not a repository-wide mutation score.
+
 ## Memory-local address spaces
 
 CONFIRMED: the new real-ProgramDB regression fails on the previous exporter

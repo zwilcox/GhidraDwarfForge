@@ -79,6 +79,19 @@ CALL_VALUE_TEST = "ghidradwarfforge.calls.CallValueSmoke"
 CALL_VALUE_ORACLE = REPO / "src/test/integration/check-call-values.py"
 VALIDATOR_STATUS = "ghidradwarfforge/output/ValidatorSupervisor.java"
 VALIDATOR_STATUS_TEST = "ghidradwarfforge.output.ValidatorStatusBoundarySmoke"
+STRICT_REPORT = "ghidradwarfforge/output/StrictDwarfReport.java"
+STRICT_REPORT_TEST = "ghidradwarfforge.output.StrictDwarfReportSmoke"
+STRICT_REPORT_MUTANTS = [
+    ("strict-report-accepts-duplicate-category", STRICT_REPORT, STRICT_REPORT_TEST,
+     "rows.put(row.group(1), counts) == null", "rows.put(row.group(1), counts) == null || true"),
+    ("strict-report-accepts-zero-checks", STRICT_REPORT, STRICT_REPORT_TEST,
+     "checks > 0 && checks ==", "checks >= 0 && checks =="),
+    ("strict-report-accepts-trailing-record", STRICT_REPORT, STRICT_REPORT_TEST,
+     "tail.substring(lastEnd).isBlank()", "true"),
+    ("strict-report-accepts-duplicate-tag-report", STRICT_REPORT, STRICT_REPORT_TEST,
+     'require(tagStart == -1, "duplicate final tag report")',
+     'require(true, "duplicate final tag report")'),
+]
 I386_ALLOCATION = "ghidradwarfforge/targets/I386ParameterAllocation.java"
 I386_ALLOCATION_TEST = "ghidradwarfforge.I386ParameterAllocationSmoke"
 
@@ -807,7 +820,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -852,6 +865,8 @@ def main():
                 raise AssertionError(f"{label}: compilation failed, not a detected mutant\n{compiled.stdout}")
             classpath = os.pathsep.join(map(str, [root, classes, tests, *selected_dependencies]))
             test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, MIXED_PREFIX_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST) else []
+            if test == STRICT_REPORT_TEST:
+                test_args.append(REPO / "src/test/fixtures/dwarfdump")
             if test == LINUX_MOUNT_TEST:
                 test_args.append("--parser-only")
             if test == BOUNDED_SWITCH_TEST:
