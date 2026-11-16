@@ -38,6 +38,19 @@ Evidence: `.forge-work/scratch/coverage-expansion/backup-readback-focused-comple
 and `backup-readback-selected-mutations/result.json`. No production bytecode,
 coverage threshold, inventory classification or host-support claim changed.
 
+Full JavaExec baseline 37 at `bb0fc59d` passes all 210 tasks in 273.2 seconds,
+plus 53,432 independent expression vectors and 181 coverage-tool tests. Raw
+verification retains 901 production classes and 255 sources (603 test classes).
+JavaExec measures 23,661/29,786 lines and 18,364/25,878 branches. The verified
+499-session partial union measures 26,722/29,786 lines (89.7%) and 19,804/25,878
+branches (76.5%). File transactions/validation improve to 91.4% lines / 77.6%
+branches; binary/location remains 92.8% / 78.2%. The same-cohort comparison adds
+eight covered lines and eleven branch outcomes in `AttachmentFileStore`, now
+131/132 lines and 53/60 branches. The exact differences are retained in
+`backup-readback-coverage-attribution.json`; verified reports use the same prefix.
+These remain local partial results; accepted critical targets and hosted/main
+publication remain outstanding.
+
 ## Retained frame inventory identity checks
 
 CONFIRMED: `OriginalFrameSourcesSmoke` now calls the inventoried debug-frame reader
