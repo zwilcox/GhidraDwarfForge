@@ -154,6 +154,18 @@ ORIGINAL_OBJECT_MUTANTS = [
     ("object-match-sign-extends-elf32-value", ORIGINAL_OBJECTS, ORIGINAL_OBJECTS_TEST,
      'Integer.toUnsignedLong(rows.getInt(at + 4))', '(long) rows.getInt(at + 4)'),
 ]
+FRAME_RANGES = "ghidradwarfforge/unwind/OriginalFrameRanges.java"
+FRAME_RANGES_TEST = "ghidradwarfforge.unwind.OriginalFrameRangesSmoke"
+FRAME_RANGE_MUTANTS = [
+    ("frame-admits-unsupported-aligned-pointer", FRAME_RANGES, FRAME_RANGES_TEST,
+     'application == 0x30 || application == 0x40',
+     'application == 0x30 || application == 0x40 || application == 0x50'),
+    ("frame-ignores-tenth-leb-overflow", FRAME_RANGES, FRAME_RANGES_TEST,
+     'if (index == 9) require(signed ? payload == 0 || payload == 127 : payload <= 1,',
+     'if (index == 9) require(true,'),
+    ("frame-reads-signed-leb-as-unsigned", FRAME_RANGES, FRAME_RANGES_TEST,
+     'case 9 -> leb(true);', 'case 9 -> leb(false);'),
+]
 BUILD_ID_HELPER = "ghidradwarfforge/output/BuildIdHelper.java"
 BUILD_ID_HELPER_TEST = "ghidradwarfforge.output.BuildIdHelperSmoke"
 BUILD_ID_HELPER_MUTANTS = [
@@ -677,7 +689,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
