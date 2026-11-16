@@ -508,6 +508,8 @@ STATIC_RECOVERY_MUTANTS = [
     ("memory-local-flattens-overlay-address", "ghidradwarfforge/GhidraTypeGraph.java", STATIC_RECOVERY_TEST,
      'memoryBlock.isOverlay() || memoryBlock.isMapped() ||\n                        !memoryAddress.getAddressSpace().equals(program.getAddressFactory().getDefaultAddressSpace())',
      'memoryBlock.isMapped()'),
+    ("memory-local-flattens-physical-address-space", "ghidradwarfforge/GhidraTypeGraph.java", STATIC_RECOVERY_TEST,
+     '!memoryAddress.getAddressSpace().equals(program.getAddressFactory().getDefaultAddressSpace())', 'false'),
 ]
 
 VTABLE_BINDING_MUTANTS = [

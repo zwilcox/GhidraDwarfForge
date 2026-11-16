@@ -33,6 +33,7 @@ public final class StaticRecoverySmoke {
             check(profile);
             MemoryLocalExtractionSmoke.check(profile);
         }
+        MemoryLocalExtractionSmoke.checkSeparateDataSpace(java.nio.file.Path.of(args[0]));
         System.out.println("static-recovery=PASS checks=" + checks);
     }
 

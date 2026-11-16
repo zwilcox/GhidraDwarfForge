@@ -37,9 +37,13 @@ Cases cover saved-type precedence, missing/stale inference, memory boundaries,
 rebasing, first-use restrictions, rejected bindings/scopes, uninitialized objects
 and unsupported mappings. Extraction preserves program state and object bytes,
 is deterministic, and honors cancellation. These explicit recovery candidates
-test extraction; they do not claim execution of the decompiler.
+test extraction; they do not claim execution of the decompiler. One further
+real dsPIC30F ProgramDB case (eight assertions) proves that distinct loaded
+physical code/data spaces with equal numeric offsets cannot be collapsed.
+Its unused register subset is checked against pinned Ghidra `PIC30.dwarf`;
+this rejection-only fixture does not establish dsPIC export support.
 
-All nine selected mutations are detected in 24.603 seconds, including incorrect
+All ten selected mutations are detected in 27.543 seconds, including incorrect
 normalization, extent, provenance, saved-type precedence and mapping admission.
 The first extent mutant failed to compile because it removed the only checked
 address-overflow operation; that attempt is not credited. The corrected mutant
@@ -50,12 +54,15 @@ controls to the existing exec/PIE/rebased-PIE pipeline. It requires deterministi
 output, unchanged inputs/project, independent GNU/LLVM/libdwarf validation and
 GDB's correct fallback to the separate global object. Both controls are mandatory
 for coverage admission, including their JVM sessions and debugger observations.
-CONFIRMED: the complete x86-64 non-PIE replay passes, including the existing
+CONFIRMED: complete x86-64 non-PIE, PIE and rebased-PIE replays pass, including the existing
 scope/recovery controls, cancellation, deterministic reruns, input/project
-preservation, independent validators and all debugger boundaries. Five complete
-collections with 37 JVM sessions pass the stricter admission policy. All 222
-coverage-tool tests pass in 8.912 seconds. PIE, rebased PIE and fresh combined
-measurement remain pending at this checkpoint.
+preservation, independent validators and all debugger boundaries. Fifteen complete
+collections with 111 JVM sessions pass the stricter admission policy. AArch64
+non-PIE also passes the full harness under QEMU; that run is behavioral evidence,
+not included in these measured x86-64 collections. All 222 coverage-tool tests
+passed in 8.912 seconds before the final mutation additions. Baseline52's 211
+JavaExec tasks passed in 279.411 seconds with 53,432 independent expression
+vectors. The separate-space follow-up requires a fresh JavaExec measurement.
 
 The production JAR has changed: previous combined percentages remain historical
 and must not be presented as coverage of this fix or merged with incompatible
@@ -64,7 +71,13 @@ probes. Evidence is in the bounded coverage workspace under
 `memory-local-fixed-mutations/` and the `memory-local-*` headless logs. The first
 headless setup lacked package metadata; later fixture corrections distinguish
 the saved name from its display name and ensure mapped storage is actually in
-the loaded default address space. Retain those failures as diagnostic evidence.
+the loaded default address space. A stale Java 25 script cache blocked the first
+rebased import; the successful replay uses the existing isolated Java 21 home
+inside scratch. Retain those failures as diagnostic evidence. The raw Java
+verifier accepts the 322 baseline52/integration sessions, but the full report
+builder correctly requires Windows data. A partial local report must identify
+that missing layer explicitly, without inventing Windows sessions or weakening
+the full acceptance gate.
 
 ## Straight-line local ownership boundaries
 

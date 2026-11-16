@@ -37,6 +37,58 @@ final class MemoryLocalExtractionSmoke {
         System.out.println("memory-local-extraction=PASS target=" + profile[1] + " cases=" + CASES.size() + " checks=" + checks);
     }
 
+    /** Rejection-only Harvard fixture: this does not establish dsPIC export support. */
+    static void checkSeparateDataSpace(java.nio.file.Path ghidra) throws Exception {
+        var mapping = ghidra.resolve("Ghidra/Processors/PIC/data/languages/PIC30.dwarf");
+        String description = java.nio.file.Files.readString(mapping);
+        require(description.contains("dwarf=\"0\" ghidra=\"W0\"") &&
+            description.contains("dwarf=\"15\" ghidra=\"W15\""), "pinned dsPIC register subset changed");
+        var registers = new TargetRegisterMap("dspic30f", "Rejection-only subset from " + mapping,
+            Map.of("W0", 0, "W15", 15));
+        var language = DefaultLanguageService.getLanguageService().getLanguage(new LanguageID("dsPIC30F:LE:24:default"));
+        require(language.getRegister("W0") != null && language.getRegister("W15") != null,
+            "pinned dsPIC registers are unavailable");
+        Object owner = new Object();
+        var program = new ProgramDB("separate-data-space", language, language.getDefaultCompilerSpec(), owner);
+        try {
+            int tx = program.startTransaction("distinct physical memory spaces");
+            try {
+                var code = program.getAddressFactory().getDefaultAddressSpace();
+                var ram = program.getAddressFactory().getAddressSpace("ram");
+                require(ram != null && !ram.equals(code), "fixture needs distinct code and data spaces");
+                var entry = code.getAddress(0x4000);
+                var dataStart = ram.getAddress(0x4000);
+                program.getMemory().createInitializedBlock("code", entry, 64, (byte) 0x11, TaskMonitor.DUMMY, false);
+                var block = program.getMemory().createInitializedBlock("objects", dataStart, 64,
+                    (byte) 0x55, TaskMonitor.DUMMY, false);
+                require(block.isLoaded() && !block.isOverlay() && !block.isMapped(),
+                    "fixture must exercise physical non-default memory, not an overlay or mapped block");
+                var function = program.getFunctionManager().createFunction("owner", entry,
+                    new AddressSet(entry, entry.add(31)), SourceType.USER_DEFINED);
+                var address = dataStart.add(16);
+                var local = function.addLocalVariable(new LocalVariableImpl("saved_memory", 0,
+                    IntegerDataType.dataType, address, program, SourceType.USER_DEFINED), SourceType.USER_DEFINED);
+                require(local.getVariableStorage().isMemoryStorage() && local.getVariableStorage().getMinAddress().equals(address),
+                    "saved local lost its real data-space identity");
+                var diagnostics = new ArrayList<String>();
+                long modifications = program.getModificationNumber();
+                var model = GhidraTypeGraph.extract(program, List.of(new FunctionSymbol("owner", entry.getOffset(), 32)),
+                    registers, 0, TaskMonitor.DUMMY, diagnostics::add, Map.of(), Map.of(), Map.of());
+                require(model.functionStatics().isEmpty() && model.globals().isEmpty() && model.functions().size() == 1 &&
+                    model.functions().getFirst().locals().isEmpty() && model.variableStorage().variables().isEmpty(),
+                    "a distinct physical address space was flattened into an ELF address");
+                require(diagnostics.contains("Omitted memory local saved_memory: unsupported memory mapping"),
+                    "unsupported physical address space was not diagnosed");
+                require(program.getModificationNumber() == modifications &&
+                    program.getMemory().getByte(entry.add(16)) == 0x11 && program.getMemory().getByte(address) == 0x55 &&
+                    local.getVariableStorage().getMinAddress().equals(address), "extraction changed saved memory or storage");
+            }
+            finally { program.endTransaction(tx, false); }
+        }
+        finally { program.release(owner); }
+        System.out.println("memory-local-separate-space=PASS rejection-only=dsPIC30F checks=" + checks);
+    }
+
     private static void check(String[] profile, String mode) throws Exception {
         var language = DefaultLanguageService.getLanguageService().getLanguage(new LanguageID(profile[0]));
         Object owner = new Object();
