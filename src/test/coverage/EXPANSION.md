@@ -30,13 +30,13 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`3e65d14b047937047cfe1f5b75c613656951c2f4` in 260.5 seconds. The combined local report
+`3cdbb239ca978097f2778cbd66cb09637eadcc5a` in 261.0 seconds. The combined local report
 contains 848 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.4% | 78.4% | 85% / 80% |
-| Binary and location correctness | 94.5% | 77.9% | 95% / 90% |
+| All production Java | 94.5% | 78.7% | 85% / 80% |
+| Binary and location correctness | 94.6% | 78.3% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.5% | Included in overall |
 
@@ -44,7 +44,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-mips-allocation-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-vtable-boundaries-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -91,7 +91,7 @@ including the existing eight abrupt-process exits. Added scenarios verify:
 172/202 branch outcomes. These are filesystem-controller tests with an
 explicit test host, not ELF/DWARF validation or native Windows evidence.
 
-All 69 selected mutation checks pass with unchanged-source baselines. Four new
+All 78 selected mutation checks pass with unchanged-source baselines. Four new
 mutants remove the CRC check, permit reused operation identity, accept unrecorded
 recovery paths or reject a correctly restored prior image. Detection requires a
 behavioral assertion failure; compilation, loading and timeout failures do not count.
@@ -123,6 +123,46 @@ of end-to-end MIPS target support. Existing compiler-correlated QEMU/GDB and
 structural-validator lanes remain required. The ABI version check after an
 AVAILABLE observation is still a defensive guard: the observer rejects nonzero
 versions first; no fabricated observation was introduced to execute it.
+
+## Variable-byte preservation and vtable evidence
+
+`registerByteSliceFlowSmoke` passes 475,324 checks. The new 380 raw p-code
+combinations compare shifts, sign/zero extension, masks, wrapping, carries and
+both operand orders against an independent finite-width BigInteger evaluator.
+Every admitted case preserves the exact tracked register byte across all 256
+byte values and selected nuisance boundaries. Every rejected case has a concrete
+destructive counterexample. These ARM-LE model controls complement the existing
+decoded-instruction tests; they do not establish new target support.
+
+`StackValueFlow` measures 534/542 executable lines and
+617/789 branch outcomes. The new mask tests add seven
+lines and 19 branch outcomes there. Four targeted faults are detected: invented
+zero sign-extension bits, an incorrectly zeroed oversized arithmetic shift,
+unsafe overlapping addition, and loss of the second operand's preserved byte.
+
+`vtableBindingEvidenceSmoke` passes 492 checks using real x86-64 and AArch64
+Ghidra programs and relocation records. One-field relocation changes (address,
+type, status, values, bytes and symbol name) must change the context fingerprint
+while preserving the original and loaded byte hashes. Explicit resaving admits
+the new witness; ordinary reads reject stale evidence without refreshing it.
+Relocations just outside the table do not invalidate its witness. Exact value
+and byte bounds are accepted; oversized values, bytes and aggregate relocation
+data are rejected without replacing saved evidence. Each control rolls back its
+own transaction and verifies exact restoration before the immutable reopen test.
+
+Malformed requests cover invalid identities, text, extents, point counts and
+complete-object geometry. Persisted-record controls include version, count,
+trailing bytes and the decoded-size limit independently of Base64 length.
+`GhidraVtableBindings` measures 230/242 executable
+lines and 185/234 branch outcomes. Five selected
+mutants detect omitted relocation type/status/values and weakened value/byte
+bounds. These are saved-program evidence tests, not new emitted-DWARF claims.
+
+The last hosted run at `aca32e4d`,
+[43810870428](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43810870428),
+failed when Maven Central returned HTTP 429 while resolving JaCoCo. Both native
+builds passed; downstream integration jobs did not run. This infrastructure
+failure is not passing validation and does not establish an exporter regression.
 
 ## Remaining acceptance
 
