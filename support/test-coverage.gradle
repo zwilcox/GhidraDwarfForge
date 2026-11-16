@@ -16,18 +16,82 @@ jacoco {
 
 def coverageDirectory = layout.buildDirectory.dir("test-coverage")
 def coverageExecution = layout.buildDirectory.dir("jacoco")
+def coverageSessions = coverageDirectory.map { it.dir("sessions") }
+def coverageVersion = project.extensions.getByType(
+    org.gradle.testing.jacoco.plugins.JacocoPluginExtension).toolVersion
+def coverageCommit = providers.environmentVariable("GITHUB_SHA").orElse(providers.exec {
+    workingDir project.projectDir
+    commandLine "git", "rev-parse", "HEAD"
+}.standardOutput.asText.map { it.trim() })
+def coverageRun = providers.environmentVariable("FORGE_COVERAGE_RUN_ID")
+    .orElse(providers.environmentVariable("GITHUB_RUN_ID")).orElse("local")
+
+def coverageSha256 = { File value ->
+    def digest = java.security.MessageDigest.getInstance("SHA-256")
+    value.withInputStream { stream ->
+        byte[] buffer = new byte[65536]
+        int count
+        while ((count = stream.read(buffer)) != -1) {
+            digest.update(buffer, 0, count)
+        }
+    }
+    return digest.digest().encodeHex().toString()
+}
+
+// Bind every compiled class, including unloaded classes, to each invocation.
+// Names and digests have an unambiguous, platform-independent encoding.
+def coverageClassFingerprint = { directories ->
+    def entries = new TreeMap<String, String>()
+    directories.files.each { directory ->
+        fileTree(directory) { include "**/*.class" }.files.each { value ->
+            String name = directory.toPath().relativize(value.toPath()).toString().replace('\\', '/')
+            if (entries.put(name, coverageSha256(value)) != null) {
+                throw new GradleException("Duplicate coverage class: ${name}")
+            }
+        }
+    }
+    if (entries.empty) {
+        throw new GradleException("Missing compiled coverage class population")
+    }
+    def digest = java.security.MessageDigest.getInstance("SHA-256")
+    entries.each { name, hash -> digest.update((name + "\n" + hash + "\n").getBytes("UTF-8")) }
+    return digest.digest().encodeHex().toString()
+}
 
 tasks.withType(JavaExec).configureEach { task ->
     project.extensions.getByType(org.gradle.testing.jacoco.plugins.JacocoPluginExtension).applyTo(task)
     def agent = task.extensions.getByType(org.gradle.testing.jacoco.plugins.JacocoTaskExtension)
     agent.destinationFile = coverageExecution.get().file("${task.name}.exec").asFile
     agent.includes = ["ghidradwarfforge.*"]
+    agent.sessionId = "forge-javaexec-" + UUID.randomUUID().toString().replace("-", "")
     doFirst {
         def marker = coverageDirectory.get().file("tasks/${task.name}.json").asFile
         marker.parentFile.mkdirs()
         marker.text = groovy.json.JsonOutput.toJson([task: task.name, complete: false]) + "\n"
+        def receipt = coverageSessions.get().file("${task.name}.json").asFile
+        receipt.parentFile.mkdirs()
+        receipt.text = groovy.json.JsonOutput.toJson([
+            schema: 1, task: task.name, session: agent.sessionId, complete: false,
+            commit: coverageCommit.get(), run: coverageRun.get(),
+            host: System.getProperty("os.name"), jacocoVersion: coverageVersion,
+            productionFingerprint: coverageClassFingerprint(sourceSets.main.output.classesDirs),
+            testFingerprint: coverageClassFingerprint(sourceSets.test.output.classesDirs)
+        ]) + "\n"
     }
     doLast {
+        def receipt = coverageSessions.get().file("${task.name}.json").asFile
+        def record = new groovy.json.JsonSlurper().parse(receipt)
+        def data = agent.destinationFile
+        if (task.executionResult.get().exitValue != 0 || !data.isFile() ||
+                java.nio.file.Files.isSymbolicLink(data.toPath()) ||
+                data.length() == 0 || data.length() > 16 * 1024 * 1024 ||
+                record.productionFingerprint != coverageClassFingerprint(sourceSets.main.output.classesDirs) ||
+                record.testFingerprint != coverageClassFingerprint(sourceSets.test.output.classesDirs)) {
+            throw new GradleException("Incomplete or changed JavaExec coverage invocation: ${task.name}")
+        }
+        record.complete = true
+        record.executionSha256 = coverageSha256(data)
+        receipt.text = groovy.json.JsonOutput.toJson(record) + "\n"
         def marker = coverageDirectory.get().file("tasks/${task.name}.json").asFile
         marker.text = groovy.json.JsonOutput.toJson([task: task.name, complete: true]) + "\n"
     }
@@ -51,6 +115,7 @@ tasks.register("testCoverageReport", org.gradle.testing.jacoco.tasks.JacocoRepor
 
 // A separate prerequisite runs even when JacocoReport would skip missing data.
 tasks.register("validateTestCoverageSessions") {
+    dependsOn classes, testClasses
     doLast {
         def markers = fileTree(coverageDirectory.map { it.dir("tasks") }) { include "*.json" }.files
         if (markers.empty) {
@@ -65,10 +130,34 @@ tasks.register("validateTestCoverageSessions") {
             if (!data.isFile() || data.length() == 0) {
                 throw new GradleException("Missing execution data for ${record.task}")
             }
+            def receipt = coverageSessions.get().file("${record.task}.json").asFile
+            if (!receipt.isFile()) {
+                throw new GradleException("Missing JavaExec coverage receipt: ${record.task}; clean and rerun")
+            }
+            def session = new groovy.json.JsonSlurper().parse(receipt)
+            if (session.schema != 1 || session.complete != true || session.task != record.task ||
+                    !(session.session ==~ /forge-javaexec-[0-9a-f]{32}/) ||
+                    session.commit != coverageCommit.get() || session.run != coverageRun.get() ||
+                    session.jacocoVersion != coverageVersion ||
+                    session.executionSha256 != coverageSha256(data)) {
+                throw new GradleException("Invalid JavaExec coverage receipt: ${record.task}")
+            }
             return data.canonicalFile
         }.toSet()
         if (expected != fileTree(coverageExecution) { include "*.exec" }.files.collect { it.canonicalFile }.toSet()) {
             throw new GradleException("Coverage execution data does not match the recorded test sessions; clean and rerun")
+        }
+        def receipts = fileTree(coverageSessions) { include "*.json" }.files
+        if (receipts.collect { it.name }.toSet() != markers.collect { it.name }.toSet()) {
+            throw new GradleException("Coverage receipts do not match the recorded test sessions")
+        }
+        def productionFingerprint = coverageClassFingerprint(sourceSets.main.output.classesDirs)
+        def testFingerprint = coverageClassFingerprint(sourceSets.test.output.classesDirs)
+        receipts.each { receipt ->
+            def session = new groovy.json.JsonSlurper().parse(receipt)
+            if (session.productionFingerprint != productionFingerprint || session.testFingerprint != testFingerprint) {
+                throw new GradleException("Coverage classes changed between JavaExec tasks; clean and rerun")
+            }
         }
     }
 }
