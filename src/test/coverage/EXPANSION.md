@@ -31,6 +31,38 @@ faults. Mutation output is excluded from coverage. Evidence is retained under
 `report-contracts-focused-2.log` and `report-contract-selected-mutations/` in the
 bounded workspace. A fresh full-suite measurement follows this test batch.
 
+CONFIRMED: baseline55 at `c9b29310` passes all 211 JavaExec tasks in 277.993
+seconds and 53,432 independent expression vectors. Raw probe verification
+retains 255 production sources / 901 classes. JavaExec gains seven lines and
+33 branches without changing production bytecode; `ExportReport` reaches
+405/405 lines and 129/132 branches. All 222 coverage-tool tests pass (8.340s).
+The refreshed qualified-type producer passes its real compiler/GDB/validator
+oracle and raw probe admission against production JAR `2f18126b...`.
+The resulting 323-session collection is explicitly partial: 24,850/29,790
+lines (83.4%) and 19,248/25,884 branches (74.4%). It lacks Windows and other
+required integration collections; these figures are not the published badge
+or complete hosted acceptance. Evidence: `javaexec-baseline-55/`,
+`report-contract-javaexec-checked-55/`, `qualified-type-current-2f181-verified/`,
+`report-contract-current-partial/` and `report-contract-final-verification.log`.
+
+## Register description admission and ownership
+
+CONFIRMED: the existing storage-model task now checks invalid register-map
+metadata, negative numbers, independent physical/logical slice bounds including
+integer overflow, missing pair children/parents, repeated children, pair gaps
+and overlaps. Valid aliases, reversed object-memory pair order and exact-end
+slices remain accepted. Caller edits and attempts to mutate returned maps or
+pair lists cannot alter retained descriptions. Unknown registers remain
+explicitly unavailable; no location or architecture support is invented.
+
+All 96 added checks pass. Eight compiled mutations are detected by assertion
+failures in 3.093 seconds, covering both overflow calculations, paired extent,
+child/parent admission, object order and list ownership. These are public model
+contract tests using ordinary maps and lists; no impossible Ghidra objects or
+duplicate-key map implementations are manufactured. Production code and the
+coverage denominator are unchanged. Evidence: `register-map-contract-verification.log`
+and `register-map-contract-selected-mutations/`; full measurement follows.
+
 ## Complete checker-report corruption controls
 
 CONFIRMED: `StrictDwarfReportSmoke` now rejects duplicate categories in each

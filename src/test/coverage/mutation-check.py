@@ -99,6 +99,26 @@ MERGED_LIFETIME = "ghidradwarfforge/MergedLocalLifetime.java"
 MERGED_LIFETIME_TEST = "ghidradwarfforge.MergedLocalLifetimeSmoke"
 REGISTER_PROFILE = "ghidradwarfforge/GhidraVariableStorage.java"
 REGISTER_PROFILE_TEST = "ghidradwarfforge.RegisterAliasSmoke"
+REGISTER_MAP = "ghidradwarfforge/locations/TargetRegisterMap.java"
+REGISTER_MAP_TEST = "ghidradwarfforge.locations.VariableStorageSmoke"
+REGISTER_MAP_MUTANTS = [
+    ("register-slice-overflows-physical-extent", REGISTER_MAP, REGISTER_MAP_TEST,
+     '(long) byteOffset * 8 + bitSize', 'byteOffset * 8 + bitSize'),
+    ("register-slice-overflows-logical-extent", REGISTER_MAP, REGISTER_MAP_TEST,
+     '(long) valueBitOffset + bitSize', 'valueBitOffset + bitSize'),
+    ("register-pair-allows-overlap-or-gap", REGISTER_MAP, REGISTER_MAP_TEST,
+     'high.baseBitOffset() != low.bitSize()', 'false'),
+    ("register-pair-allows-duplicate-child", REGISTER_MAP, REGISTER_MAP_TEST,
+     'pieces.get(0).registerName().equals(pieces.get(1).registerName())', 'false'),
+    ("register-pair-allows-unmapped-child", REGISTER_MAP, REGISTER_MAP_TEST,
+     'pieces.stream().anyMatch(piece -> !sorted.containsKey(piece.registerName()))', 'false'),
+    ("register-slice-allows-unmapped-parent", REGISTER_MAP, REGISTER_MAP_TEST,
+     '!dwarfNumbers.containsKey(entry.getValue().parent())', 'false'),
+    ("register-pair-sorts-away-object-order", REGISTER_MAP, REGISTER_MAP_TEST,
+     'pairs.put(entry.getKey(), pieces);', 'pairs.put(entry.getKey(), List.of(low, high));'),
+    ("register-pair-retains-caller-list", REGISTER_MAP, REGISTER_MAP_TEST,
+     'var pieces = List.copyOf(entry.getValue());', 'var pieces = entry.getValue();'),
+]
 MIXED_PREFIX_TEST = "ghidradwarfforge.MixedParameterPrefixSmoke"
 MIXED_PREFIX_MUTANTS = [
     ("mixed-prefix-admits-foreign-storage", REGISTER_PROFILE, MIXED_PREFIX_TEST,
@@ -840,7 +860,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + REGISTER_MAP_MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
