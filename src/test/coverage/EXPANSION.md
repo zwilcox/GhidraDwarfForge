@@ -79,6 +79,37 @@ builder correctly requires Windows data. A partial local report must identify
 that missing layer explicitly, without inventing Windows sessions or weakening
 the full acceptance gate.
 
+CONFIRMED final local checkpoint at `c5a31daa`: baseline54 passes all 211 JavaExec
+tasks in 278.070 seconds, including 53,432 independently interpreted expression
+vectors. All 222 coverage-tool tests pass in 8.570 seconds. The new memory guard
+has 4/4 changed executable lines and 6/6 branches covered. Whole-PR changed code
+has 14/14 lines and 32/36 branches (88.9%): the minimum passes, while the preferred
+90% branch target remains unmet. No production sources or classes are excluded
+(255 sources, 901 classes).
+
+Raw verification accepts 322 current-bytecode sessions: 211 JavaExec and 111
+native/headless static-scope sessions. The explicitly **partial** report measures
+24,821/29,790 lines (83.3%) and 19,196/25,884 branches (74.2%). It has no current
+Windows layer and does not include the other required Linux integration suites.
+It is not comparable in scope to the previous 1,316-session diagnostic union,
+and does not update the badge or establish hosted acceptance. The production
+JAR is `2f18126bf76e63325bd0af6b006b6ac2a645e1608b21feeea2ab3b58739138b6`;
+the previous JAR's probes are not reused.
+
+In JavaExec alone, these changes add five covered lines and 33 covered branch
+outcomes relative to baseline51, with four new production lines and six new
+branches in the denominator. `StrictDwarfReport` increases from 88/116 to
+102/116 branches; `GhidraTypeGraph` from 430/539 to 449/545. These are scoped
+measurements, not estimates of the eventual complete combined percentage.
+
+Final evidence: `javaexec-baseline-54/`, `memory-local-javaexec-checked-54/`,
+`memory-local-current-partial/`, `memory-local-final-verification.log`,
+`memory-local-harvard-mutations/` and `strict-report-selected-mutations/`.
+Baseline53 stopped on an already-existing owned lock fixture; baseline54 uses
+fresh lock/supervisor paths. That setup failure is retained. The original cached
+extension is restored, and its redundant owned backup was removed only after
+hash equality was verified. Issue #209 and PR #210 remain incomplete.
+
 ## Straight-line local ownership boundaries
 
 CONFIRMED focused validation: `LaterLocalOwnershipSmoke` extends the existing
