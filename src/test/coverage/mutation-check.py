@@ -21,10 +21,18 @@ PROTECT = "ghidradwarfforge/GhidraProjectOutputProtection.java"
 PROTECT_TEST = "ghidradwarfforge.GhidraProjectOutputProtectionSmoke"
 FIRMWARE = "ghidradwarfforge/firmware/FirmwareExportImage.java"
 FIRMWARE_TEST = "ghidradwarfforge.firmware.FirmwareImageLifecycleSmoke"
+INHERITANCE = "ghidradwarfforge/dwarf/DwarfInheritanceExpression.java"
+INHERITANCE_TEST = "ghidradwarfforge.dwarf.DwarfInheritanceExpressionSmoke"
 
 # Each edit names a specific safety/semantic guarantee. This is not a blanket
 # mutation score: surviving, uncompilable or timed-out mutants fail this harness.
 MUTANTS = [
+    ("inheritance-loses-subobject-offset", INHERITANCE, INHERITANCE_TEST,
+     "if (base.vptrOffset() != 0)", "if (false)"),
+    ("inheritance-loses-signed-slot", INHERITANCE, INHERITANCE_TEST,
+     "value >>= 7;", "value >>>= 7;"),
+    ("inheritance-accepts-excessive-slot", INHERITANCE, INHERITANCE_TEST,
+     "slot >= 65536", "slot > 65536"),
     ("repair-offset-truncation", REPAIR, REPAIR_TEST,
      "if ((buffer.getLong(cursor.offset) & 0xffffffff00000000L) != 0)", "if (false)"),
     ("repair-reference-not-adjusted", REPAIR, REPAIR_TEST,

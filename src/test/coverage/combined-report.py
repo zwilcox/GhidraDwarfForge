@@ -88,6 +88,44 @@ def load_integration(root, jar, kind):
     return rows, origin
 
 
+def load_local(manifest, jar, repository):
+    """Admit explicitly local measurements without giving them hosted provenance."""
+    value = javaexec.read(manifest)
+    directory = value.get('directory', '')
+    receipts = value.get('receipts', {})
+    harnesses = value.get('harnessSha256', {})
+    if (value.get('schema') != 1 or value.get('kind') != 'local-integration'
+            or not re.fullmatch(r'[0-9a-f]{40}', value.get('checkoutCommit', ''))
+            or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}', value.get('run', ''))
+            or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}', directory)
+            or not isinstance(receipts, dict) or not 0 < len(receipts) <= 100
+            or not isinstance(harnesses, dict) or not 0 < len(harnesses) <= 1000):
+        raise ValueError('invalid local integration manifest')
+    for name, expected in harnesses.items():
+        path = Path(name)
+        if (path.is_absolute() or '..' in path.parts or path.as_posix() != name
+                or not re.fullmatch(r'[0-9a-f]{64}', expected)
+                or javaexec.digest(repository / path) != expected):
+            raise ValueError('local measurement harness changed or has an invalid path')
+    collections = manifest.parent / directory
+    javaexec.exact_files(collections, receipts)
+    rows, suites = [], set()
+    for name, expected in sorted(receipts.items()):
+        if not re.fullmatch(r'[A-Za-z0-9_-]{1,100}', name):
+            raise ValueError('invalid local collection name')
+        folder = collections / name
+        if javaexec.digest(folder / 'receipt.json') != expected:
+            raise ValueError('local collection receipt changed')
+        record = integration.validate_collection(folder, jar)
+        if record['layer'] == 'windows' and record['host'] != 'nt':
+            raise ValueError('Windows measurement did not execute on Windows')
+        suites.add(record['suite'])
+        rows.extend((record['layer'], row['session'], folder / row['file']) for row in record['sessions'])
+    return rows, {'kind': 'local-integration', 'checkoutCommit': value['checkoutCommit'],
+        'run': value['run'], 'harnessSha256': harnesses, 'manifestSha256': javaexec.digest(manifest),
+        'sessions': len(rows), 'suites': sorted(suites), 'hostedAcceptance': False}
+
+
 def counters(node):
     result = {metric: {'covered': 0, 'missed': 0} for metric in ('LINE', 'BRANCH')}
     seen = set()
@@ -154,6 +192,10 @@ def report(args):
         executions, origin = load_integration(root, jar, kind)
         rows.extend(executions)
         origins.append(origin)
+    for manifest in args.local_measurement:
+        executions, origin = load_local(manifest, jar, args.sources.resolve().parents[2])
+        rows.extend(executions)
+        origins.append(origin)
     # Classify the complete source inventory before exposing any combined counters.
     source_names = {path.relative_to(args.sources).as_posix() for path in args.sources.rglob('*.java')}
     classification = inventory(args.inventory, source_names)
@@ -214,6 +256,8 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--commit', required=True)
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--local-measurement', type=Path, action='append', default=[],
+        help='Optional local integration manifest binding raw collections and harness hashes')
     parser.add_argument('--local-baseline', action='store_true', required=True,
         help='Acknowledge mixed run origins; this command does not establish hosted acceptance')
     report(parser.parse_args())

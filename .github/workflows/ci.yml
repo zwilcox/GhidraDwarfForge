@@ -1088,6 +1088,13 @@ jobs:
           python3 src/test/native/validate-call-site-jna.py --profile "$TARGET" \
             --sections "$results/sections" --output "$results/validation"
 
+      - name: Prepare separate coverage for existing integration JVMs
+        if: matrix.target == 'x86_64'
+        run: |
+          ./gradlew --no-daemon -PtestCoverage=true prepareIntegrationCoverage
+          echo "FORGE_INTEGRATION_COVERAGE_AGENT=$PWD/build/test-coverage-tools/jacocoagent.jar" >> "$GITHUB_ENV"
+          echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"
+
       - name: Compiler inheritance references and native exporter runtime controls
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1235,13 +1242,6 @@ jobs:
                   --ghidra "$GHIDRA_INSTALL_DIR" --package "${extension_archives[0]}" \
                   --probe-report "$probe_report" --dwarfdump "$DWARFDUMP"
           done
-
-      - name: Prepare separate coverage for existing integration JVMs
-        if: matrix.target == 'x86_64'
-        run: |
-          ./gradlew --no-daemon -PtestCoverage=true prepareIntegrationCoverage
-          echo "FORGE_INTEGRATION_COVERAGE_AGENT=$PWD/build/test-coverage-tools/jacocoagent.jar" >> "$GITHUB_ENV"
-          echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"
 
       - name: Check packaged GDB companion with live compiler references
         if: matrix.target == 'x86_64'
@@ -3272,7 +3272,8 @@ jobs:
               --require-suite derived-validation \
               --require-suite build-id-installation --require-suite instruction-context \
               --require-suite source-context --require-suite annotation-inventory --require-suite equate-evidence \
-              --require-suite annotation-export --require-suite failed-source-export
+              --require-suite annotation-export --require-suite failed-source-export \
+              --require-suite class-scopes --require-suite inheritance-producer --require-suite inheritance-names
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'

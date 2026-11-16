@@ -96,9 +96,11 @@ tasks.register("prepareCallSiteSerializationHarness") {
 
 tasks.register("prepareInheritanceHarness") {
     group = "verification"
-    dependsOn testClasses
+    dependsOn testClasses, jar
     doLast {
-        layout.buildDirectory.file("inheritance-classpath.txt").get().asFile.text = sourceSets.test.runtimeClasspath.asPath
+        def packaged = files(tasks.named("jar").get().archiveFile)
+        def harness = sourceSets.test.runtimeClasspath - sourceSets.main.output
+        layout.buildDirectory.file("inheritance-classpath.txt").get().asFile.text = (packaged + harness).asPath
     }
 }
 

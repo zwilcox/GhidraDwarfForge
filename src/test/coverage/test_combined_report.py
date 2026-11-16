@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
+from zipfile import ZipFile
 
 
 SPEC = importlib.util.spec_from_file_location('combined_report', Path(__file__).with_name('combined-report.py'))
@@ -80,6 +81,84 @@ class ReportPolicy(unittest.TestCase):
             '<x><counter type="BRANCH" covered="1.5" missed="0"/></x>'):
             with self.subTest(xml=xml), self.assertRaises(ValueError):
                 report.counters(ET.fromstring(xml))
+
+
+class LocalMeasurements(unittest.TestCase):
+    """Receipt controls use fixture bytes; the real-JVM verifier checks bytecode."""
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix='forge-local-measurement-')
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.jar = self.root / 'production.jar'
+        with ZipFile(self.jar, 'w') as archive:
+            archive.writestr('ghidradwarfforge/Fixture.class', b'receipt fixture')
+        agent = self.root / 'agent.jar'
+        agent.write_bytes(b'agent receipt fixture')
+        self.harness = self.root / 'harness.py'
+        self.harness.write_text('assert observed == expected\n')
+        collection = report.integration.Collection('local-test', self.jar, 'native-java', environment={
+            'FORGE_INTEGRATION_COVERAGE_OUTPUT': str(self.root / 'collections'),
+            'FORGE_INTEGRATION_COVERAGE_AGENT': str(agent)})
+        with collection.session(['java', 'Harness'], 'oracle'):
+            (collection.root / collection.record['sessions'][0]['file']).write_bytes(b'execution receipt fixture')
+        oracle = self.root / 'oracle.json'
+        oracle.write_text('{"status":"PASS_BEHAVIOR"}')
+        collection.finish(oracle)
+        self.collection = collection
+        self.manifest = self.root / 'measurement.json'
+        self.value = {'schema': 1, 'kind': 'local-integration', 'checkoutCommit': 'a' * 40,
+            'run': 'local-check', 'directory': 'collections',
+            'receipts': {collection.root.name: report.javaexec.digest(collection.root / 'receipt.json')},
+            'harnessSha256': {'harness.py': report.javaexec.digest(self.harness)}}
+
+    def load(self):
+        self.manifest.write_text(json.dumps(self.value))
+        return report.load_local(self.manifest, self.jar, self.root)
+
+    def test_local_origin_preserved_without_hosted_claim(self):
+        rows, origin = self.load()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0][0], 'native-java')
+        self.assertEqual(origin['kind'], 'local-integration')
+        self.assertFalse(origin['hostedAcceptance'])
+        self.assertEqual(origin['suites'], ['local-test'])
+        self.assertNotIn('artifactId', origin)
+
+    def test_changed_harness_rejected(self):
+        self.harness.write_text('pass\n')
+        with self.assertRaisesRegex(ValueError, 'harness changed'):
+            self.load()
+
+    def test_changed_receipt_rejected(self):
+        path = self.collection.root / 'receipt.json'
+        path.write_text(path.read_text() + '\n')
+        with self.assertRaisesRegex(ValueError, 'receipt changed'):
+            self.load()
+
+    def test_extra_collection_rejected(self):
+        (self.root / 'collections/unrecorded').mkdir()
+        with self.assertRaisesRegex(ValueError, 'unexpected collection'):
+            self.load()
+
+    def test_failed_oracle_rejected_even_if_manifest_rebound(self):
+        oracle = self.collection.root / 'oracle.json'
+        oracle.write_text('{"status":"FAIL"}')
+        self.collection.record['evidenceSha256'] = report.javaexec.digest(oracle)
+        self.collection._save()
+        self.value['receipts'][self.collection.root.name] = report.javaexec.digest(self.collection.root / 'receipt.json')
+        with self.assertRaisesRegex(ValueError, 'oracle did not pass'):
+            self.load()
+
+    def test_missing_origins_and_escaping_paths_rejected(self):
+        for key, value in (('checkoutCommit', ''), ('run', ''), ('directory', '../collections'),
+                ('receipts', {}), ('harnessSha256', {}),
+                ('harnessSha256', {'../harness.py': '0' * 64})):
+            with self.subTest(key=key, value=value):
+                original = self.value[key]
+                self.value[key] = value
+                with self.assertRaises(ValueError):
+                    self.load()
+                self.value[key] = original
 
 
 if __name__ == '__main__':
