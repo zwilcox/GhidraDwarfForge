@@ -6,6 +6,37 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Attachment preview request, cancellation and response boundaries
+
+CONFIRMED at `ffda4bf8`: the read-only helper test cancels at each of 1,931
+observed preview checkpoints, requires CANCELLED/130 JSON and verifies unchanged
+selected-file contents. It checks malformed JSON, wrong content pins, missing
+argument values, the exact 256 KiB request limit and the next byte. Explicit
+failed output streams cover help, successful preview, attachment cancellation
+and recovery cancellation; a lost output stream must not be reported as success.
+Restoring the original request bytes/time permits a fresh preview. These tests
+are admission/transport checks, not native attachment or privileged-host proof.
+
+Focused helper smoke passes 11,884 assertions. Three selected request-boundary,
+preview-output and cancellation-status mutations are caught (3.413 seconds).
+All 211 JavaExec tasks pass in 276.445 seconds, 53,432 independent DWARF vectors
+pass, and 197 coverage-tool checks plus actionlint pass. Baseline46 verifies
+255 production sources / 901 production classes / 616 test classes; the extra
+test class implements the controlled broken output stream. JavaExec measures
+23,806 lines / 18,572 branches. The production JAR and denominator are unchanged.
+
+The verified 1,271-session diagnostic union measures 28,450/29,786 lines (95.5%)
+and 21,076/25,878 branches (81.4%). Binary/location branches remain 15,200/18,726
+(81.2%); file-operation branches increase to 3,504/4,250 (82.4%), adding 12
+outcomes and four lines. The separate native/headless/Windows views remain
+identifiable. Current hosted/main acceptance and critical 90% branch targets
+remain incomplete.
+
+Evidence: `javaexec-baseline-46/`, `helper-preview-focused-final.log`,
+`helper-preview-selected-mutations/`, `helper-preview-javaexec-checked/`,
+`helper-preview-union-verified/`, `helper-preview-baseline-result.json` and
+`helper-preview-verification.log` in the bounded coverage workspace.
+
 ## Saved register ownership and deterministic source timestamps
 
 CONFIRMED at `108311ab`: real x86-64/AArch64 ProgramDB fixtures with 4/8-byte
