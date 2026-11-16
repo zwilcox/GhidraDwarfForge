@@ -31,6 +31,18 @@ coverage. Evidence: `allocation-boundaries-focused.log`,
 `allocation-boundary-selected-mutations/result.json` in the bounded workspace.
 Full-suite coverage attribution follows this batch; targets remain unchanged.
 
+Baseline58 at `678eddaa` passes all 211 JavaExec tasks in 276.680s,
+53,432 independent expression vectors and all 222 coverage-tool tests. Strict
+raw verification retains 255 production sources / 901 classes and the unchanged
+production JAR. This batch adds ten lines and 29 branch outcomes over baseline57.
+JavaExec now covers 23,850/29,790 lines and 18,790/25,884 branches. The same
+362-session partial union covers 24,947/29,790 lines (83.7%) and 19,409/25,884
+branches (75.0%). Windows and the other required integration suites remain
+outstanding; this is not full-cohort acceptance or published coverage.
+Evidence: `javaexec-baseline-58/`, `allocation-boundary-javaexec-checked-58/`,
+`allocation-boundary-current-partial/` and
+`allocation-boundary-final-verification-58.log` in the bounded workspace.
+
 ## ELF metadata combinations and malformed headers
 
 CONFIRMED: the runtime relocation task now checks all eight presence combinations
