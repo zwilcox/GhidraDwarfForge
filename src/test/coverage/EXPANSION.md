@@ -1001,3 +1001,57 @@ remain outstanding; this partial local measurement cannot publish the badge.
 Evidence is under `.forge-work/scratch/coverage-expansion/` in
 `javaexec-baseline-33/`, `carrier-ownership-mutation-checks/`,
 `carrier-ownership-javaexec-verified/` and `carrier-ownership-union-verified/`.
+
+## Malformed build-ID recovery records
+
+At `ab0e36c7`, the production Linux installation workflow passes 145 operation
+checks and four GDB consumer checks in 69.4 seconds. Nineteen new malformed-record
+cases exercise foreign schema/build identity/host/durability, malformed hashes
+and UUIDs, unknown phases, invalid transitions, absent required fields, changed
+directory inventories and mismatched generation identity. Each starts from an
+actual validated installation and requires rejection without changing registered
+or retained file bytes, inode identities, mode, ownership, mtime or link count.
+Restoring the valid record permits ordinary recovery. Three further checks prove
+empty-root recovery is unchanged and update/removal require a managed installation.
+Existing structural validators, GDB, interrupted publication, cancellation and
+crash recovery controls remain intact.
+
+An isolated mutation removes installation-state host-contract agreement. The
+workflow reaches the new foreign-host assertion and fails because recovery
+incorrectly returns `UNCHANGED`. Compilation succeeds, the failure is the intended
+behavioral assertion, and production source/JAR hashes remain unchanged. Mutated
+classes are never instrumented or included in coverage. Its disposable installation
+trees were removed after retaining the commands, failure output and detection receipt.
+
+Raw verification accepts 129 completed native-Java sessions; 16 forced-halt
+children remain unmeasured behavioral controls. Comparing the identical verified
+session set with and without the 22 added operation checks attributes **13 new
+branch outcomes** to `BuildIdInstallation`; it adds no executable lines. Evidence
+is under `build-id-record-controls/`, `build-id-record-collections/`,
+`build-id-existing-controls-verified/`, `build-id-records-union-verified/` and
+`build-id-host-mutation-result.json` in the coverage workspace.
+
+## Current completed host jobs, architecture cohort still pending
+
+Completed jobs in [CI 43856734959](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43856734959)
+provide 43 Linux-host, 53 Windows and four firmware sessions. Their artifact
+digests, successful producing jobs, PR merge-parent provenance, required suites
+and raw regenerated reports are independently verified against the current
+`3021d43e…` production JAR. No old pre-i386-fix data is reused. The source merge
+commit is `e84c5206f767df10a84d5e758fae658fac8785f4`; these are actual hosted
+results, not local processes relabeled as CI.
+
+Their union with the verified local sessions contains 471 sessions and all 255
+sources/901 classes: **26,688/29,786 lines (89.6%) and 19,738/25,878 branches
+(76.3%)**. The binary/location group measures 92.7% lines / 78.0% branches; the
+file-transaction/validation group measures 91.2% / 77.1%. This is explicitly a
+partial, mixed-commit diagnostic result with matching production bytes. Remaining
+architecture integrations, fresh-head CI for the new tests and protected main
+publication are still required. The overall branch and both critical-group gates
+are unmet; this is not completion or a publishable badge result.
+
+Reports and original cohort provenance are retained in
+`current-hosted-partial-union-43856734959/` and
+`verified-hosted-{linux_host,windows,firmware}-43856734959/` under the coverage
+workspace. The current Windows host and Windows attachment/GDB jobs pass; the
+five architecture jobs were still running at this checkpoint.
