@@ -30,11 +30,29 @@ reversing stack-depth subtraction each cause the intended Java assertion failure
 Local selected replay took 12.8 seconds. The earlier attempt stopped on a nonunique
 stack-depth mutation anchor; it is not a successful full run. The corrected anchor
 selects only mixed-piece translation. The repository's full mutation configuration
-now contains 165 faults; its complete current-head run remains outstanding.
+now contains 165 faults. Its complete replay at `57f71654` passed in 384.4
+seconds: all 165 faults detected and all 38 unchanged baselines passed.
 
 Evidence: `.forge-work/scratch/coverage-expansion/mixed-prefix-focused-final.log`
-and `mixed-prefix-selected-mutations-final/result.json`. No production code,
-production inventory, coverage threshold or target mapping changed.
+and `mixed-prefix-selected-mutations-final/result.json`. The complete replay is
+`mixed-prefix-all-mutation-checks/result.json`. No production code, production
+inventory, coverage threshold or target mapping changed.
+
+All 210 JavaExec tasks passed at `57f71654` in 273.1 seconds, as did 53,432
+independent expression vectors and 181 coverage-tool tests. Baseline 35 records
+901 production classes, 598 test classes and all 255 production sources. Raw
+JavaExec verification gives 23,630/29,786 lines and 18,327/25,878 branches. The
+changed production i386 logic still passes the minimum gate at 100% lines and
+86.7% branches.
+
+The verified 499-session **partial mixed-commit** union is 26,691/29,786 lines
+(89.6%) and 19,767/25,878 branches (76.4%). Binary/location coverage is 92.7% lines /
+78.1% branches; file transactions remain 91.2% / 77.4%. This is two more covered
+lines and eight more covered branch outcomes than the preceding comparable
+partial union. `GhidraVariableStorage` now measures 821/867 lines and 891/1,107
+branches. `mixed-prefix-coverage-attribution.json` records the specific decisions.
+The full hosted cohort, critical targets, protected integration and actual-main
+publication remain outstanding. These local results cannot publish a badge.
 
 ## Measurement contract
 
