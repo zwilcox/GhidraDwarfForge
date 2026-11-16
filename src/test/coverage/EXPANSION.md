@@ -19,12 +19,22 @@ structurally valid and are rejected by runtime GDB assertions.
 The production-artifact checks now use `check-dwarfdump.py` with its full native
 checker options and original-input corroboration, replacing ordinary dump-output
 scans. All 48 positive production artifacts pass strict libdwarf, LLVM, GNU and
-GDB checks. The strict parser's regression controls also pass, including its
+GDB checks. Native frame-alignment diagnostics are accepted only when the strict
+checker matches them to byte-identical inherited `.eh_frame` and the original's
+diagnostics; every artifact has zero uncorroborated errors. The strict parser's
+regression controls also pass, including its
 historical zero-exit error output. Original input hashes remain unchanged.
 This validates a compiler-supplied model through the producer and ELF writer;
-it does not claim new Ghidra extraction coverage. The 108 measured JVM sessions
-await raw matching-bytecode union verification. Evidence in bounded scratch:
-`inheritance-current-2f181/` and `inheritance-current-2f181-run.log`.
+it does not claim new Ghidra extraction coverage. All 108 measured JVM sessions
+pass raw matching-bytecode verification, adding 144 lines and 80 branch outcomes.
+The 939-session diagnostic union measures 28,024/29,790 lines (94.1%) and
+21,132/25,884 branches (81.6%). Binary/location reaches its line target at 95.2%,
+with 81.4% branches; file/validation remains 94.4% / 84.8%. Neither critical branch
+target nor full hosted acceptance is complete. Evidence in bounded scratch:
+`inheritance-current-2f181/`, its `-run.log` and `-verification.log`. The first
+verification incorrectly required zero total diagnostics instead of checking the
+existing corroboration policy; that failed attempt is retained separately and
+contributes no coverage measurement.
 
 ## Measured equate constants and retained names
 
