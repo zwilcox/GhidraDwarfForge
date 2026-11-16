@@ -6,6 +6,38 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Strict companion validation and current loader measurement
+
+CONFIRMED: `gdb-loader-mappings.py` now runs the strict checker instead of invoking
+`dwarfdump` without its checking options. It requires a PASS receipt and validates
+inherited frame diagnostics against byte-identical original ELF frame data.
+An initial supplementary check without the original correctly rejected inherited
+alignment diagnostics. That attempt is retained and is not admitted to the union.
+The corrected harness passes non-PIE, PIE and shared-library cases, GNU/LLVM/strict
+checks, eight unsafe-path refusals per case, cancellation at every observed
+checkpoint, deterministic generation and unchanged protected files.
+
+Live GDB checks confirm relocated function/global addresses, parameter values,
+source listing and stepping, repeated load idempotence, cleanup on process exit,
+shared-library unload/reload and distinct PIE ASLR biases. Compiler DWARF supplies
+the independent input to the production writer/companion generator; these results
+do not claim new Ghidra extraction. A separate diagnostic-injection control runs
+the real validator, appends a warning while returning zero, and proves the harness
+rejects it without changing either ELF. The strict-checker test suite also passes.
+
+Three verified native-Java sessions add 122 lines and 69 branch outcomes. The
+602-session diagnostic union measures 27,675/29,790 lines (92.9%) and
+20,898/25,884 branches (80.7%). Binary/location is 18,052/19,201 lines (94.0%)
+and 15,081/18,732 branches (80.5%); file/validation remains 92.6% / 83.3%.
+Neither critical group meets its 95% / 90% target. The denominator is unchanged,
+and full hosted acceptance and actual-main publication are still required.
+The measured worktree harness was subsequently committed as `4926cec2`; the
+manifest preserves the actual checkout commit and separately binds that snapshot.
+Evidence: `companion-strict-current-2f181/`,
+`companion-strict-current-2f181-verification.log`,
+`companion-strict-diagnostic.log` and `companion-strict-checker-tests.log` in the
+bounded workspace. The three live fixture trees are recorded in its provenance.
+
 ## Current-bytecode saved annotations and failure isolation
 
 CONFIRMED: the complete existing x86-64 non-PIE annotation pipeline passes with
