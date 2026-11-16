@@ -202,6 +202,15 @@ while that run completes, so frequent pushes do not repeatedly replace the
 hosted integration measurement. Local measurements retain their own commit and
 do not claim that the pending hosted run contains these additional tests.
 
+That run's MIPS big-endian lane failed before export testing because its pinned
+GDB source download returned `Network is unreachable`. The local downloader fix
+retries transport failures up to three times, removes private staging after each
+attempt, limits downloads to 128 MiB and publishes only an archive matching the
+unchanged release checksum. Fourteen isolated transport/ownership tests and
+actionlint pass. Hosted validation of this fix is still pending; the existing
+run's other jobs are retained for their measurements. This Python change is
+outside the Java coverage percentage.
+
 ## Remaining acceptance
 
 Reach every accepted group target with meaningful tests, verify the current hosted

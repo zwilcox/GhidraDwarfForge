@@ -2,6 +2,7 @@
 """Build pinned, unmodified target debuggers used by register-piece acceptance."""
 import argparse
 import hashlib
+import http.client
 import json
 import os
 import platform
@@ -9,11 +10,47 @@ from pathlib import Path
 import signal
 import subprocess
 import tarfile
+import tempfile
+import time
+import urllib.error
 import urllib.request
 
 VERSION = '17.1'
 ARCHIVE_SHA256 = '14996f5f74c9f68f5a543fdc45bca7800207f91f92aeea6c2e791822c7c6d876'
 URL = 'https://ftp.gnu.org/gnu/gdb/gdb-' + VERSION + '.tar.xz'
+MAX_ARCHIVE_BYTES = 128 * 1024 * 1024
+
+
+def download_archive(archive):
+    """Retry transport failures only; publish one complete, pinned source archive."""
+    if archive.exists() or archive.is_symlink():
+        raise FileExistsError(archive)
+    for attempt in range(1, 4):
+        with tempfile.TemporaryDirectory(prefix='gdb-download-', dir=archive.parent) as temporary:
+            staged = Path(temporary) / 'source.tar.xz'
+            digest = hashlib.sha256()
+            size = 0
+            try:
+                with urllib.request.urlopen(URL, timeout=60) as response, staged.open('xb') as output:
+                    while block := response.read(1024 * 1024):
+                        size += len(block)
+                        if size > MAX_ARCHIVE_BYTES:
+                            raise ValueError('GDB source archive exceeds download size bound')
+                        output.write(block)
+                        digest.update(block)
+            except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.IncompleteRead) as failure:
+                print(f'GDB source download attempt {attempt}/3 failed: {failure}', flush=True)
+                if attempt == 3:
+                    raise
+            else:
+                if digest.hexdigest() != ARCHIVE_SHA256:
+                    raise ValueError('GDB source archive SHA-256 does not match the pinned release')
+                # Both names are on the same filesystem. link() publishes without
+                # replacing a path created by another caller; cleanup removes only
+                # our private staging name, including on failure or interruption.
+                os.link(staged, archive)
+                return
+        time.sleep(attempt * 2)
 
 
 def main():
@@ -31,9 +68,7 @@ def main():
     root.mkdir(parents=True, exist_ok=False)
     archive = args.archive.resolve(strict=True) if args.archive else root / ('gdb-' + VERSION + '.tar.xz')
     if not args.archive:
-        with urllib.request.urlopen(URL, timeout=60) as response, archive.open('xb') as output:
-            while block := response.read(1024 * 1024):
-                output.write(block)
+        download_archive(archive)
     with archive.open('rb') as stream:
         digest = hashlib.file_digest(stream, 'sha256').hexdigest()
     if digest != ARCHIVE_SHA256:

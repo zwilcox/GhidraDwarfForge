@@ -692,6 +692,7 @@ jobs:
             python3 -B -m unittest discover -s src/test/coverage -p 'test_*.py' -v
             python3 -B src/test/integration/mips-fpr-system-diagnostics-test.py
             python3 -B src/test/integration/curated-thunk-entry-test.py
+            python3 -B src/test/integration/build-mips-gdb-test.py
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
             build/linux-rename-contract
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-build-id-lock-contract.c -o build/linux-build-id-lock-contract
