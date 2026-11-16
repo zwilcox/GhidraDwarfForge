@@ -522,3 +522,37 @@ identities. This remains a mixed-run local report, not hosted acceptance.
 After verification, 28 task-owned variant projects were retired with file hashes
 recorded, reclaiming 37,044,224 physical bytes. Six selected positive projects,
 all probes/oracles, debugger logs and ELF/source artifacts remain available.
+
+## Saved C++ configuration rejection and inventory boundaries
+
+`cxxProfileSmoke` now invokes `CxxProfileBoundarySmoke` against actual ProgramDB
+instances. The x86-64 and AArch64 configuration cases reject missing symbols,
+non-class symbols, missing types and saved non-structure types. A selected class
+cannot reuse another retained class's canonical type. Rejection restores the
+previous binding, including overwritten evidence bytes.
+
+Stale retained declaration and vtable records cause a late rejection after the
+selected class evidence has been written. Complete saved metadata is compared
+before and after; inventory diagnoses invalid records without offering them as
+valid selections or repairing them. Explicit removals commit only when requested;
+a successful preview restores them. Target bytes and an independent analyst
+label remain intact. These tests validate configuration, not new target support.
+
+Inventory tests use real saved classes, structures, memory labels and functions.
+They check 1,024 versus 1,025 candidates independently for each category, unique
+identities, matching names, deterministic ordering and unchanged program state.
+External non-memory labels and unrelated symbols are excluded. Null/oversized
+filters, malformed/overflowing record keys and incompatible saved option types
+are rejected without changing their contents. At 4,096 invalid saved records,
+each record is diagnosed; the 4,097th exceeds the bound. Exactly 16 MiB of record
+text is admitted to record validation; one further character exceeds the total
+budget. Cancellation during inventory preserves metadata and modification number.
+
+The focused suite passes 24,884 new assertions (including individual candidate
+identity/filter checks), the existing 140 profile assertions and 41 parser checks.
+Six mutation controls exercise committing previews, allowing retained canonical
+type conflicts or stale declarations, and exceeding candidate/count/text limits.
+All 111 selected mutation controls passed in 242.3 seconds, including all six
+new faults. Compilation/loading failures do not count as detection. The refreshed
+combined coverage report is pending for this snapshot.
+Production code and the coverage denominator are unchanged.
