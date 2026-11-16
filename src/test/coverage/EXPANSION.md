@@ -28,7 +28,13 @@ hashes remain unchanged. Evidence in bounded scratch:
 `validator-evidence-checked-2f181/`, `validator-evidence-mutations-2f181/` and
 their run logs. The first driver wrongly expected at least 40 native smoke
 assertions instead of the existing 38; its incomplete collection is excluded.
-The corrected full smoke run passes and awaits raw union verification.
+The corrected full smoke run and raw union verification pass. One new native
+Java session adds eight lines and thirteen branch outcomes. The 948-session
+diagnostic union measures 28,045/29,790 lines (94.1%) and 21,160/25,884 branches
+(81.7%); file/validation rises to 6,310/6,677 lines (94.5%) and 3,615/4,250 branches
+(85.1%). The production JAR is unchanged. The measured checkout `fb5645ae` and
+committed test snapshot `07d22b94` are recorded separately. The new tests will
+run in the existing hosted task; updated hosted acceptance remains unverified.
 
 ## Measured packed bit fields through the installed exporter
 
