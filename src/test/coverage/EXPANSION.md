@@ -52,6 +52,13 @@ lines (96.4%) and 3,652/4,250 branches (85.9%). All 255 production sources and
 901 classes remain included. The two critical 90% branch targets, full updated
 hosted validation, protected integration and main publication are still pending.
 
+The separate compressed-output GUI journey also passes with the current JAR,
+strict/GNU/LLVM validation, compressed-section flags, GDB stepping and unchanged
+inputs. Its raw session verifies successfully but adds no new probes beyond the
+above union: 1,002 sessions retain the same percentages. Evidence is under
+`gui-compressed-current-2f181/`. This demonstrates the compressed UI workflow;
+it is not counted as an increase in coverage or as completion of other GUI modes.
+
 ## Verified privileged Linux attachment sessions
 
 CONFIRMED: 51 measured production attachment/recovery sessions from CI run
