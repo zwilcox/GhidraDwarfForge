@@ -351,3 +351,28 @@ The verified raw-probe union adds 37 lines and 37 branch outcomes: overall
 28,206/29,782 lines (94.7%) and 20,452/25,872 branches (79.1%). The overall branch
 and critical-group targets remain unmet. The local preview remains ineligible
 for hosted publication; all original session provenance is retained.
+
+## Stack-control-flow integration measurement
+
+The existing stack-control-flow harness now measures its import and two real
+exports. Six local x86-64 cases passed: 32- and 64-bit locals, each in non-PIE,
+PIE and rebased PIE. Every case retained its LLVM/readelf/strict-consumer checks,
+repeatable sidecar/source checks, unchanged input and saved-project checks,
+and compiler/exported GDB instruction-by-instruction value and availability
+assertions. Each debugger trace contains 951 instructions across 42 invocations
+of seven functions, covering both branch choices and three seed values.
+
+Coverage admission additionally requires both debugger traces to agree on their
+executed instruction addresses and bytes. It checks logical/physical values,
+loop visits, stale register backups, unavailable and retired values, body holes,
+return values, source navigation, process exit and all three analyzer sessions.
+All 141 coverage-tool tests passed; synthetic receipt corruption tests are kept
+separate from the actual runtime evidence. The cached validation installation was
+restored to its original extension after the 18 measured analyzer sessions.
+
+Hosted acceptance now requires the stack-flow suite for all six profiles (38
+Linux suites total). Comparative old-package runs cannot contribute to this
+single-package collection. This adds measurement to existing integration tests;
+it does not change production behavior or broaden the advertised target set.
+Raw data is retained under `stack-flow-measured-collections` in the bounded
+coverage workspace. Combined counters are pending raw-probe verification.
