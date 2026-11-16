@@ -813,3 +813,36 @@ This is a production bytecode change. The historical combined percentages above
 do not establish coverage of this fix. Fresh JavaExec, headless/native-Java and
 Windows execution data must match the corrected classes before a new combined
 report can be admitted. No sources are excluded or moved between critical groups.
+
+## Saved-local ownership and proof rejection
+
+The existing `mergedLocalLifetimeSmoke` invokes 696 additional checks using
+eight actual ProgramDB profiles: x86-64/AArch64, four-/eight-byte values and
+register-/stack-backed canonical locals. Independently encoded instructions
+establish the initial value, transfer it to a saved register assignment, update
+it, and destroy the current carrier. Assertions retain the expected intervals
+and reject resurrection from the old register or stale stack slot.
+
+Public Ghidra edits exercise lost curated provenance, same-width signedness
+changes, moved definition PCs, and replacement of a defining instruction with
+NOPs. Other cases check conflicting owners, disjoint register/stack owners,
+unassigned unrelated locals and mappings borrowed from another function.
+Each edit is rolled back; byte and local snapshots remain unchanged by the proof
+itself, and the original positive intervals are restored. Cancellation is checked
+at observed inspection, mapping, ownership and dataflow traversal points.
+
+Separate proof-boundary cases deliberately supply a single mapping, omit the
+canonical member, duplicate a member, remove a register, or omit the required
+DWARF register mapping. These do not claim that Ghidra's saved-identity extractor
+normally emits malformed lists. No private Ghidra state or fake Program objects
+are used. These are model/proof tests, not a new debugger support claim.
+
+An initial fixture rerun exposed a queued Ghidra analysis notification accessing
+a database after close. Flushing pending notifications before releasing the
+fixture produces a clean rerun. The existing 248 lifetime assertions also pass.
+All 154 selected mutation controls pass in 348.0 seconds. The eight new controls
+test lost provenance, changed formal types, missing machine definitions, absent
+canonical ownership and falsely claiming disjoint stack storage. Each fails its
+intended behavioral assertion. All 154 coverage-tool tests pass. A fresh complete
+coverage run remains pending at this checkpoint; production Java and its
+measurement inventory are unchanged.
