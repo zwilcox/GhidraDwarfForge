@@ -2,14 +2,14 @@
     "schema": 1,
     "scope": "Production Java line coverage from extension-build JavaExec tests",
     "repository": "zwilcox/GhidraDwarfForge",
-    "commit": "664f8076a7ffdd7fe261e9d439d6a4254dcb1071",
-    "runId": 43654611110,
+    "commit": "c6265e1c657c9ffc7a4d9cb71017cca1e1bc5786",
+    "runId": 43761191009,
     "metric": "LINE",
-    "covered": 23118,
-    "missed": 6664,
-    "percent": "77.6",
+    "covered": 23305,
+    "missed": 6477,
+    "percent": "78.3",
     "jacocoVersion": "0.8.16",
-    "xmlSha256": "30b3aff8406dad99deba1cd6e77a6fcc590e4b8b893f8f4e05b7d98e2c9a2164",
+    "xmlSha256": "47677a067cd99185a6da1b0cbed29e5687258e807e284a7b30af923f9fc6096d",
     "tasks": [
         "aarch64AbiSelectionSmoke",
         "aarch64ParameterAllocationSmoke",
@@ -107,6 +107,7 @@
         "extendedSectionNumberingSmoke",
         "externalFunctionInventorySmoke",
         "fileDigestsSmoke",
+        "firmwareImageLifecycleSmoke",
         "firmwareInputsSmoke",
         "firmwareMemoryMapSmoke",
         "floatingTypeLayoutSmoke",
@@ -168,6 +169,7 @@
         "ownedDebuglinkCandidateSmoke",
         "packagedNativeLibrariesSmoke",
         "pathTraversalSmoke",
+        "projectOutputProtectionSmoke",
         "qualifiedFunctionNameSmoke",
         "recoveredParameterSmoke",
         "recoveredReturnSmoke",
@@ -427,9 +429,9 @@
         },
         {
             "source": "ghidradwarfforge/GhidraProjectOutputProtection.java",
-            "covered": 0,
-            "missed": 31,
-            "percent": "0.0"
+            "covered": 31,
+            "missed": 0,
+            "percent": "100.0"
         },
         {
             "source": "ghidradwarfforge/GhidraSourceContext.java",
@@ -1003,9 +1005,9 @@
         },
         {
             "source": "ghidradwarfforge/firmware/FirmwareExportImage.java",
-            "covered": 0,
-            "missed": 162,
-            "percent": "0.0"
+            "covered": 152,
+            "missed": 10,
+            "percent": "93.8"
         },
         {
             "source": "ghidradwarfforge/firmware/FirmwareMemoryMap.java",
@@ -1015,9 +1017,9 @@
         },
         {
             "source": "ghidradwarfforge/firmware/FirmwareTarget.java",
-            "covered": 16,
-            "missed": 7,
-            "percent": "69.6"
+            "covered": 20,
+            "missed": 3,
+            "percent": "87.0"
         },
         {
             "source": "ghidradwarfforge/firmware/GhidraFirmwareMemoryMap.java",
