@@ -47,6 +47,7 @@ public final class AttachmentFileStoreSmoke {
             copyExtentChanges(root);
             stagedReadbackChanges(root, expected);
             metadataStageReplacement(root, expected);
+            metadataContentChange(root, expected);
             publishedIdentityReplacement(root, expected);
             publishedDirectoryReplacement(root, expected);
             unavailableIdentity(root, expected);
@@ -285,6 +286,39 @@ public final class AttachmentFileStoreSmoke {
         equal(1, failure.getSuppressed().length);
         message(failure.getSuppressed()[0], "backup stage identity changed; retained");
         equal(source, AttachmentFileStore.observe(source.path(), HOST, () -> false));
+    }
+
+    /** Matching inode, size and metadata do not prove that metadata application preserved bytes. */
+    private static void metadataContentChange(Path root, AttachmentFileStore.Snapshot source) throws Exception {
+        Path directory = Files.createDirectory(root.resolve("metadata-content-change"));
+        Path destination = directory.resolve("backup");
+        AtomicBoolean changed = new AtomicBoolean();
+        var host = new AttachmentReceiptStoreSmoke.Host() {
+            @Override public void preserveMetadata(Path input, AttachmentReceiptStore.Fingerprint expected,
+                    Path stage) throws IOException {
+                // Acquire the writer while this owned stage is writable. A live
+                // descriptor remains writable after copying read-only permissions.
+                try (var output = java.nio.channels.FileChannel.open(stage, StandardOpenOption.WRITE)) {
+                    super.preserveMetadata(input, expected, stage);
+                    var before = inspect(stage);
+                    FileTime time = Files.getLastModifiedTime(stage);
+                    long size = Files.size(stage);
+                    equal(1, output.write(java.nio.ByteBuffer.wrap(new byte[] { 37 }), 0));
+                    output.force(true);
+                    Files.setLastModifiedTime(stage, time);
+                    equal(size, Files.size(stage));
+                    equal(before, inspect(stage));
+                    changed.set(true);
+                }
+            }
+        };
+        var failure = reject(() -> AttachmentFileStore.backup(source, destination, host, () -> false));
+        equal(true, changed.get());
+        message(failure, "backup is not an independent byte/metadata copy");
+        equal(false, failure instanceof AttachmentFileStore.PublicationFailure);
+        equal(false, Files.exists(destination));
+        equal(source, AttachmentFileStore.observe(source.path(), HOST, () -> false));
+        noStages(directory);
     }
 
     private static void publishedIdentityReplacement(Path root, AttachmentFileStore.Snapshot source) throws Exception {
