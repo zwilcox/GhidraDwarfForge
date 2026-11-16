@@ -6,6 +6,34 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Recovery record changes between independent observations
+
+CONFIRMED: the attachment transaction task now changes actual receipt bytes,
+inode or metadata between recovery's parsed-record read and its independent
+artifact observation. Content changes preserve mtime; identity changes retain
+the old inode and reproduce bytes/mode/mtime; metadata changes preserve bytes
+and inode. Assertions prove those dimensions are isolated. Initial attachment
+and refresh both report RECOVERY_REQUIRED, preserve the changed receipt, retain
+the restored target/backups, and publish no recovery record based on mismatched
+observations. Explicit receipt reconciliation permits a successful recovery retry.
+These are controlled filesystem interleavings, not an adversarial-race guarantee.
+
+Independent expected strings also check bounded recovery diagnostics, controls,
+paired/unpaired UTF-16 surrogates and preserved ordinary Unicode, in both modes.
+The first test attempt exposed an incorrect test expectation: Java regex matches
+Unicode code points while the documented diagnostic sanitizer replaces UTF-16
+code units. The oracle now uses explicit expected text; production is unchanged.
+
+The task passes 1,167 assertions, including its existing eight abrupt-process
+controls. All nine selected compiled transaction mutants are detected (43.037s).
+The five new mutants remove the independent digest/fingerprint checks or the
+control/surrogate/length diagnostic guards. Both observation mutants incorrectly
+return ROLLED_BACK and fail the expected RECOVERY_REQUIRED assertion. Native
+Windows behavior and ELF validation are outside this filesystem test's scope.
+Evidence: `recovery-observation-focused.log` (initial failed oracle),
+`recovery-observation-validation.log`, and `recovery-observation-mutations/`.
+Full-suite measurement follows.
+
 ## Current-bytecode verification after optional native exports
 
 CONFIRMED: baseline60 at `889c26bd` passes all 211 JavaExec tasks in

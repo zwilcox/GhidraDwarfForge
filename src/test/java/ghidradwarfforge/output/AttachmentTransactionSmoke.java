@@ -51,6 +51,8 @@ public final class AttachmentTransactionSmoke {
             refreshClaimBoundaries(root);
             alreadyRestoredBoundaries(root);
             changedOperationRecord(root);
+            recoveryRecordObservation(root);
+            recoveryDiagnosticBoundaries(root);
             System.out.println("attachment-transaction-smoke=PASS checks=" + checks +
                 " abrupt-process-exits=8 initial-and-refresh=true native-windows=false elf-validation=false");
         }
@@ -228,6 +230,107 @@ public final class AttachmentTransactionSmoke {
             equal(false, Files.exists(fixture.request().recoveryReceipt()));
             equal(fixture.snapshots().get("targetBefore").digest(), result.observedTarget().digest());
             retained(fixture);
+        }
+    }
+
+    /** Change actual bytes or identity between the two independent recovery reads. */
+    private static void recoveryRecordObservation(Path root) throws Exception {
+        for (boolean refresh : new boolean[] {false, true}) {
+            for (String change : new String[] {"content", "identity", "metadata"}) {
+                var fixture = fixture(root, "recovery-observation-" + refresh + "-" + change, refresh);
+                var request = fixture.request();
+                var armed = new AtomicBoolean();
+                var hits = new int[1];
+                var changed = new byte[1][];
+                var saved = new byte[1][];
+                var fingerprints = new AttachmentReceiptStore.Fingerprint[2];
+                var host = new Host() {
+                    @Override public AttachmentReceiptStore.Fingerprint inspect(Path path) throws IOException {
+                        // ReceiptStore.read observes twice; FileStore.observe then
+                        // starts an independent read used to bind the recovery record.
+                        if (armed.get() && path.equals(request.receipt()) && ++hits[0] == 3) {
+                            saved[0] = Files.readAllBytes(path);
+                            fingerprints[0] = super.inspect(path);
+                            if (change.equals("content")) {
+                                // Trailing JSON whitespace changes the digest while
+                                // keeping the receipt's semantic claims valid.
+                                var time = Files.getLastModifiedTime(path);
+                                Files.writeString(path, "\n", StandardOpenOption.APPEND);
+                                Files.setLastModifiedTime(path, time);
+                            }
+                            else if (change.equals("identity")) {
+                                var time = Files.getLastModifiedTime(path);
+                                var permissions = Files.getPosixFilePermissions(path);
+                                // Retain the old inode so the new one cannot reuse it.
+                                Files.move(path, path.resolveSibling("retained-operation-record"));
+                                Files.write(path, saved[0], StandardOpenOption.CREATE_NEW);
+                                Files.setPosixFilePermissions(path, permissions);
+                                Files.setLastModifiedTime(path, time);
+                            }
+                            else {
+                                Files.setLastModifiedTime(path, java.nio.file.attribute.FileTime.fromMillis(
+                                    Files.getLastModifiedTime(path).toMillis() + 10000));
+                            }
+                            changed[0] = Files.readAllBytes(path);
+                            fingerprints[1] = super.inspect(path);
+                        }
+                        return super.inspect(path);
+                    }
+                };
+                var result = AttachmentTransaction.commit(request, host, () -> false, point -> {
+                    if (point == AttachmentTransaction.Boundary.TARGET_REPLACED) {
+                        armed.set(true);
+                        throw new IOException("controlled failure after replacement");
+                    }
+                }, AttachmentTransaction.RECEIPTS);
+                equal(4, hits[0]);
+                equal(change.equals("content"), fingerprints[0].equals(fingerprints[1]));
+                equal(!change.equals("content"), java.util.Arrays.equals(saved[0], changed[0]));
+                equal(!change.equals("identity"), fingerprints[0].identity().equals(fingerprints[1].identity()));
+                equal(!change.equals("metadata"), fingerprints[0].metadataSha256().equals(fingerprints[1].metadataSha256()));
+                equal(AttachmentReceipt.Phase.RECOVERY_REQUIRED, result.outcome());
+                equal(true, result.diagnostic().contains("operation receipt changed during recovery observation"));
+                equal(null, result.recoveryReceipt());
+                equal(false, Files.exists(request.recoveryReceipt()));
+                equal(true, java.util.Arrays.equals(changed[0], Files.readAllBytes(request.receipt())));
+                equal(fixture.snapshots().get("targetBefore").digest(), result.observedTarget().digest());
+                equal(result.observedTarget(), AttachmentFileStore.observe(request.files().get("targetBefore"), HOST, () -> false));
+                retained(fixture);
+
+                // Explicitly reconcile the selected receipt, then prove that the
+                // preserved inputs still permit a successful recovery retry.
+                Files.write(request.receipt(), saved[0]);
+                var retried = AttachmentTransaction.recoverInterrupted(request, HOST);
+                equal(AttachmentReceipt.Phase.ROLLED_BACK, retried.outcome());
+                equal(AttachmentReceipt.Phase.ROLLED_BACK, retried.recoveryReceipt().receipt().phase());
+                equal(fixture.snapshots().get("targetBefore").digest(), retried.observedTarget().digest());
+                retained(fixture);
+            }
+        }
+    }
+
+    private static void recoveryDiagnosticBoundaries(Path root) throws Exception {
+        String[][] cases = {
+            {"controls:\u0000\t\n\r\u007f\ud800\udfff:end", "java.io.IOException: controls:       :end"},
+            {"high:\ud800:end", "java.io.IOException: high: :end"},
+            {"low:\udfff:end", "java.io.IOException: low: :end"},
+            {"valid unicode: café Ω", "java.io.IOException: valid unicode: café Ω"},
+            {"x".repeat(8001), "java.io.IOException: " + "x".repeat(7979)}
+        };
+        for (boolean refresh : new boolean[] {false, true}) {
+            for (int index = 0; index < cases.length; index++) {
+                var fixture = fixture(root, "diagnostic-" + refresh + "-" + index, refresh);
+                var failure = new IOException(cases[index][0]);
+                var result = AttachmentTransaction.commit(fixture.request(), HOST, () -> false, point -> {
+                    if (point == AttachmentTransaction.Boundary.TARGET_REPLACED) throw failure;
+                }, AttachmentTransaction.RECEIPTS);
+                String expected = cases[index][1];
+                equal(AttachmentReceipt.Phase.ROLLED_BACK, result.outcome());
+                equal(expected, result.diagnostic());
+                equal(expected, result.recoveryReceipt().receipt().diagnostic());
+                equal(fixture.snapshots().get("targetBefore").digest(), result.observedTarget().digest());
+                retained(fixture);
+            }
         }
     }
 

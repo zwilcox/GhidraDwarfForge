@@ -707,6 +707,18 @@ TRANSACTION_MUTANTS = [
      '!entry.getKey().equals("targetAfter") && !selectedPath.toString().equals(artifact.path())', "false"),
     ("transaction-rejects-already-restored-owned-image", TRANSACTION, TRANSACTION_TEST,
      "sameImage(observed, before) || allowAlreadyRestored &&", "sameImage(observed, before) || false &&"),
+    ("transaction-recovery-ignores-record-digest-change", TRANSACTION, TRANSACTION_TEST,
+     '!record.sha256().equals(originalRecord.digest().sha256())', "false"),
+    ("transaction-recovery-ignores-record-fingerprint-change", TRANSACTION, TRANSACTION_TEST,
+     '!record.fingerprint().equals(originalRecord.fingerprint())', "false"),
+    ("transaction-diagnostic-retains-controls", TRANSACTION, TRANSACTION_TEST,
+     'character < 32 || character == 127 || Character.isSurrogate(character)',
+     'Character.isSurrogate(character)'),
+    ("transaction-diagnostic-retains-surrogates", TRANSACTION, TRANSACTION_TEST,
+     'character < 32 || character == 127 || Character.isSurrogate(character)',
+     'character < 32 || character == 127'),
+    ("transaction-diagnostic-unbounded", TRANSACTION, TRANSACTION_TEST,
+     'index < value.length() && safe.length() < 8000', 'index < value.length()'),
 ]
 
 REPORT_CLAIMS_MUTANTS = [
