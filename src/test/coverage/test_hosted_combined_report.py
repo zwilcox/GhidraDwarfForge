@@ -644,5 +644,61 @@ class ReportDependencies(unittest.TestCase):
                 hosted.tools_classpath(root)
 
 
+class BuildIdIdentityAdmission(unittest.TestCase):
+    """Receipt fixtures only; the integration harness proves real OS behavior."""
+
+    def setUp(self):
+        cases = [
+            ('absent', 'original has no build ID'),
+            ('malformed', 'GNU build-ID size'),
+            ('ambiguous', 'conflicting GNU build IDs'),
+            ('baseline', None),
+            ('different-original', 'different original bytes'),
+            ('hardlink', 'hardlink'),
+            ('selected-alias', 'alias'),
+            *[('invalid-id-' + str(index), 'build ID must be canonical') for index in range(6)],
+        ]
+        self.record = {'suite': 'build-id-identity', 'layer': 'native-java',
+            'sessions': [{'label': name} for name, _ in cases]}
+        self.oracle = {'status': 'PASS', 'host': 'linux',
+            'checks': [{'name': name, 'exit': 0 if error is None else 1, 'expectedError': error}
+                for name, error in cases],
+            'protectedInputs': {name: 'a' * 64 for name in ('original', 'sidecar', 'source', 'report')}}
+
+    def test_complete_receipt(self):
+        hosted.build_id_identity_oracle(self.record, self.oracle)
+
+    def test_model_host_cannot_claim_production_linux(self):
+        self.oracle['host'] = 'model'
+        with self.assertRaisesRegex(ValueError, 'measured Linux refusal'):
+            hosted.build_id_identity_oracle(self.record, self.oracle)
+
+    def test_omitted_or_unmeasured_refusal_rejected(self):
+        for field, value in [('checks', self.oracle), ('sessions', self.record)]:
+            with self.subTest(field=field):
+                old = value[field]
+                value[field] = old[:-1]
+                with self.assertRaisesRegex(ValueError, 'every measured'):
+                    hosted.build_id_identity_oracle(self.record, self.oracle)
+                value[field] = old
+
+    def test_failed_baseline_and_wrong_refusal_rejected(self):
+        for index, field, value in [(3, 'exit', 1), (0, 'exit', 0),
+                (0, 'exit', True), (0, 'expectedError', 'unrelated process failure')]:
+            with self.subTest(index=index, field=field, value=value):
+                oracle = copy.deepcopy(self.oracle)
+                oracle['checks'][index][field] = value
+                with self.assertRaisesRegex(ValueError, 'every measured'):
+                    hosted.build_id_identity_oracle(self.record, oracle)
+
+    def test_input_preservation_evidence_required(self):
+        for replacement in [{}, {'original': 'a' * 64},
+                dict(self.oracle['protectedInputs'], sidecar='invalid')]:
+            with self.subTest(replacement=replacement):
+                self.oracle['protectedInputs'] = replacement
+                with self.assertRaisesRegex(ValueError, 'preserved input'):
+                    hosted.build_id_identity_oracle(self.record, self.oracle)
+
+
 if __name__ == '__main__':
     unittest.main()

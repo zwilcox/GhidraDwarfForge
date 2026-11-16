@@ -6,6 +6,33 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current-bytecode Linux build-ID lifecycle and launcher
+
+CONFIRMED: real Linux-host installation, identity and public-launcher checks now
+run against the current JAR using private copies of retained export fixtures.
+Non-PIE/PIE install, update, idempotence, removal and recovery preserve inputs,
+ordinary metadata, visible user xattrs and access ACLs. Fresh GDB processes find
+retained source and values while previous export sidecars/source files are hidden.
+These are tests of current installation behavior on validated retained inputs,
+not a new headless-export or Windows execution claim.
+
+The non-PIE transaction suite passes 173 checks, including 16 intentional process
+halts, record/generation corruption, alias refusals and successful recovery after
+restoring controlled changes. PIE passes seven lifecycle checks. The public
+launcher passes 27 checks with ten GDB observations, including stdin/file
+cancellation and metadata preservation. The separate identity suite passes its
+13 controls but was uninstrumented in this refresh. Forced-halt processes remain
+explicitly unmeasured; recovery sessions are measured normally.
+
+All 207 measured sessions pass raw verification. The 813-session diagnostic
+union is 27,847/29,790 lines (93.5%) and 21,022/25,884 branches (81.2%).
+File/validation rises to 6,302/6,677 lines (94.4%) and 3,600/4,250 branches
+(84.7%). Binary/location remains 94.3% / 80.8%. Full critical-group targets,
+hosted acceptance, integration and publication are still outstanding.
+Evidence: `buildid-current-2f181/` and `buildid-current-2f181-verification.log`
+in the bounded workspace; exact commands, tool hashes, input metadata and probe
+class provenance are retained there.
+
 ## Current-bytecode source relocation boundary checks
 
 CONFIRMED: four current-JAR sessions exercise source relocation for x86-64

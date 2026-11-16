@@ -29,7 +29,7 @@ windows_metadata_failures = combined.module('windows_metadata_failure_admission'
 windows_directory_failures = combined.module('windows_directory_failure_admission', HERE / 'windows-directory-failure-admission.py')
 REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
-        'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation',
+        'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation', 'build-id-identity',
         'instruction-context', 'source-context', 'annotation-inventory', 'equate-evidence',
         'annotation-export', 'failed-source-export', 'class-scopes', 'inheritance-producer',
         'inheritance-names', 'build-id-command', 'cfi-encoder', 'cfi-composition-explicit',
@@ -67,6 +67,33 @@ def tools_classpath(bundle):
             raise ValueError('changed or excessive report dependencies')
         paths.append(str(path.resolve()))
     return os.pathsep.join(paths)
+
+
+def build_id_identity_oracle(record, oracle):
+    expected = {
+        'absent': 'original has no build ID',
+        'malformed': 'GNU build-ID size',
+        'ambiguous': 'conflicting GNU build IDs',
+        'baseline': None,
+        'different-original': 'different original bytes',
+        'hardlink': 'hardlink',
+        'selected-alias': 'alias',
+        **{'invalid-id-' + str(index): 'build ID must be canonical' for index in range(6)},
+    }
+    checks = oracle.get('checks')
+    protected = oracle.get('protectedInputs')
+    if (record.get('suite') != 'build-id-identity' or record.get('layer') != 'native-java'
+            or oracle.get('status') != 'PASS' or oracle.get('host') != 'linux'
+            or not isinstance(checks, list) or len(checks) != len(expected)
+            or any(not isinstance(row, dict) for row in checks)
+            or [row.get('name') for row in checks] != list(expected)
+            or [row.get('label') for row in record.get('sessions', [])] != list(expected)
+            or any(type(row.get('exit')) is not int or row['exit'] != (0 if error is None else 1)
+                or row.get('expectedError') != error for row, error in zip(checks, expected.values()))
+            or not isinstance(protected, dict) or len(protected) != 4
+            or any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value)
+                for value in protected.values())):
+        raise ValueError('build-ID identity coverage requires every measured Linux refusal and preserved input')
 
 
 def attachment_oracle(record, oracle):
@@ -354,6 +381,8 @@ def load_job(root, jar, kind, commit, run):
                     raise ValueError('hosted visibility coverage requires both real privilege modes')
             if record['suite'] == 'linux-file-metadata':
                 metadata_failures.oracle(record, files.read(directory / 'oracle.json'))
+            if record['suite'] == 'build-id-identity':
+                build_id_identity_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'windows-host-primitives':
                 windows_metadata_failures.oracle(record, files.read(directory / 'oracle.json'))
                 windows_directory_failures.oracle(record, files.read(directory / 'oracle.json'))

@@ -3400,7 +3400,7 @@ jobs:
               --sources src/main/java --commit "$SOURCE_COMMIT" \
               --require-suite gdb-companion --require-suite source-relocation \
               --require-suite derived-validation \
-              --require-suite build-id-installation --require-suite instruction-context \
+              --require-suite build-id-installation --require-suite build-id-identity --require-suite instruction-context \
               --require-suite source-context --require-suite annotation-inventory --require-suite equate-evidence \
               --require-suite annotation-export --require-suite failed-source-export \
               --require-suite class-scopes --require-suite inheritance-producer --require-suite inheritance-names \

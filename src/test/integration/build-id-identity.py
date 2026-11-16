@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import struct
 import subprocess
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -25,6 +26,14 @@ def main():
     args = parser.parse_args()
     root = args.output.resolve()
     root.mkdir(parents=True, exist_ok=False)
+    jars = [Path(path) for path in args.classpath.split(os.pathsep)
+        if Path(path).name == 'GhidraDwarfForge.jar']
+    if os.environ.get('FORGE_INTEGRATION_COVERAGE_OUTPUT') and len(jars) != 1:
+        raise ValueError('coverage requires one production JAR in the probe classpath')
+    coverage = Collection('build-id-identity', jars[0] if jars else None, 'native-java',
+        test_classes=('ghidradwarfforge.output.BuildIdInstallationProbe',
+            'ghidradwarfforge.output.AttachmentElfTransactionProbe',
+            'ghidradwarfforge.output.AttachmentReceiptStoreSmoke'))
     config = json.loads(args.configuration.read_text())
     protected = {p: digest(p) for p in config['files'].values()}
     original = Path(config['files']['original']).read_bytes()
@@ -76,11 +85,12 @@ def main():
     def run(name, selected, debug, action='install', error=None):
         command = prefix + [str(selected), str(debug), action]
         (root / (name + '.command.json')).write_text(json.dumps(command, indent=4) + '\n')
-        completed = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=240)
-        (root / (name + '.log')).write_text(completed.stdout)
-        assert completed.returncode == (1 if error else 0), (name, completed.stdout[-4000:])
-        if error:
-            assert error in completed.stdout, (name, completed.stdout[-4000:])
+        with coverage.session(command, name) as measured:
+            completed = subprocess.run(measured, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=240)
+            (root / (name + '.log')).write_text(completed.stdout)
+            assert completed.returncode == (1 if error else 0), (name, completed.stdout[-4000:])
+            if error:
+                assert error in completed.stdout, (name, completed.stdout[-4000:])
         checks.append({'name': name, 'exit': completed.returncode, 'expectedError': error})
 
     for mutation, error in [('absent', 'original has no build ID'), ('malformed', 'GNU build-ID size'),
@@ -128,6 +138,7 @@ def main():
     assert protected == {p: digest(p) for p in protected}
     (root / 'result.json').write_text(json.dumps({'status': 'PASS', 'host': args.host, 'checks': checks,
         'protectedInputs': protected, 'scope': 'Artificial identity mutation/refusal controls; unchanged production export as positive baseline.'}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('build-id-identity=PASS checks=' + str(len(checks)))
 
 
