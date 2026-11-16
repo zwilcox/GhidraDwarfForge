@@ -6,6 +6,34 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Stack-spill pointer expressions
+
+CONFIRMED: `StackSpillSmoke` adds 48 raw-pcode expression cases across real x86-64
+and AArch64 register definitions with 4- and 8-byte parameters. The cases cover
+pointer/value copies, commuted addition, subtraction, negative constants and
+chained address temporaries. Absolute addresses, constant-minus-pointer,
+two-pointer sums and an unsupported XOR-zero identity conservatively receive no
+spill location. These are transfer tests; the existing real-decoder positives
+remain and no new decoded-instruction or ABI support is claimed.
+
+For the supported expressions, an independent finite-width `BigInteger`
+interpreter checks 384 concrete executions, including sign and unsigned-wrap
+boundaries. It verifies the stored address and every parameter byte. The focused
+suite passes 922 checks. Two selected mutations are detected with an unchanged
+baseline in 6.64 seconds: adding instead of subtracting the displacement and
+incorrectly commuting subtraction. These are separate from earlier mutation runs.
+
+At `827d5465`, all 211 JavaExec tasks pass in 274.05 seconds, as do 53,432
+independent DWARF-expression vectors, all 197 coverage-tool tests and actionlint.
+Raw verification preserves 255 production sources / 901 production classes.
+JavaExec covers 23,790/29,786 lines and 18,480/25,878 branches. The matching-bytecode
+1,268-session diagnostic union covers 28,435/29,786 lines (95.5%) and
+20,965/25,878 branches (81.0%). This batch adds one line and six branch outcomes
+to the union. Binary/location branches reach 15,122/18,726 (80.8%); file operations
+remain 3,471/4,250 (81.7%). The remaining 90% gaps are 1,732 and 354 branch outcomes.
+Hosted acceptance, nested-recovery measurements and actual-main publication
+remain incomplete; this is not a new published badge result.
+
 ## Linux metadata failure controls
 
 CONFIRMED: the real Linux LP64 metadata suite now includes 28 controlled libc
