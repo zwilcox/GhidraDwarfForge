@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# Keep the latest PR revision moving through the full matrix. Main publication
+# and explicit manual runs have distinct groups and are never replaced by a PR.
+concurrency:
+    group: forge-ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   GHIDRA_ARCHIVE: ghidra_12.0.3_PUBLIC_20260210.zip
   GHIDRA_ARCHIVE_SHA256: 90d3fffb20b00030dcef8d2a24dd0f422d3a61e432b3ad43f77233ac6d667981
