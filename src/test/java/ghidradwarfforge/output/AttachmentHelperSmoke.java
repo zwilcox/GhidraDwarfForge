@@ -61,8 +61,10 @@ public final class AttachmentHelperSmoke {
                 () -> false, new PrintStream(previewOutput)));
             equal("PREVIEW", JsonParser.parseString(previewOutput.toString(StandardCharsets.UTF_8)).getAsJsonObject().get("outcome").getAsString());
             equal(before, snapshot(root));
+            previewBoundaries(root, command);
             for (String[] rejected : new String[][] {
-                    {}, {"--confirm-target-change"}, Arrays.copyOf(command, 4),
+                    {}, {"--confirm-target-change"}, {"--request"}, {"--request-utf8-base64"},
+                    {"--request-sha256"}, Arrays.copyOf(command, 4),
                     {"--request", selection.toString(), "--confirm-target-change"},
                     {"--request", "relative", "--request-sha256", digest(selection), "--confirm-target-change"},
                     {"--request", selection.toString(), "--request-sha256", "0".repeat(64), "--confirm-target-change"},
@@ -123,6 +125,82 @@ public final class AttachmentHelperSmoke {
                 for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
             }
         }
+    }
+
+    private static void previewBoundaries(Path root, String[] command) throws Exception {
+        var original = snapshot(root);
+        String[] preview = append(Arrays.copyOf(command, 4), "--preview");
+        int[] polls = {0};
+        equal("PREVIEW", response(preview, () -> { polls[0]++; return false; }, 0).get("outcome").getAsString());
+        equal(true, polls[0] > 0);
+        for (int stop = 1; stop <= polls[0]; stop++) {
+            int selected = stop;
+            int[] current = {0};
+            var result = response(preview, () -> ++current[0] == selected, 130);
+            equal("CANCELLED", result.get("outcome").getAsString());
+            equal(false, result.has("recoverySelection"));
+            equal(original, snapshot(root));
+        }
+        String[] wrongPin = preview.clone();
+        wrongPin[3] = "0".repeat(64);
+        equal("FAILED", response(wrongPin, () -> false, 1).get("outcome").getAsString());
+        // Losing the result stream must not look like successful user review.
+        try (var broken = new PrintStream(new java.io.OutputStream() {
+                @Override public void write(int value) throws IOException { throw new IOException("closed review channel"); }
+            }, true, StandardCharsets.UTF_8)) {
+            equal(1, AttachmentHelper.run(new String[] {"--help"}, () -> false, broken));
+            equal(1, AttachmentHelper.run(preview, () -> false, broken));
+            equal(1, AttachmentHelper.run(command, () -> true, broken));
+            equal(1, AttachmentHelper.run(append(command, "--recover"), () -> true, broken));
+        }
+        equal("CANCELLED", response(append(command, "--recover"), () -> true, 130).get("outcome").getAsString());
+        equal(original, snapshot(root));
+
+        Path selected = Path.of(command[1]);
+        byte[] bytes = Files.readAllBytes(selected);
+        var time = Files.getLastModifiedTime(selected);
+        try {
+            for (String malformed : new String[] {"", "{", "[]", "null"}) {
+                Files.writeString(selected, malformed);
+                String[] changed = preview.clone();
+                changed[3] = digest(selected);
+                var before = snapshot(root);
+                equal("FAILED", response(changed, () -> false, 1).get("outcome").getAsString());
+                equal(before, snapshot(root));
+            }
+            byte[] boundary = Arrays.copyOf(bytes, 256 * 1024);
+            Arrays.fill(boundary, bytes.length, boundary.length, (byte) ' ');
+            Files.write(selected, boundary);
+            String[] changed = preview.clone();
+            changed[3] = digest(selected);
+            var before = snapshot(root);
+            equal("PREVIEW", response(changed, () -> false, 0).get("outcome").getAsString());
+            equal(before, snapshot(root));
+            Files.writeString(selected, " ", java.nio.file.StandardOpenOption.APPEND);
+            changed[3] = digest(selected);
+            before = snapshot(root);
+            var rejected = response(changed, () -> false, 1);
+            equal("FAILED", rejected.get("outcome").getAsString());
+            equal(true, rejected.get("error").getAsString().contains("exceeds limit"));
+            equal(before, snapshot(root));
+        }
+        finally {
+            Files.write(selected, bytes);
+            Files.setLastModifiedTime(selected, time);
+        }
+        equal("PREVIEW", response(preview, () -> false, 0).get("outcome").getAsString());
+        equal(original, snapshot(root));
+        System.out.println("attachment-preview-boundaries=PASS cancellation-checkpoints=" + polls[0]);
+    }
+
+    private static com.google.gson.JsonObject response(String[] args,
+            java.util.function.BooleanSupplier cancelled, int status) {
+        var output = new ByteArrayOutputStream();
+        equal(status, AttachmentHelper.run(args, cancelled, new PrintStream(output, true, StandardCharsets.UTF_8)));
+        var result = JsonParser.parseString(output.toString(StandardCharsets.UTF_8)).getAsJsonObject();
+        equal(1, result.get("schemaVersion").getAsInt());
+        equal(status, result.get("exitCode").getAsInt());
+        return result;
     }
 
     private static void validatorInputs(Path root) throws Exception {
