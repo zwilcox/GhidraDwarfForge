@@ -30,25 +30,26 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`ed6fad4efc8283be3c3c6baabfcec632fcad3370` in 272.2 seconds. The combined local report
-contains 1,033 sessions with the full unchanged denominator:
+`ad323f2008d271c003d8793348173f01f0dfb3f3` in 272.9 seconds. The combined local report
+contains 1,550 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.9% | 80.0% | 85% / 80% |
+| All production Java | 95.3% | 80.2% | 85% / 80% |
 | Binary and location correctness | 95.3% | 80.1% | 95% / 90% |
-| File transactions and validation | 93.9% | 78.6% | 95% / 90% |
-| Remaining production | 95.1% | 81.6% | Included in overall |
+| File transactions and validation | 95.3% | 79.6% | 95% / 90% |
+| Remaining production | 95.1% | 81.7% | Included in overall |
 
 The binary/location line count is 18,285/19,193, meeting its exact 95%
-line gate. Both critical branch targets and the file-transaction line target
-remain unmet, as does the overall 80% branch target.
+line gate. File transactions/validation also meets its line gate at
+6,365/6,677. Both critical branch targets remain unmet. The exact overall
+85% line and 80% branch targets are met locally.
 
 Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-program-declaration-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-validator-current-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -680,4 +681,36 @@ checks still pass. No production Java changed.
 Six selected mutation controls test the record-size boundary, duplicate fields,
 stderr counter consistency, exit-code and signal bounds, and wide-count
 preservation. All 136 selected mutants passed in 303.6 seconds
-with unchanged-source baselines. The full combined coverage refresh is pending.
+with unchanged-source baselines. Refreshed results follow.
+
+All 210 JavaExec tasks passed in 272.9 seconds; all 154 coverage-tool tests
+passed. Before adding the newly completed hosted cohort, the raw union gained
+6 lines and 21 branch outcomes. ValidatorSupervisor covers 154/167 lines and
+119/146 branches. The exact overall branch target now passes locally; hosted
+acceptance and the stronger critical-group branch targets remain pending.
+
+## Completed x86 hosted cohort
+
+The x86-64 producing job in [CI 43814174541](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43814174541)
+passed. Its 517 sessions were downloaded as the bounded raw coverage artifact,
+verified against the producing job, artifact digest, actual merge parents and
+unchanged production JAR, and independently regenerated from JaCoCo probes.
+The regenerated report matches the hosted counters and report text.
+
+The actual merge is `6c00baafb91b6a26e672bdb9ada523875b7e19e3`; artifact
+`14214744585` has SHA-256
+`ca1efc54bc0b08389e4f789af1abcb54e6ff13b02594fa6ef2b1912279066a74`.
+Verification receipts and raw collections are in
+`verified-hosted-linux-43814174541/` under the bounded workspace.
+
+The mixed-origin local union adds 90 lines and 29 branch outcomes: 85 lines and
+23 branches in the real AttachmentHelper path, with smaller gains in attachment
+invocation, binding, Linux-host and GUI paths. This closes a measurement gap; it
+is not 90 lines of newly tested behavior. Both critical line targets now pass.
+
+This historical cohort requires 33 suites; current hosted acceptance requires
+39. It is admitted with its original provenance only for local analysis. It does
+not satisfy the current single-run gate or authorize publication. The whole run
+failed on Windows-host and big-endian MIPS; their local fixes require a fresh
+hosted run. Remaining exact branch outcomes for the critical 90% targets are
+1,859 in binary/location code and 440 in file transactions/validation.
