@@ -3343,7 +3343,9 @@ jobs:
               --require-suite cfi-composition-explicit --require-suite cfi-composition-plain \
               --require-suite cfi-composition-gabi --require-suite cfi-composition-gnu \
               --require-suite linux-attachment-exec --require-suite linux-attachment-pie \
-              --require-suite linux-attachment-exec-no-build-id
+              --require-suite linux-attachment-exec-no-build-id \
+              --require-suite gui-script-manager --require-suite gui-script-manager-loader \
+              --require-suite gui-script-manager-compressed --require-suite gui-script-manager-unwind
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'

@@ -169,6 +169,24 @@ class AttachmentOracleAdmission(unittest.TestCase):
                     hosted.attachment_oracle(changed_record, changed_oracle)
 
 
+class GuiOracleAdmission(unittest.TestCase):
+    def test_headless_or_incomplete_gui_claims_rejected(self):
+        record = {'suite': 'gui-script-manager', 'sessions': [{}]}
+        oracle = {'status': 'PASS_INTERACTIVE_GUI_MEASUREMENT', 'mode': 'default', 'mainJvmSessions': 1,
+            'desktop': 'owned Xvfb and Openbox; actual Swing interactions',
+            'outcome': {'requiredChecks': ['script-manager-export-selection=PASS', 'script-manager-export-cancellation=PASS',
+                'script-manager-structural-validation=PASS', 'script-manager-gdb=PASS']},
+            'unmeasuredNestedJvmKinds': ['geometry calibration', 'report CLI', 'attachment helper']}
+        hosted.gui_oracle(record, oracle)
+        for key, value in (('status', 'PASS_HEADLESS'), ('mode', 'unwind'), ('mainJvmSessions', 2),
+                ('desktop', 'headless JVM'), ('outcome', {'requiredChecks': ['script-manager-export-selection=PASS']}),
+                ('unmeasuredNestedJvmKinds', [])):
+            with self.subTest(field=key), self.assertRaisesRegex(ValueError, 'actual interactive completion'):
+                hosted.gui_oracle(record, {**oracle, key: value})
+        with self.assertRaisesRegex(ValueError, 'actual interactive completion'):
+            hosted.gui_oracle({**record, 'sessions': []}, oracle)
+
+
 class TargetGate(unittest.TestCase):
     def test_all_overall_and_critical_targets_required(self):
         def metrics():

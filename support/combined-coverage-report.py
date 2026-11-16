@@ -169,6 +169,7 @@ def generate(directory, output, inventory, sources, repository, commit, run_id, 
         '**Local preview; mixed measurement origins; not eligible for publication.**' if local_preview else
         f'Single-run measurement for [{commit}](https://github.com/{repository}/commit/{commit}); [CI run {run_id}](https://github.com/{repository}/actions/runs/{run_id}).', '',
         'This unions matching JaCoCo execution probes. It does not add or average percentages. Every production Java class remains in each denominator, including GUI/framework code and classes that were never loaded. Native C/libdwarf, Python, shell and external libraries are outside this Java metric.', '',
+        'The native-java layer includes standalone integration JVMs and measured interactive Linux GUI suites. Per-suite receipts identify the workflows and any uninstrumented child processes.', '',
         f'{result["sessions"]} measured JVM sessions; {result["layers"]["combined"]["productionClasses"]} production classes; {len(result["layers"]["combined"]["sources"])} source files.', '',
         '| Measurement | Lines | Branches |', '| --- | ---: | ---: |']
     for layer in LAYERS:

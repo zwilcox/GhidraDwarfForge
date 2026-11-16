@@ -22,7 +22,9 @@ REQUIRED = {
         'annotation-export', 'failed-source-export', 'class-scopes', 'inheritance-producer',
         'inheritance-names', 'build-id-command', 'cfi-encoder', 'cfi-composition-explicit',
         'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu',
-        'linux-attachment-exec', 'linux-attachment-pie', 'linux-attachment-exec-no-build-id'}),
+        'linux-attachment-exec', 'linux-attachment-pie', 'linux-attachment-exec-no-build-id',
+        'gui-script-manager', 'gui-script-manager-loader', 'gui-script-manager-compressed',
+        'gui-script-manager-unwind'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -70,6 +72,21 @@ def attachment_oracle(record, oracle):
         raise ValueError('hosted attachment coverage must disclose unmeasured recovery children')
 
 
+def gui_oracle(record, oracle):
+    suffix = record['suite'].removeprefix('gui-script-manager')
+    mode = suffix.removeprefix('-') if suffix else 'default'
+    required = {'installed-unwind-chooser=PASS', 'choices=7', 'exports=4', 'cancellations=3'} if mode == 'unwind' else {
+        'script-manager-export-selection=PASS', 'script-manager-export-cancellation=PASS',
+        'script-manager-structural-validation=PASS', 'script-manager-gdb=PASS'}
+    if (mode not in ('default', 'loader', 'compressed', 'unwind')
+            or oracle.get('status') != 'PASS_INTERACTIVE_GUI_MEASUREMENT' or oracle.get('mode') != mode
+            or oracle.get('mainJvmSessions') != 1 or len(record['sessions']) != 1
+            or oracle.get('desktop') != 'owned Xvfb and Openbox; actual Swing interactions'
+            or not required.issubset(oracle.get('outcome', {}).get('requiredChecks', []))
+            or oracle.get('unmeasuredNestedJvmKinds') != ['geometry calibration', 'report CLI', 'attachment helper']):
+        raise ValueError('hosted GUI measurement requires actual interactive completion and nested-process disclosure')
+
+
 def load_job(root, jar, kind, commit, run):
     job, expected_layers, expected_suites = REQUIRED[kind]
     files.exact_files(root, {'collections', 'report'})
@@ -105,6 +122,8 @@ def load_job(root, jar, kind, commit, run):
                     raise ValueError('hosted visibility coverage requires both real privilege modes')
             if record['suite'].startswith('linux-attachment-'):
                 attachment_oracle(record, files.read(directory / 'oracle.json'))
+            if record['suite'].startswith('gui-script-manager'):
+                gui_oracle(record, files.read(directory / 'oracle.json'))
             layer_suites.add(record['suite'])
             layer_rows.extend((layer, row['session'], directory / row['file']) for row in record['sessions'])
             layer_halts.extend({'suite': record['suite'], **row} for row in record.get('unmeasuredForcedHalts', []))

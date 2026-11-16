@@ -7,6 +7,11 @@ if [[ $# -ne 4 ]]; then
     exit 64
 fi
 repository=$(realpath "$(dirname "$0")/../../..")
+if [[ -n ${FORGE_INTEGRATION_COVERAGE_OUTPUT:-} || -n ${FORGE_INTEGRATION_COVERAGE_AGENT:-} ]]; then
+    if [[ -z ${FORGE_GUI_COVERAGE_OPTION:-} ]]; then
+        exec python3 "$repository/src/test/integration/gui-coverage.py" "$@"
+    fi
+fi
 ghidra=$(realpath "$1")
 module=$(realpath "$2")
 fixture=$(realpath "$3")
@@ -135,7 +140,12 @@ if [[ ${GHIDRA_GUI_NATIVE_ATTACHMENT:-0} == 1 ]]; then
         "$repository/src/test/native/attachment-cancel-validator.c" -o "$FORGE_GUI_CANCEL_VALIDATOR"
     gui_timeout=900
 fi
-DISPLAY=":$display" timeout "$gui_timeout" "$java" --enable-native-access=ALL-UNNAMED \
+coverage_options=()
+if [[ -n ${FORGE_GUI_COVERAGE_OPTION:-} ]]; then
+    [[ "$FORGE_GUI_COVERAGE_OPTION" == -javaagent:* ]] || exit 64
+    coverage_options=("$FORGE_GUI_COVERAGE_OPTION")
+fi
+DISPLAY=":$display" timeout "$gui_timeout" "$java" "${coverage_options[@]}" --enable-native-access=ALL-UNNAMED \
     -Djava.awt.headless=false -Duser.home="$work/user" \
     -Dapplication.settingsdir="$work/settings" -Dapplication.cachedir="$work/cache" \
     -Dapplication.tempdir="$work/tmp" -Djava.io.tmpdir="$work/tmp" \
