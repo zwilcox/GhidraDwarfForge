@@ -24,7 +24,7 @@ REQUIRED = {
         'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu',
         'linux-attachment-exec', 'linux-attachment-pie', 'linux-attachment-exec-no-build-id',
         'gui-script-manager', 'gui-script-manager-loader', 'gui-script-manager-compressed',
-        'gui-script-manager-unwind'}),
+        'gui-script-manager-unwind', 'lexical-shadow'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -87,6 +87,46 @@ def gui_oracle(record, oracle):
         raise ValueError('hosted GUI measurement requires actual interactive completion and nested-process disclosure')
 
 
+def lexical_oracle(record, oracle):
+    role = oracle.get('role')
+    gap, calls, lines = (oracle.get(key) for key in ('discontiguous', 'calls', 'sourceLines'))
+    labels = ['import', *(['export-baseline'] if lines is not None else []), 'export-first', 'export-repeat']
+    nested = []
+    if lines is None and gap:
+        if oracle.get('controls') != ['stale', 'coalesced', 'native-decompiler-failure', 'copy-cancellation']:
+            raise ValueError('lexical measurement lacks existing negative controls')
+        nested = ['negative', 'failure']
+    elif lines is None and role == 'pie-rebased':
+        if oracle.get('coverageCuration') != 'PASS' or oracle.get('coverageStaging') != 'PASS':
+            raise ValueError('lexical measurement lacks coverage publication controls')
+        nested = ['coverage-staging', 'coverage-limit', 'coverage-byte-limit', 'coverage-curation']
+    pair = oracle.get('outputPair')
+    protected = oracle.get('protected')
+    if (oracle.get('status') != 'PASS_LEXICAL_SHADOW_MEASUREMENT'
+            or oracle.get('oracleStatus') != 'LEXICAL_SHADOW_PASS' or oracle.get('target') != 'x86_64'
+            or oracle.get('javaRuntime') != 21 or role not in ('exec', 'pie', 'pie-rebased')
+            or type(gap) is not bool or type(calls) is not bool
+            or (lines is not None and type(lines) is not int)
+            or (gap, calls, lines) not in ((False, False, None), (True, False, None), (True, True, None), (True, True, 8))
+            or [row.get('label') for row in record['sessions']] != labels
+            or oracle.get('measurement') != {'directAnalyzerSessions': len(labels), 'unmeasuredNestedDrivers': nested}
+            or type(oracle.get('observations')) is not int or oracle['observations'] <= 0
+            or not isinstance(pair, list) or len(pair) != 2
+            or any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value) for value in pair)
+            or not isinstance(protected, dict) or not protected
+            or any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value) for value in protected.values())
+            or (lines is not None and not oracle.get('sourceInventory'))):
+        raise ValueError('lexical measurement lacks exact runtime, preservation or session evidence')
+    return role, gap, calls, lines
+
+
+def lexical_cohort(cases):
+    expected = {(role, gap, calls, lines) for role in ('exec', 'pie', 'pie-rebased')
+        for gap, calls, lines in ((False, False, None), (True, False, None), (True, True, None), (True, True, 8))}
+    if len(cases) != len(expected) or set(cases) != expected:
+        raise ValueError('lexical coverage requires every existing role, gap, call and partitioned-source case')
+
+
 def load_job(root, jar, kind, commit, run):
     job, expected_layers, expected_suites = REQUIRED[kind]
     files.exact_files(root, {'collections', 'report'})
@@ -96,7 +136,7 @@ def load_job(root, jar, kind, commit, run):
             or summary.get('cohort') != {'commit': commit, 'run': run, 'job': job}
             or set(summary.get('layers', {})) != expected_layers):
         raise ValueError('missing or mismatched CI integration cohort: ' + kind)
-    rows, suites, known, unmeasured = [], set(), set(), []
+    rows, suites, known, unmeasured, lexical_cases = [], set(), set(), [], []
     for layer, measured in sorted(summary['layers'].items()):
         xml = files.regular(root / 'report' / (layer + '.xml'), 32 * 1024 * 1024)
         if files.digest(xml) != measured.get('xmlSha256'):
@@ -124,6 +164,8 @@ def load_job(root, jar, kind, commit, run):
                 attachment_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'].startswith('gui-script-manager'):
                 gui_oracle(record, files.read(directory / 'oracle.json'))
+            if record['suite'] == 'lexical-shadow':
+                lexical_cases.append(lexical_oracle(record, files.read(directory / 'oracle.json')))
             layer_suites.add(record['suite'])
             layer_rows.extend((layer, row['session'], directory / row['file']) for row in record['sessions'])
             layer_halts.extend({'suite': record['suite'], **row} for row in record.get('unmeasuredForcedHalts', []))
@@ -136,6 +178,8 @@ def load_job(root, jar, kind, commit, run):
     files.exact_files(root / 'collections', known)
     if suites != expected_suites:
         raise ValueError('missing or unexpected required CI integration suite: ' + kind)
+    if kind == 'linux':
+        lexical_cohort(lexical_cases)
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,
         'summarySha256': files.digest(root / 'report/summary.json'),
         'receipts': {name: files.digest(root / 'collections' / name / 'receipt.json') for name in sorted(known)},

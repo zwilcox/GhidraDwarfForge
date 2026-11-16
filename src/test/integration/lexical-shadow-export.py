@@ -8,6 +8,9 @@ import re
 from pathlib import Path
 import subprocess
 import tempfile
+from contextlib import nullcontext
+
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -51,13 +54,17 @@ def main():
             '-Djava.io.tmpdir=' + str(case / 'java-tmp')]
     print('lexical-shadow-results=' + str(case), flush=True)
     commands = []
+    collection = Collection('lexical-shadow',
+        ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar', 'headless')
 
     def run(label, command, timeout=240):
         command = list(map(str, command))
         commands.append({'label': label, 'argv': command})
         (case / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (case / (label + '.log')).open('w') as log:
-            subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=timeout)
+        analyzer = command[:len(headless)] == list(map(str, headless))
+        context = collection.session(command, label, headless=args.java is None) if analyzer else nullcontext(command)
+        with context as measured, (case / (label + '.log')).open('w') as log:
+            subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=timeout)
 
     target = args.target
     prefix = '' if target == 'x86_64' else 'aarch64-linux-gnu-'
@@ -71,7 +78,7 @@ def main():
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
     harness = repository / 'src/test/integration'
     files = [source, module, Path(__file__), *harness.glob('lexical-shadow*'),
-        harness / 'check-multifile-semantics.py',
+        harness / 'integration_coverage.py', harness / 'check-multifile-semantics.py',
         harness / 'check-lexical-shadow.py', harness / 'ghidra_scripts/PrepareLexicalShadow.java',
         harness / 'ghidra_scripts/LexicalDecompilerFailureExport.java',
         harness / 'ghidra_scripts/CancelDuringElfCopy.java']
@@ -214,6 +221,15 @@ def main():
         receipt['controls'] = ['stale', 'coalesced', 'native-decompiler-failure', 'copy-cancellation']
         (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
     assert protected == {p: digest(Path(p)) for p in protected}
+    receipt['measurement'] = {'directAnalyzerSessions': 4 if args.source_lines is not None else 3,
+        'unmeasuredNestedDrivers': [name for enabled, names in (
+            (args.coverage_controls, ['coverage-staging', 'coverage-limit', 'coverage-byte-limit', 'coverage-curation']),
+            (args.controls, ['negative', 'failure'])) if enabled for name in names]}
+    (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
+    if collection.enabled:
+        (case / 'coverage-oracle.json').write_text(json.dumps({**receipt,
+            'status': 'PASS_LEXICAL_SHADOW_MEASUREMENT', 'oracleStatus': receipt['status']}, indent=4) + '\n')
+        collection.finish(case / 'coverage-oracle.json')
     print(json.dumps(receipt, indent=4))
 
 

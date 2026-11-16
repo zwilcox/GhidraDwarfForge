@@ -202,6 +202,63 @@ class TargetGate(unittest.TestCase):
                 metric['targetMet'] = True
 
 
+class LexicalOracleAdmission(unittest.TestCase):
+    def fixture(self, role='exec', gap=False, calls=False, lines=None):
+        labels = ['import', *(['export-baseline'] if lines is not None else []), 'export-first', 'export-repeat']
+        record = {'sessions': [{'label': label} for label in labels]}
+        oracle = {'status': 'PASS_LEXICAL_SHADOW_MEASUREMENT', 'oracleStatus': 'LEXICAL_SHADOW_PASS',
+            'target': 'x86_64', 'javaRuntime': 21, 'role': role, 'discontiguous': gap, 'calls': calls,
+            'sourceLines': lines, 'observations': 8, 'outputPair': ['a' * 64, 'b' * 64],
+            'protected': {'fixture': 'c' * 64}, 'sourceInventory': {'part.c': 'd' * 64} if lines else None,
+            'measurement': {'directAnalyzerSessions': len(labels), 'unmeasuredNestedDrivers': []}}
+        if lines is None and gap:
+            oracle['controls'] = ['stale', 'coalesced', 'native-decompiler-failure', 'copy-cancellation']
+            oracle['measurement']['unmeasuredNestedDrivers'] = ['negative', 'failure']
+        elif lines is None and role == 'pie-rebased':
+            oracle.update(coverageCuration='PASS', coverageStaging='PASS')
+            oracle['measurement']['unmeasuredNestedDrivers'] = [
+                'coverage-staging', 'coverage-limit', 'coverage-byte-limit', 'coverage-curation']
+        return record, oracle
+
+    def test_all_existing_profiles_required(self):
+        cases = []
+        for role in ('exec', 'pie', 'pie-rebased'):
+            for gap, calls, lines in ((False, False, None), (True, False, None), (True, True, None), (True, True, 8)):
+                record, oracle = self.fixture(role, gap, calls, lines)
+                cases.append(hosted.lexical_oracle(record, oracle))
+        hosted.lexical_cohort(cases)
+        for missing in range(len(cases)):
+            with self.subTest(missing=cases[missing]), self.assertRaisesRegex(ValueError, 'every existing role'):
+                hosted.lexical_cohort(cases[:missing] + cases[missing + 1:])
+        with self.assertRaises(ValueError):
+            hosted.lexical_cohort(cases + cases[:1])
+
+    def test_missing_or_mislabeled_runtime_evidence_rejected(self):
+        record, oracle = self.fixture()
+        for key, value in (('status', 'PASS'), ('oracleStatus', 'PASS'), ('target', 'aarch64'),
+                ('javaRuntime', 25), ('role', 'unknown'), ('discontiguous', 0), ('calls', True),
+                ('sourceLines', 8.0), ('observations', 0), ('outputPair', []), ('protected', {}),
+                ('measurement', {'directAnalyzerSessions': 3, 'unmeasuredNestedDrivers': ['unknown']})):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                hosted.lexical_oracle(record, {**oracle, key: value})
+        for sessions in ([], record['sessions'][1:], list(reversed(record['sessions']))):
+            with self.assertRaises(ValueError):
+                hosted.lexical_oracle({'sessions': sessions}, oracle)
+        record, oracle = self.fixture(gap=True, calls=True, lines=8)
+        with self.assertRaises(ValueError):
+            hosted.lexical_oracle(record, {**oracle, 'sourceInventory': {}})
+
+    def test_negative_controls_and_unmeasured_children_are_disclosed(self):
+        for args, key in ((('exec', True, True, None), 'controls'),
+                (('pie-rebased', False, False, None), 'coverageStaging')):
+            record, oracle = self.fixture(*args)
+            with self.assertRaises(ValueError):
+                hosted.lexical_oracle(record, {**oracle, key: None})
+            oracle['measurement']['unmeasuredNestedDrivers'] = []
+            with self.assertRaises(ValueError):
+                hosted.lexical_oracle(record, oracle)
+
+
 class ReportDependencies(unittest.TestCase):
     def test_changed_or_unrecorded_tool_jars_rejected(self):
         with tempfile.TemporaryDirectory(prefix='forge-report-tools-') as temporary:
