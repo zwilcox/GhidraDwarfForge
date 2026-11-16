@@ -30,13 +30,13 @@ branches (67.0%). That badge's scope remains unchanged.
 ## Verified local checkpoint
 
 The latest complete JavaExec run executed all 210 tasks at
-`30e443c06094542bb9c08de2f63e53db2899a5a0` in 262.6 seconds. The combined local report
+`597873f9c2e27c8d50c3578ca75c6256f979b3f4` in 265.5 seconds. The combined local report
 contains 848 sessions with the full unchanged denominator:
 
 | Scope | Line coverage | Branch coverage | Accepted target |
 | --- | ---: | ---: | ---: |
-| All production Java | 94.6% | 78.8% | 85% / 80% |
-| Binary and location correctness | 94.7% | 78.5% | 95% / 90% |
+| All production Java | 94.6% | 78.9% | 85% / 80% |
+| Binary and location correctness | 94.7% | 78.6% | 95% / 90% |
 | File transactions and validation | 93.9% | 78.5% | 95% / 90% |
 | Remaining production | 95.1% | 81.5% | Included in overall |
 
@@ -44,7 +44,7 @@ Production JAR SHA-256 remains
 `98ea0bbb8a292152d76cd2be9972ad5c5e270421ab65043fc1ced2afaa81caf9`. No production Java changed in this checkpoint.
 Exact counters, per-line missed decisions, origins, execution hashes and separate
 layer reports are retained under
-`.forge-work/scratch/coverage-expansion/combined-static-admission-hosted-baseline/`.
+`.forge-work/scratch/coverage-expansion/combined-switch-boundaries-hosted-baseline/`.
 The local script `combine-verified-hosted-stable.py` reuses the normal collection
 admission and class/probe verifier and retains each historical artifact's actual
 run/merge commit. It does not claim a new hosted cohort.
@@ -310,3 +310,14 @@ All 90 selected mutants are detected. The four new faults accept conflicting
 read widths, exceed the dispatch-window budget, add instead of subtracting an
 index, or shift the index in the wrong direction. Each is caught by a behavioral
 assertion; unchanged-source baselines pass first.
+
+Baseline20 adds six covered lines and 25 branch outcomes. `GhidraBoundedSwitch`
+now measures 214/217 lines and 211/283 branches in the unchanged denominator.
+The current combined report remains a local diagnostic union, not hosted acceptance.
+
+The next identified measurement gap is `lexical-statics-export.py` and
+`recovered-statics-export.py`: they contain real producer/headless/GDB assertions
+but do not use `integration_coverage.Collection`. The already-measured
+`lexical-shadow-export.py` is a separate harness. Instrument existing recovered
+static modes and preservation/cancellation oracles before treating their missing
+HighFunction probes as evidence of missing behavior tests.
