@@ -158,6 +158,7 @@ public final class ValidatorSupervisorSmoke {
             try { ValidatorSupervisor.readStatus(report); throw new AssertionError("invalid status accepted"); }
             catch (IOException expected) { checks++; }
         }
+        ValidatorEvidenceBoundarySmoke.run(python, root);
         System.out.println("validator-supervisor-java=PASS checks=" + checks + " java=" + Runtime.version().feature());
     }
 

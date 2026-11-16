@@ -6,6 +6,30 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Validator helper evidence refusals
+
+CONFIRMED: fifteen new Linux executable-helper protocol controls exercise
+rejection of helper diagnostics, missing status, inconsistent stdout/stderr
+counts, over-limit streams, changed helper/tool bytes, incomplete cleanup,
+cancellation status, contradictory exit/signal records and launch failure.
+Each control requires the intended refusal and retained evidence state; none
+claims that a simulated helper establishes actual native cleanup. They run from
+the existing `validatorSupervisorSmoke` task after its real native lifecycle,
+cancellation, timeout, output-limit and descendant checks. Windows explicitly
+reports these script-specific protocol controls as not run; its real native
+supervisor tests remain in place.
+
+The current production JAR passes 270 status-boundary checks, 40 launch checks,
+38 native smoke assertions and all 15 new controls. Three isolated mutations
+(ignore helper diagnostics, output counters or executable changes) are rejected
+by the specific behavioral assertions, not by compilation or class-loading
+failures. Mutated classes never contribute coverage. Source/JAR/native-helper
+hashes remain unchanged. Evidence in bounded scratch:
+`validator-evidence-checked-2f181/`, `validator-evidence-mutations-2f181/` and
+their run logs. The first driver wrongly expected at least 40 native smoke
+assertions instead of the existing 38; its incomplete collection is excluded.
+The corrected full smoke run passes and awaits raw union verification.
+
 ## Measured packed bit fields through the installed exporter
 
 CONFIRMED: the existing real Ghidra bit-field fixture now measures two exports
