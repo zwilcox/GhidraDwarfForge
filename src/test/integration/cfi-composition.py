@@ -10,6 +10,7 @@ import re
 import runpy
 import sys
 import zlib
+from integration_coverage import Collection
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS = ROOT / 'src/test/integration'
@@ -36,12 +37,18 @@ def main():
     parser.add_argument('output', type=Path)
     parser.add_argument('--java', default='java')
     parser.add_argument('--dwarfdump', required=True)
+    parser.add_argument('--jar', type=Path, help='Packaged production classes for coverage measurement')
     parser.add_argument('--original-encoding', choices=('plain', 'gabi', 'gnu'),
         help='Exercise qualified writer composition from an original ELF containing the compiler prefix')
     args = parser.parse_args()
     work = args.output.resolve()
     work.mkdir(parents=True, exist_ok=False)
-    classpath = os.pathsep.join(str(args.classes.resolve() / name) for name in ('main', 'test'))
+    classes = args.classes.resolve()
+    jar = args.jar or classes.parents[1] / 'libs/GhidraDwarfForge.jar'
+    coverage = Collection('cfi-composition-' + (args.original_encoding or 'explicit'), jar, 'native-java',
+        test_classes=('ghidradwarfforge.unwind.CallFrameEncoderProbe',))
+    production = jar.resolve() if coverage.enabled or args.jar else classes / 'main'
+    classpath = os.pathsep.join(map(str, (production, classes / 'test')))
     prior = json.loads((args.encoder_results / 'result.json').read_text())
     assert prior['status'] == 'PASS_FRAME_ENCODER'
     outcomes = []
@@ -94,9 +101,11 @@ def main():
                 plan, original, artifact, frame, mode, prefix]
             if args.original_encoding:
                 command.extend(['from-original', 'controls'])
-            run(command, case / (mode + '-encode.log'))
+            with coverage.session(command, case.name + '-' + mode) as invocation:
+                run(invocation, case / (mode + '-encode.log'))
             first = digest(artifact)
-            run(command, case / (mode + '-repeat.log'))
+            with coverage.session(command, case.name + '-' + mode + '-repeat') as invocation:
+                run(invocation, case / (mode + '-repeat.log'))
             assert first == digest(artifact)
             data = frame.read_bytes()
             assert data[:fde_end] == prefix.read_bytes()
@@ -148,6 +157,7 @@ def main():
     assert outcomes
     (work / 'result.json').write_text(json.dumps({'status': 'PASS_FRAME_COMPOSITION', 'cases': outcomes,
         'scope': 'Explicit plans and preserved compiler prefix; not production recovery or writer collision authorization'}, indent=4) + '\n')
+    coverage.finish(work / 'result.json')
 
 
 if __name__ == '__main__':

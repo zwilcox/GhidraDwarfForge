@@ -14,6 +14,7 @@ import struct
 import subprocess
 import sys
 import zlib
+from integration_coverage import Collection
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -169,13 +170,18 @@ def main():
     parser.add_argument('output', type=Path)
     parser.add_argument('--java', default='java')
     parser.add_argument('--dwarfdump', required=True)
+    parser.add_argument('--jar', type=Path, help='Packaged production classes for coverage measurement')
     parser.add_argument('--target', choices=('x86_64', 'aarch64', 'all'), default='all',
                         help='Runtime target; all width/endian structural cases always run')
     args = parser.parse_args()
     work = args.output.resolve()
     work.mkdir(parents=True, exist_ok=False)
     classes = args.classes.resolve()
-    classpath = os.pathsep.join(str(classes / name) for name in ('main', 'test'))
+    jar = args.jar or classes.parents[1] / 'libs/GhidraDwarfForge.jar'
+    coverage = Collection('cfi-encoder', jar, 'native-java',
+        test_classes=('ghidradwarfforge.unwind.CallFrameEncoderProbe',))
+    production = jar.resolve() if coverage.enabled or args.jar else classes / 'main'
+    classpath = os.pathsep.join(map(str, (production, classes / 'test')))
     reports = []
 
     def encode(case, original, width, order, return_register, registers, frames, initial_rules=None):
@@ -189,9 +195,11 @@ def main():
             raw = case / (mode + '.frame')
             command = [args.java, '-cp', classpath, 'ghidradwarfforge.unwind.CallFrameEncoderProbe',
                        plan, original, candidate, raw, mode]
-            run(command, case / (mode + '-encode.log'))
+            with coverage.session(command, case.name + '-' + mode) as invocation:
+                run(invocation, case / (mode + '-encode.log'))
             encoded = candidate.read_bytes()
-            run(command, case / (mode + '-repeat.log'))
+            with coverage.session(command, case.name + '-' + mode + '-repeat') as invocation:
+                run(invocation, case / (mode + '-repeat.log'))
             assert encoded == candidate.read_bytes() and digest(original) == before
             assert decode(raw.read_bytes(), width, order, initial_rules) == frames
             if plain is None: plain = raw.read_bytes()
@@ -345,6 +353,7 @@ def main():
         print(target + ' ' + role + ' encoded CFI runtime PASS', flush=True)
     (work / 'result.json').write_text(json.dumps({'status': 'PASS_FRAME_ENCODER', 'cases': reports,
         'scope': 'Explicit test plans only; no Ghidra rule recovery or production synthesis'}, indent=4) + '\n')
+    coverage.finish(work / 'result.json')
 
 
 if __name__ == '__main__':

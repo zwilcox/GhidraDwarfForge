@@ -663,6 +663,17 @@ jobs:
           ./gradlew clean
           mkdir -p build/test-results/extension-build
           {
+            # Resolve coverage downloads before tests. Maven Central may rate-limit
+            # a fresh runner; only this preparation task is retried, never a test.
+            for attempt in 1 2 3; do
+              if ./gradlew --no-daemon prepareIntegrationCoverage; then
+                break
+              fi
+              if [[ "$attempt" -eq 3 ]]; then
+                exit 1
+              fi
+              sleep "$((attempt * 15))"
+            done
             src/test/integration/headless-wrapper.sh
             python3 src/test/integration/attachment-launcher.py
             src/test/integration/architecture-neutrality.sh
@@ -3316,7 +3327,9 @@ jobs:
               --require-suite source-context --require-suite annotation-inventory --require-suite equate-evidence \
               --require-suite annotation-export --require-suite failed-source-export \
               --require-suite class-scopes --require-suite inheritance-producer --require-suite inheritance-names \
-              --require-suite build-id-command
+              --require-suite build-id-command --require-suite cfi-encoder \
+              --require-suite cfi-composition-explicit --require-suite cfi-composition-plain \
+              --require-suite cfi-composition-gabi --require-suite cfi-composition-gnu
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'

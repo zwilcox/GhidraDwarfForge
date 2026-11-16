@@ -20,7 +20,8 @@ REQUIRED = {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation',
         'instruction-context', 'source-context', 'annotation-inventory', 'equate-evidence',
         'annotation-export', 'failed-source-export', 'class-scopes', 'inheritance-producer',
-        'inheritance-names', 'build-id-command'}),
+        'inheritance-names', 'build-id-command', 'cfi-encoder', 'cfi-composition-explicit',
+        'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
