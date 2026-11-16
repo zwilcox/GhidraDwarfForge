@@ -23,6 +23,7 @@ external_declarations = combined.module('external_declaration_admission', HERE /
 recovered_signatures = combined.module('recovered_signature_admission', HERE / 'recovered-signature-admission.py')
 stack_transitions = combined.module('stack_transition_admission', HERE / 'stack-transition-admission.py')
 producer_failures = combined.module('producer_failure_admission', HERE / 'producer-failure-admission.py')
+qualified_types = combined.module('qualified_type_admission', HERE / 'qualified-type-admission.py')
 metadata_failures = combined.module('metadata_failure_admission', HERE / 'linux-metadata-failure-admission.py')
 windows_metadata_failures = combined.module('windows_metadata_failure_admission', HERE / 'windows-metadata-failure-admission.py')
 windows_directory_failures = combined.module('windows_directory_failure_admission', HERE / 'windows-directory-failure-admission.py')
@@ -39,7 +40,7 @@ REQUIRED = {
         'calling-convention', 'custom-call-storage', 'call-site-packaged',
         'lexical-statics', 'lexical-statics-controls', 'recovered-statics-positive', 'recovered-statics-controls',
         'stack-control-flow', 'saved-inheritance', 'external-declarations', 'recovered-returns', 'recovered-parameters',
-        'stack-value-transitions', 'producer-failures'}),
+        'stack-value-transitions', 'producer-failures', 'qualified-type-producer'}),
     'linux_aarch64': ('target-preflight', {'headless'}, {'stack-value-transitions'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
@@ -327,6 +328,7 @@ def load_job(root, jar, kind, commit, run):
     recovered_signature_cases = []
     stack_transition_cases = []
     producer_failure_cases = []
+    qualified_type_cases = []
     for layer, measured in sorted(summary['layers'].items()):
         xml = files.regular(root / 'report' / (layer + '.xml'), 32 * 1024 * 1024)
         if files.digest(xml) != measured.get('xmlSha256'):
@@ -381,6 +383,8 @@ def load_job(root, jar, kind, commit, run):
                 recovered_signature_cases.append(recovered_signatures.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'producer-failures':
                 producer_failure_cases.append(producer_failures.oracle(record, files.read(directory / 'oracle.json')))
+            if record['suite'] == 'qualified-type-producer':
+                qualified_type_cases.append(qualified_types.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'stack-value-transitions':
                 stack_transition_cases.append(stack_transitions.oracle(record, files.read(directory / 'oracle.json')))
             layer_suites.add(record['suite'])
@@ -407,6 +411,7 @@ def load_job(root, jar, kind, commit, run):
         external_declarations.cohort(external_declaration_cases)
         recovered_signatures.cohort(recovered_signature_cases)
         producer_failures.cohort(producer_failure_cases)
+        qualified_types.cohort(qualified_type_cases)
     if kind in ('linux', 'linux_aarch64'):
         stack_transitions.cohort(stack_transition_cases, ['x86_64' if kind == 'linux' else 'aarch64'])
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,

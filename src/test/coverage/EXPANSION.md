@@ -6,6 +6,46 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Qualified types and scalar encodings
+
+CONFIRMED pilot: `qualified-type-producer.py` compiles a tiny Linux x86-64 C11
+non-PIE reference with thirteen globals. An explicit compiler fixture model
+drives the real native exporter twice. The sidecar is byte-identical on repeat;
+input and source remain unchanged. GNU readelf, LLVM and the strict reader
+validate the output. Compiler and exported GDB sessions check signed/unsigned
+characters, Boolean, UTF-16/32, float/double, wide unsigned values, pointer
+targets, object sizes, qualifiers, function return 42 and normal exit.
+This tests serialization of an explicit model, not Ghidra type extraction.
+
+The independent DIE oracle checks exact modifier chains, base encodings and
+widths, pointer width, absolute object locations, and the absent terminal type
+reference for const void. All 59 targeted oracle corruptions must fail. GDB
+prints `void *` for both compiler and Forge `const void *`; the DIE oracle
+therefore verifies the qualifier that debugger spelling alone cannot prove.
+
+This exposed the pinned strict reader's omission of `DW_TAG_atomic_type` from
+its permitted reference targets. The original compiler ELF reproduces the same
+error. Validation-only patch 0009 corrects that omission, with an independent
+compiler positive and a one-byte non-type-target negative. Production source
+and native libraries are unchanged. See `support/validation/README.md`.
+
+CI requires the new isolated suite and its complete compiler/debugger/DIE
+oracle before admitting coverage. Schema tests reject omitted or changed
+controls, incomplete sessions, invalid identity, missing input preservation,
+missing native provenance or failed debugger/validator outcomes. Local pilot
+evidence is in `qualified-type-pilot-5/` in the bounded coverage workspace.
+The final pilot also validates the compiler reference through LLVM and the
+strict reader; stripped input bytes corroborate inherited frame diagnostics.
+All 221 coverage-tool tests pass. Three separately compiled production mutants
+(atomic emitted as const, UTF emitted as unsigned, signed char emitted as
+unsigned char) each produce an artifact successfully, then fail the independent
+DIE oracle with the expected semantic mismatch. The unmodified compiled
+baseline passes. Compilation errors, crashes and unrelated assertions cannot
+count as detection; mutation executions contribute no coverage. Evidence:
+`qualified-type-mutations/result.json`. Production sources remain unchanged.
+Exact-commit measurement and hosted acceptance follow separately; no coverage
+increase is claimed from the test count.
+
 ## Linux metadata application failures
 
 CONFIRMED locally: twelve additional cases exercise real owned-stage application
