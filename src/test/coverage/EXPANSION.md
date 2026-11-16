@@ -31,6 +31,55 @@ code is unchanged. Evidence under the bounded coverage workspace:
 `later-local-focused-valid-pieces.log`, `later-local-selected-mutations/` and
 `later-local-mutations.log`. Full JavaExec measurement follows separately.
 
+CONFIRMED full measurement at `d00b0b1d`: all 211 JavaExec tasks pass in 275.728
+seconds, including 53,432 independent expression vectors. All 221 coverage-tool
+tests pass in 8.453 seconds; actionlint passes. Baseline51 and its matching raw
+probes verify with the unchanged production JAR and 255-source/901-class scope.
+Replacing the prior JavaExec sessions in the diagnostic union adds two lines and
+seven binary/location branches: 28,465/29,786 lines (95.6%) and
+21,138/25,878 branches (81.7%). Binary branches are 15,259/18,726 (81.5%).
+Evidence: `javaexec-baseline-51/`, `later-local-javaexec-checked/`,
+`later-local-union-verified/`, `later-local-baseline-result.json` and
+`later-local-verification.log`. Changed production-code targets still pass;
+no new production code or emitted artifact behavior changed in this batch.
+
+## Hosted Windows metadata controls verified
+
+CONFIRMED: Windows-host job `133524461073` in run `43926490219` passes at head
+`117b6c66`, merge commit `52b46cd9c5d32b3ad5f278f4f3d2cd60787ed274`.
+Artifact `14258784900` (`integration-java-coverage-windows`, 409,685 bytes),
+SHA-256 `61046946652d89d6db6b6189b990169393aed32a3b86eed92f579b5140e6bede`,
+has been downloaded with bounds and verified against GitHub's digest. All 54
+sessions regenerate the original per-layer counters, source metrics, receipt
+inventory and XML hash using the matching production JAR. README comparison
+accounts only for Windows CRLF line endings. Protected Java test sources match
+the exact Git blobs after verified LF-to-CRLF checkout conversion, recorded per
+file; no source mismatch is ignored.
+
+The host-primitives receipt proves all forty controlled metadata failures,
+273 host checks and 275 transaction checks. Each fault retains its diagnostic,
+one fault hit, balanced actual handles/allocations and unchanged source. Process
+handle count is 283 both before and after the repeated batch. Eight deliberate
+halt children and nested lock contenders remain explicitly unmeasured.
+
+The audit uses the **unchanged historical five-session admission policy** at
+`117b6c66`. Today's gate still requires six sessions, including the newer 47
+directory controls; those are **PRESENT, UNVERIFIED** until a later CI run.
+No acceptance rule was weakened to count this earlier result.
+
+Adding only the five completed primitive sessions to the prior diagnostic union
+gives 1,316 sessions, 28,472/29,786 lines (95.6%) and 21,173/25,878 branches
+(81.8%). This adds seven file-operation lines and 35 branches. File-operation
+coverage is 6,393/6,677 lines (95.7%) and 3,542/4,250 branches (83.3%);
+binary/location branches remain 81.5%. Critical 90% gaps remain 1,595 binary and
+283 file outcomes. This mixed-revision, matching-bytecode diagnostic union is
+not a complete current hosted cohort or published main coverage.
+
+Evidence: `windows-43926490219/{artifact.json,artifact.zip,job.json,merge-commit.json,
+verified.json,regenerated-fixed/,union/}` under the bounded coverage workspace;
+driver `verify-windows-43926490219.py` and its checkout-verification log retain
+the exact artifact, policy and source hashes. The full goal remains incomplete.
+
 ## Qualified types and scalar encodings
 
 CONFIRMED pilot: `qualified-type-producer.py` compiles a tiny Linux x86-64 C11
