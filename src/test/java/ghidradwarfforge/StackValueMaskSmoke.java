@@ -95,9 +95,78 @@ final class StackValueMaskSmoke {
         }
         int wideCases = wideCarriers(program, template, registers);
         int overlappingCases = overlappingMerges(program, template, registers);
+        int joinedCases = joinedZeroFacts(program, template, registers);
         System.out.println("stack-value-mask=PASS cases=" + cases.size() * 4 + " wide-cases=" + wideCases + " checks=" + checks +
-            " overlapping-cases=" + overlappingCases + " evaluator=BigInteger raw-pcode=true target=ARM-LE");
+            " overlapping-cases=" + overlappingCases + " joined-cases=" + joinedCases +
+            " evaluator=BigInteger raw-pcode=true target=ARM-LE");
         return checks;
+    }
+
+    private static int joinedZeroFacts(ProgramDB program, Instruction template, TargetRegisterMap registers)
+            throws Exception {
+        int cases = 0;
+        for (int position = 0; position < 8; position++) {
+            for (String shape : List.of("both-preserve", "first-corrupts", "second-corrupts")) {
+                for (int merge : new int[] {PcodeOp.INT_OR, PcodeOp.INT_ADD}) {
+                    for (boolean reversed : new boolean[] {false, true}) {
+                        var code = new Code(program, template);
+                        int offset = position * 8;
+                        long selected = 0xffL << offset;
+                        long firstMask = shape.equals("first-corrupts") ? selected : ~selected;
+                        long secondMask = shape.equals("second-corrupts") ? selected : ~selected & 0x5555555555555555L;
+                        var single = code.unique(1);
+                        code.op(PcodeOp.SUBPIECE, single, code.source, code.constant(0, 4));
+                        code.op(PcodeOp.INT_ZEXT, code.carrier, single);
+                        code.op(PcodeOp.INT_LEFT, code.carrier, code.carrier, code.constant(offset, 4));
+                        code.op(PcodeOp.INT_SEXT, code.nuisance, code.other);
+                        code.op(PcodeOp.CBRANCH, null, code.constant(4, 4), code.condition);
+                        code.op(PcodeOp.INT_AND, code.nuisance, code.nuisance, code.constant(firstMask, 8));
+                        code.op(PcodeOp.BRANCH, null, code.constant(3, 4));
+                        // Neither branch reaches this write. It must not contribute
+                        // a false predecessor or kill the surviving carrier.
+                        code.op(PcodeOp.COPY, code.carrier, code.constant(0, 8));
+                        code.op(PcodeOp.INT_AND, code.nuisance, code.nuisance, code.constant(secondMask, 8));
+                        code.op(merge, code.destination, reversed ? code.nuisance : code.carrier,
+                            reversed ? code.carrier : code.nuisance);
+                        code.op(PcodeOp.COPY, code.source, code.constant(0, 4));
+                        String context = "join/position=" + position + "/shape=" + shape +
+                            "/merge=" + merge + "/reversed=" + reversed;
+                        require(IntraInstructionFlow.targets(code.instruction(), TaskMonitor.DUMMY) != null,
+                            "invalid forward-only test instruction " + context);
+                        var state = StackValueFlow.forIncomingPiece(program, new Varnode(code.source.getAddress(), 1));
+                        require(state != null && state.advance(code.instruction(), false, TaskMonitor.DUMMY), context);
+                        var location = state.location(registers);
+                        boolean available = shape.equals("both-preserve");
+                        require(location.available() == available, "join retained path-dependent byte " + context + ": " + location);
+                        if (available) require(location instanceof RegisterStorage register &&
+                            register.register().dwarfNumber() == 256 && register.valueBitOffset() == offset &&
+                            register.bitSize() == 8, "wrong joined byte " + context + ": " + location);
+                        for (boolean branch : new boolean[] {false, true}) {
+                            boolean corrupts = shape.equals(branch ? "second-corrupts" : "first-corrupts");
+                            boolean counterexample = false;
+                            for (int value = 0; value <= 255; value++) {
+                                for (long noise : NOISE) {
+                                    BigInteger actual = evaluate(code, value, noise, 0, branch);
+                                    BigInteger carried = BigInteger.valueOf(value).shiftLeft(offset);
+                                    // A direct expression independently checks the interpreter's
+                                    // branch targets and signed operand construction.
+                                    BigInteger extra = BigInteger.valueOf((int) noise)
+                                        .and(BigInteger.valueOf(branch ? secondMask : firstMask)).and(mask(64));
+                                    BigInteger expected = (merge == PcodeOp.INT_OR ? carried.or(extra) : carried.add(extra)).and(mask(64));
+                                    require(actual.equals(expected), "reference path execution differs " + context);
+                                    int observed = actual.shiftRight(offset).and(BigInteger.valueOf(255)).intValue();
+                                    if (!corrupts) require(observed == value, "preserving path changed byte " + context);
+                                    else counterexample |= observed != value;
+                                }
+                            }
+                            require(counterexample == corrupts, "path counterexample mismatch " + context + "/branch=" + branch);
+                        }
+                        cases++;
+                    }
+                }
+            }
+        }
+        return cases;
     }
 
     private static int overlappingMerges(ProgramDB program, Instruction template, TargetRegisterMap registers)
@@ -219,7 +288,7 @@ final class StackValueMaskSmoke {
         final ProgramDB program;
         final Instruction template;
         final List<PcodeOp> operations = new ArrayList<>();
-        final Varnode source, other, destination, carrier, nuisance;
+        final Varnode source, other, condition, destination, carrier, nuisance;
         long next = 0x1000;
 
         Code(ProgramDB program, Instruction template) {
@@ -227,6 +296,7 @@ final class StackValueMaskSmoke {
             this.template = template;
             source = new Varnode(program.getRegister("r3").getAddress(), 4);
             other = new Varnode(program.getRegister("r0").getAddress(), 4);
+            condition = new Varnode(program.getRegister("r2").getAddress(), 1);
             destination = new Varnode(program.getRegister("d0").getAddress(), 8);
             carrier = unique(8);
             nuisance = unique(8);
@@ -278,12 +348,28 @@ final class StackValueMaskSmoke {
     }
 
     private static BigInteger evaluate(Code code, int value, long noise, int sourceByte) {
+        return evaluate(code, value, noise, sourceByte, false);
+    }
+
+    private static BigInteger evaluate(Code code, int value, long noise, int sourceByte, boolean branch) {
         Map<Varnode, BigInteger> values = new HashMap<>();
         BigInteger selected = BigInteger.valueOf(255).shiftLeft(sourceByte * 8);
         values.put(code.source, BigInteger.valueOf(noise).and(mask(32).xor(selected))
             .or(BigInteger.valueOf(value).shiftLeft(sourceByte * 8)));
         values.put(code.other, BigInteger.valueOf(noise));
-        for (PcodeOp op : code.operations) {
+        values.put(code.condition, branch ? BigInteger.ONE : BigInteger.ZERO);
+        for (int index = 0; index < code.operations.size(); index++) {
+            PcodeOp op = code.operations.get(index);
+            if (op.getOpcode() == PcodeOp.BRANCH || op.getOpcode() == PcodeOp.CBRANCH) {
+                if (op.getOpcode() == PcodeOp.BRANCH || read(values, op.getInput(1)).signum() != 0) {
+                    int distance = Math.toIntExact(op.getInput(0).getOffset());
+                    if (distance <= 0 || distance > code.operations.size() - index) {
+                        throw new AssertionError("reference interpreter requires bounded forward branches");
+                    }
+                    index += distance - 1;
+                }
+                continue;
+            }
             var first = read(values, op.getInput(0));
             var second = op.getNumInputs() > 1 ? read(values, op.getInput(1)) : BigInteger.ZERO;
             int width = op.getOutput().getSize() * 8;

@@ -482,6 +482,12 @@ VTABLE_BINDING_MUTANTS = [
 ]
 
 STACK_FLOW_MUTANTS = [
+    ("value-flow-unions-zero-bits-across-paths", STACK_FLOW, STACK_FLOW_TEST,
+     "zeros.replaceAll((node, mask) -> mask & other.zeros.getOrDefault(node, 0L));",
+     "zeros.replaceAll((node, mask) -> mask | other.zeros.getOrDefault(node, 0L));"),
+    ("value-flow-retains-first-path-zero-bits", STACK_FLOW, STACK_FLOW_TEST,
+     "zeros.replaceAll((node, mask) -> mask & other.zeros.getOrDefault(node, 0L));",
+     "zeros.replaceAll((node, mask) -> mask);"),
     ("value-flow-loses-first-byte-with-unrelated-overlap", STACK_FLOW, STACK_FLOW_TEST,
      "if (disjoint || (secondZeros & mask) == mask) values.add(value);", "if (disjoint) values.add(value);"),
     ("value-flow-loses-second-byte-with-unrelated-overlap", STACK_FLOW, STACK_FLOW_TEST,
