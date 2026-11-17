@@ -8,15 +8,15 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 866 verified
-sessions: 211 JavaExec, 559 native-Java, 39 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 867 verified
+sessions: 211 JavaExec, 560 native-Java, 39 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,228 / 29,802 (94.7%) | 21,430 / 25,902 (82.7%) |
-| Binary and location correctness | 18,315 / 19,213 (95.3%) | 15,458 / 18,750 (82.4%) |
+| Overall | 28,229 / 29,802 (94.7%) | 21,473 / 25,902 (82.9%) |
+| Binary and location correctness | 18,316 / 19,213 (95.3%) | 15,501 / 18,750 (82.7%) |
 | File transactions and validation | 6,230 / 6,677 (93.3%) | 3,660 / 4,250 (86.1%) |
 
 The production relocation fix remains covered on all 14 changed executable
@@ -52,10 +52,33 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-windows-lexical-partial/summary.json` in the coverage workspace, SHA-256
-`0aec10f31ea596fd7a24a1cea330b9be5766e123ef89f35eff0f8a307258e586`.
-It replaces the smaller 808-session partial baseline for current progress
+`stable-memory-windows-class-partial/summary.json` in the coverage workspace, SHA-256
+`ca97184402a7248a0a2e176aa168ca133e92e636528f9b6caebcd4fd65bac76a`.
+It replaces the smaller 866-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Saved class and vtable evidence boundaries
+
+**CONFIRMED, local:** `ClassEvidenceBoundarySmoke`, called by the existing
+`classScopeModelSmoke` task, adds 155 assertions. These check malformed saved
+identities, a cross-product of class owner / explicit-versus-inferred binding /
+ABI, hash and text bounds, address and file extent overflow, the 4096-table
+limit, deterministic ordering and immutable snapshots. The existing 51 class
+scope assertions also pass. No production code changed.
+
+Four compiled mutations are detected by behavioral assertion failures:
+accepting inferred ownership, ignoring ABI disagreement, and suppressing either
+address or file-offset overflow. Both unchanged production baselines and the
+mutation outcome classification tests pass. These model checks do not claim
+original-ELF identity validation or debugger behavior.
+
+The `class-evidence-stable-memory` collection records the frozen production JAR,
+raw JaCoCo receipt and committed test snapshot `42dc9c1c`; its test classes are
+excluded from measurement. The checked collection and combined-report drivers
+passed through the storage guard. Adding this session covers one previously
+missed line and 43 branches without changing any denominator. `ClassScopeModel`
+has 133/134 lines and 145/146 branches covered; `VtableEvidence` has 11/11 lines
+and 42/42 branches. The current combined total is 867 sessions.
 
 ## Matching Windows artifact and completed host job
 
