@@ -8808,3 +8808,32 @@ branches. Binary/location critical: 16,654/18,750 branches, 221 short of 90%.
 File-operation critical remains 3,831/4,250. Production bytecode and the full
 255-source denominator remain unchanged. Fresh hosted acceptance and actual-main
 publication are still required.
+
+### Loaded unwind ABI metadata agreement (2026-11-17)
+
+CONFIRMED locally: `UnwindProfileMetadataSmoke`, called by the existing
+`UnwindAbiProfileSmoke`, exercises 13 metadata views each over real decoded
+x86-64 and AArch64 programs. Transparent views preserve the complete binding;
+missing optional flag registers preserve entry identities without granting
+unknown effects. Narrow pointers, wrong byte order, missing/narrow/aliased
+registers, absent/wrong compiler stack registers, external functions, ordinary
+thunks and missing conventions are refused with the expected diagnostics.
+Unknown conventions retain the explicitly audited compiler fallback; call-site
+selection retains its distinct thunk contract. Every case preserves the program
+modification number and a clean retry's complete binding.
+
+Guarded `./gradlew --no-daemon unwindAbiProfileSmoke` passed in 5 seconds with
+26 new metadata cases and the existing 775 parent assertions. Four compiled
+faults were detected in 11.316 seconds: ignored pointer width, accepted register
+alias, accepted external function, and invented fallback for a missing convention.
+Evidence: `.forge-work/scratch/unwind-profile-metadata.log`,
+`.forge-work/scratch/unwind-profile-metadata-mutants/result.json`, and
+`.forge-work/scratch/coverage-recovery/unwind-profile-metadata/`.
+
+The independently verified diagnostic adds two lines and eleven branches in
+`UnwindAbiProfile`, one session (1365 total). Overall: 28,922/29,802 lines and
+22,890/25,902 branches. Binary/location critical: 18,665/19,213 lines and
+16,665/18,750 branches, 210 short of 90%. File counters remain unchanged.
+No production code or denominator changed. Current hosted run 44185360886
+reported a Windows attachment-boundary assertion failure; architecture jobs
+continue. Hosted acceptance, protected merge and main publication remain pending.
