@@ -276,11 +276,11 @@ public final class AttachmentTargetStoreSmoke {
             var offered = backup;
             Path restore = fixture.directory().resolve("must-not-create-restore");
             var failure = reject(() -> AttachmentTargetStore.restore(fixture.before(), offered, restore, HOST, () -> false));
-            equal("recovery requires an independent metadata-preserving backup", failure.getMessage());
             equal(false, Files.exists(restore));
             equal(fixture.before(), AttachmentFileStore.observe(fixture.before().path(), HOST, () -> false));
             equal(offered, AttachmentFileStore.observe(offered.path(), HOST, () -> false));
             equal(fixture.after(), AttachmentFileStore.observe(fixture.after().path(), HOST, () -> false));
+            equal("recovery requires an independent metadata-preserving backup", failure.getMessage());
         }
         System.out.println("target-recovery-admission=PASS checks=" + (checks - before));
     }
