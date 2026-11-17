@@ -6,7 +6,53 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current retained split-source build-ID workflow
+## Current Linux cohort and inheritance admission checkpoint
+
+CONFIRMED: the completed Linux artifact from run `43952501473` has been
+reverified against its authenticated merge-source tree and historical admission
+policy. All 821 raw JVM sessions reproduce the original layer reports with the
+current production JAR. The recorded harness hashes in 63 behavioral receipts
+match 81 authenticated source files. Fifty-one sessions were already present;
+their raw bytes match and they are counted only once. This adds 99 covered lines
+and 147 branch outcomes, including the completed GUI loader/unwind workflows.
+The current hosted admission policy has not been relaxed. The historical run
+still failed its required gate because of the MIPS QEMU collision.
+
+Commit `e6bfc25e` adds inheritance evidence boundary tests to the existing
+`inheritanceModelSmoke` task. They accept exactly 65,536 entries, reject an
+additional entry, preserve semantic declaration order independently of identity
+order, and preserve admitted evidence after caller mutation. They also check
+bounded identities/provenance and exact, non-wrapping vtable address/file ranges.
+These are pure Java model tests, not claims about a real program with that many
+bases. The existing inheritance model and expression smokes also pass.
+
+Six independently compiled faults fail the intended behavioral assertions:
+both excessive model capacities, sorting by parent identity, mutable admitted
+evidence, and unchecked virtual-address/file-offset addition. Mutant execution
+data is excluded. Production source and JAR bytes remain unchanged. The verified
+new session adds two lines and 26 critical branch outcomes; `InheritanceModel`
+now measures 95/95 lines and 115/118 branches.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall, 1,852 distinct sessions | 28,650 / 29,790 (96.2%) | 21,621 / 25,884 (83.5%) |
+| Binary/location | 18,441 / 19,201 (96.0%) | 15,545 / 18,732 (83.0%) |
+| File/validation | 6,483 / 6,677 (97.1%) | 3,695 / 4,250 (86.9%) |
+
+All 255 production sources/901 classes remain included. Evidence is under
+`.forge-work/scratch/coverage-expansion/hosted-linux-43952501473/` and
+`inheritance-admission-checked-2f181/`, with mutation evidence in
+`inheritance-admission-mutations-2f181/`. The earlier inheritance admission run
+predates the stronger declaration-order assertion and is not included.
+
+**Still incomplete:** 1,314 binary/location and 130 file/validation branch
+outcomes are needed for the 90% critical targets. Updated hosted validation,
+protected merge and actual-main publication remain outstanding. This increment
+does not claim a new full JavaExec run or Windows validation. CI run
+`43991284160` is validating pushed commit `6bf2352c`; the subsequent test commit
+is local while that run continues.
+
+## Earlier retained split-source build-ID workflow
 
 CONFIRMED: commits `09cfc855` and `31ee8ee2` add the real Linux build-ID
 installation lifecycle to the x86-64 non-PIE multifile integration workflow.
@@ -58,9 +104,9 @@ jobs passed; the known MIPS big-endian QEMU collision prevented the required
 gate and combined publication. The Linux raw artifact `14285999979` has been
 downloaded within budget (5,561,709 compressed / 25,762,060 extracted bytes;
 SHA-256 `8c1323313630c1cadb51fd8829e1a24030f06897946b3aa4fbc9a6ba784e359d`).
-Its report identifies the same production JAR and 821 sessions. Those sessions
-are **not yet admitted** to the local union; its older cohort also lacks newly
-required suites and cannot establish current hosted acceptance.
+Its report identifies the same production JAR and 821 sessions. The newer
+checkpoint above verifies and admits the distinct sessions; its older cohort
+still lacks newly required suites and cannot establish current hosted acceptance.
 
 ## Earlier artifact-pair failure boundaries
 
