@@ -6,7 +6,45 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current true-entry and alias integration measurement
+## Current type-graph contract boundaries
+
+CONFIRMED: commit `d6c36ae8` adds 6,223 assertions to the existing
+`typeGraphSmoke` task. The new tests exercise each half-open bit-field interval
+for 1/2/4/8-byte component storage, signed-integer overflow boundaries, meaningful
+value size versus floating ABI padding, hidden-return/object-parameter roles,
+required model fields, recursive references, and immutable canonical ownership.
+These are native-independent model contracts, not claims that very large model
+boundary values describe an actual Ghidra type or a debugger-tested output.
+
+The focused run compiles the current test sources against the unchanged
+`2f18126b...` production JAR and passes the new checks plus existing declaration
+and program-model tests. Five separately compiled mutations are rejected by
+their intended assertions: overflowing the bit-field offset sum, allowing integer
+padding, using padded object width for meaningful value size, allowing a dual
+hidden-return/object role, and exposing the mutable type index. Mutation runs
+are excluded from measured coverage.
+
+Current `TypeGraph.java` coverage is **146/146 lines and 118/118 branches**.
+The verified raw union gains **12 lines and 33 branch outcomes**. All prior raw
+execution hashes and collection receipts were rechecked, followed by actual Java
+class/session verification. Evidence is in
+`.forge-work/scratch/coverage-expansion/type-graph-boundaries-2f181/`, with mutation
+receipts in `type-graph-mutations-2f181/`. The normal Gradle task already invokes
+the new test; no production logic or measurement exclusions changed.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall, 1,062 sessions | 28,538 / 29,790 (95.8%) | 21,437 / 25,884 (82.8%) |
+| Binary/location | 18,347 / 19,201 (95.6%) | 15,388 / 18,732 (82.1%) |
+| File/validation | 6,469 / 6,677 (96.9%) | 3,680 / 4,250 (86.6%) |
+
+**Still incomplete:** 1,471 binary/location and 145 file/validation branch
+outcomes remain before both critical groups meet 90%. Full updated hosted
+validation, protected merge and actual-main publication remain outstanding.
+This focused pure-model increment does not claim new native/GDB validation or
+a full JavaExec rerun. All 255 sources/901 classes remain in the denominator.
+
+## Earlier true-entry and alias integration measurement
 
 CONFIRMED: commit `d943783f` instruments the existing real function-entry shell
 oracle without changing its exporter, fixtures or GDB assertions. Each mode
