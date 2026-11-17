@@ -6,6 +6,55 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current installation and Linux metadata measurement refresh
+
+CONFIRMED: the fixed `4bd11717` JAR now has 658 independently verified raw
+sessions: 211 JavaExec, 420 native Java and 27 headless. All 255 production
+sources/901 classes remain in the denominator. No old-JAR execution data was used.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Partial current-JAR union | 26,932 / 29,792 (90.4%) | 20,638 / 25,888 (79.7%) |
+| Binary/location | 17,992 / 19,203 (93.7%) | 15,154 / 18,736 (80.9%) |
+| File/validation | 5,534 / 6,677 (82.9%) | 3,254 / 4,250 (76.6%) |
+
+The fresh multi-file exporter passes strict libdwarf/LLVM validation and GDB
+source observations. Its retained-source build-ID lifecycle and source-binding
+refusals contribute 18 native sessions. Build-ID operations use the actual Linux
+host; the owned-copy source-binding controls use their explicitly limited test
+metadata host. The cached extension JAR and native metadata were restored.
+
+Linux metadata, directory sync and unprivileged visibility contribute 43 native
+sessions. Independent native observations and the complete 28 read-failure and
+12 application-failure controls pass, including balanced resource release,
+unchanged source, checked stage effects and successful retries. Privileged
+visibility is **NOT RUN** locally; these receipts do not satisfy the complete
+hosted visibility requirement.
+
+The build-ID installation/command suites contribute another 220 native sessions:
+157 non-PIE installation, seven PIE installation, 13 identity-refusal and 43
+command sessions. Real Linux installation, idempotence, update, removal, source
+retention, cancellation, crash recovery and fresh GDB discovery pass. Sixteen
+intentional process halts are behavioral evidence only and are excluded from
+coverage. This suite reuses preserved exported fixtures as inputs to the current
+installation code; the separate multi-file run above exercises fresh exports.
+
+Every collection was checked against the fixed JAR, recorded source snapshot,
+raw session identities, protected-input hashes and behavioral receipts before
+regenerating the full-denominator union. Evidence under
+`.forge-work/scratch/coverage-expansion/`:
+`build-id-multifile-current-4bd11`, `linux-host-current-4bd11`,
+`buildid-current-4bd11` and `installation-refresh-checked-4bd11`.
+The intermediate 438-session union in `file-refresh-checked-4bd11` measured
+90.0% lines / 79.3% branches and is superseded by the result above.
+
+These are measurement refreshes, not new production changes. Fresh Windows and
+remaining integration data, both critical-group targets, exact-head hosted
+validation, protected merge and actual-main publication remain **incomplete**.
+The active older CI run is still advancing; its old-JAR data is not admitted.
+Storage after this refresh is 11.650/100 GiB scratch, 2.033/10 GiB cache and
+6.728/10 GiB evidence, with no extra worktrees or local heavy processes retained.
+
 ## Current producer, inheritance and annotation measurement refresh
 
 CONFIRMED: the fixed `4bd11717` production JAR now has 377 verified raw sessions:
