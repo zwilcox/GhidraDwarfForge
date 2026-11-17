@@ -7774,3 +7774,22 @@ mixed current/historical union retains the same production JAR, 255 source files
 and 901 classes: 28,894/29,802 lines and 22,556/25,902 branches. Critical
 binary/location branches are 16,335/18,750, 540 below 90%. File-operation targets
 remain met. Full current hosted validation, merge and publication remain unmet.
+
+### Stack-spill instruction geometry and return contracts (2026-11-17)
+
+CONFIRMED: `StackSpillSmoke` now rejects zero/inconsistent lengths, mismatched
+instruction/end/fallthrough address spaces (even at equal numeric offsets), and
+RETURN output/arity/null/width/order violations. Real x86-64/AArch64 spill fixtures
+supply the context for 32-/64-bit values. A valid retry must still prove the spill.
+Raw metadata controls do not establish new machine-code or architecture support.
+
+Guarded `./gradlew --no-daemon stackSpillSmoke` PASS, 2,270 checks (68 added),
+4 seconds; log `.forge-work/scratch/spill-metadata.log`. Six selected compiled
+faults all produced behavioral assertion failures and the baseline passed:
+`.forge-work/scratch/spill-metadata-mutants/result.json` (14.603 seconds).
+Production Java is unchanged. Diagnostic `coverage-recovery/spill-metadata`
+verifies one additional line and eleven branches against the same 58bd JAR and
+full denominator. The 1,372-session mixed cohort has 28,895/29,802 lines and
+22,567/25,902 branches; critical binary/location branches are 16,346/18,750,
+529 below 90%. Other current/historical cohorts remain; this is not full hosted
+acceptance, merge readiness or main publication.

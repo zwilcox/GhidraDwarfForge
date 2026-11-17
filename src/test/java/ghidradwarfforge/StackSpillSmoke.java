@@ -14,6 +14,8 @@ import ghidra.framework.Application;
 import ghidra.framework.HeadlessGhidraApplicationConfiguration;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.AddressSet;
+import ghidra.program.model.address.AddressSpace;
+import ghidra.program.model.address.GenericAddressSpace;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.lang.LanguageID;
@@ -194,6 +196,7 @@ public final class StackSpillSmoke {
                 PcodeOp store = Arrays.stream(spill.getPcode()).filter(op -> op.getOpcode() == PcodeOp.STORE)
                     .findFirst().orElseThrow();
                 pointerExpressions(program, instructions, spillIndex, incoming, width, mapping, end, expectedEnd);
+                metadataBoundaries(program, instructions, afterIndex, incoming, width, mapping, end);
                 for (int kind = 0; kind < 9; kind++) {
                     var operations = new ArrayList<>(Arrays.asList(spill.getPcode()));
                     int storeIndex = 0;
@@ -297,6 +300,56 @@ public final class StackSpillSmoke {
     }
 
     private record SpillExpression(String name, Long offset, PcodeOp[] operations) { }
+
+    /** Matching numeric offsets are insufficient when instruction geometry or return shape disagrees. */
+    private static void metadataBoundaries(ProgramDB program, List<Instruction> instructions,
+            int index, Varnode incoming, int width, TargetRegisterMap registers, long end) throws Exception {
+        Instruction selected = instructions.get(index);
+        var foreign = new GenericAddressSpace("foreign-code", 64, AddressSpace.TYPE_RAM, 71);
+        var changes = List.<java.util.Map.Entry<String, Object>>of(
+            java.util.Map.entry("getLength", 0),
+            java.util.Map.entry("getParsedLength", selected.getLength() + 1),
+            java.util.Map.entry("getLength", selected.getLength() + 1),
+            java.util.Map.entry("getAddress", foreign.getAddress(selected.getAddress().getOffset())),
+            java.util.Map.entry("getMaxAddress", foreign.getAddress(selected.getMaxAddress().getOffset())),
+            java.util.Map.entry("getFallThrough", foreign.getAddress(selected.getFallThrough().getOffset())));
+        for (var change : changes) {
+            Instruction invalid = decorate(selected, change.getKey(), change.getValue());
+            if (change.getKey().equals("getLength") && (int) change.getValue() > 0) {
+                // Isolate end/length agreement from parsed-length agreement.
+                invalid = decorate(invalid, "getParsedLength", change.getValue());
+            }
+            require(StackSpillLifetime.prove(program, 0x1000, end, replace(instructions, index, invalid),
+                incoming, width, registers, TaskMonitor.DUMMY) == null,
+                "inconsistent spill instruction geometry accepted: " + change);
+        }
+        int last = instructions.size() - 1;
+        Instruction terminal = instructions.get(last);
+        PcodeOp[] code = terminal.getPcode();
+        require(code.length > 0 && code[code.length - 1].getOpcode() == PcodeOp.RETURN,
+            "decoded terminal context must end in RETURN");
+        var target = code[code.length - 1].getInput(0);
+        var invalidReturns = new ArrayList<PcodeOp[]>();
+        invalidReturns.add(new PcodeOp[] {op(terminal, PcodeOp.RETURN, incoming, target)});
+        invalidReturns.add(new PcodeOp[] {op(terminal, PcodeOp.RETURN, null)});
+        invalidReturns.add(new PcodeOp[] {op(terminal, PcodeOp.RETURN, null, (Varnode) null)});
+        invalidReturns.add(new PcodeOp[] {op(terminal, PcodeOp.RETURN, null, target, target)});
+        invalidReturns.add(new PcodeOp[] {op(terminal, PcodeOp.RETURN, null, target),
+            op(terminal, PcodeOp.COPY, incoming, incoming)});
+        for (int size : new int[] {1, 2, 4, 8, 16}) {
+            if (size != target.getSize()) invalidReturns.add(new PcodeOp[] {
+                op(terminal, PcodeOp.RETURN, null, new Varnode(target.getAddress(), size))});
+        }
+        for (PcodeOp[] replacement : invalidReturns) {
+            var operations = new ArrayList<>(Arrays.asList(code).subList(0, code.length - 1));
+            operations.addAll(Arrays.asList(replacement));
+            require(StackSpillLifetime.prove(program, 0x1000, end, replace(instructions, last,
+                decorate(terminal, "getPcode", operations.toArray(PcodeOp[]::new))), incoming, width,
+                registers, TaskMonitor.DUMMY) == null, "malformed RETURN retained a spill: " + Arrays.toString(replacement));
+        }
+        require(StackSpillLifetime.prove(program, 0x1000, end, instructions, incoming, width,
+            registers, TaskMonitor.DUMMY) != null, "invalid metadata poisoned the valid spill proof");
+    }
 
     /** Raw-pcode transfer tests on real register definitions; not new decoded instruction claims. */
     private static void pointerExpressions(ProgramDB program, List<Instruction> instructions,

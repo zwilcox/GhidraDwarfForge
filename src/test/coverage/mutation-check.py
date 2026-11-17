@@ -470,6 +470,18 @@ LINUX_METADATA_MUTANTS = [
 STACK_SPILL = "ghidradwarfforge/StackSpillLifetime.java"
 STACK_SPILL_TEST = "ghidradwarfforge.StackSpillSmoke"
 STACK_SPILL_MUTANTS = [
+    ("stack-spill-ignores-instruction-space", STACK_SPILL, STACK_SPILL_TEST,
+     "instruction.getAddress().getAddressSpace() != code ||", ""),
+    ("stack-spill-ignores-instruction-extent", STACK_SPILL, STACK_SPILL_TEST,
+     "next != Math.addExact(instruction.getAddress().getOffset(), instruction.getLength()) ||", ""),
+    ("stack-spill-ignores-return-output", STACK_SPILL, STACK_SPILL_TEST,
+     "index != operations.length - 1 || operation.getOutput() != null ||", "index != operations.length - 1 ||"),
+    ("stack-spill-ignores-return-width", STACK_SPILL, STACK_SPILL_TEST,
+     "operation.getInput(0).getSize() != code.getPointerSize()", "false"),
+    ("stack-spill-accepts-extra-return-operand", STACK_SPILL, STACK_SPILL_TEST,
+     "operation.getNumInputs() != 1 ||", "operation.getNumInputs() < 1 ||"),
+    ("stack-spill-allows-effects-after-return", STACK_SPILL, STACK_SPILL_TEST,
+     "index != operations.length - 1 ||", ""),
     ("spill-ignores-signed-pointer-width", STACK_SPILL, STACK_SPILL_TEST,
      'long delta = (second.getOffset() << shift) >> shift;', 'long delta = second.getOffset();'),
     ("spill-accepts-narrow-displacement-overflow", STACK_SPILL, STACK_SPILL_TEST,
