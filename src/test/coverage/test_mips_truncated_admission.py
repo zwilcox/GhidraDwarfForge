@@ -122,6 +122,16 @@ class HostedAdmission(unittest.TestCase):
                     coverage.save(width_oracle, width_evidence)
                     width.finish(width_oracle)
                     width_records.append(width)
+                context = coverage.Collection('context-boundaries', jar, 'headless', environment={
+                    'FORGE_INTEGRATION_COVERAGE_OUTPUT': str(job / 'collections'),
+                    'FORGE_INTEGRATION_COVERAGE_AGENT': str(agent)})
+                context.record['host'] = 'posix'
+                with context.session(['java', 'Fake'], 'context-boundaries'):
+                    (context.root / context.record['sessions'][-1]['file']).write_bytes(b'not real probes')
+                context_oracle = root / 'context.json'
+                coverage.save(context_oracle, {'status': 'PASS_CONTEXT_BOUNDARIES', 'target': target,
+                    'productionJarSha256': coverage.digest(jar)})
+                context.finish(context_oracle)
                 report = job / 'report'
                 report.mkdir()
                 xml = report / 'headless.xml'
@@ -131,20 +141,33 @@ class HostedAdmission(unittest.TestCase):
                 summary = {'schema': 1, 'status': 'PASS', 'commit': 'a' * 40,
                     'productionJarSha256': coverage.digest(jar),
                     'cohort': {'commit': 'a' * 40, 'run': '7', 'job': 'target-preflight'},
-                    'layers': {'headless': {'xmlSha256': coverage.digest(xml), 'sessions': 4,
-                        'productionClasses': 1, 'suites': ['mips-truncated-space'],
+                    'layers': {'headless': {'xmlSha256': coverage.digest(xml), 'sessions': 5,
+                        'productionClasses': 1, 'suites': ['context-boundaries', 'mips-truncated-space'],
                         'unmeasuredForcedHalts': [],
-                        'receipts': {collection.root.name: coverage.digest(collection.root / 'receipt.json')}},
+                        'receipts': {collection.root.name: coverage.digest(collection.root / 'receipt.json'),
+                            context.root.name: coverage.digest(context.root / 'receipt.json')}},
                         'native-java': {'xmlSha256': coverage.digest(native_xml), 'sessions': 4,
                             'productionClasses': 1, 'suites': ['location-width-producer'], 'unmeasuredForcedHalts': [],
                             'receipts': {r.root.name: coverage.digest(r.root / 'receipt.json') for r in width_records}}}}
                 coverage.save(report / 'summary.json', summary)
                 rows, origin = hosted.load_job(job, jar, 'linux_' + target, 'a' * 40, '7')
-                self.assertEqual(len(rows), 8)
+                self.assertEqual(len(rows), 9)
                 self.assertEqual(origin['kind'], 'linux_' + target)
                 other = 'mips32le' if target == 'mips32be' else 'mips32be'
                 with self.assertRaisesRegex(ValueError, 'target cohort'):
                     hosted.load_job(job, jar, 'linux_' + other, 'a' * 40, '7')
+                # A lane cannot omit the newly required context suite, even when
+                # every remaining receipt and report hash is rebound consistently.
+                summary['layers']['headless']['suites'] = ['mips-truncated-space']
+                summary['layers']['headless']['sessions'] = 4
+                summary['layers']['headless']['receipts'].pop(context.root.name)
+                coverage.save(report / 'summary.json', summary)
+                with self.assertRaisesRegex(ValueError, 'missing or unexpected collection files'):
+                    hosted.load_job(job, jar, 'linux_' + target, 'a' * 40, '7')
+                summary['layers']['headless']['suites'] = ['context-boundaries', 'mips-truncated-space']
+                summary['layers']['headless']['sessions'] = 5
+                summary['layers']['headless']['receipts'][context.root.name] = coverage.digest(context.root / 'receipt.json')
+                coverage.save(report / 'summary.json', summary)
                 # A producer cannot omit an ABI even by recomputing receipt/report hashes.
                 evidence['cases'].pop()
                 coverage.save(collection.root / 'oracle.json', evidence)
