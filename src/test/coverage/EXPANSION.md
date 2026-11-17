@@ -8,28 +8,30 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 899 verified
-sessions: 211 JavaExec, 578 native-Java, 53 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 952 verified
+sessions: 211 JavaExec, 627 native-Java, 57 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,316 / 29,802 (95.0%) | 21,583 / 25,902 (83.3%) |
-| Binary and location correctness | 18,355 / 19,213 (95.5%) | 15,542 / 18,750 (82.9%) |
-| File transactions and validation | 6,230 / 6,677 (93.3%) | 3,660 / 4,250 (86.1%) |
+| Overall | 28,435 / 29,802 (95.4%) | 21,624 / 25,902 (83.5%) |
+| Binary and location correctness | 18,355 / 19,213 (95.5%) | 15,543 / 18,750 (82.9%) |
+| File transactions and validation | 6,349 / 6,677 (95.1%) | 3,700 / 4,250 (87.1%) |
 
 The production relocation fix remains covered on all 14 changed executable
 lines and 14 changed branches. Both overall numerical targets are met in this
 partial measurement. The critical-group targets and complete hosted cohort
-remain unmet.
+remain unmet. Both critical-group line targets are now met in this partial report;
+their branch targets are not.
 
 The file-operation refresh verifies 43 Linux host sessions and 220 build-ID
 sessions. It checks real metadata/directory operations, installation/update/
 removal, recovery, identity refusal, fresh GDB discovery and command cancellation.
 Sixteen deliberate process-halt controls remain unmeasured and are reported
-separately. Local privileged visibility is **NOT RUN**; these results do not
-replace the actual privileged-host or Windows requirements.
+separately. Local privileged visibility is **NOT RUN**. The separately authenticated Linux
+CI host artifact now supplies both privileged and unprivileged visibility
+results; the verified Windows artifact remains a separate origin.
 
 The expanded measurement also includes 28 native producer-failure sessions
 with validated retries, 17 attachment sessions on the limited Linux test host,
@@ -52,10 +54,45 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-windows-namespaces-partial/summary.json` in the coverage workspace, SHA-256
-`78839baa141fafe85d11f47d261caa2b1c4b4ef8c500c385857cd3676f14c4bd`.
-It replaces the smaller 868-session partial baseline for current progress
+`stable-memory-hosts-mips-partial/summary.json` in the coverage workspace, SHA-256
+`4be583fffe5bb5bedcf72537747c5306cf939409e06f9633a9ee41f28dc89b35`.
+It replaces the smaller 899-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Authenticated Linux-host and partial MIPS CI measurements
+
+**CONFIRMED:** completed `extension-build` job `133902228908` from run
+`44042799768` passed. Artifact `14311029718` contains 45 matching native-Java
+sessions: 39 file-metadata, one directory-sync and five metadata-visibility
+sessions. Both privileged and unprivileged visibility checks passed. This is
+isolated host-component evidence, not public attachment acceptance.
+
+The ZIP is 277,431 bytes (3,164,153 extracted bytes), SHA-256
+`2f0709a31cd3af905643eb494cc3801b7cba1890266012b9da363c2d37435542`.
+Download digest, bounded extraction, run/job/source-tree identity, raw receipt
+hashes, current admission checks and exact regenerated report/README all passed.
+These older host receipts do not carry harness hashes: harness provenance was
+instead checked against the API-authenticated merge tree and completed job's
+source-build workflow. The first verification attempt stopped because the merge
+revision was unavailable locally; the successful check uses locally available
+head blobs and verifies each against the authenticated merge-tree blob ID.
+No failed attempt contributes measured sessions.
+
+Completed MIPS big-endian job `133915220959` also passed. Its artifact
+`14316685268` contains four headless O32/N32 truncated-space sessions and four
+native memory-location sessions. Current behavioral admission checks and exact
+report regeneration pass, as do committed harness hashes. The 549,739-byte ZIP
+has SHA-256 `0a0eb5e07bb2ddbe5609f9ef4c05175574c8a87f522a4108db683d19fcf2d56b`.
+It is deliberately admitted as **partial** evidence: current whole-job admission
+rejects it for lacking the newly added `context-boundaries` suite. The policy was
+not weakened, and the old job does not satisfy the updated hosted gate.
+
+The combined 952-session measurement includes these 53 distinct sessions with
+unchanged production bytecode and denominator. Linux-host evidence adds 119
+lines and 40 branches; MIPS adds one further branch. File-operation line coverage
+now meets 95%, while both critical groups still miss their 90% branch target.
+Evidence is under `hosted-linux-host-44042799768` and
+`hosted-mips32be-44042799768` in the bounded coverage workspace.
 
 ## Refreshed instruction context, qualified types and namespace lookup
 
