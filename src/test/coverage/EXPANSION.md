@@ -7793,3 +7793,28 @@ full denominator. The 1,372-session mixed cohort has 28,895/29,802 lines and
 22,567/25,902 branches; critical binary/location branches are 16,346/18,750,
 529 below 90%. Other current/historical cohorts remain; this is not full hosted
 acceptance, merge readiness or main publication.
+
+### MIPS delayed-return closure and instruction contracts (2026-11-17)
+
+CONFIRMED: `DelayedReturnPrefixSmoke` checks delayed-return owner length,
+parsed length, overrides, fallthrough and terminal-call inconsistencies; slot
+adjacency, extent and fallthrough; eight control/opaque p-code kinds in a slot;
+extra instructions and undecoded trailing bytes. Valid retry retains the exact
+incoming-value boundary. The existing matrix covers MIPS BE/LE 32-bit, 64-bit
+and N32 contexts, with the original write before or inside the delay slot.
+Decorated metadata controls are defensive proof tests, not new runtime support.
+
+Guarded `./gradlew --no-daemon delayedReturnPrefixSmoke` PASS, 468 checks,
+4 seconds; final log `.forge-work/scratch/delay-contracts-isolated.log`.
+Tests were refined before mutation measurement to isolate owner length from
+parsed length and slot adjacency from extent. Six selected compiled faults
+all produced behavioral assertion failures; unchanged baseline passed:
+`.forge-work/scratch/delay-contracts-mutants/result.json` (14.087 seconds).
+
+Verified diagnostic `coverage-recovery/delay-contracts` adds one line and twelve
+branches on the unchanged production JAR. Its 1,373-session mixed cohort keeps
+all 255 sources and 901 classes: 28,896/29,802 lines and 22,579/25,902 branches.
+Critical binary/location branches are 16,358/18,750, 517 below 90%; file-operation
+targets remain met. Hosted validation of queued HEAD, merge and main publication
+are still required. Current run 44150222826 has three architecture jobs live and
+no failed jobs at the last poll; both MIPS jobs and Windows have passed.
