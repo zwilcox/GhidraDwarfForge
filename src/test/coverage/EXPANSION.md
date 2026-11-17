@@ -6,6 +6,56 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current formatter consumers and measurement
+
+**CONFIRMED, local validation:** the three existing x86-64 formatter profiles
+pass through the production wrapper with both GDB CLI/MI and LLDB 18.1.3:
+non-PIE with companion loaders/unwind evidence, compressed PIE, and compressed
+PIE with a multi-file source bundle and companions. The 27 measured headless
+sessions include preparation, default/enabled/repeated/restored exports,
+cancellation recovery, and missing-key/wrong-kind rejection. Tests assert typed
+values and bit fields, signed/high-bit flags, child expansion, formatter unload,
+unchanged input/selection hashes, retained outputs after rejection, deterministic
+reruns, and independent DWARF validation. Unicode/quoted sidecar paths are retained.
+This measurement does not add an AArch64 or Windows formatter claim.
+
+The local LLDB prerequisite is now available in the shared tool cache. Unmodified
+Ubuntu packages `lldb-18`, `liblldb-18`, `python3-lldb-18`, and `liblldb-18-dev`, all
+`1:18.1.3-1ubuntu1`, were checksum-verified and extracted there. A cache-only
+wrapper selects their relocated library, Python and server paths. A native
+fixture launch, Python API value assertion and normal exit pass before the
+formatter suites. No system package installation was performed; downloaded
+archives were removed after verification. The initial extraction attempt stopped
+on an APT epoch-encoded filename; the existing authenticated downloads were
+reused without repeating the download or changing the version pin.
+
+The validator supports the exercised zlib sections. Verification checks source
+and package inventories, tool hashes, raw coverage identities, all three profile
+receipts, emitted file/source-bundle hashes, export reports, strict/LLVM results
+and raw GDB/LLDB transcripts. The local validation package and cached installation
+are restored. Original source/bytecode and previous immutable JavaExec receipts
+remain unchanged.
+
+The verified partial union is
+`.forge-work/scratch/coverage-expansion/formatters-refresh-4bd11/summary.json`,
+SHA-256 `59c1dfd4131e9ee769041389583868c9837f4c8d3dcb51ec959f5704f43c9b38`.
+Its 1,102 sessions comprise 211 JavaExec, 517 isolated Java/native-path and 374
+headless executions. All 255 production sources and 901 classes remain included.
+These formatter profiles add 40 lines and 46 branches over the prior checkpoint.
+
+| Scope | Lines | Branches | Required |
+| --- | --- | --- | --- |
+| Overall Java | 27,893/29,792 (93.6%) | 21,276/25,888 (82.2%) | 85% / 80% |
+| Binary/location correctness | 18,481/19,203 (96.2%) | 15,587/18,736 (83.2%) | 95% / 90% |
+| File transactions/validation | 5,686/6,677 (85.2%) | 3,312/4,250 (77.9%) | 95% / 90% |
+
+**INCOMPLETE:** critical targets, fresh Windows execution, remaining full-cohort
+measurement, exact-head hosted acceptance, protected merge and actual-main
+publication. This is a verified partial matching-bytecode union, not the published
+coverage badge or a completed CI acceptance run. Hosted run `44020062360` has
+finished its extension-build step and is measuring Java coverage at this checkpoint;
+its Windows failure and queued correction remain as described below.
+
 ## Saved inheritance, C++ ABI bounds and hosted Linux measurement
 
 **CONFIRMED, local validation:** `02f18a4d` adds 8,883 independent C++ ABI checks
@@ -67,7 +117,7 @@ failed test cases. This is isolated host-test evidence, not full public attachme
 or power-loss acceptance. These sessions add 119 lines and 40 branches to the
 preceding 893-session union.
 
-The latest verified partial report is
+That checkpoint's verified partial report is
 `.forge-work/scratch/coverage-expansion/saved-inheritance-abi-refresh-4bd11/summary.json`,
 SHA-256 `c4f040a6ffd56084c2f94e0e14cfefadf55ea0f97af2149ffa45ec192c223991`.
 It unions 1,075 distinct sessions: 211 JavaExec, 517 isolated Java/native-path and
