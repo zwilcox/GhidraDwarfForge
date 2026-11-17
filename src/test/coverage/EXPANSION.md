@@ -8,15 +8,15 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 971 verified
-sessions: 211 JavaExec, 646 native-Java, 57 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 972 verified
+sessions: 211 JavaExec, 647 native-Java, 57 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,448 / 29,802 (95.5%) | 21,642 / 25,902 (83.6%) |
-| Binary and location correctness | 18,355 / 19,213 (95.5%) | 15,543 / 18,750 (82.9%) |
+| Overall | 28,451 / 29,802 (95.5%) | 21,653 / 25,902 (83.6%) |
+| Binary and location correctness | 18,358 / 19,213 (95.5%) | 15,554 / 18,750 (83.0%) |
 | File transactions and validation | 6,362 / 6,677 (95.3%) | 3,718 / 4,250 (87.5%) |
 
 The production relocation fix remains covered on all 14 changed executable
@@ -54,10 +54,39 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-hosts-canary-multifile-partial/summary.json` in the coverage workspace, SHA-256
-`6c5bca861e2d414e1a30839b0767fd9ec5aff13bc636c797772da355c00b43f6`.
-It replaces the smaller 952-session partial baseline for current progress
+`stable-memory-hosts-composite-partial/summary.json` in the coverage workspace, SHA-256
+`0693e76eafe4a0f9d5c8287eeb5d91318099f0f21290e777e7e5ee53a8e7c0fd`.
+It replaces the smaller 971-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Composite lifetimes across decoded body gaps
+
+**CONFIRMED, local:** commit `bc3650c7` adds four actual decoded ProgramDB
+fixtures: x86-64, AArch64, ARM little-endian and ARM big-endian. Each jumps over
+a non-body gap into a small loop. Two unchanged incoming register pieces must
+retain memory order and exact executable intervals on either side of the gap.
+The proof must neither emit a gap interval nor merge equal locations across it.
+Foreign program/function/storage, absent or invalid storage, single-piece
+storage, stack-pointer pieces and explicitly unmapped registers are refused.
+
+The new fixture passes 1,088 assertions, alongside the existing 1,032 composite
+flow checks. Cancellation is exercised at every observed checkpoint: 112 each
+for x86-64/AArch64 and 137 each for the two ARM profiles (498 total). Every
+cancelled proof permits an identical retry; machine bytes, function body and
+attached storage remain unchanged. These are decoded API tests, not new runtime
+architecture-support claims.
+
+Two compiled faults are detected by exact interval assertions: emitting an
+unavailable interval inside the body gap and coalescing equal locations across
+the gap. The original baseline and eight mutation-outcome tests pass. No
+production source changed. The added measured session passes committed-source,
+raw-receipt and oracle verification, with only the two test classes excluded.
+It adds three lines and eleven branch outcomes to the prior matching union.
+`CompositeValueFlow` now measures 87/87 lines and 86/114 branch outcomes. Critical
+branch deficits remain 1,321 for binary/location correctness and 107 for file
+operations. Full current hosted acceptance and publication remain incomplete.
+Evidence: `composite-boundaries-stable-memory` and `composite-boundaries-mutations`
+in the bounded coverage workspace.
 
 ## Owned canary safety and multi-file build-ID refresh
 
