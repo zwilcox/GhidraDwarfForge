@@ -6,6 +6,30 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Build-ID lock acquisition interruption boundaries
+
+`BuildIdFileLockSmoke` now cancels acquisition at each of its four observed
+checkpoints and changes actual file modification time at each of the two
+verification observations. Every refusal leaves record bytes intact and allows
+a separate process to acquire the lease, proving resource release. The metadata
+fixture restores its original timestamp after each case. The same test is wired
+into the existing Windows host harness; that platform's new cases remain
+**PRESENT, UNVERIFIED** pending hosted execution.
+
+Guarded Linux `buildIdFileLockSmoke` passes. Two compiled mutations removing the
+initial/final metadata check are detected by behavioral assertions, with the
+unchanged baseline passing (7.514 seconds total). The first mutation invocation
+omitted required class-directory arguments and failed argument parsing; the
+corrected invocation passed. Evidence under scratch: `lock-interruption-test.log`,
+`lock-interruption-mutations-retry.log`, `lock-interruption-mutations/result.json`.
+
+Diagnostic `coverage-recovery/lock-interruptions/` verifies the same production
+JAR/class/probe identities against the historical cohort. It adds **zero** lines
+or branches beyond `installation-lock-publication`; the task's two-line/two-branch
+historical gain remains attributable to that earlier batch. These are behavioral
+regressions, not new progress toward the critical branch percentage. Production
+sources, denominator and targets remain unchanged.
+
 ## Windows rename replies — PRESENT, UNVERIFIED
 
 The existing Windows rename lifetime probe now forwards real kernel calls with

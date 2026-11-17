@@ -86,8 +86,64 @@ public final class BuildIdFileLockSmoke {
             Files.write(path, MAGIC);
             child(path, "LOCK_ACQUIRED");
         }
+        acquisitionInterruptionBoundaries(path, host);
         installationPublicationBoundaries(path.getParent(), host);
         System.out.println("build-id-file-lock=PASS host=" + (windows ? "windows" : "linux"));
+    }
+
+    /** Every acquisition cancellation and both metadata observations must release the real lease. */
+    private static void acquisitionInterruptionBoundaries(Path path, AttachmentOperation.Host host) throws Exception {
+        var visits = new java.util.concurrent.atomic.AtomicInteger();
+        try (var lease = BuildIdFileLock.acquire(path, MAGIC, host, () -> {
+                visits.incrementAndGet();
+                return false;
+            })) {
+            child(path, "LOCK_BUSY");
+        }
+        require(visits.get() >= 4, "acquisition did not observe all cancellation boundaries");
+        for (int stop = 1; stop <= visits.get(); stop++) {
+            int boundary = stop;
+            var calls = new java.util.concurrent.atomic.AtomicInteger();
+            try (var unexpected = BuildIdFileLock.acquire(path, MAGIC, host,
+                    () -> calls.incrementAndGet() == boundary)) {
+                throw new AssertionError("acquisition ignored cancellation at " + boundary);
+            }
+            catch (CancellationException expected) {
+                require(expected.getMessage().equals("build-ID lock cancelled"), expected.toString());
+                require(calls.get() == boundary, "acquisition continued past cancellation");
+            }
+            require(Arrays.equals(MAGIC, Files.readAllBytes(path)), "cancelled acquisition changed lock bytes");
+            child(path, "LOCK_ACQUIRED");
+        }
+        for (int observation : new int[] {2, 3}) {
+            var originalTime = Files.getLastModifiedTime(path);
+            var originalFingerprint = host.inspect(path);
+            int[] calls = {0};
+            AttachmentOperation.Host changing = (AttachmentOperation.Host) java.lang.reflect.Proxy.newProxyInstance(
+                AttachmentOperation.Host.class.getClassLoader(), new Class<?>[] {AttachmentOperation.Host.class},
+                (proxy, method, arguments) -> {
+                    if (method.getName().equals("inspect") && ++calls[0] == observation) {
+                        Files.setLastModifiedTime(path, java.nio.file.attribute.FileTime.fromMillis(
+                            originalTime.toMillis() + 2000));
+                    }
+                    try { return method.invoke(host, arguments); }
+                    catch (java.lang.reflect.InvocationTargetException failure) { throw failure.getCause(); }
+                });
+            try {
+                try (var unexpected = BuildIdFileLock.acquire(path, MAGIC, changing, () -> false)) {
+                    throw new AssertionError("acquisition accepted changed metadata at observation " + observation);
+                }
+                catch (IOException expected) {
+                    require(expected.getMessage().equals("build-ID lock identity or metadata changed"), expected.toString());
+                    require(calls[0] == observation, "wrong metadata refusal boundary");
+                }
+                require(!originalFingerprint.equals(host.inspect(path)), "metadata mutation did not reach the filesystem");
+                require(Arrays.equals(MAGIC, Files.readAllBytes(path)), "metadata refusal changed lock bytes");
+                child(path, "LOCK_ACQUIRED");
+            }
+            finally { Files.setLastModifiedTime(path, originalTime); }
+        }
+        System.out.println("build-id-lock-interruptions=PASS cancellations=" + visits.get() + " metadataChanges=2");
     }
 
     /** A failed lock-name publication can proceed only with an independently valid competing record. */
