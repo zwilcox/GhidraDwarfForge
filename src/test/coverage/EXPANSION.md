@@ -6,6 +6,37 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Raw intra-instruction flow admission
+
+The existing `intraInstructionFlowSmoke` now invokes 140 additional assertions
+for raw p-code admission. Independently constructed arrays check exact forward
+targets at the first, middle and last operation, using both unconditional and
+conditional branches. Exactly 4,096 operations remain eligible; 4,097 are
+refused. Ordinary operations remain marked as non-branches, and a branchless
+instruction does not acquire an internal-flow proof.
+
+Null/empty arrays, null operations, missing/extra branch inputs, null targets or
+conditions, wide conditions, self/backward branches and out-of-range distances
+must be refused without crashing. Cancellation at entry and during classification
+must allow a clean retry. Classification preserves operation descriptions and
+the program modification counter. These synthetic p-code cases do not establish
+new processor support; the existing real ARM/BE8 predication suite still passes.
+
+The guarded task passes 140 new assertions plus 598 existing checks. Six compiled
+faults are detected by behavioral assertions: rejecting the exact operation cap,
+accepting wide conditions, dereferencing null operations, admitting self-branches,
+inventing branchless proofs and using the next operation as the displacement base.
+The unchanged baseline passes. No production code was changed.
+
+Evidence: `.forge-work/scratch/intra-instruction-boundaries-first.log`,
+`intra-instruction-boundary-mutants/result.json`, and
+`coverage-recovery/intra-instruction-boundaries/`. The verified diagnostic union
+contains 1,399 sessions, 901 unchanged production classes and all 255 production
+sources. It adds seven branches: 28,846/29,802 lines and 22,236/25,902 branches
+overall; critical binary/location 16,067/18,750 branches (808 short of 90%). File
+operations remain 50 short. Historical cohorts remain, so full current-head
+hosted acceptance is still pending.
+
 ## Custom scalar storage and finite compiler-model input regions
 
 The existing `customCallStorageSmoke` now invokes 688 additional assertions on
