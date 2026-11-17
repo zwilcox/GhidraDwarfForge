@@ -6980,3 +6980,34 @@ plus manifest addition. Adds 20 branches. Overall 28,859/29,802 lines and
 (50 short). Historical cohorts remain: not current-head hosted acceptance.
 Evidence: `.forge-work/scratch/arm-call-signatures-final.log` and
 `arm-call-signature-mutants/result.json`. CI44150222826 remains active.
+
+### MIPS N32/N64 signature boundaries (#209, local diagnostic)
+
+Acceptance: callable definitions, external declarations and callbacks agree on
+supported scalar transfers, bounded alias resolution and hidden-result storage;
+classification preserves recovered parameters, input graphs and prior restrictions.
+`MipsWideSignatureBoundarySmoke` runs from the existing `mipsWideCallPolicySmoke`
+task for both ELF widths and byte orders. It covers 64/65 alternating aliases and
+qualifiers, scalar/enum/pointer widths, reference kinds, conservative aggregate
+field admission and malformed hidden-result carriers. No production code changed.
+The task now uses the storage guard's temporary directory.
+
+Guarded `./gradlew --no-daemon mipsWideCallPolicySmoke` passed in 4 seconds:
+3,244 new helper assertions plus 13,964 existing checks. The initial test expectation
+incorrectly treated ADDRESS/UTF encodings as integer transfers; that expectation
+was corrected to the supported signed/unsigned/character/boolean envelope.
+Eight targeted compiled mutants passed the mutation harness in 3.544 seconds,
+with a passing baseline and Java assertion failures for all eight faults. Source
+hash matched the unchanged production policy. Evidence:
+`.forge-work/scratch/mips-wide-signatures-final.log` and
+`.forge-work/scratch/mips-wide-signature-mutants/result.json`.
+
+The verified local diagnostic adds 11 covered branch outcomes, no lines:
+1,406 sessions, unchanged production JAR `58bd7a71517452ca3f33e372060abd47f29166850cdcf464e3b3cb0f2a2a158b`,
+255 production sources and 901 classes. Overall 28,859/29,802 lines and
+22,332/25,902 branches; binary/location 18,622/19,213 lines and 16,163/18,750
+branches (712 outcomes short of 90%); file operations remain 6,502/6,677 lines
+and 3,775/4,250 branches (50 short). Raw execution hash, test source hashes and
+unique manifest extension verified. Historical cohorts remain in this diagnostic;
+it is not current-head hosted acceptance. Evidence:
+`.forge-work/scratch/coverage-recovery/mips-wide-signatures/`.

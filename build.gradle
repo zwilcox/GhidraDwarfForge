@@ -2336,6 +2336,7 @@ tasks.register("mipsWideCallPolicySmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.MipsWideCallPolicySmoke"
     args ghidraInstallDir
+    systemProperty "java.io.tmpdir", System.getenv("TMPDIR") ?: System.getProperty("java.io.tmpdir")
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/mips-wide-calls/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/mips-wide-calls/cache").absolutePath
