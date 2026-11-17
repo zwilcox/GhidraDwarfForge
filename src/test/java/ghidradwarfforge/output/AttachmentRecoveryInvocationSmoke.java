@@ -38,6 +38,7 @@ public final class AttachmentRecoveryInvocationSmoke {
                 var prepared = new AttachmentReceipt(template.operationId(), mode, AttachmentReceipt.Phase.PREPARED,
                     paths.get("receipt").toString(), template.backend(), template.hostContract(), template.durability(),
                     template.debuglinkCrc32(), artifacts, null);
+                selectionBoundaries(paths, directory);
                 for (var phase : new AttachmentReceipt.Phase[] {AttachmentReceipt.Phase.PREPARED, AttachmentReceipt.Phase.COMMITTED}) {
                     var record = phase == AttachmentReceipt.Phase.PREPARED ? prepared : prepared.advance(phase, null);
                     Files.writeString(paths.get("receipt"), record.toJson());
@@ -86,6 +87,7 @@ public final class AttachmentRecoveryInvocationSmoke {
                     equal(record.toJson(), Files.readString(paths.get("receipt")));
                     equal(false, Files.exists(paths.get("recoveryReceipt")));
                     equal(false, Files.exists(paths.get("restoreImage")));
+                    transactionBoundaries(invocation, record, directory);
                     Files.writeString(paths.get("receipt"), prepared.advance(AttachmentReceipt.Phase.ROLLED_BACK, "test-only").toJson());
                     var terminal = new AttachmentRecoveryInvocation(paths, FileDigests.read(paths.get("receipt"), () -> false).sha256());
                     rejects(() -> terminal.transaction(() -> false));
@@ -98,6 +100,97 @@ public final class AttachmentRecoveryInvocationSmoke {
                 for (var path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
             }
         }
+    }
+
+    private static void selectionBoundaries(java.util.Map<String, Path> paths, Path directory) throws Exception {
+        int before = checks;
+        String sha = "a".repeat(64);
+        String committed = "b".repeat(64);
+        for (String bad : new String[] {null, "", "a".repeat(63), "a".repeat(65), "A".repeat(64), "g".repeat(64)}) {
+            rejectsMessage(() -> new AttachmentRecoveryInvocation(paths, bad, committed),
+                "recovery requires every explicit role and the selected receipt SHA-256");
+            rejectsMessage(() -> new AttachmentRecoveryInvocation(paths, sha, bad),
+                "recovery requires every explicit role and the selected receipt SHA-256");
+        }
+        for (String role : paths.keySet()) {
+            var missing = new HashMap<>(paths);
+            missing.remove(role);
+            rejectsMessage(() -> new AttachmentRecoveryInvocation(missing, sha, committed),
+                "recovery requires every explicit role and the selected receipt SHA-256");
+        }
+        var unrelated = new HashMap<>(paths);
+        unrelated.put("unrecognized", directory.resolve("unused"));
+        rejectsMessage(() -> new AttachmentRecoveryInvocation(unrelated, sha, committed),
+            "recovery requires every explicit role and the selected receipt SHA-256");
+        var valid = new AttachmentRecoveryInvocation(paths, sha, committed);
+        equal(true, valid.acceptsReceiptSha256(sha));
+        equal(true, valid.acceptsReceiptSha256(committed));
+        equal(false, valid.acceptsReceiptSha256("c".repeat(64)));
+        equal(false, valid.acceptsReceiptSha256(null));
+        equal(valid, read(valid.toJson()));
+
+        // These are transport inputs, never paths to create on the host filesystem.
+        String prefix = directory.toString() + java.io.File.separator;
+        var boundary = new HashMap<>(paths);
+        Path maximum = Path.of(prefix + "x".repeat(16384 - prefix.length()));
+        boundary.put("source", maximum);
+        var accepted = new AttachmentRecoveryInvocation(boundary, sha, committed);
+        equal(maximum, read(accepted.toJson()).paths().get("source"));
+        boundary.put("source", Path.of(maximum.toString() + "x"));
+        rejectsMessage(() -> new AttachmentRecoveryInvocation(boundary, sha, committed),
+            "recovery selections require bounded absolute paths");
+        boundary.put("source", Path.of("relative-source"));
+        rejectsMessage(() -> new AttachmentRecoveryInvocation(boundary, sha, committed),
+            "recovery selections require bounded absolute paths");
+        var oversized = new HashMap<String, Path>();
+        for (String role : paths.keySet()) {
+            oversized.put(role, directory.resolve(role + "λ".repeat(15000)));
+        }
+        var boundedStrings = new AttachmentRecoveryInvocation(oversized, sha, committed);
+        rejectsMessage(boundedStrings::toJson, "recovery request exceeds transport limit");
+        System.out.println("recovery-selection-boundaries=PASS checks=" + (checks - before));
+    }
+
+    private static void transactionBoundaries(AttachmentRecoveryInvocation invocation,
+            AttachmentReceipt record, Path directory) throws Exception {
+        int before = checks;
+        Path receipt = invocation.paths().get("receipt");
+        byte[] original = Files.readAllBytes(receipt);
+        var differentRoles = new HashMap<>(invocation.paths());
+        for (String role : new String[] {"previousReceipt", "previousSidecar", "previousSource", "priorTargetBackup"}) {
+            if (record.mode() == AttachmentReceipt.Mode.INITIAL) differentRoles.put(role, directory.resolve(role));
+            else differentRoles.remove(role);
+        }
+        var mismatch = new AttachmentRecoveryInvocation(differentRoles, invocation.receiptSha256());
+        rejectsMessage(() -> mismatch.transaction(() -> false),
+            "selected recovery roles or receipt path differ from the recorded operation");
+
+        Path copied = Files.write(directory.resolve("receipt-copy.json"), original);
+        var otherReceipt = new HashMap<>(invocation.paths());
+        otherReceipt.put("receipt", copied);
+        var moved = new AttachmentRecoveryInvocation(otherReceipt, invocation.receiptSha256());
+        rejectsMessage(() -> moved.transaction(() -> false),
+            "selected recovery roles or receipt path differ from the recorded operation");
+        equal(record.toJson(), Files.readString(copied));
+        Files.delete(copied);
+
+        // A valid recovery receipt cannot become the starting point of another normal recovery.
+        var artifact = new AttachmentReceipt.Artifact(directory.resolve("prior-receipt.json").toString(),
+            invocation.receiptSha256(), original.length, "prior-receipt-identity", "c".repeat(64));
+        var prepared = record.phase() == AttachmentReceipt.Phase.PREPARED ? record :
+            new AttachmentReceipt(record.operationId(), record.mode(), AttachmentReceipt.Phase.PREPARED,
+                record.receiptPath(), record.backend(), record.hostContract(), record.durability(),
+                record.debuglinkCrc32(), record.files(), null);
+        Files.writeString(receipt, prepared.forRecovery(record.receiptPath(), artifact, null).toJson());
+        var recursive = new AttachmentRecoveryInvocation(invocation.paths(), FileDigests.read(receipt, () -> false).sha256());
+        rejectsMessage(() -> recursive.transaction(() -> false),
+            "select a normal interrupted PREPARED or COMMITTED receipt");
+        Files.write(receipt, original);
+        equal(record.toJson(), Files.readString(receipt));
+        equal(prepared, invocation.transaction(() -> false).prepared());
+        equal(false, Files.exists(invocation.paths().get("recoveryReceipt")));
+        equal(false, Files.exists(invocation.paths().get("restoreImage")));
+        System.out.println("recovery-transaction-boundaries=PASS checks=" + (checks - before));
     }
 
     private static void deferredCandidatePreview(AttachmentRecoveryInvocation original,
@@ -164,6 +257,10 @@ public final class AttachmentRecoveryInvocationSmoke {
     private static void rejects(Action action) throws Exception {
         try { action.run(); throw new AssertionError("invalid recovery accepted"); }
         catch (IOException | IllegalArgumentException expected) { checks++; }
+    }
+    private static void rejectsMessage(Action action, String message) throws Exception {
+        try { action.run(); throw new AssertionError("accepted invalid recovery: " + message); }
+        catch (IOException | IllegalArgumentException expected) { equal(message, expected.getMessage()); }
     }
     private static void equal(Object expected, Object actual) {
         if (!expected.equals(actual)) throw new AssertionError("expected " + expected + " but got " + actual);
