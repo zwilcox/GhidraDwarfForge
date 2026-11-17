@@ -6,6 +6,39 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Sectionless unwind framing and exact record limits
+
+The existing `sectionlessUnwindSmoke` now invokes an independent CIE/FDE and
+search-table fixture suite. It validates versions 1, 3 and 4 across ELF32/ELF64
+and both byte orders, including the minimum accepted version-4 CIE length.
+Three-entry controls reject repeated/descending PCs, repeated FDE references,
+FDEs before or beyond the bounded frame extent, backward-reference underflow,
+unindexed FDEs and a short version-4 CIE. Successful inventories must retain
+exact section/file extents and each FDE-to-initial-PC association, and expose an
+immutable map. Input bytes, identity and modification time remain unchanged.
+
+The exact record-cap control includes one CIE and 262,143 FDEs: all 262,144
+records are accepted and every association is checked independently. Adding one
+FDE remains within the search-table count limit but must fail the total record
+limit. The largest fixture is about 8 MiB; the suite owns and deletes its input.
+These are framing/discovery tests, not an assertion of runtime CFI behavior or
+new architecture support.
+
+The guarded Gradle task passes 262,343 helper assertions (mostly the complete
+large-table coordinate check) plus 9,172 existing checks. Six compiled faults are
+caught by Java assertions, with a passing unchanged baseline: both directions
+of the record-cap boundary, allowing equal PCs, allowing a short version-4 CIE,
+rejecting version 3 and shifting stored initial PCs.
+
+Evidence: `.forge-work/scratch/sectionless-unwind-boundaries-first.log`,
+`sectionless-unwind-boundary-mutants/result.json`, and
+`coverage-recovery/sectionless-unwind-boundaries/`. The verified local diagnostic
+has 1,397 sessions, the unchanged production JAR with 901 classes, and all 255
+production sources. It adds 11 branches. Totals: 28,843/29,802 lines and
+22,220/25,902 branches overall; 16,051/18,750 critical binary/location branches,
+824 short of 90%. File operations remain 50 short. Historical cohorts remain;
+full current-head hosted acceptance is pending. Production code is unchanged.
+
 ## Relative-pointer provenance, admission and candidate bounds
 
 `elfRelocatedPointersSmoke` passes 569 assertions for the existing AMD64 and
