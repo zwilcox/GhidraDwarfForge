@@ -22,8 +22,18 @@ baseline passes. Logs are under `.forge-work/scratch/stack-boundary-test.log`
 and `stack-boundary-slot-mutations/`. Earlier mutations of the general overlap
 helper also failed, but the retained registration targets slot invalidation
 specifically. No production code changed. These are extraction component checks,
-not new emitted-DWARF or debugger acceptance, and no combined coverage increase
-is claimed until execution data is measured and admitted.
+not new emitted-DWARF or debugger acceptance.
+
+A subsequent guarded measurement uses the unchanged `58bd7a71` production JAR,
+instruments only its production classes, and verifies class/probe identities
+before combining the new session with 1,252 recovered historical sessions.
+It adds **zero line or branch outcomes** to that diagnostic cohort: the new
+assertions cover additional boundary inputs along already executed branches.
+The two detected faults establish their regression value. The historical cohort
+lacks ARM32 and current test additions, so this comparison is neither current
+hosted acceptance nor a replacement for the preceding full partial measurement.
+The command, source hashes, raw execution, log and comparison are under
+`.forge-work/scratch/coverage-recovery/stack-boundaries/`.
 
 ## Current partial measurement after integration refresh
 
