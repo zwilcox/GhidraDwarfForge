@@ -7746,3 +7746,31 @@ losing covered lines/branches. Result and provenance:
 The mixed diagnostic remains 1,370 sessions, 28,894/29,802 lines,
 22,549/25,902 branches. Other historical cohorts remain, so this does not prove
 complete current-HEAD coverage or final acceptance of #209.
+
+### Saved identity controls for repeated register copies (2026-11-17)
+
+CONFIRMED: `RegisterCopyChainSmoke` now checks coherent metadata views against
+seven independently inconsistent bindings: function/program, storage/program,
+parameter/function, ordinal, saved-row identity, first-use offset and forced
+indirection. For real x86-64/AArch64 decoded chains and both 32-/64-bit values,
+consistent views retain the complete expected chain. Inconsistent views preserve
+only the original prefix and first independently proven backup; later ranges
+remain unavailable and cannot be filled by the separate value-flow proof.
+Saved metadata stays unchanged and valid retry produces the original result.
+These are proof-boundary checks, not new processor support claims.
+
+Guarded `./gradlew --no-daemon registerCopyChainSmoke` PASS, 496 checks, 4 seconds.
+Log: `.forge-work/scratch/copy-chain-identity-final.log`. The first setup attempt
+incorrectly passed a program-owned compiler spec to a new ProgramDB; Ghidra
+refused it. The fixture now obtains the compiler spec from the language. No
+production workaround or coverage from that failed run was admitted.
+Seven independently removed composition guards all produced behavioral assertion
+failures, with the unchanged baseline passing (17.357 seconds):
+`.forge-work/scratch/copy-chain-identity-mutants/result.json`.
+
+The verified diagnostic addition `coverage-recovery/copy-chain-identity` adds
+five GhidraVariableStorage and two StackValueFlow branches. Its 1,371-session
+mixed current/historical union retains the same production JAR, 255 source files
+and 901 classes: 28,894/29,802 lines and 22,556/25,902 branches. Critical
+binary/location branches are 16,335/18,750, 540 below 90%. File-operation targets
+remain met. Full current hosted validation, merge and publication remain unmet.

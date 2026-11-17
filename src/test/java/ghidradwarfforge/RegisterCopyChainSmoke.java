@@ -1,6 +1,7 @@
 package ghidradwarfforge;
 
 import java.io.File;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
@@ -14,8 +15,11 @@ import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.lang.LanguageID;
+import ghidra.program.model.lang.DynamicVariableStorage;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
+import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.util.DefaultLanguageService;
 import ghidra.util.exception.CancelledException;
@@ -23,6 +27,7 @@ import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
 import ghidradwarfforge.locations.TargetRegisterMap;
 import ghidradwarfforge.locations.VariableStorageModel.RegisterStorage;
+import ghidradwarfforge.locations.VariableStorageModel.Storage;
 
 /** Decoded repeated handoffs, including reuse of a previously killed register. */
 public final class RegisterCopyChainSmoke {
@@ -117,6 +122,9 @@ public final class RegisterCopyChainSmoke {
                 var tail = intervals.getLast();
                 require(!tail.storage().available() && tail.start() == start && tail.end() == 0x1000 + raw.length,
                     "unavailable tail " + context);
+                if (handoffs == 3 && !loseLast) {
+                    ownership(program, function, parameter, mapping, rejected, intervals);
+                }
                 var cancelled = new TaskMonitorAdapter(true);
                 cancelled.cancel();
                 try {
@@ -134,6 +142,65 @@ public final class RegisterCopyChainSmoke {
         finally {
             program.release(owner);
         }
+    }
+
+    private static void ownership(ProgramDB program, Function original, Parameter saved,
+            TargetRegisterMap registers, Storage rejected,
+            List<GhidraVariableStorage.StorageInterval> expected) throws Exception {
+        long modification = program.getModificationNumber();
+        var originalStorage = saved.getVariableStorage();
+        Object owner = new Object();
+        var foreign = new ProgramDB("foreign-chain", program.getLanguage(),
+            program.getLanguage().getCompilerSpecByID(program.getCompilerSpec().getCompilerSpecID()), owner);
+        try {
+            for (String mode : List.of("coherent", "foreign-function", "foreign-storage", "other-function",
+                    "negative-ordinal", "different-saved-row", "later-first-use", "indirect-storage")) {
+                Parameter[] subject = new Parameter[1];
+                Function[] binding = new Function[1];
+                VariableStorage storage = switch (mode) {
+                    case "foreign-storage" -> new VariableStorage(foreign, originalStorage.getVarnodes());
+                    case "indirect-storage" -> new DynamicVariableStorage(program, true, originalStorage.getVarnodes());
+                    default -> originalStorage;
+                };
+                binding[0] = (Function) Proxy.newProxyInstance(Function.class.getClassLoader(),
+                    new Class<?>[] {Function.class}, (proxy, method, arguments) -> switch (method.getName()) {
+                        case "getProgram" -> mode.equals("foreign-function") ? foreign : program;
+                        case "getParameter" -> mode.equals("different-saved-row") ? saved : subject[0];
+                        default -> method.invoke(original, arguments);
+                    });
+                subject[0] = (Parameter) Proxy.newProxyInstance(Parameter.class.getClassLoader(),
+                    new Class<?>[] {Parameter.class}, (proxy, method, arguments) -> switch (method.getName()) {
+                        case "getFunction" -> mode.equals("other-function") ? original : binding[0];
+                        case "getOrdinal" -> mode.equals("negative-ordinal") ? -1 : saved.getOrdinal();
+                        case "getFirstUseOffset" -> mode.equals("later-first-use") ? 1 : 0;
+                        case "getVariableStorage" -> storage;
+                        default -> method.invoke(saved, arguments);
+                    });
+                var actual = GhidraVariableStorage.parameterPrefix(program, binding[0], subject[0], storage,
+                    registers, rejected, TaskMonitor.DUMMY);
+                if (mode.equals("coherent")) {
+                    require(actual.equals(expected), "consistent views retain the entire proven copy chain");
+                    require(!StackValueFlow.prove(program, binding[0], subject[0], storage,
+                        registers, TaskMonitor.DUMMY).isEmpty(), "consistent identity must admit value-flow proof");
+                }
+                else {
+                    // The first completed copy has its own instruction proof. Subsequent
+                    // composition must stop when saved incoming-value identity disagrees.
+                    require(actual.size() == 3 && actual.get(0).equals(expected.get(0)) &&
+                        actual.get(1).equals(expected.get(1)) && !actual.get(2).storage().available() &&
+                        actual.get(2).start() == expected.get(1).end() &&
+                        actual.get(2).end() == expected.getLast().end(),
+                        mode + " must retain only the independently proven first backup: " + actual);
+                    require(StackValueFlow.prove(program, binding[0], subject[0], storage,
+                        registers, TaskMonitor.DUMMY).isEmpty(), mode + " must not seed a later value-flow proof");
+                }
+            }
+            require(program.getModificationNumber() == modification && original.getParameter(0) == saved &&
+                originalStorage.equals(saved.getVariableStorage()), "identity controls changed saved parameter");
+            require(GhidraVariableStorage.parameterPrefix(program, original, saved, registers, rejected,
+                TaskMonitor.DUMMY).equals(expected), "identity refusal poisoned a later valid proof");
+        }
+        finally { foreign.release(owner); }
     }
 
     private static void require(boolean condition, String detail) {
