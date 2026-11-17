@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** Read-only token reply faults after actual Windows admission; never grants a missing privilege. */
+/** Token reply faults after actual Windows admission; never grants a missing privilege. */
 public final class WindowsPrivilegeReadbackControls {
     private record Case(String name, String diagnostic) { }
     private static final List<Case> CASES = List.of(
@@ -34,13 +34,155 @@ public final class WindowsPrivilegeReadbackControls {
             int original = control.attributes();
             require((original & 2) == 0, "fixture did not disable the owned privilege");
             exercise(control, original);
+            closeReplies(control, original);
             long before = metadata.processHandleCount();
             var rows = exercise(control, original);
+            var closing = closeReplies(control, original);
             long after = metadata.processHandleCount();
             require(before == after, "privilege readback controls leaked handles");
             return Map.of("status", "PASS_WINDOWS_PRIVILEGE_READBACK_FAILURES", "cases", rows,
+                "closeCases", closing,
                 "handlesBefore", before, "handlesAfter", after,
-                "scope", "Actual Windows token queries with controlled replies after real constructor admission; token unchanged by reads and scope restored");
+                "scope", "Actual Windows token queries/restoration with controlled replies after real constructor admission; original token state restored and real handles released");
+        }
+    }
+
+    /** Error replies occur after real restoration/close, so no injected fault deliberately leaks authority. */
+    private static List<Map<String, Object>> closeReplies(WindowsFileSecurityProbe.OwnPrivilege control,
+            int original) throws Exception {
+        Field tokens = WindowsAttachmentPrivilege.class.getDeclaredField("tokens");
+        Field kernel = WindowsAttachmentPrivilege.class.getDeclaredField("kernel");
+        Field luid = WindowsAttachmentPrivilege.class.getDeclaredField("securityLuid");
+        tokens.setAccessible(true);
+        kernel.setAccessible(true);
+        luid.setAccessible(true);
+        var rows = new ArrayList<Map<String, Object>>();
+        for (Case selected : List.of(
+                new Case("adjust-false", "AdjustTokenPrivileges failed"),
+                new Case("adjust-not-assigned", "AdjustTokenPrivileges failed"),
+                new Case("previous-short", "previous privilege state exceeds"),
+                new Case("previous-large", "previous privilege state exceeds"),
+                new Case("previous-count-negative", "previous privilege state exceeds"),
+                new Case("previous-count-excess", "previous privilege state exceeds"),
+                new Case("previous-other-luid", "adjustment returned a different privilege"),
+                new Case("restore-readback", "helper privilege restoration readback differs"),
+                new Case("adjust-runtime", "injected restoration reply exception"),
+                new Case("close-only", "CloseHandle(helper token) failed"),
+                new Case("adjust-and-close", "AdjustTokenPrivileges failed"),
+                new Case("runtime-and-close", "injected restoration reply exception"))) {
+            var scope = new WindowsAttachmentPrivilege();
+            Object realTokens = tokens.get(scope);
+            Object realKernel = kernel.get(scope);
+            var fault = new CloseFault(selected.name(), luid.getLong(scope));
+            Throwable rejected;
+            try {
+                require(scope.attributes() == (original | 2), "close fixture was not admitted");
+                tokens.set(scope, Proxy.newProxyInstance(tokens.getType().getClassLoader(), new Class<?>[] {tokens.getType()},
+                    (object, method, args) -> {
+                        method.setAccessible(true);
+                        Object result;
+                        try { result = method.invoke(realTokens, args); }
+                        catch (InvocationTargetException failure) { throw failure.getCause(); }
+                        return fault.tokenReply(method.getName(), args, result);
+                    }));
+                kernel.set(scope, Proxy.newProxyInstance(kernel.getType().getClassLoader(), new Class<?>[] {kernel.getType()},
+                    (object, method, args) -> {
+                        method.setAccessible(true);
+                        Object result;
+                        try { result = method.invoke(realKernel, args); }
+                        catch (InvocationTargetException failure) { throw failure.getCause(); }
+                        if (method.getName().equals("CloseHandle")) {
+                            require((int) result != 0, "actual token CloseHandle failed");
+                            fault.closed++;
+                            if (selected.name().equals("close-only") || selected.name().endsWith("-and-close")) {
+                                fault.closeFaults++;
+                                Native.setLastError(6);
+                                return 0;
+                            }
+                        }
+                        return result;
+                    }));
+                try {
+                    scope.close();
+                    throw new AssertionError("invalid close reply accepted: " + selected.name());
+                }
+                catch (IOException | RuntimeException expected) { rejected = expected; }
+            }
+            finally {
+                tokens.set(scope, realTokens);
+                kernel.set(scope, realKernel);
+                scope.close(); // Real cleanup if a fixture assertion interrupted the first close.
+            }
+            require(rejected.getMessage().contains(selected.diagnostic()), "wrong close failure: " + rejected);
+            require((rejected instanceof IllegalStateException) == selected.name().contains("runtime"),
+                "restoration failure changed its checked/unchecked type");
+            boolean suppressed = selected.name().endsWith("-and-close");
+            require(rejected.getSuppressed().length == (suppressed ? 1 : 0), "cleanup failure suppression differs");
+            if (suppressed) require(rejected.getSuppressed()[0] instanceof IOException &&
+                rejected.getSuppressed()[0].getMessage().contains("CloseHandle(helper token) failed"),
+                "real restoration error was replaced by secondary close error");
+            require(fault.adjustments == 1 && fault.closed == 1, "restoration and real handle release must occur once");
+            require(fault.replyFaults == (selected.name().equals("close-only") ? 0 : 1), "restoration reply control was not reached");
+            require(fault.closeFaults == (selected.name().equals("close-only") || suppressed ? 1 : 0), "close reply control was not reached");
+            require(control.attributes() == original, "close failure left the actual privilege changed");
+            try {
+                scope.attributes();
+                throw new AssertionError("closed token scope still usable");
+            }
+            catch (IOException expected) { require(expected.getMessage().contains("scope is closed"), expected.toString()); }
+            rows.add(Map.of("name", selected.name(), "diagnostic", rejected.getMessage(),
+                "originalStateRestored", true, "realHandlesClosed", fault.closed,
+                "suppressedCloseFailure", suppressed));
+        }
+        System.out.println("windows-privilege-close-replies=PASS cases=" + rows.size());
+        return rows;
+    }
+
+    private static final class CloseFault {
+        final String name;
+        final long luid;
+        int adjustments;
+        int closed;
+        int replyFaults;
+        int closeFaults;
+        CloseFault(String name, long luid) { this.name = name; this.luid = luid; }
+
+        Object tokenReply(String method, Object[] args, Object result) {
+            if (method.equals("AdjustTokenPrivileges")) {
+                require((int) result != 0 && Native.getLastError() == 0, "actual restoration failed");
+                adjustments++;
+                if (name.equals("close-only") || name.equals("restore-readback")) return result;
+                replyFaults++;
+                Pointer previous = (Pointer) args[4], needed = (Pointer) args[5];
+                switch (name) {
+                    case "adjust-false", "adjust-and-close" -> { Native.setLastError(5); return 0; }
+                    case "adjust-not-assigned" -> Native.setLastError(1300);
+                    case "previous-short" -> needed.setInt(0, 3);
+                    case "previous-large" -> needed.setInt(0, 17);
+                    case "previous-count-negative" -> previous.setInt(0, -1);
+                    case "previous-count-excess" -> previous.setInt(0, 2);
+                    case "previous-other-luid" -> { previous.setInt(0, 1); previous.setLong(4, luid ^ 1); }
+                    case "adjust-runtime", "runtime-and-close" -> throw new IllegalStateException("injected restoration reply exception");
+                    default -> throw new AssertionError(name);
+                }
+            }
+            else if (method.equals("GetTokenInformation") && name.equals("restore-readback") &&
+                    adjustments == 1 && args[2] != null) {
+                require((int) result != 0, "actual restored privilege readback failed");
+                Pointer data = (Pointer) args[2];
+                int returned = ((Pointer) args[4]).getInt(0);
+                int count = data.getInt(0);
+                require(returned >= 4 && returned <= (int) args[3] && count >= 0 && count <= (returned - 4) / 12,
+                    "actual restored privilege array exceeds its buffer");
+                for (int index = 0; index < count; index++) {
+                    int offset = 4 + index * 12;
+                    if (data.getLong(offset) == luid) {
+                        data.setInt(offset + 8, data.getInt(offset + 8) ^ 2);
+                        replyFaults++;
+                    }
+                }
+            }
+            return result;
         }
     }
 

@@ -6,6 +6,32 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Windows privilege restoration replies — PRESENT, UNVERIFIED
+
+`WindowsPrivilegeReadbackControls` adds 12 cases after actual constructor
+admission. Real token restoration runs before controlled adjustment failures,
+ERROR_NOT_ALL_ASSIGNED, invalid previous-state lengths/counts/LUID, or a runtime
+exception is reported. A readback control changes only the returned attributes.
+Close-error controls perform the actual `CloseHandle` successfully before
+reporting failure. Combined restoration/close errors must preserve the primary
+checked or unchecked exception and retain the secondary close error as suppressed.
+
+Each case independently observes the real original token attributes, requires
+one restoration and one successful native handle release, and rejects later use
+of the closed scope. The native interfaces are restored in `finally`; ordinary
+scope cleanup runs even when a fixture assertion fails. Warmed repetitions and
+the existing process-handle count enclose the controls. Python requires all 12
+named results, original-state restoration and handle-release evidence; PowerShell
+requires the new control marker alongside the original acceptance marker.
+
+Guarded Java `testClasses` compilation passes, including the final returned-buffer
+bounds assertion (`windows-privilege-close-final-compile.log`). Python harness
+AST parsing passes. **Actual Windows execution, stable handle counts, PowerShell
+execution and coverage gains remain unverified** until CI includes this change.
+The current run's successful Windows-host and debugger follow-up jobs use the
+older remote commit and do not validate these queued cases. Production code and
+native interfaces are unchanged.
+
 ## Validator helper changes during provenance observation
 
 `ValidatorLaunchBoundarySmoke` uses owned executable fixtures and synchronizes

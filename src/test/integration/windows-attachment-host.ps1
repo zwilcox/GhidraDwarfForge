@@ -79,6 +79,9 @@ if ([IO.File]::ReadAllText((Join-Path $root 'helper-privilege.stderr')).Length -
 if (-not [IO.File]::ReadAllText((Join-Path $root 'helper-privilege.stdout')).Contains('windows-attachment-privilege=PASS')) {
     throw 'Missing helper privilege acceptance result'
 }
+if (-not [IO.File]::ReadAllText((Join-Path $root 'helper-privilege.stdout')).Contains('windows-privilege-close-replies=PASS cases=12')) {
+    throw 'Missing helper privilege restoration/close controls'
+}
 Run 'host-stores' (Join-Path $env:JAVA_HOME 'bin/java.exe') @('-Xint','-XX:+UseSerialGC','--enable-native-access=ALL-UNNAMED',
     '-cp',($classes + ';' + $dependencies),'ghidradwarfforge.output.WindowsAttachmentHostSmoke',(Join-Path $root 'owned'))
 if ([IO.File]::ReadAllText((Join-Path $root 'host-stores.stderr')).Length -ne 0) { throw 'Unexpected host diagnostics' }

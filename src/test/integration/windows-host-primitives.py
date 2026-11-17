@@ -70,6 +70,15 @@ def main():
     stable = [java, '-Xint', '-XX:+UseSerialGC', *prefix[1:]]
     run('privilege', [*stable, 'ghidradwarfforge.output.WindowsAttachmentPrivilegeProbe', root / 'privilege-failures.json'],
         marker='windows-attachment-privilege=PASS cycles=128')
+    privilege = json.loads((root / 'privilege-failures.json').read_text(encoding='utf-8'))
+    closing = privilege['closeCases']
+    expected_closing = {'adjust-false', 'adjust-not-assigned', 'previous-short', 'previous-large',
+        'previous-count-negative', 'previous-count-excess', 'previous-other-luid', 'restore-readback',
+        'adjust-runtime', 'close-only', 'adjust-and-close', 'runtime-and-close'}
+    if (len(closing) != 12 or {row['name'] for row in closing} != expected_closing
+            or any(row['originalStateRestored'] is not True or row['realHandlesClosed'] != 1
+                or row['suppressedCloseFailure'] != row['name'].endswith('-and-close') for row in closing)):
+        raise AssertionError('incomplete native privilege restoration/close evidence')
     run('host', [*stable, 'ghidradwarfforge.output.WindowsAttachmentHostSmoke', root / 'owned'],
         marker='windows-attachment-host=PASS')
     run('transactions', [*prefix, 'ghidradwarfforge.output.WindowsAttachmentTransactionSmoke', root / 'transactions'],
@@ -113,7 +122,7 @@ def main():
         'directoryFailures': json.loads((root / 'directory-failures/result.json').read_text(encoding='utf-8')),
         'securityFailures': json.loads((root / 'security-failures/result.json').read_text(encoding='utf-8')),
         'backupFailures': json.loads((root / 'backup-failures/result.json').read_text(encoding='utf-8')),
-        'privilegeReadback': json.loads((root / 'privilege-failures.json').read_text(encoding='utf-8')),
+        'privilegeReadback': privilege,
         'backupFixture': {'status': 'PASS_NATIVE_BACKUP_FIXTURE_PRESERVATION', 'sha256': backup_hashes},
         'protectedSha256': protected,
         'unmeasuredNestedChildren': [{'case': row['case'], 'exitCode': row['childExit']} for row in abrupt],
