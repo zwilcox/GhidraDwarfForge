@@ -8,15 +8,15 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 868 verified
-sessions: 211 JavaExec, 561 native-Java, 39 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 899 verified
+sessions: 211 JavaExec, 578 native-Java, 53 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,230 / 29,802 (94.7%) | 21,476 / 25,902 (82.9%) |
-| Binary and location correctness | 18,317 / 19,213 (95.3%) | 15,504 / 18,750 (82.7%) |
+| Overall | 28,316 / 29,802 (95.0%) | 21,583 / 25,902 (83.3%) |
+| Binary and location correctness | 18,355 / 19,213 (95.5%) | 15,542 / 18,750 (82.9%) |
 | File transactions and validation | 6,230 / 6,677 (93.3%) | 3,660 / 4,250 (86.1%) |
 
 The production relocation fix remains covered on all 14 changed executable
@@ -52,10 +52,46 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-windows-aarch64-partial/summary.json` in the coverage workspace, SHA-256
-`e8c60eb64e0a30d8b8a4ae0db8169fe72eb4182c18dd52cd2af85e557836044d`.
-It replaces the smaller 867-session partial baseline for current progress
+`stable-memory-windows-namespaces-partial/summary.json` in the coverage workspace, SHA-256
+`78839baa141fafe85d11f47d261caa2b1c4b4ef8c500c385857cd3676f14c4bd`.
+It replaces the smaller 868-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Refreshed instruction context, qualified types and namespace lookup
+
+**CONFIRMED, local:** five fresh measured JVMs reran the existing instruction/
+source-context pipeline against the current production JAR. Read-only saved
+program observations, byte and instruction bounds, repeated output and staged
+cancellation passed; the cached installation was restored afterward.
+
+`context-boundaries.py` now uses the standard opt-in collector for its import and
+two repeated headless runs. Its receipt is finalized only after the existing
+structural and debugger checks pass. ARM32 and both MIPS byte orders passed,
+adding nine authenticated sessions and ten compiler/Forge QEMU-GDB workflows.
+Tests cover ARM/Thumb context, full MIPS delay slots, gaps and partial bodies,
+real native decompilation failure, deterministic outputs and preserved input/
+project state. GNU/LLVM/strict validators pass with only the harness's explicitly
+corroborated compiler warnings permitted. The checked harness snapshot is
+`30db26c0`. CI and hosted cohort admission now require this suite on all three
+targets (`933306ca`); 61 existing admission tests and actionlint pass. Hosted
+execution of the new requirement remains unverified.
+
+The qualified-type producer refresh adds one current native session, with
+compiler/exported GDB type/value checks plus symbol-only and source-only output
+checks, independent validators and input preservation. The namespace/global
+refresh adds 16 native sessions across x86-64 and AArch64: eight variants each,
+cold debugger lookups, compiler/selected runtime checks, independent validators,
+artifact hash checks and restored packaged-library metadata. This refresh does
+not claim LLDB coverage or rerun historical mutation checks.
+
+Raw receipts, committed harness hashes, unchanged production bytecode and local
+admission checks passed for all four refreshes. Evidence directories are
+`context-stable-memory`, `context-boundaries-stable-memory`,
+`qualified-type-stable-memory` and `namespace-stable-memory` under the bounded
+coverage workspace. The combined 899-session report adds 86 lines and 107
+branches over the 868-session baseline, with unchanged production denominators.
+Critical-group targets, complete hosted acceptance, merge and main publication
+remain outstanding.
 
 ## AArch64 composite allocation and cancellation boundaries
 
