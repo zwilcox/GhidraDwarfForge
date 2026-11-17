@@ -653,6 +653,16 @@ LOCAL_OWNERSHIP_TEST = "ghidradwarfforge.LocalDefinitionFlowSmoke"
 LOCAL_PREFIX_TEST = "ghidradwarfforge.LaterRegisterLocalSmoke"
 LOCAL_PREFIX_ADMISSION = '        if (!(rejected instanceof UnavailableStorage unavailable) ||\n                unavailable.reason() != OmissionReason.UNKNOWN_LIFETIME ||\n                !(variable instanceof ghidra.program.model.listing.LocalVariable) ||\n                variable.getSource() != ghidra.program.model.symbol.SourceType.USER_DEFINED ||\n                variable.getProgram() != program || variable.getFunction() != function ||\n                function.getProgram() != program || variable.getFirstUseOffset() <= 0 ||\n                !variable.isValid() || !variable.hasAssignedStorage() || storage == null ||\n                storage.getProgramArchitecture() != program || !storage.isValid() ||\n                storage.isBadStorage() || storage.isForcedIndirect() || !storage.isRegisterStorage() ||\n                storage.getVarnodeCount() != 1 || register == null || variable.getLength() <= 0 ||\n                variable.getDataType().getLength() != variable.getLength() ||\n                storage.size() != variable.getLength() ||\n                register.getBitLength() != variable.getLength() * 8L ||\n                !storage.getFirstVarnode().getAddress().equals(register.getAddress()) ||\n                function.getBody().getNumAddressRanges() != 1 ||\n                !function.getEntryPoint().equals(function.getBody().getMinAddress())) {\n'
 LOCAL_OWNERSHIP_MUTANTS = [
+    ("local-definition-ignores-validity", LOCAL_OWNERSHIP, LOCAL_OWNERSHIP_TEST,
+     '!variable.isValid() || ', ""),
+    ("local-definition-ignores-assignment", LOCAL_OWNERSHIP, LOCAL_OWNERSHIP_TEST,
+     '!variable.hasAssignedStorage() || ', ""),
+    ("local-definition-ignores-type-extent", LOCAL_OWNERSHIP, LOCAL_OWNERSHIP_TEST,
+     'variable.getDataType().getLength() != variable.getLength() ||', ""),
+    ("local-definition-ignores-foreign-storage", LOCAL_OWNERSHIP, LOCAL_OWNERSHIP_TEST,
+     'storage.getProgramArchitecture() != program || ', ""),
+    ("local-definition-ignores-indirect-storage", LOCAL_OWNERSHIP, LOCAL_OWNERSHIP_TEST,
+     'storage.isForcedIndirect() || ', ""),
     ("local-prefix-ignores-validity", "ghidradwarfforge/GhidraVariableStorage.java",
      LOCAL_PREFIX_TEST, LOCAL_PREFIX_ADMISSION, LOCAL_PREFIX_ADMISSION.replace('!variable.isValid() || ', "")),
     ("local-prefix-ignores-assignment", "ghidradwarfforge/GhidraVariableStorage.java",

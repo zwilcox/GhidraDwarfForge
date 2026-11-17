@@ -8461,3 +8461,30 @@ The 1,352-session diagnostic union adds 13 branches, reaching 22,788/25,902
 overall and 16,563/18,750 binary/location branches (312 short of 90%). Line
 counts and file-operation coverage are unchanged. This mixed diagnostic union
 is not current-head hosted acceptance; PR #210 and issue #209 remain incomplete.
+
+## Register-definition metadata agreement through control flow
+
+The metadata oracle above is now shared in `RegisterLocalMetadataSmoke` and
+also called by `localDefinitionFlowSmoke` on its four real decoded diamond
+fixtures. Both parents pass: 240 metadata assertions each, 161 separate later
+ownership checks/112 later-parent checks, and 508 definition-flow parent checks
+plus its existing unreachable-definition and control-boundary children. The
+shared extraction avoids duplicating the admission oracle. The definition
+suite retains its independent join, loop, bypass, available-range and input
+preservation assertions.
+
+Guarded `laterRegisterLocalSmoke localDefinitionFlowSmoke` passes in six seconds.
+Five separately compiled faults in `RegisterDefinitionFlow` are detected by
+behavioral assertions (validity, assignment, type extent, foreign storage and
+indirect storage); the unchanged baseline passes, total 15.301 seconds. Production
+code and bytecode remain unchanged.
+
+Evidence: `.forge-work/scratch/register-definition-metadata.log`,
+`register-definition-metadata-mutants/result.json`, and
+`coverage-recovery/register-definition-metadata/`. Raw SHA-256:
+`653822af4953532a36cd71cef3697674122adb46fc48e983c09b73ae64cb913e`.
+Source hashes and the unique session addition verify. The 1,353-session diagnostic
+union adds 13 further branches, reaching 22,801/25,902 overall and 16,576/18,750
+binary/location branches (299 short of 90%); all 255 production sources remain
+included. Line and file-operation counters are unchanged. Current-head hosted
+acceptance, protected merge and main publication are still required.

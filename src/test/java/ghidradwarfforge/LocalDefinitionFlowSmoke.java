@@ -193,6 +193,8 @@ public final class LocalDefinitionFlowSmoke {
     private static void ownership(ProgramDB program, Function function, LocalVariable local,
             TargetRegisterMap map, Storage rejected, List<GhidraVariableStorage.StorageInterval> expected)
             throws Exception {
+        RegisterLocalMetadataSmoke.check(program, function, local, expected,
+            (owner, value) -> RegisterDefinitionFlow.prove(program, owner, value, map, rejected, TaskMonitor.DUMMY));
         var register = local.getRegister();
         var base = register.getBaseRegister();
         int firstUse = local.getFirstUseOffset();
