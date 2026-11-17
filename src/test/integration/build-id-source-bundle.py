@@ -138,8 +138,14 @@ def main():
         result_dir.mkdir()
         options = ['set pagination off', 'set confirm off', 'set debuginfod enabled off',
             'set auto-solib-add off', 'set disable-randomization off',
-            'set substitute-path ' + json.dumps(str(export)) + ' ' + json.dumps(str(work / 'unavailable-export')),
-            'set debug-file-directory ' + str(debug), 'file ' + json.dumps(str(original))]
+            'set debug-file-directory ' + str(debug)]
+        if source is not None:
+            # GDB applies the first matching substitution. A retained generation
+            # may live below the export fixture root; preserve that more specific
+            # directory while making fallback to the old export sources fail.
+            options.append('set substitute-path ' + json.dumps(str(source.parent)) + ' ' + json.dumps(str(source.parent)))
+        options += ['set substitute-path ' + json.dumps(str(export)) + ' ' + json.dumps(str(work / 'unavailable-export')),
+            'file ' + json.dumps(str(original))]
         if source is None:
             options += ['python assert gdb.find_pc_line(int(gdb.parse_and_eval("&recovered_first"))).symtab is None',
                 'echo NO_INSTALLED_SOURCE_PASS\\n']
