@@ -9015,3 +9015,33 @@ branches, 1,374 sessions. Overall 28,937/29,802 lines and 22,959/25,902 branches
 binary/location critical 16,734/18,750 branches, 141 short of 90%. Full unchanged
 255-source scope and authenticated JAR; file counts unchanged. No production
 changes. Hosted acceptance, protected merge and actual-main publication pending.
+
+### Conservative conditional call-site effects (2026-11-17)
+
+CONFIRMED: CallTransferContractsSmoke now exercises callSiteEffects using
+read-only raw-p-code views around actual x86-64/AArch64 decoded calls. Both
+constant intra-instruction targets and decoded fallthrough targets are checked
+for BRANCH/CBRANCH: conditional COPY, LOAD and pure arithmetic kill the exact
+physical register span. Missing output, memory output, STORE and unsupported
+wide cells yield opaque effects. Trailing machine-branch effects and missing/
+oversized p-code are refused; the exact 4,096-operation budget is accepted.
+Original decoded bytes and program modification number remain unchanged.
+
+Guarded callSiteEvidenceSmoke passes in 6 seconds with its existing 527 parent
+checks plus these new cases. Five cancellation checkpoints are exercised, then
+a clean retry matches the expected effects. The initial counting monitor used
+isCancelled, which did not observe checkCancelled calls; it was corrected to
+override checkCancelled and assert a positive checkpoint count before reporting
+cancellation coverage. No production behavior changed.
+
+Two compiled faults detected in 8.230 seconds: retaining a conditional output's
+old identity and accepting effects after a machine branch. Evidence:
+`.forge-work/scratch/call-conditional-effects-final.log` and
+`.forge-work/scratch/call-conditional-mutants/result.json`.
+
+Verified diagnostic call-conditional-effects adds one line and six branches,
+1,375 sessions, all 255 sources and the unchanged authenticated JAR. Overall:
+28,938/29,802 lines and 22,965/25,902 branches. Binary/location critical:
+18,681/19,213 lines and 16,740/18,750 branches, 135 short of 90%. File counts
+remain unchanged. This historical/local union is diagnostic; fresh hosted
+acceptance, protected merge and actual-main publication remain outstanding.

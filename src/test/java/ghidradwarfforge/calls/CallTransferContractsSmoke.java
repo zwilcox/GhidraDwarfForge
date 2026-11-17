@@ -20,6 +20,8 @@ import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.elf.ElfCodeBytes;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.elf.ElfRelocationEffects;
+import ghidradwarfforge.unwind.GhidraUnwindInstructions;
+import ghidradwarfforge.unwind.UnwindFlow;
 
 /** Raw transfer consistency around real decode/ELF bytes; no call-site emission claim. */
 final class CallTransferContractsSmoke {
@@ -117,7 +119,88 @@ final class CallTransferContractsSmoke {
             }
             System.out.println("call-transfer-contracts=PASS kind=" + baseline.kind() + " cases=" + cases.size());
             metadata(program, instruction, elf, effects, delta, baseline);
+            if (transfer.getOpcode() == PcodeOp.CALL) effectContracts(program, instruction, cell, target);
         }
+    }
+
+    private static void effectContracts(Program program, Instruction instruction, Varnode register, Varnode target)
+            throws Exception {
+        long modification = program.getModificationNumber();
+        byte[] original = instruction.getParsedBytes();
+        var address = instruction.getAddress();
+        var constant = program.getAddressFactory().getConstantSpace();
+        var local = new Varnode(constant.getAddress(1), 4);
+        var internal = new PcodeOp(address, 0, PcodeOp.CBRANCH, new Varnode[] {local, register}, null);
+        var copy = new PcodeOp(address, 1, PcodeOp.COPY, new Varnode[] {register}, register);
+        var expected = List.<UnwindFlow.Effect>of(new UnwindFlow.Kill(
+            new UnwindFlow.Cell(UnwindFlow.Bank.REGISTER, register.getOffset(), register.getSize())));
+        for (var destination : List.of(local, new Varnode(instruction.getDefaultFallThrough(), 8))) {
+            for (int opcode : new int[] {PcodeOp.BRANCH, PcodeOp.CBRANCH}) {
+                var branch = new PcodeOp(address, 0, opcode,
+                    opcode == PcodeOp.BRANCH ? new Varnode[] {destination} : new Varnode[] {destination, register}, null);
+                for (int operation : new int[] {PcodeOp.COPY, PcodeOp.LOAD, PcodeOp.INT_MULT}) {
+                    var output = new PcodeOp(address, 1, operation, new Varnode[] {register, register}, register);
+                    var actual = GhidraUnwindInstructions.callSiteEffects(program,
+                        rawView(instruction, new PcodeOp[] {branch, output}), TaskMonitor.DUMMY);
+                    require(actual.equals(expected), "conditional output must kill its physical span: " + actual);
+                }
+            }
+        }
+        var machine = new PcodeOp(address, 0, PcodeOp.BRANCH, new Varnode[] {target}, null);
+        effectOmitted(program, instruction, new PcodeOp[] {machine, copy}, "machine branch has trailing effects");
+        effectOmitted(program, instruction, null, "missing or unbounded raw p-code");
+        var excessive = new PcodeOp[4097];
+        Arrays.fill(excessive, copy);
+        effectOmitted(program, instruction, excessive, "missing or unbounded raw p-code");
+        var exact = Arrays.copyOf(excessive, 4096);
+        require(GhidraUnwindInstructions.callSiteEffects(program, rawView(instruction, exact), TaskMonitor.DUMMY).size() == 4096,
+            "exact operation budget was dropped");
+        for (var output : new PcodeOp[] {
+                new PcodeOp(address, 1, PcodeOp.COPY, new Varnode[] {register}, null),
+                new PcodeOp(address, 1, PcodeOp.COPY, new Varnode[] {register}, new Varnode(address, 8)),
+                new PcodeOp(address, 1, PcodeOp.STORE, new Varnode[] {register, register, register}, null)}) {
+            effectOmitted(program, instruction, new PcodeOp[] {internal, output},
+                "conditional instruction has unproved memory/control effects");
+        }
+        var wide = new PcodeOp(address, 1, PcodeOp.COPY, new Varnode[] {register}, new Varnode(register.getAddress(), 16));
+        var refused = GhidraUnwindInstructions.callSiteEffects(program,
+            rawView(instruction, new PcodeOp[] {internal, wide}), TaskMonitor.DUMMY);
+        require(refused.size() == 1 && refused.getFirst() instanceof UnwindFlow.Opaque,
+            "unsupported conditional cell was retained as ordinary facts");
+        var selected = rawView(instruction, new PcodeOp[] {internal, copy});
+        int[] polls = {0};
+        var counting = new ghidra.util.task.TaskMonitorAdapter(true) {
+            @Override public void checkCancelled() { polls[0]++; }
+        };
+        require(GhidraUnwindInstructions.callSiteEffects(program, selected, counting).equals(expected), "counted effects differ");
+        require(polls[0] > 1, "conditional effect cancellation checkpoints were not observed");
+        for (int stop = 1; stop <= polls[0]; stop++) {
+            int at = stop;
+            int[] seen = {0};
+            var cancelled = new ghidra.util.task.TaskMonitorAdapter(true) {
+                @Override public void checkCancelled() throws ghidra.util.exception.CancelledException {
+                    if (++seen[0] == at) throw new ghidra.util.exception.CancelledException();
+                }
+            };
+            try {
+                GhidraUnwindInstructions.callSiteEffects(program, selected, cancelled);
+                throw new AssertionError("conditional effect capture ignored cancellation");
+            }
+            catch (ghidra.util.exception.CancelledException expectedCancellation) {
+                require(seen[0] == at, "conditional effect cancellation was delayed");
+            }
+        }
+        require(GhidraUnwindInstructions.callSiteEffects(program, selected, TaskMonitor.DUMMY).equals(expected),
+            "cancelled capture poisoned retry");
+        require(program.getModificationNumber() == modification && Arrays.equals(original, instruction.getParsedBytes()),
+            "effect observation changed the program");
+        System.out.println("call-conditional-effects=PASS cancellation=" + polls[0]);
+    }
+
+    private static void effectOmitted(Program program, Instruction instruction, PcodeOp[] operations, String reason)
+            throws Exception {
+        require(GhidraUnwindInstructions.callSiteEffects(program, rawView(instruction, operations), TaskMonitor.DUMMY)
+            .equals(List.of(new UnwindFlow.Opaque(reason))), "incorrect conservative raw-effect omission: " + reason);
     }
 
     private static void metadata(Program program, Instruction instruction, ElfCodeBytes elf,
