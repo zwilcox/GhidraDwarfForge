@@ -7038,3 +7038,31 @@ operations remain 6,502/6,677 lines and 3,775/4,250 branches (50 short). Raw
 execution/test-source hashes and exact manifest extension verified. Historical
 cohorts remain; this is not hosted acceptance for the current head. Evidence:
 `.forge-work/scratch/coverage-recovery/mips-o32-metadata/`.
+
+### Callee stack-relative arithmetic limits (#209)
+
+Acceptance: decoded stack-relative writes at representable signed boundaries
+retain their exact ranges; addition/subtraction and write-end overflow are refused
+without a wrapped summary or an exception escaping. Added eight real decoded
+x86-32/x86-64 cases to `CallMemoryEffectsBoundarySmoke`: minimum offsets,
+maximum representable byte range, overflowing write end, positive/negative affine
+overflow and subtraction of the most-negative offset. These symbolic proof
+fixtures are not executable host-pointer tests. Existing checks cover immediate
+cancellation, reversed instruction enumeration, missing/duplicate instructions,
+and unchanged machine bytes and saved program state.
+
+Guarded `./gradlew --no-daemon callMemoryEffectsSmoke` passed: 50 boundary cases,
+525 boundary assertions and 165 parent assertions, 5 seconds. Four compiled
+faults (unchecked add, subtract, write end, and rejecting valid negative offsets)
+were detected by Java assertions; baseline and production source hash verified,
+12.727 seconds. No production changes. Evidence:
+`.forge-work/scratch/call-memory-affine-limits-final.log` and
+`.forge-work/scratch/call-memory-affine-mutants/result.json`.
+
+Verified diagnostic `coverage-recovery/call-memory-affine-limits/` contains
+1,408 unique sessions against unchanged JAR58bd, 255 sources/901 classes. This
+addition increases neither line nor branch counters; exception edges are not
+JaCoCo branches. Overall remains 28,859/29,802 lines and 22,346/25,902 branches;
+binary/location remains 698 branch outcomes short of 90%, file operations 50
+short. This is useful boundary/fault detection, not a coverage-percentage gain.
+Historical cohorts remain; current-head hosted acceptance is outstanding.

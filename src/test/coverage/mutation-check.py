@@ -797,6 +797,14 @@ CALL_PARAMETERS_MUTANTS = [
 ]
 
 CALL_MEMORY_MUTANTS = [
+    ("call-memory-wraps-affine-addition", CALL_MEMORY, CALL_MEMORY_TEST,
+     "Math.addExact(left.offset(), right.offset())", "(left.offset() + right.offset())"),
+    ("call-memory-wraps-affine-subtraction", CALL_MEMORY, CALL_MEMORY_TEST,
+     "Math.subtractExact(left.offset(), right.offset())", "(left.offset() - right.offset())"),
+    ("call-memory-wraps-write-end", CALL_MEMORY, CALL_MEMORY_TEST,
+     "Math.addExact(destination, operation.getInput(2).getSize())", "(destination + operation.getInput(2).getSize())"),
+    ("call-memory-rejects-negative-affine-offset", CALL_MEMORY, CALL_MEMORY_TEST,
+     "return fits(result, width) ?", "return result >= 0 && fits(result, width) ?"),
     ("call-memory-accepts-absolute-store", CALL_MEMORY, CALL_MEMORY_TEST,
      "address != null && address.stack() ? address.offset() : null",
      "address != null ? address.offset() : null"),

@@ -1,6 +1,8 @@
 package ghidradwarfforge;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -80,7 +82,13 @@ public final class CallMemoryEffectsBoundarySmoke {
             var counter = new TaskMonitorAdapter(true) {
                 @Override public void checkCancelled() { visits[0]++; }
             };
-            var actual = CallMemoryEffects.summarize(program, entry, instructions, Map.of(), Map.of(), counter);
+            CallMemoryEffects.Summary actual;
+            try {
+                actual = CallMemoryEffects.summarize(program, entry, instructions, Map.of(), Map.of(), counter);
+            }
+            catch (RuntimeException invalid) {
+                throw new AssertionError(label + " unrepresentable effects must be refused without crashing", invalid);
+            }
             require(Objects.equals(actual, expected), label + " exact effects: expected=" + expected + " actual=" + actual);
             var reversed = new ArrayList<>(instructions);
             Collections.reverse(reversed);
@@ -208,6 +216,25 @@ public final class CallMemoryEffectsBoundarySmoke {
             // test rdi, rdi; jz 1f; mov rax, rsp; add rax, 16; jmp 2f; 1: mov rax, rsp; add rax, 24; 2: mov BYTE PTR [rax], 0; ret
             new Fixture("x86:LE:64:default", "join-conflicts",
                 "4885ff74094889e04883c010eb074889e04883c018c60000c3", null, 8),
+            // movabs rdx, offset; mov rax, rsp; add rax, rdx;
+            // optional adjustment; mov BYTE PTR [rax], 0; ret.
+            // These are symbolic stack-relative limits, not runnable host pointers.
+            new Fixture("x86:LE:64:default", "lowest-relative-byte",
+                offsetStore(Long.MIN_VALUE, ""), Long.MIN_VALUE, 8),
+            new Fixture("x86:LE:64:default", "highest-representable-byte-range",
+                offsetStore(Long.MAX_VALUE - 1, ""), Long.MAX_VALUE - 1, 8),
+            new Fixture("x86:LE:64:default", "write-end-overflow",
+                offsetStore(Long.MAX_VALUE, ""), null, 8),
+            new Fixture("x86:LE:64:default", "positive-affine-overflow",
+                offsetStore(Long.MAX_VALUE, "4883c001"), null, 8),
+            new Fixture("x86:LE:64:default", "negative-affine-overflow",
+                offsetStore(Long.MIN_VALUE, "4883e801"), null, 8),
+            new Fixture("x86:LE:64:default", "largest-negative-subtraction",
+                "48ba00000000000000804889e04829d0c60000c3", null, 8),
+            new Fixture("x86:LE:32:default", "lowest-relative-byte",
+                "ba0000008089e001d0c60000c3", (long) Integer.MIN_VALUE, 4),
+            new Fixture("x86:LE:32:default", "negative-affine-overflow",
+                "ba0000008089e001d083e801c60000c3", null, 4),
             // mov x0, sp; add x0, x0, #16; strb wzr, [x0]; ret
             new Fixture("AARCH64:LE:64:v8A", "copy-sp",
                 "e0030091004000911f000039c0035fd6", 16L, 0),
@@ -251,6 +278,11 @@ public final class CallMemoryEffectsBoundarySmoke {
             new Fixture("AARCH64:LE:64:v8A", "join-conflicts",
                 "620000b4e043009102000014e06300911f000039c0035fd6", null, 0)
         );
+    }
+
+    private static String offsetStore(long offset, String adjustment) {
+        String immediate = HexFormat.of().formatHex(ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(offset).array());
+        return "48ba" + immediate + "4889e04801d0" + adjustment + "c60000c3";
     }
 
     private static void require(boolean condition, String message) {
