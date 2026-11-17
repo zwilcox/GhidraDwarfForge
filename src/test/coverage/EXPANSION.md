@@ -6,6 +6,42 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Firmware capture consistency and original-file provenance
+
+The existing `ghidraFirmwareMemoryMapSmoke` task now invokes 21 additional
+assertions using real ProgramDB/FileBytes, a 131,073-byte mapped region and
+nonzero import/source offsets. The exact file span and whole-input SHA-256 are
+independently checked. Analysis-byte edits immediately before/after a 64 KiB
+boundary and in the final chunk are refused. Duplicate FileBytes, duplicate
+logical input IDs, foreign FileBytes and a one-byte-short original extent are
+also refused; restoring the explicit edits restores the exact captured map.
+
+A monitor calibrated from the unchanged capture injects an edit to an unmapped
+input byte immediately before the second digest pass. The final whole-input
+comparison must refuse it. A separate edit changes block permissions at the
+last capture cancellation poll; the program modification check must refuse it
+without undoing the analyst edit. These are deterministic consistency controls,
+not claims of an atomic snapshot or exhaustive concurrent-filesystem protection.
+The caller's pre-publication consistency obligation remains unchanged.
+
+The guarded Gradle task passes these 21 assertions and the original 20 checks.
+Four compiled faults are caught by behavioral assertions: ignoring the final
+input mismatch while still reading its digest, ignoring a program modification,
+dropping the import file offset, and trusting altered analysis bytes. Baseline
+passes. The first fixture attempt had a one-byte-short FileBytes range and was
+rejected by Ghidra before capture; that setup failure is not credited as passing
+validation. The corrected fixture crosses the intended chunk boundary.
+
+Evidence: `.forge-work/scratch/firmware-capture-consistency-second.log`,
+`firmware-capture-consistency-mutants/result.json`, and
+`coverage-recovery/firmware-capture-consistency/`. The verified diagnostic union
+has 1,395 sessions, 901 unchanged production classes and all 255 production
+sources. It gains five lines and six branches: overall 28,843/29,802 lines and
+22,199/25,902 branches; critical binary/location 18,606/19,213 lines and
+16,030/18,750 branches (845 short of 90%). File operations remain 50 branches
+short. Historical cohorts remain, so full current-head hosted acceptance is
+still pending. Production and emitted artifacts are unchanged.
+
 ## ARM floating-aggregate admission and exact classification bounds
 
 The existing `armHfaParameterAllocationSmoke` now runs 226 additional assertions
