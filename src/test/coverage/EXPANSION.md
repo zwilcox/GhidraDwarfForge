@@ -31,6 +31,19 @@ Evidence: `switch-partial-index-test.log`, `switch-partial-index-mutations/`, an
 `coverage-recovery/switch-partial-index/` under guarded scratch. Production code
 is unchanged and current hosted validation remains pending.
 
+Five further switch guard shapes use a register bound, stale flags, a signed
+comparison, an index-changing subtraction, or an unproved memory bound. The
+original and rebased forms are refused at their appropriate proof stages and
+preserve the original ELF. The full suite passes 116 cases/1,041 checks and adds
+one line/five branches to the historical diagnostic cohort. Initial diagnostic
+expectations for the signed and destructive guards were too late in the proof;
+both were corrected to the observed earlier refusals. A proposed mutation of
+the later index-overwrite guard was discarded: the unchanged-source baseline
+failed the stale expectation, and the final fixture never reaches that guard.
+No mutation detection is claimed for this batch. Evidence: guarded scratch
+`switch-guard-input-test-final.log`, `switch-guard-input-mutations.log` (failed
+baseline), and `coverage-recovery/switch-guard-inputs/`.
+
 ## Request admission and stack controls awaiting hosted measurement
 
 Build-ID lock publication tests now cover an absent destination after a failed

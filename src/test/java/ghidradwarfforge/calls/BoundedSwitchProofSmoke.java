@@ -40,7 +40,8 @@ public final class BoundedSwitchProofSmoke {
             "conflicting-read", "byte-index", "word-index", "wide-index", "strict-less", "zero-limit", "max-limit", "excess-limit",
             "window-limit", "window-excess", "data-reference", "guard-flow", "guard-interior-flow", "negative-target", "interior-target",
             "no-owner", "function-entry", "missing-branch", "flow-override", "length-override", "fallthrough-override",
-            "unknown-addend", "unknown-byte-overwrite", "unknown-word-overwrite", "high-byte-index");
+            "unknown-addend", "unknown-byte-overwrite", "unknown-word-overwrite", "high-byte-index",
+            "register-bound", "stale-flags", "signed-bound", "destructive-guard", "memory-bound");
         for (long delta : List.of(0L, 0x400000L)) for (String shape : shapes) check(shape, delta, output);
         System.out.println("bounded-switch-proof=PASS cases=" + shapes.size() * 2 + " checks=" + checks);
     }
@@ -213,6 +214,9 @@ public final class BoundedSwitchProofSmoke {
                         case "missing-branch" -> "undecoded dispatch instruction";
                         case "flow-override", "length-override", "fallthrough-override" -> "unsupported switch instruction override/context";
                         case "unknown-addend", "unknown-byte-overwrite", "unknown-word-overwrite" -> "table address depends on unbounded state";
+                        case "register-bound", "stale-flags", "destructive-guard" -> "unsigned finite guard bound is unavailable";
+                        case "signed-bound" -> "guard does not establish a bounded fallthrough";
+                        case "memory-bound" -> "guard has unmodeled p-code effects";
                         default -> null;
                     };
                     if (diagnostic != null) require(rejected.getMessage().contains(diagnostic),
@@ -254,6 +258,11 @@ public final class BoundedSwitchProofSmoke {
             case "zero-limit" -> guard = "83ff0077";
             case "max-limit" -> guard = "81ffff00000077";
             case "excess-limit" -> guard = "81ff0001000077";
+            case "register-bound" -> guard = "39f777"; // CMP EDI,ESI; the upper bound is not known.
+            case "stale-flags" -> guard = "bf0100000077"; // MOV EDI,1 leaves the branch flags unproved.
+            case "signed-bound" -> guard = "83ff017f"; // CMP EDI,1; JG does not bound negative indices.
+            case "destructive-guard" -> guard = "83ef0177"; // SUB EDI,1 changes the value whose flags are tested.
+            case "memory-bound" -> guard = "3b3e77"; // CMP EDI,[RSI] depends on unproved memory.
             default -> { if (arithmetic.isEmpty()) return null; }
         }
         byte[] result = HexFormat.of().parseHex(guard + "00" + index + arithmetic + "ff24fd00200000");
