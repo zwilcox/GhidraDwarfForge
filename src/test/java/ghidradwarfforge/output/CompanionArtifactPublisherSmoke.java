@@ -9,6 +9,7 @@ import java.util.concurrent.CancellationException;
 
 public final class CompanionArtifactPublisherSmoke {
     public static void main(String[] args) throws Exception {
+        CompanionPublicationFailureSmoke.main(args);
         Path root = Files.createTempDirectory("forge-companion-publisher-");
         try {
             for (boolean existing : List.of(false, true)) {

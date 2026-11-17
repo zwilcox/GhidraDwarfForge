@@ -4,29 +4,26 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Objects;
 
-/** Filesystem fault injection with byte and exception-identity oracles. */
+/** Real owned-filesystem changes at observation, installation and cleanup boundaries. */
 public final class CompanionPublicationFailureSmoke {
-    private static int cases;
-
-    private CompanionPublicationFailureSmoke() { }
+    private static int checks;
 
     public static void main(String[] args) throws Exception {
-        Path root = Files.createTempDirectory("forge-publication-failures-");
+        Path root = Files.createTempDirectory("forge-companion-failures-");
         try {
-            preflight(root);
-            invalidStages(root);
-            cleanupFailure(root, false);
-            cleanupFailure(root, true);
-            observationChange(root);
-            symbolicOutputs(root);
-            for (boolean existing : List.of(false, true)) cancellation(root, existing);
-            System.out.println("companion-publication-failures=PASS cases=" + cases);
+            for (String change : List.of("identity", "size", "timestamp")) observationRace(root, change);
+            for (boolean directory : List.of(false, true)) changedDestination(root, directory);
+            missingStageAfterBackup(root);
+            committedCleanupFailure(root);
+            System.out.println("companion-publication-failures=PASS checks=" + checks);
         }
         finally {
             try (var paths = Files.walk(root)) {
@@ -35,209 +32,185 @@ public final class CompanionPublicationFailureSmoke {
         }
     }
 
-    private static void preflight(Path root) throws Exception {
-        Path dir = Files.createDirectory(root.resolve("preflight"));
-        Path input = Files.writeString(dir.resolve("input"), "original");
-        List<Path> outputs = outputs(dir);
-        Path elsewhere = Files.createDirectory(dir.resolve("elsewhere"));
-        Path directoryOutput = Files.createDirectory(dir.resolve("directory-output"));
-        var selections = List.of(outputs.subList(0, 2),
-            List.of(outputs.get(0), outputs.get(1), outputs.get(2), dir.resolve("four"), dir.resolve("five"), dir.resolve("six")),
-            List.of(outputs.get(0), outputs.get(1), elsewhere.resolve("companion")),
-            List.of(outputs.get(0), outputs.get(1), directoryOutput));
-        for (List<Path> selected : selections) {
-            refuse(() -> CompanionArtifactPublisher.stageAndPublish(input, selected,
-                stages -> { throw new AssertionError("writer ran after invalid preflight"); }, () -> { }));
-            noStages(dir);
+    private record Saved(byte[] bytes, Object key, FileTime modified) {
+        static Saved read(Path path) throws IOException {
+            var attributes = Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+            return new Saved(Files.readAllBytes(path), attributes.fileKey(), attributes.lastModifiedTime());
         }
-        for (Path invalidInput : List.of(dir.resolve("missing"), elsewhere)) {
-            refuse(() -> CompanionArtifactPublisher.stageAndPublish(invalidInput, outputs,
-                stages -> { throw new AssertionError("writer ran without a regular input"); }, () -> { }));
-        }
-        Path unrelated = Files.writeString(dir.resolve("unrelated"), "protected");
-        CompanionArtifactPublisher.validate(input, outputs, unrelated);
-        require(Files.readString(unrelated).equals("protected"), "validation changed unrelated input");
-        require(Files.readString(input).equals("original"), "preflight changed original");
-        require(outputs.stream().noneMatch(Files::exists), "preflight left outputs");
-    }
 
-    private static void invalidStages(Path root) throws Exception {
-        for (String kind : List.of("missing", "directory", "symlink")) {
-            Path dir = Files.createDirectory(root.resolve("invalid-" + kind));
-            Path input = Files.writeString(dir.resolve("input"), "original");
-            List<Path> outputs = outputs(dir);
-            seed(outputs);
-            refuse(() -> CompanionArtifactPublisher.stageAndPublish(input, outputs, stages -> {
-                write(stages);
-                Files.delete(stages.get(1));
-                switch (kind) {
-                    case "directory" -> Files.createDirectory(stages.get(1));
-                    case "symlink" -> Files.createSymbolicLink(stages.get(1), input);
-                    default -> { }
-                }
-            }, () -> { }));
-            previous(outputs, true);
-            require(Files.readString(input).equals("original"), "invalid stage modified input");
-            noStages(dir);
+        void unchanged(Path path) throws IOException {
+            check(Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS),
+                "publication lost protected file: " + path.getFileName());
+            var actual = read(path);
+            check(Arrays.equals(bytes, actual.bytes) && Objects.equals(key, actual.key) && modified.equals(actual.modified),
+                "publication changed protected bytes, identity or timestamp: " + path.getFileName());
         }
     }
 
-    private static void cleanupFailure(Path root, boolean installed) throws Exception {
-        Path dir = Files.createDirectory(root.resolve("cleanup-" + installed));
-        Path input = Files.writeString(dir.resolve("input"), "original");
-        List<Path> outputs = outputs(dir);
-        seed(outputs);
-        IOException primary = new IOException("injected writer failure");
-        Path[] obstruction = { null };
+    private record Fixture(Path root, Path original, List<Path> outputs, Saved input, List<Saved> prior) {
+        static Fixture create(Path root) throws IOException {
+            Files.createDirectory(root);
+            Path original = Files.writeString(root.resolve("original"), "original executable sentinel");
+            var outputs = new ArrayList<Path>();
+            var prior = new ArrayList<Saved>();
+            for (String name : List.of("sidecar", "source", "loader")) {
+                Path path = Files.writeString(root.resolve(name), "old " + name);
+                Files.setLastModifiedTime(path, FileTime.fromMillis(1700000000000L));
+                outputs.add(path);
+                prior.add(Saved.read(path));
+            }
+            return new Fixture(root, original, List.copyOf(outputs), Saved.read(original), List.copyOf(prior));
+        }
+
+        void unchanged() throws IOException {
+            input.unchanged(original);
+            for (int i = 0; i < outputs.size(); i++) prior.get(i).unchanged(outputs.get(i));
+        }
+
+        void noStages(int expectedEntries) throws IOException {
+            try (var paths = Files.list(root)) {
+                check(paths.count() == expectedEntries, "disposable generation files leaked");
+            }
+        }
+    }
+
+    private static void write(List<Path> stages) throws IOException {
+        for (int i = 0; i < stages.size(); i++) Files.writeString(stages.get(i), "new generation " + i);
+    }
+
+    private static void observationRace(Path root, String change) throws Exception {
+        var fixture = Fixture.create(root.resolve("observed-" + change));
+        Path output = fixture.outputs.getFirst();
+        int[] polls = {0};
+        boolean[] changed = {false};
+        Saved[] concurrent = {null};
         try {
-            CompanionArtifactPublisher.stageAndPublish(input, outputs, stages -> {
-                write(stages);
-                if (!installed) {
-                    Files.delete(stages.get(1));
-                    Files.createDirectory(stages.get(1));
-                    obstruction[0] = Files.writeString(stages.get(1).resolve("keep"), "recovery witness");
-                    throw primary;
-                }
-            }, () -> { }, index -> {
-                if (installed && index == 2) {
-                    try (var paths = Files.list(dir)) {
-                        Path recovery = paths.filter(path -> path.getFileName().toString().startsWith(".forge-generation-") &&
-                            Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)).findFirst().orElseThrow();
-                        obstruction[0] = Files.writeString(recovery.resolve("keep"), "recovery witness");
+            CompanionArtifactPublisher.stageAndPublish(fixture.original, fixture.outputs,
+                stages -> { throw new AssertionError("writer ran after unstable output observation"); }, () -> {
+                    // observe's check precedes its metadata read; FileDigests' first check
+                    // follows that read, before it opens the file. No timing/thread race.
+                    if (++polls[0] != 2) return;
+                    switch (change) {
+                        case "identity" -> {
+                            Files.move(output, fixture.root.resolve("concurrent-old-inode"));
+                            Files.write(output, fixture.prior.getFirst().bytes);
+                            Files.setLastModifiedTime(output, fixture.prior.getFirst().modified);
+                            check(!Objects.equals(Saved.read(output).key, fixture.prior.getFirst().key),
+                                "identity fixture did not replace its inode");
+                        }
+                        case "size" -> {
+                            Files.writeString(output, "a longer concurrent output");
+                            Files.setLastModifiedTime(output, fixture.prior.getFirst().modified);
+                        }
+                        case "timestamp" -> Files.setLastModifiedTime(output, FileTime.fromMillis(1700000002000L));
+                        default -> throw new AssertionError(change);
                     }
+                    concurrent[0] = Saved.read(output);
+                    changed[0] = true;
+                });
+            throw new AssertionError("unstable output observation was accepted: " + change);
+        }
+        catch (IOException expected) {
+            check(changed[0] && expected.getMessage().contains("changed while observing"), "wrong observation rejection");
+            check(expected.getSuppressed().length == 0, "observation rejection attempted publication cleanup");
+        }
+        concurrent[0].unchanged(output);
+        fixture.input.unchanged(fixture.original);
+        for (int i = 1; i < fixture.outputs.size(); i++) fixture.prior.get(i).unchanged(fixture.outputs.get(i));
+        if (change.equals("identity")) fixture.prior.getFirst().unchanged(fixture.root.resolve("concurrent-old-inode"));
+        fixture.noStages(change.equals("identity") ? 5 : 4);
+    }
+
+    private static void changedDestination(Path root, boolean directory) throws Exception {
+        var fixture = Fixture.create(root.resolve("changed-destination-" + directory));
+        Path changed = fixture.outputs.get(1);
+        Saved[] concurrent = {null};
+        try {
+            CompanionArtifactPublisher.stageAndPublish(fixture.original, fixture.outputs, stages -> {
+                write(stages);
+                if (directory) {
+                    Files.delete(changed);
+                    Files.createDirectory(changed);
+                    Files.writeString(changed.resolve("user-file"), "concurrent directory contents");
+                }
+                else {
+                    Files.writeString(changed, "new source"); // Same size as the selected old source.
+                    Files.setLastModifiedTime(changed, fixture.prior.get(1).modified);
+                    concurrent[0] = Saved.read(changed);
+                }
+            }, () -> { });
+            throw new AssertionError("concurrent destination was overwritten");
+        }
+        catch (IOException expected) {
+            check(expected.getMessage().contains(directory ? "not a regular file" : "changed concurrently"),
+                "wrong concurrent destination rejection");
+            check(expected.getSuppressed().length == 0, "early refusal left incomplete cleanup");
+        }
+        if (directory) check(Files.readString(changed.resolve("user-file")).equals("concurrent directory contents"),
+            "concurrent directory contents were lost");
+        else concurrent[0].unchanged(changed);
+        fixture.input.unchanged(fixture.original);
+        fixture.prior.get(0).unchanged(fixture.outputs.get(0));
+        fixture.prior.get(2).unchanged(fixture.outputs.get(2));
+        fixture.noStages(4);
+    }
+
+    private static void missingStageAfterBackup(Path root) throws Exception {
+        var fixture = Fixture.create(root.resolve("missing-stage"));
+        var stages = new ArrayList<Path>();
+        boolean[] removed = {false};
+        try {
+            CompanionArtifactPublisher.stageAndPublish(fixture.original, fixture.outputs, selected -> {
+                stages.addAll(selected);
+                write(selected);
+            }, () -> { }, index -> {
+                if (index == 0) {
+                    Files.delete(stages.get(1));
+                    removed[0] = true;
                 }
             });
-            throw new AssertionError("cleanup failure was hidden");
+            throw new AssertionError("missing stage was accepted");
         }
-        catch (IOException observed) {
-            if (installed) {
-                require(observed.getMessage().startsWith("generation installed but staging cleanup failed"),
-                    "installed generation incorrectly reported as rolled back");
-                require(observed.getCause() instanceof java.nio.file.DirectoryNotEmptyException,
-                    "missing cleanup cause");
-            }
-            else {
-                require(observed == primary, "cleanup replaced primary error");
-                require(Arrays.stream(observed.getSuppressed()).anyMatch(java.nio.file.DirectoryNotEmptyException.class::isInstance),
-                    "missing suppressed cleanup failure");
-            }
+        catch (java.nio.file.NoSuchFileException expected) {
+            check(removed[0], "missing stage fixture did not reach partial installation");
+            check(expected.getSuppressed().length == 0, "backup restoration failed after missing stage");
         }
-        if (installed) current(outputs); else previous(outputs, true);
-        require(Files.readString(input).equals("original"), "cleanup changed original");
-        require(Files.readString(obstruction[0]).equals("recovery witness"), "cleanup removed unrelated witness");
-        cases++;
+        fixture.unchanged();
+        fixture.noStages(4);
     }
 
-    private static void observationChange(Path root) throws Exception {
-        Path dir = Files.createDirectory(root.resolve("observation"));
-        Path input = Files.writeString(dir.resolve("input"), "original");
-        List<Path> outputs = outputs(dir);
-        seed(outputs);
-        AtomicInteger checks = new AtomicInteger();
-        // First callback observes the path; the second runs after metadata was read,
-        // immediately before FileDigests opens the same file. No timing race/thread.
-        refuse(() -> CompanionArtifactPublisher.stageAndPublish(input, outputs,
-            stages -> { throw new AssertionError("writer ran after inconsistent observation"); }, () -> {
-                if (checks.incrementAndGet() == 2) Files.writeString(outputs.get(0), "concurrent larger user value");
-            }));
-        require(Files.readString(outputs.get(0)).equals("concurrent larger user value"), "concurrent value overwritten");
-        require(Files.readString(outputs.get(1)).equals("old-1") && Files.readString(outputs.get(2)).equals("old-2"),
-            "other generation members changed");
-        require(Files.readString(input).equals("original"), "observation changed original");
-        noStages(dir);
-    }
-
-    private static void symbolicOutputs(Path root) throws Exception {
-        Path dir = Files.createDirectory(root.resolve("symbolic"));
-        Path input = Files.writeString(dir.resolve("input"), "original");
-        Path external = Files.writeString(dir.resolve("external"), "external bytes");
-        List<Path> outputs = outputs(dir);
-        Files.createSymbolicLink(outputs.get(0), external.getFileName());
-        IOException primary = new IOException("cancel after replacing output link");
+    private static void committedCleanupFailure(Path root) throws Exception {
+        var fixture = Fixture.create(root.resolve("committed-cleanup"));
+        Path[] retained = {null};
         try {
-            CompanionArtifactPublisher.stageAndPublish(input, outputs, CompanionPublicationFailureSmoke::write,
-                () -> { }, index -> { if (index == 0) throw primary; });
-            throw new AssertionError("injected failure ignored");
+            CompanionArtifactPublisher.stageAndPublish(fixture.original, fixture.outputs, CompanionPublicationFailureSmoke::write,
+                () -> { }, index -> {
+                    if (index == 2) {
+                        try (var paths = Files.list(fixture.root)) {
+                            Path recovery = paths.filter(Files::isDirectory).findFirst().orElseThrow();
+                            retained[0] = Files.writeString(recovery.resolve("concurrent-user-file"), "preserve this file");
+                        }
+                    }
+                });
+            throw new AssertionError("failed generation cleanup was reported as success");
         }
-        catch (IOException observed) { require(observed == primary && observed.getSuppressed().length == 0, "link rollback failed"); }
-        require(Files.isSymbolicLink(outputs.get(0)) && Files.readSymbolicLink(outputs.get(0)).equals(external.getFileName()),
-            "original link identity lost");
-        require(Files.readString(external).equals("external bytes"), "link referent modified");
-        require(!Files.exists(outputs.get(1)) && !Files.exists(outputs.get(2)), "partial generation left");
-        noStages(dir);
-        cases++;
-    }
-
-    private static void cancellation(Path root, boolean existing) throws Exception {
-        int visits = 0;
-        for (int stop = 0; stop <= visits; stop++) {
-            Path dir = Files.createDirectory(root.resolve("cancel-" + existing + "-" + stop));
-            Path input = Files.writeString(dir.resolve("input"), "original");
-            List<Path> outputs = outputs(dir);
-            if (existing) seed(outputs);
-            int selected = stop;
-            AtomicInteger calls = new AtomicInteger();
-            var cancellation = new CancellationException("checkpoint " + selected);
-            try {
-                CompanionArtifactPublisher.stageAndPublish(input, outputs.get(0), outputs.get(1), outputs.get(2),
-                    (a, b, c) -> write(List.of(a, b, c)), () -> {
-                        if (calls.incrementAndGet() == selected) throw cancellation;
-                    });
-                require(stop == 0, "cancellation ignored");
-                visits = calls.get();
-                current(outputs);
-            }
-            catch (CancellationException observed) {
-                require(stop != 0 && observed == cancellation && observed.getSuppressed().length == 0, "cancellation rollback failed");
-                previous(outputs, existing);
-            }
-            require(Files.readString(input).equals("original"), "cancellation changed original");
-            noStages(dir);
-            cases++;
+        catch (IOException expected) {
+            check(expected.getMessage().contains("generation installed but staging cleanup failed"),
+                "cleanup failure lost committed outcome");
+            check(expected.getCause() instanceof java.nio.file.DirectoryNotEmptyException,
+                "cleanup error cause not retained");
         }
-    }
-
-    private static List<Path> outputs(Path dir) {
-        return List.of(dir.resolve("image.dbg"), dir.resolve("image.dbg.c"), dir.resolve("image.dbg.gdb"));
-    }
-
-    private static void seed(List<Path> outputs) throws IOException {
-        for (int index = 0; index < outputs.size(); index++) Files.writeString(outputs.get(index), "old-" + index);
-    }
-
-    private static void write(List<Path> outputs) throws IOException {
-        for (int index = 0; index < outputs.size(); index++) Files.writeString(outputs.get(index), "new-" + index);
-    }
-
-    private static void current(List<Path> outputs) throws IOException {
-        for (int index = 0; index < outputs.size(); index++) require(Files.readString(outputs.get(index)).equals("new-" + index), "new member missing");
-    }
-
-    private static void previous(List<Path> outputs, boolean existing) throws IOException {
-        for (int index = 0; index < outputs.size(); index++) {
-            if (existing) require(Files.readString(outputs.get(index)).equals("old-" + index), "previous bytes lost");
-            else require(!Files.exists(outputs.get(index), LinkOption.NOFOLLOW_LINKS), "partial output remains");
+        fixture.input.unchanged(fixture.original);
+        for (int i = 0; i < fixture.outputs.size(); i++) {
+            check(Files.readString(fixture.outputs.get(i)).equals("new generation " + i),
+                "cleanup failure rolled back committed generation");
         }
+        check(Files.readString(retained[0]).equals("preserve this file"), "cleanup removed unrelated file");
+        fixture.noStages(5);
     }
 
-    private static void noStages(Path dir) throws IOException {
-        try (var paths = Files.list(dir)) {
-            require(paths.noneMatch(path -> path.getFileName().toString().startsWith(".forge-")), "unexpected stage/recovery leak");
-        }
-    }
-
-    @FunctionalInterface
-    private interface Checked { void run() throws Exception; }
-
-    private static void refuse(Checked action) throws Exception {
-        try { action.run(); throw new AssertionError("invalid publication accepted"); }
-        catch (IOException | IllegalArgumentException expected) {
-            require(expected.getMessage() != null && !expected.getMessage().isBlank(), "missing diagnostic");
-            cases++;
-        }
-    }
-
-    private static void require(boolean condition, String message) {
+    private static void check(boolean condition, String message) {
+        checks++;
         if (!condition) throw new AssertionError(message);
     }
 }
