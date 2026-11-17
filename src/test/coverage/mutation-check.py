@@ -74,6 +74,7 @@ ARM_MODE_INVENTORY_TEST = "ghidradwarfforge.elf.Arm32FunctionAliasSymbolsSmoke"
 CURATED_TYPES = "ghidradwarfforge/GhidraTypeGraph.java"
 CURATED_TYPES_TEST = "ghidradwarfforge.FloatingTypeLayoutSmoke"
 TYPE_IDENTITY_TEST = "ghidradwarfforge.DefaultTypeIdentitySmoke"
+TARGET_DESCRIPTOR_TEST = "ghidradwarfforge.nativeapi.DwarfTargetSmoke"
 CALL_MEMORY = "ghidradwarfforge/CallMemoryEffects.java"
 CALL_MEMORY_TEST = "ghidradwarfforge.CallMemoryEffectsSmoke"
 CALL_PARAMETERS = "ghidradwarfforge/GhidraCallParameters.java"
@@ -536,6 +537,8 @@ FRAME_REREAD_MUTANTS = [
      'require(selected == null, "multiple original debug-frame sources");', ''),
 ]
 REGISTER_PROFILE_MUTANTS = [
+    ("register-pair-admits-incomplete-child-coverage", REGISTER_PROFILE, REGISTER_PROFILE_TEST,
+     "if (bits != requiredBits)", "if (false)"),
     ("register-slice-ignores-parent-width", REGISTER_PROFILE, REGISTER_PROFILE_TEST,
      "parent.getBitLength() != logicalSlice.parentBits() ||", ""),
     ("register-slice-ignores-physical-offset", REGISTER_PROFILE, REGISTER_PROFILE_TEST,
@@ -699,6 +702,14 @@ CALL_MEMORY_MUTANTS = [
 ]
 
 CURATED_TYPE_MUTANTS = [
+    ("target-descriptor-allows-empty-processor", "ghidradwarfforge/nativeapi/DwarfTarget.java", TARGET_DESCRIPTOR_TEST,
+     "ghidraProcessor == null || ghidraProcessor.isBlank()", "false"),
+    ("target-descriptor-ignores-instruction-image", "ghidradwarfforge/nativeapi/DwarfTarget.java", TARGET_DESCRIPTOR_TEST,
+     'if (!equals(fromElf(elf))) throw new IllegalArgumentException("instruction target disagrees with ELF");',
+     '// instruction image agreement omitted'),
+    ("target-descriptor-ignores-call-origin-image", "ghidradwarfforge/nativeapi/DwarfTarget.java", TARGET_DESCRIPTOR_TEST,
+     'if (!equals(fromElf(image))) throw new IllegalArgumentException("call-origin target disagrees with ELF");',
+     '// call origin image agreement omitted'),
     ("type-identity-merges-conflicting-layouts", CURATED_TYPES, TYPE_IDENTITY_TEST,
      "if (owner == null || owner.isEquivalent(type))", "if (true)"),
     ("type-identity-admits-ambiguous-collision", CURATED_TYPES, TYPE_IDENTITY_TEST,
@@ -1192,7 +1203,7 @@ def main():
             # The production publisher's private exception is never serialized;
             # its existing missing serialVersionUID is unrelated to these mutants.
             selected_dependencies = dependencies if test in (
-                TYPE_IDENTITY_TEST, STORAGE_REFINEMENT_TEST, REPORT_LEXICAL_TEST, PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
+                TARGET_DESCRIPTOR_TEST, TYPE_IDENTITY_TEST, STORAGE_REFINEMENT_TEST, REPORT_LEXICAL_TEST, PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
                 REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, TARGET_STORE_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, STATIC_BINDING_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CALL_PARAMETERS_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, AARCH64_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, CLOSED_FLOW_TEST, COMPOSITE_FLOW_TEST, MIXED_PREFIX_TEST, BACKUP_READBACK_TEST, REPORT_TEXT_TEST, BUILD_ID_HELPER_TEST, LINUX_METADATA_TEST, LINUX_APPLICATION_TEST, LINUX_CANARY_TEST, LINUX_MOUNT_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST, ATTACHMENT_PREVIEW_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))

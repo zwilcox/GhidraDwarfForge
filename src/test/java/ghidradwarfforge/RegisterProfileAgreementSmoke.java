@@ -22,6 +22,7 @@ final class RegisterProfileAgreementSmoke {
     private static int checks;
 
     static void check() throws Exception {
+        refused(mapped(null, 4, TargetRegisterMap.forTarget("arm")), "unresolved language register must stay unavailable");
         for (String id : List.of("ARM:LE:32:v8", "ARM:LEBE:32:v8LEInstruction")) {
             Language language = language(id);
             for (int index : new int[] {0, 1, 31}) slices(language, index);
@@ -54,6 +55,14 @@ final class RegisterProfileAgreementSmoke {
                     new PairPiece("cr7", 0, split), new PairPiece(second, split, 64 - split))));
             refused(mapped(register, 8, wrong), "paired child cannot absorb unrelated physical siblings");
         }
+        // Both listed children are physically correct, but six others remain unrepresented.
+        var incomplete = new TargetRegisterMap("test-only-profile", "incomplete real child coverage",
+            Map.of("cr7", 0, "cr6", 1), Map.of("crall", List.of(
+                new PairPiece("cr7", 0, 8), new PairPiece("cr6", 8, 8))));
+        Storage missing = mapped(register, 8, incomplete);
+        refused(missing, "two valid children cannot represent the entire eight-child container");
+        require(((UnavailableStorage) missing).diagnostic().contains("paired pieces do not cover its size"),
+            "incomplete child coverage was rejected before verifying the real child layouts");
     }
 
     private static void slices(Language language, int index) {
@@ -115,6 +124,10 @@ final class RegisterProfileAgreementSmoke {
         }
         refused(mapped(language.getRegister(low), 4, pairMap(low, order, big)),
             "a child register cannot impersonate the complete physical pair");
+        Storage partial = mapped(register, 4, good);
+        refused(partial, "half-width value cannot use the complete paired-register mapping");
+        require(((UnavailableStorage) partial).diagnostic().contains("not the complete paired register"),
+            "partial paired-register request failed at an unrelated check");
         require(expected.equals(mapped(register, 8, good)), "rejected pair description changed the valid mapping");
         require(language.getRegister(name) == register, "profile checks replaced a paired register");
     }

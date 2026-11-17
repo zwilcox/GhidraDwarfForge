@@ -807,6 +807,7 @@ tasks.register("dwarfTargetSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.nativeapi.DwarfTargetSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
 tasks.register("ghidraTargetAgreementSmoke", JavaExec) {

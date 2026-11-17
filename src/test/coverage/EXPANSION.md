@@ -6,6 +6,33 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Target descriptors and complete register mappings
+
+`RegisterProfileAgreementSmoke` uses actual pinned language registers to reject
+an unresolved register, a half-width request for a complete MIPS pair, and two
+correct PowerPC children that cover only part of their parent. The PowerPC case
+is refusal evidence, not a new supported ABI. The register-alias suite passes;
+165 profile checks and one compiled missing-completeness mutation pass with its
+baseline. Diagnostic measurement adds two lines/two branches in
+`GhidraVariableStorage`. Evidence: guarded scratch
+`register-pair-completeness-test.log`, `register-pair-completeness-mutations/`, and
+`coverage-recovery/register-pair-completeness/`. The guard refused an overlapping
+measurement launch; the measurement was retried after the first command ended.
+
+`DwarfTargetSmoke` rejects malformed public target descriptors and independently
+changes each identity field against a real, header-only ELF. Instruction, call
+ABI, call-origin, alias, and mode planners must reject disagreement before
+downstream work. Matching metadata remains accepted; ordinary x86 has no ARM
+mode-symbol output. Input bytes remain unchanged. These are metadata admission
+checks, not executable/native producer or debugger validation. The suite passes
+and three compiled faults are detected. Diagnostic measurement adds six lines/
+fourteen branches in `DwarfTarget`. Evidence: `target-descriptor-admission-test.log`,
+`target-descriptor-admission-mutations/`, and
+`coverage-recovery/target-descriptor-admission/` under guarded scratch. Its Gradle
+task now uses the guard's temporary directory when supplied. Production code,
+coverage denominator and acceptance targets are unchanged; hosted results for
+these additions remain pending.
+
 ## Imported type identity and switch index controls
 
 `defaultTypeIdentitySmoke` now reserves and converts actual Ghidra structure
