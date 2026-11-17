@@ -42,8 +42,13 @@ Workflow lint passes. The new native runs are behavioral evidence, not added
 JaCoCo sessions. Evidence roots under `.forge-work/scratch/coverage-expansion/`:
 `location-width-repro`, `location-width-build`, `location-width-native` and
 `location-width-old-native`. The previous JAR/build remains intact for auditing.
+The 211 raw JavaExec sessions were separately collected and verified against the
+new JAR's class IDs/probe lengths. The source snapshot binds to `6fa6a270`; the
+build receipts retain their original checkout commit `7d5c1152` because the fix
+was tested before committing. Verification is retained in
+`location-width-javaexec-verification/`, with no old-JAR sessions admitted.
 
-## Latest completed Windows job verification
+## Historical completed Windows job verification (previous JAR)
 
 CONFIRMED: the `windows-host` job in run `43991284160` passes at PR head
 `6bf2352c` (tested merge `731fae2d`). Artifact `14291317448` contains 55 raw
