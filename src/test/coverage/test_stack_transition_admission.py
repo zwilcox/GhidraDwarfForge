@@ -6,6 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from zipfile import ZipFile
+from test_namespace_global_admission import fixture as namespace_fixture
 
 
 spec = importlib.util.spec_from_file_location('admission', Path(__file__).with_name('stack-transition-admission.py'))
@@ -205,23 +206,42 @@ class HostedMatrixAdmission(unittest.TestCase):
                 'cases': [{'mode': mode, 'observations': observed} for mode in ('compiler', 'forge')]}})
         collection.finish(oracle)
         records.append(collection)
+        collection = coverage.Collection('namespace-globals', self.jar, 'native-java', environment={
+            'FORGE_INTEGRATION_COVERAGE_OUTPUT': str(root / 'collections'),
+            'FORGE_INTEGRATION_COVERAGE_AGENT': str(agent)})
+        namespace_record, evidence = namespace_fixture(target)
+        for row in namespace_record['sessions']:
+            with collection.session(['java', 'Fake'], row['label']):
+                (collection.root / collection.record['sessions'][-1]['file']).write_bytes(b'not real JaCoCo probes')
+        evidence['jarSha256'] = coverage.digest(self.jar)
+        evidence['protected']['jar'] = coverage.digest(self.jar)
+        oracle = self.root / (target + '-namespace.json')
+        coverage.save(oracle, evidence)
+        collection.finish(oracle)
+        records.append(collection)
         report = root / 'report'
         report.mkdir()
         xml = report / 'headless.xml'
         xml.write_text('<report/>')
+        native_xml = report / 'native-java.xml'
+        native_xml.write_text('<report/>')
         summary = {'schema': 1, 'status': 'PASS', 'commit': 'a' * 40,
             'productionJarSha256': coverage.digest(self.jar),
             'cohort': {'commit': 'a' * 40, 'run': '7', 'job': 'target-preflight'},
             'layers': {'headless': {'xmlSha256': coverage.digest(xml), 'sessions': 14, 'productionClasses': 1,
                 'suites': ['bitfield-values', 'stack-value-transitions'], 'unmeasuredForcedHalts': [],
-                'receipts': {c.root.name: coverage.digest(c.root / 'receipt.json') for c in records}}}}
+                'receipts': {c.root.name: coverage.digest(c.root / 'receipt.json')
+                    for c in records if c.record['layer'] == 'headless'}},
+                'native-java': {'xmlSha256': coverage.digest(native_xml), 'sessions': 8, 'productionClasses': 1,
+                    'suites': ['namespace-globals'], 'unmeasuredForcedHalts': [],
+                    'receipts': {collection.root.name: coverage.digest(collection.root / 'receipt.json')}}}}
         coverage.save(report / 'summary.json', summary)
         return root, records, summary
 
     def test_aarch64_receipt_layer_and_full_inventory(self):
         root, _, _ = self.bundle('aarch64')
         rows, origin = self.hosted.load_job(root, self.jar, 'linux_aarch64', 'a' * 40, '7')
-        self.assertEqual(len(rows), 14)
+        self.assertEqual(len(rows), 22)
         self.assertEqual(origin['kind'], 'linux_aarch64')
 
     def test_x86_receipts_cannot_fill_the_aarch64_matrix_input(self):
@@ -231,7 +251,7 @@ class HostedMatrixAdmission(unittest.TestCase):
 
     def test_rebound_report_still_cannot_omit_a_profile(self):
         root, records, summary = self.bundle('aarch64')
-        removed = records[-2]
+        removed = records[2]
         # Retain omitted synthetic data outside the input rather than erasing it.
         removed.root.rename(self.root / 'omitted')
         summary['layers']['headless']['receipts'].pop(removed.root.name)

@@ -2522,7 +2522,9 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          python3 src/test/integration/namespace-globals-native.py "$GHIDRA_INSTALL_DIR" "$TARGET"
+          FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar" \
+              FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections" \
+              python3 src/test/integration/namespace-globals-native.py "$GHIDRA_INSTALL_DIR" "$TARGET"
           for role in exec pie pie-rebased; do
               python3 src/test/integration/same-name-types-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
@@ -3435,9 +3437,9 @@ jobs:
               --require-suite recovered-statics-positive --require-suite recovered-statics-controls \
               --require-suite stack-control-flow --require-suite saved-inheritance --require-suite external-declarations \
               --require-suite recovered-returns --require-suite recovered-parameters --require-suite stack-value-transitions \
-              --require-suite producer-failures --require-suite qualified-type-producer
+              --require-suite producer-failures --require-suite qualified-type-producer --require-suite namespace-globals
 
-      - name: Verify and report AArch64 transition coverage
+      - name: Verify and report AArch64 integration coverage
         if: matrix.target == 'aarch64'
         env:
           SOURCE_COMMIT: ${{ github.sha }}
@@ -3447,7 +3449,7 @@ jobs:
               --collections build/integration-coverage/collections --output build/integration-coverage/report \
               --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
               --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite stack-value-transitions \
-              --require-suite bitfield-values
+              --require-suite bitfield-values --require-suite namespace-globals
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'aarch64'

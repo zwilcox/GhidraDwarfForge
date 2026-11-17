@@ -24,6 +24,7 @@ recovered_signatures = combined.module('recovered_signature_admission', HERE / '
 stack_transitions = combined.module('stack_transition_admission', HERE / 'stack-transition-admission.py')
 producer_failures = combined.module('producer_failure_admission', HERE / 'producer-failure-admission.py')
 qualified_types = combined.module('qualified_type_admission', HERE / 'qualified-type-admission.py')
+namespace_globals = combined.module('namespace_global_admission', HERE / 'namespace-global-admission.py')
 function_entries = combined.module('function_entry_admission', HERE / 'function-entry-admission.py')
 build_id_sources = combined.module('build_id_source_admission', HERE / 'build-id-source-bundle-admission.py')
 metadata_failures = combined.module('metadata_failure_admission', HERE / 'linux-metadata-failure-admission.py')
@@ -48,8 +49,9 @@ REQUIRED = {
         'calling-convention', 'custom-call-storage', 'call-site-packaged',
         'lexical-statics', 'lexical-statics-controls', 'recovered-statics-positive', 'recovered-statics-controls',
         'stack-control-flow', 'saved-inheritance', 'external-declarations', 'recovered-returns', 'recovered-parameters',
-        'stack-value-transitions', 'producer-failures', 'qualified-type-producer'}),
-    'linux_aarch64': ('target-preflight', {'headless'}, {'stack-value-transitions', 'bitfield-values'}),
+        'stack-value-transitions', 'producer-failures', 'qualified-type-producer', 'namespace-globals'}),
+    'linux_aarch64': ('target-preflight', {'headless', 'native-java'}, {
+        'stack-value-transitions', 'bitfield-values', 'namespace-globals'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -475,6 +477,7 @@ def load_job(root, jar, kind, commit, run):
     stack_transition_cases = []
     producer_failure_cases = []
     qualified_type_cases = []
+    namespace_global_cases = []
     for layer, measured in sorted(summary['layers'].items()):
         xml = files.regular(root / 'report' / (layer + '.xml'), 32 * 1024 * 1024)
         if files.digest(xml) != measured.get('xmlSha256'):
@@ -551,6 +554,8 @@ def load_job(root, jar, kind, commit, run):
                 producer_failure_cases.append(producer_failures.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'qualified-type-producer':
                 qualified_type_cases.append(qualified_types.oracle(record, files.read(directory / 'oracle.json')))
+            if record['suite'] == 'namespace-globals':
+                namespace_global_cases.append(namespace_globals.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'stack-value-transitions':
                 stack_transition_cases.append(stack_transitions.oracle(record, files.read(directory / 'oracle.json')))
             layer_suites.add(record['suite'])
@@ -580,6 +585,7 @@ def load_job(root, jar, kind, commit, run):
         qualified_types.cohort(qualified_type_cases)
     if kind in ('linux', 'linux_aarch64'):
         stack_transitions.cohort(stack_transition_cases, ['x86_64' if kind == 'linux' else 'aarch64'])
+        namespace_globals.cohort(namespace_global_cases, 'x86_64' if kind == 'linux' else 'aarch64')
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,
         'summarySha256': files.digest(root / 'report/summary.json'),
         'receipts': {name: files.digest(root / 'collections' / name / 'receipt.json') for name in sorted(known)},

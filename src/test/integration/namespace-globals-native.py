@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Packaged producer: cold qualified lookup, namespace ownership and collision controls."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 import os
@@ -10,6 +11,7 @@ import shutil
 import subprocess
 import tempfile
 from alias_relationships import read_dies, value
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -32,20 +34,27 @@ def main():
     parent.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix=args.target + '-', dir=parent))
     print('namespace-globals-native-results=' + str(case), flush=True)
-    protected = {str(p): digest(p) for p in [Path(__file__), test, research / 'fixture.cpp',
+    sources = [Path(__file__), test, research / 'fixture.cpp',
         research / 'runtime.py', research / 'runtime.sh', harness / 'qemu-socket.sh',
         harness / 'alias_relationships.py', harness / 'check-dwarfdump.py',
+        harness / 'integration_coverage.py']
+    source_hashes = {str(p.relative_to(root)): digest(p) for p in sources}
+    protected = {str(p): digest(p) for p in [*sources,
         *[p for p in module.rglob('*') if p.is_file()]]}
+    coverage = Collection('namespace-globals', jar, 'native-java',
+        test_classes=('ghidradwarfforge.nativeapi.NamespaceGlobalLookupSmoke',))
     commands = []
 
     def run(label, argv):
         argv = list(map(str, argv))
         commands.append({'label': label, 'argv': argv})
         (case / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        result = subprocess.run(argv, capture_output=True, text=True, timeout=180)
-        (case / (label + '.log')).write_text(result.stdout)
-        (case / (label + '.stderr')).write_text(result.stderr)
-        assert result.returncode == 0, (label, result.returncode, result.stderr)
+        context = coverage.session(argv, label) if label.endswith('-producer') else nullcontext(argv)
+        with context as measured:
+            result = subprocess.run(measured, capture_output=True, text=True, timeout=180)
+            (case / (label + '.log')).write_text(result.stdout)
+            (case / (label + '.stderr')).write_text(result.stderr)
+            assert result.returncode == 0, (label, result.returncode, result.stderr)
         return result.stdout
 
     prefix = '' if args.target == 'x86_64' else 'aarch64-linux-gnu-'
@@ -135,7 +144,10 @@ def main():
                 '-ex', 'file ' + str(case / 'input'), '-ex', 'symbol-file ' + str(artifact),
                 '-ex', 'set language c', '-ex', query])
             assert expected in observed, (variant, query, expected, observed)
-        artifacts.append({'variant': variant, 'sha256': digest(artifact), 'coldQueries': queries})
+        artifacts.append({'variant': variant, 'sha256': digest(artifact), 'coldQueries': queries,
+            'validators': ['readelf', 'llvm', 'strict'],
+            'coldLogSha256': [digest(case / (variant + '-cold-' + str(index) + '.log'))
+                for index in range(len(queries))]})
     shutil.copyfile(case / 'normal.dbg', case / 'root-qualified-import.dbg')
     for mode in ['compiler', 'selected']:
         run(mode + '-runtime', ['bash', research / 'runtime.sh', case, args.target, mode])
@@ -145,9 +157,18 @@ def main():
     assert compiler['values'] == selected['values'] and compiler['addresses'] == selected['addresses']
     assert selected['shortUnique'] == 41 and compiler['return'] == selected['return'] == 140
     assert protected == {p: digest(Path(p)) for p in protected}
-    (case / 'acceptance.json').write_text(json.dumps({'status': 'NAMESPACE_GLOBAL_NATIVE_PASS',
+    acceptance = {'status': 'NAMESPACE_GLOBAL_NATIVE_PASS',
         'target': args.target, 'jarSha256': digest(jar), 'protected': protected,
-        'artifacts': artifacts, 'compiler': compiler, 'selected': selected}, indent=4) + '\n')
+        'harnessSha256': source_hashes, 'symbols': symbols,
+        'nativeSha256': {name: digest(native / filename) for name, filename in (
+            ('consumer', 'libdwarf.so.2.3.2'), ('producer', 'libdwarfp.so.2.3.2'))},
+        'artifacts': artifacts, 'compiler': compiler, 'selected': selected}
+    (case / 'acceptance.json').write_text(json.dumps(acceptance, indent=4) + '\n')
+    if coverage.enabled:
+        evidence = {**acceptance, 'status': 'PASS_NAMESPACE_GLOBALS_MEASUREMENT',
+            'oracleStatus': acceptance['status']}
+        (case / 'coverage-oracle.json').write_text(json.dumps(evidence, indent=4) + '\n')
+        coverage.finish(case / 'coverage-oracle.json')
     print('namespace-globals-native=PASS', flush=True)
 
 
