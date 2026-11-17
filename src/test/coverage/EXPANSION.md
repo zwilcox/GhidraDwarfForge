@@ -28,11 +28,33 @@ targets are unchanged. No production Java code changed.
 Validation: guarded full coverage-policy suite passed **301 tests**; after adding
 the hosted-lane substitution/omission test, the focused suite passed **six tests**.
 `bash -n`, `actionlint` and `git diff --check` passed. Raw execution data is retained
-under `mips-truncated-current-4bd11/` in the bounded coverage workspace. Exact-class
-verification and the resulting combined counters are recorded separately below
-when complete. New hosted collection remains **PRESENT, UNVERIFIED** until CI runs
+under `mips-truncated-current-4bd11/` in the bounded coverage workspace. New hosted
+collection remains **PRESENT, UNVERIFIED** until CI runs
 this revision. Run `44024881065` still has eleven passing jobs and five live
 architecture lanes; it predates this change and has not been cancelled.
+
+Guarded verification `55718` passed against source snapshot `7fa5b0d6` and JAR
+`4bd11717ce1ff8e46eba3b0f7091517c4dd90e4e0c82472613f8fd66ca31390c`.
+It checked source hashes against committed blobs, artifact/oracle bindings,
+native/script restoration, the existing 1,292 raw sessions and the eight new
+sessions before regenerating all five coverage views. Each view retains all
+255 production sources and 901 classes. The verified partial union is now
+**1,300 sessions**: 211 JavaExec, 638 native-Java, 394 headless and 57 Windows.
+
+Combined results are **28,609/29,792 lines (96.0%)** and **21,732/25,888 branches
+(83.9%)**. The MIPS regression adds one branch to the preceding union. Binary
+and location correctness is **18,506/19,203 lines (96.4%)**, **15,641/18,736
+branches (83.5%)**; file transactions and validation remain **6,377/6,677 lines
+(95.5%)**, **3,714/4,250 branches (87.4%)**. Each critical 90% branch target is
+still unmet. `hostedAcceptance` and `completeCombinedCohort` remain false.
+
+The union is `mips-truncated-refresh-4bd11/summary.json`, SHA-256
+`c0edf50f3878c69b6bf11d3ab3cb4da2ff16cba93935aeff8c8d873b8cbf4a30`.
+After verification, guarded cleanup `48223` removed only the four owned fixture
+projects (4,526,152 bytes), preserving hashes of 1,077 retained files including
+all eight raw sessions, fixture artifacts, source snapshots and debugger logs.
+Scratch/cache/evidence usage is 13.923/2.059/6.728 GiB, within the 100/10/10 GiB
+budgets. No additional worktree or `/dev/shm` workspace was created.
 
 ## Verified Windows measurements and callable producer behavior
 
