@@ -7701,3 +7701,29 @@ frame-append-mutants-final/{result.json,*.log}, and
 coverage-recovery/frame-append-coverage/{result.json,sessions.tsv,counts.json,
 gaps.json,xml/combined.xml}. Four architecture CI lanes remain live without
 reported failed steps. No production Java or emitted-product changes.
+
+### Raw callee memory-effect contracts (2026-11-17)
+
+CONFIRMED: `CallMemoryRawSmoke` is invoked by `callMemoryEffectsSmoke`.
+Acceptance: malformed store operands, wrong-width affine inputs, absolute or
+unknown addresses, memory outputs, partial SP writes and expired instruction
+temporaries must not establish an unaffected-stack contract. Positive controls
+retain exact stack-relative write ranges. Real x86-32, x86-64 and AArch64 language
+contexts supply the register model; decorated raw p-code exercises proof-boundary
+contracts and is not additional machine-code support evidence. Program bytes and
+modification number remain unchanged. Production Java is unchanged.
+
+Guarded `./gradlew --no-daemon callMemoryEffectsSmoke` PASS in 5 seconds:
+234 new raw checks, 525 existing decoded-boundary checks and 165 parent checks.
+Log: `.forge-work/scratch/call-memory-raw.log`.
+Five selected compiled faults (extra STORE operand, truncated space ID, ignored
+offset width, retained instruction temporaries and ignored memory output) were
+caught by behavioral assertions; unchanged baseline passed. Result:
+`.forge-work/scratch/call-memory-raw-mutants/result.json` (17.382 seconds).
+
+The verified diagnostic addition `coverage-recovery/call-memory-raw` contributes
+22 branches to the same 58bd production JAR, retaining all 255 source files and
+901 classes. Its 1,370-session mixed current/historical union has 28,894/29,802
+lines and 22,549/25,902 branches; binary/location branches are 16,328/18,750,
+547 below the 90% target. File targets remain met. These numbers do not establish
+hosted acceptance of queued HEAD, merge readiness or main publication.

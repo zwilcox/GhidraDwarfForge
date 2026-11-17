@@ -26,6 +26,7 @@ public final class CallMemoryEffectsSmoke {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
         CallMemoryEffectsBoundarySmoke.run();
+        CallMemoryRawSmoke.run();
         for (boolean x86 : new boolean[] {true, false}) {
             for (String mode : List.of("return", "frame", "caller-slot", "unknown-store", "unequal-return",
                     "branch", "drift-loop", "unknown-sp", "nested", "recursive")) check(x86, mode);

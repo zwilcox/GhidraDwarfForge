@@ -964,6 +964,16 @@ CALL_PARAMETERS_MUTANTS = [
 ]
 
 CALL_MEMORY_MUTANTS = [
+    ("call-memory-accepts-extra-store-operand", CALL_MEMORY, CALL_MEMORY_TEST,
+     "operation.getNumInputs() != 3 ||", "operation.getNumInputs() < 3 ||"),
+    ("call-memory-truncates-space-id", CALL_MEMORY, CALL_MEMORY_TEST,
+     "(id != (int) id && id != Integer.toUnsignedLong((int) id)) ||", ""),
+    ("call-memory-ignores-offset-width", CALL_MEMORY, CALL_MEMORY_TEST,
+     "second.getSize() != width", "false"),
+    ("call-memory-retains-instruction-temporaries", CALL_MEMORY, CALL_MEMORY_TEST,
+     "state.keySet().removeIf(Varnode::isUnique);", ""),
+    ("call-memory-ignores-memory-output", CALL_MEMORY, CALL_MEMORY_TEST,
+     "if (destination.getAddress().getAddressSpace().isMemorySpace()) return null;", ""),
     ("call-memory-wraps-affine-addition", CALL_MEMORY, CALL_MEMORY_TEST,
      "Math.addExact(left.offset(), right.offset())", "(left.offset() + right.offset())"),
     ("call-memory-wraps-affine-subtraction", CALL_MEMORY, CALL_MEMORY_TEST,
