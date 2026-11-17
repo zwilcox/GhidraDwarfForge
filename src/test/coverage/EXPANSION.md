@@ -6,6 +6,51 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Independent frame-state encoding boundaries
+
+CONFIRMED: commit `5342ccd7` adds `CallFrameEncodingBoundarySmoke` through the
+existing `callFrameEncoderSmoke` task. The test independently decodes complete
+CIE/FDE instruction streams with ByteBuffer and BigInteger LEB operands, then
+compares the resulting CFA/register state with the explicit input plan at each
+modeled instruction boundary. It covers both byte orders, 32/64-bit addresses,
+extended register numbers, signed-long offset limits, high addresses crossing
+the signed-long boundary, and row gaps at and above the 32-bit advance limit.
+Negative CFA-value expressions retain their signed addition semantics.
+
+The standalone and Gradle paths both pass 7,992 new assertions plus 362 existing
+checks. Six separately compiled faults trigger the intended behavioral
+assertions: truncated wide row gaps, wrong negative-CFA operations, erased saved
+register displacements, truncated return-register numbers, narrowed frame
+addresses and omitted CFA transitions. Compilation failures are not credited;
+mutants are excluded from coverage and their owned compiled directories removed.
+Production code and the `4bd11717` JAR remain unchanged.
+
+`DwarfDebugFrame` now measures **172/173 lines (99.4%) and 112/121 branches
+(92.6%)**. This adds five previously unmeasured lines and branch outcomes to the
+current union. The isolated `native-java` collection explicitly describes pure
+Java model checks; it does not claim recovered unwind evidence or new debugger
+validation. The original JavaExec collection retains its original test snapshot.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Partial current-JAR union, 684 sessions | 27,542 / 29,792 (92.4%) | 20,954 / 25,888 (80.9%) |
+| Binary/location | 18,303 / 19,203 (95.3%) | 15,378 / 18,736 (82.1%) |
+| File/validation | 5,556 / 6,677 (83.2%) | 3,264 / 4,250 (76.8%) |
+
+All 255 production sources/901 classes remain included. Evidence under
+`.forge-work/scratch/coverage-expansion/`: `frame-encoding-boundaries-4bd11`,
+`frame-encoding-mutations-4bd11`, `frame-encoding-gradle-4bd11.log`, and the
+independently regenerated union `frame-encoding-refresh-4bd11`. Source snapshots,
+behavioral receipts, raw identities/probes and all prior current-JAR collections
+were rechecked before unioning.
+
+Issue #209 remains **incomplete**: both critical-group branch targets,
+file/validation line coverage, fresh Windows/full hosted evidence, protected
+merge and actual-main publication are outstanding. The older CI run now has a
+passing ARM32 job; AArch64 and x86-64 are still active, and its probes belong to
+old bytecode. Storage is 11.888/100 GiB scratch, 2.033/10 GiB caches and 6.728/10 GiB
+evidence. No extra worktrees or local heavy processes remain active.
+
 ## Lexical range boundary tests and current GUI unwind measurement
 
 CONFIRMED: commit `679ea5d1` adds `RangeListScopeBoundarySmoke` through the existing
