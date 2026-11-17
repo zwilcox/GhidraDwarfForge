@@ -44,7 +44,7 @@ or new Windows validation is claimed for this increment.
 
 ### Queued Windows backup stream failure validation
 
-PRESENT, UNVERIFIED on Windows: commit `ef3cd584` adds 20 backup-stream
+PRESENT, UNVERIFIED on Windows: commits `ef3cd584` and `824e263f` add 20 backup-stream
 failure controls through the existing native Windows host primitive suite.
 Actual Windows x64 admission happens before any injected replies. The controls
 forward real file/context operations and test open/read errors, signed and
@@ -55,14 +55,19 @@ a reported abort/close failure is injected only after the real release succeeds.
 Each case requires the intended failure, one injected fault, unchanged payloads
 and metadata, balanced native lifetime and a successful retry.
 
+The native Python harness creates the owned alternate stream and independently
+hashes all four fixture payloads before and after the JVM. Java inspects base
+files through the production backup API; it does not construct colon-bearing
+ADS Paths, which its Windows provider rejects. Admission requires the external
+payload-preservation receipt as well as the Java case results.
 Positive controls inspect an actual alternate data stream and an empty file.
 A buffered-read control splits bytes actually returned by Windows into replies
 of at most seven bytes, requiring the exact same inventory as normal reads.
 The suite now requires eight direct JVM sessions; complete backup case receipts,
 positive controls and stable process handle counts are required for admission.
 
-Java 21 compilation and all 274 coverage-tool tests pass locally. Evidence:
-`.forge-work/scratch/coverage-expansion/windows-backup-preflight-2f181/`.
+Java 21 compilation and all 275 coverage-tool tests pass locally. Evidence:
+`.forge-work/scratch/coverage-expansion/windows-backup-native-fixture-preflight-2f181/`.
 Actual Windows execution is still pending; **no new native probes or percentage
 increase are claimed**. The verified union above remains unchanged. Current CI
 `43991284160` still runs its earlier revision; these controls are queued with the
