@@ -28,6 +28,7 @@ public final class Arm32CallPolicySmoke {
         try {
             for (var order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                 int endianFlag = order == ByteOrder.BIG_ENDIAN ? 0x800000 : 0;
+                metadataBoundaries(path, order, 0x05000400 | endianFlag);
                 for (int floatingFlag : new int[] {0, 0x200, 0x400}) {
                     int flags = 0x05000000 | endianFlag | floatingFlag;
                     boolean hard = floatingFlag == 0x400;
@@ -136,6 +137,93 @@ public final class Arm32CallPolicySmoke {
             }
             catch (CancellationException expected) { checks++; }
         }
+    }
+
+    private static void metadataBoundaries(Path path, ByteOrder order, int flags) throws Exception {
+        byte[] valid = attributes(order, 28, 1);
+        write(path, order, flags, valid);
+        byte[] original = Files.readAllBytes(path);
+        // Independently vary the ELF envelope without corrupting its structural layout.
+        for (int type : new int[] {1, 2, 3, 4}) {
+            byte[] changed = original.clone(); ByteBuffer.wrap(changed).order(order).putShort(16, (short) type);
+            require(observation(path, changed).valid() == (type == 2 || type == 3), "only executable/shared images have this call profile");
+        }
+        for (int machine : new int[] {0, 3, 40, 62, 183}) {
+            byte[] changed = original.clone(); ByteBuffer.wrap(changed).order(order).putShort(18, (short) machine);
+            require(observation(path, changed).valid() == (machine == 40), "ARM flags cannot authorize a different ELF machine");
+        }
+        for (int abi : new int[] {0, 3, 9, 255}) {
+            for (int revision : new int[] {0, 1, 255}) {
+                byte[] changed = original.clone(); changed[7] = (byte) abi; changed[8] = (byte) revision;
+                require(observation(path, changed).valid() == ((abi == 0 || abi == 3) && revision == 0),
+                    "only declared Linux/System V ABI revisions are admitted");
+            }
+        }
+        byte[] wrongEndian = original.clone(); ByteBuffer.wrap(wrongEndian).order(order).putInt(36, flags ^ 0x800000);
+        require(!observation(path, wrongEndian).valid(), "BE8 flag must agree with ELF byte order");
+        var wide = ByteBuffer.allocate(64).order(order);
+        wide.put(new byte[] {0x7f, 'E', 'L', 'F', 2, (byte) (order == ByteOrder.LITTLE_ENDIAN ? 1 : 2), 1});
+        wide.putShort(16, (short) 2).putShort(18, (short) 40).putInt(20, 1).putInt(48, flags).putShort(52, (short) 64);
+        var unsupportedWide = observation(path, wide.array());
+        require(!unsupportedWide.valid() && !unsupportedWide.attributesPresent(), "ELF64 ARM is not a proven AArch32 ABI");
+
+        int table = ByteBuffer.wrap(original).order(order).getInt(32);
+        byte[] wrongType = original.clone(); ByteBuffer.wrap(wrongType).order(order).putInt(table + 84, 1);
+        require(!observation(path, wrongType).valid(), "attribute name cannot substitute for section type");
+        byte[] allocated = original.clone(); ByteBuffer.wrap(allocated).order(order).putInt(table + 88, 2);
+        require(!observation(path, allocated).valid(), "allocated attribute section is outside the accepted format");
+        byte[] unnamed = original.clone(); ByteBuffer.wrap(unnamed).order(order).putInt(table + 80, 0);
+        require(observation(path, unnamed).valid(), "ARM attribute section is recognized by type without its conventional name");
+        byte[] duplicate = Arrays.copyOf(original, original.length + 40);
+        System.arraycopy(original, table + 80, duplicate, table + 120, 40);
+        ByteBuffer.wrap(duplicate).order(order).putShort(48, (short) 4);
+        require(!observation(path, duplicate).valid(), "two attribute sections cannot silently select the first");
+
+        for (int length : new int[] {65536, 65537}) {
+            var container = ByteBuffer.allocate(length).order(order);
+            int ignoredLength = length - valid.length;
+            container.put((byte) 'A').putInt(ignoredLength).put("foreign\0".getBytes(StandardCharsets.US_ASCII));
+            container.position(1 + ignoredLength); container.put(valid, 1, valid.length - 1);
+            var elf = write(path, order, flags, container.array());
+            require(Arm32CallAbi.observe(elf, () -> false).valid() == (length == 65536),
+                "exact attribute byte cap and foreign vendor skip");
+        }
+        var repeated = ByteBuffer.allocate(2 * valid.length - 1).put(valid).put(valid, 1, valid.length - 1).array();
+        rejected(path, order, flags, repeated, "multiple AEABI file scopes");
+        var noScope = ByteBuffer.allocate(11).order(order).put((byte) 'A').putInt(10)
+            .put("aeabi\0".getBytes(StandardCharsets.US_ASCII)).array();
+        rejected(path, order, flags, noScope, "no AEABI file scope");
+        var foreign = valid.clone(); foreign[5] = 'x';
+        rejected(path, order, flags, foreign, "no AEABI file scope");
+        // Optional odd tags are strings and even tags are unsigned values.
+        // UINT32_MAX must survive decoding without signed narrowing.
+        var optional = write(path, order, flags, attributes(order, 28, 1, 64, 0,
+            4, 'c', 'p', 'u', 0, 32, 0, 0, 36, 0, 52, 0,
+            66, 255, 255, 255, 255, 15, 255, 255, 255, 255, 7, 0));
+        java.util.Map<Integer, Long> values;
+        try { values = Arm32CallAbi.readFileAttributes(optional, () -> false); }
+        catch (IllegalArgumentException unexpected) { throw new AssertionError("valid optional attribute inventory must parse", unexpected); }
+        require(values.get(66) == 0xffffffffL && values.get(Integer.MAX_VALUE) == 0L &&
+            values.get(28) == 1L && Arm32CallAbi.observe(optional, () -> false).valid(),
+            "optional tag/value width does not change the proven VFP convention");
+        try { values.put(28, 0L); throw new AssertionError("mutable parsed ABI evidence"); }
+        catch (UnsupportedOperationException expected) { checks++; }
+        for (int tag : new int[] {0, 3, 33, 63}) {
+            rejected(path, order, flags, attributes(order, 28, 1, tag, 0), tag < 4 ? "invalid ARM attribute tag" :
+                "mandatory");
+        }
+        rejected(path, order, flags, attributes(order, 28, 1, 128, 1, 0), "mandatory");
+        rejected(path, order, flags, attributes(order, 28, 1, 128, 128, 128, 128, 8, 0), "invalid ARM attribute tag");
+    }
+
+    private static Arm32CallAbi.Observation observation(Path path, byte[] bytes) throws Exception {
+        Files.write(path, bytes);
+        var observed = Arm32CallAbi.observe(ElfImage.read(path), () -> false);
+        require(Arrays.equals(bytes, Files.readAllBytes(path)), "ABI inspection preserves original ELF bytes");
+        if (!observed.valid()) require(observed.declared() == Arm32CallAbi.Pcs.UNKNOWN &&
+            observed.consumer() == Arm32CallAbi.Pcs.UNKNOWN && !observed.restriction().isBlank(),
+            "invalid metadata cannot supply either a declared or consumer ABI");
+        return observed;
     }
 
     private static void implicitDefault(ElfImage elf, boolean hard) throws Exception {

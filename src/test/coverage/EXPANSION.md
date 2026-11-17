@@ -6909,3 +6909,39 @@ execution/source hashes and manifest addition. Adds eight branches. Overall
 3,775/4,250 branches (50 short). Historical cohorts remain: not hosted acceptance.
 Local evidence: `.forge-work/scratch/source-relocation-limits-assertions.log`,
 `source-relocation-limit-mutants/result.json`. CI44150222826 remains live.
+
+
+### ARM call ABI envelope and attribute inventory
+
+Extended `Arm32CallPolicySmoke` with structurally readable ELF fixtures in both
+byte orders. Admission varies executable/shared/relocatable/core type, machine,
+OS ABI/revision, ELF class and BE8 flags independently. Invalid observations must
+supply neither a declared nor a consumer ABI and must explain the restriction.
+Section controls reject duplicate, mistyped or allocated ARM attributes while
+accepting the correct section type without the conventional name. Foreign vendor
+records are skipped within bounds; exactly 65,536 bytes pass and one extra byte
+fails. Multiple AEABI file scopes and absent file scopes are rejected.
+
+Optional attribute tests preserve UINT32_MAX values and the largest accepted
+optional tag, handle string/compatibility attributes and Tag_nodefaults with an
+explicit PCS, and refuse unknown mandatory or out-of-domain tags. Parsed maps
+are immutable; all original ELF bytes remain unchanged. The Gradle task now
+honors the guard-provided TMPDIR. This extends metadata classification tests,
+not advertised architecture or debugger support.
+
+Guarded `./gradlew --no-daemon arm32CallPolicySmoke`: PASS, 4,190 assertions, 4s.
+An initial fixture incorrectly encoded tag 128 as a single byte; corrected to
+ULEB128 0x80,0x01. Eight compiled mutation controls PASS in 4.977s with unchanged
+baseline and verified source hash. The first mutation attempt lacked a Ghidra
+fixture dependency and was rejected as a class-loading failure, never credited;
+the linked retry detected all eight through behavioral Java assertions.
+
+Diagnostic `coverage-recovery/arm-call-metadata/`: 1,404 unique sessions with the
+same production JAR, all 255 sources / 901 classes, verified execution/source
+hashes and exact manifest addition. Adds two lines and 23 branches. Overall
+28,859/29,802 lines and 22,301/25,902 branches; binary/location 18,622/19,213 lines,
+16,132/18,750 branches (743 short of 90%); file operations unchanged at
+6,502/6,677 lines and 3,775/4,250 branches (50 short). Historical cohorts remain;
+this is not current-head hosted acceptance. No production implementation changed.
+Evidence: `.forge-work/scratch/arm-call-metadata-final.log` and
+`arm-call-metadata-mutants-linked/result.json`.

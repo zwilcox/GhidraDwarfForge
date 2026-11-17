@@ -1885,6 +1885,7 @@ tasks.register("arm32CallPolicySmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.Arm32CallPolicySmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
 tasks.register("mipsAbiFlagsSmoke", JavaExec) {
