@@ -6,7 +6,45 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current location-list narrowing fix and new measurement baseline
+## Current producer, inheritance and annotation measurement refresh
+
+CONFIRMED: the fixed `4bd11717` production JAR now has 377 verified raw sessions:
+211 JavaExec, 139 native Java and 27 headless sessions. No old-JAR probes were
+admitted. All 255 production sources/901 classes remain included.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Partial current-JAR union | 25,811 / 29,792 (86.6%) | 20,076 / 25,888 (77.5%) |
+| Binary/location | 17,800 / 19,203 (92.7%) | 15,053 / 18,736 (80.3%) |
+| File/validation | 4,605 / 6,677 (69.0%) | 2,793 / 4,250 (65.7%) |
+
+Fresh native runs pass all 28 producer fault/cleanup/retry cases, qualified scalar
+types and optional source-only/symbol-only exports, and the existing x86-64/AArch64
+inheritance/vtable matrix. The inheritance evidence includes 48 compiler-reference
+observations, eight producer cases, 40 naming variants and six runtime rejection
+controls. Structural validators and debugger receipts are checked before admitting
+the corresponding raw execution data.
+
+The saved-annotation pipeline also passes against the installed fixed JAR:
+comments and equates, placement, context exports, deterministic reruns, cancellation
+and limit failures, failed-decompilation output, and multi-file source failures.
+It preserves the original project and restores the cached extension JAR afterward.
+Its current instrumentation records 29 sessions, including two native constant
+sessions and three retained-name headless sessions; the older local verifier's
+24-session assumption was corrected after checking these additional receipts
+against the current equate admission policy and GDB results.
+
+The fresh partial union is retained in
+`.forge-work/scratch/coverage-expansion/annotation-refresh-checked-4bd11/`.
+Supporting evidence is in `producer-failures-current-4bd11`,
+`qualified-type-current-4bd11`, `inheritance-current-4bd11` and
+`annotations-current-4bd11`. Raw class IDs, probe lengths, session identities,
+source hashes, protected inputs and the full source denominator were rechecked.
+This refresh adds no production changes. It is **not** a complete hosted cohort:
+fresh Windows and remaining integration measurements, critical targets, protected
+merge and actual-main publication are still outstanding.
+
+## Location-list narrowing fix and initial new measurement baseline
 
 CONFIRMED: boundary tests found that `Dwarf5LocationLists` silently serialized
 `0x100000007` as `0x7` for 32-bit targets. The old production JAR reproduces this
