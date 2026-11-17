@@ -7123,3 +7123,33 @@ coverage-recovery/firmware-map-boundaries/ adds two lines and nine branch outcom
 and 22,357/25,902 branches overall. Critical binary/location is 16,188/18,750
 branches (687 short of 90%); file operations 3,775/4,250 (50 short). Historical
 cohorts remain; current-head hosted acceptance is still outstanding.
+
+### Raw value-transfer shapes and temporary lifetime (#209)
+
+Acceptance: extraction, concatenation and byte-aligned shifts preserve only a
+complete tracked byte window at its exact destination offset. Invalid widths,
+runtime-dependent displacements, partial-bit shifts and truncated values must
+not acquire a location; unique temporaries must not survive an instruction.
+StackTransferShapeSmoke is invoked by existing stackValueFlowSmoke and checks
+all fitting source windows for 1/2/4/8-byte values, extraction widths, shifts
+at sign/byte/register boundaries, both concatenation operands and explicit
+invalid shapes. Byte windows and BigInteger assertions provide independent
+expected positions. Real Ghidra register descriptions and a decoded NOP supply
+the instruction context; injected raw p-code does not claim new target support.
+Original program bytes and modification counter remain unchanged.
+
+Guarded stackValueFlowSmoke passed in 5 seconds: 4,440 new assertions and
+5,540,773 total including existing exhaustive refinement checks. Six compiled
+faults were detected by Java assertions (14.541 seconds), including rounded
+bit shifts, wrong concatenation offsets and leaked unique temporaries. Baseline
+and source hashes verified. The initial mutation invocation lacked the Ghidra
+argument and failed its baseline; the corrected invocation is the only admitted
+mutation result. No production code changes. Evidence:
+.forge-work/scratch/stack-transfer-shapes-first.log and
+stack-transfer-shape-mutants-final/result.json.
+
+Verified diagnostic coverage-recovery/stack-transfer-shapes/ adds nine branches,
+zero lines: 1,411 unique sessions against unchanged JAR58bd, all 255 sources and
+901 classes. Overall 28,861/29,802 lines and 22,366/25,902 branches. Critical
+binary/location 16,197/18,750 branches (678 short of 90%), file operations
+3,775/4,250 (50 short). Historical cohorts remain; final hosted acceptance pending.

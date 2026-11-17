@@ -44,6 +44,7 @@ public final class StackValueFlowSmoke {
             }
         }
         checks += StackCarrierOwnershipSmoke.check();
+        checks += StackTransferShapeSmoke.check();
         checks += StorageRefinementSmoke.check();
         System.out.println("stack-value-flow-smoke=PASS checks=" + checks);
     }
