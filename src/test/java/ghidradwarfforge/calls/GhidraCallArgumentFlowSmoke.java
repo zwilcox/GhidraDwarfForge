@@ -53,6 +53,7 @@ public final class GhidraCallArgumentFlowSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])), new HeadlessGhidraApplicationConfiguration());
         Path output = Path.of(args[1]); Files.createDirectories(output);
+        ArgumentValueStorageSmoke.run();
         for (boolean arm : List.of(false, true)) {
             for (String shape : List.of("incoming", "add-wrap", "constant", "load", "call-kill", "constant-after-call",
                     "join-conflict", "join-agree", "save-reload", "rebase", "micro-select", "unknown-select",

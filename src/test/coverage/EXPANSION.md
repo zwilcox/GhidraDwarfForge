@@ -8583,3 +8583,33 @@ diagnostic union adds two lines and six branches: 28,912/29,802 lines,
 16,595/18,750 branches (280 short of 90%). Production code/bytecode is unchanged.
 This is not a fresh hosted acceptance cohort; #209 still requires its hosted
 gates, protected merge and main publication.
+
+## Call-value byte containment and snapshot budgets
+
+`ArgumentValueStorageSmoke` adds 1,704 assertions to the existing call-argument
+suite. For every one-through-eight-byte owner in both register/temporary banks,
+it checks every nearby one-through-eight-byte query against exact containment
+and independently calculated little-endian literal bytes. Cross-bank and
+out-of-owner reads remain unavailable. An undersized expression cannot fabricate
+whole-register bits; a depth-budget refusal retains the source expression.
+Snapshots copy input maps, expose immutable state, accept exactly 1,024 entries
+and reject the first excess entry without changing the previous snapshot.
+
+Guarded `callArgumentFlowSmoke` passes in six seconds (1,704 new assertions plus
+858 parent checks/49 fixtures). Six compiled faults are detected: cross-bank
+reads, rejected exact containment, bit/byte offset confusion, wrong exact/excess
+state budget and retained mutable input maps. The initial mutation run rejected
+an exception-only result at the valid budget boundary; the test now explicitly
+asserts successful construction there. Final mutation baseline and all six
+behavioral detections pass in 12.066 seconds. The independent 576-vector DWARF
+oracle also passes for the measured run. No production code changed.
+
+Evidence: `.forge-work/scratch/argument-value-storage-final.log`,
+`argument-value-storage-behavior-mutants/result.json`,
+`argument-value-storage-oracle.log`, and `coverage-recovery/argument-value-storage/`.
+Raw SHA-256: `d54b02a23e789fa6cca6bf1e091e2dc0ec4b768a514711fc1c9243f231b96761`.
+Source/raw/session/full-denominator verification passes. Most exercised branches
+were already measured elsewhere: the 1,357-session diagnostic union adds one
+line and one branch, reaching 28,913/29,802 lines and 22,821/25,902 branches overall;
+binary/location 18,656/19,213 lines and 16,596/18,750 branches (279 short of 90%).
+File counters remain unchanged. Current-head hosted acceptance is still pending.

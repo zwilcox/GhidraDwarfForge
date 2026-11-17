@@ -1202,6 +1202,18 @@ CXX_PROFILE_MUTANTS = [
 ]
 
 CALL_PARAMETERS_MUTANTS = [
+    ('argument-slice-crosses-register-bank', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'owner.bank() == cell.bank()', 'true'),
+    ('argument-slice-rejects-exact-extent', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'cell.offset() - owner.offset() <= owner.bytes() - cell.bytes()', 'cell.offset() - owner.offset() < owner.bytes() - cell.bytes()'),
+    ('argument-slice-uses-bit-offset', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     '(int) (cell.offset() - owner.offset()) * 8', '(int) (cell.offset() - owner.offset())'),
+    ('argument-state-rejects-exact-budget', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'values.size() > 1024', 'values.size() >= 1024'),
+    ('argument-state-ignores-budget', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'values.size() > 1024', 'false'),
+    ('argument-state-retains-mutable-input', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'values = Collections.unmodifiableMap(new LinkedHashMap<>(values));', 'values = Collections.unmodifiableMap(values);'),
     ('argument-subtracts-as-add', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
      'case PcodeOp.INT_SUB -> Op.SUBTRACT;', 'case PcodeOp.INT_SUB -> Op.ADD;'),
     ('argument-multiplies-as-add', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
