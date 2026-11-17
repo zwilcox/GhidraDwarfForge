@@ -6,7 +6,56 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current native-producer failure measurement
+## Current true-entry and alias integration measurement
+
+CONFIRMED: commit `d943783f` instruments the existing real function-entry shell
+oracle without changing its exporter, fixtures or GDB assertions. Each mode
+measures six analyzer JVMs: non-PIE and PIE, each with baseline, rebase and repeat.
+The alias mode additionally checks analyst secondary symbols. The real Ghidra
+installation remains the source of the measured production JAR; single-use
+adapters inject JaCoCo only into each analyzer JVM. Incomplete shell workflows
+cannot finalize a coverage collection.
+
+All **12 actual headless exports** passed with the current `2f18126b...` JAR.
+GNU/LLVM/pinned strict validation, original preservation and byte-identical
+repeats passed. GDB checks true function-entry breakpoints, every body range,
+absence of function/source ownership in gaps, backward branches into earlier
+body addresses, parameter values, global writes, source stepping and exit zero.
+The non-PIE strict-checker frame diagnostics were corroborated against the
+original input; no uncorroborated errors were accepted. Aliases also passed the
+independent ELF symbol check. Both modes are now required by hosted admission.
+
+The first local attempt failed because the shared Ghidra script cache contained
+Java 25 bytecode while the selected runtime was Java 21. It contributes no probes.
+A fresh run used isolated application settings/cache under the storage guard's
+temporary directory, retained Java 21, and restored the installed extension JAR
+after completion. This did not require a production or baseline change.
+
+The coverage-tool suite passes **256 tests**, including five new admission tests
+with negative controls for missing cases, wrong hosts/layers, missing validators
+or GDB receipts, incorrect aliases and inconsistent repeat/rebase identities.
+These synthetic receipt controls are not treated as runtime behavior evidence.
+
+The verified raw union adds **8 lines and 8 branch outcomes** across 12 sessions:
+8 lines/6 branches in the exporter, plus one branch each in equate reservations
+and coverage claims. Latest evidence is under
+`.forge-work/scratch/coverage-expansion/function-entry-java21-2f181/`, including
+`provenance/verification.json`, `measurements.json`, `verified/`, and `union/`.
+Every prior execution hash/collection and actual Java class/session identity was
+rechecked before union. All 255 sources/901 classes remain in the denominator.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall, 1,061 sessions | 28,526 / 29,790 (95.8%) | 21,404 / 25,884 (82.7%) |
+| Binary/location | 18,335 / 19,201 (95.5%) | 15,355 / 18,732 (82.0%) |
+| File/validation | 6,469 / 6,677 (96.9%) | 3,680 / 4,250 (86.6%) |
+
+**Still incomplete:** the critical groups need another 1,504 binary/location and
+145 file/validation branch outcomes to reach 90%. The updated hosted cohort,
+protected merge and actual-main publication remain outstanding. These are local
+diagnostic measurements, not hosted acceptance or a refreshed public badge.
+
+## Earlier native-producer failure measurement
 
 CONFIRMED: the existing 28-case isolated producer-failure suite now passes against
 the current `2f18126b...` production JAR and verified pinned libdwarf 2.3.2 native
