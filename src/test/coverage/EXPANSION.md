@@ -6,6 +6,41 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## ARM/MIPS context sessions reconciled with the diagnostic union
+
+The nine previously validated local context-boundary sessions are now included
+in the combined diagnostic: import plus two exports for ARM32, MIPS32 big endian
+and MIPS32 little endian. All use the same production JAR. Receipt hashes, raw
+execution hashes, oracle hashes and session identities were checked; each target's
+headless report regenerated exactly, including per-source counters and XML hashes.
+The producing local commit is `7f663d1a33fc906c398be7b6e00945f529431c14`; production
+source remains unchanged since that commit.
+
+Retained evidence was also rechecked: output and saved-project hashes, repeated
+generation equality, protected inputs, GNU/LLVM and strict libdwarf reports, and
+successful compiler/Forge GDB results with QEMU exit status. The runtime cases
+exercise ARM/Thumb transitions and MIPS delay slots. Incomplete context retains
+diagnostic source without fabricated executable line mappings. This was evidence
+revalidation, not a new runtime test execution. The cached Ghidra installation
+was restored after the original run; its tested JAR identity is checked against
+the preserved matching production JAR, not against the restored installation.
+
+The union now has 1,392 sessions and gains nine lines and 15 branches: nine lines
+and 13 branches in instruction-context extraction, plus one branch in each of
+the MIPS aggregate/floating call policies. Totals are 28,838/29,802 lines and
+22,176/25,902 branches. Critical binary/location branches are 16,007/18,750,
+868 short of 90%; file operations remain 3,775/4,250, 50 short. No classification
+or denominator changed. Historical cohorts remain; this does not establish
+complete current-head hosted acceptance or resolve the hosted MIPS collector
+failures before the queued workflow fix runs.
+
+Evidence: `.forge-work/scratch/coverage-recovery/verify-context-addition.log`,
+`verify-context-oracles-final.log`, and `context-current-diagnostic/` (regenerated
+target reports, retained-oracle recheck, receipts, union, counters and gaps).
+The first oracle recheck incorrectly expected QEMU's status file to contain
+`0`; the runner records `exit=0`. Correcting that format assertion produces the
+passing final recheck without changing the retained evidence.
+
 ## Loader write ranges and file-backed intersections
 
 `elfRelocationEffectsSmoke` now checks an independent interval oracle over COPY
