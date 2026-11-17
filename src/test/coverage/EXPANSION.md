@@ -6,6 +6,60 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Incoming-reference contracts and attachment validation refresh
+
+**CONFIRMED, partial local measurement:** test commit `6d290908` adds an actual
+Ghidra listing-reference matrix to `outsideBodyFlowSmoke`. Across x86-64,
+AArch64, ARM32 and both MIPS byte orders, 3,544 cases check instruction entries,
+offcuts, external predecessors, delay slots, and flow/data references. Unsafe
+entries must omit incoming parameter locations without fabricating a prefix;
+removing each reference restores the proof. Target bytes and function bodies
+remain unchanged. All **17,419 new assertions plus 85 existing checks pass**.
+
+Three compiled production mutants are rejected by the new matrix's behavioral
+assertions: accepting alternate entries, allowing outgoing delay-slot flow, and
+treating data references as flow. Compilation failures are not credited. Mutants
+are not instrumented and their disposable compiled classes were removed.
+The existing Gradle task also passes. Production source/JAR/native libraries
+are unchanged. This test uses actual Ghidra ProgramDB objects; it does not claim
+new native DWARF or runtime-debugger validation.
+
+A separate current-JAR attachment refresh measures **17 JVM sessions** covering
+live validation success, 14 rejection/cancellation controls, commit and rollback.
+It runs independent readelf/LLVM/libdwarf checks and actual GDB discovery/runtime
+and CRC rejection. Historical exported fixtures are preserved inputs to the
+current Java implementation, not a source of old execution data. The limited
+Linux test host does not establish privileged production-host acceptance or
+public-launcher recovery coverage.
+
+The verified union now contains **702 distinct sessions**: 211 JavaExec,
+452 isolated Java/native-path and 39 headless. All **255 production sources /
+901 classes** remain included:
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall | 27,552 / 29,792 (92.5%) | 20,963 / 25,888 (81.0%) |
+| Binary/location correctness | 18,303 / 19,203 (95.3%) | 15,380 / 18,736 (82.1%) |
+| File transactions/validation | 5,566 / 6,677 (83.4%) | 3,271 / 4,250 (77.0%) |
+
+This checkpoint adds ten lines and nine branch outcomes to the prior CFI
+checkpoint. `AttachmentValidator` has 204/204 measured lines;
+`StrictDwarfCheck` has 63/66. Original JavaExec receipt/test-bytecode snapshots
+are retained; the full suite was not rerun merely for this focused change.
+
+Evidence under `.forge-work/scratch/coverage-expansion/`:
+`flow-entry-contract-4bd11`, `flow-entry-mutations-4bd11`,
+`flow-entry-refresh-4bd11`, `attachment-current-4bd11`, and
+`attachment-refresh-4bd11`. Source snapshots, behavioral receipts, raw probes,
+class IDs, complete population, protected inputs, expected failure outcomes and
+validator logs are checked before admission. Final summary SHA-256:
+`7ce5ba489cd22bf9e8115210e160af9d323c396ff5f720a9266ea25b226ed3e7`.
+
+Issue #209 remains **incomplete**. Critical-group targets, fresh Windows and
+remaining integration measurement, exact-revision hosted acceptance, protected
+merge and publication from actual `main` remain required. The earlier CI cycle
+is still running and uses different production bytecode.
+
 ## Independent frame-state encoding boundaries
 
 CONFIRMED: commit `5342ccd7` adds `CallFrameEncodingBoundarySmoke` through the
