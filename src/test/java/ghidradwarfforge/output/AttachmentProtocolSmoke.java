@@ -28,6 +28,7 @@ public final class AttachmentProtocolSmoke {
         Path root = Files.createTempDirectory("forge-attachment-protocol-");
         try {
             paths(root);
+            AttachmentPathBoundarySmoke.exercise(Files.createDirectory(root.resolve("boundaries")));
             receiptFiles(root);
         }
         finally {

@@ -7355,3 +7355,42 @@ firmware-input-mutants/{result.json,*.log}, and
 coverage-recovery/firmware-input-boundaries/{result.json,sessions.tsv,counts.json,
 gaps.json,xml/combined.xml}. CI44150222826 still has five live architecture lanes
 and no failed completed jobs; this test change remains queued locally.
+
+### Attachment path boundaries and pre-publication rechecks (#209)
+
+Acceptance: read-only path preflight accepts the exact 128-path/64-character
+role limits, rejects duplicate/invalid roles, retains immutable selections,
+and refuses independent size, mtime, identity and parent-traversal changes
+before output creation. AttachmentPathBoundarySmoke runs within the existing
+attachmentProtocolSmoke task and also independently for mutation checks.
+
+Real files isolate each change: size-only restores mtime; time-only retains
+bytes; identity-only retains the old inode while copying equal bytes and mtime;
+parent substitution redirects to a hardlink of the same leaf, so inode and all
+leaf metadata stay equal. Rechecks must refuse each case, preserve input bytes
+and leave the selected output absent. Restoring the parent allows retry.
+The tests also cover missing/directory inputs and both input/new-output orders.
+
+Guarded Java25/Ghidra12.0.3 `./gradlew --no-daemon attachmentProtocolSmoke`
+passes 158 new assertions and 11,335 existing protocol assertions in 3 seconds.
+Guarded `src/test/coverage/mutation-check.py` with compiled main/test classes,
+Java25 and repeated `--only attachment-path-...` selectors for accepts-129,
+rejects-128, ignores-size, ignores-time, ignores-identity and ignores-parent
+passes its unchanged baseline and catches all six compiled faults by behavioral
+assertions (2.302 seconds). Production code and ELF/DWARF output are unchanged.
+
+Guarded measure-stack.py attachment-path-boundaries
+ ghidradwarfforge.output.AttachmentPathBoundarySmoke followed by
+verify-local-addition.py attachment-path-boundaries firmware-input-boundaries
+verifies the added raw session/current test hashes and unchanged production
+JAR. Diagnostic union: +5 lines/+9 branches, all AttachmentPaths, no losses;
+1,361 sessions, all255 production sources/901 classes. Overall28,882/29,802
+lines and22,460/25,902branches. File operations3,807/4,250branches (18short90%);
+binary/location remains616short. Historical cohorts remain; this is not full
+current-head hosted acceptance.
+
+Evidence: .forge-work/scratch/attachment-path-boundaries-final.log,
+attachment-path-mutants/{result.json,*.log}, and
+coverage-recovery/attachment-path-boundaries/{result.json,sessions.tsv,counts.json,
+gaps.json,xml/combined.xml}. Both earlier and final smoke runs pass; final run
+and mutants use the stronger same-inode parent-substitution fixture.
