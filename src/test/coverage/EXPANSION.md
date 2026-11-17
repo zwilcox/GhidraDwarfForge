@@ -6,7 +6,59 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current frame, entry, class, relocation and GUI-loader measurement
+## Stack coordinates and actual ARM literal memory effects
+
+**CONFIRMED:** `208efbca` adds `StackCoordinateProjectionSmoke`, invoked by the
+existing `truncatedStackDepthSmoke` Gradle task. Its 13,483 checks independently
+evaluate effective addresses with BigInteger across eight existing register maps,
+including signed displacement limits, unknown-depth intervals, instruction gaps,
+missing register mappings and immutable inputs/results. This tests the coordinate
+stage's contract; it does not claim those arithmetic extremes arise in recovered
+programs or establish new target support. The isolated and Gradle runs also pass
+the existing 996 decoded MIPS stack-depth checks. Six separately compiled faults
+are rejected by the new assertions: reversed displacement, wrapped overflow,
+invented known depth, altered interval bounds, mutable results and a hard-coded
+stack-register name. Mutated bytecode is not measured and was removed.
+
+**CONFIRMED:** `b9bdd725` extends `mixedParameterPrefixSmoke` with four actual
+ARM little-/big-endian decoded cases. A PC-relative store ends the conservative
+mixed register/stack prefix; a load into an unrelated register preserves it.
+Assertions check the independently calculated literal address in raw p-code and
+the listing's write result, along with the existing byte/parameter preservation,
+cancellation and ownership controls. The isolated and Gradle task pass 364
+checks. Two compiled faults are caught by the new literal cases alone: ignoring
+the listing's fixed-address write, and treating a load as a write.
+
+The first literal test incorrectly expected reference-table entries immediately
+after disassembly. An unmeasured probe established that this decoder exposes the
+literal address in p-code and result objects while the reference table is still
+empty. The corrected test asserts those actual contracts; the failed collection
+is excluded and retained for diagnosis. No production behavior was changed.
+
+Each Gradle task passes independently in six seconds. Production JAR SHA-256
+remains `4bd11717ce1ff8e46eba3b0f7091517c4dd90e4e0c82472613f8fd66ca31390c`.
+The verified partial union is
+`.forge-work/scratch/coverage-expansion/stack-literal-refresh-4bd11/summary.json`,
+SHA-256 `4cd2084de3e4419cef621ba2e9d27b7ee6ffea3483e94c4e3b9c12475795be9b`.
+Its 1,232 sessions comprise 211 JavaExec, 635 isolated Java/native-path and 386
+headless sessions, with all 255 production sources and 901 classes included.
+The new tests add seven covered lines and eleven branches over the preceding
+1,230-session report. Individual receipts bind the tested source snapshots,
+committed harness versions, compiled test classes, mutation outcomes and raw probes.
+
+| Scope | Lines | Branches | Required |
+| --- | --- | --- | --- |
+| Overall Java | 27,915/29,792 (93.7%) | 21,306/25,888 (82.3%) | 85% / 80% |
+| Binary/location correctness | 18,501/19,203 (96.3%) | 15,615/18,736 (83.3%) | 95% / 90% |
+| File transactions/validation | 5,688/6,677 (85.2%) | 3,314/4,250 (78.0%) | 95% / 90% |
+
+**INCOMPLETE:** the critical-group targets and complete hosted acceptance remain
+unchanged. Run `44024881065` has now passed extension-build, release-package and
+the initial Linux/Windows host jobs; architecture jobs and Windows-host validation
+are advancing at this checkpoint. These queued test commits are not part of that
+run and will require their own protected CI validation before integration.
+
+## Earlier frame, entry, class, relocation and GUI-loader checkpoint
 
 **CONFIRMED, local validation:** the following existing suites now have verified
 measurements against production JAR
