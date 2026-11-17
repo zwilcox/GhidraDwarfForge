@@ -14,6 +14,7 @@ public final class FormatterPlanSmoke {
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("forge-formatter-plan-");
         try {
+            FormatterWitnessAdmissionSmoke.run(root);
             Path selection = root.resolve("selection.json");
             String good = "{\"schema\":1,\"types\":[{\"key\":\"flags\",\"mode\":\"flags\"}]}";
             Files.writeString(selection, good);

@@ -6,6 +6,32 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Formatter type-name admission before native production
+
+The existing `formatterPlanSmoke` task now runs 60 additional assertions against
+the exporter admission path. It rejects malformed or duplicate formatter witness
+names, missing type models/keys, and collisions with recovered function, type
+or global names. The negative exports use an independently encoded ARM ELF and
+regular-file placeholders that cannot be loaded as producer libraries. Each
+case must reach the specific admission diagnostic before native loading.
+
+Both absent and existing sidecar destinations are checked. The original ELF and
+library placeholders retain their bytes; an existing destination retains its
+bytes, file identity and modification time. No source or staging artifact is
+left behind. The existing owning task removes its entire disposable fixture
+directory. Linux and Windows CI already run this task; fresh hosted validation
+of the additional cases is pending.
+
+The guarded task and matching-production measurement pass. The full task adds
+two lines and eight branches in `MinimalDwarfSidecarExporter`, plus one branch in
+`Arm32CallPolicy`, against the 1,379-session spill diagnostic. This tests rejection
+before native production, not successful DWARF serialization or debugger use.
+No new mutation-control result is claimed. Production code and coverage scope
+remain unchanged.
+
+Evidence: `.forge-work/scratch/formatter-witness-admission-test.log` and
+`coverage-recovery/formatter-witness-admission/`.
+
 ## 32-bit stack spill displacement and input admission
 
 `StackSpillSmoke` adds real decoded x86-32 spills of 1-, 2- and 4-byte values and
