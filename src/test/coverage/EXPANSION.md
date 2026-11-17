@@ -9045,3 +9045,42 @@ Verified diagnostic call-conditional-effects adds one line and six branches,
 18,681/19,213 lines and 16,740/18,750 branches, 135 short of 90%. File counts
 remain unchanged. This historical/local union is diagnostic; fresh hosted
 acceptance, protected merge and actual-main publication remain outstanding.
+
+### Compressed source-container width/order matrix (2026-11-17)
+
+CONFIRMED: the existing pure source-relocation boundary suite now builds small
+non-loadable ELF containers by hand for ELF32/ELF64 and both byte orders. All
+four source sections use independent JDK zlib envelopes; the string table has
+96 KiB of deterministic text to exercise chunked compression. Expected relocated
+info/string/line bytes are computed independently, decompressed and compared;
+abbreviations stay unchanged, envelope sizes/alignment remain exact and the
+original container stays byte-identical. A trailing byte inside the declared
+compressed section must fail. The test uses the existing Gradle/coverage task.
+
+Guarded sourceRelocationBoundarySmoke passes in 3 seconds with 1,248 cases.
+Three compiled faults detected in 2.190 seconds: allowing trailing compressed
+input, losing ELF32 decoded alignment, and forcing little-endian envelopes.
+Evidence `.forge-work/scratch/source-container-boundaries-strp.log` and
+`.forge-work/scratch/source-container-mutants-final/result.json`.
+
+All four retained artifacts pass readelf header/section/info/abbrev/aranges/line
+inspection, llvm-dwarfdump --verify, the pinned strict libdwarf checker, and GDB
+source-inventory assertions for both files under the relocated directory.
+These are minimal container/source-inventory fixtures, not target execution
+support claims. Evidence `.forge-work/scratch/source-container-validation-strp/`
+contains logs, artifact hashes and result.json. The guarded driver is
+`.forge-work/scratch/validate-source-containers.py`.
+
+Fixture development failures were corrected before acceptance: use the public
+Section.name() accessor; add an actual text extent for line addresses and aligned
+section payloads; identify the synthetic test producer so strict checking has a
+compiler completion record. The producer uses the reviewed DW_FORM_strp layout;
+an initial inline-string variant was correctly refused by production code.
+No validator policy, production source or coverage denominator was relaxed.
+
+Verified diagnostic source-container-boundaries adds one line and nine branches,
+1,376 unique sessions and all 255 sources against the unchanged authenticated
+JAR. Overall 28,939/29,802 lines and 22,974/25,902 branches; binary/location
+critical 18,682/19,213 lines and 16,749/18,750 branches, 126 short of 90%.
+File counts remain unchanged. Fresh hosted acceptance, protected merge and
+actual-main publication remain outstanding.
