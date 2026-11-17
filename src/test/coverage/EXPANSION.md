@@ -8,16 +8,16 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 690 verified
-sessions: 211 JavaExec, 440 native-Java and 39 headless. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 805 verified
+sessions: 211 JavaExec, 555 native-Java and 39 headless. Every available view
 retains all 255 production sources / 901 class files. Windows execution data
 and the remaining integration cohort are still missing; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 27,378 / 29,802 (91.9%) | 20,866 / 25,902 (80.6%) |
-| Binary and location correctness | 18,157 / 19,213 (94.5%) | 15,298 / 18,750 (81.6%) |
+| Overall | 27,529 / 29,802 (92.4%) | 20,999 / 25,902 (81.1%) |
+| Binary and location correctness | 18,308 / 19,213 (95.3%) | 15,431 / 18,750 (82.3%) |
 | File transactions and validation | 5,538 / 6,677 (82.9%) | 3,256 / 4,250 (76.6%) |
 
 The production relocation fix remains covered on all 14 changed executable
@@ -41,10 +41,21 @@ Cortex-M3 headless sessions, 29 annotation/equate/source-failure sessions, and
 structurally valid but behaviorally incorrect object layouts. GUI, firmware and
 annotation harnesses restore the cached Ghidra installation after testing.
 
+The latest additions are 104 frame-encoding/composition sessions, four source
+relocation sessions, three companion-loader sessions and four ARM32 memory
+sessions. Unwind tests cover both address widths and byte orders structurally,
+plus real x86-64/AArch64 executable and PIE backtraces with plain, gABI and GNU
+compressed original frames. Source relocation checks executable/PIE inputs,
+plain/zlib DWARF and 32 debugger scenarios plus source lookup. Companion loading
+checks executable, PIE and shared-object mappings and rejects a validator that
+prints a diagnostic despite exiting successfully. These source/attachment
+fixtures may be preserved historical inputs; measured production Java is the
+current JAR. Native-C coverage and a complete hosted cohort are not claimed.
+
 The immutable partial summary is
-`stable-memory-expanded-partial/summary.json` in the coverage workspace, SHA-256
-`a4ec705502770bf1d1a2e8d21f0186633afbf72a9ceb00a691b9afa57edd58e6`.
-It replaces the smaller 503-session partial baseline for current progress
+`stable-memory-unwind-partial/summary.json` in the coverage workspace, SHA-256
+`ff850d6bd03dea190b5944ed2acb68ed579880f72860252800ca46d8479c8205`.
+It replaces the smaller 690-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
 
 ## Stable and listed memory locations under PIE relocation
@@ -124,8 +135,8 @@ cross targets), repeats production deterministically and preserves inputs.
 The MIPS profiles additionally reject 32 oversized-address exports across both
 output-present and output-absent cases, then retry successfully. These explicit
 compiler fixture models test native serialization, not Ghidra extraction.
-ARM32 is **PRESENT, UNVERIFIED** locally because its cross-compiler is absent;
-all four forms run in its CI lane.
+ARM32 was unverified at that earlier checkpoint. Its four forms are now verified
+locally with the cached compiler/runtime described above and remain in CI.
 
 Both compiled mutation controls pass: removing the stable relocation expectation
 or the width check triggers the specific regression assertion; compilation,
