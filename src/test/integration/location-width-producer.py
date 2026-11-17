@@ -43,6 +43,8 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--dwarfdump', required=True)
     parser.add_argument('--target', choices=TARGETS, required=True)
+    parser.add_argument('--runtime-sysroot', type=Path,
+        help='Override the QEMU/GDB runtime sysroot for a cached cross toolchain')
     parser.add_argument('--role', choices=('exec', 'pie'), default='exec')
     parser.add_argument('--mode', choices=('listed', 'stable', 'listed-indirect', 'stable-indirect'), default='listed')
     args = parser.parse_args()
@@ -71,10 +73,16 @@ def main():
         return completed.stdout
 
     cc, objcopy, nm, emulator, sysroot, elf_class, data, machine = TARGETS[args.target]
+    if args.runtime_sysroot is not None:
+        if emulator is None or not args.runtime_sysroot.is_dir():
+            parser.error('--runtime-sysroot requires an emulated target and an existing directory')
+        sysroot = str(args.runtime_sysroot.resolve())
     fixture = root / 'fixture.c'
     fixture.write_text(FIXTURE)
     reference, binary = root / 'reference', root / 'input'
     flags = ['-fPIE', '-pie'] if args.role == 'pie' else ['-fno-pie', '-no-pie']
+    if args.target == 'arm32':
+        flags += ['-march=armv7-a', '-marm', '-mfpu=vfpv3-d16', '-mfloat-abi=hard']
     run('compile', [cc, '-O0', '-gdwarf-5', *flags, fixture, '-o', reference])
     header = reference.read_bytes()[:64]
     order = 'little' if data == 1 else 'big'
@@ -93,6 +101,8 @@ def main():
             symbols[parts[2]] = (int(parts[0], 16), 0)
     address, size = symbols['forge_location_probe']
     split = symbols['forge_location_split'][0]
+    if args.target == 'arm32':
+        assert address % 4 == split % 4 == 0, 'ARM-state fixture entries must be word-aligned'
     observed, = [value for name, value in symbols.items() if name.startswith('observed.')]
     retained, = [value for name, value in symbols.items() if name.startswith('retained.')]
     assert observed[1] == 4 and address < split < address + size

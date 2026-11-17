@@ -70,8 +70,15 @@ tests and workflow lint pass.
 
 CI now requires the four x86-64 PIE cases as well as the existing executable
 cases on all five targets. Admission checks the ELF role and two runtime address
-checks per debugger, rejecting missing or duplicate profiles. ARM32 remains
-unverified locally because its cross-compiler is unavailable. These tests use
+checks per debugger, rejecting missing or duplicate profiles. ARM32 is now
+verified locally using a checksum-verified Ubuntu cross toolchain extracted
+under the shared cache, without changing system packages. The four ARMv7-A
+ARM-state hard-float profiles pass eight compiler/Forge QEMU/GDB workflows,
+sixteen overflow refusals with retries, structural validators, deterministic
+reruns and input preservation. The harness explicitly selects that instruction
+profile and accepts a runtime sysroot for cached toolchains. A separate compiler
+default-mode check also selected ARM state; this is fixture normalization, not
+a reproduced product bug. These tests use
 an explicit fixture model through the real native exporter; they do not claim
 Ghidra variable-extraction coverage or a completed combined coverage goal.
 
