@@ -1,6 +1,8 @@
 package ghidradwarfforge.firmware;
 
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import ghidradwarfforge.firmware.FirmwareMemoryMap.FileSpan;
 import ghidradwarfforge.firmware.FirmwareMemoryMap.Input;
@@ -14,6 +16,13 @@ public final class FirmwareMemoryMapSmoke {
     private static final Input DATA = new Input("data", 32, "cd".repeat(32));
 
     public static void main(String[] args) {
+        try { run(); }
+        catch (IllegalArgumentException unexpected) {
+            throw new AssertionError("valid firmware metadata was rejected", unexpected);
+        }
+    }
+
+    private static void run() {
         FirmwareTarget.select("cortex-m3").requireSupported();
         reject(() -> FirmwareTarget.select("arm"), "unsupported");
         reject(() -> new FirmwareTarget("cortex-m3", "ARMv7-M", "AAPCS32-base", 40,
@@ -72,7 +81,92 @@ public final class FirmwareMemoryMapSmoke {
         reject(() -> new Region("a", 0, 16, true, false, false, Storage.UNINITIALIZED,
             List.of(new FileSpan(0, 16, "flash", 0))), "cannot claim");
         reject(() -> new Input("flash", 512, "wrong-hash"), "SHA-256");
+        boundaryInventory();
+        exhaustiveRegions();
         System.out.println("firmware-memory-map=PASS checks=" + checks);
+    }
+
+    private static void boundaryInventory() {
+        for (String name : new String[] {null, "", " \t\n", "bad\0name", "\ud800", "\udc00"}) {
+            reject(() -> new Input(name, 1, "ab".repeat(32)), "input ID");
+            reject(() -> new FileSpan(0, 1, name, 0), "span input ID");
+            reject(() -> unknown(name, 0, 1), "region name");
+        }
+        for (String hash : new String[] {null, "", "AB".repeat(32), "a".repeat(63), "a".repeat(65), "g".repeat(64)}) {
+            reject(() -> new Input("flash", 1, hash), "SHA-256");
+        }
+        for (long size : new long[] {0, -1, Long.MIN_VALUE}) {
+            reject(() -> new Input("flash", size, "ab".repeat(32)), "positive size");
+            reject(() -> new FileSpan(0, size, "flash", 0), "range");
+            reject(() -> unknown("empty", 0, size), "range");
+        }
+        for (int bits : new int[] {0, 16, 31, 33, 63, 65}) {
+            reject(() -> new FirmwareMemoryMap(bits, List.of(FLASH), List.of(file("a", 0, 1, "flash", 0))), "width");
+        }
+        reject(() -> new FirmwareMemoryMap(32, List.of(), List.of(unknown("ram", 0, 1))), "original inputs");
+        reject(() -> new FirmwareMemoryMap(32, List.of(FLASH), List.of()), "memory regions");
+        reject(() -> new FileSpan(0, 1, "flash", -1), "range");
+        for (String name : List.of("firmware λ", "raw-\ud83d\ude80", "e\u0301")) {
+            var input = new Input(name, Long.MAX_VALUE, "ab".repeat(32));
+            var region = file(name, Long.MAX_VALUE - 1, 1, name, Long.MAX_VALUE - 1);
+            var map = new FirmwareMemoryMap(64, List.of(input), List.of(region));
+            require(map.regions().getFirst().endExclusive() == Long.MAX_VALUE &&
+                map.regions().getFirst().spans().getFirst().fileOffset() == Long.MAX_VALUE - 1,
+                "largest supported endpoints and Unicode identities must survive");
+        }
+        var spans = new ArrayList<>(List.of(new FileSpan(2, 2, "flash", 10), new FileSpan(0, 2, "flash", 0)));
+        var region = new Region("fragmented", 0, 4, true, false, true, Storage.FILE_BACKED, spans);
+        var regions = new ArrayList<>(List.of(unknown("ram", 4, 1), region));
+        var inputs = new ArrayList<>(List.of(FLASH));
+        var map = new FirmwareMemoryMap(32, inputs, regions);
+        spans.clear(); regions.clear(); inputs.clear();
+        require(map.inputs().equals(List.of(FLASH)) && map.regions().size() == 2 &&
+            region.spans().equals(List.of(new FileSpan(0, 2, "flash", 0), new FileSpan(2, 2, "flash", 10))),
+            "mutable extraction inventories must not change the admitted map");
+        for (Runnable change : List.<Runnable>of(() -> map.inputs().clear(), () -> map.regions().clear(), () -> region.spans().clear())) {
+            try { change.run(); throw new AssertionError("admitted inventory is mutable"); }
+            catch (UnsupportedOperationException expected) { checks++; }
+        }
+    }
+
+    /** Small byte occupancy is independent of the production sorted-endpoint check. */
+    private static void exhaustiveRegions() {
+        for (int first = 0; first < 5; first++) {
+            for (int second = 0; second < 5; second++) {
+                for (int firstLength = 1; firstLength <= 3; firstLength++) {
+                    for (int secondLength = 1; secondLength <= 3; secondLength++) {
+                        boolean[] occupied = new boolean[8];
+                        for (int index = first; index < first + firstLength; index++) occupied[index] = true;
+                        boolean overlap = false;
+                        for (int index = second; index < second + secondLength; index++) overlap |= occupied[index];
+                        for (int flags = 0; flags < 8; flags++) {
+                            var initial = file("mapped", first, firstLength, "flash", 0);
+                            var unknown = new Region("unknown", second, secondLength,
+                                (flags & 1) != 0, (flags & 2) != 0, (flags & 4) != 0, Storage.UNINITIALIZED, List.of());
+                            var selected = new ArrayList<>(List.of(initial, unknown));
+                            if (overlap) {
+                                reject(() -> new FirmwareMemoryMap(32, List.of(FLASH), selected), "overlapping");
+                                Collections.reverse(selected);
+                                reject(() -> new FirmwareMemoryMap(32, List.of(FLASH), selected), "overlapping");
+                            }
+                            else {
+                                var accepted = new FirmwareMemoryMap(32, List.of(FLASH), selected);
+                                Collections.reverse(selected);
+                                require(accepted.equals(new FirmwareMemoryMap(32, List.of(FLASH), selected)), "input order changed map");
+                                var retained = accepted.regions().stream().filter(r -> r.name().equals("unknown")).findFirst().orElseThrow();
+                                require(retained.equals(unknown) && retained.spans().isEmpty(),
+                                    "permissions or uninitialized memory contents were invented");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void require(boolean value, String message) {
+        if (!value) throw new AssertionError(message);
+        checks++;
     }
 
     private static Region file(String name, long address, long size, String input, long offset) {

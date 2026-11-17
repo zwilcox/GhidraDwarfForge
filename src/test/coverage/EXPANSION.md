@@ -7104,3 +7104,22 @@ outcomes, zero lines. 1,409 sessions, unchanged JAR58bd, 255 sources/901 classes
 28,859/29,802 lines and 22,348/25,902 branches overall; binary/location
 16,179/18,750 branches (696 short of 90%), file operations 3,775/4,250 (50 short).
 Historical cohorts remain; current-head hosted acceptance is outstanding.
+
+### Firmware metadata boundaries (#209)
+
+Acceptance: memory-map provenance is immutable; valid adjacent regions, the
+last 32-bit address and largest signed file-offset endpoint remain accepted.
+Malformed names, hashes, widths, extents and absent inputs must be rejected.
+The existing firmwareMemoryMapSmoke now checks 1,800 pairs of regions against
+an independent byte-occupancy model in both orders, all permission combinations,
+Unicode identities and mutation of caller-owned lists.
+
+Guarded task passed 3,674 assertions. Six compiled faults were detected by Java
+assertions, with a passing baseline and verified source hashes (2.185 seconds).
+No production changes. Evidence: .forge-work/scratch/firmware-map-boundaries-final.log
+and firmware-map-mutants/result.json. Verified diagnostic
+coverage-recovery/firmware-map-boundaries/ adds two lines and nine branch outcomes:
+1,410 sessions, unchanged JAR58bd, 255 sources/901 classes; 28,861/29,802 lines
+and 22,357/25,902 branches overall. Critical binary/location is 16,188/18,750
+branches (687 short of 90%); file operations 3,775/4,250 (50 short). Historical
+cohorts remain; current-head hosted acceptance is still outstanding.
