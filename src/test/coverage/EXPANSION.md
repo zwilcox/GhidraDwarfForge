@@ -6,7 +6,45 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current companion observation and recovery checkpoint
+## Current variable location contract checkpoint
+
+CONFIRMED: commit `65bf9ae8` adds `VariableLocationContractSmoke` through the
+existing `variableStorageSmoke` task. A deterministic point-by-point oracle
+checks 32 shuffled lifetime inventories, including gaps, adjacent ranges,
+changing storage and unavailable intervals. Sorting must preserve both the
+half-open coverage and each interval's analyst evidence. Boundary cases also
+reject overlapping lifetimes, incomplete/excessive composite pieces, ambiguous
+variable identities and missing evidence. Caller-owned lists cannot mutate
+admitted models. Register-piece width mismatches and untranslated Ghidra stack
+coordinates remain omitted; omission reasons and diagnostics are retained.
+
+The focused storage smoke passes 5,229 contract assertions and the existing
+register-map checks. Eight independently compiled faults fail the intended
+assertions: accepting overlap or excessive pieces, requiring every interval to
+be available, identifying variables by function spelling, mutable model output,
+ignoring register-piece width, inventing a frame-base translation, and replacing
+omission reasons. These pure Java model/planning tests make no new native,
+debugger or architecture-support claim. Production source/JAR bytes are unchanged.
+
+One verified JVM session adds 12 lines and 27 critical branch outcomes.
+`VariableStorageModel` now measures 102/103 lines and 74/78 branches; the
+expression planner gains one branch outcome. All prior raw hashes, receipt
+bindings and actual class/session identities were rechecked before the union.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall, 1,855 distinct sessions | 28,664 / 29,790 (96.2%) | 21,654 / 25,884 (83.7%) |
+| Binary/location | 18,453 / 19,201 (96.1%) | 15,572 / 18,732 (83.1%) |
+| File/validation | 6,485 / 6,677 (97.1%) | 3,701 / 4,250 (87.1%) |
+
+Evidence is in `.forge-work/scratch/coverage-expansion/variable-location-contracts-2f181/`
+and `variable-location-mutations-2f181/`. Mutant probes are excluded. All 255
+production sources/901 classes remain included. **Still incomplete:** 1,287
+binary/location and 124 file/validation branch outcomes for the 90% critical
+targets, full current hosted validation, protected merge and main publication.
+No full JavaExec rerun or current Windows result is claimed for this increment.
+
+## Earlier companion observation and recovery checkpoint
 
 CONFIRMED: commit `351e0f6e` preserves the existing
 `CompanionPublicationFailureSmoke` byte-for-byte and adds the separate
