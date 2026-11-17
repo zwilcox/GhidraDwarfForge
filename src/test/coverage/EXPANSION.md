@@ -8254,3 +8254,31 @@ The 1,340-session diagnostic union adds five branches and no lines:
 28,904/29,802 lines, 22,691/25,902 branches; critical binary/location
 16,470/18,750 branches, 405 short of 90%. File operations remain 3,827/4,250.
 Mixed historical/local evidence still prevents final hosted acceptance.
+
+## Scalar, mixed and indirect parameter metadata
+
+The existing scalar-flow, mixed-prefix and indirect-parameter tasks now run
+92 additional cases over real decoded programs: x86-64/AArch64 scalar values
+at four/eight bytes, ARM register/stack joins in both byte orders, and AArch64
+ABI pointers arriving in registers or on the stack. Transparent API views must
+retain each fixture's independently checked locations and transitions. Altered
+ownership, ordinals, attachment, first use, widths and formal types must not
+seed a proof. Indirect controls additionally reject non-pointer effective
+types, unknown or incompatible pointees, short pointers, empty objects and
+a self-consistent four-byte carrier/pointer that disagrees with the 64-bit ABI.
+Every case checks a clean retry and unchanged saved program/parameter state.
+
+Guarded tasks `stackValueFlowSmoke mixedParameterPrefixSmoke
+indirectParameterStorageSmoke` pass in ten seconds. Eight compiled guard faults
+are caught by Java assertions, with all three unchanged baselines passing
+(27.995 seconds total). The tests do not change production code or emitted
+artifacts. They run in already registered JavaExec tasks.
+
+Evidence: `.forge-work/scratch/parameter-proof-metadata-build.log`,
+`parameter-proof-metadata-mutants/result.json`, and sequentially verified
+`coverage-recovery/{scalar,mixed,indirect}-parameter-metadata/` reports. Three
+new measured sessions add 12 branches (one scalar, five mixed, six indirect),
+with no new lines or denominator changes. The 1,343-session diagnostic union
+reports 28,904/29,802 lines and 22,703/25,902 branches. Binary/location branches
+are 16,482/18,750, 393 short of 90%; file-operation branches remain 3,827/4,250.
+These local additions still need validation in a complete hosted cohort.

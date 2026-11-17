@@ -120,6 +120,11 @@ public final class MixedParameterPrefixSmoke {
                     return;
                 }
                 require(!intervals.isEmpty(), "missing mixed prefix");
+                if (adjustsStack) {
+                    ParameterProofMetadataSmoke.run("mixed", program, function, parameter,
+                        (ownerFunction, value) -> GhidraVariableStorage.parameterPrefix(program, ownerFunction,
+                            value, map, rejected, TaskMonitor.DUMMY));
+                }
                 long expected = 0x1000;
                 for (var interval : intervals) {
                     require(interval.start() == expected, "location gap");

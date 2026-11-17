@@ -65,6 +65,8 @@ final class StackCarrierOwnershipSmoke {
                 var storage = parameter.getVariableStorage();
                 var registers = TargetRegisterMap.forTarget(x86 ? "x86_64" : "aarch64");
                 var baseline = StackValueFlow.prove(program, function, parameter, registers, TaskMonitor.DUMMY);
+                ParameterProofMetadataSmoke.run("scalar", program, function, parameter,
+                    (ownerFunction, value) -> StackValueFlow.prove(program, ownerFunction, value, registers, TaskMonitor.DUMMY));
                 require(baseline.size() == 1 && baseline.getFirst().start() == entry.getOffset()
                     && baseline.getFirst().end() == entry.getOffset() + code.length
                     && baseline.getFirst().storage() instanceof RegisterStorage register

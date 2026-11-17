@@ -79,6 +79,11 @@ public final class IndirectParameterStorageSmoke {
                     parameter.getFormalDataType().getLength() == 24, "fixture lacks a genuine ABI pointer");
                 var registers = TargetRegisterMap.forTarget("aarch64");
                 var intervals = StackValueFlow.proveIndirect(program, function, parameter, registers, TaskMonitor.DUMMY);
+                if (!overwrite) {
+                    ParameterProofMetadataSmoke.run("indirect", program, function, parameter,
+                        (ownerFunction, value) -> StackValueFlow.proveIndirect(program, ownerFunction, value,
+                            registers, TaskMonitor.DUMMY));
+                }
                 if (incomingStack) {
                     require(at(intervals, 0) instanceof IndirectMemoryStorage memory &&
                         memory.pointerLocation() instanceof RegisterRelativeStorage relative &&
