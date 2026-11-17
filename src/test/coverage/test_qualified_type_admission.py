@@ -40,7 +40,7 @@ class Admission(unittest.TestCase):
             admission.oracle(record, evidence)
 
     def test_complete_cohort(self):
-        self.assertEqual(len(admission.expected_controls()), 59)
+        self.assertEqual(len(admission.expected_controls()), 64)
         admission.cohort([admission.oracle(*fixture())])
         for cases in ([], [('linux', 'x86_64')] * 2, [('linux', 'aarch64')]):
             with self.subTest(cases=cases), self.assertRaises(ValueError):
@@ -62,7 +62,7 @@ class Admission(unittest.TestCase):
             self.reject(lambda r, e: e.update({key: value}))
 
     def test_type_chain_and_all_controls(self):
-        for index in range(59):
+        for index in range(64):
             with self.subTest(index=index):
                 self.reject(lambda r, e: e['typeOracle']['negativeControls'].pop(index))
         self.reject(lambda r, e: e['typeOracle']['negativeControls'].reverse())

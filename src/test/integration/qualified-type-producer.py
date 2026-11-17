@@ -29,12 +29,15 @@ char32_t forge_utf32 = 0x1f642;
 float forge_float = 1.25f;
 double forge_double = -2.5;
 unsigned long long forge_u64 = 0xfedcba9876543210ULL;
+struct ForgePacket { int count; unsigned char data[]; } forge_packet = { 2 };
+struct ForgeIncomplete;
+struct ForgeIncomplete *forge_incomplete = 0;
 __attribute__((noinline)) int forge_types_probe(void) { return forge_base + forge_atomic; }
 int main(void) { return forge_types_probe() != 42; }
 '''
 GLOBALS = ('forge_base', 'forge_atomic', 'forge_cv', 'forge_restrict', 'forge_void',
     'forge_schar', 'forge_uchar', 'forge_bool', 'forge_utf16', 'forge_utf32',
-    'forge_float', 'forge_double', 'forge_u64')
+    'forge_float', 'forge_double', 'forge_u64', 'forge_packet', 'forge_incomplete')
 CHECKS = '''
 python
 values = {'forge_base': 35, 'forge_atomic': 7, 'forge_cv': 19, 'forge_schar': -7,
@@ -58,6 +61,18 @@ assert 'restrict' in gdb.execute('ptype forge_restrict', to_string=True)
 # The separate DIE oracle must verify the retained const modifier.
 assert gdb.execute('ptype forge_void', to_string=True).strip() == 'type = void *'
 assert '_Atomic' in gdb.execute('ptype forge_atomic', to_string=True)
+assert int(gdb.parse_and_eval('forge_packet.count')) == 2
+assert int(gdb.parse_and_eval('sizeof(forge_packet)')) == 4
+packet = gdb.parse_and_eval('forge_packet').type
+assert [field.name for field in packet.fields()] == ['count', 'data']
+assert packet.fields()[1].bitpos == 32
+assert packet.fields()[1].type.code == gdb.TYPE_CODE_ARRAY
+assert packet.fields()[1].type.target().sizeof == 1
+assert int(gdb.parse_and_eval('forge_incomplete')) == 0
+incomplete = gdb.parse_and_eval('forge_incomplete').type
+assert incomplete.sizeof == 8 and incomplete.target().code == gdb.TYPE_CODE_STRUCT
+assert incomplete.target().tag == 'ForgeIncomplete'
+assert len(incomplete.target().fields()) == 0
 end
 '''
 
@@ -108,7 +123,49 @@ def check_types(nodes, symbols):
             assert actual and int(actual[1]) == encoding, (name, 'base encoding')
             assert node['attributes'].get('DW_AT_byte_size') == str(width), (name, 'base width')
         chains[name] = {'global': matches[0]['offset'], 'types': chain}
+    check_incomplete_types(nodes, symbols)
     return chains
+
+
+def check_incomplete_types(nodes, symbols):
+    def unique(tag, name):
+        found = [node for node in nodes.values() if node['tag'] == 'DW_TAG_' + tag and node['name'] == name]
+        assert len(found) == 1, ('incomplete-types', tag, name)
+        return found[0]
+
+    def target(node, tag):
+        match = re.fullmatch(r'<0x([0-9a-f]+)>', node['attributes'].get('DW_AT_type', ''))
+        assert match and int(match[1], 16) in nodes, ('incomplete-types', 'reference')
+        result = nodes[int(match[1], 16)]
+        assert result['tag'] == 'DW_TAG_' + tag, ('incomplete-types', 'target-tag')
+        return result
+
+    packet_global = unique('variable', 'forge_packet')
+    pointer_global = unique('variable', 'forge_incomplete')
+    for node in (packet_global, pointer_global):
+        match = re.search(r'\(DW_OP_addr: ([0-9a-f]+)\)$', node['attributes'].get('DW_AT_location', ''))
+        assert match and int(match[1], 16) == symbols[node['name']]['address'], ('incomplete-types', 'address')
+    packet = target(packet_global, 'structure_type')
+    assert packet['attributes'].get('DW_AT_byte_size') == '4', ('incomplete-types', 'packet-size')
+    members = {node['name']: node for node in nodes.values() if node['parent'] == packet['offset']}
+    assert set(members) == {'count', 'data'}, ('incomplete-types', 'members')
+    assert members['count']['attributes'].get('DW_AT_data_member_location') == '0', ('incomplete-types', 'count-offset')
+    assert members['data']['attributes'].get('DW_AT_data_member_location') == '4', ('incomplete-types', 'data-offset')
+    array = target(members['data'], 'array_type')
+    assert 'DW_AT_byte_size' not in array['attributes'], ('incomplete-types', 'array-size')
+    element = target(array, 'base_type')
+    assert element['attributes'].get('DW_AT_byte_size') == '1', ('incomplete-types', 'element-width')
+    ranges = [node for node in nodes.values() if node['parent'] == array['offset']]
+    assert len(ranges) == 1 and ranges[0]['tag'] == 'DW_TAG_subrange_type', ('incomplete-types', 'subrange')
+    assert ranges[0]['attributes'].get('DW_AT_count') == '0', ('incomplete-types', 'count')
+    pointer = target(pointer_global, 'pointer_type')
+    assert pointer['attributes'].get('DW_AT_byte_size') == '8', ('incomplete-types', 'pointer-width')
+    incomplete = target(pointer, 'structure_type')
+    assert incomplete['name'] == 'ForgeIncomplete', ('incomplete-types', 'name')
+    assert 'DW_AT_byte_size' not in incomplete['attributes'], ('incomplete-types', 'incomplete-size')
+    assert not any(node['parent'] == incomplete['offset'] for node in nodes.values()), ('incomplete-types', 'invented-members')
+    return {'array': array['offset'], 'range': ranges[0]['offset'], 'incomplete': incomplete['offset'],
+        'data': members['data']['offset'], 'pointer': pointer['offset']}
 
 
 def type_oracle(info, symbols, parser_path):
@@ -130,6 +187,15 @@ def type_oracle(info, symbols, parser_path):
         else:
             raise AssertionError('type oracle accepted corruption: ' + label)
 
+    incomplete = check_incomplete_types(nodes, symbols)
+    for label, key, attribute, value in (
+            ('flexible-array-count', 'range', 'DW_AT_count', '1'),
+            ('flexible-array-size', 'array', 'DW_AT_byte_size', '1'),
+            ('flexible-member-offset', 'data', 'DW_AT_data_member_location', '0'),
+            ('incomplete-structure-size', 'incomplete', 'DW_AT_byte_size', '1'),
+            ('incomplete-pointer-width', 'pointer', 'DW_AT_byte_size', '4')):
+        reject(label, incomplete[key], attribute, value)
+
     for name, chain in chains.items():
         reject(name + ':address', chain['global'], 'DW_AT_location', '(DW_OP_addr: 0)')
         for index, offset in enumerate(chain['types']):
@@ -144,7 +210,7 @@ def type_oracle(info, symbols, parser_path):
             # const void terminates without a type reference. GDB's display
             # alone cannot distinguish this from an unqualified void pointer.
             reject(name + ':void-target', terminal, 'DW_AT_type', '<0x0>')
-    return {'globals': list(chains), 'negativeControls': controls,
+    return {'globals': list(GLOBALS), 'negativeControls': controls,
         'constVoidChain': ['DW_TAG_pointer_type', 'DW_TAG_const_type'],
         'constVoidHasNoTarget': True}
 
@@ -263,7 +329,7 @@ def main():
     marker = run('producer', [args.java_home / 'bin/java', '--enable-native-access=ALL-UNNAMED', '-cp', cp,
         'ghidradwarfforge.nativeapi.QualifiedTypeProducerProbe', args.consumer.resolve(), args.producer.resolve(),
         binary, sidecar, request], coverage)
-    assert 'qualified-type-producer=PASS globals=13 deterministic=true original-preserved=true' in marker
+    assert 'qualified-type-producer=PASS globals=15 deterministic=true original-preserved=true' in marker
     assert 'untyped-producer=PASS variants=2 invalid-source-names=5 deterministic=true retry=true' in marker
     info = run('readelf', ['readelf', '-h', '-S', '--debug-dump=info', '--debug-dump=abbrev',
         '--debug-dump=aranges', '--debug-dump=decodedline', sidecar])

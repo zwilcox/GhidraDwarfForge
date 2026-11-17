@@ -2,9 +2,10 @@
 import re
 
 
-GLOBALS = ('forge_base', 'forge_atomic', 'forge_cv', 'forge_restrict', 'forge_void',
+SCALAR_GLOBALS = ('forge_base', 'forge_atomic', 'forge_cv', 'forge_restrict', 'forge_void',
     'forge_schar', 'forge_uchar', 'forge_bool', 'forge_utf16', 'forge_utf32',
     'forge_float', 'forge_double', 'forge_u64')
+GLOBALS = SCALAR_GLOBALS + ('forge_packet', 'forge_incomplete')
 SOURCES = {'src/test/integration/qualified-type-producer.py',
     'src/test/java/ghidradwarfforge/nativeapi/QualifiedTypeProducerProbe.java',
     'src/test/integration/check-object-parameters.py', 'src/test/integration/check-dwarfdump.py',
@@ -15,8 +16,9 @@ UNTYPED_CONTROLS = ['name', 'DW_AT_low_pc', 'DW_AT_high_pc', 'DW_AT_type',
 
 
 def expected_controls():
-    controls = []
-    for name in GLOBALS:
+    controls = ['flexible-array-count', 'flexible-array-size', 'flexible-member-offset',
+        'incomplete-structure-size', 'incomplete-pointer-width']
+    for name in SCALAR_GLOBALS:
         controls.append(name + ':address')
         depth = {'forge_atomic': 2, 'forge_cv': 3, 'forge_restrict': 3, 'forge_void': 2}.get(name, 1)
         for index in range(depth):

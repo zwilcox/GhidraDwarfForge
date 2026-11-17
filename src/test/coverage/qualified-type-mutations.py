@@ -11,6 +11,12 @@ import tempfile
 
 
 MUTANTS = (
+    ('flexible-array-invents-byte-size', 'if (array.byteSize() > 0) {',
+        'if (true) {', ('incomplete-types', 'array-size')),
+    ('flexible-array-invents-element', 'array.elementCount(), errorOut);',
+        'array.elementCount() + 1, errorOut);', ('incomplete-types', 'count')),
+    ('incomplete-structure-invents-size', 'if (aggregate.byteSize() > 0) {',
+        'if (true) {', ('incomplete-types', 'incomplete-size')),
     ('atomic-as-const', 'case ATOMIC -> DW_TAG_ATOMIC_TYPE;',
         'case ATOMIC -> DW_TAG_CONST_TYPE;', ('forge_atomic', 'type tag', 'DW_TAG_const_type')),
     ('utf-as-unsigned', 'case UTF -> DW_ATE_UTF;',
@@ -101,7 +107,7 @@ def main():
     (output / 'result.json').write_text(json.dumps({'status': 'PASS', 'mutantsDetected': len(MUTANTS),
         'coverageCollected': False, 'productionSourceSha256': oracle.digest(source),
         'baselineResultSha256': oracle.digest(baseline / 'result.json'), 'results': outcomes,
-        'scope': 'Five selected modifier/encoding/untyped-symbol faults; no repository-wide mutation score'}, indent=4) + '\n')
+        'scope': 'Selected incomplete-type/modifier/encoding/untyped-symbol faults; no repository-wide mutation score'}, indent=4) + '\n')
     print('qualified-type-mutations=PASS faults=' + str(len(MUTANTS)))
 
 

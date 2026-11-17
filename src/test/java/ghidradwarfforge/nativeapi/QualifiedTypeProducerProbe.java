@@ -47,6 +47,13 @@ public final class QualifiedTypeProducerProbe {
             List.of(TypeGraph.Qualifier.CONST), ref("void")));
         nodes.add(new TypeGraph.IndirectionType("voidpointer", "const void *", 8,
             TypeGraph.IndirectionKind.POINTER, ref("constvoid")));
+        nodes.add(new TypeGraph.ArrayType("flexible", "unsigned char[]", 0, ref("uchar"), 0));
+        nodes.add(new TypeGraph.AggregateType("packet", "ForgePacket", 4, TypeGraph.AggregateKind.STRUCTURE,
+            List.of(new TypeGraph.Member("count", ref("int"), 0), new TypeGraph.Member("data", ref("flexible"), 4))));
+        nodes.add(new TypeGraph.AggregateType("incomplete", "ForgeIncomplete", 0,
+            TypeGraph.AggregateKind.STRUCTURE, List.of()));
+        nodes.add(new TypeGraph.IndirectionType("incomplete_pointer", "ForgeIncomplete *", 8,
+            TypeGraph.IndirectionKind.POINTER, ref("incomplete")));
         var graph = new TypeGraph(nodes);
         Map<String, String> types = Map.ofEntries(
             Map.entry("forge_base", "int"), Map.entry("forge_atomic", "atomic"),
@@ -55,7 +62,8 @@ public final class QualifiedTypeProducerProbe {
             Map.entry("forge_uchar", "uchar"), Map.entry("forge_bool", "bool"),
             Map.entry("forge_utf16", "utf16"), Map.entry("forge_utf32", "utf32"),
             Map.entry("forge_float", "float"), Map.entry("forge_double", "double"),
-            Map.entry("forge_u64", "u64"));
+            Map.entry("forge_u64", "u64"), Map.entry("forge_packet", "packet"),
+            Map.entry("forge_incomplete", "incomplete_pointer"));
         require(request.globals().stream().map(Symbol::name).collect(java.util.stream.Collectors.toSet()).equals(types.keySet()),
             "fixture globals differ");
         var globals = new ArrayList<ProgramTypeModel.GlobalVariable>();
@@ -118,7 +126,7 @@ public final class QualifiedTypeProducerProbe {
         require(Arrays.equals(original, Files.readAllBytes(input)), "original changed");
         require(Arrays.equals(text.utf8(), Files.readAllBytes(source)), "source changed");
         System.out.println("untyped-producer=PASS variants=2 invalid-source-names=5 deterministic=true retry=true");
-        System.out.println("qualified-type-producer=PASS globals=13 deterministic=true original-preserved=true");
+        System.out.println("qualified-type-producer=PASS globals=15 deterministic=true original-preserved=true");
     }
 
     private static TypeGraph.TypeRef ref(String key) { return new TypeGraph.TypeRef(key); }

@@ -7066,3 +7066,41 @@ JaCoCo branches. Overall remains 28,859/29,802 lines and 22,346/25,902 branches;
 binary/location remains 698 branch outcomes short of 90%, file operations 50
 short. This is useful boundary/fault detection, not a coverage-percentage gain.
 Historical cohorts remain; current-head hosted acceptance is outstanding.
+
+### Flexible arrays and incomplete structure emission (#209)
+
+Acceptance: a zero-element flexible array preserves its element type and member
+offset without an invented byte extent; a pointer to an incomplete structure
+preserves the pointer width and named target without an invented layout.
+Expanded the existing qualified-type producer fixture to 15 compiler globals.
+The native production exporter runs twice and preserves original/source bytes;
+paired compiler/exported GDB checks verify field layout, element width, pointer
+value/width and incomplete target identity. The independent DIE oracle checks
+zero count, omitted array/structure sizes and exact references/locations. It now
+rejects 64 output corruptions, including five new controls. Admission requires
+all 15 globals and all 64 controls; its eight unit tests pass.
+
+The final guarded `qualified-type-producer.py` run passed GNU/LLVM and strict
+validation plus both GDB workflows. The strict checker reported two frame
+alignment diagnostics, both corroborated against the unchanged compiler original
+by the existing strict policy. These were not unexplained or suppressed errors.
+The first local run used a stale validator lacking the atomic-type correction
+and failed; it was not admitted. Reused current CI validator artifact14358631735
+from run44150222826 (5,452,742 compressed bytes); all bundle SHA256SUMS and
+repository patch hashes verified. Shipped libdwarf and production Java unchanged.
+
+`qualified-type-mutations.py` passed baseline plus eight compiled faults, including
+invented flexible-array size/count and incomplete-structure size. Each mutant
+produced readable DWARF and failed the independent output oracle; no compile
+failure or native crash counted. Mutant execution excluded from coverage.
+Final evidence: `.forge-work/scratch/qualified-incomplete-final/`,
+`qualified-incomplete-final-coverage/`, `qualified-incomplete-final-mutants/`,
+and `qualified-incomplete-admission.log`.
+
+Verified native receipt, raw execution, production JAR/classes, harness/source and
+protected-file hashes, validators/GDB logs and final mutation baseline binding.
+Diagnostic `coverage-recovery/qualified-incomplete/` adds two exporter branch
+outcomes, zero lines. 1,409 sessions, unchanged JAR58bd, 255 sources/901 classes:
+28,859/29,802 lines and 22,348/25,902 branches overall; binary/location
+16,179/18,750 branches (696 short of 90%), file operations 3,775/4,250 (50 short).
+Historical cohorts remain; current-head hosted acceptance is outstanding.
