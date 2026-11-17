@@ -6,6 +6,40 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Saved ARM mode evidence after analyst edits
+
+`GhidraArm32FunctionModesSmoke` now retains an extracted function selection while
+the actual ProgramDB function is renamed, removed, marked as a thunk, or shortened
+to another completely decoded body. It requires the precise stale-evidence
+diagnostic, unchanged unrelated cues, and an unchanged program modification
+counter. Transaction rollback restores the exact original evidence. Rejection
+of the last usable Thumb cue also drops the otherwise valid ARM-only supplement.
+
+Additional cases exercise out-of-range analysis addresses, invalid ELF32
+coordinates that rebase into valid saved instructions, misaligned link-time
+coordinates, and the exact 65,536-alias limit followed by its first excess.
+Both primary and alias mode extraction must refuse invalid coordinates without
+altering the saved program.
+
+The guarded task passes 423 checks. Four compiled mutations are detected through
+behavioral assertions: skipping name agreement, skipping body-size agreement,
+accepting thunks, and rejecting the valid alias-count boundary. The initial
+mutation invocation lacked the Ghidra dependency/argument registration for this
+test; that compilation failure was not counted as detection. The corrected
+baseline and all four controls pass, as do the eight mutation-outcome tests.
+
+Production code remains unchanged. The measured task adds five lines and 13
+branches. Together with the ARM inventory tests above, the refreshed diagnostic
+contains 1,377 matching-production sessions, adding 15 lines and 41 branches to
+the preceding inventory diagnostic. It retains all 255 production sources and
+901 classes. This mixed historical/current union is still not full current-head
+hosted acceptance, and neither critical-group branch target has been met.
+
+Evidence: `.forge-work/scratch/arm-saved-mode-test-final.log`,
+`arm-saved-mode-mutants-final/result.json`, `arm-mode-mutation-outcomes.log`,
+`coverage-recovery/arm-saved-mode-boundaries/`, and
+`coverage-recovery/current-44105084385/arm-admission-diagnostic/`.
+
 ## ARM mode symbol admission boundaries
 
 `Arm32ModeSymbolsSmoke` now checks malformed dynamic-table framing and links,
