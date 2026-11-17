@@ -9194,3 +9194,22 @@ compilation dependency already fixed locally in e66dd020. Artifact 14381088547
 eede08aaa951e536447d00dd35ecd679fd65c2d97856fcf4645ee61c0e5d4267; only
 compile.stderr retained, temporary archive automatically deleted by the guarded
 reader. Evidence x86-compile-44185360886/result.json. AArch64 remains live.
+
+### Native package manifest rejection (2026-11-17)
+
+CONFIRMED: PackagedNativeLibrariesSmoke verifies missing metadata, missing/blank/
+traversing pair names, uncovered pair members, malformed/empty/duplicate/self
+checksum entries, extra files and missing supervisor refusal. Blank checksum
+lines remain accepted and repaired metadata resolves deterministically. Both
+Linux and Windows library/supervisor names are checked using inert fixture files;
+no native code is loaded and this does not replace Windows execution tests.
+Guarded packagedNativeLibrariesSmoke PASS in 2 seconds. Three compiled faults
+(duplicate checksum, uncovered producer and dot basename admission) detected.
+Evidence .forge-work/scratch/native-manifest-boundaries.log and
+native-manifest-mutants/result.json. No native ABI or production changes.
+
+Verified native-manifest-boundaries diagnostic adds nine lines/seventeen branches,
+1,382 sessions, full 255-source denominator and fixed authenticated JAR. Overall
+28,960/29,802 lines and 23,059/25,902 branches; binary/location 18,703/19,213
+lines and 16,834/18,750 branches, 41 short of 90%. File counts unchanged.
+Hosted acceptance, protected merge and actual-main publication remain pending.
