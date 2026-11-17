@@ -103,6 +103,43 @@ public final class SyntheticSourceSidecarSmoke {
         }
         if (!Arrays.equals(Files.readAllBytes(scratch), new byte[] { 37 })) throw new AssertionError("nonempty stage modified");
         Files.delete(scratch);
+        try (var stage = FileChannel.open(scratch, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+            stage.position(1);
+            try { plan.writeStage(stage, () -> false); throw new AssertionError("nonzero stage position accepted"); }
+            catch (IllegalArgumentException expected) {
+                if (!expected.getMessage().equals("source relocation needs an empty private stage")) throw expected;
+            }
+            if (stage.size() != 0 || stage.position() != 1) throw new AssertionError("refused stage was modified");
+        }
+        Files.delete(scratch);
+        for (boolean append : new boolean[] { false, true }) {
+            Files.write(scratch, result, StandardOpenOption.CREATE_NEW);
+            AtomicInteger polls = new AtomicInteger();
+            try {
+                plan.requireMatches(scratch, () -> {
+                    // The initial size check has passed; change the owned candidate
+                    // at the first comparison-loop poll, before any payload read.
+                    if (polls.incrementAndGet() == 2) {
+                        try (var changed = FileChannel.open(scratch, StandardOpenOption.WRITE)) {
+                            if (append) changed.write(ByteBuffer.wrap(new byte[] { 37 }), result.length);
+                            else changed.truncate(result.length - 1);
+                        }
+                        catch (IOException failure) { throw new java.io.UncheckedIOException(failure); }
+                    }
+                    return false;
+                });
+                throw new AssertionError("candidate length change during comparison accepted");
+            }
+            catch (IOException expected) {
+                String diagnostic = append ? "derived sidecar length changed during comparison" :
+                    "source relocation comparison read made no progress";
+                if (!expected.getMessage().equals(diagnostic)) throw expected;
+                if (polls.get() < 2 || Files.size(scratch) != result.length + (append ? 1 : -1)) {
+                    throw new AssertionError("comparison length-change control did not run");
+                }
+            }
+            finally { Files.delete(scratch); }
+        }
         ElfImage image = ElfImage.read(input);
         var info = image.sections().stream().filter(s -> s.name.equals(".debug_info")).findFirst().orElseThrow();
         var abbrev = image.sections().stream().filter(s -> s.name.equals(".debug_abbrev")).findFirst().orElseThrow();
@@ -151,7 +188,7 @@ public final class SyntheticSourceSidecarSmoke {
         Files.writeString(output.resolveSibling(output.getFileName() + ".source.json"),
             "{\"scope\":\"unpublished stage only\",\"prepareChecks\":" + prepareChecks + "}\n");
         System.out.printf("source-sidecar-smoke=PASS refusals=%d cancellation=%d comparisonCancellation=%d%n",
-            refusals.size() + 1 + boundaries, visits.get(), comparisons.get());
+            refusals.size() + 4 + boundaries, visits.get(), comparisons.get());
     }
 
     private record Refusal(byte[] bytes, String diagnostic) { }

@@ -6,6 +6,36 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Sidecar comparison detects changing candidate lengths
+
+`SyntheticSourceSidecarSmoke` now rejects an empty staging channel whose position
+is nonzero, without writing or repositioning it. Two owned-file controls change
+the candidate length after its initial size check: appending must fail the final
+size comparison, and truncation must fail when the required comparison read cannot
+complete. Both require the specific diagnostic and independently verify that the
+intended size change occurred. These synchronized controls do not establish
+protection against every possible concurrent filesystem mutation.
+
+Guarded test compilation and real producer-sidecar smoke runs pass for ARM32 and
+MIPS32 in both byte orders. Each transformed artifact passes readelf inspection,
+LLVM verification, the strict libdwarf checker, and the existing QEMU/GDB context
+oracle, including source lookup from another directory, exact branch/mode/slot
+behavior and normal exit. Original inputs remain unchanged. Production Java is
+unchanged; no malformed fixture is passed off as a valid debugger artifact.
+
+Unioning the three production-only sessions with the previous 1,370-session
+diagnostic produces 1,373 compatible sessions and adds **2 lines / 16 branches**
+in `SyntheticSourceSidecar`. This is the gain from the full refreshed smoke tasks,
+not an isolated attribution to the three new controls. Production identities and
+the complete 255-source denominator remain unchanged. It is still mixed partial
+evidence, not a full current-head acceptance report.
+
+Evidence: `.forge-work/scratch/source-comparison-compile.log`,
+`verify-source-comparison.log`, `coverage-recovery/source-comparison-validation.json`,
+and `coverage-recovery/current-44105084385/source-comparison-diagnostic/`.
+The individual `source-comparison-boundaries*` directories retain measured test,
+validator and debugger logs. No new mutation run is claimed for these controls.
+
 ## Enable required context collection in ARM/MIPS CI
 
 **CONFIRMED failure and local correction; hosted verification pending:** run
