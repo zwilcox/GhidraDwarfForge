@@ -6,6 +6,36 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## 32-bit stack spill displacement and input admission
+
+`StackSpillSmoke` adds real decoded x86-32 spills of 1-, 2- and 4-byte values and
+an ARM32 spill of a 4-byte value. Each fixture checks the exact stack-pointer
+DWARF register, negative displacement and end of availability. Analysis must
+preserve the saved function body, program modification counter and code bytes.
+The 4-byte fixtures additionally refuse absent/non-register incoming nodes,
+zero-width and high-byte slices, mismatched extents and the stack pointer itself.
+
+The existing independent finite-width p-code evaluator now runs for both 32-bit
+and 64-bit pointers. It checks stored values and addresses near signed and
+unsigned wrap boundaries. Exact minimum/maximum signed displacements are
+accepted; their first excesses and negation of the signed minimum are refused.
+These controlled p-code transfers supplement the real decoder fixtures; they do
+not claim that every synthetic operation sequence comes from an instruction or
+establish a new full debugger/architecture support profile.
+
+The final guarded suite passes 2,202 checks. Four compiled mutations are detected
+by behavioral assertions: lost displacement sign extension, missing narrow-width
+overflow refusal, incorrect subtraction and incorrectly commuted subtraction.
+The measured task adds one line and eight branches against the 1,377-session ARM
+admission diagnostic. Production Java and the coverage denominator are unchanged;
+complete current-head hosted acceptance and critical branch targets remain unmet.
+
+Evidence: `.forge-work/scratch/stack-spill32-admission-test.log`,
+`stack-spill32-admission-mutants/result.json`, and
+`coverage-recovery/stack-spill32-admission/`. The earlier arithmetic-only
+measurement adds one branch and is superseded by the final task; do not count
+both sessions as separate coverage gains.
+
 ## Complete ARM section allocation boundaries
 
 `GhidraArm32SectionModesSmoke` checks allocations that begin inside an ARM

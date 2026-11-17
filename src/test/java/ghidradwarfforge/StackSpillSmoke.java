@@ -44,7 +44,93 @@ public final class StackSpillSmoke {
                 check(target, width);
             }
         }
+        for (int width : new int[] {1, 2, 4}) {
+            narrowProfile("x86", width);
+        }
+        narrowProfile("arm", 4);
         System.out.println("stack-spill-smoke=PASS checks=" + checks);
+    }
+
+    private static void narrowProfile(String target, int width) throws Exception {
+        boolean x86 = target.equals("x86");
+        var language = DefaultLanguageService.getLanguageService().getLanguage(new LanguageID(
+            x86 ? "x86:LE:32:default" : "ARM:LE:32:v8"));
+        String store = x86 ? switch (width) {
+            case 1 -> "884424ff";
+            case 2 -> "66894424fe";
+            case 4 -> "894424fc";
+            default -> throw new AssertionError(width);
+        } : "04000de5";
+        String load = x86 ? switch (width) {
+            case 1 -> "8a4c24ff";
+            case 2 -> "668b4c24fe";
+            case 4 -> "8b4c24fc";
+            default -> throw new AssertionError(width);
+        } : "04101de5";
+        String nop = x86 ? "90" : "00f020e3";
+        byte[] code = HexFormat.of().parseHex(store + nop + (x86 ? "31c0" : "0000a0e3") +
+            nop + load + (x86 ? "c3" : "1eff2fe1"));
+        Object owner = new Object();
+        var program = new ProgramDB("narrow-spill", language, language.getDefaultCompilerSpec(), owner);
+        try {
+            int transaction = program.startTransaction("real 32-bit spill and register clobber");
+            try {
+                var entry = language.getDefaultSpace().getAddress(0x1000);
+                var body = new AddressSet(entry, entry.add(code.length - 1));
+                program.getMemory().createInitializedBlock("code", entry, code.length,
+                    (byte) 0, TaskMonitor.DUMMY, false).setExecute(true);
+                program.getMemory().setBytes(entry, code);
+                if (!x86) {
+                    program.getProgramContext().setValue(program.getRegister("TMode"), entry,
+                        body.getMaxAddress(), BigInteger.ZERO);
+                }
+                require(new DisassembleCommand(entry, body, true).applyTo(program, TaskMonitor.DUMMY),
+                    "32-bit spill fixture decode: " + target + "/" + width);
+                var function = program.getFunctionManager().createFunction("narrow_spill", entry,
+                    body, SourceType.USER_DEFINED);
+                var instructions = new ArrayList<Instruction>();
+                program.getListing().getInstructions(body, true).forEach(instructions::add);
+                require(instructions.size() == 6, "expected store/nop/clobber/nop/load/return sequence");
+                var register = program.getRegister(x86 ? (width == 1 ? "AL" : width == 2 ? "AX" : "EAX") : "r0");
+                var incoming = new Varnode(register.getAddress(), width);
+                var mapping = TargetRegisterMap.forTarget(target);
+                long end = 0x1000 + code.length;
+                long modification = program.getModificationNumber();
+                var backup = StackSpillLifetime.prove(program, 0x1000, end, instructions,
+                    incoming, width, mapping, TaskMonitor.DUMMY);
+                require(backup != null && backup.end() == end && backup.storage().byteOffset() == -width &&
+                    backup.storage().register().dwarfNumber() == (x86 ? 4 : 13),
+                    "32-bit saved value must use exact SP register/displacement/end: " + backup);
+                if (width == 4) {
+                    for (Varnode invalid : new Varnode[] {null,
+                            constant(program, 0, 4), new Varnode(entry, 4),
+                            new Varnode(register.getAddress(), 0),
+                            new Varnode(register.getAddress().add(1), 1)}) {
+                        require(StackSpillLifetime.prove(program, 0x1000, end, instructions,
+                            invalid, invalid == null ? 4 : invalid.getSize(), mapping, TaskMonitor.DUMMY) == null,
+                            "non-exact incoming register must not acquire a spill: " + invalid);
+                    }
+                    for (int invalidWidth : new int[] {-1, 0, 3, 5}) {
+                        require(StackSpillLifetime.prove(program, 0x1000, end, instructions,
+                            incoming, invalidWidth, mapping, TaskMonitor.DUMMY) == null,
+                            "incoming extent mismatch acquired a spill: " + invalidWidth);
+                    }
+                    var pointer = program.getCompilerSpec().getStackPointer();
+                    require(StackSpillLifetime.prove(program, 0x1000, end, instructions,
+                        new Varnode(pointer.getAddress(), 4), 4, mapping, TaskMonitor.DUMMY) == null,
+                        "stack pointer cannot serve as both incoming value and stack-address proof");
+                }
+                pointerExpressions(program, instructions, 0, incoming, width, mapping, end, end);
+                require(program.getModificationNumber() == modification && function.getBody().equals(body),
+                    "spill analysis changed saved function state");
+                byte[] after = new byte[code.length];
+                require(program.getMemory().getBytes(entry, after) == code.length && Arrays.equals(code, after),
+                    "spill analysis changed decoded machine bytes");
+            }
+            finally { program.endTransaction(transaction, false); }
+        }
+        finally { program.release(owner); }
+        System.out.println("stack-spill-narrow-profile=PASS target=" + target + " width=" + width);
     }
 
     private static void check(String target, int width) throws Exception {
@@ -218,14 +304,17 @@ public final class StackSpillSmoke {
             long end, long expectedEnd) throws Exception {
         Instruction spill = instructions.get(spillIndex);
         var pointer = program.getCompilerSpec().getStackPointer();
+        int pointerBytes = pointer.getMinimumByteSize();
         var sp = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
         var unique = program.getAddressFactory().getUniqueSpace();
-        var destination = new Varnode(unique.getAddress(0x200000), 8);
-        var intermediate = new Varnode(unique.getAddress(0x200100), 8);
+        var destination = new Varnode(unique.getAddress(0x200000), pointerBytes);
+        var intermediate = new Varnode(unique.getAddress(0x200100), pointerBytes);
         var value = new Varnode(unique.getAddress(0x200200), width);
         var memory = constant(program, program.getLanguage().getDefaultDataSpace().getSpaceID(), 4);
-        var twelve = constant(program, 12, 8);
-        var negative = constant(program, -12, 8);
+        var twelve = constant(program, 12, pointerBytes);
+        var negative = constant(program, -12, pointerBytes);
+        long minimum = pointerBytes == 4 ? Integer.MIN_VALUE : Long.MIN_VALUE;
+        long maximum = pointerBytes == 4 ? Integer.MAX_VALUE : Long.MAX_VALUE;
         var store = op(spill, PcodeOp.STORE, null, memory, destination, value);
         var expressions = List.of(
             new SpillExpression("pointer-copy", 0L, new PcodeOp[] {op(spill, PcodeOp.COPY, destination, sp)}),
@@ -235,20 +324,32 @@ public final class StackSpillSmoke {
             new SpillExpression("add-negative", -12L, new PcodeOp[] {op(spill, PcodeOp.INT_ADD, destination, sp, negative)}),
             new SpillExpression("subtract-negative", 12L, new PcodeOp[] {op(spill, PcodeOp.INT_SUB, destination, sp, negative)}),
             new SpillExpression("chained", 12L, new PcodeOp[] {
-                op(spill, PcodeOp.INT_ADD, intermediate, sp, constant(program, 20, 8)),
-                op(spill, PcodeOp.INT_SUB, destination, intermediate, constant(program, 8, 8))}),
+                op(spill, PcodeOp.INT_ADD, intermediate, sp, constant(program, 20, pointerBytes)),
+                op(spill, PcodeOp.INT_SUB, destination, intermediate, constant(program, 8, pointerBytes))}),
             new SpillExpression("copied-address", 12L, new PcodeOp[] {
                 op(spill, PcodeOp.INT_ADD, intermediate, twelve, sp),
                 op(spill, PcodeOp.COPY, destination, intermediate)}),
             new SpillExpression("absolute-address", null, new PcodeOp[] {
-                op(spill, PcodeOp.COPY, destination, constant(program, 0x7000, 8))}),
+                op(spill, PcodeOp.COPY, destination, constant(program, 0x7000, pointerBytes))}),
             new SpillExpression("constant-minus-pointer", null, new PcodeOp[] {
                 op(spill, PcodeOp.INT_SUB, destination, twelve, sp)}),
             new SpillExpression("two-pointers", null, new PcodeOp[] {
                 op(spill, PcodeOp.INT_ADD, destination, sp, sp)}),
+            new SpillExpression("minimum-signed-offset", minimum, new PcodeOp[] {
+                op(spill, PcodeOp.INT_ADD, destination, sp, constant(program, minimum, pointerBytes))}),
+            new SpillExpression("maximum-signed-offset", maximum, new PcodeOp[] {
+                op(spill, PcodeOp.INT_ADD, destination, sp, constant(program, maximum, pointerBytes))}),
+            new SpillExpression("first-positive-overflow", null, new PcodeOp[] {
+                op(spill, PcodeOp.INT_ADD, intermediate, sp, constant(program, maximum, pointerBytes)),
+                op(spill, PcodeOp.INT_ADD, destination, intermediate, constant(program, 1, pointerBytes))}),
+            new SpillExpression("first-negative-overflow", null, new PcodeOp[] {
+                op(spill, PcodeOp.INT_ADD, intermediate, sp, constant(program, minimum, pointerBytes)),
+                op(spill, PcodeOp.INT_SUB, destination, intermediate, constant(program, 1, pointerBytes))}),
+            new SpillExpression("negated-minimum-overflow", null, new PcodeOp[] {
+                op(spill, PcodeOp.INT_SUB, destination, sp, constant(program, minimum, pointerBytes))}),
             // XOR zero is a concrete identity, but outside this bounded proof's supported transfers.
             new SpillExpression("unsupported-identity", null, new PcodeOp[] {
-                op(spill, PcodeOp.INT_XOR, destination, sp, constant(program, 0, 8))}));
+                op(spill, PcodeOp.INT_XOR, destination, sp, constant(program, 0, pointerBytes))}));
         for (var expression : expressions) {
             var operations = new ArrayList<PcodeOp>();
             operations.add(op(spill, PcodeOp.COPY, value, incoming));
@@ -266,7 +367,8 @@ public final class StackSpillSmoke {
                 backup.storage().equals(mapping.registerRelative(pointer.getName(), expression.offset())),
                 "wrong spill expression location: " + expression.name() + " " + backup);
             // Independently execute finite-width pcode. Include sign and unsigned-wrap boundaries.
-            for (String initial : List.of("10000", "7ffffffffffffff0", "fffffffffffffff0")) {
+            for (String initial : pointerBytes == 4 ? List.of("10000", "7ffffff0", "fffffff0") :
+                    List.of("10000", "7ffffffffffffff0", "fffffffffffffff0")) {
                 for (long input : new long[] {0, 1, 0x12345678, -1}) {
                     var state = new java.util.HashMap<Varnode, BigInteger>();
                     BigInteger stack = new BigInteger(initial, 16);
@@ -276,7 +378,7 @@ public final class StackSpillSmoke {
                     for (var operation : operations) {
                         if (operation.getOpcode() == PcodeOp.STORE) {
                             require(readConcrete(operation.getInput(1), state).equals(
-                                finite(stack.add(BigInteger.valueOf(expression.offset())), 8)),
+                                finite(stack.add(BigInteger.valueOf(expression.offset())), pointerBytes)),
                                 "independent address mismatch: " + expression.name());
                             require(readConcrete(operation.getInput(2), state).equals(argument),
                                 "independent spill lost parameter bytes: " + expression.name());

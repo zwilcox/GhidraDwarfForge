@@ -411,6 +411,10 @@ LINUX_METADATA_MUTANTS = [
 STACK_SPILL = "ghidradwarfforge/StackSpillLifetime.java"
 STACK_SPILL_TEST = "ghidradwarfforge.StackSpillSmoke"
 STACK_SPILL_MUTANTS = [
+    ("spill-ignores-signed-pointer-width", STACK_SPILL, STACK_SPILL_TEST,
+     'long delta = (second.getOffset() << shift) >> shift;', 'long delta = second.getOffset();'),
+    ("spill-accepts-narrow-displacement-overflow", STACK_SPILL, STACK_SPILL_TEST,
+     '((offset << shift) >> shift) == offset', 'true'),
     ("spill-subtraction-adds-displacement", STACK_SPILL, STACK_SPILL_TEST,
      'Math.subtractExact(base.offset(), delta)', 'Math.addExact(base.offset(), delta)'),
     ("spill-commutes-subtraction", STACK_SPILL, STACK_SPILL_TEST,
