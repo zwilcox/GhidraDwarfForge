@@ -7459,3 +7459,42 @@ Evidence: .forge-work/scratch/invocation-transport-boundaries.log,
 invocation-transport-mutants/{result.json,*.log}, and
 coverage-recovery/invocation-transport-boundaries/{result.json,sessions.tsv,
 counts.json,gaps.json,xml/combined.xml}.
+
+### Validator file observation boundaries (#209)
+
+Acceptance: validator provenance refuses invalid identity/link/size records,
+honors cancellation throughout a real streamed file read without modifying the
+selected tool, refuses concurrent changes encountered between its observations,
+and permits a stable retry. ValidatorObservationBoundarySmoke uses131,073 known
+bytes and independently computed SHA-256. It exercises every observed cancellation
+poll and appends one byte at every poll in separate fresh runs. Accepted snapshots
+must pair the old or new complete digest with its matching size; changed input
+bytes remain intact. No atomic filesystem snapshot is claimed: mutation before
+the initial facts read or after the final facts read may legitimately succeed.
+
+The helper is wired into existing attachmentHelperSmoke. Guarded Java25/
+Ghidra12.0.3 `./gradlew --no-daemon attachmentHelperSmoke` passes83 new assertions
+(seven injected changes refused) and6,664 existing helper checks in3seconds.
+Guarded mutation-check.py with compiled main/test classes, the same Java/Ghidra
+installations and repeated --only selectors for validator-observation-accepts-
+empty-identity, validator-observation-accepts-zero-links,
+validator-observation-accepts-negative-size and
+validator-observation-ignores-concurrent-change passes its unchanged baseline
+and detects all four compiled faults by behavioral assertions (2.640seconds).
+These new runtime results are Linux evidence; their Windows execution is pending.
+No production Java or emitted ELF/DWARF changed.
+
+Guarded measure-stack.py validator-observation-boundaries
+ ghidradwarfforge.output.ValidatorObservationBoundarySmoke and
+verify-local-addition.py validator-observation-boundaries invocation-transport-boundaries
+verify the raw session, current test sources and unchanged production bytecode.
+Diagnostic union: +2lines/+4branches in ValidatorInput, no losses;1,364sessions,
+255sources/901classes. Overall28,885/29,802lines22,472/25,902branches;
+file operations3,819/4,250branches(6short90%), binary/location616short90%.
+Historical cohorts remain and do not establish current hosted acceptance.
+
+Evidence: .forge-work/scratch/validator-observation-boundaries.log,
+validator-observation-mutants/{result.json,*.log}, and
+coverage-recovery/validator-observation-boundaries/{result.json,sessions.tsv,
+counts.json,gaps.json,xml/combined.xml}. CI44150222826 still has five live
+architecture jobs and no failed completed jobs; this change stays queued locally.

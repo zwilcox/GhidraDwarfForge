@@ -24,6 +24,10 @@ public final class AttachmentHelperSmoke {
         pathArguments();
         Path root = Files.createTempDirectory("forge-helper-λ ");
         try {
+            ValidatorObservationBoundarySmoke.exercise(Files.createDirectory(root.resolve("observation")));
+            try (var paths = Files.walk(root.resolve("observation"))) {
+                for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
+            }
             for (String role : new String[] {"target", "sidecar", "source", "report", "helper", "readelf", "llvm", "strict", "configuration"}) {
                 Files.writeString(root.resolve(role), "owned input " + role);
             }
