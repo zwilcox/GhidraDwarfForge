@@ -44,6 +44,7 @@ public final class UnwindFlowSmoke {
 
     public static void main(String[] args) {
         UnwindArithmeticSmoke.check();
+        UnwindMemorySmoke.check();
         var dispatch = new LinkedHashMap<Integer, Node<Integer>>();
         var destinations = java.util.stream.IntStream.rangeClosed(1, 256).boxed().toList();
         dispatch.put(0, new Node<>(List.of(new Opaque("bounded dispatch loses incoming facts")), destinations));

@@ -8140,3 +8140,32 @@ satisfy final hosted acceptance.
 
 Evidence: `.forge-work/scratch/unwind-arithmetic.log`,
 `unwind-arithmetic-mutants/result.json`, and `coverage-recovery/unwind-arithmetic/`.
+
+## Unwind memory aliases and exact reloads
+
+`unwindFlowSmoke` now also runs 4,760 memory cases. An independent byte-by-byte
+BigInteger oracle compares stores of one through eight bytes with three saved
+caller facts across negative, zero and near-signed-limit stack coordinates.
+Every overlapping write invalidates the complete prior fact; only a known value
+with the exact stored width establishes a replacement. Exact reloads recover
+that value, while partial-width or displaced reads cannot invent it. Additional
+cases cover overflowing store/load extents, unknown pointers and constants or
+caller identities that are not proved stack addresses. Every case checks the
+input state, unrelated registers and memory preservation across loads.
+
+The guarded parent passes in 3 seconds: 4,760 memory cases, 1,808 arithmetic
+cases and the existing 105 checks. Five compiled faults are caught through
+behavioral assertions with a passing baseline in 2.481 seconds: missing either
+endpoint of an overlap, retaining slots across an unproved store, accepting a
+mismatched stored width, and reloading an adjacent address. A valid effect graph
+that unexpectedly throws is an assertion failure, distinct from a compilation
+or class-loading failure. Production code is unchanged.
+
+Diagnostic `unwind-memory` has 1,338 sessions and adds four branch outcomes,
+with no additional lines. Its full-denominator counts are 28,904/29,802 lines
+and 22,685/25,902 branches; binary/location critical coverage is 16,464/18,750
+branches, 411 short of 90%. The production JAR and 255-source/901-class inventory
+are unchanged. This mixed diagnostic cohort is not final hosted acceptance.
+
+Evidence: `.forge-work/scratch/unwind-memory.log`,
+`unwind-memory-mutants/result.json`, and `coverage-recovery/unwind-memory/`.
