@@ -58,6 +58,28 @@ The immutable partial summary is
 It replaces the smaller 807-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
 
+## Matching Windows artifact awaiting full job completion
+
+**CONFIRMED, artifact only:** run `44042799768` published Windows coverage
+artifact `14313128001` (414,544 compressed bytes; 3,524,218 extracted bytes).
+Its SHA-256 is
+`a89ce2752893028e046e9b8f7c49c8f0a60c0abb45480fc15ac05379afa5a8e4`.
+The 57 sessions use the exact current `58bd7a71` production JAR and cover
+Windows attachment, build-ID installation/recovery and host primitives.
+
+Raw execution validation, current admission controls, committed harness hashes
+(including the recorded Windows CRLF transformation), and regenerated coverage
+counters all pass. The artifact's source is PR merge commit
+`4d3960f95ae97c433d204a7d6b383ad62018e109`, whose parent includes branch head
+`9e0cc53a79f3a20394da831cd270deefa42375ef`. The coverage-reporting step succeeded;
+the overall Windows job was still running its formatter/GUI checks at this
+checkpoint. These sessions are **not yet added** to the 808-session partial
+summary above, and do not establish a passing complete host job or full CI gate.
+
+Evidence is in `hosted-windows-44042799768/`, including `artifact.json`, the
+bounded ZIP, source-tree authentication, regenerated report and
+`raw-verified.json`. No old-production Windows execution data is reused.
+
 ## Attachment paths changed during commit and recovery
 
 **CONFIRMED, local:** the expanded `AttachmentTransactionSmoke` passes 1,293
