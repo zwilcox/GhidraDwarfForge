@@ -7818,3 +7818,29 @@ Critical binary/location branches are 16,358/18,750, 517 below 90%; file-operati
 targets remain met. Hosted validation of queued HEAD, merge and main publication
 are still required. Current run 44150222826 has three architecture jobs live and
 no failed jobs at the last poll; both MIPS jobs and Windows have passed.
+
+### Saved merged-local storage changes and unknown owners (2026-11-17)
+
+CONFIRMED: `MergedLocalOwnershipSmoke`, invoked by `mergedLocalLifetimeSmoke`,
+now changes actual saved variable storage to unassigned, invalid and a different
+register. Existing extracted mapping groups must then be rejected without
+repairing the analyst's state. Transaction rollback restores the original proof.
+A stack canonical mapping cannot claim a register assignment. An unrelated saved
+variable with an assigned but invalid storage extent also blocks the proof,
+because its extent cannot establish nonoverlap with the tracked value. That final
+bad row is retained only until its owned ProgramDB is released, avoiding Ghidra's
+known deleted-variable cache behavior. No production changes were made.
+
+Guarded `./gradlew --no-daemon mergedLocalLifetimeSmoke` PASS, 880 ownership
+checks plus 248 parent checks, 4 seconds. Log:
+`.forge-work/scratch/merged-storage-ownership.log`. Three compiled faults
+(ignoring invalid stack/register owners and accepting a register on the stack
+canonical mapping) were caught by behavioral assertions; baseline passed in the
+8.986-second run: `.forge-work/scratch/merged-storage-ownership-mutants/result.json`.
+
+Verified diagnostic `coverage-recovery/merged-storage-ownership` adds seven
+branches to MergedLocalLifetime. The same 58bd JAR/full denominator has 1,374
+mixed current/historical sessions, 28,896/29,802 lines and 22,586/25,902 branches.
+Critical binary/location branches are 16,365/18,750, 510 below 90%; file-operation
+targets remain met. This is not hosted acceptance of queued HEAD. Current CI
+44150222826 has three architecture jobs live with no failed jobs at the last poll.

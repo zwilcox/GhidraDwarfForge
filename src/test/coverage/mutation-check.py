@@ -883,6 +883,12 @@ STACK_CARRIER_MUTANTS = [
      "storage.isForcedIndirect() != indirect ||", ""),
 ]
 MERGED_LIFETIME_MUTANTS = [
+    ("merged-lifetime-ignores-invalid-stack-owner", MERGED_LIFETIME, MERGED_LIFETIME_TEST,
+     "if (!assigned.isValid()) return List.of();", ""),
+    ("merged-lifetime-ignores-invalid-register-owner", MERGED_LIFETIME, MERGED_LIFETIME_TEST,
+     "if (!storage.isValid()) return List.of();", ""),
+    ("merged-lifetime-allows-register-on-stack-canonical", MERGED_LIFETIME, MERGED_LIFETIME_TEST,
+     "if (mapping.register() != null || stackDefinition != null)", "if (stackDefinition != null)"),
     ("merged-stack-ignores-curated-provenance", MERGED_LIFETIME, MERGED_LIFETIME_TEST,
      "variable.getSource() != SourceType.USER_DEFINED || !variable.isValid() ||\n                    !variable.hasAssignedStorage() || assigned == null || !assigned.isValid() ||", "!variable.isValid() ||\n                    !variable.hasAssignedStorage() || assigned == null || !assigned.isValid() ||"),
     ("merged-register-ignores-curated-provenance", MERGED_LIFETIME, MERGED_LIFETIME_TEST,

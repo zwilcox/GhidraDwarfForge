@@ -78,6 +78,13 @@ final class MergedLocalOwnershipSmoke {
         var second = missingRegister.get(1);
         missingRegister.set(1, new GhidraLocalMappings.Mapping(second.variable(), second.definition(), null));
         f.reject(new GhidraLocalMappings.Group(group.canonical(), missingRegister), "missing assignment register");
+        if (f.stack) {
+            var wrongCanonical = new ArrayList<>(group.mappings());
+            var canonical = wrongCanonical.getFirst();
+            wrongCanonical.set(0, new GhidraLocalMappings.Mapping(canonical.variable(), canonical.definition(), f.first));
+            f.reject(new GhidraLocalMappings.Group(group.canonical(), wrongCanonical),
+                "stack canonical observation must not claim a register assignment");
+        }
         String stackName = f.x86 ? "RSP" : "sp";
         var incomplete = new TargetRegisterMap(f.registers.target(), "fixture omits local registers",
             Map.of(stackName, f.x86 ? 7 : 31));
@@ -92,6 +99,18 @@ final class MergedLocalOwnershipSmoke {
         f.alter("definition PC changed after extraction", false, g ->
             ((LocalVariable) g.mappings().get(1).variable()).setFirstUseOffset(f.secondPc + 1));
         f.alter("recorded register assignment no longer writes its carrier", false, g -> f.removeDefinition());
+        f.alter("saved assignment lost its storage", false, g ->
+            g.mappings().get(1).variable().setDataType(f.type, VariableStorage.UNASSIGNED_STORAGE,
+                true, SourceType.USER_DEFINED));
+        f.alter("saved assignment has invalid storage", false, g ->
+            g.mappings().get(1).variable().setDataType(f.type, VariableStorage.BAD_STORAGE,
+                true, SourceType.USER_DEFINED));
+        f.alter("saved assignment moved to another register", false, g -> {
+            var register = f.program.getRegister(f.x86 ? (f.bytes == 4 ? "R12D" : "R12") :
+                (f.bytes == 4 ? "w11" : "x11"));
+            g.mappings().get(1).variable().setDataType(f.type, new VariableStorage(f.program, register),
+                true, SourceType.USER_DEFINED);
+        });
         if (f.stack) {
             f.alter("stack identity lost its explicit initialization point", false, g ->
                 ((LocalVariable) g.canonical()).setFirstUseOffset(0));
@@ -133,6 +152,18 @@ final class MergedLocalOwnershipSmoke {
             require(before.equals(f.snapshot()), "cancelled proof preserves program and locals");
         }
         require(f.prove(f.group()).equals(baseline), "all controls preserve the positive lifetime");
+        // Keep this intentionally bad saved row until ProgramDB release: deleting
+        // bad rows can leave Ghidra's cached variable list holding a deleted row.
+        var finalGroup = f.group();
+        int tx = f.program.startTransaction("unknown ownership extent");
+        try {
+            var bad = f.function.addLocalVariable(new LocalVariableImpl("unknown_owner", f.thirdPc + 1,
+                f.type, VariableStorage.BAD_STORAGE, true, f.program, SourceType.USER_DEFINED), SourceType.USER_DEFINED);
+            require(bad.hasAssignedStorage() && !bad.getVariableStorage().isValid(),
+                "nonmember fixture must have an assigned but invalid extent");
+            f.reject(finalGroup, "a saved owner with unknown extent may overlap the merged value");
+        }
+        finally { f.program.endTransaction(tx, true); }
     }
 
     private static final class CountingMonitor extends TaskMonitorAdapter {
