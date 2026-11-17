@@ -312,6 +312,7 @@ jobs:
             'src/main/java/ghidradwarfforge/output/ArtifactPairPublisher.java'
             'src/main/java/ghidradwarfforge/output/CompanionArtifactPublisher.java'
             'src/test/java/ghidradwarfforge/output/CompanionArtifactPublisherSmoke.java'
+            'src/test/java/ghidradwarfforge/output/CompanionObservationRecoverySmoke.java'
           )
           & javac --release 21 -d $classes @sources 2>&1 | Tee-Object -FilePath "$results/compile.log"
           if ($LASTEXITCODE -ne 0) { throw 'Companion publication test compilation failed' }
