@@ -6,7 +6,43 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current Linux cohort and inheritance admission checkpoint
+## Current companion observation and recovery checkpoint
+
+CONFIRMED: commit `351e0f6e` preserves the existing
+`CompanionPublicationFailureSmoke` byte-for-byte and adds the separate
+`CompanionObservationRecoverySmoke` through the existing publisher smoke task.
+The final focused run passes 68 new assertions, the publisher smoke and all
+111 existing publication failure cases. The new cases use actual owned files
+to distinguish inode replacement, size changes with restored timestamps, and
+timestamp-only changes during observation. They also reject changed content or
+a directory substituted before publication, and restore the prior generation
+when the next stage disappears after the first file is installed.
+
+Five independently compiled faults fail the intended assertions: ignored
+identity, size or timestamp changes, ignored prepublication content changes,
+and skipped restoration of a backup whose replacement was never installed.
+Mutant probes are excluded. The final two verified JVM sessions add two covered
+lines and six file/validation branch outcomes. `CompanionArtifactPublisher`
+now measures 155/164 lines and 88/92 branches. No production code changed.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall, 1,854 distinct sessions | 28,652 / 29,790 (96.2%) | 21,627 / 25,884 (83.6%) |
+| Binary/location | 18,441 / 19,201 (96.0%) | 15,545 / 18,732 (83.0%) |
+| File/validation | 6,485 / 6,677 (97.1%) | 3,701 / 4,250 (87.1%) |
+
+Evidence is in `.forge-work/scratch/coverage-expansion/companion-observation-recovery-2f181/`
+and `companion-observation-mutations-2f181/`. An intermediate local test-name
+collision was corrected before push; its superseded measurements are not
+included. The original failure task and mutation-harness references are intact.
+All 255 production sources/901 classes remain included. **Still incomplete:**
+1,314 binary/location and 124 file/validation branch outcomes for the 90%
+critical targets, current hosted validation, protected merge and main publication.
+This increment does not claim a new full JavaExec run, Windows run, native
+producer validation or debugger result. CI `43991284160` remains active at
+`6bf2352c`; subsequent local test commits await the next cycle.
+
+## Earlier Linux cohort and inheritance admission checkpoint
 
 CONFIRMED: the completed Linux artifact from run `43952501473` has been
 reverified against its authenticated merge-source tree and historical admission
