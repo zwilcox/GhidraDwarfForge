@@ -36,7 +36,7 @@ REQUIRED = {
         'inheritance-names', 'build-id-command', 'cfi-encoder', 'cfi-composition-explicit',
         'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu',
         'linux-attachment-exec', 'linux-attachment-pie', 'linux-attachment-exec-no-build-id',
-        'sectionless-validation',
+        'sectionless-validation', 'source-bundle-binding',
         'gui-script-manager', 'gui-script-manager-loader', 'gui-script-manager-compressed',
         'gui-script-manager-unwind', 'lexical-shadow', 'object-parameter', 'object-return', 'formatter-export',
         'calling-convention', 'custom-call-storage', 'call-site-packaged',
@@ -69,6 +69,23 @@ def tools_classpath(bundle):
             raise ValueError('changed or excessive report dependencies')
         paths.append(str(path.resolve()))
     return os.pathsep.join(paths)
+
+
+def source_bundle_binding_oracle(record, oracle):
+    dependencies = oracle.get('dependencies')
+    protected = oracle.get('protectedInputs')
+    hashes = [oracle.get('inputSha256'), oracle.get('probeLogSha256')]
+    if (record.get('suite') != 'source-bundle-binding' or record.get('layer') != 'native-java'
+            or record.get('host') != 'posix'
+            or [row.get('label') for row in record.get('sessions', [])] != ['source-bundle-boundaries']
+            or oracle.get('status') != 'PASS_SOURCE_BUNDLE_BINDING'
+            or type(dependencies) is not int or dependencies < 3
+            or type(oracle.get('checks')) is not int or oracle['checks'] != 6 * dependencies + 7
+            or oracle.get('productionHost') is not False
+            or not isinstance(protected, dict) or len(protected) < dependencies + 12
+            or not all(isinstance(value, str) and re.fullmatch(r'[0-9a-f]{64}', value)
+                for value in [*hashes, *(protected or {}).values()])):
+        raise ValueError('source bundle binding requires preserved exports and every dependency refusal; no production-host claim')
 
 
 def build_id_identity_oracle(record, oracle):
@@ -493,6 +510,8 @@ def load_job(root, jar, kind, commit, run):
                 attachment_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'sectionless-validation':
                 sectionless_validation_oracle(record, files.read(directory / 'oracle.json'))
+            if record['suite'] == 'source-bundle-binding':
+                source_bundle_binding_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'].startswith('gui-script-manager'):
                 gui_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'lexical-shadow':

@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 
@@ -135,6 +136,12 @@ def main():
         assert set(observed) <= allowed, observed
         warnings.append(Counter(observed))
     assert warnings[0] == warnings[1] == warnings[2]
+    if args.target == 'x86_64':
+        run('attachment-source-binding', ['python3', harness / 'attachment-bundle-binding.py',
+            '--ghidra', ghidra, '--jar', module / 'lib/GhidraDwarfForge.jar',
+            '--report', case / 'multi-report.json', '--original', original, '--sidecar', sidecar,
+            '--index', Path(str(sidecar) + '.c'), '--work', case / 'attachment-source-binding',
+            '--java', args.java or shutil.which('java')])
     assert protected == {path: digest(Path(path)) for path in protected}
     (case / 'acceptance.json').write_text(json.dumps({'status': 'MULTIFILE_TARGET_PASS',
         'target': args.target, 'role': args.role, 'sourceInventory': inventory, 'protected': protected,

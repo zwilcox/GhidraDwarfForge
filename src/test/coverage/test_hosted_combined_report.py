@@ -332,6 +332,39 @@ class SectionlessValidationAdmission(unittest.TestCase):
             hosted.sectionless_validation_oracle(self.record, dict(self.oracle, originalFrameViewSha256='b' * 64))
 
 
+class SourceBundleBindingAdmission(unittest.TestCase):
+    def setUp(self):
+        self.record = {'suite': 'source-bundle-binding', 'layer': 'native-java', 'host': 'posix',
+            'sessions': [{'label': 'source-bundle-boundaries'}]}
+        self.oracle = {'status': 'PASS_SOURCE_BUNDLE_BINDING', 'dependencies': 3, 'checks': 25,
+            'productionHost': False, 'inputSha256': 'a' * 64, 'probeLogSha256': 'b' * 64,
+            'protectedInputs': {str(index): 'c' * 64 for index in range(15)}}
+
+    def test_complete_receipt(self):
+        hosted.source_bundle_binding_oracle(self.record, self.oracle)
+
+    def test_missing_dependency_checks_or_scope_rejected(self):
+        for key, values in {'dependencies': [None, True, 0, 2], 'checks': [None, True, 24],
+                'productionHost': [None, True], 'status': ['PASS']}.items():
+            for value in values:
+                with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                    hosted.source_bundle_binding_oracle(self.record, dict(self.oracle, **{key: value}))
+
+    def test_missing_or_changed_hashes_rejected(self):
+        for key, values in {'inputSha256': [None, ''], 'probeLogSha256': [None, 'g' * 64],
+                'protectedInputs': [None, [], {}, {'x': 'a' * 64}, dict(self.oracle['protectedInputs'], x='bad')]}.items():
+            for value in values:
+                with self.subTest(key=key), self.assertRaises(ValueError):
+                    hosted.source_bundle_binding_oracle(self.record, dict(self.oracle, **{key: value}))
+
+    def test_wrong_measurement_layer_and_sessions_rejected(self):
+        for key, values in {'suite': ['other'], 'layer': ['headless'], 'host': ['nt'],
+                'sessions': [[], [{'label': 'other'}], self.record['sessions'] * 2]}.items():
+            for value in values:
+                with self.subTest(key=key), self.assertRaises(ValueError):
+                    hosted.source_bundle_binding_oracle(dict(self.record, **{key: value}), self.oracle)
+
+
 class GuiOracleAdmission(unittest.TestCase):
     def test_headless_or_incomplete_gui_claims_rejected(self):
         record = {'suite': 'gui-script-manager', 'sessions': [{}]}
