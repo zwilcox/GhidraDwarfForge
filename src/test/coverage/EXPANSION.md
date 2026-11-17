@@ -6,6 +6,54 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Namespace/global producer measurement on both target lanes
+
+**CONFIRMED, local validation:** commit `518f2718` instruments the existing eight
+namespace/collision variants on x86-64 and AArch64. Each producer JVM has its own
+raw session; the test class is explicitly excluded and every production class
+remains included. Collection completes only after the existing structural,
+cold-lookup and runtime assertions pass.
+
+The new admission policy requires exact sessions and variants, all cold GDB
+queries, validator inventory, source/native provenance, compiler/selected global
+values and addresses, return value 140 and normal process exits. The hosted
+report requires this suite on both target lanes; AArch64 now includes its native
+Java layer. The workflow supplies the measurement environment on the namespace
+command without instrumenting unrelated AArch64 suites.
+
+Validation: **286 coverage-policy tests pass**, including incomplete/mismatched
+receipt rejection and the updated synthetic AArch64 bundle; workflow lint passes.
+Two initial metadata-test failures were corrected before native execution: the
+synthetic bundle needed the new layer, and the measurement wrapper needed the
+collector's existing status format. Neither policy nor the behavioral test was
+weakened.
+
+Actual runs passed **16 producer JVM sessions**, **54 cold GDB lookups**,
+independent validation of all 16 artifacts, and compiler-versus-exported runtime
+checks on native x86-64 and QEMU AArch64. Emulator endpoints were removed after
+normal exits. Cached extension files were restored and checked. Production Java
+and native libraries are unchanged.
+
+The verified union now includes **764 sessions** (211 JavaExec, 469 isolated
+Java/native-path, 84 headless), all **255 production sources / 901 classes**:
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall | 27,664 / 29,792 (92.9%) | 21,089 / 25,888 (81.5%) |
+| Binary/location correctness | 18,376 / 19,203 (95.7%) | 15,449 / 18,736 (82.5%) |
+| File transactions/validation | 5,566 / 6,677 (83.4%) | 3,271 / 4,250 (77.0%) |
+
+This adds 15 lines and 14 branch outcomes in `MinimalDwarfSidecarExporter`.
+Evidence: `.forge-work/scratch/coverage-expansion/namespace-current-4bd11` and
+`namespace-refresh-4bd11`; final summary SHA-256:
+`c15165e5e8ff4fe2a92da4343efdd125857b2c477c74c5a317b0184b2c9b56ed`. Executed harness snapshots bind to `518f2718`; the original
+pre-commit run identity is retained. The captured but unexecuted workflow is
+context evidence, not proof of hosted execution.
+
+Issue #209 remains **incomplete**. Both critical branch targets, file-operation
+line target, remaining integration/Windows measurements, exact-revision hosted
+acceptance, protected merge and actual-main publication remain required.
+
 ## Current instruction context, static objects and lexical composition
 
 **CONFIRMED, partial local measurement:** refreshed existing integration suites
