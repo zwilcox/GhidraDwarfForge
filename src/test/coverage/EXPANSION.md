@@ -6,6 +6,46 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Call-site admission and ARM dynamic interval boundaries
+
+CONFIRMED: 1,021 verified sessions now measure **28,497/29,790 lines (95.7%)
+and 21,370/25,884 branches (82.6%)**. Binary/location reaches 18,306/19,201
+lines (95.3%) and 15,322/18,732 branches (81.8%). File/validation remains
+6,469/6,677 lines (96.9%) and 3,680/4,250 branches (86.6%). The denominator
+still includes all 255 sources and 901 classes. Both critical 90% branch targets
+and full updated hosted/main acceptance remain outstanding.
+
+The existing call-site plan smoke adds 57 checks for identity validation,
+global instruction/return-key uniqueness, discontiguous owner boundaries,
+ordinary recursion versus excluded self-tail entries, ELF32 return-address
+limits, hidden return-storage formals, immutable input snapshots and stable
+argument/function ordering. It passes 69 checks total. Four compiled mutations
+are caught by behavioral assertions: omitted ELF32 return width, hidden-return
+refusal, duplicate-return refusal and argument sorting. `CallSitePlan.java` now
+has all 60 executable lines and all 86 branch outcomes measured. These are pure
+Java admission/model checks before native production, not a debugger claim.
+
+ARM mode-symbol tests add an independent byte-interval oracle for unnamed dynamic
+NOTYPE/FUNC/IFUNC definitions. Six interval populations, six permutations, three
+symbol types and two query widths produce 6,588 cases. They exercise touching,
+separated, bridged, nested and equal-start ranges, unknown sizes extending to the
+section end, empty end labels and Thumb-bit normalization. Every query checks
+exact retained mode-symbol identity or the specific dynamic-conflict omission;
+every table remains byte-identical. The new matrix passes 13,284 assertions;
+the entire existing smoke passes 13,515. Three compiled mutations are caught:
+treating adjacency as overlap, shrinking a containing interval, and retaining
+the Thumb tag in a code address. These byte-built ELF tests do not execute ARM
+instructions or add an architecture support claim.
+
+The two matching-production-JAR sessions add 15 lines and 47 branches to the
+preceding union. Mutation execution is unmeasured. Every prior raw execution
+hash/native collection is revalidated before union. No production source or JAR
+changed. Evidence roots under guarded coverage-expansion scratch:
+`call-site-plan-boundaries-2f181/`, `arm-dynamic-intervals-2f181/`,
+`call-site-plan-mutations-2f181/`, `arm-dynamic-intervals-mutations-2f181/`, and
+`call-and-arm-boundaries-2f181/union/`. The tests remain in their existing Gradle
+smoke tasks; no full JavaExec rerun or hosted acceptance is claimed this turn.
+
 ## Split-source binding and recovery-request boundaries
 
 CONFIRMED: the latest diagnostic union has **1,019 sessions, 28,482/29,790
