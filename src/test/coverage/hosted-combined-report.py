@@ -56,9 +56,9 @@ REQUIRED = {
         'stack-value-transitions', 'producer-failures', 'qualified-type-producer', 'namespace-globals', 'mmio-failure-controls'}),
     'linux_aarch64': ('target-preflight', {'headless', 'native-java'}, {
         'stack-value-transitions', 'bitfield-values', 'namespace-globals', 'location-width-producer'}),
-    'linux_arm32': ('target-preflight', {'native-java'}, {'location-width-producer'}),
-    'linux_mips32be': ('target-preflight', {'headless', 'native-java'}, {'mips-truncated-space', 'location-width-producer'}),
-    'linux_mips32le': ('target-preflight', {'headless', 'native-java'}, {'mips-truncated-space', 'location-width-producer'}),
+    'linux_arm32': ('target-preflight', {'headless', 'native-java'}, {'location-width-producer', 'context-boundaries'}),
+    'linux_mips32be': ('target-preflight', {'headless', 'native-java'}, {'mips-truncated-space', 'location-width-producer', 'context-boundaries'}),
+    'linux_mips32le': ('target-preflight', {'headless', 'native-java'}, {'mips-truncated-space', 'location-width-producer', 'context-boundaries'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
