@@ -8,15 +8,15 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,091 verified
-sessions: 211 JavaExec, 677 native-Java, 146 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,127 verified
+sessions: 212 JavaExec, 677 native-Java, 181 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,537 / 29,802 (95.8%) | 21,743 / 25,902 (83.9%) |
-| Binary and location correctness | 18,424 / 19,213 (95.9%) | 15,630 / 18,750 (83.4%) |
+| Overall | 28,554 / 29,802 (95.8%) | 21,783 / 25,902 (84.1%) |
+| Binary and location correctness | 18,441 / 19,213 (96.0%) | 15,670 / 18,750 (83.6%) |
 | File transactions and validation | 6,378 / 6,677 (95.5%) | 3,726 / 4,250 (87.7%) |
 
 Across all four production sources changed from PR base `c6265e1`, all 30
@@ -56,10 +56,66 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-hosts-object-lexical-partial/summary.json` in the coverage workspace, SHA-256
-`4046b59367ae29f8a658729bf3a6cb6a6f1f38e653afeeeabe4e9e7472ed00ef`.
-It replaces the smaller 1,041-session partial baseline for current progress
+`stable-memory-hosts-call-signatures-partial/summary.json` in the coverage workspace, SHA-256
+`8f9be09d84d14cf4e9c293a4d05886515622b447fed7173e8b9603bca8e82e6d`.
+It replaces the smaller 1,091-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Measured call-site task and calling-convention/signature refresh
+
+**CONFIRMED, local:** the existing `callSitePlanSmoke` ran in the target CI jobs
+but was absent from the extension-build measured cohort. Commit `9515363f` adds
+it to that job and its required JavaExec receipt inventory. It does not change
+production Java, remove a target test or exclude production classes. The fresh
+212-task cohort passes in 4 minutes 52 seconds; its production JAR is byte-for-byte
+identical to `58bd7a71`. All 901 production classes and 683 current test classes
+are authenticated, with a source snapshot at `9515363f`. The 212 fresh sessions
+replace the previous 211-session JavaExec baseline in this partial measurement.
+
+The call-site smoke passes all 69 checks, including stale formal identities,
+duplicate instruction/return keys, discontiguous owner boundaries, ELF32 return
+address limits, hidden return carriers, ordinary recursion versus excluded
+self-tail entries, immutable snapshots and stable ordering. Its 60 executable
+lines and 86 branch outcomes are now measured. These are Java model/admission
+checks; they do not substitute for the separate native/debugger tests.
+
+Nine actual headless calling-convention/custom-storage profiles pass for x86-64
+non-PIE, PIE and rebased PIE, including GCC and Windows compiler profiles on the
+Linux host. The compiler/Forge GDB comparisons, GNU/LLVM/strict validators,
+repeatability, saved model equality and unchanged protected inputs are rechecked
+before admitting their 27 sessions. The Windows compiler profile does not imply
+a Windows host run. Three additional workflows pass for recovered return types,
+recovered parameter types and curated external declarations, adding eight
+headless sessions with the same independent validators and debugger observations.
+No LLDB evidence is claimed by these runs.
+
+The initial rebased import failed before export because a shared cached script
+had Java 25 class-file version 69 while the chosen Java 21 runtime accepts version
+65. That incomplete collection and its log/hash inventory remain under
+`call-abi-stable-memory/failed-collections` and are excluded from measurement.
+Only the three remaining rebased profiles were rerun, using an isolated Java 21
+settings/cache directory. All passed. Both drivers restore the installed JAR,
+native checksum manifest and supervisor metadata after completion or failure.
+The signature refresh also uses an isolated Java 21 cache.
+
+Workflow syntax passes `actionlint`; all nine JavaExec collection-integrity and
+11 coverage report/publication controls pass. The complete 212-task run and
+independent call-value checker pass. The refreshed union authenticates every
+prior admitted raw session and source snapshot again, preserves all 255 sources
+and 901 classes in each view, and adds 17 covered lines / 40 covered branch
+outcomes overall. It is still a partial cohort with hosted acceptance false.
+The critical groups still need 1,205 binary/location and 99 file/validation
+branch outcomes to reach 90%. Full updated CI, protected integration and actual
+main publication remain required.
+
+Evidence under guarded coverage-expansion scratch:
+`call-abi-stable-memory/`, `call-abi-rebased-stable-memory/`,
+`signatures-stable-memory/`, `measured-task-refresh-build/`,
+`javaexec-measured-task-refresh/` and
+`stable-memory-hosts-call-signatures-partial/`. The corresponding run/verify
+drivers retain exact commands, source hashes, raw receipts, logs and report
+hashes. Storage is READY at 16.116/100 GiB scratch, 2.200/10 GiB cache and
+6.728/10 GiB evidence. No extra worktree or local heavy process remains.
 
 ## Object bindings, lexical visibility and preservation of saved associations
 
