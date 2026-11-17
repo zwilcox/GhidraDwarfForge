@@ -207,6 +207,7 @@ public final class GhidraCallArgumentFlowSmoke {
         require(ranges.size() == 2 && !ranges.getLast().storage().available() &&
             ranges.getLast().end() == variable.locations().getLast().end(), "invented a post-entry lifetime");
         require(refined.functions().equals(types.functions()) && refined.types().equals(types.types()), "entry location changed signatures/types");
+        EntryLocationBoundarySmoke.check(program, types, entries, captures, registers, image, delta, ranges.getFirst().storage());
         require(refined.equals(GhidraCallParameters.withEntryLocations(program, refined, entries, captures, registers, image, delta,
             TaskMonitor.DUMMY)), "entry refinement overwrote an available location or was not idempotent");
         for (var absent : List.of(List.<GhidraCallParameters.Entry>of(), List.of(entries.getFirst(), entries.getFirst()))) {

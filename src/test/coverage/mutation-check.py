@@ -1202,6 +1202,18 @@ CXX_PROFILE_MUTANTS = [
 ]
 
 CALL_PARAMETERS_MUTANTS = [
+    ('entry-location-drops-prefix', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
+     'if (range.start() < elfEntryAddress) ranges.add', 'if (false) ranges.add'),
+    ('entry-location-drops-suffix', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
+     'if (elfEntryAddress + 1 < range.end()) ranges.add', 'if (false) ranges.add'),
+    ('entry-location-expands-lifetime', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
+     'Math.addExact(elfEntryAddress, 1)', 'Math.addExact(elfEntryAddress, 2)'),
+    ('entry-location-includes-exclusive-end', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
+     'elfEntryAddress < range.end()', 'elfEntryAddress <= range.end()'),
+    ('entry-location-precedes-range', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
+     'range.start() <= elfEntryAddress', 'true'),
+    ('entry-location-accepts-stale-owner', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
+     'entry.functionId() == function.getID()', 'true'),
     ("call-parameters-accept-stale-owner", CALL_PARAMETERS, CALL_PARAMETERS_TEST,
      "entry.functionId() != callee.getID()", "false"),
     ("call-parameters-accept-duplicate-snapshot", CALL_PARAMETERS, CALL_PARAMETERS_TEST,

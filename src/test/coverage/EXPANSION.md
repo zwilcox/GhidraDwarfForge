@@ -8488,3 +8488,33 @@ union adds 13 further branches, reaching 22,801/25,902 overall and 16,576/18,750
 binary/location branches (299 short of 90%); all 255 production sources remain
 included. Line and file-operation counters are unchanged. Current-head hosted
 acceptance, protected merge and main publication are still required.
+
+## Exact parameter-entry location boundaries
+
+`EntryLocationBoundarySmoke`, invoked by the existing call-argument task, adds
+108 assertions over real x86-64/AArch64 evidence. Six half-open range shapes
+exercise entry inclusion/exclusion, exact one-address extent and retained
+prefix/suffix omissions. Adjacent proven locations, omission reasons/confidence,
+input state and idempotence are preserved. Stale entry owner/ordinal, missing
+instruction evidence and local-variable declarations cannot acquire a parameter
+location. The public model constructor rejects missing declarations and width
+inconsistency before refinement; the tests respect that invariant instead of
+forcing an impossible model through the refinement path. The first fixture run
+failed at that constructor, and the corrected test explicitly asserts it.
+
+Guarded `callArgumentFlowSmoke` passes in five seconds (108 new, 612 parent
+checks, 25 cases). Six compiled behavioral faults are caught: lost prefix,
+lost suffix, expanded lifetime, included exclusive end, proof before the range
+start, and stale owner acceptance. Baseline plus the independent DWARF value
+oracle pass; mutation run takes 16.747 seconds. The separately measured run's
+240 numerical vectors also pass `check-call-values.py --min-count 240`.
+
+Evidence: `.forge-work/scratch/entry-location-boundaries-final.log`,
+`entry-location-boundary-mutants/result.json`, `entry-location-boundaries-oracle.log`,
+and `coverage-recovery/entry-location-boundaries/`. Raw SHA-256:
+`af116881b3b83944d8164bcd252456f459288aa5a3ee4a1fee1a150b90167a1c`.
+Source/session/full-denominator verification passes. The 1,354-session diagnostic
+union adds five branches: 22,806/25,902 overall and 16,581/18,750 binary/location
+(294 short of 90%); other counters are unchanged. Production code is unchanged.
+This remains diagnostic evidence; hosted current-head gates, merge and main
+publication are still pending for #209.
