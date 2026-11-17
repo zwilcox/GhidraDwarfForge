@@ -8940,3 +8940,29 @@ compile diagnostics were retained. Artifact IDs 14379742061 (LE) and 14379562563
 (BE), hashes and stderr are in `.forge-work/scratch/mips-compile-44185360886/`.
 The already committed six-harness dependency fix addresses that compile error;
 fresh architecture execution remains required.
+
+### Original ELF mapping selection boundaries (2026-11-17)
+
+CONFIRMED: ElfCodeBytesSmoke now checks ET_DYN link-time mapping and refuses
+ET_REL/ET_CORE, ignores non-load/zero-memory records, rejects requests crossing
+memory extents or lying beyond file-backed bytes, and distinguishes executable
+writable code from non-writable table evidence. A short ended nested segment
+must not hide the longer valid code mapping, while intersecting ambiguous
+segments still fail. The matrix covers both ELF widths and byte orders, with
+unchanged input assertions for image-kind selection.
+
+Guarded elfCodeBytesSmoke passes in 2 seconds with 268 checks. Two compiled
+faults are detected in 0.995 seconds: stopping at an ended nested segment and
+allowing writable table data. The initial nested-segment mutation produced an
+unclassified exception; the positive contract now converts that invalid refusal
+to an explicit assertion. The mutation classifier was not weakened.
+Evidence: `.forge-work/scratch/code-mapping-boundaries-final.log` and
+`.forge-work/scratch/code-mapping-mutants-final/result.json`.
+
+Verified code-mapping-boundaries adds eight branches, no lines. The 1,371-session
+diagnostic retains the authenticated JAR and all 255 production sources:
+28,933/29,802 lines, 22,936/25,902 branches overall; binary/location critical
+16,711/18,750 branches, 164 short of 90%. File counts remain unchanged.
+Evidence: `.forge-work/scratch/coverage-recovery/code-mapping-boundaries/`.
+No production change. Hosted acceptance, protected merge and actual-main
+publication remain required; the current x86-64 and AArch64 jobs remain live.

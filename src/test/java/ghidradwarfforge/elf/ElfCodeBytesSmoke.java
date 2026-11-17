@@ -58,6 +58,7 @@ public final class ElfCodeBytesSmoke {
         return ElfImage.read(path);
     }
     private static void check(Path path, boolean wide, ByteOrder order) throws Exception {
+        mappingBoundaries(path, wide, order);
         Segment ordinary = new Segment(0x401000, 0x200, 4, 8, 5);
         var image = fixture(path, wide, order, List.of(ordinary));
         byte[] before = Files.readAllBytes(path);
@@ -140,6 +141,68 @@ public final class ElfCodeBytesSmoke {
             }
         }
     }
+    private static void mappingBoundaries(Path path, boolean wide, ByteOrder order) throws Exception {
+        var ordinary = new Segment(0x401000, 0x200, 4, 8, 5);
+        fixture(path, wide, order, List.of(ordinary));
+        byte[] original = Files.readAllBytes(path);
+        for (int type : new int[] {1, 3, 4}) {
+            byte[] modified = original.clone();
+            ByteBuffer.wrap(modified).order(order).putShort(16, (short) type);
+            Files.write(path, modified);
+            var image = ElfImage.read(path);
+            if (type == 3) {
+                try (var bytes = ElfCodeBytes.open(image, () -> false)) {
+                    require(bytes.requireMatches(0x401000, CODE, () -> false).fileOffset() == 0x200,
+                        "ET_DYN link-time address lost its file mapping");
+                }
+            }
+            else reject(() -> { try (var bytes = ElfCodeBytes.open(image, () -> false)) { } });
+            require(Arrays.equals(modified, Files.readAllBytes(path)), "image-kind check changed original");
+        }
+        // Non-load records and zero-memory loads cannot authorize instruction reads.
+        for (int kind : new int[] {0, 4}) {
+            byte[] modified = original.clone();
+            ByteBuffer.wrap(modified).order(order).putInt(wide ? 64 : 52, kind);
+            Files.write(path, modified);
+            try (var bytes = ElfCodeBytes.open(ElfImage.read(path), () -> false)) {
+                reject(() -> bytes.requireMatches(0x401000, CODE, () -> false));
+            }
+        }
+        var empty = fixture(path, wide, order, List.of(new Segment(0x401000, 0x200, 0, 0, 5)));
+        try (var bytes = ElfCodeBytes.open(empty, () -> false)) {
+            reject(() -> bytes.requireMatches(0x401000, CODE, () -> false));
+        }
+        var ordinaryImage = fixture(path, wide, order, List.of(ordinary));
+        try (var bytes = ElfCodeBytes.open(ordinaryImage, () -> false)) {
+            reject(() -> bytes.requireMatches(0x401007, CODE, () -> false));
+            reject(() -> bytes.requireMatches(0x401005, new byte[] {0}, () -> false));
+            reject(() -> bytes.readReadOnlyData(-1, 1, () -> false));
+            reject(() -> bytes.readReadOnlyData(0x401007, 2, () -> false));
+            reject(() -> bytes.readReadOnlyData(0x401005, 1, () -> false));
+            reject(() -> bytes.readReadOnlyData(0x401100, 1, () -> false));
+        }
+        var writable = fixture(path, wide, order, List.of(new Segment(0x401000, 0x200, 4, 4, 7)));
+        try (var bytes = ElfCodeBytes.open(writable, () -> false)) {
+            require(bytes.requireMatches(0x401000, CODE, () -> false).bytes() == 4,
+                "writable executable segment lost code agreement");
+            reject(() -> bytes.readReadOnlyData(0x401000, 4, () -> false));
+        }
+        // A short nested mapping has already ended at the requested instruction.
+        // The prefix index must still reach the longer containing mapping.
+        var nested = fixture(path, wide, order, List.of(ordinary, new Segment(0x401001, 0x210, 0, 1, 4)));
+        try (var bytes = ElfCodeBytes.open(nested, () -> false)) {
+            ElfCodeBytes.Match matched;
+            try { matched = bytes.requireMatches(0x401002, new byte[] {3, 4}, () -> false); }
+            catch (IllegalArgumentException wrong) {
+                throw new AssertionError("ended nested segment cannot invalidate the complete mapping", wrong);
+            }
+            require(matched.fileOffset() == 0x202,
+                "ended nested segment hid the complete executable mapping");
+            reject(() -> bytes.requireMatches(0x401000, CODE, () -> false));
+            reject(() -> bytes.readReadOnlyData(0x401000, 4, () -> false));
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         Path directory = Files.createTempDirectory("forge-code-bytes-");
         try {
