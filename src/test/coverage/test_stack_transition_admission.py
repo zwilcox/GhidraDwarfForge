@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from zipfile import ZipFile
 from test_namespace_global_admission import fixture as namespace_fixture
+from test_location_width_admission import fixture as width_fixture
 
 
 spec = importlib.util.spec_from_file_location('admission', Path(__file__).with_name('stack-transition-admission.py'))
@@ -220,6 +221,19 @@ class HostedMatrixAdmission(unittest.TestCase):
         collection.finish(oracle)
         records.append(collection)
         report = root / 'report'
+        for mode in self.hosted.location_width.MODES:
+            width = coverage.Collection('location-width-producer', self.jar, 'native-java', environment={
+                'FORGE_INTEGRATION_COVERAGE_OUTPUT': str(root / 'collections'),
+                'FORGE_INTEGRATION_COVERAGE_AGENT': str(agent)})
+            width.record['host'] = 'posix'
+            with width.session(['java', 'Fake'], 'producer'):
+                (width.root / width.record['sessions'][-1]['file']).write_bytes(b'not real probes')
+            _, width_evidence = width_fixture(target, mode)
+            width_evidence['productionJarSha256'] = width_evidence['protectedSha256']['jar'] = coverage.digest(self.jar)
+            width_oracle = self.root / (target + '-' + mode + '.json')
+            coverage.save(width_oracle, width_evidence)
+            width.finish(width_oracle)
+            records.append(width)
         report.mkdir()
         xml = report / 'headless.xml'
         xml.write_text('<report/>')
@@ -232,16 +246,17 @@ class HostedMatrixAdmission(unittest.TestCase):
                 'suites': ['bitfield-values', 'stack-value-transitions'], 'unmeasuredForcedHalts': [],
                 'receipts': {c.root.name: coverage.digest(c.root / 'receipt.json')
                     for c in records if c.record['layer'] == 'headless'}},
-                'native-java': {'xmlSha256': coverage.digest(native_xml), 'sessions': 8, 'productionClasses': 1,
-                    'suites': ['namespace-globals'], 'unmeasuredForcedHalts': [],
-                    'receipts': {collection.root.name: coverage.digest(collection.root / 'receipt.json')}}}}
+                'native-java': {'xmlSha256': coverage.digest(native_xml), 'sessions': 12, 'productionClasses': 1,
+                    'suites': ['location-width-producer', 'namespace-globals'], 'unmeasuredForcedHalts': [],
+                    'receipts': {c.root.name: coverage.digest(c.root / 'receipt.json')
+                        for c in records if c.record['layer'] == 'native-java'}}}}
         coverage.save(report / 'summary.json', summary)
         return root, records, summary
 
     def test_aarch64_receipt_layer_and_full_inventory(self):
         root, _, _ = self.bundle('aarch64')
         rows, origin = self.hosted.load_job(root, self.jar, 'linux_aarch64', 'a' * 40, '7')
-        self.assertEqual(len(rows), 22)
+        self.assertEqual(len(rows), 26)
         self.assertEqual(origin['kind'], 'linux_aarch64')
 
     def test_x86_receipts_cannot_fill_the_aarch64_matrix_input(self):

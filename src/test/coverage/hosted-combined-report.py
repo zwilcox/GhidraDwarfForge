@@ -26,6 +26,7 @@ producer_failures = combined.module('producer_failure_admission', HERE / 'produc
 qualified_types = combined.module('qualified_type_admission', HERE / 'qualified-type-admission.py')
 callable_types = combined.module('callable_type_admission', HERE / 'callable-type-admission.py')
 mips_truncated = combined.module('mips_truncated_admission', HERE / 'mips-truncated-admission.py')
+location_width = combined.module('location_width_admission', HERE / 'location-width-admission.py')
 mmio_failures = combined.module('mmio_failure_admission', HERE / 'mmio-failure-admission.py')
 namespace_globals = combined.module('namespace_global_admission', HERE / 'namespace-global-admission.py')
 function_entries = combined.module('function_entry_admission', HERE / 'function-entry-admission.py')
@@ -39,7 +40,7 @@ windows_privilege_readback = combined.module('windows_privilege_readback_admissi
 REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation', 'build-id-identity',
-        'build-id-source-bundle', 'callable-type-producer',
+        'build-id-source-bundle', 'callable-type-producer', 'location-width-producer',
         'instruction-context', 'source-context', 'annotation-inventory', 'equate-evidence',
         'equate-constants', 'equate-retained-names', 'bitfield-values',
         'annotation-export', 'failed-source-export', 'class-scopes', 'inheritance-producer',
@@ -54,9 +55,10 @@ REQUIRED = {
         'stack-control-flow', 'saved-inheritance', 'external-declarations', 'recovered-returns', 'recovered-parameters',
         'stack-value-transitions', 'producer-failures', 'qualified-type-producer', 'namespace-globals', 'mmio-failure-controls'}),
     'linux_aarch64': ('target-preflight', {'headless', 'native-java'}, {
-        'stack-value-transitions', 'bitfield-values', 'namespace-globals'}),
-    'linux_mips32be': ('target-preflight', {'headless'}, {'mips-truncated-space'}),
-    'linux_mips32le': ('target-preflight', {'headless'}, {'mips-truncated-space'}),
+        'stack-value-transitions', 'bitfield-values', 'namespace-globals', 'location-width-producer'}),
+    'linux_arm32': ('target-preflight', {'native-java'}, {'location-width-producer'}),
+    'linux_mips32be': ('target-preflight', {'headless', 'native-java'}, {'mips-truncated-space', 'location-width-producer'}),
+    'linux_mips32le': ('target-preflight', {'headless', 'native-java'}, {'mips-truncated-space', 'location-width-producer'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -484,6 +486,7 @@ def load_job(root, jar, kind, commit, run):
     qualified_type_cases = []
     callable_type_cases = []
     mips_truncated_cases = []
+    location_width_cases = []
     mmio_failure_cases = []
     namespace_global_cases = []
     for layer, measured in sorted(summary['layers'].items()):
@@ -566,6 +569,8 @@ def load_job(root, jar, kind, commit, run):
                 callable_type_cases.append(callable_types.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'mips-truncated-space':
                 mips_truncated_cases.append(mips_truncated.oracle(record, files.read(directory / 'oracle.json')))
+            if record['suite'] == 'location-width-producer':
+                location_width_cases.append(location_width.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'mmio-failure-controls':
                 mmio_failure_cases.append(mmio_failures.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'namespace-globals':
@@ -605,6 +610,8 @@ def load_job(root, jar, kind, commit, run):
         namespace_globals.cohort(namespace_global_cases, 'x86_64' if kind == 'linux' else 'aarch64')
     if kind in ('linux_mips32be', 'linux_mips32le'):
         mips_truncated.cohort(mips_truncated_cases, kind.removeprefix('linux_'))
+    if kind in ('linux', 'linux_aarch64', 'linux_arm32', 'linux_mips32be', 'linux_mips32le'):
+        location_width.cohort(location_width_cases, 'x86_64' if kind == 'linux' else kind.removeprefix('linux_'))
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,
         'summarySha256': files.digest(root / 'report/summary.json'),
         'receipts': {name: files.digest(root / 'collections' / name / 'receipt.json') for name in sorted(known)},
@@ -660,7 +667,7 @@ def finish_report(args, result):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('bundle', 'expected-tasks', 'linux', 'linux-host', 'linux-aarch64',
-            'linux-mips32be', 'linux-mips32le', 'firmware', 'windows',
+            'linux-arm32', 'linux-mips32be', 'linux-mips32le', 'firmware', 'windows',
             'inventory', 'sources', 'java', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--commit', required=True)

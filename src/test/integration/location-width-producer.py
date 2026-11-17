@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+from integration_coverage import Collection
 
 
 TARGETS = {
@@ -22,9 +23,10 @@ TARGETS = {
 }
 FIXTURE = '''__attribute__((noinline)) int forge_location_probe(void) {
     static volatile int observed = 42;
+    static volatile int *retained = &observed;
     __asm__ volatile("nop");
     __asm__ volatile(".globl forge_location_split\\nforge_location_split:\\nnop");
-    return observed;
+    return *retained;
 }
 int main(void) { return forge_location_probe() != 42; }
 '''
@@ -40,6 +42,7 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--dwarfdump', required=True)
     parser.add_argument('--target', choices=TARGETS, required=True)
+    parser.add_argument('--mode', choices=('listed', 'stable', 'listed-indirect', 'stable-indirect'), default='listed')
     args = parser.parse_args()
     root = args.results.resolve()
     root.mkdir(parents=True, exist_ok=False)
@@ -47,7 +50,8 @@ def main():
     scripts = Path(__file__).resolve().parent
     harness = repo / 'src/test/java/ghidradwarfforge/nativeapi/LocationWidthProducerProbe.java'
     protected = {str(p.resolve()): digest(p) for p in (args.jar, args.consumer, args.producer,
-        Path(__file__), harness, scripts / 'qemu-socket.sh', scripts / 'check-dwarfdump.py')}
+        Path(__file__), harness, scripts / 'qemu-socket.sh', scripts / 'check-dwarfdump.py',
+        scripts / 'integration_coverage.py')}
     commands = []
 
     def run(label, command):
@@ -83,7 +87,10 @@ def main():
     address, size = symbols['forge_location_probe']
     split = symbols['forge_location_split'][0]
     observed, = [value for name, value in symbols.items() if name.startswith('observed.')]
+    retained, = [value for name, value in symbols.items() if name.startswith('retained.')]
     assert observed[1] == 4 and address < split < address + size
+    assert retained[1] == (4 if elf_class == 1 else 8)
+    location = retained[0] if args.mode.endswith('-indirect') else observed[0]
     classes = root / 'classes'
     classes.mkdir()
     jna, = args.ghidra.glob('Ghidra/Framework/Pty/lib/jna-[0-9]*.jar')
@@ -93,16 +100,22 @@ def main():
     output = root / 'output'
     output.mkdir()
     sidecar = output / 'input.dbg'
-    text = run('producer', [args.java_home / 'bin/java', '--enable-native-access=ALL-UNNAMED',
+    coverage = Collection('location-width-producer', args.jar.resolve(), 'native-java',
+        test_classes=('ghidradwarfforge.nativeapi.LocationWidthProducerProbe',))
+    command = [args.java_home / 'bin/java', '--enable-native-access=ALL-UNNAMED',
         '-cp', classpath, 'ghidradwarfforge.nativeapi.LocationWidthProducerProbe',
         args.consumer.resolve(), args.producer.resolve(), binary, sidecar,
-        hex(address), hex(size), hex(observed[0]), hex(split)])
+        hex(address), hex(size), hex(location), hex(split), args.mode]
+    with coverage.session(command, 'producer') as measured:
+        text = run('producer', measured)
     rejected = 4 if elf_class == 1 else 0
     assert f'location-width-producer=PASS rejected={rejected} deterministic=true preserved=true' in text
     info = run('readelf', ['readelf', '-h', '-S', '--debug-dump=info', '--debug-dump=abbrev',
         '--debug-dump=aranges', '--debug-dump=decodedline', '--debug-dump=loc', sidecar])
-    assert '.debug_loclists' in info and 'DW_AT_location' in info
-    assert info.count('DW_OP_addr: ' + format(observed[0], 'x')) == 2
+    listed = args.mode.startswith('listed')
+    assert ('.debug_loclists' in info) == listed and 'DW_AT_location' in info
+    assert info.count('DW_OP_addr: ' + format(location, 'x')) == (2 if listed else 1)
+    assert info.count('DW_OP_deref') == ((2 if listed else 1) if args.mode.endswith('-indirect') else 0)
     run('llvm', ['llvm-dwarfdump', '--verify', sidecar])
     run('strict', [sys.executable, '-B', scripts / 'check-dwarfdump.py', sidecar,
         root / 'strict.log', '--original', binary, '--tool', args.dwarfdump])
@@ -132,12 +145,17 @@ qemu_socket_wait
             command = ['gdb-multiarch', '-nx', '-q', '-batch', '-x', script]
         assert 'LOCATION_WIDTH_GDB_PASS' in run(label + '-gdb', command)
     assert all(digest(path) == value for path, value in protected.items())
-    result = {'status': 'PASS_LOCATION_WIDTH_PRODUCER', 'target': args.target,
+    result = {'status': 'PASS_LOCATION_WIDTH_PRODUCER', 'target': args.target, 'mode': args.mode,
         'rejectedOverflowExports': rejected, 'validators': ['readelf', 'llvm', 'strict'],
         'compilerGdb': 'PASS', 'exportedGdb': 'PASS', 'deterministic': True,
         'inputPreserved': True, 'sidecarSha256': digest(sidecar), 'protectedSha256': protected,
+        'productionJarSha256': digest(args.jar),
+        'nativeSha256': {'consumer': digest(args.consumer), 'producer': digest(args.producer)},
+        'harnessSha256': {str(p.relative_to(repo)): digest(p) for p in (Path(__file__).resolve(), harness,
+            scripts / 'qemu-socket.sh', scripts / 'check-dwarfdump.py', scripts / 'integration_coverage.py')},
         'scope': 'Explicit compiler fixture model and actual native serializer; not a Ghidra extraction claim'}
     (root / 'result.json').write_text(json.dumps(result, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print(json.dumps(result), flush=True)
 
 

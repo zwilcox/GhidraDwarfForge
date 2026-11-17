@@ -16,7 +16,13 @@ import java.util.Objects;
 /** Actual producer regression for an explicit compiler-fixture memory object, not extraction. */
 public final class LocationWidthProducerProbe {
     public static void main(String[] args) throws Exception {
-        if (args.length != 8) throw new IllegalArgumentException("consumer producer input output address size object split");
+        if (args.length != 8 && args.length != 9) {
+            throw new IllegalArgumentException("consumer producer input output address size object split [listed|stable]");
+        }
+        String mode = args.length == 9 ? args[8] : "listed";
+        if (!List.of("listed", "stable", "listed-indirect", "stable-indirect").contains(mode)) {
+            throw new IllegalArgumentException("invalid location mode");
+        }
         Path consumer = Path.of(args[0]), producer = Path.of(args[1]), input = Path.of(args[2]), output = Path.of(args[3]);
         long address = Long.decode(args[4]), size = Long.decode(args[5]);
         long object = Long.decode(args[6]), split = Long.decode(args[7]);
@@ -31,8 +37,15 @@ public final class LocationWidthProducerProbe {
         Files.write(source, text.utf8());
         var functions = List.of(new MinimalDwarfSidecarExporter.FunctionSymbol("forge_location_probe", address, size));
         var exporter = new MinimalDwarfSidecarExporter();
-        var valid = model(address, size, split, new MemoryStorage(object));
-        exporter.export(input, output, consumer, producer, functions, text, valid);
+        Storage storage = new MemoryStorage(object);
+        if (mode.endsWith("-indirect")) storage = new IndirectMemoryStorage(storage);
+        var valid = model(address, size, split, storage, mode);
+        try {
+            exporter.export(input, output, consumer, producer, functions, text, valid);
+        }
+        catch (IllegalStateException rejected) {
+            throw new AssertionError("valid fixture memory location was rejected", rejected);
+        }
         byte[] baseline = Files.readAllBytes(output);
         exporter.export(input, output, consumer, producer, functions, text, valid);
         require(Arrays.equals(baseline, Files.readAllBytes(output)), "valid export not deterministic");
@@ -45,12 +58,17 @@ public final class LocationWidthProducerProbe {
                     var before = existing ? Files.readAttributes(output, BasicFileAttributes.class) : null;
                     try {
                         exporter.export(input, output, consumer, producer, functions, text,
-                            model(address, size, split, bad));
+                            model(address, size, split, bad, mode));
                         throw new AssertionError("producer accepted a truncated memory location");
                     }
                     catch (IllegalArgumentException expected) {
-                        require(expected.getMessage().equals("location-list value exceeds serialized width"), "wrong rejection");
+                        require(expected.getMessage().equals(mode.startsWith("stable")
+                            ? "location address exceeds target width" : "location-list value exceeds serialized width"),
+                            "wrong rejection");
                         failures++;
+                    }
+                    catch (IllegalStateException serialized) {
+                        throw new AssertionError("oversized location reached native relocation validation", serialized);
                     }
                     require(Files.exists(output) == existing, "failure changed final artifact presence");
                     if (existing) {
@@ -75,16 +93,18 @@ public final class LocationWidthProducerProbe {
         System.out.println("location-width-producer=PASS rejected=" + failures + " deterministic=true preserved=true");
     }
 
-    private static ProgramTypeModel model(long start, long size, long split, Storage storage) {
+    private static ProgramTypeModel model(long start, long size, long split, Storage storage, String mode) {
         var integer = new TypeGraph.TypeRef("integer");
         var graph = new TypeGraph(List.of(new TypeGraph.BaseType("integer", "int", 4, TypeGraph.BaseEncoding.SIGNED)));
         var local = new ProgramTypeModel.LocalVariable("observed", 4, integer, 0, true, "EXPLICIT_COMPILER_FIXTURE");
         var signature = new ProgramTypeModel.FunctionSignature("forge_location_probe", start, integer,
             List.of(), List.of(local), false, false, "default", "EXPLICIT_COMPILER_FIXTURE");
         var evidence = new Evidence(Confidence.USER_DEFINED, "compiler fixture static object symbol");
+        var ranges = mode.startsWith("stable") ? List.of(new LocationRange(start, start + size, storage, evidence))
+            : List.of(new LocationRange(start, split, storage, evidence),
+                new LocationRange(split, start + size, storage, evidence));
         var locations = new VariableStorageModel(List.of(new VariableLocation("forge_location_probe", start,
-            "observed", VariableKind.LOCAL, 4, List.of(new LocationRange(start, split, storage, evidence),
-                new LocationRange(split, start + size, storage, evidence)))));
+            "observed", VariableKind.LOCAL, 4, ranges)));
         return new ProgramTypeModel(graph, List.of(signature), List.of(), locations);
     }
 

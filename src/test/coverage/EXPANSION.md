@@ -6,6 +6,54 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Stable memory locations: regression found and corrected
+
+**CONFIRMED:** extending the native location fixture to one stable interval exposed
+a valid-export failure. The producer created a relocation for a local variable's
+absolute memory address, but the relocation validator expected only function,
+scope, call-site and global/static-object addresses. The original JAR rejected
+the valid MIPS fixture with `producer address relocations do not match requested
+functions, scopes and objects`. The retained reproduction is
+`stable-location-mips-pilot-4bd11/producer.stderr` in the coverage workspace.
+
+The validator now includes addresses from the exact variable expressions that
+were emitted. It excludes omitted and list-based locations, whose bytes are
+handled separately. Stable address operands are checked against the target
+pointer width before passing them to libdwarf; oversized direct and indirect
+32-bit addresses fail without replacing an existing output or leaving a partial
+final artifact. No JNA signature, native dependency or default input behavior
+changed.
+
+**CONFIRMED, local:** `stable-location-verified/` passes sixteen profiles:
+x86-64, AArch64, MIPS big-endian and MIPS little-endian, each with stable/listed
+and direct/indirect memory. Every profile validates the real sidecar with GNU,
+LLVM and strict libdwarf, checks compiler and exported values in GDB (QEMU for
+cross targets), repeats production deterministically and preserves inputs.
+The MIPS profiles additionally reject 32 oversized-address exports across both
+output-present and output-absent cases, then retry successfully. These explicit
+compiler fixture models test native serialization, not Ghidra extraction.
+ARM32 is **PRESENT, UNVERIFIED** locally because its cross-compiler is absent;
+all four forms run in its CI lane.
+
+Both compiled mutation controls pass: removing the stable relocation expectation
+or the width check triggers the specific regression assertion; compilation,
+loading errors and native crashes do not qualify. Mutants are unmeasured and
+their temporary compiled files are removed. Coverage-policy tests pass 304
+checks; `actionlint` and `git diff --check` pass. The location-emission,
+location-list and variable-storage Java checks pass. An additional invocation
+of `indirectStorageSmoke` stopped at setup because its required fixture/native
+Gradle properties were not supplied; it is not reported as a passing test.
+
+The corrected production JAR is
+`58bd7a71517452ca3f33e372060abd47f29166850cdcf464e3b3cb0f2a2a158b`.
+**The preceding 96.0% / 83.9% combined measurement is now historical for JAR
+4bd11717.** Those raw exporter probes must not be presented as coverage of this
+changed bytecode. A fresh JavaExec baseline and matching integration/host data
+are required; current full combined coverage and hosted acceptance are
+**UNCERTAIN**. The full denominator and all original targets remain unchanged
+as policy. Pipeline reporting now requires all four location forms on each of
+the five targets, with ARM32 retained as a separate measured origin.
+
 ## MIPS STORE regression measurement
 
 **CONFIRMED:** the existing freestanding O32/N32 integer STORE regression now

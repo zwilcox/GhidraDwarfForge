@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from zipfile import ZipFile
+from test_location_width_admission import fixture as width_fixture
 
 
 spec = importlib.util.spec_from_file_location('mips_truncated_admission',
@@ -107,20 +108,39 @@ class HostedAdmission(unittest.TestCase):
                 oracle = root / 'oracle.json'
                 coverage.save(oracle, evidence)
                 collection.finish(oracle)
+                width_records = []
+                for mode in hosted.location_width.MODES:
+                    width = coverage.Collection('location-width-producer', jar, 'native-java', environment={
+                        'FORGE_INTEGRATION_COVERAGE_OUTPUT': str(job / 'collections'),
+                        'FORGE_INTEGRATION_COVERAGE_AGENT': str(agent)})
+                    width.record['host'] = 'posix'
+                    with width.session(['java', 'Fake'], 'producer'):
+                        (width.root / width.record['sessions'][-1]['file']).write_bytes(b'not real probes')
+                    _, width_evidence = width_fixture(target, mode)
+                    width_evidence['productionJarSha256'] = width_evidence['protectedSha256']['jar'] = coverage.digest(jar)
+                    width_oracle = root / (mode + '.json')
+                    coverage.save(width_oracle, width_evidence)
+                    width.finish(width_oracle)
+                    width_records.append(width)
                 report = job / 'report'
                 report.mkdir()
                 xml = report / 'headless.xml'
                 xml.write_text('<report/>')
+                native_xml = report / 'native-java.xml'
+                native_xml.write_text('<report/>')
                 summary = {'schema': 1, 'status': 'PASS', 'commit': 'a' * 40,
                     'productionJarSha256': coverage.digest(jar),
                     'cohort': {'commit': 'a' * 40, 'run': '7', 'job': 'target-preflight'},
                     'layers': {'headless': {'xmlSha256': coverage.digest(xml), 'sessions': 4,
                         'productionClasses': 1, 'suites': ['mips-truncated-space'],
                         'unmeasuredForcedHalts': [],
-                        'receipts': {collection.root.name: coverage.digest(collection.root / 'receipt.json')}}}}
+                        'receipts': {collection.root.name: coverage.digest(collection.root / 'receipt.json')}},
+                        'native-java': {'xmlSha256': coverage.digest(native_xml), 'sessions': 4,
+                            'productionClasses': 1, 'suites': ['location-width-producer'], 'unmeasuredForcedHalts': [],
+                            'receipts': {r.root.name: coverage.digest(r.root / 'receipt.json') for r in width_records}}}}
                 coverage.save(report / 'summary.json', summary)
                 rows, origin = hosted.load_job(job, jar, 'linux_' + target, 'a' * 40, '7')
-                self.assertEqual(len(rows), 4)
+                self.assertEqual(len(rows), 8)
                 self.assertEqual(origin['kind'], 'linux_' + target)
                 other = 'mips32le' if target == 'mips32be' else 'mips32be'
                 with self.assertRaisesRegex(ValueError, 'target cohort'):

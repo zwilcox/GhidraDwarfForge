@@ -899,7 +899,7 @@ public final class MinimalDwarfSidecarExporter {
                         }
                         Location location = addVariableLocation(producer, consumer, debug, parameterDie,
                             variableLocations.get(new VariableKey(function.address(),
-                                VariableKind.PARAMETER, parameter.name())), locationLists,
+                                VariableKind.PARAMETER, parameter.name())), locationLists, target.addressBytes(),
                             errorOut);
                         if (parameter.objectPointer()) {
                             addReference(producer, consumer, debug, die,
@@ -947,7 +947,7 @@ public final class MinimalDwarfSidecarExporter {
                             typeModel.types(), allocatedTypes, errorOut);
                         Location location = addVariableLocation(producer, consumer, debug, localDie,
                             variableLocations.get(new VariableKey(function.address(),
-                                VariableKind.LOCAL, local.name())), locationLists, errorOut);
+                                VariableKind.LOCAL, local.name())), locationLists, target.addressBytes(), errorOut);
                         declarations.add(new VariableEmission(Kind.LOCAL, -1, local.name(),
                             binding == null ? local.name() : binding.displayName(),
                             binding == null ? "" : binding.block(), local.type(), false, false, location));
@@ -1073,7 +1073,8 @@ public final class MinimalDwarfSidecarExporter {
             Map<Long, byte[]> bytes = collect(producer, consumer, debug, errorOut,
                 bufferCount.getValue(), sections);
             validateRelocations(producer, consumer, debug, errorOut, sections, bytes,
-                functions, typeModel, functionStatics, lexicalAddresses, callAddresses, target.addressBytes(), byteOrder);
+                functions, typeModel, functionStatics, lexicalAddresses, callAddresses,
+                emittedVariables, target.addressBytes(), byteOrder);
 
             Map<String, byte[]> result = new LinkedHashMap<>();
             sections.forEach((index, section) -> {
@@ -1757,7 +1758,8 @@ public final class MinimalDwarfSidecarExporter {
             LibDwarfConsumer consumer, Debug debug, PointerByReference errorOut,
             Map<Long, SectionRecord> sections, Map<Long, byte[]> sectionData,
             List<FunctionSymbol> functions, ProgramTypeModel typeModel,
-            List<ProgramTypeModel.FunctionStaticVariable> functionStatics, Set<Long> lexicalAddresses, Set<Long> callAddresses, int addressBytes,
+            List<ProgramTypeModel.FunctionStaticVariable> functionStatics, Set<Long> lexicalAddresses, Set<Long> callAddresses,
+            Map<FunctionKey, List<VariableEmission>> emittedVariables, int addressBytes,
             ByteOrder byteOrder) {
         LongByReference groupCount = new LongByReference();
         IntByReference version = new IntByReference();
@@ -1813,6 +1815,17 @@ public final class MinimalDwarfSidecarExporter {
             .map(FunctionSymbol::address).forEach(expected::add);
         expected.addAll(lexicalAddresses);
         expected.addAll(callAddresses);
+        // Stable local/parameter expressions have producer relocations too.
+        // Listed locations are serialized separately and have no such records.
+        for (var variables : emittedVariables.values()) {
+            for (var variable : variables) {
+                if (variable.location() instanceof ExpressionLocation expression) {
+                    for (var operation : expression.expression().operations()) {
+                        if (operation instanceof AddressOperation address) expected.add(address.address());
+                    }
+                }
+            }
+        }
         if (typeModel != null) {
             typeModel.globals().stream().filter(global -> !global.declaration())
                 .map(ProgramTypeModel.GlobalVariable::address).forEach(expected::add);
@@ -1888,7 +1901,7 @@ public final class MinimalDwarfSidecarExporter {
 
     private static Location addStableLocation(LibDwarfProducer producer,
             LibDwarfConsumer consumer, Debug debug, Die die, VariableLocation variable,
-            PointerByReference errorOut) {
+            int addressBytes, PointerByReference errorOut) {
         if (variable == null) {
             return new NoLocation("NO_STORAGE_EVIDENCE", "No variable storage record was supplied");
         }
@@ -1898,13 +1911,13 @@ public final class MinimalDwarfSidecarExporter {
         }
         Expression plan = (Expression) planned;
         addExpressionAttribute(producer, consumer, debug, die, DW_AT_LOCATION, plan,
-            errorOut);
+            addressBytes, errorOut);
         return new ExpressionLocation(plan);
     }
 
     private static Location addVariableLocation(LibDwarfProducer producer,
             LibDwarfConsumer consumer, Debug debug, Die die, VariableLocation variable,
-            Dwarf5LocationLists.Result locationLists, PointerByReference errorOut) {
+            Dwarf5LocationLists.Result locationLists, int addressBytes, PointerByReference errorOut) {
         if (variable == null) {
             return new NoLocation("NO_STORAGE_EVIDENCE", "No variable storage record was supplied");
         }
@@ -1915,7 +1928,7 @@ public final class MinimalDwarfSidecarExporter {
             return new ListLocation(offset, Objects.requireNonNull(locationLists.plans().get(variable),
                 "emitted location-list plan"));
         }
-        return addStableLocation(producer, consumer, debug, die, variable, errorOut);
+        return addStableLocation(producer, consumer, debug, die, variable, addressBytes, errorOut);
     }
 
     private static void checkCancelled(BooleanSupplier cancelled) {
@@ -1926,7 +1939,7 @@ public final class MinimalDwarfSidecarExporter {
 
     private static void addExpressionAttribute(LibDwarfProducer producer,
             LibDwarfConsumer consumer, Debug debug, Die die, short attribute,
-            Expression plan, PointerByReference errorOut) {
+            Expression plan, int addressBytes, PointerByReference errorOut) {
         PointerByReference expressionOut = new PointerByReference();
         check(producer.dwarf_new_expr_a(debug, expressionOut, errorOut),
             "dwarf_new_expr_a", errorOut, consumer);
@@ -1940,6 +1953,9 @@ public final class MinimalDwarfSidecarExporter {
                     "dwarf_add_expr_gen_a", errorOut, consumer);
             }
             else if (operation instanceof AddressOperation address) {
+                if (addressBytes < Long.BYTES && address.address() >>> (addressBytes * Byte.SIZE) != 0) {
+                    throw new IllegalArgumentException("location address exceeds target width");
+                }
                 check(producer.dwarf_add_expr_addr_c(expression, address.address(),
                     TEXT_SYMBOL_INDEX, nextOffset, errorOut), "dwarf_add_expr_addr_c",
                     errorOut, consumer);

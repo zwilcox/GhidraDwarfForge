@@ -1155,7 +1155,6 @@ jobs:
             --sections "$results/sections" --output "$results/validation"
 
       - name: Prepare separate coverage for existing integration JVMs
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1239,12 +1238,22 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          python3 -B src/test/integration/location-width-producer.py \
-              --target "$TARGET" --results "$PWD/build/test-results/location-width-producer/$TARGET" \
+          export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
+          export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections"
+          for mode in listed stable listed-indirect stable-indirect; do
+              python3 -B src/test/integration/location-width-producer.py \
+              --target "$TARGET" --mode "$mode" --results "$PWD/build/test-results/location-width-producer/$TARGET/$mode" \
               --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
               --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
               --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
               --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME" --dwarfdump "$DWARFDUMP"
+          done
+          if [[ "$TARGET" == mips32be ]]; then
+              python3 -B src/test/coverage/location-width-mutations.py \
+                  --baseline "$PWD/build/test-results/location-width-producer/$TARGET/stable" \
+                  --output "$PWD/build/test-results/location-width-mutations" \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME"
+          fi
 
       - name: Isolated producer failure cleanup and validated retries
         if: matrix.target == 'x86_64'
@@ -3455,7 +3464,8 @@ jobs:
               --require-suite recovered-statics-positive --require-suite recovered-statics-controls \
               --require-suite stack-control-flow --require-suite saved-inheritance --require-suite external-declarations \
               --require-suite recovered-returns --require-suite recovered-parameters --require-suite stack-value-transitions \
-              --require-suite producer-failures --require-suite qualified-type-producer --require-suite namespace-globals --require-suite mmio-failure-controls
+              --require-suite producer-failures --require-suite qualified-type-producer --require-suite namespace-globals --require-suite mmio-failure-controls \
+              --require-suite callable-type-producer --require-suite location-width-producer
 
       - name: Verify and report AArch64 integration coverage
         if: matrix.target == 'aarch64'
@@ -3467,7 +3477,7 @@ jobs:
               --collections build/integration-coverage/collections --output build/integration-coverage/report \
               --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
               --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite stack-value-transitions \
-              --require-suite bitfield-values --require-suite namespace-globals
+              --require-suite bitfield-values --require-suite namespace-globals --require-suite location-width-producer
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'aarch64'
@@ -3486,7 +3496,27 @@ jobs:
               --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
               --collections build/integration-coverage/collections --output build/integration-coverage/report \
               --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
-              --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite mips-truncated-space
+              --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite mips-truncated-space \
+              --require-suite location-width-producer
+
+      - name: Verify and report ARM32 location integration coverage
+        if: matrix.target == 'arm32'
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 -B src/test/coverage/integration-report.py \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --collections build/integration-coverage/collections --output build/integration-coverage/report \
+              --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite location-width-producer
+
+      - uses: actions/upload-artifact@v7
+        if: always() && matrix.target == 'arm32'
+        with:
+          name: integration-java-coverage-linux-arm32
+          path: build/integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
 
       - uses: actions/upload-artifact@v7
         if: always() && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
@@ -4458,6 +4488,10 @@ jobs:
           path: build/combined-inputs/linux-mips32be
       - uses: actions/download-artifact@v8
         with:
+          name: integration-java-coverage-linux-arm32
+          path: build/combined-inputs/linux-arm32
+      - uses: actions/download-artifact@v8
+        with:
           name: integration-java-coverage-linux-mips32le
           path: build/combined-inputs/linux-mips32le
       - uses: actions/download-artifact@v8
@@ -4483,6 +4517,7 @@ jobs:
               --bundle build/combined-inputs/javaexec --expected-tasks src/test/coverage/javaexec-tasks.json \
               --linux build/combined-inputs/linux --linux-host build/combined-inputs/linux-host \
               --linux-aarch64 build/combined-inputs/linux-aarch64 \
+              --linux-arm32 build/combined-inputs/linux-arm32 \
               --linux-mips32be build/combined-inputs/linux-mips32be \
               --linux-mips32le build/combined-inputs/linux-mips32le \
               --windows build/combined-inputs/windows --firmware build/combined-inputs/firmware \
