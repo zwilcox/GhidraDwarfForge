@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
@@ -85,7 +86,74 @@ public final class BuildIdFileLockSmoke {
             Files.write(path, MAGIC);
             child(path, "LOCK_ACQUIRED");
         }
+        installationPublicationBoundaries(path.getParent(), host);
         System.out.println("build-id-file-lock=PASS host=" + (windows ? "windows" : "linux"));
+    }
+
+    /** A failed lock-name publication can proceed only with an independently valid competing record. */
+    private static void installationPublicationBoundaries(Path parent, AttachmentOperation.Host delegate) throws Exception {
+        Path cases = Files.createTempDirectory(parent, "installation-lock-publication-");
+        try {
+            for (String variant : new String[] {"absent", "valid-competitor", "foreign-competitor"}) {
+                Path root = Files.createDirectory(cases.resolve(variant));
+                String id = "11223344";
+                Path lock = root.resolve(".forge-build-id/v1/" + id + "/lock");
+                var failure = new IOException("injected lock publication failure");
+                int[] attempts = {0};
+                byte[][] published = {null};
+                AttachmentOperation.Host host = new AttachmentOperation.Host() {
+                    public String contract() { return delegate.contract(); }
+                    public String durability() { return delegate.durability(); }
+                    public byte[] debuglinkBasename(Path file) throws IOException { return delegate.debuglinkBasename(file); }
+                    public AttachmentReceiptStore.Fingerprint inspect(Path file) throws IOException { return delegate.inspect(file); }
+                    public String directoryIdentity(Path directory) throws IOException { return delegate.directoryIdentity(directory); }
+                    public void preserveMetadata(Path source, AttachmentReceiptStore.Fingerprint before, Path stage) throws IOException {
+                        delegate.preserveMetadata(source, before, stage);
+                    }
+                    public void replaceAtomic(Path stage, Path target) throws IOException { delegate.replaceAtomic(stage, target); }
+                    public void syncDirectory(Path directory) throws IOException { delegate.syncDirectory(directory); }
+                    public void publishNew(Path stage, Path target) throws IOException {
+                        require(target.equals(lock), "unexpected publication before lock admission: " + target);
+                        attempts[0]++;
+                        if (!variant.equals("absent")) {
+                            byte[] bytes = Files.readAllBytes(stage);
+                            require(Arrays.equals(bytes, ("Forge build-ID lock v1\n" + id + "\n")
+                                .getBytes(StandardCharsets.UTF_8)), "unexpected lock format");
+                            if (variant.equals("foreign-competitor")) bytes[0] ^= 1;
+                            Files.write(target, bytes, StandardOpenOption.CREATE_NEW);
+                            published[0] = bytes;
+                        }
+                        throw failure;
+                    }
+                };
+                try {
+                    var result = BuildIdInstallation.recover(root, id, host, () -> false);
+                    require(variant.equals("valid-competitor"), "unverified lock admitted: " + variant);
+                    require(result.outcome() == BuildIdInstallation.Outcome.UNCHANGED, "empty recovery changed state");
+                }
+                catch (IOException rejected) {
+                    if (variant.equals("absent")) require(rejected == failure, "original publication failure was lost");
+                    else {
+                        require(variant.equals("foreign-competitor"), "valid competitor rejected: " + rejected);
+                        require(rejected.getMessage().equals("foreign or incomplete build-ID lock"), rejected.toString());
+                    }
+                }
+                require(attempts[0] == 1, "publication was retried without verification");
+                require(!Files.exists(root.resolve(".build-id/11/223344.debug")), "recovery published a registration");
+                require(!Files.exists(lock.resolveSibling("state.json")), "recovery published state");
+                if (published[0] == null) require(!Files.exists(lock), "failed publication created a lock");
+                else require(Arrays.equals(published[0], Files.readAllBytes(lock)), "competing record was changed");
+                if (variant.equals("foreign-competitor")) Files.delete(lock); // Remove only this fixture's known record.
+                // A later ordinary recovery proves failed admission released all acquired resources.
+                require(BuildIdInstallation.recover(root, id, delegate, () -> false).outcome() ==
+                    BuildIdInstallation.Outcome.UNCHANGED, "recovery retry failed");
+            }
+        }
+        finally {
+            try (var paths = Files.walk(cases)) {
+                for (Path entry : paths.sorted(java.util.Comparator.reverseOrder()).toList()) Files.delete(entry);
+            }
+        }
     }
 
     private static void child(Path path, String marker) throws Exception {

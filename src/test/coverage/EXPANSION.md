@@ -8,6 +8,17 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Request admission and stack controls awaiting hosted measurement
 
+Build-ID lock publication tests now cover an absent destination after a failed
+publication, a valid competing lock, and a same-length foreign lock record.
+They verify the original error or independent validation result, unchanged
+competing bytes, no state/registration publication, and successful retry after
+failed admission. The existing real-host lease smoke passes on Linux; its Windows
+lane will exercise the same cases after push. Diagnostic measurement against the
+historical cohort adds two lines/two branches in `BuildIdInstallation`; this is
+not current hosted acceptance. Evidence: guarded scratch
+`installation-publication-test.log` and
+`coverage-recovery/installation-lock-publication/`.
+
 Transaction request admission now rejects each missing explicit role, unknown
 roles, all completed phases and a PREPARED recovery journal presented as a new
 transaction, for both initial attachment and refresh. The fixture verifies that
