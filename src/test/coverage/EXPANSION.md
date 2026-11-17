@@ -6,6 +6,37 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current partial measurement after memory and file-operation refresh
+
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 503 verified
+sessions: 211 JavaExec, 284 native-Java and eight headless. Every available view
+retains all 255 production sources / 901 class files. Windows execution data
+and the remaining integration cohort are still missing; hosted acceptance is
+false. Native C, Python and shell are outside these Java counters.
+
+| Scope | Lines | Branches |
+| --- | ---: | ---: |
+| Overall | 26,122 / 29,802 (87.7%) | 20,161 / 25,902 (77.8%) |
+| Binary and location correctness | 17,799 / 19,213 (92.6%) | 15,057 / 18,750 (80.3%) |
+| File transactions and validation | 5,521 / 6,677 (82.7%) | 3,244 / 4,250 (76.3%) |
+
+The production relocation fix remains covered on all 14 changed executable
+lines and 14 changed branches. Overall line coverage alone does not complete
+the goal; the branch and critical-group targets remain unmet.
+
+The file-operation refresh verifies 43 Linux host sessions and 220 build-ID
+sessions. It checks real metadata/directory operations, installation/update/
+removal, recovery, identity refusal, fresh GDB discovery and command cancellation.
+Sixteen deliberate process-halt controls remain unmeasured and are reported
+separately. Local privileged visibility is **NOT RUN**; these results do not
+replace the actual privileged-host or Windows requirements.
+
+The immutable partial summary is
+`stable-memory-files-partial/summary.json` in the coverage workspace, SHA-256
+`9cb00bf5b29b31ad48b44232ccabc31a20041c63aa7ad2ad361f648309fc4a6b`.
+It replaces the smaller 236-session partial baseline for current progress
+reporting. It does not combine execution data from the older production JAR.
+
 ## Stable and listed memory locations under PIE relocation
 
 **CONFIRMED, local:** `stable-location-pie-verified/` passes twenty profiles
