@@ -1272,6 +1272,20 @@ jobs:
               --output "$PWD/build/test-results/qualified-type-mutations" \
               --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR"
 
+      - name: Callable types, unknown conventions and address-free declarations
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 -B src/test/integration/callable-type-producer.py \
+              --results "$PWD/build/test-results/callable-type-producer" \
+              --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME" --dwarfdump "$DWARFDUMP"
+          python3 -B src/test/coverage/callable-type-mutations.py \
+              --baseline "$PWD/build/test-results/callable-type-producer" \
+              --output "$PWD/build/test-results/callable-type-mutations" \
+              --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR"
+
       - name: Producer cleanup and buffer-bound mutation controls
         if: matrix.target == 'x86_64'
         run: |

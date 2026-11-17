@@ -24,6 +24,7 @@ recovered_signatures = combined.module('recovered_signature_admission', HERE / '
 stack_transitions = combined.module('stack_transition_admission', HERE / 'stack-transition-admission.py')
 producer_failures = combined.module('producer_failure_admission', HERE / 'producer-failure-admission.py')
 qualified_types = combined.module('qualified_type_admission', HERE / 'qualified-type-admission.py')
+callable_types = combined.module('callable_type_admission', HERE / 'callable-type-admission.py')
 mmio_failures = combined.module('mmio_failure_admission', HERE / 'mmio-failure-admission.py')
 namespace_globals = combined.module('namespace_global_admission', HERE / 'namespace-global-admission.py')
 function_entries = combined.module('function_entry_admission', HERE / 'function-entry-admission.py')
@@ -37,7 +38,7 @@ windows_privilege_readback = combined.module('windows_privilege_readback_admissi
 REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation', 'build-id-identity',
-        'build-id-source-bundle',
+        'build-id-source-bundle', 'callable-type-producer',
         'instruction-context', 'source-context', 'annotation-inventory', 'equate-evidence',
         'equate-constants', 'equate-retained-names', 'bitfield-values',
         'annotation-export', 'failed-source-export', 'class-scopes', 'inheritance-producer',
@@ -478,6 +479,7 @@ def load_job(root, jar, kind, commit, run):
     stack_transition_cases = []
     producer_failure_cases = []
     qualified_type_cases = []
+    callable_type_cases = []
     mmio_failure_cases = []
     namespace_global_cases = []
     for layer, measured in sorted(summary['layers'].items()):
@@ -556,6 +558,8 @@ def load_job(root, jar, kind, commit, run):
                 producer_failure_cases.append(producer_failures.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'qualified-type-producer':
                 qualified_type_cases.append(qualified_types.oracle(record, files.read(directory / 'oracle.json')))
+            if record['suite'] == 'callable-type-producer':
+                callable_type_cases.append(callable_types.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'mmio-failure-controls':
                 mmio_failure_cases.append(mmio_failures.oracle(record, files.read(directory / 'oracle.json')))
             if record['suite'] == 'namespace-globals':
@@ -587,6 +591,7 @@ def load_job(root, jar, kind, commit, run):
         recovered_signatures.cohort(recovered_signature_cases)
         producer_failures.cohort(producer_failure_cases)
         qualified_types.cohort(qualified_type_cases)
+        callable_types.cohort(callable_type_cases)
     if kind == 'linux':
         mmio_failures.cohort(mmio_failure_cases)
     if kind in ('linux', 'linux_aarch64'):
