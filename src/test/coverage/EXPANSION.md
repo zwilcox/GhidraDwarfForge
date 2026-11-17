@@ -54,6 +54,46 @@ are required; current full combined coverage and hosted acceptance are
 as policy. Pipeline reporting now requires all four location forms on each of
 the five targets, with ARM32 retained as a separate measured origin.
 
+The fresh baseline at source commit `86b5a34b` is now **CONFIRMED** locally:
+all **211 measured JavaExec tasks** passed (4m43s), followed by sixteen native
+location profiles, the callable metadata fixture, and eight real headless
+exports across x86-64, AArch64 and both MIPS byte orders. The latter retain
+compiler/Forge GDB bit-field values and restore the prior cached installation.
+The two native fault mutations pass their behavioral assertions. Source hashes,
+artifact receipts and every raw class/session identity were verified before
+combining these **236 current-JAR sessions**. No historical-JAR probes are used.
+
+The local partial measurement is **25,014/29,802 lines (83.9%)** and
+**19,609/25,902 branches (75.7%)**. Binary/location correctness is 91.6% lines /
+79.8% branches; file transactions/validation is 69.0% / 65.7%. These are not
+comparable to the preceding broader union: current Windows and most integration
+origins remain absent. All 255 production sources and 901 classes remain in
+each measured view, including the unexecuted Windows classes. The fix itself
+has **14/14 changed executable lines and 14/14 branches covered**, meeting the
+changed-logic gate. Full issue #209 acceptance remains incomplete.
+
+The strict checker reports two inherited compiler-frame alignment diagnostics
+on x86-64 and five on AArch64; MIPS has none. Verification compares the original
+and sidecar `.eh_frame` bytes, complete section identity and exact diagnostic
+sets, and reruns the checker's log assertions. No uncorroborated error is
+accepted. A first local verifier incorrectly demanded zero total diagnostics;
+it was corrected to enforce this existing corroboration policy. The hosted
+reporter also refused to construct a complete report without current Windows
+data. Its requirements were preserved; the separate local audit explicitly
+records four measured views and no Windows origin, with publication disabled.
+
+Evidence: `stable-location-verified/`, `stable-location-mutations/`,
+`javaexec-stable-memory-baseline-64/`, `callable-type-stable-memory/`,
+`bitfields-stable-memory/` and `stable-memory-baseline-verification/` in the
+bounded workspace. The latter's `report/summary.json` has SHA-256
+`10067ce11c259d76c9f5a51a9eaa3b2583de8b954a838512763c24ade0479d2b`.
+Local verification processes are terminal; storage is READY at
+14.104/100 GiB scratch, 2.059/10 GiB cache and 6.728/10 GiB evidence. The headless
+fixture deletes its owned projects, and mutation compilation directories were
+removed. Hosted run `44024881065` now has thirteen passing jobs (both MIPS lanes
+included), three running architecture jobs, and no failures observed; it still
+predates this fix and does not prove current-head acceptance.
+
 ## MIPS STORE regression measurement
 
 **CONFIRMED:** the existing freestanding O32/N32 integer STORE regression now
