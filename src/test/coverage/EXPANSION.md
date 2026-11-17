@@ -8,15 +8,15 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 867 verified
-sessions: 211 JavaExec, 560 native-Java, 39 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 868 verified
+sessions: 211 JavaExec, 561 native-Java, 39 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,229 / 29,802 (94.7%) | 21,473 / 25,902 (82.9%) |
-| Binary and location correctness | 18,316 / 19,213 (95.3%) | 15,501 / 18,750 (82.7%) |
+| Overall | 28,230 / 29,802 (94.7%) | 21,476 / 25,902 (82.9%) |
+| Binary and location correctness | 18,317 / 19,213 (95.3%) | 15,504 / 18,750 (82.7%) |
 | File transactions and validation | 6,230 / 6,677 (93.3%) | 3,660 / 4,250 (86.1%) |
 
 The production relocation fix remains covered on all 14 changed executable
@@ -52,10 +52,33 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-windows-class-partial/summary.json` in the coverage workspace, SHA-256
-`ca97184402a7248a0a2e176aa168ca133e92e636528f9b6caebcd4fd65bac76a`.
-It replaces the smaller 866-session partial baseline for current progress
+`stable-memory-windows-aarch64-partial/summary.json` in the coverage workspace, SHA-256
+`e8c60eb64e0a30d8b8a4ae0db8169fe72eb4182c18dd52cd2af85e557836044d`.
+It replaces the smaller 867-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## AArch64 composite allocation and cancellation boundaries
+
+**CONFIRMED, local:** the expanded `Aarch64ParameterAllocationSmoke` passes
+1009 assertions using actual pinned Ghidra programs. Its 48 new composite cases
+cover sizes 1 through 24 with and without saved typedef wrappers. After seven
+integer arguments, the oracle requires 9–16-byte composites wholly on the stack,
+with the following integer at offset 16. Smaller composites remain in the final
+argument register; larger ones use an indirect pointer, with the next integer
+at stack offset zero. Saved signatures/storage remain unchanged.
+
+Staged cancellation reaches 25 internal checkpoints. Every cancelled attempt
+leaves the saved signature intact and allows an identical successful retry.
+Three compiled mutations (dropping typedef resolution and excluding either the
+9-byte or 16-byte boundary) fail behavioral assertions. The unchanged baseline
+and mutation classification tests pass.
+
+The guarded final collection `aarch64-boundaries-stable-memory-final` records
+committed harness `4934bae5` and unchanged production JAR. Two preliminary helper
+compilations failed on the typedef API spelling/constructor; neither generated
+an admitted session. Final collection validation and combined regeneration pass.
+This adds one line and three branches, bringing the current partial to 868
+sessions. These compiler-model tests do not replace AArch64 runtime/GDB checks.
 
 ## Saved class and vtable evidence boundaries
 
@@ -78,7 +101,7 @@ excluded from measurement. The checked collection and combined-report drivers
 passed through the storage guard. Adding this session covers one previously
 missed line and 43 branches without changing any denominator. `ClassScopeModel`
 has 133/134 lines and 145/146 branches covered; `VtableEvidence` has 11/11 lines
-and 42/42 branches. The current combined total is 867 sessions.
+and 42/42 branches. That checkpoint contained 867 combined sessions.
 
 ## Matching Windows artifact and completed host job
 
