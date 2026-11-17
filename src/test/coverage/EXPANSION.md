@@ -6,6 +6,43 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Relative-pointer provenance, admission and candidate bounds
+
+`elfRelocatedPointersSmoke` passes 569 assertions for the existing AMD64 and
+AArch64 little-endian relocation profiles. The expanded cases distinguish RELA
+relative candidates from REL, RELR, NONE and absolute relocations; reject missing,
+partial or duplicate RELRO coverage; and reject unreadable slots, ambiguous or
+unreadable targets, and slots without complete file backing. Target values at
+file/BSS boundaries remain link-time candidates, not runtime observations.
+Adjacent loader writes ending exactly at the slot or starting at its end remain
+non-overlapping. Every fixture inspection preserves original bytes, file identity
+and modification time on both success and refusal.
+
+Unsorted tables of 1, 63 and exactly 64 candidates must produce address-sorted,
+immutable lists retaining each original relocation-record offset, explicit addend,
+file offset and independently computed SHA-256 of its original eight bytes.
+65 candidates are refused. The bounded fixtures use at most 16 KiB each.
+
+The guarded Gradle task and six compiled behavioral mutations pass. Mutations
+cover an off-by-one candidate cap, retained record order, fabricated source-byte
+hashes, duplicate protection ranges, ambiguous targets and write-only slots.
+The first cap mutation escaped as an uncaught exception; the positive-boundary
+oracle now explicitly asserts that valid input must be accepted. An initial
+write-only fixture also had an unreadable target and did not distinguish the
+slot-read check. Giving the target its own readable segment isolates that check;
+the complete final mutation run detects all six faults. Neither earlier attempt
+is credited as a passing mutation run.
+
+Evidence: `.forge-work/scratch/relocated-pointer-boundaries-isolated.log`,
+`relocated-pointer-boundary-mutants-isolated/result.json`, and
+`coverage-recovery/relocated-pointer-boundaries/`. The same-production diagnostic
+union has 1,396 sessions, 901 classes and all 255 production sources, adding ten
+branches. Overall totals are 28,843/29,802 lines and 22,209/25,902 branches;
+critical binary/location is 16,040/18,750 branches, 835 short of 90%. File
+operations remain 50 short. Production is unchanged; this adds no ABI/runtime
+immutability claim. Historical cohorts remain, so current-head hosted acceptance
+is still pending.
+
 ## Firmware capture consistency and original-file provenance
 
 The existing `ghidraFirmwareMemoryMapSmoke` task now invokes 21 additional
