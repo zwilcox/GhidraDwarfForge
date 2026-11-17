@@ -6,6 +6,61 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current-JAR signature and calling-convention refresh
+
+**CONFIRMED, partial local measurement:** the existing recovered-return,
+recovered-parameter and external-declaration workflows pass with production JAR
+`4bd11717ce1ff8e46eba3b0f7091517c4dd90e4e0c82472613f8fd66ca31390c`.
+Their eight headless sessions preserve curated/inferred signature distinctions,
+omit unproven parameter locations, and keep external declarations unlocated.
+Compiler/Forge GDB, independent validators, saved-program/input preservation and
+repeatable artifact pairs pass. Both existing admission policies accept the
+complete cases; no historical-package probes contribute.
+
+All nine calling-convention/custom-storage cases also pass: non-PIE, PIE and
+rebased PIE, each with explicit alternate conventions, GCC custom storage and
+Ghidra's Windows compiler profile on the Linux ELF fixture. Their 27 headless
+sessions retain ordinary arguments/return values while GDB rejects unsupported
+injected calls. This is ABI-profile validation, not a native Windows-host claim.
+Both compiler and exported artifacts pass LLVM and strict libdwarf checks.
+
+One initial rebased import **failed before export**: the shared Ghidra script
+cache contained a Java 25 `RebaseFixtureProgram` class, incompatible with the
+selected Java 21 runtime. Its incomplete receipt and raw execution data remain
+under `call-abi-current-4bd11/failed-collections` and are excluded from coverage.
+The three rebased profiles then passed with an isolated Java 21 cache. The
+original failure and retry remain separately recorded; no failed test was
+converted into a passing receipt. Installed JAR/native metadata restoration was
+verified, and the retry's 9.3 MB disposable script cache was removed afterward.
+
+The verified union now contains **799 sessions**: 211 JavaExec, 469 isolated
+Java/native-path and 119 headless. All **255 production sources / 901 classes**
+remain in the denominator:
+
+| Scope | Covered lines | Covered branches |
+| --- | ---: | ---: |
+| Overall Java | 27,673 / 29,792 (92.9%) | 21,105 / 25,888 (81.5%) |
+| Binary/location correctness | 18,385 / 19,203 (95.7%) | 15,465 / 18,736 (82.5%) |
+| File transactions/validation | 5,566 / 6,677 (83.4%) | 3,271 / 4,250 (77.0%) |
+
+Relative to the preceding namespace checkpoint this adds nine covered lines and
+16 branches. Evidence is under `.forge-work/scratch/coverage-expansion/`:
+`signatures-current-4bd11`, `signatures-refresh-4bd11`,
+`call-abi-current-4bd11`, `call-abi-rebased-current-4bd11` and
+`call-abi-refresh-4bd11`. The final summary SHA-256 is
+`e432493510a61acb8ca98324e5261f099fccd66cff29a9aff138b01383ab1d90`.
+Executed harness snapshots bind to `78af6ca8`; original run provenance is retained.
+Guarded signature verification, ABI execution/retry and final union verification
+all completed successfully after the recorded cache failure. The union checks
+raw class identities, source population, artifact hashes and complete behavioral
+receipts. Production code and coverage targets are unchanged.
+
+Issue #209 remains **incomplete**: each critical group's 90% branch target,
+file/validation's 95% line target, fresh Windows/remaining integration data,
+exact-revision hosted acceptance, protected merge and actual-main publication
+remain required. These are local measurements, not a new published badge.
+Storage is READY: 12.38/100 GiB scratch, 2.03/10 GiB cache, 6.73/10 GiB evidence.
+
 ## Namespace/global producer measurement on both target lanes
 
 **CONFIRMED, local validation:** commit `518f2718` instruments the existing eight
