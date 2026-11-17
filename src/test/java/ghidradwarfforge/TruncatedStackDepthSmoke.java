@@ -50,6 +50,7 @@ public final class TruncatedStackDepthSmoke {
         checks += StackCoordinateProjectionSmoke.check();
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        TruncatedAffineBoundarySmoke.run();
         for (boolean big : List.of(true, false)) {
             for (boolean truncated : List.of(true, false)) {
                 for (Middle middle : MIDDLES) {

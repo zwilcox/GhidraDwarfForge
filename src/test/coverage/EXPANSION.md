@@ -7617,3 +7617,45 @@ current-44150222826/integration-java-coverage-linux-mips32le{,.zip,.artifact.jso
 and mips32le-44150222826/{job.json,producing-merge.json,origin.json,result.json,
 regenerated/summary.json,sessions.tsv,counts.json,gaps.json,xml/combined.xml}.
 No additional architecture artifact copies or large validation archives retained.
+
+### Truncated-address affine storage contracts (#209)
+
+Acceptance: declared32-bit physical addresses in64-bit MIPS register models use
+correct low-address arithmetic in both byte orders, refuse unknown/malformed
+operands and invalidate instruction-local temporaries at the next instruction.
+TruncatedAffineBoundarySmoke exercises the actual TruncatedStackDepth.prove entry
+point with controlled p-code over a real decoded N32 context. BigInteger modulo
+2^32 calculations independently check additions/subtractions including wide
+constants, sign boundaries and commuted addition. Tests cover COPY/extension
+widths, low SUBPIECE extraction, absent/extra operands, unknown registers, partial
+clobbers, unrelated writes and same-instruction versus cross-instruction unique
+values. Rejected evidence yields UNKNOWN_STACK_DEPTH_CHANGE; it never invents a
+depth or modifies the saved program. Raw fixtures are not new machine-code or
+architecture support claims.
+
+Guarded Java25/Ghidra12.0.3 `./gradlew --no-daemon truncatedStackDepthSmoke`
+passes480 new assertions and14,479 existing checks in6seconds. Guarded
+mutation-check.py with compiled main/test classes, the same Java/Ghidra
+installations and repeated --only selectors for truncated-affine-retains-temporaries,
+truncated-affine-accepts-shifted-subpiece,truncated-affine-accepts-equal-extension,
+truncated-affine-accepts-copy-width-mismatch,truncated-affine-ignores-first-operand-width,
+truncated-affine-uses-high-big-endian-bytes and
+truncated-affine-treats-register-as-constant passes its unchanged baseline and
+detects all seven compiled faults by behavioral assertions (15.179seconds).
+No production Java or emitted ELF/DWARF changes.
+
+Guarded measure-stack.py truncated-affine-boundaries
+ ghidradwarfforge.TruncatedAffineBoundarySmoke and
+verify-local-addition.py truncated-affine-boundaries mips32le-44150222826 verify
+the raw session/current test sources and unchanged production JAR. Diagnostic
+union gains3lines/28branches, all TruncatedStackDepth, no losses.1,368sessions,
+255sources/901classes retained: overall28,894/29,802lines22,523/25,902branches.
+Binary/location16,302/18,750branches is573short90%; file group remains above its
+95%line/90%branch targets. Historical cohorts remain, so current queued-HEAD
+hosted acceptance is still unproven.
+
+Evidence: .forge-work/scratch/truncated-affine-boundaries.log,
+truncated-affine-mutants/{result.json,*.log} and
+coverage-recovery/truncated-affine-boundaries/{result.json,sessions.tsv,counts.json,
+gaps.json,xml/combined.xml}. CI44150222826 has four live architecture jobs with
+no failed steps observed; MIPSLE and Windows jobs already passed.
