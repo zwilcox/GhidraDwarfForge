@@ -8,7 +8,9 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
+import ghidradwarfforge.targets.UnwindRelocationProfile;
 
 public final class ElfRuntimeRelocationsSmoke {
     private static int checks;
@@ -349,6 +351,78 @@ public final class ElfRuntimeRelocationsSmoke {
         try { ElfRuntimeRelocations.inspect(image, () -> false); throw new AssertionError("accepted changed source"); }
         catch (java.io.IOException expected) { checks++; }
     }
+    private static void profileMetadata(Path path) throws Exception {
+        for (int machine : List.of(62, 183)) {
+            UnwindRelocationProfile baseline = null;
+            for (int type : List.of(2, 3)) for (int osAbi : List.of(0, 3)) {
+                byte[] bytes = fixture(true, ByteOrder.LITTLE_ENDIAN, false);
+                ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).putShort(18, (short) machine)
+                    .putShort(16, (short) type).put(7, (byte) osAbi);
+                Files.write(path, bytes);
+                var profile = UnwindRelocationProfile.select(ElfImage.read(path));
+                require(profile.id().equals(machine == 62 ? "amd64-sysv" : "aarch64-sysv") &&
+                    profile.alignment() == (machine == 62 ? 1 : 8), "wrong relocation ABI profile");
+                require(baseline == null || baseline.equals(profile), "ELF kind/OS ABI changed relocation semantics");
+                baseline = profile;
+                require(Arrays.equals(bytes, Files.readAllBytes(path)), "profile selection changed ELF input");
+            }
+            for (String defect : List.of("class", "order", "machine", "type", "flags", "osabi", "version")) {
+                boolean wide = !defect.equals("class");
+                ByteOrder order = defect.equals("order") ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
+                byte[] bytes = fixture(wide, order, false);
+                var buffer = ByteBuffer.wrap(bytes).order(order);
+                buffer.putShort(18, (short) machine);
+                switch (defect) {
+                    case "machine" -> buffer.putShort(18, (short) 8);
+                    case "type" -> buffer.putShort(16, (short) 1);
+                    case "flags" -> buffer.putInt(wide ? 48 : 36, 1);
+                    case "osabi" -> buffer.put(7, (byte) 9);
+                    case "version" -> buffer.put(8, (byte) 1);
+                    default -> { }
+                }
+                Files.write(path, bytes);
+                var image = ElfImage.read(path);
+                try {
+                    UnwindRelocationProfile.select(image);
+                    throw new AssertionError("accepted unreviewed relocation profile: " + defect);
+                }
+                catch (IllegalArgumentException expected) {
+                    require(expected.getMessage().equals("no audited ordinary unwind relocation profile"),
+                        "wrong relocation profile rejection");
+                }
+                require(Arrays.equals(bytes, Files.readAllBytes(path)), "profile rejection changed ELF input");
+            }
+            var profile = baseline;
+            for (long tag : new long[] {30, 0x6ffffffbL}) {
+                Set<Integer> allowed = tag == 30 ? Set.of(0, 1, 2, 3, 4) : Set.of(0, 1, 3, 7, 11, 27);
+                long combined = 0;
+                profile.requireTag(tag, 0);
+                for (int bit = 0; bit < 64; bit++) {
+                    long value = 1L << bit;
+                    if (allowed.contains(bit)) {
+                        profile.requireTag(tag, value);
+                        combined |= value;
+                        checks++;
+                    }
+                    else reject(() -> profile.requireTag(tag, value), "unreviewed loader flag bit " + bit);
+                }
+                profile.requireTag(tag, combined);
+                reject(() -> profile.requireTag(tag, -1), "all loader flags set");
+            }
+            for (long tag : new long[] {0x6ffffef6L, 0x6ffffef7L}) {
+                if (machine == 62) profile.requireTag(tag, 0x1234);
+                else reject(() -> profile.requireTag(tag, 0x1234), "x86 descriptor metadata on AArch64");
+            }
+            for (long tag : new long[] {-1, 0, 31, 0x70000001L}) {
+                reject(() -> profile.requireTag(tag, 0), "unknown dynamic tag " + tag);
+            }
+            var got = new UnwindRelocationProfile.PointerWrite(3, 8, 16);
+            require(profile.loaderPointerWrites().equals(machine == 62 ?
+                List.of(got, new UnwindRelocationProfile.PointerWrite(0x6ffffef7L, 0, 8)) : List.of(got)),
+                "reserved loader writes changed physical extents");
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         if (args.length != 0) {
             var value = ElfRuntimeRelocations.inspect(ElfImage.read(Path.of(args[0])), () -> false);
@@ -362,6 +436,7 @@ public final class ElfRuntimeRelocationsSmoke {
         }
         var path = Files.createTempFile("runtime-relocations-", ".elf");
         try {
+            profileMetadata(path);
             for (boolean wide : List.of(false, true)) for (var order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                 variants(path, wide, order);
                 metadataMatrix(path, wide, order);

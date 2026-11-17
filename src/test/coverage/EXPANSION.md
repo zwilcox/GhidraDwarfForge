@@ -8777,3 +8777,34 @@ Binary/location critical: 18,663/19,213 lines, 16,645/18,750 branches, 230 short
 of 90%. File-operation critical counters remain 6,522/6,677 and 3,831/4,250.
 The production JAR and full 255-source denominator are unchanged. These local
 measurements do not replace current hosted acceptance or main publication.
+
+### Ordinary unwind relocation profile admission (2026-11-17)
+
+CONFIRMED locally: `ElfRuntimeRelocationsSmoke` selects both audited relocation
+profiles across ET_EXEC/ET_DYN and System V/Linux OS ABI combinations, with
+unchanged identity and alignment. It rejects ELF32, big-endian, wrong-machine,
+relocatable-object, nonzero machine flags, unsupported OS ABI, and nonzero ABI
+version headers without changing input bytes. The test uses parsed complete
+ELF fixtures; these metadata checks do not claim runtime support for rejected
+architectures or formats.
+
+Every single bit of DT_FLAGS and DT_FLAGS_1 is tested on both profiles. Exact
+allowed-bit unions and zero pass; unreviewed bits and all-bits-set values fail.
+AMD64 GNU descriptor tags remain target-specific, unknown tags are rejected,
+and the complete reserved GOT/descriptor pointer-write extents are asserted.
+Existing REL/RELA/RELR, PLT, malformed-table, cancellation and preservation
+checks remain enabled. Guarded `./gradlew --no-daemon elfRuntimeRelocationsSmoke`
+passed in 3 seconds with 1960 checks. Four compiled behavioral faults were
+caught in 1.752 seconds: accepting ELF32, ignoring ABI version, admitting an
+unknown DT_FLAGS bit, and admitting an unreviewed DT_FLAGS_1 mode.
+
+Evidence: `.forge-work/scratch/relocation-profile-boundaries.log`,
+`.forge-work/scratch/relocation-profile-mutants/result.json`, and
+`.forge-work/scratch/coverage-recovery/relocation-profile-boundaries/`.
+The verified diagnostic adds nine branch outcomes in `UnwindRelocationProfile`
+(all its 38 branches now covered in this union), no executable lines, and one
+unique session (1364 total). Overall: 28,920/29,802 lines and 22,879/25,902
+branches. Binary/location critical: 16,654/18,750 branches, 221 short of 90%.
+File-operation critical remains 3,831/4,250. Production bytecode and the full
+255-source denominator remain unchanged. Fresh hosted acceptance and actual-main
+publication are still required.
