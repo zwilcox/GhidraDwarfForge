@@ -8,18 +8,55 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,161 verified
-sessions: 212 JavaExec, 686 native-Java, 206 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,164 verified
+sessions: 212 JavaExec, 689 native-Java, 206 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,606 / 29,802 (96.0%) | 21,859 / 25,902 (84.4%) |
-| Binary and location correctness | 18,488 / 19,213 (96.2%) | 15,740 / 18,750 (83.9%) |
+| Overall | 28,610 / 29,802 (96.0%) | 21,868 / 25,902 (84.4%) |
+| Binary and location correctness | 18,492 / 19,213 (96.2%) | 15,749 / 18,750 (84.0%) |
 | File transactions and validation | 6,383 / 6,677 (95.6%) | 3,732 / 4,250 (87.8%) |
 
-The latest batch adds build-ID reader boundaries and refreshed ELF32 source
+Commit `c613b980` adds 37 GDB companion identity-policy cases using independent
+ELF metadata fixtures. Exact immutable header/payload hashes, both ELF widths
+and byte orders, 1,024 accepted LOADs/probes and their first refused excesses,
+writable or absent executable evidence, and the runtime hashing budget are
+checked without modifying inputs. The over-budget test uses a two-MiB file
+with repeated views. These metadata fixtures are not runnable programs and do
+not establish new architecture or DWARF support. Seven compiled faults are
+detected by behavioral assertions; the unchanged baseline and eight mutation
+outcome controls pass. CI's existing companion workflow and mutation harness
+both invoke the expanded tests.
+
+A fresh live companion run passes the native executable, PIE and shared-object
+workflows, including validator checks, real GDB symbol/source/variable values,
+ASLR/reload behavior, explicit registration, refusal controls and preserved
+inputs. Its three native-Java sessions are admitted after raw receipt, committed
+harness, production JAR, protected artifact and mutation-log verification.
+The isolated metadata session is not additionally counted in this union.
+The initial metadata attempt expected the no-LOAD fixture to reach the LOAD
+count check, but missing allocation evidence correctly refused it earlier.
+That setup failure is retained separately; the corrected test requires the
+actual conservative refusal and does not bypass correspondence validation.
+
+Current immutable partial summary:
+`.forge-work/scratch/coverage-expansion/stable-memory-hosts-companion-identity-partial/summary.json`,
+SHA-256 `d3be55a2d09bf99dcc1ceb904f3a72f8a4de779ed72b65fa3ca5264c3fef27b6`.
+This batch adds four lines and nine branch outcomes; critical branch deficits
+remain 1,126 binary/location and 93 file-operation outcomes.
+
+Hosted run `44042799768` is now terminal. x86-64, AArch64, both MIPS and Windows
+jobs passed. ARM32 failed before integration execution when Maven Central
+returned HTTP 429 for JaCoCo preparation; its missing coverage artifact then
+failed upload. Required validation failed and combined coverage/publication
+were skipped. The bounded preparation retry in `eac13854` was not in that run;
+it retries dependency preparation only, not behavioral failures. The full
+updated revision still needs hosted validation, and a dependency retry does
+not establish that the critical coverage targets pass.
+
+The preceding batch adds build-ID reader boundaries and refreshed ELF32 source
 relocation measurements. Commit `fc45754e` tests independently constructed
 ELF32/ELF64 note views in both byte orders. Individually valid views must be
 rejected when their physical record intervals overlap or wider alignment padding
