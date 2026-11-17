@@ -6,6 +6,51 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current compressed GUI, sectionless ELF and bit-field refresh
+
+CONFIRMED: the fixed `4bd11717` JAR has 681 verified raw sessions: 211 JavaExec,
+431 native Java and 39 headless. All 255 production sources/901 classes remain
+included, with no old-JAR execution data admitted.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Partial current-JAR union | 27,508 / 29,792 (92.3%) | 20,908 / 25,888 (80.8%) |
+| Binary/location | 18,269 / 19,203 (95.1%) | 15,333 / 18,736 (81.8%) |
+| File/validation | 5,556 / 6,677 (83.2%) | 3,263 / 4,250 (76.8%) |
+
+The real compressed Linux Swing workflow passes cancellation, attachment
+preparation, strict validation and both GDB checks, contributing one measured
+main JVM. Unmeasured helper/CLI/calibration processes remain identified separately.
+Inherited frame diagnostics are corroborated against the original input.
+
+Fresh sectionless ELF exports are deterministic and preserve the original input.
+GDB resolves the expected breakpoint and source, displays types, steps and exits
+successfully. Live attachment validation obtains original-frame evidence from
+program headers and rejects an already-existing evidence destination. Both
+native validator sessions pass the hosted admission checks for this suite; the
+limited test host does not establish full privileged attachment acceptance.
+
+Bit-field values pass compiler-reference and exported GDB comparisons for
+x86-64, AArch64, MIPS32 big-endian and MIPS32 little-endian, together with strict
+structural validation, deterministic outputs and protected-input checks.
+The eight measured headless sessions are verified against the current JAR.
+QEMU endpoints/processes are checked as cleaned up. LLDB was **NOT RUN** locally
+and remains required in hosted validation; ARM32 was not included in this local
+four-target invocation. Cached extension files and native metadata are restored.
+
+Evidence under `.forge-work/scratch/coverage-expansion/`:
+`gui-compressed-current-4bd11`, `sectionless-validation-current-4bd11`,
+`bitfields-current-4bd11` and the latest union `validation-refresh-checked-4bd11`.
+All prior current-JAR sessions were revalidated with the new collections before
+regenerating the union. No production/test-source changes or target reductions
+were made in this refresh.
+
+Issue #209 remains **incomplete**: both critical branch targets, file/validation
+line coverage, fresh Windows and full hosted evidence, protected merge and
+actual-main publication remain outstanding. Storage is 11.805/100 GiB scratch,
+2.033/10 GiB caches and 6.728/10 GiB evidence. No extra worktrees or local heavy
+processes remain active.
+
 ## Current source, GUI, firmware and debugger measurement refresh
 
 CONFIRMED: the unchanged fixed `4bd11717` JAR now has 670 verified raw sessions:
