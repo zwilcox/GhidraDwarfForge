@@ -82,6 +82,7 @@ public final class LexicalScopeEvidenceSmoke {
                 GhidraLexicalScopes.save(function, "analyst-recorded lexical ownership", blocks, locals, TaskMonitor.DUMMY);
                 var properties = program.getUsrPropertyManager().getStringPropertyMap(MAP);
                 String original = properties.getString(entry);
+                LexicalRecordBoundarySmoke.check(function, original, blocks, locals);
                 observe(function);
                 require(!original.contains("shadow"), "bounded binary envelope is used");
                 GhidraLexicalScopes.save(function, "analyst-recorded lexical ownership", List.of(parent, child, negative),

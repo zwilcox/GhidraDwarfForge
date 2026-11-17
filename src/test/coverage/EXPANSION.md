@@ -7180,3 +7180,30 @@ Verified diagnostic coverage-recovery/static-binding-record/ adds one line and
 Overall 28,862/29,802 lines and 22,384/25,902 branches; critical binary/location
 16,215/18,750 branches (660 short of 90%), file operations 3,775/4,250 (50 short).
 Historical cohorts remain; current-head hosted acceptance is outstanding.
+
+### Lexical record identity and range boundaries (#209)
+
+Acceptance: persisted local type ID/path, size, first use, storage and block
+identity must match the current function, and encoded ranges must remain ordered
+and representable. LexicalRecordBoundarySmoke locates fields with an independent
+v1 byte decoder, then changes each field separately through the public saved
+property. Rejected reads omit the entire snapshot, emit one diagnostic and
+preserve both payload and program modification counter. Restoring the original
+record restores validity. Null/oversized block and local lists, malformed text,
+missing variables and empty bodies are refused; exact 1,024-character Unicode
+evidence, block IDs and display names round-trip without truncation.
+
+Guarded lexicalScopeEvidenceSmoke passed in 4 seconds: 45 new assertions on each
+of five profiles (x86-64, AArch64, ARM32 and both MIPS orders), plus 430 parent
+assertions including rebasing and immutable database reopening. Six compiled
+identity-check faults were caught by behavioral Java assertions, baseline and
+source hashes verified (13.955 seconds). No production changes. Evidence:
+.forge-work/scratch/lexical-record-boundaries-first.log and
+lexical-record-mutants/result.json.
+
+Verified diagnostic coverage-recovery/lexical-record-boundaries/ adds four lines
+and 16 branches: 1,413 sessions, unchanged JAR58bd, all 255 production sources
+and 901 classes. Overall 28,866/29,802 lines and 22,400/25,902 branches; critical
+binary/location 16,231/18,750 branches (644 short of 90%), file operations
+3,775/4,250 (50 short). Historical cohorts remain; this is not final hosted
+acceptance.
