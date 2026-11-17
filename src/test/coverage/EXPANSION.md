@@ -6,7 +6,49 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current type-graph contract boundaries
+## Current artifact-pair failure boundaries
+
+CONFIRMED: commit `b5edd09e` adds 63 real owned-filesystem assertions to the
+existing `artifactPairPublisherSmoke` workflow. It verifies callback admission,
+cross-directory staging refusal, cleanup after each writer fails, and two
+exclusive-rollback cases where another writer replaces or removes the first
+installed artifact before the second installation collides. Concurrent files
+remain untouched, the caller-owned staging files remain available, and the
+primary failure retains the cleanup failure as a suppressed exception.
+
+A separate case replaces the newly installed artifact with a nonempty directory
+and then interrupts publication. Failed restoration preserves the concurrent
+directory, unchanged original source, and the original artifact's backup bytes,
+identity and timestamp. Disposable staging files are removed. These actions
+operate only on the test's owned temporary files and are cleaned up afterward.
+
+The focused Linux run and existing publisher smoke passed against unchanged
+production bytecode. Four separately compiled mutations failed their intended
+behavioral assertions: deleting a concurrent artifact, dropping the restoration
+error, discarding the recovery backup, and leaking the source staging file.
+Mutation probes are not admitted to coverage. Windows execution of the new
+cases remains for the updated hosted cohort; no new ELF/DWARF/GDB claim is made.
+
+`ArtifactPairPublisher.java` now measures **143/145 lines and 58/66 branches**.
+The verified raw union gains 7 lines and 8 branch outcomes, preserving all 255
+sources/901 classes. Evidence, exact test-source snapshots, mutation receipts and
+class/session verification are under
+`.forge-work/scratch/coverage-expansion/artifact-pair-failures-2f181/` and
+`artifact-pair-mutations-2f181/`. Every prior raw execution hash and collection
+receipt was rechecked before combining the measurements.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall, 1,063 sessions | 28,545 / 29,790 (95.8%) | 21,445 / 25,884 (82.9%) |
+| Binary/location | 18,347 / 19,201 (95.6%) | 15,388 / 18,732 (82.1%) |
+| File/validation | 6,476 / 6,677 (97.0%) | 3,688 / 4,250 (86.8%) |
+
+**Still incomplete:** 1,471 binary/location and 137 file/validation branch
+outcomes remain before both critical groups meet 90%. The updated hosted cohort,
+protected merge and actual-main publication remain outstanding. This focused
+filesystem increment does not claim a full JavaExec rerun or public badge update.
+
+## Earlier type-graph contract boundaries
 
 CONFIRMED: commit `d6c36ae8` adds 6,223 assertions to the existing
 `typeGraphSmoke` task. The new tests exercise each half-open bit-field interval
