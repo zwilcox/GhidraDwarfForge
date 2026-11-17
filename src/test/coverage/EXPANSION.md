@@ -7585,3 +7585,35 @@ register-control-mutants/result.json,register-control-measure-final.log and
 coverage-recovery/register-control-boundaries/{result.json,sessions.tsv,
 counts.json,gaps.json,xml/combined.xml}. CI44150222826 still live; MIPSLE reached
 archive step, no failed steps observed. Hold queued changes while CI continues.
+
+### Current MIPS little-endian cohort admitted (#209)
+
+CONFIRMED: target-preflight(mips32le) job134300299512 in run44150222826 completed
+successfully, with every step successful or intentionally skipped. Authenticated
+artifact14366336597 (560,160 bytes), its GitHub SHA-256 and run/head, and producing
+merge3bdd9b76f85c0d4d49b169a049b23caaf6e824cd whose parent is PR heada5a29b1d.
+Guarded download/extraction stayed below1MiB compressed/20MiB extracted and
+rejected absolute/traversing/symlink archive paths. Current production remains
+byte-identical JAR58bd,901classes, with no src/main delta from the producing head.
+
+Current hosted-combined-report.load_job admits all11 sessions: seven headless
+(context-boundaries and mips-truncated-space) plus four native-Java
+(location-width-producer). Raw session receipts, oracle inventories and coverage
+bindings pass current admission. Guarded integration-report regeneration exactly
+reproduces hosted layers/counters/XML bindings. This confirms the context-boundary
+collector wiring that failed in the earlier run now passes on hosted MIPSLE.
+
+Diagnostic mips32le-44150222826 replaces eight historical hosted MIPSLE sessions
+and three superseded local MIPSLE context-boundary sessions with these11 current
+sessions. The1,367-session union loses and gains no lines or branches. Other
+historical cohorts and queued tests remain; this is not current local-HEAD hosted
+acceptance. Counts remain28,891/29,802lines22,495/25,902branches; binary/location
+601short90%, file group97.66%line/90.05%branch. Four other architecture lanes are
+still running; Windows host and downstream GDB jobs already passed.
+
+Evidence under .forge-work/scratch/coverage-recovery/:
+fetch-mips32le-44150222826.py/.log,admit-mips32le-44150222826.py/.log,
+current-44150222826/integration-java-coverage-linux-mips32le{,.zip,.artifact.json},
+and mips32le-44150222826/{job.json,producing-merge.json,origin.json,result.json,
+regenerated/summary.json,sessions.tsv,counts.json,gaps.json,xml/combined.xml}.
+No additional architecture artifact copies or large validation archives retained.
