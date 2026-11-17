@@ -8110,3 +8110,33 @@ does not establish final hosted acceptance or validate queued local commits.
 Evidence: `.forge-work/scratch/call-transfer-metadata-final.log`,
 `call-transfer-metadata-mutants-semantic/result.json`, and
 `coverage-recovery/call-transfer-metadata/`.
+
+## Unwind arithmetic and caller identity
+
+`unwindFlowSmoke` now invokes an independent BigInteger boundary oracle with
+1,808 cases over all supported symbolic widths (one through eight bytes).
+Signed minimum/maximum, zero and adjacent signed values cover affine stack
+addition/subtraction, modular constants, commuted addition, noncommutative
+subtraction, incoming-register/return-address identities, missing operands and
+mismatched widths. A caller identity survives only a zero displacement. Results
+outside the target's signed stack-offset range are unavailable. The existing
+conservative omission for subtraction requiring negation of signed 64-bit MIN
+is retained explicitly; this does not claim all modular expressions are proved.
+Every case checks unchanged unrelated registers, memory ownership and input state.
+
+The guarded parent task passes in 2 seconds (1,808 arithmetic cases plus its
+existing 105 assertions and cancellation checks). Six compiled faults are caught
+by behavioral assertions, with a passing baseline in 2.807 seconds: ignoring
+either operand width, commuting subtraction, retaining shifted caller identity,
+wrapping a 64-bit stack offset, or exceeding a narrower signed target offset.
+Production code is unchanged.
+
+Verified diagnostic `unwind-arithmetic` contains 1,337 sessions and adds six
+branch outcomes, with no line increase. Overall coverage is 28,904/29,802 lines
+and 22,681/25,902 branches. Binary/location critical coverage is 16,460/18,750
+branches, still 415 short of 90%. Production JAR SHA-256 and the full 255-source,
+901-class denominator remain unchanged. This mixed diagnostic cohort does not
+satisfy final hosted acceptance.
+
+Evidence: `.forge-work/scratch/unwind-arithmetic.log`,
+`unwind-arithmetic-mutants/result.json`, and `coverage-recovery/unwind-arithmetic/`.
