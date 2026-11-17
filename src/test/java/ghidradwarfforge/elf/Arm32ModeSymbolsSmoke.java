@@ -143,6 +143,7 @@ public final class Arm32ModeSymbolsSmoke {
         unnamed = dynamic(ordinary, TEXT + 1, 80, 2, 1);
         put(unnamed, 0x190, 0);
         reject(root, unnamed, List.of(thumb), "exceeds its section");
+        unnamedDynamicIntervals(root, ordinary);
 
         // Extended section counts and a high referenced index need SHNDX entries;
         // this is metadata-only scale, well below the actual 64 MiB smoke heap.
@@ -271,6 +272,68 @@ public final class Arm32ModeSymbolsSmoke {
             thumb.codeSha256()));
         expect(IllegalArgumentException.class, () -> new ElfFunctionModeCue("bad", 1, 1, 1, "bad"));
         System.out.println("ARM32 mode symbols PASS checks=" + checks + " evidence=" + root);
+    }
+
+    /** An independent interval oracle: adjacency is harmless; any shared byte conflicts. */
+    private static void unnamedDynamicIntervals(Path root, byte[] ordinary) throws Exception {
+        int before = checks;
+        int scenarios = 0;
+        int[][][] inventories = {
+            {{0, 8}, {16, 8}, {8, 8}},       // bridge two existing intervals
+            {{0, 32}, {8, 8}, {16, 8}},     // nested intervals
+            {{0, 8}, {16, 8}, {32, 8}},     // separated intervals
+            {{16, 8}, {8, 8}, {0, 8}},      // reverse adjacency
+            {{16, 0}, {0, 8}, {64, 0}},     // unknown size reaches section end; empty end label
+            {{0, 8}, {0, 16}, {0, 4}}       // duplicate starts with different extents
+        };
+        int[][] permutations = {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}};
+        for (int type : new int[] {0, 2, 10}) {
+            for (int[][] inventory : inventories) {
+                for (int[] permutation : permutations) {
+                    byte[] bytes = dynamic(ordinary, 0, 0, type, 0);
+                    put(bytes, sectionOffset(bytes, 2) + 20, 64);
+                    for (int i = 0; i < 3; i++) {
+                        int[] interval = inventory[permutation[i]];
+                        int at = 0x190 + i * 16;
+                        put(bytes, at, 0); // deliberately unnamed; named definitions are refused separately
+                        put(bytes, at + 4, (TEXT + interval[0]) | (type == 0 ? 0 : 1));
+                        put(bytes, at + 8, interval[1]);
+                        bytes[at + 12] = (byte) (0x10 | type);
+                        bytes[at + 13] = 0;
+                        half(bytes, at + 14, 1);
+                    }
+                    Path file = root.resolve("unnamed-dynamic-input");
+                    Files.write(file, bytes);
+                    var image = ElfImage.read(file);
+                    for (int width : new int[] {2, 8}) {
+                        for (int start = 0; start + width <= 64; start += 2) {
+                            boolean occupied = false;
+                            for (int[] interval : inventory) {
+                                int end = interval[1] == 0 ? 64 : interval[0] + interval[1];
+                                occupied |= interval[0] < start + width && start < end;
+                            }
+                            var messages = new ArrayList<String>();
+                            var selected = cue(bytes, start, width, true);
+                            var planned = Arm32ModeSymbols.plan(image, List.of(selected), () -> false, messages::add);
+                            require(planned.size() == (occupied ? 0 : 1),
+                                "dynamic interval conflict differs from byte-interval oracle at " + start + "/" + width);
+                            if (occupied) {
+                                require(messages.stream().anyMatch(message -> message.contains("existing dynamic code symbol")),
+                                    "actual dynamic overlap requires its precise omission reason");
+                            }
+                            else {
+                                require(messages.isEmpty() && planned.getFirst().value() == TEXT + start + 1 &&
+                                    planned.getFirst().size() == width && planned.getFirst().sectionIndex() == 1,
+                                    "adjacent or disjoint cue retains exact Thumb identity");
+                            }
+                            scenarios++;
+                        }
+                    }
+                    require(Arrays.equals(bytes, Files.readAllBytes(file)), "range planning preserves the dynamic table");
+                }
+            }
+        }
+        System.out.println("arm-unnamed-dynamic-intervals=PASS scenarios=" + scenarios + " checks=" + (checks - before));
     }
 
     private static void inspectOutput(Path output, int textIndex,
