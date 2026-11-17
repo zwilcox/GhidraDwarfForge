@@ -6,6 +6,56 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Lexical range boundary tests and current GUI unwind measurement
+
+CONFIRMED: commit `679ea5d1` adds `RangeListScopeBoundarySmoke` through the existing
+`dwarfRangeListsSmoke` task. Its independent ByteBuffer decoder checks lexical
+visibility point by point when a contiguous function contains a discontiguous
+block. It covers both byte orders, 32/64-bit addresses, near-width limits,
+visibility gaps, absent/ambiguous/mismatched owners, duplicate scope identities,
+invalid address widths, deterministic reruns and defensive output ownership.
+
+The new test passes 18,832 assertions and the existing Gradle smoke task passes.
+Four separately compiled faults are rejected by the intended behavioral
+assertions: omitting lexical-only lists, filling a lexical gap, accepting
+ambiguous owners and accepting duplicate scope identities. Compile failures do
+not count as detections. Mutant execution is excluded from coverage and owned
+compiled mutant directories were removed after verification. Production source
+and the `4bd11717` JAR remain unchanged.
+
+`Dwarf5RangeLists` now measures **94/95 lines (98.9%) and 53/54 branches (98.1%)**.
+The additional focused JVM is recorded as an isolated `native-java` collection
+with an explicit pure-Java scope; it makes no native producer or debugger claim.
+The original 211-task JavaExec collection remains bound to its original test
+snapshot rather than being relabeled as a rerun of the new tests.
+
+The actual Linux GUI unwind workflow also passes all seven choices, four exports
+and three cancellations. Independent compiler/GDB instruction-boundary and
+return-frame comparisons pass for conditioned modes; off/strict modes correctly
+omit unproven plans in this fixture. All four outputs pass structural validation.
+Its one measured main JVM is separate from unmeasured helper processes. The
+cached installation and compiler fixture inventory are restored/preserved.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Partial current-JAR union, 683 sessions | 27,537 / 29,792 (92.4%) | 20,949 / 25,888 (80.9%) |
+| Binary/location | 18,298 / 19,203 (95.3%) | 15,373 / 18,736 (82.1%) |
+| File/validation | 5,556 / 6,677 (83.2%) | 3,264 / 4,250 (76.8%) |
+
+All 255 sources/901 classes remain included. Evidence under
+`.forge-work/scratch/coverage-expansion/`: `range-scope-boundaries-4bd11`,
+`range-scope-mutations-4bd11`, `gui-unwind-current-4bd11`, and the verified union
+`range-unwind-refresh-verified-4bd11`. Two initial local verifier attempts stopped
+before admission because the default-GUI marker and Python import path did not
+match the unwind harness. After checking the actual unwind script/receipts, the
+verifier was corrected; the passing behavioral tests were not rerun or weakened.
+
+Issue #209 remains **incomplete**. Critical branch targets, file/validation line
+coverage, fresh Windows and complete hosted evidence, protected merge and
+actual-main publication remain outstanding. Storage is 11.872/100 GiB scratch,
+2.033/10 GiB caches and 6.728/10 GiB evidence; no extra worktrees or active local
+heavy processes remain.
+
 ## Current compressed GUI, sectionless ELF and bit-field refresh
 
 CONFIRMED: the fixed `4bd11717` JAR has 681 verified raw sessions: 211 JavaExec,
