@@ -6,6 +6,37 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Saved local mapping encoding boundaries
+
+`LocalMappingsSmoke` captures actual `HighSymbol.encodeMapSym` output for curated
+register and stack/register identities on x86-64, AArch64, and MIPS BE/LE. The
+original typed tree is a positive control. `LocalMappingEncodingSmoke` changes
+one storage/range field or structural relationship at a time and replays through
+the private mapping collector's public `Encoder` interface. Reflection only
+constructs the collector and observes its acceptance state; malformed trees are
+explicit parser-boundary inputs, not claims that Ghidra emits them.
+
+The cases reject missing fields, unresolved/constant storage spaces, nonpositive
+or overflowing sizes, nested/duplicate/orphan/dangling storage, absent or multiple
+register definition ranges, non-point ranges and invented stack definition
+ranges. Every observed encoder cancellation checkpoint retains its cancellation
+cause and stops promptly. A separate real-listing case sets two saved variables
+to the same definition PC, requires refusal, restores distinct PCs and verifies
+the original group returns unchanged.
+
+Guarded `localMappingsSmoke` passes (92 listing checks plus 592 encoding checks).
+Four compiled malformed-encoding faults and one duplicate-PC fault are detected
+by behavioral assertions; both unchanged-source baselines pass. Logs and results
+are under scratch: `local-mapping-encoding-test.log`,
+`local-mapping-definition-test.log`, `local-mapping-encoding-mutations/`, and
+`local-mapping-definition-mutation/`.
+
+Diagnostic `coverage-recovery/local-mapping-encoding/` verifies the unchanged
+production JAR/class/probe identities and adds **5 lines / 23 branches** in
+`GhidraLocalMappings` against the historical partial cohort. This is a measured
+local gain, not a refreshed complete-cohort percentage or hosted acceptance.
+Production behavior and the coverage denominator are unchanged.
+
 ## Build-ID lock acquisition interruption boundaries
 
 `BuildIdFileLockSmoke` now cancels acquisition at each of its four observed

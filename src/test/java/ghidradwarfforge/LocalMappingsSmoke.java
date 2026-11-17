@@ -68,6 +68,7 @@ public final class LocalMappingsSmoke {
                     .equals(List.of(first, second, second)), "physical storage changes and reuse");
                 require(function.getLocalVariables().length == 3 && copy.getName().equals("value$1"),
                     "extraction must not rewrite saved locals");
+                LocalMappingEncodingSmoke.run(program, function, false);
 
                 copy.setName("unrelated", SourceType.USER_DEFINED);
                 require(GhidraLocalMappings.extract(program, function, TaskMonitor.DUMMY, diagnostics::add).isEmpty(),
@@ -90,6 +91,17 @@ public final class LocalMappingsSmoke {
                 copy.getSymbol().setSource(SourceType.USER_DEFINED);
                 require(GhidraLocalMappings.extract(program, function, TaskMonitor.DUMMY, diagnostics::add).equals(groups),
                     "negative controls restore identical evidence");
+
+                ((ghidra.program.model.listing.LocalVariable) copy).setFirstUseOffset(4);
+                diagnostics.clear();
+                require(GhidraLocalMappings.extract(program, function, TaskMonitor.DUMMY, diagnostics::add).isEmpty(),
+                    "different physical mappings at the same definition cannot establish ordered handoff");
+                require(diagnostics.size() == 1 && diagnostics.getFirst().contains("distinct curated full-width definition"),
+                    "duplicate definition PC is diagnosed");
+                ((ghidra.program.model.listing.LocalVariable) copy).setFirstUseOffset(12);
+                diagnostics.clear();
+                require(GhidraLocalMappings.extract(program, function, TaskMonitor.DUMMY, diagnostics::add).equals(groups),
+                    "restoring distinct first uses restores the exact saved mapping group");
 
                 var cancelled = new TaskMonitorAdapter(true) {
                     private int calls;
@@ -131,6 +143,7 @@ public final class LocalMappingsSmoke {
                     "stack definition comes from the saved listing first use, not an invented decompiler PC");
                 require(stackGroups.getFirst().mappings().getFirst().register() == null,
                     "stack mapping must not fabricate a register");
+                LocalMappingEncodingSmoke.run(program, function, true);
             }
             finally { program.endTransaction(tx, true); }
         }
