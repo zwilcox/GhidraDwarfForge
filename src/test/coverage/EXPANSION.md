@@ -7659,3 +7659,45 @@ truncated-affine-mutants/{result.json,*.log} and
 coverage-recovery/truncated-affine-boundaries/{result.json,sessions.tsv,counts.json,
 gaps.json,xml/combined.xml}. CI44150222826 has four live architecture jobs with
 no failed steps observed; MIPSLE and Windows jobs already passed.
+
+### Inherited frame coverage unions (#209)
+
+Acceptance: appending generated FDEs preserves inherited bytes and refuses any
+shared address, including enclosing tails, single-byte endpoint collisions and
+unsorted/nested original ranges. Zero-sized inherited FDEs reserve no addresses.
+FrameAppendCoverageSmoke independently walks serialized record extents to locate
+original FDE fields, then varies two inherited ranges and compares every proposed
+addition against a byte-occupancy oracle. Both ELF address widths and byte orders
+are checked, including64-bit ranges near the supported signed-address ceiling.
+No original CFI semantics are inferred from this coverage-only test.
+
+The initial fixture crossed Long.MAX_VALUE and correctly hit the inherited
+reader's existing `FDE extent overflows` refusal. The final fixture explicitly
+tests that refusal and keeps admitted overlap cases within the reader's supported
+domain; no production behavior or address-domain requirement was changed.
+
+Guarded Java25/Ghidra12.0.3 `./gradlew --no-daemon callFrameEncoderSmoke` passes
+58,554 new oracle assertions,7,992 existing encoding checks and362 existing
+encoder checks in3seconds. Guarded mutation-check.py with compiled main/test
+classes and Java25 detects all four compiled faults selected with repeated
+--only flags: frame-append-forgets-enclosing-tail, frame-append-reserves-empty-range,
+frame-append-allows-prior-last-byte and frame-append-allows-next-first-byte.
+Unchanged baseline passes; all detections are behavioral assertions (1.689seconds).
+An initial mutation anchor matched both union-building and collision checks;
+the harness refused it. The final anchor selects only the intended collision
+check. Neither failed setup is passing-test evidence.
+
+Guarded measure-stack.py frame-append-coverage
+ ghidradwarfforge.unwind.FrameAppendCoverageSmoke and
+verify-local-addition.py frame-append-coverage truncated-affine-boundaries verify
+the raw session/current test sources against unchanged production bytecode.
+Diagnostic1,369sessions,255sources/901classes: +4branches in DwarfDebugFrame,
+no losses. Overall28,894/29,802lines22,527/25,902branches; binary/location
+16,306/18,750branches(569short90%). File-group targets remain met. Historical
+cohorts mean full current queued-HEAD hosted acceptance is still outstanding.
+
+Evidence: .forge-work/scratch/frame-append-coverage-final.log,
+frame-append-mutants-final/{result.json,*.log}, and
+coverage-recovery/frame-append-coverage/{result.json,sessions.tsv,counts.json,
+gaps.json,xml/combined.xml}. Four architecture CI lanes remain live without
+reported failed steps. No production Java or emitted-product changes.
