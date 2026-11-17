@@ -6,6 +6,31 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Queued Windows privilege readback checks
+
+PRESENT, UNVERIFIED on Windows: `WindowsPrivilegeReadbackControls` adds thirteen
+controlled failures to the existing isolated privilege probe. Each case first
+opens a real Windows x64 token scope with an already-owned privilege. Only the
+subsequent readback replies are changed: sizing status/error and length bounds,
+read errors, returned lengths, privilege counts, duplicate entries and a missing
+entry. No platform flags are spoofed and no missing privilege is granted.
+
+Each case requires the intended rejection, exactly one injected fault, an
+independent native query proving unchanged token attributes, a successful retry,
+and restoration when the real scope closes. Warmed process handle counts must
+remain equal. These controls do not claim constructor or adjustment-failure
+coverage. Both explicit Windows compilation harnesses include the new helper;
+the coverage harness requires its full behavioral receipt in the existing
+privilege session, retaining eight direct host-primitive JVM sessions.
+
+CONFIRMED locally: Java 21 compilation of all six sources used by the PowerShell
+attachment harness and all 281 coverage-policy tests pass. The first local
+policy run failed because its test imported an incorrect module filename; the
+corrected run is retained separately in
+`.forge-work/scratch/coverage-expansion/windows-privilege-harnesses-preflight-2f181/`.
+Native Windows execution remains pending. No new probes are admitted and the
+verified coverage totals below are unchanged.
+
 ## Current unreachable local-definition checkpoint
 
 CONFIRMED: commit `1682df53` adds `UnreachableLocalDefinitionSmoke` through

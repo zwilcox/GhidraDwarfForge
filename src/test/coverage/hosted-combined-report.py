@@ -31,6 +31,7 @@ windows_metadata_failures = combined.module('windows_metadata_failure_admission'
 windows_directory_failures = combined.module('windows_directory_failure_admission', HERE / 'windows-directory-failure-admission.py')
 windows_security_failures = combined.module('windows_security_failure_admission', HERE / 'windows-security-failure-admission.py')
 windows_backup_failures = combined.module('windows_backup_failure_admission', HERE / 'windows-backup-failure-admission.py')
+windows_privilege_readback = combined.module('windows_privilege_readback_admission', HERE / 'windows-privilege-readback-admission.py')
 REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation', 'build-id-identity',
@@ -513,6 +514,7 @@ def load_job(root, jar, kind, commit, run):
                 windows_directory_failures.oracle(record, files.read(directory / 'oracle.json'))
                 windows_security_failures.oracle(record, files.read(directory / 'oracle.json'))
                 windows_backup_failures.oracle(record, files.read(directory / 'oracle.json'))
+                windows_privilege_readback.oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'].startswith('linux-attachment-'):
                 attachment_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'sectionless-validation':

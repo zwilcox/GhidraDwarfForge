@@ -5,7 +5,10 @@ import java.io.IOException;
 /** Runs only in an isolated, already authorized Windows CI fixture process. */
 public final class WindowsAttachmentPrivilegeProbe {
     public static void main(String[] args) throws Exception {
-        if (args.length != 0) throw new IllegalArgumentException("no arguments expected");
+        if (args.length > 1) throw new IllegalArgumentException("optional owned failure-result file expected");
+        var failures = WindowsPrivilegeReadbackControls.check();
+        if (args.length == 1) java.nio.file.Files.writeString(java.nio.file.Path.of(args[0]),
+            new com.google.gson.Gson().toJson(failures), java.nio.file.StandardOpenOption.CREATE_NEW);
         var metadata = new WindowsFileMetadata();
         try (var control = new WindowsFileSecurityProbe.OwnPrivilege(false)) {
             int original = control.attributes();

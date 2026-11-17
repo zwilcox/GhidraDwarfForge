@@ -29,7 +29,7 @@ def main():
     names = ('WindowsFileSecurityProbe', 'WindowsAttachmentPrivilegeProbe',
         'WindowsAttachmentHostSmoke', 'WindowsAttachmentTransactionSmoke', 'BuildIdFileLockSmoke',
         'WindowsMetadataFailureControls', 'WindowsDirectoryFailureControls', 'WindowsSecurityFailureControls',
-        'WindowsBackupFailureControls')
+        'WindowsBackupFailureControls', 'WindowsPrivilegeReadbackControls')
     sources = [Path(__file__).resolve().parents[1] / 'java/ghidradwarfforge/output' / (name + '.java')
         for name in names]
     protected = {str(path): digest(path) for path in [*dependencies, *sources]}
@@ -68,7 +68,7 @@ def main():
     # Match the established isolated probes' interpreter/GC settings for native
     # handle accounting. Do not inject agents into their deliberate halt children.
     stable = [java, '-Xint', '-XX:+UseSerialGC', *prefix[1:]]
-    run('privilege', [*stable, 'ghidradwarfforge.output.WindowsAttachmentPrivilegeProbe'],
+    run('privilege', [*stable, 'ghidradwarfforge.output.WindowsAttachmentPrivilegeProbe', root / 'privilege-failures.json'],
         marker='windows-attachment-privilege=PASS cycles=128')
     run('host', [*stable, 'ghidradwarfforge.output.WindowsAttachmentHostSmoke', root / 'owned'],
         marker='windows-attachment-host=PASS')
@@ -113,6 +113,7 @@ def main():
         'directoryFailures': json.loads((root / 'directory-failures/result.json').read_text(encoding='utf-8')),
         'securityFailures': json.loads((root / 'security-failures/result.json').read_text(encoding='utf-8')),
         'backupFailures': json.loads((root / 'backup-failures/result.json').read_text(encoding='utf-8')),
+        'privilegeReadback': json.loads((root / 'privilege-failures.json').read_text(encoding='utf-8')),
         'backupFixture': {'status': 'PASS_NATIVE_BACKUP_FIXTURE_PRESERVATION', 'sha256': backup_hashes},
         'protectedSha256': protected,
         'unmeasuredNestedChildren': [{'case': row['case'], 'exitCode': row['childExit']} for row in abrupt],
