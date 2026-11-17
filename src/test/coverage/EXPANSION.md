@@ -8023,3 +8023,24 @@ not final hosted acceptance; production code is unchanged.
 Evidence: `.forge-work/scratch/closed-delay-ownership-complete.log`,
 `closed-delay-ownership-mutants-complete/result.json`, and
 `coverage-recovery/closed-delay-ownership/`.
+
+## Current-run ARM32 evidence
+
+Run `44150222826` completed `target-preflight (arm32)` successfully, including
+its debugger, validator and compressed-DWARF checks. Job `134300299620` has no
+failed steps. Coverage artifact `14369983001` is 514,499 bytes, authenticated by
+SHA-256 `334b1374c27a72b16483bbfa7c29a2b6af463e6a84f579ded1d3c1fc1c639457`,
+run/head identity and producing-merge parentage. Its seven raw coverage sessions
+(three headless context-boundary and four native location-width sessions) pass
+current admission checks, and independent report regeneration reproduces the
+hosted layer counts with the unchanged production JAR and full denominator.
+
+These replace three local ARM32 context-boundary sessions. The diagnostic union
+`arm32-44150222826` now has 1,334 unique sessions with unchanged line/branch
+counts and a remaining critical branch deficit of 447. No coverage increase is
+claimed. Other historical cohorts remain, and the successful run does not
+validate queued local commits. Full issue #209 acceptance remains outstanding.
+
+Evidence: `.forge-work/scratch/coverage-recovery/current-44150222826/` contains
+the authenticated ARM32 archive and artifact metadata; `arm32-44150222826/`
+contains job/origin records, regenerated reports and the diagnostic union.
