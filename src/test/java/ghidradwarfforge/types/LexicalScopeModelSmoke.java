@@ -69,6 +69,7 @@ public final class LexicalScopeModelSmoke {
         var tooWide = new FunctionSymbol("wide", 0x100000000L,
             List.of(new FunctionRange(0x100000000L, 4), new FunctionRange(0x100000010L, 4)));
         rejects(() -> Dwarf5RangeLists.build(List.of(tooWide), 4, ByteOrder.LITTLE_ENDIAN), "32-bit truncation");
+        LexicalScopeBoundarySmoke.run();
         System.out.println("lexical-scope-model=PASS checks=" + checks);
     }
 
