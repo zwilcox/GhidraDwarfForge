@@ -8,19 +8,21 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,003 verified
-sessions: 211 JavaExec, 674 native-Java, 61 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,041 verified
+sessions: 211 JavaExec, 676 native-Java, 97 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,467 / 29,802 (95.5%) | 21,663 / 25,902 (83.6%) |
-| Binary and location correctness | 18,358 / 19,213 (95.5%) | 15,556 / 18,750 (83.0%) |
+| Overall | 28,523 / 29,802 (95.7%) | 21,713 / 25,902 (83.8%) |
+| Binary and location correctness | 18,414 / 19,213 (95.8%) | 15,606 / 18,750 (83.2%) |
 | File transactions and validation | 6,378 / 6,677 (95.5%) | 3,726 / 4,250 (87.7%) |
 
-The production relocation fix remains covered on all 14 changed executable
-lines and 14 changed branches. Both overall numerical targets are met in this
+Across all four production sources changed from PR base `c6265e1`, all 30
+changed executable lines and 50/54 branch outcomes are covered (100% / 92.6%).
+The latest relocation fix is a subset covering 14/14 lines and 14/14 branches;
+its 100% branch figure does not describe the entire PR. Both overall numerical targets are met in this
 partial measurement. The critical-group targets and complete hosted cohort
 remain unmet. Both critical-group line targets are now met in this partial report;
 their branch targets are not.
@@ -54,10 +56,44 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-hosts-validator-mipsle-partial/summary.json` in the coverage workspace, SHA-256
-`ede47a670b63eca49cd4fb350aaec62da5858b4f9ee24444fe2b13d78b28e114`.
-It replaces the smaller 972-session partial baseline for current progress
+`stable-memory-hosts-statics-classes-partial/summary.json` in the coverage workspace, SHA-256
+`26b76dd899cfb0cb74c2da115963294829e5fee69e9e19bfef37523765742af9`.
+It replaces the smaller 1,003-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Refreshed static recovery and isolated class scopes
+
+**CONFIRMED, local:** the current production JAR passes the existing x86-64
+non-PIE lexical/static/recovered-static workflow with 37 measured sessions:
+one native producer and 36 actual headless Ghidra runs. The five raw collections
+cover ordinary static objects, lexical shadowing, recovered static types and
+negative/failure/cancellation controls. Current per-suite and whole-role
+admission checks pass, along with exact output pairs, independently retained
+GDB observations, structural validation, source provenance and input hashes.
+The temporary installed JAR, native manifest and supervisor metadata are restored.
+
+The isolated class-scope producer also passes five variants: normal, failed
+source generation, collision, ambiguous binding and unbound collision. Each
+artifact passes GNU/LLVM/pinned-libdwarf and DIE-reference checks. Four variants
+add 26 cold GDB queries; the failed-source variant retains its separately checked
+symbol/type behavior. This contributes one native session and reuses the existing
+matching module without copying another build tree.
+
+The refreshed measurements add 56 executable lines and 50 branch outcomes.
+`GhidraStaticRecovery` improves to 85/87 lines and 91/116 branch outcomes; the
+exporter reaches 1,138/1,206 lines and 626/742 branch outcomes. These results
+identify missing measurement against the current JAR; no production or test
+source changed in this refresh. Evidence roots are `statics-stable-memory` and
+`class-scopes-stable-memory` in the bounded workspace.
+
+The combined report now evaluates changed-code scope against the full PR base,
+verified through GitHub as `c6265e1c657c9ffc7a4d9cb71017cca1e1bc5786`, rather than
+only the latest exporter-fix parent. Full-PR changed-code coverage meets both the
+minimum and preferred targets: 30/30 lines and 50/54 branches (92.6%). Four
+remaining changed branch outcomes are in the i386 allocation correction.
+Critical-group branch deficits remain 1,269 binary/location and 99 file-operation
+outcomes. Complete current hosted acceptance, protected merge and actual-main
+publication remain incomplete.
 
 ## Validator refusals, sectionless frame validation and MIPS little-endian CI
 
