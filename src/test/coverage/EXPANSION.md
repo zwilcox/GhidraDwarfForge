@@ -8,16 +8,16 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 972 verified
-sessions: 211 JavaExec, 647 native-Java, 57 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,003 verified
+sessions: 211 JavaExec, 674 native-Java, 61 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,451 / 29,802 (95.5%) | 21,653 / 25,902 (83.6%) |
-| Binary and location correctness | 18,358 / 19,213 (95.5%) | 15,554 / 18,750 (83.0%) |
-| File transactions and validation | 6,362 / 6,677 (95.3%) | 3,718 / 4,250 (87.5%) |
+| Overall | 28,467 / 29,802 (95.5%) | 21,663 / 25,902 (83.6%) |
+| Binary and location correctness | 18,358 / 19,213 (95.5%) | 15,556 / 18,750 (83.0%) |
+| File transactions and validation | 6,378 / 6,677 (95.5%) | 3,726 / 4,250 (87.7%) |
 
 The production relocation fix remains covered on all 14 changed executable
 lines and 14 changed branches. Both overall numerical targets are met in this
@@ -54,10 +54,53 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-hosts-composite-partial/summary.json` in the coverage workspace, SHA-256
-`0693e76eafe4a0f9d5c8287eeb5d91318099f0f21290e777e7e5ee53a8e7c0fd`.
-It replaces the smaller 971-session partial baseline for current progress
+`stable-memory-hosts-validator-mipsle-partial/summary.json` in the coverage workspace, SHA-256
+`ede47a670b63eca49cd4fb350aaec62da5858b4f9ee24444fe2b13d78b28e114`.
+It replaces the smaller 972-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Validator refusals, sectionless frame validation and MIPS little-endian CI
+
+**CONFIRMED:** commit `30fbf0d0` adds four live negative controls for the
+production attachment validator. Replayed tools exit successfully but omit an
+LLVM unit check, omit final success, duplicate the success marker, or write a
+strict-checker diagnostic to stderr. Each is rejected for the expected reason,
+without publishing success evidence or changing protected inputs. These are
+explicit faulty-tool controls, not observations that real validators misbehave.
+The refreshed attachment bridge passes all 21 measured sessions, actual GDB
+association/runtime checks, CRC rejection, commit and rollback. It uses the
+documented limited Linux test host, not privileged public attachment.
+
+The current exporter also passes two deterministic exports of an actual
+sectionless x86-64 fixture. The live attachment validator corroborates three
+inherited-frame diagnostics against the original program-header bytes and
+checks its temporary non-loadable frame view with GNU, LLVM and pinned libdwarf.
+The view preserves the original payload; the original ELF remains unchanged.
+GDB resolves the generated source, resolves the recovered type, advances with
+`next`, and exits normally. A second evidence publication is rejected without
+overwriting the first. Two native validation sessions are measured; the two
+headless exports are behavioral evidence only in this collection. Cached
+installed JAR/native metadata are restored. The export script conservatively
+refused its own temporary-directory cleanup under the storage guard; the guard
+removed its owned per-run temporary directory on completion.
+
+Completed MIPS little-endian job `133915220868` from run `44042799768` passed.
+Artifact `14317104428` contains eight matching raw sessions (four headless and
+four native), ZIP size 549,795 bytes / expanded 6,248,338 bytes, SHA-256
+`ff9c6cba3f68e8d2712f07f70a0f4876b673fc689b9dc88da90bdce0a649c648`.
+API-authenticated job/source tree, committed harness hashes, raw receipts,
+current per-suite behavioral admission and exact report regeneration pass.
+Whole-job admission correctly rejects the older artifact because it lacks the
+new `context-boundaries` suite. It remains partial evidence, not an updated-gate
+pass. The verified origin digest is
+`614555a2e2372e26d8db16214ad7b2f204406bb2440d8206fa26a641d8bf6a97`.
+
+The resulting 1,003-session union adds sixteen lines and ten branch outcomes to
+the previous report. Critical branch deficits remain 1,319 for binary/location
+correctness and 99 for file operations. Evidence roots are
+`sectionless-validation-stable-memory`, `attachment-validator-boundaries-stable-memory`
+and `hosted-mips32le-44042799768` in the bounded workspace. Current hosted
+acceptance, protected integration and main publication remain incomplete.
 
 ## Composite lifetimes across decoded body gaps
 
