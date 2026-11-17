@@ -35,6 +35,15 @@ hosted acceptance nor a replacement for the preceding full partial measurement.
 The command, source hashes, raw execution, log and comparison are under
 `.forge-work/scratch/coverage-recovery/stack-boundaries/`.
 
+Four further cases decode real x86-64/AArch64 two-byte loads from saved four-
+and eight-byte parameters. The intact stack slot remains the complete location;
+after a partial overwrite of that slot, the short register read cannot stand in
+for the original parameter. Both internal and public location APIs are checked.
+The existing smoke task passes, and a compiled fault that retires memory on a
+short read is detected by the new assertion. Guarded measurement in
+`coverage-recovery/stack-narrow/` again adds zero line/branch outcomes to the
+historical diagnostic cohort. This is additional behavioral coverage only.
+
 ## Current partial measurement after integration refresh
 
 **CONFIRMED, local:** the current `58bd7a71` production JAR has 1,164 verified

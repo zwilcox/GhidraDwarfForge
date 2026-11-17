@@ -545,6 +545,9 @@ REGISTER_PROFILE_MUTANTS = [
      "child.getBitLength() != expected.bitSize()", "false"),
 ]
 STACK_CARRIER_MUTANTS = [
+    ("stack-narrow-load-retires-intact-memory", STACK_FLOW, STACK_CARRIER_TEST,
+     "if (opcode == PcodeOp.LOAD && operation.getNumInputs() == 2 && output.getSize() >= bytes) {",
+     "if (opcode == PcodeOp.LOAD && output.getSize() < bytes) slots.clear();\n        if (opcode == PcodeOp.LOAD && operation.getNumInputs() == 2 && output.getSize() >= bytes) {"),
     ("stack-slot-touch-before-retires-value", STACK_FLOW, STACK_CARRIER_TEST,
      "slots.keySet().removeIf(start -> intersects(start, bytes, offset, end));",
      "slots.keySet().removeIf(start -> intersects(start, bytes, offset, end) || start == end);"),
