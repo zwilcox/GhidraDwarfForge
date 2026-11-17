@@ -6,6 +6,54 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Split-source binding and recovery-request boundaries
+
+CONFIRMED: the latest diagnostic union has **1,019 sessions, 28,482/29,790
+lines (95.6%) and 21,323/25,884 branches (82.4%)**. File/validation reaches
+6,469/6,677 lines (96.9%) and 3,680/4,250 branches (86.6%). Binary/location
+remains 18,291/19,201 lines (95.3%) and 15,275/18,732 branches (81.5%). Both
+critical 90% branch goals, updated hosted validation and protected main
+publication remain incomplete. All production sources/classes remain measured.
+
+The existing x86-64 multi-file integration cases now run a read-only attachment
+binding probe on owned copies of their actual exporter outputs. It binds the
+manifest and every source part, including an index retained under a private name.
+For every dependency it rejects changed bytes with restored mtime, missing files,
+and identical bytes with a new inode. It also rejects a valid bundle describing
+a different input, a valid bundle whose source names differ from DWARF, and a
+source part changed between inventory validation and host observation. The host
+uses actual Linux file identities but controlled metadata; this is not privileged
+attachment approval. New hosted admission preserves that distinction and requires
+all dependency checks and protected-input/log hashes.
+
+A fresh current-JAR x86-64 executable passes the existing single/multi/repeat
+export journey, semantic comparison, unchanged input/project checks, strict
+libdwarf, GNU/LLVM and actual GDB source-stepping checks. The binding probe passes
+79 assertions across twelve dependencies. Three compiled mutations are rejected
+by their intended behavioral assertions: omitted dependency recheck, omitted input
+binding and omitted post-observation inventory verification. The new measured
+session adds nine lines and seven branches; the headless export processes were
+not instrumented in this run. Coverage-tool schema tests pass 251 checks.
+Evidence: `source-bundle-binding-2f181/`, `source-bundle-binding-mutations-2f181/`
+and `build/test-results/multifile/x86_64-exec-6y1joqf5/`. The temporary installed
+JAR/native metadata are restored and verified. This local run covers executable
+layout; the existing hosted task also invokes the probe for PIE/rebased PIE.
+
+Recovery-request smoke tests add 100 assertions across initial/refresh modes and
+prepared/committed receipts. They reject malformed or absent pinned hashes,
+missing/unknown roles, relative/oversized path strings, excessive UTF-8 transport,
+mismatched receipt roles or selected path, and recursive recovery receipts.
+Exact path-length boundaries and both accepted pinned hashes have positive
+controls. The long paths are transport inputs only, never files to create.
+Receipt bytes and absent recovery outputs are checked after each refusal.
+All 304 smoke assertions pass. Four compiled mutations are caught: omitted
+committed-hash syntax, transport limit, receipt-path agreement and recursive
+recovery refusal. These admission-only tests claim no native transaction approval.
+Their verified session adds two lines and nine branches. Evidence:
+`recovery-invocation-boundaries-2f181/` and `recovery-invocation-mutations-2f181/`.
+Both new unions revalidate previous execution hashes and native collections;
+mutation probes are excluded and production source/JAR bytes are unchanged.
+
 ## Sectionless validation, hosted AArch64 and recovery publication
 
 CONFIRMED: the diagnostic union now contains 1,017 verified sessions with
