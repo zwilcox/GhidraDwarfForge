@@ -6,6 +6,42 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current native-producer failure measurement
+
+CONFIRMED: the existing 28-case isolated producer-failure suite now passes against
+the current `2f18126b...` production JAR and verified pinned libdwarf 2.3.2 native
+pair. Its earlier local result used production JAR `3021d43e...` and correctly
+could not contribute to the current union. This was a measurement refresh, not
+a newly discovered upstream failure or a production change.
+
+The shim compiles against the three exact headers extracted from the authenticated
+release archive. Normal calls reach the real producer; each configured result
+fault is introduced twice, once with an existing final output and once without
+one. All 56 fault attempts preserve the original/source, preserve or leave absent
+the final output as appropriate, leave no staging file, and finish every allocated
+producer handle. All 28 retries are byte-identical to their baseline and pass
+GNU/LLVM/pinned strict validation plus actual GDB function/type/source/breakpoint,
+input-register, return-value and normal-exit checks. The suite's current admission
+oracle confirms every mode, native lifecycle count, header/native/harness hash and
+behavioral receipt. These synthetic faults are not claims of upstream defects.
+
+The verified 28 JVM collections add **21 lines and 26 branch outcomes**. The
+1,049-session diagnostic union measures **28,518/29,790 lines (95.7%) and
+21,396/25,884 branches (82.7%)**. Binary/location reaches 18,327/19,201 lines
+(95.4%) and 15,348/18,732 branches (81.9%). File/validation remains 96.9% lines /
+86.6% branches. Both critical branch targets and the updated hosted/protected-main
+requirements remain incomplete. All 255 sources and 901 classes remain included.
+No historical-JAR execution data was mixed into this result.
+
+Evidence: `producer-failures-current-2f181/` under guarded coverage-expansion
+scratch retains focused Java compilation, source/header provenance, real shim,
+28 validated output pairs, raw collection, regenerated report and the latest
+`union/`. Verification rechecks all prior raw execution hashes and collections.
+Drivers are `run-producer-failures-current-2f181.py` and
+`verify-producer-failures-current-2f181.py`. No full JavaExec rerun, new mutation
+run, or hosted acceptance is claimed by this refresh; existing tests/admission
+source code are unchanged.
+
 ## Call-site admission and ARM dynamic interval boundaries
 
 CONFIRMED: 1,021 verified sessions now measure **28,497/29,790 lines (95.7%)
