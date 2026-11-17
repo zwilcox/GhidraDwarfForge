@@ -8325,3 +8325,29 @@ combined report artifact 14374180886 has SHA-256
 Before the next push, 139 admission tests and actionlint pass; production Java
 is unchanged from the completed run. The next run must validate the queued
 tests and stronger admission requirements. PR #210 remains draft.
+
+## Curated stack-local admission and competing owners
+
+The existing stack-local lifetime task adds 312 checks over four real decoded
+x86-64/AArch64 fixtures (four/eight-byte locals). An already proven location
+and unrelated omission reasons must not be replaced. Transparent saved-API
+views preserve exact intervals; contradictory ownership, first-use, validity,
+assignment, type extent and carrier metadata must produce no lifetime.
+Each metadata refusal checks saved identity, unchanged program state and a
+clean retry. Real disjoint and unassigned saved variables must not claim the
+local's bytes; an invalid saved owner must prevent a lifetime proof.
+
+`stackLocalLifetimeSmoke` passes in four seconds (312 new checks plus 376
+existing checks). Eight compiled admission/ownership faults are detected by
+behavioral assertions; the unchanged baseline passes (19.141 seconds total).
+An initial fixture setup used a program-specific compiler model to construct
+a second database; corrected to obtain the language's compiler specification.
+No production changes were necessary.
+
+Evidence: `.forge-work/scratch/stack-local-admission-final-build.log`,
+`stack-local-admission-mutants/result.json`, and
+`coverage-recovery/stack-local-admission/`. The verified diagnostic union adds
+16 branches and no lines: 1,348 sessions, 28,909/29,802 lines and
+22,732/25,902 branches. Critical binary/location branches are 16,507/18,750,
+368 short of 90%. File operations remain 3,831/4,250. Full-denominator scope
+and production JAR are unchanged; current-head hosted acceptance is pending.

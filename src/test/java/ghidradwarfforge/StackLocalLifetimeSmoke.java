@@ -149,10 +149,13 @@ public final class StackLocalLifetimeSmoke {
                     throw new AssertionError("cancellation lost");
                 }
                 catch (CancelledException expected) { checks++; }
+                if (shape.equals("other-slot")) {
+                    StackLocalAdmissionSmoke.check(program, function, first, registers, rejected, proof);
+                }
             }
             finally { program.endTransaction(tx, true); }
         }
-        finally { program.release(owner); }
+        finally { program.flushEvents(); program.release(owner); }
     }
 
     private static Storage at(List<GhidraVariableStorage.StorageInterval> proof, long pc) {
