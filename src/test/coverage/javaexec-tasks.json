@@ -34,6 +34,7 @@
     "callMemoryEffectsSmoke",
     "callOriginSymbolsSmoke",
     "callSiteEvidenceSmoke",
+    "callSitePlanSmoke",
     "callValueSmoke",
     "callingConventionPolicySmoke",
     "classBindingEvidenceSmoke",
