@@ -1,5 +1,8 @@
 """Admit ELF MMIO controls only with the preserved validated generation."""
+import hashlib
 import re
+
+FORMATTER_CONTROL = hashlib.sha256(b'{"schema":1,"types":[{"key":"not-used","mode":"structure"}]}').hexdigest()
 
 SOURCES = {'src/test/scenarios/mmio-access/' + name for name in ('failures.py', 'forge.py', 'layout.py')}
 SOURCES |= {'src/test/integration/integration_coverage.py', 'ghidra_scripts/GhidraDwarfForge.java',
@@ -61,6 +64,12 @@ def oracle(record, evidence):
         and base.get('outputsSha256') == [before[paths[k]] for k in ('sidecar', 'source', 'profile')],
         'MMIO controls detached from validated deterministic generation')
     fields = [5, 5, 41, 52, -3, 57997] if target == 'mips32be' else [5, 17, 13, 10, -1, 42405]
+    values = base.get('values')
+    require(isinstance(values, dict)
+        and all(type(values.get(k)) is int for k in ('address', 'raw', 'counter', 'counterOffset'))
+        and all(isinstance(values.get(k), list) and all(type(v) is int for v in values[k])
+            for k in ('fields', 'packed', 'widths', 'unionOffsets', 'flagValues')),
+        'MMIO debugger observations must be integer values')
     require(base.get('values') == {'address': 0x40000000, 'fields': fields, 'raw': 0xa5a5e28d,
         'counter': 17, 'packed': fields[:2], 'widths': [4, 1, 4, 8], 'unionOffsets': [0] * 5,
         'counterOffset': 4, 'flagValues': [1, 8, 128]}, 'MMIO debugger value/layout oracle differs')
@@ -70,9 +79,11 @@ def oracle(record, evidence):
         'MMIO strict validation incomplete')
     require(sha(evidence.get('logSha256')), 'MMIO control log is unbound')
     controls = evidence.get('controls')
-    require(isinstance(controls, dict) and controls == {
+    expected_controls = {
         'existing.dbg' + suffix: before[paths[role]]
-        for suffix, role in (('', 'sidecar'), ('.c', 'source'), ('.mmio.json', 'profile'))},
+        for suffix, role in (('', 'sidecar'), ('.c', 'source'), ('.mmio.json', 'profile'))}
+    expected_controls['formatters.json'] = FORMATTER_CONTROL
+    require(isinstance(controls, dict) and controls == expected_controls,
         'MMIO failed publication left unexpected files or changed prior output')
     return target
 

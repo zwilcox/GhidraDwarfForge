@@ -30,6 +30,7 @@ def fixture(target='x86_64'):
             'values': {'address': 0x40000000, 'fields': fields, 'raw': 0xa5a5e28d, 'counter': 17,
                 'packed': fields[:2], 'widths': [4, 1, 4, 8], 'unionOffsets': [0] * 5,
                 'counterOffset': 4, 'flagValues': [1, 8, 128]}}}
+    evidence['controls']['formatters.json'] = admission.FORMATTER_CONTROL
     return record, evidence
 
 
@@ -82,6 +83,14 @@ class Admission(unittest.TestCase):
             self.reject(lambda r, e: e['controls'].pop(name))
             self.reject(lambda r, e: e['controls'].update({name: 'b' * 64}))
         self.reject(lambda r, e: e['controls'].update({'partial.dbg': 'a' * 64}))
+
+    def test_numeric_types_are_not_boolean_or_float(self):
+        for name, value in fixture()[1]['baseExport']['values'].items():
+            for replacement in (True, 1.0):
+                if isinstance(value, list):
+                    self.reject(lambda r, e: e['baseExport']['values'][name].__setitem__(0, replacement))
+                else:
+                    self.reject(lambda r, e: e['baseExport']['values'].update({name: replacement}))
 
 
 if __name__ == '__main__':
