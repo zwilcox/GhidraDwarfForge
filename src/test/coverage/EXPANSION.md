@@ -8,16 +8,16 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,127 verified
-sessions: 212 JavaExec, 677 native-Java, 181 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,152 verified
+sessions: 212 JavaExec, 678 native-Java, 205 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,554 / 29,802 (95.8%) | 21,783 / 25,902 (84.1%) |
-| Binary and location correctness | 18,441 / 19,213 (96.0%) | 15,670 / 18,750 (83.6%) |
-| File transactions and validation | 6,378 / 6,677 (95.5%) | 3,726 / 4,250 (87.7%) |
+| Overall | 28,561 / 29,802 (95.8%) | 21,791 / 25,902 (84.1%) |
+| Binary and location correctness | 18,443 / 19,213 (96.0%) | 15,672 / 18,750 (83.6%) |
+| File transactions and validation | 6,383 / 6,677 (95.6%) | 3,732 / 4,250 (87.8%) |
 
 Across all four production sources changed from PR base `c6265e1`, all 30
 changed executable lines and 50/54 branch outcomes are covered (100% / 92.6%).
@@ -56,10 +56,56 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-hosts-call-signatures-partial/summary.json` in the coverage workspace, SHA-256
-`8f9be09d84d14cf4e9c293a4d05886515622b447fed7173e8b9603bca8e82e6d`.
-It replaces the smaller 1,091-session partial baseline for current progress
+`stable-memory-hosts-target-transitions-partial/summary.json` in the coverage workspace, SHA-256
+`c3410d31579b07865eef286e478520c7162970f64c4d95d162a7e67271af7aa9`.
+It replaces the smaller 1,127-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Target replacement boundaries and stack transition refresh
+
+**CONFIRMED, local:** commits `61862fc0` and `9e95aa3e` extend the existing
+`AttachmentTargetStoreSmoke` with 76 assertions, for 139 total. The tests use
+actual owned files and the existing limited Linux metadata host. They check
+post-replacement byte, metadata and inode changes independently; both replaced
+parent directories; rejection of the target itself or a metadata-mismatched
+backup as recovery material; exact retained recovery paths; and directory
+flushes when source and destination share or do not share a parent. Original
+backups remain unchanged and explicit recovery restores the original bytes and
+metadata where supported. Existing cancellation and two abrupt process-exit
+controls still pass; the halted children are not counted as measured sessions.
+
+Five compiled mutations are detected by behavioral assertions: omitted byte
+readback, omitted fingerprint readback, accepting the target as its own backup,
+accepting a metadata-mismatched backup, and skipping destination-directory sync.
+The metadata-refusal test checks that no restore file was created before checking
+diagnostic wording; removing the guard fails on the unexpected file. The baseline
+and all eight mutation-outcome controls pass. This is not evidence of privileged
+host support or ELF validation, and no production source changes were needed.
+
+The final one-session collection authenticates the committed test source at
+`9e95aa3e`, raw receipt, protected JAR, all four new assertion groups and the
+mutation logs. `AttachmentTargetStore` now measures 52/53 lines (98.1%) and
+22/24 branch outcomes (91.7%). The earlier run is retained separately; only the
+final run contributes to the new combined measurement.
+
+Six real stack-value transition profiles also pass on x86-64 and AArch64:
+non-PIE, PIE and rebased PIE for each target. Twenty-four headless sessions retain
+instruction-by-instruction compiler/Forge GDB observations with signed inputs,
+an independent DWARF location-byte oracle, GNU/LLVM/strict validators, saved
+model and project checks, deterministic outputs and unchanged protected inputs.
+AArch64 runtime checks use QEMU. The driver uses an isolated Java 21 script cache
+and restores the installed JAR, native manifest and supervisor metadata. No LLDB
+claim is made. The current hosted admission oracle/cohort checks also pass on
+these local results; hosted acceptance remains false.
+
+The revalidated 1,152-session union adds seven covered lines and eight branch
+outcomes. Critical groups still need 1,203 binary/location and 93 file/validation
+branch outcomes to reach 90%. Full current CI, protected merge and actual-main
+publication remain outstanding. Evidence in guarded coverage-expansion scratch:
+`target-store-boundaries-final/`, `target-store-boundaries-final-mutations/`,
+`transitions-stable-memory/` and `stable-memory-hosts-target-transitions-partial/`,
+with corresponding run/verify drivers. Storage is READY at 16.186/100 GiB scratch,
+2.200/10 GiB cache and 6.728/10 GiB evidence. No local heavy process remains.
 
 ## Measured call-site task and calling-convention/signature refresh
 
