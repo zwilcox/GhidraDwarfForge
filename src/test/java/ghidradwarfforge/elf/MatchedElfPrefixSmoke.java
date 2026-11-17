@@ -25,10 +25,50 @@ import ghidradwarfforge.output.FileDigests;
 
 /** Read-only relationship tests; synthetic debug bytes do not claim valid DWARF. */
 public final class MatchedElfPrefixSmoke {
+    private static void observationContracts() throws Exception {
+        long wide = 0x100000007L;
+        result(new MatchedElfPrefix.Result(Status.MATCHING_COPIED_PREFIX, wide, wide + 8,
+            wide, OptionalLong.empty(), "copied prefix only"), Status.MATCHING_COPIED_PREFIX, wide, OptionalLong.empty());
+        result(new MatchedElfPrefix.Result(Status.DIFFERENT_PREFIX, wide, wide + 8,
+            wide, OptionalLong.of(wide - 1), "last original byte differs"), Status.DIFFERENT_PREFIX, wide, OptionalLong.of(wide - 1));
+        result(new MatchedElfPrefix.Result(Status.SHORTER_CANDIDATE, wide, wide - 1,
+            0, OptionalLong.empty(), "not compared"), Status.SHORTER_CANDIDATE, 0, OptionalLong.empty());
+        result(new MatchedElfPrefix.Result(Status.DIFFERENT_LAYOUT, wide, wide,
+            0, OptionalLong.empty(), "not compared"), Status.DIFFERENT_LAYOUT, 0, OptionalLong.empty());
+        // Invalid observations must not be mistaken for proof of a retained prefix.
+        for (long[] lengths : new long[][] {{-1, 8, 0}, {8, -1, 0}, {8, 8, -1},
+                {8, 16, 9}, {16, 8, 9}}) {
+            expect(IllegalArgumentException.class, () -> new MatchedElfPrefix.Result(Status.DIFFERENT_PREFIX,
+                lengths[0], lengths[1], lengths[2], OptionalLong.of(0), "invalid extent"));
+        }
+        for (String diagnostic : Arrays.asList(null, "", " \t")) {
+            expect(IllegalArgumentException.class, () -> new MatchedElfPrefix.Result(Status.MATCHING_COPIED_PREFIX,
+                8, 8, 8, OptionalLong.empty(), diagnostic));
+        }
+        for (OptionalLong offset : List.of(OptionalLong.empty(), OptionalLong.of(-1), OptionalLong.of(8), OptionalLong.of(6))) {
+            expect(IllegalArgumentException.class, () -> new MatchedElfPrefix.Result(Status.DIFFERENT_PREFIX,
+                8, 8, 8, offset, "bad mismatch position"));
+        }
+        for (Status status : List.of(Status.MATCHING_COPIED_PREFIX, Status.SHORTER_CANDIDATE, Status.DIFFERENT_LAYOUT)) {
+            expect(IllegalArgumentException.class, () -> new MatchedElfPrefix.Result(status,
+                8, 8, 8, OptionalLong.of(7), "unexpected mismatch"));
+        }
+        expect(IllegalArgumentException.class, () -> new MatchedElfPrefix.Result(Status.MATCHING_COPIED_PREFIX,
+            8, 8, 7, OptionalLong.empty(), "incomplete matching prefix"));
+        expect(IllegalArgumentException.class, () -> new MatchedElfPrefix.Result(Status.DIFFERENT_LAYOUT,
+            8, 8, 1, OptionalLong.empty(), "layout result claimed compared bytes"));
+        for (long candidate : new long[] {8, 9}) {
+            expect(IllegalArgumentException.class, () -> new MatchedElfPrefix.Result(Status.SHORTER_CANDIDATE,
+                8, candidate, 0, OptionalLong.empty(), "not actually shorter"));
+        }
+        expect(NullPointerException.class, () -> new MatchedElfPrefix.Result(null, 8, 8, 0, OptionalLong.empty(), "no status"));
+        expect(NullPointerException.class, () -> new MatchedElfPrefix.Result(Status.DIFFERENT_LAYOUT, 8, 8, 0, null, "no offset container"));
+    }
     private MatchedElfPrefixSmoke() {
     }
 
     public static void main(String[] args) throws Exception {
+        observationContracts();
         if (args.length > 1 || (args.length == 1 && !args[0].equals("--large"))) {
             throw new IllegalArgumentException("optional --large runs actual >2GiB sparse I/O");
         }
@@ -57,6 +97,7 @@ public final class MatchedElfPrefixSmoke {
             result(MatchedElfPrefix.compare(pairs.get(0).original(), pairs.get(1).candidate()),
                 Status.DIFFERENT_LAYOUT, 0, OptionalLong.empty());
             resources(pairs.get(0));
+            expect(IOException.class, () -> MatchedElfPrefix.compare(root, pairs.get(0).candidate()));
             if (args.length == 1) {
                 large(root.resolve("large"));
             }

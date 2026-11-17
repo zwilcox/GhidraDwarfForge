@@ -9129,3 +9129,23 @@ branches. Overall 28,943/29,802 lines and 22,999/25,902 branches. Binary/locatio
 18,686/19,213 lines and 16,774/18,750 branches, 101 short of 90%. File group
 unchanged. Fresh complete hosted acceptance, protected merge and actual-main
 publication remain outstanding.
+
+### Copied-prefix observation contracts (2026-11-17)
+
+CONFIRMED: MatchedElfPrefixSmoke verifies wide (>4GiB) reported extents without
+large file creation, all four status contracts, and rejection of negative or
+out-of-file extents, incomplete matches, inconsistent mismatch offsets, false
+shorter-candidate claims and missing diagnostics. Directory inputs are refused.
+Existing four-format prefix, I/O ownership and cancellation checks remain.
+Guarded matchedElfPrefixSmoke PASS in 3 seconds; large sparse I/O was not rerun
+for this result-model change. Three behavioral mutants detected: incomplete
+match, incorrect mismatch offset and nonshorter candidate acceptance. Evidence:
+.forge-work/scratch/prefix-observation-contracts.log and
+prefix-observation-mutants/result.json.
+
+Verified prefix-observation-contracts diagnostic adds five lines and sixteen
+branches, 1,379 unique sessions against the unchanged authenticated JAR and
+255-source denominator. Overall 28,948/29,802 lines, 23,015/25,902 branches.
+Binary/location 18,691/19,213 lines, 16,790/18,750 branches: 85 short of 90%.
+File counts unchanged. Historical/local diagnostic only; complete hosted
+acceptance, protected merge and actual-main publication remain outstanding.
