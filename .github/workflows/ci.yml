@@ -3438,7 +3438,7 @@ jobs:
               --require-suite recovered-statics-positive --require-suite recovered-statics-controls \
               --require-suite stack-control-flow --require-suite saved-inheritance --require-suite external-declarations \
               --require-suite recovered-returns --require-suite recovered-parameters --require-suite stack-value-transitions \
-              --require-suite producer-failures --require-suite qualified-type-producer --require-suite namespace-globals
+              --require-suite producer-failures --require-suite qualified-type-producer --require-suite namespace-globals --require-suite mmio-failure-controls
 
       - name: Verify and report AArch64 integration coverage
         if: matrix.target == 'aarch64'
