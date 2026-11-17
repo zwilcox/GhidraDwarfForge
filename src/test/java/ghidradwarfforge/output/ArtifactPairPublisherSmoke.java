@@ -20,6 +20,7 @@ public final class ArtifactPairPublisherSmoke {
         }
         Path directory = Files.createTempDirectory("forge-artifact-pair-");
         try {
+            ArtifactPairFailureSmoke.run(Files.createDirectory(directory.resolve("failure-boundaries")));
             testFreshPublication(Files.createDirectory(directory.resolve("fresh")));
             Path artifact = directory.resolve("fixture.dbg");
             Path source = directory.resolve("fixture.dbg.c");
