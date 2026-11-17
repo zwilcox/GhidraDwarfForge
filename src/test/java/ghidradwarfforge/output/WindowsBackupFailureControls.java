@@ -45,24 +45,21 @@ public final class WindowsBackupFailureControls {
         new Case("cancel-after-header", "backup inventory cancelled"));
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 1) throw new IllegalArgumentException("owned results directory required");
+        if (args.length != 2) throw new IllegalArgumentException("owned results and input directories required");
         var metadata = new WindowsFileMetadata(); // Actual host/ABI admission before any injected replies.
         var backup = new WindowsBackupStreams(metadata);
         Path root = Path.of(args[0]);
         Files.createDirectory(root);
-        Path source = root.resolve("source"), named = root.resolve("named-source"), empty = root.resolve("empty");
-        Files.writeString(source, "owned Windows backup stream failure fixture");
-        Files.writeString(named, "owned Windows named stream fixture");
-        Path alternate = Path.of(named + ":notes");
-        Files.writeString(alternate, "owned alternate payload");
-        Files.write(empty, new byte[0]);
+        // Python creates and hashes the alternate stream: Windows NIO rejects colon paths.
+        Path inputs = Path.of(args[1]);
+        Path source = inputs.resolve("source"), named = inputs.resolve("named-source"), empty = inputs.resolve("empty");
         WindowsBackupStreams.requireOrdinaryData(backup.inspect(source, () -> false));
         WindowsBackupStreams.requireOrdinaryData(backup.inspect(empty, () -> false));
         require(backup.inspect(named, () -> false).streams().stream().anyMatch(s -> !s.name().isEmpty()),
             "named-stream fixture was not observed by native backup APIs");
-        check(backup, metadata, source, named, alternate);
+        check(backup, metadata, source, named);
         long before = metadata.processHandleCount();
-        var rows = check(backup, metadata, source, named, alternate);
+        var rows = check(backup, metadata, source, named);
         long after = metadata.processHandleCount();
         require(before == after, "Windows backup process handles leaked");
         Files.writeString(root.resolve("result.json"), new Gson().toJson(Map.of(
@@ -74,7 +71,7 @@ public final class WindowsBackupFailureControls {
     }
 
     private static List<Map<String, Object>> check(WindowsBackupStreams backup, WindowsFileMetadata metadata,
-            Path source, Path named, Path alternate) throws Exception {
+            Path source, Path named) throws Exception {
         Field field = WindowsBackupStreams.class.getDeclaredField("kernel");
         field.setAccessible(true);
         Object real = field.get(backup);
@@ -83,7 +80,7 @@ public final class WindowsBackupFailureControls {
             Path path = selected.name().startsWith("name-") ? named : source;
             var baseline = backup.inspect(path, () -> false);
             var facts = metadata.inspect(path, () -> false);
-            byte[] bytes = Files.readAllBytes(path), alternateBytes = Files.readAllBytes(alternate);
+            byte[] bytes = Files.readAllBytes(path);
             var fault = new Fault(selected.name(), real);
             field.set(backup, wrapper(field, fault));
             try {
@@ -112,8 +109,7 @@ public final class WindowsBackupFailureControls {
                 field.set(backup, real);
                 require(backup.inspect(path, () -> false).equals(baseline), "backup retry differs");
                 require(metadata.inspect(path, () -> false).equals(facts), "backup source metadata changed");
-                require(Arrays.equals(bytes, Files.readAllBytes(path)) &&
-                    Arrays.equals(alternateBytes, Files.readAllBytes(alternate)), "backup source payload changed");
+                require(Arrays.equals(bytes, Files.readAllBytes(path)), "backup source payload changed");
                 rows.add(Map.of("name", selected.name(), "faultHits", fault.hits,
                     "opened", fault.opened, "closed", fault.closed, "aborts", fault.aborts,
                     "contextReleased", true, "sourceUnchanged", true, "retryPassed", true,

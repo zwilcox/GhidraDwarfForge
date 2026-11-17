@@ -20,7 +20,9 @@ class WindowsBackupFailureAdmission(unittest.TestCase):
         return record, {'status': 'PASS_NATIVE_WINDOWS_HOST_PRIMITIVES',
             'backupFailures': {'status': 'PASS_CONTROLLED_WINDOWS_BACKUP_FAILURES',
                 'cases': rows, 'handlesBefore': 100, 'handlesAfter': 100,
-                'fragmentedReadPassed': True, 'emptyDataPassed': True, 'namedStreamObserved': True}}
+                'fragmentedReadPassed': True, 'emptyDataPassed': True, 'namedStreamObserved': True},
+            'backupFixture': {'status': 'PASS_NATIVE_BACKUP_FIXTURE_PRESERVATION',
+                'sha256': {name: 'a' * 64 for name in ('source', 'named-source', 'named-source:notes', 'empty')}}}
 
     def test_complete_shape(self):
         admission.oracle(*self.fixture())
@@ -92,6 +94,20 @@ class WindowsBackupFailureAdmission(unittest.TestCase):
                 [{'label': 'wrong', 'status': 'ORACLE_PASSED'}]):
             with self.subTest(sessions=sessions), self.assertRaisesRegex(ValueError, 'completed isolated session'):
                 admission.oracle({**record, 'sessions': sessions}, evidence)
+
+    def test_independent_payload_preservation_required(self):
+        record, evidence = self.fixture()
+        for fixture in (None, {}, {'status': 'FAILED'},
+                {**evidence['backupFixture'], 'sha256': {}},
+                {**evidence['backupFixture'], 'sha256': {**evidence['backupFixture']['sha256'], 'extra': 'a' * 64}}):
+            with self.subTest(fixture=fixture), self.assertRaisesRegex(ValueError, 'independent payload preservation'):
+                admission.oracle(record, {**evidence, 'backupFixture': fixture})
+        for name in evidence['backupFixture']['sha256']:
+            for value in (None, True, 'bad', 'G' * 64):
+                changed = copy.deepcopy(evidence)
+                changed['backupFixture']['sha256'][name] = value
+                with self.subTest(name=name, value=value), self.assertRaisesRegex(ValueError, 'independent payload preservation'):
+                    admission.oracle(record, changed)
 
 
 if __name__ == '__main__':

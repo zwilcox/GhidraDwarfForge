@@ -82,8 +82,24 @@ def main():
         root / 'directory-failures'], marker='windows-directory-failures=PASS cases=47')
     run('controlled-security-failures', [*stable, 'ghidradwarfforge.output.WindowsSecurityFailureControls',
         root / 'security-failures'], marker='windows-security-failures=PASS cases=18')
+    # Java's Windows Path parser rejects ADS spelling; use native Python I/O for
+    # this owned fixture and independently verify every payload after the JVM.
+    backup_inputs = root / 'backup-inputs'
+    backup_inputs.mkdir()
+    backup_payloads = {
+        'source': b'owned Windows backup stream failure fixture',
+        'named-source': b'owned Windows named stream fixture',
+        'named-source:notes': b'owned alternate payload',
+        'empty': b'',
+    }
+    for name, payload in backup_payloads.items():
+        with (backup_inputs / name).open('xb') as output:
+            output.write(payload)
+    backup_hashes = {name: digest(backup_inputs / name) for name in backup_payloads}
     run('controlled-backup-failures', [*stable, 'ghidradwarfforge.output.WindowsBackupFailureControls',
-        root / 'backup-failures'], marker='windows-backup-failures=PASS cases=20')
+        root / 'backup-failures', backup_inputs], marker='windows-backup-failures=PASS cases=20')
+    if backup_hashes != {name: digest(backup_inputs / name) for name in backup_payloads}:
+        raise AssertionError('Windows backup fixture payloads changed')
     host = json.loads((root / 'owned/result.json').read_text(encoding='utf-8'))
     transactions = json.loads((root / 'transactions/result.json').read_text(encoding='utf-8'))
     abrupt = [row for row in transactions['outcomes'] if 'childExit' in row]
@@ -97,6 +113,7 @@ def main():
         'directoryFailures': json.loads((root / 'directory-failures/result.json').read_text(encoding='utf-8')),
         'securityFailures': json.loads((root / 'security-failures/result.json').read_text(encoding='utf-8')),
         'backupFailures': json.loads((root / 'backup-failures/result.json').read_text(encoding='utf-8')),
+        'backupFixture': {'status': 'PASS_NATIVE_BACKUP_FIXTURE_PRESERVATION', 'sha256': backup_hashes},
         'protectedSha256': protected,
         'unmeasuredNestedChildren': [{'case': row['case'], 'exitCode': row['childExit']} for row in abrupt],
         'lockContendersMeasured': False,

@@ -44,6 +44,13 @@ def oracle(record, evidence):
             raise ValueError('Windows backup fault lacks cleanup, preservation or retry evidence')
     if any(result.get(key) is not True for key in ('fragmentedReadPassed', 'emptyDataPassed', 'namedStreamObserved')):
         raise ValueError('Windows backup failures lack positive native controls')
+    fixture = evidence.get('backupFixture')
+    hashes = fixture.get('sha256') if isinstance(fixture, dict) else None
+    if (not isinstance(fixture, dict) or fixture.get('status') != 'PASS_NATIVE_BACKUP_FIXTURE_PRESERVATION'
+            or not isinstance(hashes, dict) or set(hashes) != {'source', 'named-source', 'named-source:notes', 'empty'}
+            or any(not isinstance(value, str) or len(value) != 64
+                   or any(char not in '0123456789abcdef' for char in value) for value in hashes.values())):
+        raise ValueError('Windows backup failures lack independent payload preservation evidence')
     if (any(type(result.get(key)) is not int or result[key] <= 0 for key in ('handlesBefore', 'handlesAfter'))
             or result['handlesBefore'] != result['handlesAfter']):
         raise ValueError('Windows backup faults lack stable process handle count')
