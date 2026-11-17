@@ -6,6 +6,52 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## ARM BE8 aggregate correction admission
+
+The existing `armCompositeParameterAllocationSmoke` task now invokes a focused
+saved-program admission suite. It passes 118 new assertions alongside the
+existing 2,592 checks on Ghidra 12.0.3. Real ProgramDB functions prove refusal
+for mismatched ELF metadata, unaudited language/compiler profiles, another
+program, unknown calling conventions, and signatures exceeding 4,096 parameters.
+The exact 4,096 boundary remains accepted. A large aggregate return introduces
+an actual hidden return pointer; correction applies only to the explicit
+three-byte stack aggregate, with the corresponding shifted stack offset.
+
+Every observation checks unchanged saved storage, formal types, program
+modification count and ELF bytes. Nested typedef inputs at depths 63, 64 and
+65 resolve through Ghidra's actual base-type API and retain the justified
+correction. These cases do **not** claim to exercise a typedef traversal cap:
+Ghidra resolves the base structure directly. Initial test attempts incorrectly
+expected a correction for an already-correct register argument and refusal for
+the flattened alias chain. Those fixture assumptions were corrected; production
+code was not changed. The positive fixture uses a stack argument whose padding
+really needs adjustment.
+
+Five compiled faults are detected by Java assertions: accepting an unaudited
+compiler, accepting invalid EABI metadata, rejecting the exact parameter cap,
+including the hidden argument in the explicit signature, and retaining incorrect
+stack padding. The unchanged-source baseline passes. This is a selected-fault
+check, not a repository-wide mutation score.
+
+Commands (through `support/storage-guard.py run`):
+
+- `./gradlew --no-daemon armCompositeParameterAllocationSmoke`
+- `python3 src/test/coverage/mutation-check.py` with the five
+  `arm-composite-*` selectors and pinned Ghidra dependencies.
+- The local diagnostic collector against the unchanged production JAR,
+  followed by raw execution/source hash and complete-denominator verification.
+
+Evidence: `.forge-work/scratch/arm-composite-admission-final.log`,
+`arm-composite-admission-mutants/result.json`, and
+`coverage-recovery/arm-composite-admission/`. The diagnostic union contains
+1,393 sessions with all 255 production sources and 901 production classes.
+It adds ten branches: nine in aggregate allocation and one in ARM ABI metadata
+admission. Totals are 28,838/29,802 lines and 22,186/25,902 branches. Critical
+binary/location coverage is 16,017/18,750 branches, 858 short of 90%; file-operation
+coverage remains 3,775/4,250, 50 short. Historical cohorts remain, so this is not
+full current-head hosted acceptance. This test-only change makes no new emitted
+DWARF, debugger or architecture-support claim.
+
 ## ARM/MIPS context sessions reconciled with the diagnostic union
 
 The nine previously validated local context-boundary sessions are now included

@@ -39,6 +39,7 @@ public final class ArmCompositeParameterAllocationSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        ArmCompositeAdmissionSmoke.run();
         for (boolean big : new boolean[] {false, true}) {
             for (String convention : List.of("__stdcall", "__stdcall_softfp")) {
                 for (int leading = 0; leading <= 5; leading++) {
