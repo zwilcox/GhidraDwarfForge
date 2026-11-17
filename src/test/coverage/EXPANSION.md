@@ -42,6 +42,32 @@ and 124 file/validation branch outcomes for the critical targets, current hosted
 acceptance, protected merge and actual-main publication. No full JavaExec rerun
 or new Windows validation is claimed for this increment.
 
+### Queued Windows backup stream failure validation
+
+PRESENT, UNVERIFIED on Windows: commit `ef3cd584` adds 20 backup-stream
+failure controls through the existing native Windows host primitive suite.
+Actual Windows x64 admission happens before any injected replies. The controls
+forward real file/context operations and test open/read errors, signed and
+excessive read counts, invalid stream headers and UTF-16 names, premature EOF,
+incomplete low/high seek results, cancellation and reported cleanup errors.
+Aborting the backup context and closing its handle are independently counted;
+a reported abort/close failure is injected only after the real release succeeds.
+Each case requires the intended failure, one injected fault, unchanged payloads
+and metadata, balanced native lifetime and a successful retry.
+
+Positive controls inspect an actual alternate data stream and an empty file.
+A buffered-read control splits bytes actually returned by Windows into replies
+of at most seven bytes, requiring the exact same inventory as normal reads.
+The suite now requires eight direct JVM sessions; complete backup case receipts,
+positive controls and stable process handle counts are required for admission.
+
+Java 21 compilation and all 274 coverage-tool tests pass locally. Evidence:
+`.forge-work/scratch/coverage-expansion/windows-backup-preflight-2f181/`.
+Actual Windows execution is still pending; **no new native probes or percentage
+increase are claimed**. The verified union above remains unchanged. Current CI
+`43991284160` still runs its earlier revision; these controls are queued with the
+security controls and GDB transport fix for the next complete cycle.
+
 ### Queued Windows security and CI transport validation
 
 PRESENT, UNVERIFIED on Windows: `1199abc3` adds 18 controlled native security
