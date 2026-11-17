@@ -29,6 +29,7 @@ public final class Arm32CallPolicySmoke {
             for (var order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                 int endianFlag = order == ByteOrder.BIG_ENDIAN ? 0x800000 : 0;
                 metadataBoundaries(path, order, 0x05000400 | endianFlag);
+                ArmCallSignatureBoundarySmoke.run(write(path, order, 0x05000000 | endianFlag, attributes(order, 28, 0)));
                 for (int floatingFlag : new int[] {0, 0x200, 0x400}) {
                     int flags = 0x05000000 | endianFlag | floatingFlag;
                     boolean hard = floatingFlag == 0x400;

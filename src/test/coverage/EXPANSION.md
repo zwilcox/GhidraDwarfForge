@@ -6945,3 +6945,38 @@ hashes and exact manifest addition. Adds two lines and 23 branches. Overall
 this is not current-head hosted acceptance. No production implementation changed.
 Evidence: `.forge-work/scratch/arm-call-metadata-final.log` and
 `arm-call-metadata-mutants-linked/result.json`.
+
+
+### ARM callable signature budgets and transfer classification
+
+`ArmCallSignatureBoundarySmoke`, included in `arm32CallPolicySmoke`, applies the
+same bounded type graphs to function definitions, external declarations and
+function-pointer types. It checks the exact 4,096-parameter and 64-wrapper limits
+and next-entry refusals; mixed typedef/qualifier chains are real TypeGraph edges,
+not Ghidra aliases that flatten to their base. Scalar encoding/width, enum and
+pointer cases cover the admitted widths and unsupported widths explicitly.
+
+Aggregate controls cover four/five members, empty layout, unsupported short/enum
+members, tail padding and alignment, and mixed double/float/float members. The
+last must retain base transfer even under selected VFP PCS; it is not homogeneous
+floating evidence. Hidden-return controls reject duplicate pointers, small or
+scalar results, nonpointer/wide/reference carriers, and unknown automatic roles.
+All three callable forms must agree, preserve recovered return/parameter types
+and independent restrictions, leave the input model unchanged, and be idempotent.
+These are policy tests, not new target/debugger support claims.
+
+Guarded `./gradlew --no-daemon arm32CallPolicySmoke`: PASS in 3s, 852 new helper
+assertions across LE/BE8 plus 4,192 parent assertions. Nine compiled faults
+(parameter/wrapper bounds, duplicate result pointers, reference carrier,
+mixed floating widths, tail padding and unknown automatic roles) detected by
+Java assertions; unchanged baseline PASS and source hash verified, 4.164s.
+No production implementation changed.
+
+Diagnostic `coverage-recovery/arm-call-signatures/`: verified 1,405 unique sessions,
+same production JAR/all 255 sources/901 classes and exact execution/source hashes
+plus manifest addition. Adds 20 branches. Overall 28,859/29,802 lines and
+22,321/25,902 branches; binary/location 18,622/19,213 lines,16,152/18,750 branches
+(723 short of 90%); file operations remain 6,502/6,677 lines,3,775/4,250 branches
+(50 short). Historical cohorts remain: not current-head hosted acceptance.
+Evidence: `.forge-work/scratch/arm-call-signatures-final.log` and
+`arm-call-signature-mutants/result.json`. CI44150222826 remains active.
