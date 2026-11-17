@@ -1743,7 +1743,7 @@ tasks.register("compilerCallPolicySmoke", JavaExec) {
 
 tasks.register("dynamicParameterStorageSmoke", JavaExec) {
     group = "verification"
-    description = "Checks computed parameter storage in saved Ghidra programs across five targets"
+    description = "Checks computed parameter storage in saved Ghidra programs across pinned target profiles"
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.DynamicParameterStorageSmoke"
@@ -1751,6 +1751,7 @@ tasks.register("dynamicParameterStorageSmoke", JavaExec) {
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/dynamic-parameters/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/dynamic-parameters/cache").absolutePath
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
 tasks.register("dynamicCompositeOrderSmoke", JavaExec) {

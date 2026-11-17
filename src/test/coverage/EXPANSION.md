@@ -6,6 +6,34 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Parameter storage refusals across seven profiles
+
+`DynamicParameterStorageSmoke` now rejects missing register maps, unnamed slices
+whose byte extent disagrees with the saved formal, cross-register spans, RAM and
+void storage, oversized stack allocations, and values wider than their assigned
+register. Positive three-byte slices retain byte-order-aware offsets. All cases
+use actual Ghidra storage objects and assert that extraction leaves the program's
+modification number unchanged; the existing immutable reopen and file hash checks
+remain. The task puts temporary database fixtures under the guard's `TMPDIR`.
+
+Guarded `dynamicParameterStorageSmoke` passes 325 checks across x86-64, AArch64,
+ARM32, and both byte orders of MIPS32/MIPS64. An initial test expected the unnamed
+slice diagnostic for a span that Ghidra resolves through a named register; the
+expectation now distinguishes those paths. This was a test correction, not a
+production fix. The canonical mutation harness detects all three compiled faults
+(removing the unnamed-width check, removing the named-register width check, and
+allowing a byte slice across its container) through Java assertions, with both
+unmodified source baselines passing. Elapsed time: 11.904 seconds.
+
+A production-only measurement against the refreshed 1,367-session diagnostic
+union adds **3 lines and 6 branches** in `GhidraVariableStorage`. The unchanged
+production JAR and full class identities validate. This remains a mixed
+current/historical/local diagnostic cohort, **not** final hosted acceptance.
+Evidence: `.forge-work/scratch/parameter-storage-refusal-test-corrected.log`,
+`parameter-storage-refusal-mutants/result.json`, and
+`coverage-recovery/parameter-storage-refusals/result.json`. Production code is
+unchanged; this test does not newly validate emitted DWARF or debugger behavior.
+
 ## Windows privilege restoration replies — PRESENT, UNVERIFIED
 
 `WindowsPrivilegeReadbackControls` adds 12 cases after actual constructor
