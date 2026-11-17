@@ -118,6 +118,18 @@ MERGED_LIFETIME = "ghidradwarfforge/MergedLocalLifetime.java"
 MERGED_LIFETIME_TEST = "ghidradwarfforge.MergedLocalLifetimeSmoke"
 REGISTER_PROFILE = "ghidradwarfforge/GhidraVariableStorage.java"
 REGISTER_PROFILE_TEST = "ghidradwarfforge.RegisterAliasSmoke"
+CLOSED_FLOW_TEST = "ghidradwarfforge.ClosedFlowBoundarySmoke"
+CLOSED_FLOW_MUTANTS = [
+    ("closed-flow-accepts-conditional-return", REGISTER_PROFILE, CLOSED_FLOW_TEST,
+     'if (flow.isConditional() || flow.isJump() || flow.hasFallthrough() ||\n'
+     '                        operations.length == 0 ||\n'
+     '                        operations[operations.length - 1].getOpcode() != PcodeOp.RETURN)',
+     'if (false)'),
+    ("closed-flow-ignores-slot-references", REGISTER_PROFILE, CLOSED_FLOW_TEST,
+     '(defaults != null && defaults.length != 0) ||\n'
+     '                        (references != null && references.length != 0)',
+     '(defaults != null && defaults.length != 0)'),
+]
 REGISTER_MAP = "ghidradwarfforge/locations/TargetRegisterMap.java"
 REGISTER_MAP_TEST = "ghidradwarfforge.locations.VariableStorageSmoke"
 RUNTIME_RELOCATIONS = "ghidradwarfforge/elf/ElfRuntimeRelocations.java"
@@ -975,13 +987,20 @@ def main():
     parser.add_argument("--java-home", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ghidra", type=Path, help="also check project protection, records, unwind and analyst selections using Ghidra's API/Gson")
+    parser.add_argument("--only", action="append", help="run an exact mutation label and its baseline; repeatable")
     args = parser.parse_args()
     classes, tests, output = args.classes.resolve(), args.tests.resolve(), args.output.resolve()
     if not classes.is_dir() or not tests.is_dir():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + ALLOCATION_CHANGE_MUTANTS + ALLOCATION_BOUNDARY_MUTANTS + ELF_READER_MUTANTS + RUNTIME_RELOCATION_MUTANTS + REGISTER_MAP_MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (STORAGE_REFINEMENT_MUTANTS + REPORT_LEXICAL_MUTANTS + PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + ALLOCATION_CHANGE_MUTANTS + ALLOCATION_BOUNDARY_MUTANTS + ELF_READER_MUTANTS + RUNTIME_RELOCATION_MUTANTS + REGISTER_MAP_MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (STORAGE_REFINEMENT_MUTANTS + REPORT_LEXICAL_MUTANTS + PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + CLOSED_FLOW_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
+    if args.only:
+        selected = set(args.only)
+        unknown = selected - {row[0] for row in mutants}
+        if unknown:
+            parser.error("unknown or unavailable mutation labels: " + ", ".join(sorted(unknown)))
+        mutants = [row for row in mutants if row[0] in selected]
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
@@ -1004,7 +1023,7 @@ def main():
             selected_dependencies = dependencies if test in (
                 STORAGE_REFINEMENT_TEST, REPORT_LEXICAL_TEST, PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
-                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, MIXED_PREFIX_TEST, BACKUP_READBACK_TEST, REPORT_TEXT_TEST, BUILD_ID_HELPER_TEST, LINUX_METADATA_TEST, LINUX_APPLICATION_TEST, LINUX_MOUNT_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST, ATTACHMENT_PREVIEW_TEST) else []
+                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, CLOSED_FLOW_TEST, MIXED_PREFIX_TEST, BACKUP_READBACK_TEST, REPORT_TEXT_TEST, BUILD_ID_HELPER_TEST, LINUX_METADATA_TEST, LINUX_APPLICATION_TEST, LINUX_MOUNT_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST, ATTACHMENT_PREVIEW_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
@@ -1025,7 +1044,7 @@ def main():
             if compiled.returncode:
                 raise AssertionError(f"{label}: compilation failed, not a detected mutant\n{compiled.stdout}")
             classpath = os.pathsep.join(map(str, [root, classes, tests, *selected_dependencies]))
-            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, MIXED_PREFIX_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST) else []
+            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, CLOSED_FLOW_TEST, MIXED_PREFIX_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST) else []
             if test == STRICT_REPORT_TEST:
                 test_args.append(REPO / "src/test/fixtures/dwarfdump")
             if test == LINUX_MOUNT_TEST:

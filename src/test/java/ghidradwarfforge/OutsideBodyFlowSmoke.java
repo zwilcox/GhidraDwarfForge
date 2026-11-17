@@ -67,6 +67,7 @@ public final class OutsideBodyFlowSmoke {
             check(profile);
         }
         FlowEntryContractSmoke.check();
+        ClosedFlowBoundarySmoke.check();
         System.out.println("outside-body-flow-smoke=PASS checks=" + checks);
     }
 
