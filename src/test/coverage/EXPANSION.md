@@ -8,16 +8,62 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,154 verified
-sessions: 212 JavaExec, 679 native-Java, 206 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,161 verified
+sessions: 212 JavaExec, 686 native-Java, 206 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,598 / 29,802 (96.0%) | 21,817 / 25,902 (84.2%) |
-| Binary and location correctness | 18,480 / 19,213 (96.2%) | 15,698 / 18,750 (83.7%) |
+| Overall | 28,606 / 29,802 (96.0%) | 21,859 / 25,902 (84.4%) |
+| Binary and location correctness | 18,488 / 19,213 (96.2%) | 15,740 / 18,750 (83.9%) |
 | File transactions and validation | 6,383 / 6,677 (95.6%) | 3,732 / 4,250 (87.8%) |
+
+The latest batch adds build-ID reader boundaries and refreshed ELF32 source
+relocation measurements. Commit `fc45754e` tests independently constructed
+ELF32/ELF64 note views in both byte orders. Individually valid views must be
+rejected when their physical record intervals overlap or wider alignment padding
+extends into a following record, without changing the input. It also tests 21
+invalid normalized provenance records, accepted upper bounds and defensive list
+ownership. The five compiled faults (two overlap checks, container overflow,
+oversized descriptor and invalid hex) all fail behavioral assertions; the
+unmodified baseline and eight mutation-outcome controls pass. These mutants are
+registered in the existing CI mutation harness. This is reader-component
+validation, not a new architecture support claim.
+
+Six source-relocation cases reuse current-production serializer fixtures for
+ARM32, MIPS32 big endian and MIPS32 little endian, each plain and gABI zlib
+compressed. The existing smoke test checks deterministic/idempotent output,
+14 plain or 26 compressed refusal controls, every observed cooperative
+cancellation point, exact candidate bytes and unchanged inputs. Independent
+ELF byte comparisons restrict edits to the selected section offset/size fields
+and appended payloads. LLVM/GNU validation and fresh compiler/relocated GDB
+runs under QEMU pass; both expected variable values (42 then 43), addresses and
+the retained source path are asserted. This exercises the serializer and
+relocator with an explicit compiler fixture model, not fresh Ghidra extraction,
+installer transactions or LLDB.
+
+The first local driver completed both ARM32 cases, then stopped before MIPS on
+an old fixture's harness-hash mismatch. Its failure log remains retained. The
+historical MIPS source is authenticated against snapshot `652fe943`, and its
+artifact/native/JAR hashes still match. The only intervening harness changes
+add ARM toolchain/sysroot handling. The four MIPS cases ran in a separate root;
+the two already completed ARM cases were admitted separately. A subsequent
+local manifest-generation variable collision was rejected by admission, fixed,
+and reverified without rerunning or relabeling the tests. Neither failed attempt
+is represented as a successful complete run.
+
+The resulting immutable partial summary is
+`.forge-work/scratch/coverage-expansion/stable-memory-hosts-source32-partial/summary.json`,
+SHA-256 `4a36405c558b90184ae91e910738e6951786b93a81a05166713b58ee461038f5`.
+The preceding 1,155-session build-ID checkpoint has SHA-256
+`88b01cd17432f7f1eab23504612866c8e17e612d3962eea874bad1e54ea95c6c`.
+Together these measurements add eight covered lines and 42 branch outcomes.
+`ElfBuildId` now measures 155/156 lines and 134/140 branches;
+`SyntheticSourceSidecar` measures 199/200 lines and 154/180 branches.
+Critical-group branch deficits remain 1,135 binary/location and 93 file-operation
+outcomes. The complete current hosted cohort, protected merge and actual-main
+publication are still outstanding.
 
 Across all four production sources changed from PR base `c6265e1`, all 30
 changed executable lines and 50/54 branch outcomes are covered (100% / 92.6%).
