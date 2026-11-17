@@ -73,6 +73,7 @@ ARM_MODE_INVENTORY = "ghidradwarfforge/elf/Arm32FunctionAliasSymbols.java"
 ARM_MODE_INVENTORY_TEST = "ghidradwarfforge.elf.Arm32FunctionAliasSymbolsSmoke"
 CURATED_TYPES = "ghidradwarfforge/GhidraTypeGraph.java"
 CURATED_TYPES_TEST = "ghidradwarfforge.FloatingTypeLayoutSmoke"
+TYPE_IDENTITY_TEST = "ghidradwarfforge.DefaultTypeIdentitySmoke"
 CALL_MEMORY = "ghidradwarfforge/CallMemoryEffects.java"
 CALL_MEMORY_TEST = "ghidradwarfforge.CallMemoryEffectsSmoke"
 CALL_PARAMETERS = "ghidradwarfforge/GhidraCallParameters.java"
@@ -698,6 +699,10 @@ CALL_MEMORY_MUTANTS = [
 ]
 
 CURATED_TYPE_MUTANTS = [
+    ("type-identity-merges-conflicting-layouts", CURATED_TYPES, TYPE_IDENTITY_TEST,
+     "if (owner == null || owner.isEquivalent(type))", "if (true)"),
+    ("type-identity-admits-ambiguous-collision", CURATED_TYPES, TYPE_IDENTITY_TEST,
+     "if (qualifiedOwner != null && !qualifiedOwner.isEquivalent(type))", "if (false)"),
     ("types-promote-ai-to-user-evidence", CURATED_TYPES, CURATED_TYPES_TEST,
      'case AI -> Confidence.DECOMPILER;', 'case AI -> Confidence.USER_DEFINED;'),
     ("types-erase-imported-evidence", CURATED_TYPES, CURATED_TYPES_TEST,
@@ -735,6 +740,14 @@ ARM_MODE_INVENTORY_MUTANTS = [
 ]
 
 BOUNDED_SWITCH_MUTANTS = [
+    ("switch-reads-low-byte-for-high-byte-index", BOUNDED_SWITCH, BOUNDED_SWITCH_TEST,
+     "return mask(entry.getValue() >>> (8 * (key.offset() - owner.offset())), key.bytes());",
+     "return mask(entry.getValue(), key.bytes());"),
+    ("switch-preserves-overwritten-register-alias", BOUNDED_SWITCH, BOUNDED_SWITCH_TEST,
+     "state.keySet().removeIf(key -> overlap(key, output));",
+     "state.keySet().removeIf(key -> key.equals(output));"),
+    ("switch-ignores-unbounded-right-operand", BOUNDED_SWITCH, BOUNDED_SWITCH_TEST,
+     "if (b == null) return null;", "if (b == null) return a;"),
     ("switch-accepts-conflicting-read-widths", BOUNDED_SWITCH, BOUNDED_SWITCH_TEST,
      "old == null || old.equals(read)", "true"),
     ("switch-exceeds-dispatch-window", BOUNDED_SWITCH, BOUNDED_SWITCH_TEST,
@@ -1179,7 +1192,7 @@ def main():
             # The production publisher's private exception is never serialized;
             # its existing missing serialVersionUID is unrelated to these mutants.
             selected_dependencies = dependencies if test in (
-                STORAGE_REFINEMENT_TEST, REPORT_LEXICAL_TEST, PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
+                TYPE_IDENTITY_TEST, STORAGE_REFINEMENT_TEST, REPORT_LEXICAL_TEST, PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
                 REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, TARGET_STORE_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, STATIC_BINDING_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CALL_PARAMETERS_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, AARCH64_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, CLOSED_FLOW_TEST, COMPOSITE_FLOW_TEST, MIXED_PREFIX_TEST, BACKUP_READBACK_TEST, REPORT_TEXT_TEST, BUILD_ID_HELPER_TEST, LINUX_METADATA_TEST, LINUX_APPLICATION_TEST, LINUX_CANARY_TEST, LINUX_MOUNT_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST, ATTACHMENT_PREVIEW_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))

@@ -6,6 +6,31 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Imported type identity and switch index controls
+
+`defaultTypeIdentitySmoke` now reserves and converts actual Ghidra structure
+objects with the same persistent ID but different sizes. Equivalent imports
+deduplicate, distinct layouts retain distinct deterministic identities, and an
+ambiguous third layout fails without replacing either accepted aggregate.
+Reflection accesses the existing private extractor, as in the prior identity
+test; this is component evidence, not a new headless export claim. The test and
+two compiled identity-merging/ambiguity mutations pass. Diagnostic comparison
+with the recovered historical cohort adds eight lines and six branches in
+`GhidraTypeGraph`. Evidence: guarded scratch `type-identity-collision-test.log`,
+`type-identity-collision-mutations/`, and `coverage-recovery/type-identity-collisions/`.
+
+`boundedSwitchProofSmoke` adds real x86 encodings for an unbounded addend,
+unknown byte/word index overwrites, and a known high-byte extraction. Both
+original and rebased programs must reject unbounded dispatches and retain the
+exact expected target addresses and original table witnesses for the known
+case. All 106 cases/981 checks pass. Three compiled faults are detected: the
+new high-byte case catches a wrong-byte calculation; existing index-clobbered
+and same-read cases catch the other two faults. This batch adds **zero** measured
+lines/branches, so it is regression coverage rather than percentage progress.
+Evidence: `switch-partial-index-test.log`, `switch-partial-index-mutations/`, and
+`coverage-recovery/switch-partial-index/` under guarded scratch. Production code
+is unchanged and current hosted validation remains pending.
+
 ## Request admission and stack controls awaiting hosted measurement
 
 Build-ID lock publication tests now cover an absent destination after a failed

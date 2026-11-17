@@ -39,7 +39,8 @@ public final class BoundedSwitchProofSmoke {
             "add-sub", "or-index", "xor-index", "and-index", "shift-index", "repeat-read", "same-read",
             "conflicting-read", "byte-index", "word-index", "wide-index", "strict-less", "zero-limit", "max-limit", "excess-limit",
             "window-limit", "window-excess", "data-reference", "guard-flow", "guard-interior-flow", "negative-target", "interior-target",
-            "no-owner", "function-entry", "missing-branch", "flow-override", "length-override", "fallthrough-override");
+            "no-owner", "function-entry", "missing-branch", "flow-override", "length-override", "fallthrough-override",
+            "unknown-addend", "unknown-byte-overwrite", "unknown-word-overwrite", "high-byte-index");
         for (long delta : List.of(0L, 0x400000L)) for (String shape : shapes) check(shape, delta, output);
         System.out.println("bounded-switch-proof=PASS cases=" + shapes.size() * 2 + " checks=" + checks);
     }
@@ -139,7 +140,7 @@ public final class BoundedSwitchProofSmoke {
                 if (shape.equals("missing-branch")) program.getListing().clearCodeUnits(start.add(3), start.add(4), false);
                 boolean positive = List.of("absolute", "relative", "misleading-hint", "add-sub", "or-index", "xor-index",
                     "and-index", "shift-index", "repeat-read", "same-read", "byte-index", "word-index", "wide-index",
-                    "max-limit", "window-limit", "data-reference", "guard-flow").contains(shape) || caseFlow;
+                    "max-limit", "window-limit", "data-reference", "guard-flow", "high-byte-index").contains(shape) || caseFlow;
                 var compare = program.getListing().getInstructionAt(start);
                 if (shape.equals("flow-override")) compare.setFlowOverride(ghidra.program.model.listing.FlowOverride.BRANCH);
                 if (shape.equals("length-override")) compare.setLengthOverride(2);
@@ -211,6 +212,7 @@ public final class BoundedSwitchProofSmoke {
                         case "function-entry" -> "dispatch has another function entry";
                         case "missing-branch" -> "undecoded dispatch instruction";
                         case "flow-override", "length-override", "fallthrough-override" -> "unsupported switch instruction override/context";
+                        case "unknown-addend", "unknown-byte-overwrite", "unknown-word-overwrite" -> "table address depends on unbounded state";
                         default -> null;
                     };
                     if (diagnostic != null) require(rejected.getMessage().contains(diagnostic),
@@ -233,6 +235,10 @@ public final class BoundedSwitchProofSmoke {
             case "xor-index" -> "83f700";
             case "and-index" -> "83e701";
             case "shift-index" -> "c1e703c1ef03";
+            case "unknown-addend" -> "01f7"; // ADD EDI,ESI uses an unbounded operand after the guard.
+            case "unknown-byte-overwrite" -> "4088f7"; // MOV DIL,SIL invalidates the previous full-register value.
+            case "unknown-word-overwrite" -> "6689f7"; // MOV DI,SI does the same for two bytes.
+            case "high-byte-index" -> "89f8c1e0080fb6fc"; // MOV EAX,EDI; SHL EAX,8; MOVZX EDI,AH.
             case "repeat-read" -> "b800200000488b08"; // Known RAX base, qword LOAD into RCX.
             case "same-read" -> "31ff";
             case "conflicting-read" -> "b8002000008b08"; // Same base, dword LOAD before qword table LOAD.
