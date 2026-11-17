@@ -40,6 +40,7 @@ public final class UnwindStackSeparationSmoke {
             new Load(TARGET, STACK), new Add(STACK, STACK, new Constant(8, 8), false)))), Map.of(), Set.of(0));
     }
     public static void main(String[] args) {
+        conditionBounds();
         var body = leaf(new Constant(0x600000, 8), 8);
         reject(() -> UnwindCalls.verify(Map.of(0, body), contract(UnwindStackSeparation.NONE), () -> false));
         var proof = UnwindCalls.verify(Map.of(0, body), contract(CONDITION), () -> false);
@@ -122,6 +123,37 @@ public final class UnwindStackSeparationSmoke {
         }
         System.out.println("unwind-stack-separation=PASS checks=" + checks + " cancellation-points=" + polls[0]);
     }
+    private static void conditionBounds() {
+        var regions = new java.util.ArrayList<UnwindStackSeparation.Region>();
+        var pointers = new java.util.ArrayList<UnwindStackSeparation.Pointer>();
+        for (int index = 0; index < 128; index++) {
+            regions.add(new UnwindStackSeparation.Region(index * 16L, index * 16L + 7));
+            if (index < 64) pointers.add(new UnwindStackSeparation.Pointer(index * 16L, 0x1000 + index));
+        }
+        var maximum = new UnwindStackSeparation(8, regions, "x".repeat(4096), pointers);
+        require(maximum.regions().equals(regions) && maximum.fixedPointers().equals(pointers),
+            "exact condition bounds lost evidence");
+        regions.add(new UnwindStackSeparation.Region(0x1000, 0x1007));
+        reject(() -> new UnwindStackSeparation(8, regions, "explicit", pointers));
+        regions.removeLast();
+        pointers.add(new UnwindStackSeparation.Pointer(64 * 16, 0x2000));
+        reject(() -> new UnwindStackSeparation(8, regions, "explicit", pointers));
+        pointers.removeLast();
+        reject(() -> new UnwindStackSeparation(8, regions, "x".repeat(4097), pointers));
+        for (int width : new int[] {0, 1, 2, 16}) {
+            reject(() -> new UnwindStackSeparation(width, regions, "explicit", pointers));
+        }
+        reject(() -> new UnwindStackSeparation(0, List.of(), "unexpected evidence"));
+        regions.clear();
+        pointers.clear();
+        require(maximum.regions().size() == 128 && maximum.fixedPointers().size() == 64,
+            "caller mutation erased admitted external conditions");
+        require(!maximum.permits(new Constant(0, 8), 0) && !maximum.permits(new Constant(0, 8), 9),
+            "invalid access width admitted");
+        reject(() -> maximum.requireCompatibleStore(new Constant(-1, 8), 2));
+        reject(() -> maximum.requireCompatibleStore(new Constant(0, 4), 1));
+    }
+
     private static void fixedPointers() {
         var regions = List.of(new UnwindStackSeparation.Region(0x500000, 0x500007), CONDITION.regions().getFirst());
         var pointer = new UnwindStackSeparation.Pointer(0x500000, 0x600000);

@@ -8966,3 +8966,30 @@ diagnostic retains the authenticated JAR and all 255 production sources:
 Evidence: `.forge-work/scratch/coverage-recovery/code-mapping-boundaries/`.
 No production change. Hosted acceptance, protected merge and actual-main
 publication remain required; the current x86-64 and AArch64 jobs remain live.
+
+### Explicit unwind condition limits and preservation (2026-11-17)
+
+CONFIRMED: unwind options accept exactly 64 supplied regions and reject the
+65th through both parsing and direct construction. Oversized option text and
+unapproved pointer candidates are rejected. Nested/duplicate ranges merge
+without dropping unsigned high addresses; rebasing sorts fixed pointers and
+retains their values. OFF/STRICT cannot acquire fixed-pointer conditions.
+
+UnwindStackSeparationSmoke checks exact 128-region, 64-pointer and 4,096-character
+limits, one-over-limit refusals, unsupported address widths, invalid access
+widths, wrapped stores and wrong-width writes. Mutating caller-owned lists
+cannot erase the admitted conditions. Existing recursive/call-flow and all
+cancellation controls remain in the parent tests.
+
+Guarded unwindOptionsSmoke and unwindStackSeparationSmoke pass together in
+3 seconds (138 separation checks, 50 ordinary cancellation points). Three
+compiled faults detected in 1.459 seconds: unapproved fixed pointers, excess
+regions and excess pointers. Logs/results: `.forge-work/scratch/unwind-condition-bounds.log`
+and `.forge-work/scratch/unwind-condition-mutants/result.json`.
+
+Verified diagnostic unwind-option-bounds plus unwind-condition-bounds adds
+one line and 13 branches across the two production classes, 1,373 sessions.
+Overall 28,934/29,802 lines and 22,949/25,902 branches; binary/location critical
+16,724/18,750 branches, 151 short of 90%. Same authenticated JAR/full 255-source
+scope, file counters unchanged. No production changes. Hosted acceptance and
+protected integration remain pending.
