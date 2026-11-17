@@ -29,17 +29,23 @@ public final class AttachmentPathBoundarySmoke {
         }
         argument(() -> AttachmentPaths.preflight(null));
         argument(() -> AttachmentPaths.preflight(List.of()));
+        Path selectionParent = Files.createDirectory(root.resolve("selected-parent"));
+        Path canonicalParent = selectionParent.toRealPath();
+        Path selectionAlias = Files.createSymbolicLink(root.resolve("selected-alias"), canonicalParent);
         var selections = new ArrayList<AttachmentPaths.Selection>();
+        var canonicalSelections = new ArrayList<AttachmentPaths.Selection>();
         for (int i = 0; i < 128; i++) {
-            selections.add(selection(i == 0 ? "a".repeat(64) : "file" + i,
-                root.resolve("absent" + i), AttachmentPaths.Kind.NEW_FILE));
+            String role = i == 0 ? "a".repeat(64) : "file" + i;
+            selections.add(selection(role, selectionAlias.resolve("absent" + i), AttachmentPaths.Kind.NEW_FILE));
+            canonicalSelections.add(selection(role, canonicalParent.resolve("absent" + i), AttachmentPaths.Kind.NEW_FILE));
         }
         AttachmentPaths.Plan boundary;
         try { boundary = AttachmentPaths.preflight(selections); }
         catch (IllegalArgumentException invalid) { throw new AssertionError("valid 128-path plan refused", invalid); }
         boundary.recheck();
         equal(128, boundary.paths().size());
-        equal(selections, boundary.selections());
+        equal(canonicalSelections, boundary.selections());
+        for (var selected : canonicalSelections) equal(selected.path(), boundary.paths().get(selected.role()));
         selections.clear();
         equal(128, boundary.selections().size());
         try { boundary.paths().clear(); throw new AssertionError("mutable path map"); }

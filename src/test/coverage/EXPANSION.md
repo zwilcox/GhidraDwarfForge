@@ -8837,3 +8837,27 @@ The independently verified diagnostic adds two lines and eleven branches in
 No production code or denominator changed. Current hosted run 44185360886
 reported a Windows attachment-boundary assertion failure; architecture jobs
 continue. Hosted acceptance, protected merge and main publication remain pending.
+
+### Windows attachment-boundary expectation correction (2026-11-17)
+
+CONFIRMED: hosted Windows job 134436289697 in run 44185360886 failed in
+`AttachmentPathBoundarySmoke.exercise` at the comparison of input selections
+with resolved plan selections. The hosted temporary path used `RUNNER~1`, while
+preflight correctly returned its real `runneradmin` parent. This was an invalid
+lexical-path expectation in the new boundary test; the production resolver did
+not fail. The later missing-coverage-artifact error followed the early test exit.
+
+The test now independently derives expected paths from the existing parent's
+`toRealPath()` and the unchanged leaf names, retaining exact role/kind/order and
+path-map assertions. All 128 selections pass through an actual symlink parent,
+so Linux exercises the input-spelling/resolved-parent difference too. The fixture
+already required symbolic links for its parent-replacement race test.
+Guarded `./gradlew --no-daemon attachmentProtocolSmoke` passes on Linux in
+3 seconds: 286 boundary checks plus 11,335 protocol checks. A local compilation
+error from an initially conflicting variable name was corrected before this
+passing run. No production path handling or exception expectation was relaxed.
+
+Evidence: `.forge-work/scratch/attachment-canonical-parent-final.log` and
+https://github.com/zwilcox/GhidraDwarfForge/actions/runs/44185360886/job/134436289697.
+Windows verification of this correction is PRESENT, UNVERIFIED until the next
+hosted run. The current architecture jobs are retained; no run was cancelled.
