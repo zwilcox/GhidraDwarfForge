@@ -7897,3 +7897,32 @@ Critical binary/location branches are 16,398/18,750, 477 below 90%; file-operati
 targets remain met. This is not current hosted acceptance of queued HEAD.
 CI run 44150222826 still has three architecture jobs live and no failed jobs
 at the last poll. Full validation, protected merge and publication remain unmet.
+
+### Complete byte windows and address identity for stack loads (2026-11-17)
+
+CONFIRMED: `StackTransferShapeSmoke` now stores a tracked value, attempts a load,
+then erases both the saved slot and original register. Only the loaded register
+can establish availability. A BigInteger interval oracle checks complete
+containment across 1/2/4/8-byte values/loads, negative/adjacent offsets and extreme
+signed displacements. Missing/extra/null LOAD operands, nonconstant/wrong/
+truncated space IDs, incorrect pointer widths, unknown/absolute addresses and
+ordinary values masquerading as stack addresses cannot preserve the value.
+Both sign-extended and zero-extended encodings of a valid space ID are accepted.
+These raw transfer checks do not expand architecture support.
+
+Guarded `./gradlew --no-daemon stackValueFlowSmoke` PASS in 5 seconds; transfer
+suite 5,370 checks, full parent 5,541,703 checks (not distinct test cases).
+Log: `.forge-work/scratch/stack-load-contracts-final.log`.
+Five compiled faults (extra LOAD operand, truncated/ignored space ID, wrapping
+relative subtraction and treating a value as a stack address) all produced
+behavioral assertion failures; baseline passed in 12.741 seconds:
+`.forge-work/scratch/stack-load-contracts-mutants/result.json`.
+
+Diagnostic `coverage-recovery/stack-load-contracts` verifies nine additional
+StackValueFlow branches against the unchanged 58bd production JAR, retaining
+255 sources/901 classes. Its 1,377-session mixed cohort has 28,896/29,802 lines
+and 22,628/25,902 branches; critical binary/location branches are 16,407/18,750,
+468 below 90%. File-operation targets remain met. No production code or coverage
+denominator changed. Final current hosted validation, protected merge and main
+publication remain unfulfilled; CI44150222826 still has three architecture jobs
+live and no failed jobs at the last poll.

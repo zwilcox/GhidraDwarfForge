@@ -849,6 +849,16 @@ REGISTER_PROFILE_MUTANTS = [
      "child.getBitLength() != expected.bitSize()", "false"),
 ]
 STACK_TRANSFER_MUTANTS = [
+    ("stack-load-accepts-extra-operand", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,
+     "if (opcode == PcodeOp.LOAD && operation.getNumInputs() == 2 &&", "if (opcode == PcodeOp.LOAD && operation.getNumInputs() >= 2 &&"),
+    ("stack-load-truncates-space-id", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,
+     "(id != (int) id && id != Integer.toUnsignedLong((int) id)) ||", ""),
+    ("stack-load-ignores-space-id", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,
+     "(int) id != memory.getSpaceID()) return null;", "false) return null;"),
+    ("stack-load-wraps-relative-window", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,
+     "Math.subtractExact(slot, source.offset())", "(slot - source.offset())"),
+    ("stack-load-treats-value-as-address", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,
+     "address != null && address.kind() == Kind.STACK_ADDRESS ? address : null", "address != null ? address : null"),
     ("stack-transfer-accepts-extra-copy-operand", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,
      'if ((opcode == PcodeOp.COPY || opcode == PcodeOp.INT_ZEXT || opcode == PcodeOp.INT_SEXT) &&\n                operation.getNumInputs() == 1 &&', 'if ((opcode == PcodeOp.COPY || opcode == PcodeOp.INT_ZEXT || opcode == PcodeOp.INT_SEXT) &&\n                operation.getNumInputs() >= 1 &&'),
     ("stack-transfer-accepts-extra-subpiece-operand", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,

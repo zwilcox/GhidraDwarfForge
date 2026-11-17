@@ -85,6 +85,7 @@ public final class StackTransferShapeSmoke {
                 }
                 invalidShapes(program, template);
                 operandContracts(program, template);
+                loadContracts(program, template);
                 temporaryLifetime(program, template);
                 require(program.getModificationNumber() == modification && program.getMemory().getByte(entry) == (byte) 0x90,
                     "proof changed the program or its bytes");
@@ -191,6 +192,75 @@ public final class StackTransferShapeSmoke {
                 }
             }
         }
+    }
+
+    /** Preserve only complete contained byte ranges, then erase both original carriers. */
+    private static void loadContracts(ProgramDB program, Instruction template) throws Exception {
+        for (int bytes : new int[] {1, 2, 4, 8}) {
+            for (int width : new int[] {1, 2, 4, 8}) {
+                for (long saved : new long[] {-9, -1, 0, 1, 7, 8, 9}) {
+                    loadCase(program, template, bytes, width, saved, 0, "valid");
+                }
+            }
+        }
+        for (long[] offsets : new long[][] {
+                {Long.MIN_VALUE, Long.MIN_VALUE}, {Long.MAX_VALUE - 1, Long.MAX_VALUE - 1},
+                {Long.MIN_VALUE, Long.MAX_VALUE - 1}, {Long.MAX_VALUE - 1, Long.MIN_VALUE},
+                {Long.MAX_VALUE, 0}}) {
+            loadCase(program, template, 1, 1, offsets[0], offsets[1], "valid");
+        }
+        loadCase(program, template, 1, 8, Long.MIN_VALUE, Long.MAX_VALUE - 1, "valid");
+        loadCase(program, template, 8, 8, 0, 0, "value-as-address");
+        for (String mode : List.of("missing", "one-operand", "extra-operand", "null-space", "runtime-space",
+                "null-address", "narrow-address", "wide-address", "wrong-space", "truncated-space",
+                "absolute-address", "unknown-address", "value-as-address", "literal-address", "signed-space")) {
+            loadCase(program, template, 1, 8, 0, 0, mode);
+        }
+    }
+
+    private static void loadCase(ProgramDB program, Instruction template, int bytes, int width,
+            long savedOffset, long loadOffset, String mode) throws Exception {
+        var code = new Code(program, template);
+        var pointer = program.getCompilerSpec().getStackPointer();
+        var sp = new Varnode(pointer.getAddress(), 8);
+        var unique = program.getAddressFactory().getUniqueSpace();
+        var saved = new Varnode(unique.getAddress(0x3000), 8);
+        var loaded = new Varnode(unique.getAddress(0x3010), 8);
+        long id = Integer.toUnsignedLong(program.getLanguage().getDefaultDataSpace().getSpaceID());
+        var space = code.constant(id, 4);
+        code.op(PcodeOp.INT_ADD, saved, sp, code.constant(savedOffset, 8));
+        code.op(PcodeOp.STORE, null, space, saved, new Varnode(code.source.getAddress(), bytes));
+        code.op(PcodeOp.INT_ADD, loaded, sp, code.constant(loadOffset, 8));
+        if (mode.equals("value-as-address")) code.op(PcodeOp.COPY, loaded, code.source);
+        if (mode.equals("literal-address")) code.op(PcodeOp.COPY, loaded, code.constant(0, 8));
+        Varnode[] inputs = switch (mode) {
+            case "missing" -> new Varnode[0];
+            case "one-operand" -> new Varnode[] {space};
+            case "extra-operand" -> new Varnode[] {space, loaded, loaded};
+            case "null-space" -> new Varnode[] {null, loaded};
+            case "runtime-space" -> new Varnode[] {code.source, loaded};
+            case "null-address" -> new Varnode[] {space, null};
+            case "narrow-address" -> new Varnode[] {space, new Varnode(loaded.getAddress(), 4)};
+            case "wide-address" -> new Varnode[] {space, new Varnode(loaded.getAddress(), 16)};
+            case "wrong-space" -> new Varnode[] {code.constant(id + 1, 4), loaded};
+            case "truncated-space" -> new Varnode[] {code.constant(id | (1L << 40), 8), loaded};
+            case "absolute-address" -> new Varnode[] {space, code.constant(0, 8)};
+            case "unknown-address" -> new Varnode[] {space, new Varnode(program.getRegister("RCX").getAddress(), 8)};
+            case "signed-space" -> new Varnode[] {code.constant((int) id, 8), loaded};
+            default -> new Varnode[] {space, loaded};
+        };
+        code.op(PcodeOp.LOAD, code.destination(width), inputs);
+        // Remove the saved copy after loading. check() also overwrites RDI, so
+        // only the loaded register can establish availability in this assertion.
+        code.op(PcodeOp.STORE, null, space, saved, code.constant(0, bytes));
+        BigInteger start = BigInteger.valueOf(savedOffset);
+        BigInteger finish = start.add(BigInteger.valueOf(bytes));
+        BigInteger displacement = start.subtract(BigInteger.valueOf(loadOffset));
+        boolean preserved = (mode.equals("valid") || mode.equals("signed-space")) &&
+            finish.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0 &&
+            displacement.signum() >= 0 && displacement.compareTo(BigInteger.valueOf(width - bytes)) <= 0;
+        code.check(bytes, 0, preserved ? displacement.intValueExact() : -1,
+            "load " + mode + "/width=" + width + "/saved=" + savedOffset + "/address=" + loadOffset);
     }
 
     private static final class Code {
