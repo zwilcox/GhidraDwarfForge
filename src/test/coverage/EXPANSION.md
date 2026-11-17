@@ -9213,3 +9213,31 @@ Verified native-manifest-boundaries diagnostic adds nine lines/seventeen branche
 28,960/29,802 lines and 23,059/25,902 branches; binary/location 18,703/19,213
 lines and 16,834/18,750 branches, 41 short of 90%. File counts unchanged.
 Hosted acceptance, protected merge and actual-main publication remain pending.
+
+### Vtable admission extents and budgets (2026-11-17)
+
+CONFIRMED: VtableSymbolsSmoke checks absent models, ET_DYN acceptance, ET_REL/
+ET_CORE rejection, absent/empty allocations, partially file-backed extents and
+canonical/allocation comparison budgets for x86-64 and AArch64 metadata.
+Budget fixtures use 4,096 tables or 2,048 tables with 8,193 tiny section records;
+no large payloads or new processor support claims. Existing original identity,
+hash, alias and cancellation checks remain. Guarded vtableSymbolsSmoke PASS,
+290 checks. Both compiled budget-relaxation faults detected. The first mutation
+run exceeded the diagnostic-size bound because the failed assertion printed
+thousands of messages; test failure text now shows count/first three messages,
+while checking the full collection. No production guard or harness cap changed.
+Evidence .forge-work/scratch/vtable-admission-bounds-final.log and
+vtable-admission-mutants-final/result.json; failed attempt retained separately.
+
+Verified vtable-admission-bounds diagnostic adds four lines/seven branches:
+1,383 sessions, 28,964/29,802 lines and 23,066/25,902 branches overall.
+Binary/location 18,707/19,213 lines and 16,841/18,750 branches, 34 short of 90%.
+File group unchanged. Same full 255-source denominator and authenticated JAR.
+
+CI 44185360886 is terminal failure. AArch64 artifact 14382855300 SHA-256
+cafd4957f2dc9d6d21e250198cef63dec14113f8d3aad040569bc45ef3d4dfce confirms
+the same missing AttachmentPathBoundarySmoke compilation dependency as the
+other four target lanes. Local e66dd020 covers all six isolated source lists.
+Only bounded compile.stderr/result retained under aarch64-compile-44185360886;
+download automatically removed. Windows c581fbb8 fix also pending hosted proof.
+Complete hosted cohort, protected merge and actual-main publication pending.
