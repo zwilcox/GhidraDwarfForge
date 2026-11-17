@@ -8,15 +8,15 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,152 verified
-sessions: 212 JavaExec, 678 native-Java, 205 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,154 verified
+sessions: 212 JavaExec, 679 native-Java, 206 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,561 / 29,802 (95.8%) | 21,791 / 25,902 (84.1%) |
-| Binary and location correctness | 18,443 / 19,213 (96.0%) | 15,672 / 18,750 (83.6%) |
+| Overall | 28,598 / 29,802 (96.0%) | 21,817 / 25,902 (84.2%) |
+| Binary and location correctness | 18,480 / 19,213 (96.2%) | 15,698 / 18,750 (83.7%) |
 | File transactions and validation | 6,383 / 6,677 (95.6%) | 3,732 / 4,250 (87.8%) |
 
 Across all four production sources changed from PR base `c6265e1`, all 30
@@ -56,10 +56,55 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-hosts-target-transitions-partial/summary.json` in the coverage workspace, SHA-256
-`c3410d31579b07865eef286e478520c7162970f64c4d95d162a7e67271af7aa9`.
-It replaces the smaller 1,127-session partial baseline for current progress
+`stable-memory-hosts-call-mmio-partial/summary.json` in the coverage workspace, SHA-256
+`9bdc59b07d982d487f969c6e5f5d1af2cd18585a04d75465d665ea3f7fa489f5`.
+It replaces the smaller 1,152-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Call-parameter admission and MMIO failure refresh
+
+**CONFIRMED, local:** commit `6d03d027` adds 36 assertions to the existing
+call-argument smoke. Real x86-64/AArch64 ProgramDB fixtures reject missing proof,
+stale function IDs/addresses, duplicate snapshots, invalid or missing storage
+pieces and hidden return carriers. An actual extraction-correction callback
+maps two real formals onto one register; both ambiguous arguments must be omitted.
+Qualified integers preserve the recovered value, and refusals leave retry results
+unchanged. This tests normalized entry evidence without fake Ghidra API objects.
+
+The full smoke passes 612 assertions across its existing 25 decoded instruction
+cases. All 240 expression vectors pass the independent DWARF evaluator. Five
+compiled faults are detected by behavioral assertions: accepting a stale owner,
+accepting duplicate snapshots, assigning overlapping carriers, rejecting qualified
+integers and binding a hidden return carrier as an argument. The mutation baseline
+also runs the independent vector evaluator; all eight mutation-outcome controls
+pass. No production Java or support claim changes. The one measured native-Java
+session authenticates source, raw receipt, both 18-check target groups, vectors
+and mutation results. `GhidraCallParameters` now has 143/144 measured lines and
+108/140 branch outcomes. Remaining decisions are still visible in the report.
+
+The existing x86-64 MMIO reference/export/failure workflows also pass against the
+current JAR. Compiler/Forge static GDB values, alias values, GNU/LLVM/strict
+validation, deterministic outputs, unchanged input/project/output bindings and
+16 cancellation/failure controls are independently rechecked. Deliberately
+changed reference bytes are rejected by the value oracle. Only the completed
+failure-control analyzer session is newly measured; the positive export is its
+validated dependency. This is a file-backed fixture, not real-device access,
+LLDB evidence, or a new architecture claim. The isolated Java 21 script cache
+avoids incompatible cached classes; the installed JAR, native manifest and
+supervisor metadata are restored. The applied admission verifier is authenticated
+against the recorded and committed source.
+
+The 1,154-session union adds 37 covered lines and 26 branch outcomes over the
+preceding checkpoint. `GhidraMmioProfile` reaches 88/92 measured lines. Critical
+branch deficits remain 1,177 binary/location and 93 file/validation outcomes.
+All 255 production sources and 901 classes remain in each available view; the
+full current hosted cohort, protected merge and actual-main publication remain
+unfinished. Evidence under guarded coverage-expansion scratch:
+`call-parameter-boundaries-stable-memory/`, `call-parameter-boundaries-mutations/`,
+`mmio-stable-memory/` and `stable-memory-hosts-call-mmio-partial/`, with corresponding
+run/verify drivers. The intermediate `stable-memory-hosts-call-parameters-partial/`
+report is retained separately. Storage is READY at 16.244/100 GiB scratch,
+2.200/10 GiB cache and 6.728/10 GiB evidence. No local heavy process remains.
 
 ## Target replacement boundaries and stack transition refresh
 
