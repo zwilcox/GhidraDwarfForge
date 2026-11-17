@@ -75,6 +75,7 @@ public final class ClassScopeModelSmoke {
     }
 
     public static void main(String[] args) {
+        ClassEvidenceBoundarySmoke.main(args);
         var bindings = List.of(binding(3, LEFT, BindingSource.EXPLICIT_SAVED),
             binding(4, RIGHT, BindingSource.CURRENT_AUTO_THIS));
         var scopes = new ClassScopeModel(SCOPES, bindings, METHODS);
