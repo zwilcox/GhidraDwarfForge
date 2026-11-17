@@ -8740,3 +8740,40 @@ and oracle hashes, full 255-source denominator and harness sources are retained
 in `coverage-recovery/class-method-metadata/result.json`. No production code or
 native ABI changed. Fresh hosted acceptance and actual-main publication remain
 required for issue #209 completion.
+
+### Unwind policy and alias model limits (2026-11-17)
+
+CONFIRMED locally: `UnwindFrameRowsSmoke` rejects missing/aliased frame roles,
+invalid DWARF register numbers, temporary rather than physical-register cells,
+wrong widths, overlaps, and excess register count. Positive 32/64-bit cases
+accept exactly 512 adjacent registers and check all projected identities and
+509 explicit unavailabilities. Caller mutation cannot change the captured policy;
+register number 4095 and a shared return/counter role remain valid. Missing either
+side of a call produces no recovery rules, and caller-stack/CFA overflow is
+explicitly omitted. The initial overflow fixture used `-1 - Long.MAX_VALUE`,
+which equals representable `Long.MIN_VALUE`; corrected to `-2 - Long.MAX_VALUE`.
+No implementation defect or production edit was needed.
+
+`FunctionAliasSymbolsSmoke` adds invalid hash/extent/name/owner/body inputs,
+case-normalized hash identity, exactly 65,536 UTF-8 bytes (one-, two-, and
+four-byte code points), exactly 65,536 body ranges and one-over-limit refusal,
+immutable capture, half-open address boundaries through the highest supported
+signed address, and entry-containing suffix extents. Existing both-width/order
+ELF symbol merge, byte-preservation, collision and cancellation checks still run.
+
+Guarded `./gradlew --no-daemon unwindFrameRowsSmoke functionAliasSymbolsSmoke`
+passed in 3 seconds (107 unwind checks and 463 alias checks). Eight compiled
+faults were detected by behavioral assertions in 3.313 seconds: exact-count
+rejection, temporary-cell acceptance, mismatched-width acceptance, stack/counter
+aliasing, omitted UTF-8 budget, exact-range-count rejection, noncanonical hash,
+and mutable alias body. Evidence logs are
+`.forge-work/scratch/policy-alias-boundaries-final.log` and
+`.forge-work/scratch/policy-alias-mutants/result.json`.
+
+The independently verified `unwind-policy-boundaries` and `alias-model-boundaries`
+diagnostic additions contribute two sessions, two lines and 24 branch outcomes.
+Final union: 1363 sessions, 28,920/29,802 lines, 22,870/25,902 branches.
+Binary/location critical: 18,663/19,213 lines, 16,645/18,750 branches, 230 short
+of 90%. File-operation critical counters remain 6,522/6,677 and 3,831/4,250.
+The production JAR and full 255-source denominator are unchanged. These local
+measurements do not replace current hosted acceptance or main publication.

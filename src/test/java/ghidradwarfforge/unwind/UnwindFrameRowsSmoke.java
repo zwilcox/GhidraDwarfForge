@@ -23,6 +23,7 @@ public final class UnwindFrameRowsSmoke {
         return UnwindFrameRows.project(new State(values, slots), POLICY, () -> false);
     }
     public static void main(String[] args) {
+        policyBoundaries();
         var entry = project(Map.of(STACK, new StackAddress(0, 8), ANCHOR, new Incoming(1, 8),
             SAVED, new Incoming(2, 8), LINK, new ReturnAddress(8)), Map.of());
         require(entry.covered() && entry.cfa().equals(new Cfa(0, 8)), "entry CFA differs from evidence");
@@ -93,5 +94,88 @@ public final class UnwindFrameRowsSmoke {
         }
         require(UnwindFrameRows.projectCall(callBefore, callAfter, POLICY, () -> false).equals(call), "call projection retry changed rules");
         System.out.println("unwind-frame-rows-smoke=PASS checks=" + checks + " cancellation=" + polls[0]);
+    }
+
+    private static void policyBoundaries() {
+        invalidPolicy(() -> new UnwindFrameRows.Policy(Map.of(), 0, 1, 2, 0, 0));
+        for (int missing : List.of(0, 3, 4)) {
+            var registers = new LinkedHashMap<>(REGISTERS);
+            registers.remove(missing);
+            invalidPolicy(() -> new UnwindFrameRows.Policy(registers, 0, 3, 4, 8, 8));
+        }
+        invalidPolicy(() -> new UnwindFrameRows.Policy(REGISTERS, 0, 0, 4, 8, 8));
+        invalidPolicy(() -> new UnwindFrameRows.Policy(REGISTERS, 0, 3, 0, 8, 8));
+        for (int bad : List.of(-1, 4096)) {
+            var registers = new LinkedHashMap<>(REGISTERS);
+            registers.put(bad, new Cell(Bank.REGISTER, 64, 8));
+            invalidPolicy(() -> new UnwindFrameRows.Policy(registers, 0, 3, 4, 8, 8));
+        }
+        for (Cell bad : List.of(new Cell(Bank.TEMPORARY, 64, 8),
+                new Cell(Bank.REGISTER, 64, 4), new Cell(Bank.REGISTER, 7, 8))) {
+            var registers = new LinkedHashMap<>(REGISTERS);
+            registers.put(5, bad);
+            invalidPolicy(() -> new UnwindFrameRows.Policy(registers, 0, 3, 4, 8, 8));
+        }
+        for (int width : List.of(4, 8)) {
+            var registers = new LinkedHashMap<Integer, Cell>();
+            for (int number = 0; number < 512; number++) {
+                registers.put(number, new Cell(Bank.REGISTER, (long) number * width, width));
+            }
+            UnwindFrameRows.Policy full;
+            try {
+                full = new UnwindFrameRows.Policy(registers, 0, 1, 2, width, width);
+            }
+            catch (IllegalArgumentException wrong) {
+                throw new AssertionError("exact 512-register policy rejected", wrong);
+            }
+            registers.put(512, new Cell(Bank.REGISTER, 512L * width, width));
+            invalidPolicy(() -> new UnwindFrameRows.Policy(registers, 0, 1, 2, width, width));
+            registers.clear();
+            require(full.registers().size() == 512, "caller mutation changed accepted policy");
+            var state = new State(Map.of(full.registers().get(0), new StackAddress(0, width),
+                full.registers().get(1), new ReturnAddress(width)), Map.of());
+            var projected = UnwindFrameRows.project(state, full, () -> false);
+            require(projected.covered() && projected.cfa().equals(new Cfa(0, width)),
+                "adjacent physical registers rejected");
+            require(projected.rules().size() == 512 && projected.unavailable().size() == 509 &&
+                projected.rules().get(0).equals(new CfaValue(0)) &&
+                projected.rules().get(1).equals(new SameValue()) &&
+                projected.rules().get(2).equals(new InRegister(1)),
+                "large policy invented or dropped register identities");
+            for (State before : new State[] {null, state}) {
+                for (State after : new State[] {null, state}) {
+                    var call = UnwindFrameRows.projectCall(before, after, full, () -> false);
+                    if (before == null || after == null) {
+                        require(!call.covered() && call.cfa() == null && call.rules().isEmpty() &&
+                            call.unavailable().isEmpty() && call.omission().contains("no complete reachable state"),
+                            "missing side of call invented recovery rules");
+                    }
+                    else require(call.equals(projected), "unchanged call altered entry projection");
+                }
+            }
+        }
+        var highest = new UnwindFrameRows.Policy(Map.of(0, STACK, 1, LINK, 4095, COUNTER), 0, 1, 4095, 8, 8);
+        var state = new State(Map.of(STACK, new StackAddress(0, 8), LINK, new ReturnAddress(8)), Map.of());
+        require(UnwindFrameRows.project(state, highest, () -> false).rules().equals(
+            Map.of(0, new CfaValue(0), 1, new SameValue(), 4095, new InRegister(1))),
+            "maximum DWARF register number was truncated");
+        var sharedReturn = new UnwindFrameRows.Policy(REGISTERS, 0, 3, 3, 8, 8);
+        require(UnwindFrameRows.project(state, sharedReturn, () -> false).covered(),
+            "shared return/counter role was rejected");
+        var overflow = new UnwindFrameRows.Policy(REGISTERS, 0, 3, 4, Long.MAX_VALUE, -2);
+        var omitted = UnwindFrameRows.project(state, overflow, () -> false);
+        require(!omitted.covered() && omitted.rules().isEmpty() &&
+            omitted.omission().equals("caller stack/CFA relation overflows"),
+            "overflowing caller stack relation fabricated a row");
+    }
+
+    private static void invalidPolicy(Runnable operation) {
+        try {
+            operation.run();
+            throw new AssertionError("invalid frame projection policy accepted");
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage().contains("projection"), "wrong policy diagnostic");
+        }
     }
 }

@@ -24,6 +24,7 @@ public final class FunctionAliasSymbolsSmoke {
     private static final ElfFunctionAlias ALIAS = new ElfFunctionAlias("scope::alternate", "primary", 0x1040, 16, HASH);
 
     public static void main(String[] args) throws Exception {
+        modelBoundaries();
         Path root = Files.createTempDirectory("forge-alias-planner-");
         for (boolean wide : List.of(false, true)) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
@@ -145,6 +146,71 @@ public final class FunctionAliasSymbolsSmoke {
             }
         }
         System.out.println("function-alias-symbols-smoke=PASS checks=" + checks);
+    }
+
+    private static void modelBoundaries() {
+        for (String bad : Arrays.asList(null, "", "a".repeat(63), "a".repeat(65), "g".repeat(64))) {
+            invalidModel(() -> new ElfFunctionAlias.CodeRange(0, 1, bad), "invalid alias code range");
+        }
+        for (long[] bad : List.of(new long[] {-1, 1}, new long[] {0, 0},
+                new long[] {0, -1}, new long[] {Long.MAX_VALUE, 1})) {
+            invalidModel(() -> new ElfFunctionAlias.CodeRange(bad[0], bad[1], HASH), "invalid alias code range");
+        }
+        String upperHash = "ABCDEF01".repeat(8);
+        require(new ElfFunctionAlias.CodeRange(0, 1, upperHash).codeSha256().equals("abcdef01".repeat(8)),
+            "hexadecimal evidence hash was not canonicalized");
+        for (String name : Arrays.asList(null, " ", "a".repeat(65537), "λ".repeat(32769))) {
+            invalidModel(() -> alias(name, HASH), "invalid recovered function alias");
+        }
+        for (String owner : Arrays.asList(null, "", " ", "alias")) {
+            invalidModel(() -> new ElfFunctionAlias("alias", owner, 0, 1, HASH), "invalid recovered function alias");
+        }
+        for (String name : List.of("a".repeat(65536), "λ".repeat(32768), "😀".repeat(16384))) {
+            try {
+                require(alias(name, HASH).name().equals(name), "exact UTF-8 name limit changed spelling");
+            }
+            catch (IllegalArgumentException wrong) {
+                throw new AssertionError("valid 65536-byte alias name rejected", wrong);
+            }
+        }
+        var ranges = new ArrayList<ElfFunctionAlias.CodeRange>();
+        for (int index = 0; index < 65536; index++) ranges.add(new ElfFunctionAlias.CodeRange(index * 2L, 1, HASH));
+        ElfFunctionAlias full;
+        try {
+            full = new ElfFunctionAlias("alias", "primary", 131070, ranges);
+        }
+        catch (IllegalArgumentException wrong) {
+            throw new AssertionError("exact range count limit rejected", wrong);
+        }
+        ranges.add(new ElfFunctionAlias.CodeRange(131072, 1, HASH));
+        invalidModel(() -> new ElfFunctionAlias("alias", "primary", 0, ranges), "invalid recovered function alias");
+        ranges.clear();
+        require(full.ranges().size() == 65536 && full.size() == 1, "caller mutation changed alias body");
+        invalidModel(() -> new ElfFunctionAlias("alias", "primary", 0, (List<ElfFunctionAlias.CodeRange>) null),
+            "invalid recovered function alias");
+        invalidModel(() -> new ElfFunctionAlias("alias", "primary", 0, List.of()), "invalid recovered function alias");
+        invalidModel(() -> new ElfFunctionAlias("alias", "primary", -1, full.ranges()), "invalid recovered function alias");
+        for (long base : new long[] {0, 0xffff_ffffL, Long.MAX_VALUE - 16}) {
+            var range = new ElfFunctionAlias.CodeRange(base, 16, HASH);
+            for (int offset = -1; offset <= 16; offset++) {
+                require(range.contains(base + offset) == (offset >= 0 && offset < 16),
+                    "alias body membership lost half-open boundary");
+            }
+            for (int offset : new int[] {0, 1, 15}) {
+                var interior = new ElfFunctionAlias("alias", "primary", base + offset, List.of(range));
+                require(interior.size() == 16 - offset, "ELF symbol extent includes bytes preceding its entry");
+            }
+        }
+    }
+
+    private static void invalidModel(Runnable operation, String diagnostic) {
+        try {
+            operation.run();
+            throw new AssertionError("invalid alias model accepted: " + diagnostic);
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage().contains(diagnostic), "wrong alias model diagnostic");
+        }
     }
 
     private static void rangeCases(Path root, byte[] bytes) throws Exception {
