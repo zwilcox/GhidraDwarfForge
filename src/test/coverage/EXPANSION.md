@@ -8613,3 +8613,30 @@ were already measured elsewhere: the 1,357-session diagnostic union adds one
 line and one branch, reaching 28,913/29,802 lines and 22,821/25,902 branches overall;
 binary/location 18,656/19,213 lines and 16,596/18,750 branches (279 short of 90%).
 File counters remain unchanged. Current-head hosted acceptance is still pending.
+
+## Stack-spill target profile agreement
+
+The real decoded x86-64/AArch64 four/eight-byte spill fixtures now check eleven
+profile views each. The transparent view retains the exact SP-relative storage
+and lifetime; missing/partial SP, missing/overlay/non-RAM/word-addressed memory,
+wrong pointer width and unregistered memory identity must not acquire a spill.
+Each case leaves the program unchanged and permits a clean original-profile
+retry. The shared `TargetProfileViews` helper replaces the equivalent private
+call-memory helper, retaining its existing checks and controls. These tests do
+not extend the supported target profiles.
+
+Guarded `stackSpillSmoke callMemoryEffectsSmoke` passes in seven seconds:
+2,406 spill checks (136 additional assertions across 44 profile cases), plus
+456 raw, 525 boundary and 165 parent call-memory checks. Four compiled faults
+are detected by behavioral assertions: accepting overlay memory, register-space
+memory, word addressing and an unregistered memory identity. Baseline passes;
+mutation run takes 10.949 seconds. No production code changed.
+
+Evidence: `.forge-work/scratch/stack-spill-target-profiles.log`,
+`stack-spill-target-mutants/result.json`, and
+`coverage-recovery/stack-spill-target-profiles/`. Raw SHA-256:
+`8221feb30fb7be75791a4d8be7a6902845fe1a80c3821ca945061ceaf480f65c`.
+Source/raw/session/all-255-source verification passes. The 1,358-session diagnostic
+union adds seven branches: 22,828/25,902 overall and 16,603/18,750 binary/location
+(272 short of 90%). Other counters remain unchanged. Hosted current-head gates,
+protected merge and main publication are still required for #209.

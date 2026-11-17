@@ -178,6 +178,7 @@ public final class StackSpillSmoke {
                     incoming, width, mapping, TaskMonitor.DUMMY);
                 require(backup != null && backup.end() == expectedEnd && backup.storage().byteOffset() == offset,
                     "real spill failed: " + target + " " + width + " " + backup);
+                targetProfiles(program, instructions, incoming, width, mapping, end, backup);
                 var rejected = GhidraVariableStorage.stableParameter(program, function, parameter, mapping, TaskMonitor.DUMMY);
                 var intervals = GhidraVariableStorage.parameterPrefix(program, function, parameter, mapping,
                     rejected, TaskMonitor.DUMMY);
@@ -296,6 +297,24 @@ public final class StackSpillSmoke {
         }
         finally {
             program.release(owner);
+        }
+    }
+
+    private static void targetProfiles(ProgramDB program, List<Instruction> instructions,
+            Varnode incoming, int width, TargetRegisterMap registers, long end, StackSpillLifetime.Backup expected)
+            throws Exception {
+        long modification = program.getModificationNumber();
+        for (String defect : List.of("transparent", "missing-stack-pointer", "partial-stack-pointer", "missing-memory",
+                "overlay", "register-space", "word-addressed", "zero-pointer", "wide-pointer", "pointer-mismatch",
+                "unregistered-memory")) {
+            var view = TargetProfileViews.create(program, program.getDefaultPointerSize(), defect,
+                program.getCompilerSpec().stackGrowsNegative(), StackSpillSmoke::require);
+            var actual = StackSpillLifetime.prove(view, 0x1000, end, instructions, incoming, width, registers, TaskMonitor.DUMMY);
+            require(defect.equals("transparent") ? expected.equals(actual) : actual == null,
+                "unsupported target acquired a stack spill: " + defect + " " + actual);
+            require(expected.equals(StackSpillLifetime.prove(program, 0x1000, end, instructions,
+                incoming, width, registers, TaskMonitor.DUMMY)), "profile refusal changed a subsequent spill proof");
+            require(program.getModificationNumber() == modification, "profile admission changed the saved program");
         }
     }
 

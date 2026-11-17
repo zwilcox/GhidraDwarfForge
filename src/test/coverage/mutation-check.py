@@ -580,6 +580,14 @@ LINUX_METADATA_MUTANTS = [
 STACK_SPILL = "ghidradwarfforge/StackSpillLifetime.java"
 STACK_SPILL_TEST = "ghidradwarfforge.StackSpillSmoke"
 STACK_SPILL_MUTANTS = [
+    ('spill-admits-overlay-memory', "ghidradwarfforge/StackSpillLifetime.java", STACK_SPILL_TEST,
+     'memory.isOverlaySpace()', 'false'),
+    ('spill-admits-register-memory', "ghidradwarfforge/StackSpillLifetime.java", STACK_SPILL_TEST,
+     'memory.getType() != AddressSpace.TYPE_RAM', 'false'),
+    ('spill-admits-word-addressing', "ghidradwarfforge/StackSpillLifetime.java", STACK_SPILL_TEST,
+     'memory.getAddressableUnitSize() != 1', 'false'),
+    ('spill-admits-unregistered-memory', "ghidradwarfforge/StackSpillLifetime.java", STACK_SPILL_TEST,
+     'program.getAddressFactory().getAddressSpace(memory.getSpaceID()) != memory', 'false'),
     ("stack-spill-ignores-instruction-space", STACK_SPILL, STACK_SPILL_TEST,
      "instruction.getAddress().getAddressSpace() != code ||", ""),
     ("stack-spill-ignores-instruction-extent", STACK_SPILL, STACK_SPILL_TEST,
