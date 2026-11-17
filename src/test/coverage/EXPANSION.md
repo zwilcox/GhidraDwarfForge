@@ -6880,3 +6880,32 @@ remain 6,502/6,677 lines and 3,775/4,250 branches (50 short). Historical cohorts
 remain; this is diagnostic evidence, not current-head hosted acceptance.
 Logs: `.forge-work/scratch/synthetic-source-dispositions-first.log` and
 `source-disposition-mutants/result.json`. Hosted run 44150222826 remains live.
+
+
+### Source relocation inventory and UTF-8 limits
+
+Extended `SyntheticSourceRelocationBoundarySmoke` with hand-encoded DWARF32/v5
+fixtures in both byte orders and four-/eight-byte target addresses. Exactly
+128 abbreviation attributes, 65,536 abbreviation records and 65,537 source files
+relocate successfully; the next entry is refused. Directory limits use UTF-8
+bytes: both ASCII and multibyte strings at 65,535 bytes pass, while excess bytes
+are refused independently of Java character count. Invalid later file basenames
+are rejected, including empty, dot, dot-dot and both path separators.
+
+Successful relocation compares every output byte against independently built
+sections, preserves pooled strings, executable line programs and input arrays,
+and remains idempotent for the same directory. Existing cancellation and malformed
+metadata checks remain. Guarded `./gradlew --no-daemon sourceRelocationBoundarySmoke`
+PASS: 1,244 cases, 3s. An initial command used a nonexistent task name and did not
+run tests; the registered task above was then run successfully. Eight new compiled
+boundary faults were detected by Java assertions, unchanged baseline PASS,
+production source hash verified, 3.302s. No production implementation changed.
+
+Diagnostic `coverage-recovery/source-relocation-limits/`: verified 1,403 unique
+sessions, same production JAR, complete 255-source/901-class denominator, raw
+execution/source hashes and manifest addition. Adds eight branches. Overall
+28,857/29,802 lines and 22,278/25,902 branches; binary/location 18,620/19,213 lines,
+16,109/18,750 branches (766 short of 90%). File group unchanged: 6,502/6,677 lines,
+3,775/4,250 branches (50 short). Historical cohorts remain: not hosted acceptance.
+Local evidence: `.forge-work/scratch/source-relocation-limits-assertions.log`,
+`source-relocation-limit-mutants/result.json`. CI44150222826 remains live.

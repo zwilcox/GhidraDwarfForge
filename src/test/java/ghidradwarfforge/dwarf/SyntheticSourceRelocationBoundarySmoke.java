@@ -35,14 +35,19 @@ public final class SyntheticSourceRelocationBoundarySmoke {
                 cancellation(fixture);
                 malformed(fixture);
                 forms(order, width);
+                limits(order, width);
             }
         }
         System.out.println("synthetic-source-relocation-boundaries=PASS cases=" + cases);
     }
 
     private static void exact(Fixture f, String directory) {
+        exact(f, directory, List.of("a.c", "b.c"));
+    }
+
+    private static void exact(Fixture f, String directory, List<String> files) {
         Fixture saved = copy(f);
-        var actual = relocate(f, directory, () -> false);
+        var actual = accepted(f, directory);
         byte[] expectedInfo = f.info().clone();
         ByteBuffer.wrap(expectedInfo).order(f.order()).putInt(17, f.strings().length);
         byte[] expectedStrings = concat(f.strings(), text(directory));
@@ -55,11 +60,11 @@ public final class SyntheticSourceRelocationBoundarySmoke {
         equal(expectedStrings, actual.strings(), "old pooled strings must be retained byte-for-byte");
         equal(expectedLine, actual.line(), "line file table and executable program must be preserved");
         require(actual.previousDirectory().equals(OLD) && actual.fileName().equals("a.c") &&
-            actual.sourceFiles().equals(List.of("a.c", "b.c")), "incorrect source identity");
+            actual.sourceFiles().equals(files), "incorrect source identity");
         try { actual.sourceFiles().add("invented.c"); throw new AssertionError("mutable source inventory"); }
         catch (UnsupportedOperationException expected) { }
         Fixture moved = f.with(actual.info(), f.abbrev(), actual.strings(), actual.line());
-        var again = relocate(moved, directory, () -> false);
+        var again = accepted(moved, directory);
         equal(actual.info(), again.info(), "same-directory info changed");
         equal(actual.strings(), again.strings(), "same-directory strings grew");
         equal(actual.line(), again.line(), "same-directory line changed");
@@ -187,6 +192,67 @@ public final class SyntheticSourceRelocationBoundarySmoke {
         reject(fixture(order, width, bytes(0x25, 0x0d), unterminated), NEW, "SLEB overflow");
     }
 
+    private static void limits(ByteOrder order, int width) {
+        Fixture f = fixture(order, width, bytes(), bytes());
+        exact(f, "/" + "x".repeat(65534));
+        exact(f, "/" + "\u03bb".repeat(32767));
+        reject(f, "/" + "\u03bb".repeat(32768), "UTF-8 byte limit independent of Java character count");
+
+        var attributes = new ByteArrayOutputStream();
+        for (int index = 0; index < 125; index++) {
+            // Vendor attributes with flag_present consume no DIE bytes. Together
+            // with name/comp_dir/stmt_list these are exactly 128 attributes.
+            attributes.writeBytes(uleb(0x2000 + index));
+            attributes.write(0x19);
+        }
+        exact(fixture(order, width, attributes.toByteArray(), bytes()), NEW);
+        attributes.writeBytes(uleb(0x2000 + 125)); attributes.write(0x19);
+        reject(fixture(order, width, attributes.toByteArray(), bytes()), NEW, "129 abbreviation attributes");
+
+        var abbreviations = new ByteArrayOutputStream();
+        abbreviations.writeBytes(Arrays.copyOf(f.abbrev(), f.abbrev().length - 1));
+        for (int code = 2; code <= 65536; code++) {
+            abbreviations.writeBytes(uleb(code)); abbreviations.writeBytes(bytes(0x2e, 0, 0, 0));
+        }
+        exact(f.with(f.info(), concat(abbreviations.toByteArray(), bytes(0)), f.strings(), f.line()), NEW);
+        abbreviations.writeBytes(uleb(65537)); abbreviations.writeBytes(bytes(0x2e, 0, 0, 0, 0));
+        reject(f.with(f.info(), abbreviations.toByteArray(), f.strings(), f.line()), NEW, "65537 abbreviation records");
+
+        var files = new java.util.ArrayList<String>();
+        files.add("a.c");
+        for (int index = 1; index < 65537; index++) files.add("part" + index + ".c");
+        exact(fileTable(f, files), NEW, files);
+        files.add("extra.c");
+        reject(fileTable(f, files), NEW, "65538 source files");
+        for (String invalid : List.of("", ".", "..", "nested/file.c", "nested\\file.c")) {
+            reject(fileTable(f, List.of("a.c", invalid)), NEW, "invalid later source basename");
+        }
+    }
+
+    private static Fixture fileTable(Fixture f, List<String> files) {
+        var table = new ByteArrayOutputStream();
+        table.writeBytes(Arrays.copyOf(f.line(), f.directoryEnd()));
+        table.writeBytes(bytes(2, 1, 8, 2, 15));
+        table.writeBytes(uleb(files.size()));
+        for (String name : files) { table.writeBytes(text(name)); table.write(0); }
+        int programStart = table.size();
+        table.writeBytes(Arrays.copyOfRange(f.line(), f.programStart(), f.line().length));
+        byte[] line = table.toByteArray();
+        put(line, 0, line.length - 4, f.order()); put(line, 8, programStart - 12, f.order());
+        return new Fixture(f.info(), f.abbrev(), f.strings(), line, f.order(), f.width(),
+            f.directoryStart(), f.directoryEnd(), programStart);
+    }
+
+    private static byte[] uleb(int value) {
+        var result = new ByteArrayOutputStream();
+        do {
+            int part = value & 127;
+            value >>>= 7;
+            result.write(value == 0 ? part : part | 128);
+        } while (value != 0);
+        return result.toByteArray();
+    }
+
     private static Fixture fixture(ByteOrder order, int width, byte[] extraAttributes, byte[] extraValues) {
         byte[] strings = concat(text("a.c"), text(OLD));
         byte[] abbrev = concat(bytes(1, 0x11, 0, 3, 0x0e, 0x1b, 0x0e, 0x10, 0x17), extraAttributes, bytes(0, 0, 0));
@@ -210,6 +276,11 @@ public final class SyntheticSourceRelocationBoundarySmoke {
 
     private static SyntheticSourceRelocation.Result relocate(Fixture f, String directory, BooleanSupplier cancelled) {
         return SyntheticSourceRelocation.relocate(f.info(), f.abbrev(), f.strings(), f.line(), f.order(), directory, cancelled);
+    }
+
+    private static SyntheticSourceRelocation.Result accepted(Fixture f, String directory) {
+        try { return relocate(f, directory, () -> false); }
+        catch (IllegalArgumentException unexpected) { throw new AssertionError("valid bounded source metadata must relocate", unexpected); }
     }
 
     private static void reject(Fixture f, String directory, String label) {
