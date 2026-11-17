@@ -7320,3 +7320,38 @@ coverage-recovery/current-44150222826/integration-java-coverage-windows/,
 coverage-recovery/windows-44150222826/{job.json,producing-merge.json,result.json,
 regenerated/summary.json,sessions.tsv,xml/combined.xml}, and guarded
 coverage-recovery/admit-windows-44150222826.log.
+
+### Firmware original-file selection boundaries (#209)
+
+Acceptance: preserve explicit FileBytes associations at the 128-input boundary,
+reject duplicate IDs and independently duplicate indices, retain immutable
+selection snapshots, and leave selection files unchanged on refusal/cancellation.
+FirmwareInputsSmoke now checks these through direct records and the JSON reader,
+including maximum signed indices, shared path strings with distinct identities,
+blank/NUL/null fields, and entry/middle/final cancellation followed by retry.
+No production code or emitted ELF/DWARF changed.
+
+Guarded `./gradlew --no-daemon firmwareInputsSmoke` passes 54 checks with Java25
+and Ghidra12.0.3. Guarded `src/test/coverage/mutation-check.py` using compiled main
+and test classes, the same Java/Ghidra installations, and repeated `--only`
+selectors for firmware-input-accepts-129, firmware-input-rejects-128,
+firmware-input-ignores-index-alias and firmware-input-retains-caller-list passes
+its unchanged baseline and detects all four compiled faults by behavioral
+assertions (2.585 seconds). An initial invocation omitted repeated `--only`
+flags and exited at argument parsing; it supplies no test evidence.
+
+Guarded measure-stack.py firmware-input-boundaries
+ ghidradwarfforge.output.FirmwareInputsSmoke plus verify-local-addition.py
+firmware-input-boundaries windows-44150222826 verifies the raw session, unchanged
+production JAR and current test source hashes. The diagnostic union gains one
+line and nine branches, all in FirmwareInputs, without losses. It retains all
+255 production sources/901 classes in the denominator: 28,877/29,802 lines and
+22,451/25,902 branches. File operations reach 3,798/4,250 branches, 27 short of
+90%; binary/location remains 616 short. Historical cohorts remain in this
+1,360-session diagnostic: it is not final hosted acceptance.
+
+Evidence: .forge-work/scratch/firmware-input-boundaries-final.log,
+firmware-input-mutants/{result.json,*.log}, and
+coverage-recovery/firmware-input-boundaries/{result.json,sessions.tsv,counts.json,
+gaps.json,xml/combined.xml}. CI44150222826 still has five live architecture lanes
+and no failed completed jobs; this test change remains queued locally.
