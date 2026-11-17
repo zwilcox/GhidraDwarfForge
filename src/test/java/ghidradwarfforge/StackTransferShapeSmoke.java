@@ -84,6 +84,7 @@ public final class StackTransferShapeSmoke {
                     }
                 }
                 invalidShapes(program, template);
+                operandContracts(program, template);
                 temporaryLifetime(program, template);
                 require(program.getModificationNumber() == modification && program.getMemory().getByte(entry) == (byte) 0x90,
                     "proof changed the program or its bytes");
@@ -134,6 +135,62 @@ public final class StackTransferShapeSmoke {
         require(state.advance(code.instruction(), false, TaskMonitor.DUMMY), "second instruction refused");
         require(!state.location(TargetRegisterMap.forTarget("x86_64")).available(),
             "unique temporary escaped its instruction and fabricated a surviving value");
+    }
+
+    /** Malformed raw transfer descriptions cannot create a carrier after the original is killed. */
+    private static void operandContracts(ProgramDB program, Instruction template) throws Exception {
+        for (boolean temporary : new boolean[] {false, true}) {
+            for (int opcode : new int[] {PcodeOp.COPY, PcodeOp.INT_ZEXT, PcodeOp.INT_SEXT,
+                    PcodeOp.SUBPIECE, PcodeOp.PIECE, PcodeOp.INT_LEFT, PcodeOp.INT_RIGHT,
+                    PcodeOp.INT_SRIGHT, PcodeOp.INT_ADD, PcodeOp.INT_OR}) {
+                var base = new Code(program, template);
+                var narrow = new Varnode(base.source.getAddress(), 4);
+                Varnode[] valid = switch (opcode) {
+                    case PcodeOp.COPY -> new Varnode[] {base.source};
+                    case PcodeOp.INT_ZEXT, PcodeOp.INT_SEXT -> new Varnode[] {narrow};
+                    case PcodeOp.PIECE -> new Varnode[] {base.constant(0, 4), narrow};
+                    default -> new Varnode[] {base.source, base.constant(0, 8)};
+                };
+                var invalid = new ArrayList<Varnode[]>();
+                invalid.add(new Varnode[0]);
+                if (valid.length > 1) invalid.add(java.util.Arrays.copyOf(valid, valid.length - 1));
+                var extra = java.util.Arrays.copyOf(valid, valid.length + 1);
+                extra[extra.length - 1] = base.constant(0, 8);
+                invalid.add(extra);
+                for (int i = 0; i < valid.length; i++) {
+                    var absent = valid.clone();
+                    absent[i] = null;
+                    invalid.add(absent);
+                }
+                switch (opcode) {
+                    case PcodeOp.COPY -> invalid.add(new Varnode[] {narrow});
+                    case PcodeOp.INT_ZEXT, PcodeOp.INT_SEXT -> {
+                        invalid.add(new Varnode[] {base.source});
+                        invalid.add(new Varnode[] {new Varnode(base.source.getAddress(), 16)});
+                    }
+                    case PcodeOp.PIECE -> invalid.add(new Varnode[] {base.source, narrow});
+                    default -> invalid.add(new Varnode[] {narrow, base.constant(0, 8)});
+                }
+                if (opcode == PcodeOp.INT_ADD || opcode == PcodeOp.INT_OR) {
+                    invalid.add(new Varnode[] {base.source, base.constant(0, 4)});
+                }
+                // Run the valid transfer before and after all invalid shapes. The
+                // byte oracle is simply preservation of the original low byte.
+                var cases = new ArrayList<Varnode[]>();
+                cases.add(valid);
+                cases.addAll(invalid);
+                cases.add(valid);
+                for (int i = 0; i < cases.size(); i++) {
+                    var code = new Code(program, template);
+                    Varnode destination = temporary ? new Varnode(
+                        program.getAddressFactory().getUniqueSpace().getAddress(0x2000), 8) : code.destination(8);
+                    code.op(opcode, destination, cases.get(i));
+                    if (temporary) code.op(PcodeOp.COPY, code.destination(8), destination);
+                    code.check(1, 0, i == 0 || i == cases.size() - 1 ? 0 : -1,
+                        "operand contract " + opcode + "/temporary=" + temporary + "/case=" + i);
+                }
+            }
+        }
     }
 
     private static final class Code {

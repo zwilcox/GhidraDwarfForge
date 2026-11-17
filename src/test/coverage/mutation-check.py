@@ -849,6 +849,16 @@ REGISTER_PROFILE_MUTANTS = [
      "child.getBitLength() != expected.bitSize()", "false"),
 ]
 STACK_TRANSFER_MUTANTS = [
+    ("stack-transfer-accepts-extra-copy-operand", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,
+     'if ((opcode == PcodeOp.COPY || opcode == PcodeOp.INT_ZEXT || opcode == PcodeOp.INT_SEXT) &&\n                operation.getNumInputs() == 1 &&', 'if ((opcode == PcodeOp.COPY || opcode == PcodeOp.INT_ZEXT || opcode == PcodeOp.INT_SEXT) &&\n                operation.getNumInputs() >= 1 &&'),
+    ("stack-transfer-accepts-extra-subpiece-operand", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,
+     'if (opcode == PcodeOp.SUBPIECE && operation.getNumInputs() == 2 &&', 'if (opcode == PcodeOp.SUBPIECE && operation.getNumInputs() >= 2 &&'),
+    ("stack-transfer-accepts-extra-piece-operand", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,
+     'if (opcode == PcodeOp.PIECE && operation.getNumInputs() == 2 &&', 'if (opcode == PcodeOp.PIECE && operation.getNumInputs() >= 2 &&'),
+    ("stack-transfer-accepts-extra-shift-operand", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,
+     'if ((opcode == PcodeOp.INT_LEFT || opcode == PcodeOp.INT_RIGHT || opcode == PcodeOp.INT_SRIGHT) &&\n                operation.getNumInputs() == 2 &&', 'if ((opcode == PcodeOp.INT_LEFT || opcode == PcodeOp.INT_RIGHT || opcode == PcodeOp.INT_SRIGHT) &&\n                operation.getNumInputs() >= 2 &&'),
+    ("stack-transfer-accepts-extra-join-operand", "ghidradwarfforge/StackValueFlow.java", STACK_TRANSFER_TEST,
+     'if ((opcode == PcodeOp.INT_ADD || opcode == PcodeOp.INT_OR) && operation.getNumInputs() == 2 &&', 'if ((opcode == PcodeOp.INT_ADD || opcode == PcodeOp.INT_OR) && operation.getNumInputs() >= 2 &&'),
     ("stack-transfer-copy-ignores-width", STACK_FLOW, STACK_TRANSFER_TEST,
      "opcode == PcodeOp.COPY ? input.getSize() != output.getSize() : input.getSize() >= output.getSize()",
      "opcode == PcodeOp.COPY ? false : input.getSize() >= output.getSize()"),

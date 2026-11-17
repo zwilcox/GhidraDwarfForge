@@ -7870,3 +7870,30 @@ with **no additional covered lines or branches**. The critical deficit remains
 510 branches; no denominator changes or target reductions were made. This test
 adds an architecture-specific behavioral boundary, not a coverage percentage gain.
 Full current hosted acceptance, protected merge and main publication remain unmet.
+
+### Operand contracts for tracked-value transfers (2026-11-17)
+
+CONFIRMED: `StackTransferShapeSmoke` now tests missing, extra, null and
+wrong-width operands for COPY, extensions, SUBPIECE, PIECE, shifts and ADD/OR
+joins. Each runs with direct-register and instruction-temporary destinations.
+After the original carrier is overwritten, malformed transfers must leave the
+tracked byte unavailable. Valid controls before/after preserve the low byte in
+the exact expected register slice. These are raw-pcode contract tests on a real
+language/register model; they do not claim additional machine-code support.
+
+Guarded `./gradlew --no-daemon stackValueFlowSmoke` PASS in 5 seconds. The final
+transfer suite has 4,948 checks; existing carrier-ownership and pointwise interval
+refinement tests also pass (full task 5,541,281 checks, not distinct test cases).
+Log: `.forge-work/scratch/stack-transfer-operands-final.log`.
+Five compiled faults admitting extra operands in copy/extension, subpiece,
+piece, shift and join operations all produced behavioral assertion failures;
+unchanged baseline passed in the 12.627-second mutation run:
+`.forge-work/scratch/stack-transfer-operands-mutants/result.json`.
+
+Diagnostic `coverage-recovery/stack-transfer-operands` verifies 33 additional
+StackValueFlow branches on the unchanged production JAR/full denominator. Its
+1,376-session mixed cohort has 28,896/29,802 lines and 22,619/25,902 branches.
+Critical binary/location branches are 16,398/18,750, 477 below 90%; file-operation
+targets remain met. This is not current hosted acceptance of queued HEAD.
+CI run 44150222826 still has three architecture jobs live and no failed jobs
+at the last poll. Full validation, protected merge and publication remain unmet.
