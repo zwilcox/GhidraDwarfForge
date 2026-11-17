@@ -32,6 +32,10 @@ public final class AttachmentTargetStoreSmoke {
             failures(root);
             concurrentChanges(root);
             interruptedRestore(root);
+            replacementObservations(root);
+            parentReplacement(root);
+            recoveryAdmission(root);
+            directoryDurability(root);
             cancellations(root);
             crashes(root);
             System.out.println("attachment-target-store-smoke=PASS checks=" + checks +
@@ -179,6 +183,130 @@ public final class AttachmentTargetStoreSmoke {
         reject(() -> AttachmentTargetStore.replace(metadata.before(), changed, HOST, () -> false));
         equal(metadata.before(), AttachmentFileStore.observe(metadata.before().path(), HOST, () -> false));
         reject(() -> AttachmentTargetStore.replace(metadata.before(), metadata.before(), HOST, () -> false));
+    }
+
+    private static void replacementObservations(Path root) throws Exception {
+        int before = checks;
+        for (String change : new String[] { "bytes", "metadata", "identity" }) {
+            var fixture = fixture(root, "readback-" + change);
+            byte[] intended = Files.readAllBytes(fixture.after().path());
+            var permissions = Files.getPosixFilePermissions(fixture.after().path());
+            var modified = Files.getLastModifiedTime(fixture.after().path());
+            var failure = reject(() -> AttachmentTargetStore.replace(fixture.before(), fixture.after(), HOST,
+                () -> false, (boundary, stage, target) -> {
+                    if (boundary != AttachmentTargetStore.Boundary.AFTER_REPLACEMENT) return;
+                    if (change.equals("bytes")) {
+                        byte[] damaged = intended.clone();
+                        damaged[0] ^= 1;
+                        Files.setPosixFilePermissions(target, PosixFilePermissions.fromString("rw-------"));
+                        Files.write(target, damaged);
+                        Files.setPosixFilePermissions(target, permissions);
+                        Files.setLastModifiedTime(target, modified);
+                    }
+                    else if (change.equals("metadata")) {
+                        Files.setPosixFilePermissions(target, PosixFilePermissions.fromString("rw-------"));
+                    }
+                    else {
+                        Files.move(target, target.resolveSibling("retained-installed-image"));
+                        Files.write(target, intended);
+                        Files.setPosixFilePermissions(target, permissions);
+                        Files.setLastModifiedTime(target, modified);
+                    }
+                }));
+            equal(true, failure instanceof AttachmentTargetStore.ReplacementFailure);
+            var reconciliation = (AttachmentTargetStore.ReplacementFailure) failure;
+            equal(fixture.before().path(), reconciliation.target());
+            equal(fixture.after().path(), reconciliation.stage());
+            equal("installed target differs from the verified owned stage", failure.getCause().getMessage());
+            equal(false, Files.exists(reconciliation.stage()));
+            var current = AttachmentFileStore.observe(reconciliation.target(), HOST, () -> false);
+            equal(!change.equals("bytes"), current.digest().equals(fixture.after().digest()));
+            equal(!change.equals("metadata"), current.fingerprint().metadataSha256()
+                .equals(fixture.after().fingerprint().metadataSha256()));
+            equal(!change.equals("identity"), current.fingerprint().identity()
+                .equals(fixture.after().fingerprint().identity()));
+            equal(fixture.backup(), AttachmentFileStore.observe(fixture.backup().path(), HOST, () -> false));
+            if (!change.equals("metadata")) {
+                var restored = AttachmentTargetStore.restore(current, fixture.backup(),
+                    fixture.directory().resolve("observed-recovery"), HOST, () -> false);
+                equal(fixture.before().digest(), restored.digest());
+                equal(fixture.before().fingerprint().metadataSha256(), restored.fingerprint().metadataSha256());
+                equal(fixture.backup(), AttachmentFileStore.observe(fixture.backup().path(), HOST, () -> false));
+            }
+        }
+        System.out.println("target-readback-boundaries=PASS checks=" + (checks - before));
+    }
+
+    private static void parentReplacement(Path root) throws Exception {
+        int before = checks;
+        for (boolean targetParent : new boolean[] { true, false }) {
+            var fixture = fixture(root, "parent-" + targetParent);
+            Path parent = targetParent ? fixture.before().path().getParent() : fixture.after().path().getParent();
+            Path retained = parent.resolveSibling(parent.getFileName() + "-retained");
+            Path foreign = targetParent ? fixture.before().path() : fixture.after().path();
+            var failure = reject(() -> AttachmentTargetStore.replace(fixture.before(), fixture.after(), HOST,
+                () -> false, (boundary, stage, target) -> {
+                    if (boundary != AttachmentTargetStore.Boundary.BEFORE_REPLACEMENT) return;
+                    Files.move(parent, retained);
+                    Files.createDirectory(parent);
+                    Files.writeString(foreign, "foreign file in replacement directory");
+                }));
+            equal(false, failure instanceof AttachmentTargetStore.ReplacementFailure);
+            equal("replacement parent directory changed", failure.getMessage());
+            equal("foreign file in replacement directory", Files.readString(foreign));
+            for (var saved : new AttachmentFileStore.Snapshot[] { fixture.before(), fixture.after(), fixture.backup() }) {
+                Path actualPath = saved.path().startsWith(parent) ? retained.resolve(parent.relativize(saved.path())) : saved.path();
+                var actual = AttachmentFileStore.observe(actualPath, HOST, () -> false);
+                equal(saved.digest(), actual.digest());
+                equal(saved.fingerprint(), actual.fingerprint());
+            }
+        }
+        System.out.println("target-parent-replacement=PASS checks=" + (checks - before));
+    }
+
+    private static void recoveryAdmission(Path root) throws Exception {
+        int before = checks;
+        for (boolean sameImage : new boolean[] { true, false }) {
+            var fixture = fixture(root, "recovery-admission-" + sameImage);
+            var backup = fixture.before();
+            if (!sameImage) {
+                Files.setPosixFilePermissions(fixture.backup().path(), PosixFilePermissions.fromString("rw-------"));
+                backup = AttachmentFileStore.observe(fixture.backup().path(), HOST, () -> false);
+            }
+            var offered = backup;
+            Path restore = fixture.directory().resolve("must-not-create-restore");
+            var failure = reject(() -> AttachmentTargetStore.restore(fixture.before(), offered, restore, HOST, () -> false));
+            equal("recovery requires an independent metadata-preserving backup", failure.getMessage());
+            equal(false, Files.exists(restore));
+            equal(fixture.before(), AttachmentFileStore.observe(fixture.before().path(), HOST, () -> false));
+            equal(offered, AttachmentFileStore.observe(offered.path(), HOST, () -> false));
+            equal(fixture.after(), AttachmentFileStore.observe(fixture.after().path(), HOST, () -> false));
+        }
+        System.out.println("target-recovery-admission=PASS checks=" + (checks - before));
+    }
+
+    private static void directoryDurability(Path root) throws Exception {
+        int before = checks;
+        for (boolean sameDirectory : new boolean[] { true, false }) {
+            var fixture = fixture(root, "durability-" + sameDirectory);
+            Path stage = fixture.after().path();
+            if (sameDirectory) stage = Files.move(stage, fixture.directory().resolve("sibling-stage"));
+            var observedStage = AttachmentFileStore.observe(stage, HOST, () -> false);
+            var synced = new java.util.ArrayList<Path>();
+            var host = new Host() {
+                @Override public void syncDirectory(Path directory) throws IOException {
+                    super.syncDirectory(directory);
+                    synced.add(directory);
+                }
+            };
+            var installed = AttachmentTargetStore.replace(fixture.before(), observedStage, host, () -> false);
+            equal(sameDirectory ? java.util.List.of(fixture.directory()) :
+                java.util.List.of(stage.getParent(), fixture.directory()), synced);
+            equal(observedStage.digest(), installed.digest());
+            equal(observedStage.fingerprint(), installed.fingerprint());
+            equal(fixture.backup(), AttachmentFileStore.observe(fixture.backup().path(), HOST, () -> false));
+        }
+        System.out.println("target-directory-durability=PASS checks=" + (checks - before));
     }
 
     private static void cancellations(Path root) throws Exception {
