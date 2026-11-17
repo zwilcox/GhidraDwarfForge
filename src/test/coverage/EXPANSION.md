@@ -6,7 +6,63 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current artifact-pair failure boundaries
+## Current retained split-source build-ID workflow
+
+CONFIRMED: commits `09cfc855` and `31ee8ee2` add the real Linux build-ID
+installation lifecycle to the x86-64 non-PIE multifile integration workflow.
+Fresh headless single/split/repeat exports pass independent GNU/LLVM/pinned strict
+checks, deterministic reruns, semantic comparison and compiler/sidecar GDB
+checks. The source binding controls still pass. The new workflow then installs
+the split export using `LinuxBuildIdHost`, verifies an idempotent repeat, updates
+to single source and back to split source, and explicitly removes registration.
+
+All three installed generations pass the production supervised validator.
+Four GDB workflows prove automatic build-ID discovery, source stepping between
+two functions, the expected global value and normal exit, then lack of source
+discovery after removal. Selected export inputs are temporarily unavailable and
+source substitution disables fallback to the original export location. Retained
+generation paths remain explicitly usable, including when CI places them below
+the export fixture. All retained generation bytes survive updates and removal.
+Changes to every retained dependency (one manifest and eleven parts) are refused
+without changing registration; test changes are restored afterward.
+
+The first standalone run passed. The first full rerun exposed an overly broad
+test-only GDB substitution rule that also hid nested retained sources; its
+incomplete collection is excluded. The corrected full rerun passes at
+`build/test-results/multifile/x86_64-exec-p9sor8eh`. All **261 coverage-tool tests**
+pass, including five new receipt-admission tests. No production bytecode changed.
+The installed Ghidra JAR/native metadata were restored after local validation.
+
+The latest verified union admits **18 JVM sessions** from the corrected full
+run: seventeen real build-ID operation/refusal processes and one source-binding
+probe. Its headless exporters are behaviorally checked but not instrumented by
+this harness. The union gains four lines/one branch in `BuildIdInstallation` and
+two branches in `ArtifactValidationBinding`. All prior raw hashes, receipts and
+actual Java class/session identities were rechecked.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall, 1,081 sessions | 28,549 / 29,790 (95.8%) | 21,448 / 25,884 (82.9%) |
+| Binary/location | 18,347 / 19,201 (95.6%) | 15,388 / 18,732 (82.1%) |
+| File/validation | 6,480 / 6,677 (97.0%) | 3,691 / 4,250 (86.8%) |
+
+Evidence is in `.forge-work/scratch/coverage-expansion/build-id-multifile-checked-2f181/`.
+All 255 sources/901 classes remain measured. **Still incomplete:** another 1,471
+binary/location and 134 file/validation branch outcomes are needed for the 90%
+critical targets, followed by updated hosted validation, protected merge and
+actual-main publication. No full JavaExec rerun, Windows result or new mutation
+claim is made for this increment.
+
+Historical CI run `43952501473` is now complete: its x86-64 lane and all Windows
+jobs passed; the known MIPS big-endian QEMU collision prevented the required
+gate and combined publication. The Linux raw artifact `14285999979` has been
+downloaded within budget (5,561,709 compressed / 25,762,060 extracted bytes;
+SHA-256 `8c1323313630c1cadb51fd8829e1a24030f06897946b3aa4fbc9a6ba784e359d`).
+Its report identifies the same production JAR and 821 sessions. Those sessions
+are **not yet admitted** to the local union; its older cohort also lacks newly
+required suites and cannot establish current hosted acceptance.
+
+## Earlier artifact-pair failure boundaries
 
 CONFIRMED: commit `b5edd09e` adds 63 real owned-filesystem assertions to the
 existing `artifactPairPublisherSmoke` workflow. It verifies callback admission,
