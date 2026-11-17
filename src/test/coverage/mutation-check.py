@@ -303,6 +303,16 @@ CLOSED_FLOW_TEST = "ghidradwarfforge.ClosedFlowBoundarySmoke"
 COMPOSITE_FLOW = "ghidradwarfforge/CompositeValueFlow.java"
 COMPOSITE_FLOW_TEST = "ghidradwarfforge.CompositeValueFlowSmoke"
 COMPOSITE_FLOW_MUTANTS = [
+    ("composite-metadata-ignores-owner", COMPOSITE_FLOW, COMPOSITE_FLOW_TEST,
+     'parameter.getFunction() != function ||', ''),
+    ("composite-metadata-accepts-negative-ordinal", COMPOSITE_FLOW, COMPOSITE_FLOW_TEST,
+     'parameter.getOrdinal() < 0 ||', ''),
+    ("composite-metadata-accepts-detached-parameter", COMPOSITE_FLOW, COMPOSITE_FLOW_TEST,
+     'function.getParameter(parameter.getOrdinal()) != parameter ||', ''),
+    ("composite-metadata-ignores-first-use", COMPOSITE_FLOW, COMPOSITE_FLOW_TEST,
+     'parameter.getFirstUseOffset() != 0 ||', ''),
+    ("composite-metadata-ignores-formal-size", COMPOSITE_FLOW, COMPOSITE_FLOW_TEST,
+     'formal.getLength() != bytes ||', ''),
     ("composite-emits-body-hole", COMPOSITE_FLOW, COMPOSITE_FLOW_TEST,
      'if (!covered) continue;', 'if (false) continue;'),
     ("composite-merges-across-body-hole", COMPOSITE_FLOW, COMPOSITE_FLOW_TEST,

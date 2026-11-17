@@ -1,5 +1,7 @@
 package ghidradwarfforge;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
@@ -13,6 +15,7 @@ import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.data.StructureDataType;
 import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.pcode.Varnode;
@@ -25,7 +28,7 @@ import ghidradwarfforge.locations.TargetRegisterMap;
 import ghidradwarfforge.locations.VariableStorageModel.CompositeStorage;
 import ghidradwarfforge.locations.VariableStorageModel.RegisterStorage;
 
-/** Real decoded holes and attached parameter provenance; no synthetic Ghidra implementations. */
+/** Real decoded holes and saved parameter provenance, with isolated contradictory API claims. */
 final class CompositeValueFlowBoundarySmoke {
     private static int checks;
 
@@ -77,6 +80,7 @@ final class CompositeValueFlowBoundarySmoke {
                 var parameter = function.getParameter(0);
                 var registers = TargetRegisterMap.forTarget(target.map());
                 var expected = CompositeValueFlow.prove(program, function, parameter, registers, TaskMonitor.DUMMY);
+                metadata(program, function, parameter, registers, expected);
                 require(expected.size() == 2, "discontiguous body must retain two intervals: " + expected);
                 require(expected.get(0).start() == 0x1000 && expected.get(0).end() == 0x1000 + jump.length &&
                     expected.get(1).start() == 0x1010 && expected.get(1).end() == 0x1000 + bytes.length,
@@ -142,7 +146,60 @@ final class CompositeValueFlowBoundarySmoke {
             }
             finally { program.endTransaction(transaction, false); }
         }
-        finally { foreign.release(owner); program.release(owner); }
+        finally {
+            foreign.flushEvents();
+            program.flushEvents();
+            foreign.release(owner);
+            program.release(owner);
+        }
+    }
+
+    /** Keep the decoded program real while varying one saved API claim at a time. */
+    private static void metadata(ProgramDB program, Function original, Parameter saved,
+            TargetRegisterMap registers, List<GhidraVariableStorage.StorageInterval> expected) throws Exception {
+        long modification = program.getModificationNumber();
+        var originalStorage = saved.getVariableStorage();
+        var originalType = saved.getFormalDataType();
+        for (String defect : List.of("transparent", "foreign-owner", "negative-ordinal", "detached",
+                "late-first-use", "zero-width", "negative-width", "short-width", "missing-type", "short-type")) {
+            Function[] function = new Function[1];
+            Parameter[] parameter = new Parameter[1];
+            function[0] = (Function) Proxy.newProxyInstance(Function.class.getClassLoader(),
+                new Class<?>[] { Function.class }, (proxy, method, args) -> {
+                    if (method.getName().equals("getParameter")) {
+                        return defect.equals("detached") ? saved : parameter[0];
+                    }
+                    if (method.getName().equals("getParameters")) return new Parameter[] { parameter[0] };
+                    try { return method.invoke(original, args); }
+                    catch (InvocationTargetException failure) { throw failure.getCause(); }
+                });
+            parameter[0] = (Parameter) Proxy.newProxyInstance(Parameter.class.getClassLoader(),
+                new Class<?>[] { Parameter.class }, (proxy, method, args) -> {
+                    String name = method.getName();
+                    if (name.equals("getFunction")) return defect.equals("foreign-owner") ? original : function[0];
+                    if (name.equals("getOrdinal") && defect.equals("negative-ordinal")) return -1;
+                    if (name.equals("getFirstUseOffset") && defect.equals("late-first-use")) return 1;
+                    if (name.equals("getLength")) {
+                        if (defect.equals("zero-width")) return 0;
+                        if (defect.equals("negative-width")) return -1;
+                        if (defect.equals("short-width")) return saved.getLength() - 1;
+                    }
+                    if (name.equals("getFormalDataType")) {
+                        if (defect.equals("missing-type")) return null;
+                        if (defect.equals("short-type")) return IntegerDataType.dataType;
+                    }
+                    try { return method.invoke(saved, args); }
+                    catch (InvocationTargetException failure) { throw failure.getCause(); }
+                });
+            var result = CompositeValueFlow.prove(program, function[0], parameter[0], registers, TaskMonitor.DUMMY);
+            require(defect.equals("transparent") ? result.equals(expected) : result.isEmpty(),
+                "unproven composite metadata acquired a location: " + defect + " " + result);
+            require(CompositeValueFlow.prove(program, original, saved, registers, TaskMonitor.DUMMY).equals(expected),
+                "metadata refusal changed subsequent proof: " + defect);
+            require(program.getModificationNumber() == modification && original.getParameter(0) == saved &&
+                saved.getVariableStorage().equals(originalStorage) && saved.getFormalDataType().equals(originalType),
+                "metadata inspection changed the saved program: " + defect);
+        }
     }
 
     private static void require(boolean condition, String message) {

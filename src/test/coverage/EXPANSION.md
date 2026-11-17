@@ -8225,3 +8225,32 @@ Verification receipts and regenerated XML:
 `.forge-work/scratch/coverage-recovery/javaexec-44150222826/` and
 `aarch64-44150222826/`. The separately downloaded rendered JavaExec report is
 artifact 14360634181; it was not mistaken for raw execution data at admission.
+
+## Composite parameter metadata consistency
+
+The existing composite-value smoke task now tests a transparent API view and
+nine contradictory metadata cases on real decoded x86-64, AArch64, ARM
+little-endian and ARM big-endian programs: mismatched owner, negative ordinal,
+detached parameter, late first use, zero/negative/short length, missing formal
+type and short formal type. Invalid claims produce no location. Every case
+checks a clean retry and unchanged saved parameter, storage, type and program
+modification counter. The transparent view retains the independently asserted
+piece order, widths and discontiguous intervals from the real fixture.
+
+The guarded `compositeValueFlowSmoke` passes in six seconds: 1,208 boundary
+checks (120 added) plus 1,032 existing parent checks. Five compiled mutations
+that remove owner, ordinal, attachment, first-use or formal-size checks are
+detected by behavioral assertions; the unchanged baseline passes (19.358s
+for the mutation run). No production source changes or new architecture
+support claims result.
+
+Evidence: `.forge-work/scratch/composite-metadata-final-build.log`,
+`composite-metadata-mutants/result.json`, and
+`coverage-recovery/composite-metadata-final/`. The local measurement initially
+refused a stale test JAR after the JavaExec cohort refresh; that failed merge
+is not admitted. The final helper uses the current authenticated bundle, and
+source hashes, session uniqueness and the full denominator were reverified.
+The 1,340-session diagnostic union adds five branches and no lines:
+28,904/29,802 lines, 22,691/25,902 branches; critical binary/location
+16,470/18,750 branches, 405 short of 90%. File operations remain 3,827/4,250.
+Mixed historical/local evidence still prevents final hosted acceptance.
