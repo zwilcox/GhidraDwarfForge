@@ -17,6 +17,8 @@ import ghidra.program.model.data.DoubleDataType;
 import ghidra.program.model.data.Integer16DataType;
 import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.data.StructureDataType;
+import ghidra.program.model.data.TypedefDataType;
+import ghidra.program.model.data.CategoryPath;
 import ghidra.program.model.lang.CompilerSpecID;
 import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.listing.Function;
@@ -99,6 +101,7 @@ public final class Aarch64ParameterAllocationSmoke {
     private static void extended(ProgramDB program, java.nio.file.Path path) throws Exception {
         Files.write(path, header(0, 0));
         var policy = Aarch64ParameterAllocation.forProgram(program, ElfImage.read(path), TaskMonitor.DUMMY, ignored -> { });
+        compositeBoundaries(program, policy);
         var function = fixture(program, 7, true);
         var parameters = function.getParameters();
         String before = snapshot(function);
@@ -177,6 +180,64 @@ public final class Aarch64ParameterAllocationSmoke {
             new ReturnParameterImpl(word, program), Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS,
             true, SourceType.USER_DEFINED, parameters.toArray(Parameter[]::new));
         return function;
+    }
+
+    private static void compositeBoundaries(ProgramDB program, GhidraParameterAllocation policy) throws Exception {
+        // AAPCS64 C.12-C.15: after x0-x6, a 9..16-byte non-HFA composite
+        // must go wholly to the stack. Smaller values fit x7; larger ones use
+        // an indirect pointer. The following integer then starts at 16 or 0.
+        for (int size = 1; size <= 24; size++) {
+            for (boolean alias : List.of(false, true)) {
+                var function = fixture(program, 7, false);
+                var type = new StructureDataType("Boundary" + nextAddress, size, program.getDataTypeManager());
+                function.getParameter(7).setDataType(alias ? new TypedefDataType(CategoryPath.ROOT, "Alias" + nextAddress,
+                    type, program.getDataTypeManager()) : type, SourceType.USER_DEFINED);
+                String before = snapshot(function);
+                var diagnostics = new ArrayList<String>();
+                var changes = policy.corrections(function, TaskMonitor.DUMMY, diagnostics::add);
+                boolean stackComposite = size >= 9 && size <= 16;
+                require(changes.size() == (stackComposite ? 2 : 0), "incorrect composite size classification: " + size);
+                var aggregate = changes.getOrDefault(7, function.getParameter(7).getVariableStorage());
+                var tail = changes.getOrDefault(8, function.getParameter(8).getVariableStorage());
+                require(tail.isStackStorage() && tail.getStackOffset() == (stackComposite ? 16 : 0),
+                    "following integer has incorrect ABI stack offset: " + size);
+                if (stackComposite) {
+                    require(aggregate.isStackStorage() && aggregate.getStackOffset() == 0 && aggregate.size() == size,
+                        "composite was split or rounded to the wrong byte size: " + size);
+                    require(!aggregate.isForcedIndirect() && diagnostics.size() == 2, "composite correction evidence");
+                }
+                else {
+                    require(aggregate.isRegisterStorage() && aggregate.isForcedIndirect() == (size > 16),
+                        "register or indirect composite classification changed: " + size);
+                    require(diagnostics.isEmpty(), "unchanged composite produced a correction diagnostic");
+                }
+                require(snapshot(function).equals(before), "boundary allocation changed the saved program");
+            }
+        }
+        var function = fixture(program, 7, true);
+        String before = snapshot(function);
+        var expected = policy.corrections(function, TaskMonitor.DUMMY, ignored -> { });
+        int cancelled = 0;
+        for (int checkpoint = 1; checkpoint <= 40; checkpoint++) {
+            final int stop = checkpoint;
+            var monitor = new TaskMonitorAdapter(true) {
+                private int calls;
+                @Override public void checkCancelled() throws CancelledException {
+                    if (++calls == stop) cancel();
+                    super.checkCancelled();
+                }
+            };
+            try {
+                require(policy.corrections(function, monitor, ignored -> { }).equals(expected),
+                    "uncancelled allocation changed result");
+            }
+            catch (CancelledException correct) { cancelled++; }
+            require(snapshot(function).equals(before), "mid-allocation cancellation changed saved storage");
+            require(policy.corrections(function, TaskMonitor.DUMMY, ignored -> { }).equals(expected),
+                "cancelled allocation poisoned retry");
+        }
+        require(cancelled > 12 && cancelled < 40, "cancellation matrix missed internal work or completion");
+        System.out.println("aarch64-composite-boundaries=PASS cases=48 cancellationPoints=" + cancelled);
     }
 
     private static String snapshot(Function function) {
