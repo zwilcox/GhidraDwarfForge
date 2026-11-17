@@ -43,6 +43,7 @@ public final class BoundedSwitchProofSmoke {
             "unknown-addend", "unknown-byte-overwrite", "unknown-word-overwrite", "high-byte-index",
             "register-bound", "stale-flags", "signed-bound", "destructive-guard", "memory-bound");
         for (long delta : List.of(0L, 0x400000L)) for (String shape : shapes) check(shape, delta, output);
+        Aarch64SwitchOmissionSmoke.run(output);
         System.out.println("bounded-switch-proof=PASS cases=" + shapes.size() * 2 + " checks=" + checks);
     }
     private static void check(String shape, long delta, Path directory) throws Exception {

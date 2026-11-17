@@ -7844,3 +7844,29 @@ mixed current/historical sessions, 28,896/29,802 lines and 22,586/25,902 branche
 Critical binary/location branches are 16,365/18,750, 510 below 90%; file-operation
 targets remain met. This is not hosted acceptance of queued HEAD. Current CI
 44150222826 has three architecture jobs live with no failed jobs at the last poll.
+
+### Explicit AArch64 switch-guard omissions (2026-11-17)
+
+CONFIRMED: the tested AArch64 `CMP W0,#limit; B.HI` and `B.HS` dispatch guards
+are conservatively refused with `guard does not establish a bounded fallthrough`.
+The first two probes incorrectly assumed these shapes would be admitted; both
+failed before target enumeration. No failed-run data was admitted and production
+was not changed to expand the supported symbolic guard forms.
+
+`Aarch64SwitchOmissionSmoke`, called by `boundedSwitchProofSmoke`, now makes this
+limitation explicit. Ten original-image fixtures exercise both guard forms with
+multiple bounds at ordinary and rebased addresses. They verify the decoded
+conditional edge, exact refusal, unchanged original ELF and unchanged ProgramDB.
+GNU AArch64 as/ld/objdump independently checked the embedded dispatch encodings;
+owned source/disassembly evidence is in `.forge-work/scratch/switch-arm-encoding`.
+This is a safe-omission regression, not an AArch64 switch-support claim. Any future
+extension must additionally assert target enumeration and downstream behavior.
+
+Guarded `./gradlew --no-daemon boundedSwitchProofSmoke` PASS in 9 seconds:
+70 new omission checks plus the existing 116-case/1,041-check x86-64 suite.
+Log: `.forge-work/scratch/aarch64-switch-omission.log`.
+Diagnostic `coverage-recovery/aarch64-switch-omission` verifies 1,375 sessions
+with **no additional covered lines or branches**. The critical deficit remains
+510 branches; no denominator changes or target reductions were made. This test
+adds an architecture-specific behavioral boundary, not a coverage percentage gain.
+Full current hosted acceptance, protected merge and main publication remain unmet.
