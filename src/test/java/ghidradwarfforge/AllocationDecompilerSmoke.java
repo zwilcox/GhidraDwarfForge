@@ -169,10 +169,75 @@ public final class AllocationDecompilerSmoke {
             rejects(() -> GhidraAllocationDecompiler.replaceOverrideStorage(override, overrideResolution, TaskMonitor.DUMMY), "explicit analyst");
             rejects(() -> GhidraAllocationDecompiler.replaceOverrideStorage(prototype,
                 new GhidraParameterAllocation.SignatureResolution(returnStorage, List.of()), TaskMonitor.DUMMY), "parameter count");
+            overrideBoundaries(prototype, overrideResolution);
+            require(view.getParameterCount() == 1 && view.getAutoParameterCount() == 0,
+                "allocation view retained omitted automatic return parameter");
+            require(view.getReturnType().isEquivalent(extended), "allocation view changed formal return type");
+            try {
+                GhidraAllocationDecompiler.functionView(function,
+                    new GhidraParameterAllocation.Resolution(Map.of(), Set.of(1), returnStorage));
+                throw new AssertionError("explicit analyst parameter was omitted from allocation view");
+            }
+            catch (IllegalArgumentException expectedRejection) {
+                require(expectedRejection.getMessage().equals("Cannot omit an explicit parameter"),
+                    "wrong explicit-parameter rejection");
+            }
             require(snapshot.equals(function.getPrototypeString(false, false) + Arrays.toString(function.getAllVariables())), "saved signature mutated");
             require(encode(function, decompiler, 20, true).equals(original), "saved encoding mutated");
         }
         finally { decompiler.dispose(); }
+    }
+
+    private static void overrideBoundaries(GhidraEncoderTree.Node prototype,
+            GhidraParameterAllocation.SignatureResolution resolution) throws Exception {
+        var returned = prototype.only(ELEM_RETURNSYM);
+        var parameters = prototype.only(ELEM_INTERNALLIST);
+        var parameter = parameters.children().getFirst();
+        String frozen = prototype.toString();
+        // Opaque/new parameter elements must not be rewritten as ordinary parameters.
+        var unexpected = new GhidraEncoderTree.Node(ELEM_SYMBOL, parameter.attributes(), parameter.children());
+        var malformed = prototype.replace(parameters,
+            new GhidraEncoderTree.Node(parameters.id(), parameters.attributes(), List.of(unexpected)));
+        rejects(() -> GhidraAllocationDecompiler.replaceOverrideStorage(malformed, resolution, TaskMonitor.DUMMY),
+            "Unexpected call override parameter");
+        for (var symbol : List.of(returned, parameter)) {
+            var address = symbol.only(ELEM_ADDR);
+            // An address with child metadata is explicit storage too, even if it
+            // has no attributes. Preserve it rather than replacing it with allocation.
+            var childAddress = new GhidraEncoderTree.Node(address.id(), List.of(), List.of(
+                new GhidraEncoderTree.Node(ELEM_ADDR, List.of(), List.of())));
+            var explicit = symbol.replace(address, childAddress);
+            var selected = symbol == returned ? prototype.replace(returned, explicit) :
+                prototype.replace(parameters, parameters.replace(parameter, explicit));
+            rejects(() -> GhidraAllocationDecompiler.replaceOverrideStorage(selected, resolution, TaskMonitor.DUMMY),
+                "Refusing to replace explicit analyst call storage");
+            var duplicated = new ArrayList<>(symbol.children());
+            duplicated.add(address);
+            var duplicate = new GhidraEncoderTree.Node(symbol.id(), symbol.attributes(), duplicated);
+            var duplicateTree = symbol == returned ? prototype.replace(returned, duplicate) :
+                prototype.replace(parameters, parameters.replace(parameter, duplicate));
+            rejects(() -> GhidraAllocationDecompiler.replaceOverrideStorage(duplicateTree, resolution, TaskMonitor.DUMMY), "shape");
+        }
+        int[] polls = {0};
+        var counting = new TaskMonitorAdapter(true) {
+            @Override public boolean isCancelled() { polls[0]++; return false; }
+        };
+        var expected = GhidraAllocationDecompiler.replaceOverrideStorage(prototype, resolution, counting);
+        require(polls[0] > 1, "override encoding did not expose cancellation boundaries");
+        for (int stop = 1; stop <= polls[0]; stop++) {
+            int selected = stop;
+            int[] calls = {0};
+            var cancelled = new TaskMonitorAdapter(true) {
+                @Override public boolean isCancelled() { return ++calls[0] == selected; }
+            };
+            rejects(() -> GhidraAllocationDecompiler.replaceOverrideStorage(prototype, resolution, cancelled), "cancelled");
+            require(calls[0] == selected && prototype.toString().equals(frozen),
+                "cancelled rewrite continued or changed captured analyst data");
+        }
+        var repeated = GhidraAllocationDecompiler.replaceOverrideStorage(prototype, resolution, TaskMonitor.DUMMY);
+        require(repeated.equals(expected), "cancelled rewrite changed valid retry result");
+        require(Boolean.TRUE.equals(repeated.attribute(ATTRIB_CUSTOM)), "valid retry lost custom storage");
+        require(prototype.toString().equals(frozen), "override controls changed captured analyst data");
     }
 
     private static GhidraEncoderTree.Node encode(Function function, DecompInterface decompiler, int extrapop, boolean override)

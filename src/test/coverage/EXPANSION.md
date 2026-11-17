@@ -6,6 +6,34 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Preserve explicit analyst call overrides during allocation correction
+
+`AllocationDecompilerSmoke` starts with Ghidra's actual encoded i386 function and
+analyst call override. Controls replace a parameter tag with an unexpected element,
+add child metadata to a return/parameter address without attributes, and duplicate
+those address elements. Each must be rejected without changing the captured tree
+or saved function. A separate control rejects an allocation view that requests
+omission of an explicit analyst parameter. Positive assertions retain the formal
+return type and the intended omission of only the automatic return parameter.
+
+Every observed override-encoding cancellation poll is exercised, with immediate
+failure, unchanged captured data and a deterministic valid retry. The first test
+attempt counted `checkCancelled()` calls, while this encoder uses `isCancelled()`;
+correcting the monitor to observe the actual API made the cancellation test valid.
+No production cancellation defect is claimed.
+
+Guarded `allocationDecompilerSmoke` passes **60 checks**. The canonical mutation
+harness detects all three compiled faults (unexpected parameter acceptance,
+explicit address-child loss, and explicit-parameter omission) through Java
+assertions; the unmodified baseline passes (9.025 seconds). Production-only
+measurement adds **2 lines / 5 branches** in `GhidraAllocationDecompiler` against
+the 1,373-session partial diagnostic baseline. This does not update the complete
+hosted coverage figure or claim a new end-to-end debugger profile.
+
+Evidence: `.forge-work/scratch/allocation-override-boundaries-test-final.log`,
+`allocation-override-mutants/result.json`, and
+`coverage-recovery/allocation-override-boundaries/result.json`.
+
 ## Sidecar comparison detects changing candidate lengths
 
 `SyntheticSourceSidecarSmoke` now rejects an empty staging channel whose position
