@@ -47,6 +47,7 @@ public final class TruncatedStackDepthSmoke {
         new Middle(0x001de838, false, "dsll"));
 
     public static void main(String[] args) throws Exception {
+        checks += StackCoordinateProjectionSmoke.check();
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
         for (boolean big : List.of(true, false)) {
