@@ -36,6 +36,11 @@ public final class StackValueFlowSmoke {
                 for (String shape : List.of("reload", "clobbered-slot", "partial-slot", "unknown-store", "other-slot", "lost-register", "respill")) {
                     check(x86, bytes, shape);
                 }
+                if (x86) {
+                    for (String shape : List.of("adjacent-before", "adjacent-after", "overlap-before", "overlap-after")) {
+                        check(true, bytes, shape);
+                    }
+                }
             }
         }
         checks += StackCarrierOwnershipSmoke.check();
@@ -73,6 +78,24 @@ public final class StackValueFlowSmoke {
             code.append(unknownStore).append(nop);
         }
         if (shape.equals("other-slot")) code.append(otherStore).append(nop);
+        boolean boundaryWrite = shape.startsWith("adjacent-") || shape.startsWith("overlap-");
+        boolean boundaryValueLost = false;
+        if (boundaryWrite) {
+            int offset = shape.endsWith("before") ? 7 :
+                (shape.startsWith("adjacent-") ? 8 + bytes : 7 + bytes);
+            int width = shape.startsWith("adjacent-") ? 1 : 2;
+            // Independent byte-memory oracle: all tracked bytes start nonzero;
+            // applying this actual MOV must preserve or destroy the saved value.
+            byte[] memory = new byte[32];
+            java.util.Arrays.fill(memory, 8, 8 + bytes, (byte) 0x5a);
+            byte[] expectedValue = java.util.Arrays.copyOfRange(memory, 8, 8 + bytes);
+            java.util.Arrays.fill(memory, offset, offset + width, (byte) 0);
+            boundaryValueLost = !java.util.Arrays.equals(expectedValue,
+                java.util.Arrays.copyOfRange(memory, 8, 8 + bytes));
+            destructive = code.length() / 2;
+            code.append(width == 1 ? "c64424" : "66c74424")
+                .append(String.format("%02x", offset)).append(width == 1 ? "00" : "0000").append(nop);
+        }
         int reload = code.length() / 2;
         code.append(load);
         int ready = code.length() / 2;
@@ -121,7 +144,8 @@ public final class StackValueFlowSmoke {
                 var map = TargetRegisterMap.forTarget(x86 ? "x86_64" : "aarch64");
                 var intervals = StackValueFlow.prove(program, function, parameter, map, TaskMonitor.DUMMY);
                 String context = (x86 ? "x86" : "arm") + "/" + bytes + "/" + shape + " " + intervals;
-                boolean lostBeforeReload = shape.equals("clobbered-slot") || shape.equals("partial-slot") || shape.equals("unknown-store");
+                boolean lostBeforeReload = shape.equals("clobbered-slot") || shape.equals("partial-slot") ||
+                    shape.equals("unknown-store") || boundaryValueLost;
                 if (lostBeforeReload) {
                     require(at(intervals, 0) instanceof RegisterStorage, "retain valid incoming prefix: " + context);
                     require(!at(intervals, reload).available() && !at(intervals, ready).available() &&
@@ -151,6 +175,13 @@ public final class StackValueFlowSmoke {
                 }
                 var rejected = GhidraVariableStorage.stableParameter(program, function, parameter, map, TaskMonitor.DUMMY);
                 var publicRanges = GhidraVariableStorage.parameterPrefix(program, function, parameter, map, rejected, TaskMonitor.DUMMY);
+                if (boundaryWrite) {
+                    require(at(intervals, destructive) instanceof RegisterRelativeStorage,
+                        "boundary write retired value before execution: " + context);
+                    require(at(publicRanges, ready).available() == !boundaryValueLost &&
+                        at(publicRanges, returned).available() == !boundaryValueLost,
+                        "public storage proof disagrees with byte-memory oracle: " + context);
+                }
                 if (!lostBeforeReload && !shape.equals("lost-register")) {
                     require(at(publicRanges, returned) instanceof RegisterStorage, "public proof missed surviving register: " + publicRanges);
                 }

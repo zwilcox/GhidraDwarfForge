@@ -545,6 +545,12 @@ REGISTER_PROFILE_MUTANTS = [
      "child.getBitLength() != expected.bitSize()", "false"),
 ]
 STACK_CARRIER_MUTANTS = [
+    ("stack-slot-touch-before-retires-value", STACK_FLOW, STACK_CARRIER_TEST,
+     "slots.keySet().removeIf(start -> intersects(start, bytes, offset, end));",
+     "slots.keySet().removeIf(start -> intersects(start, bytes, offset, end) || start == end);"),
+    ("stack-slot-touch-after-retires-value", STACK_FLOW, STACK_CARRIER_TEST,
+     "slots.keySet().removeIf(start -> intersects(start, bytes, offset, end));",
+     "slots.keySet().removeIf(start -> intersects(start, bytes, offset, end) || Math.addExact(start, bytes) == offset);"),
     ("stack-carrier-admits-unsaved-parameter", STACK_FLOW, STACK_CARRIER_TEST,
      "parameter.getFunction() != function ||\n                parameter.getOrdinal() < 0 || function.getParameter(parameter.getOrdinal()) != parameter ||", ""),
     ("stack-carrier-admits-foreign-storage", STACK_FLOW, STACK_CARRIER_TEST,

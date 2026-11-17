@@ -6,6 +6,25 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Stack-slot boundary controls awaiting combined measurement
+
+Eight new x86-64 component cases use actual decoded byte/word stores immediately
+before, after, or across either edge of four- and eight-byte saved parameters.
+An independent byte-memory oracle determines whether the saved value survives.
+Both `StackValueFlow.prove` and the public parameter-location path must retain
+adjacent writes and omit locations after destructive overlapping writes; the
+pre-instruction location remains available. Existing ARM64 cases also pass.
+
+Guarded `./gradlew --no-daemon stackValueFlowSmoke` passes. Two registered
+slot-invalidation mutations incorrectly retire a value at the lower or upper
+touching boundary; both compile and fail behavioral assertions, while their
+baseline passes. Logs are under `.forge-work/scratch/stack-boundary-test.log`
+and `stack-boundary-slot-mutations/`. Earlier mutations of the general overlap
+helper also failed, but the retained registration targets slot invalidation
+specifically. No production code changed. These are extraction component checks,
+not new emitted-DWARF or debugger acceptance, and no combined coverage increase
+is claimed until execution data is measured and admitted.
+
 ## Current partial measurement after integration refresh
 
 **CONFIRMED, local:** the current `58bd7a71` production JAR has 1,164 verified
