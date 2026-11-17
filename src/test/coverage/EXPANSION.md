@@ -9149,3 +9149,21 @@ branches, 1,379 unique sessions against the unchanged authenticated JAR and
 Binary/location 18,691/19,213 lines, 16,790/18,750 branches: 85 short of 90%.
 File counts unchanged. Historical/local diagnostic only; complete hosted
 acceptance, protected merge and actual-main publication remain outstanding.
+
+### Executable-program observation contracts (2026-11-17)
+
+CONFIRMED: ExecutableProgramBytesSmoke now checks wide physical offsets for
+each byte phase and absent offsets for program-count differences; inconsistent
+status/evidence combinations, negative/missing offsets and missing diagnostics
+are rejected. Existing byte, layout, channel ownership and cancellation cases
+pass: guarded executableProgramBytesSmoke, 506 checks in 3 seconds. Large sparse
+I/O was not rerun for this model-only addition. Two compiled faults detected:
+negative physical offsets and unsupported difference observations. Evidence:
+.forge-work/scratch/program-byte-observations.log and
+program-byte-observation-mutants/result.json.
+
+Verified program-byte-observations diagnostic adds three lines/five branches,
+1,380 unique sessions. Overall 28,951/29,802 lines, 23,020/25,902 branches;
+binary/location 18,694/19,213 lines, 16,795/18,750 branches, 80 short of 90%.
+File group unchanged. Full 255 sources and production JAR unchanged. This is
+not hosted acceptance; a full passing cohort, merge and publication are pending.

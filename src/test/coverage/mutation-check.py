@@ -2024,6 +2024,10 @@ CODE_MAPPING_MUTANTS = [
 ]
 
 PREFIX_OBSERVATION_MUTANTS = [
+    ('program-observation-accepts-negative-offset', "ghidradwarfforge/elf/ExecutableProgramBytes.java", "ghidradwarfforge.elf.ExecutableProgramBytesSmoke",
+     'offset.isPresent() && offset.getAsLong() < 0', 'false'),
+    ('program-observation-accepts-unsupported-difference', "ghidradwarfforge/elf/ExecutableProgramBytes.java", "ghidradwarfforge.elf.ExecutableProgramBytesSmoke",
+     '(status == Status.DIFFERENT_PROGRAM_BYTES) != issue.isPresent()', 'false'),
     ('prefix-observation-accepts-incomplete-match', "ghidradwarfforge/elf/MatchedElfPrefix.java", "ghidradwarfforge.elf.MatchedElfPrefixSmoke",
      'comparedExtent != originalByteCount', 'false'),
     ('prefix-observation-accepts-wrong-difference', "ghidradwarfforge/elf/MatchedElfPrefix.java", "ghidradwarfforge.elf.MatchedElfPrefixSmoke",
