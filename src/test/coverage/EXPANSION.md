@@ -6,6 +6,36 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Enable required context collection in ARM/MIPS CI
+
+**CONFIRMED failure and local correction; hosted verification pending:** run
+`44105084385` MIPS little-endian job `134145563389` passed the context-boundary
+harness at 15:54 UTC, but its final report failed with
+`required integration coverage suite did not run: ['context-boundaries']`.
+The collector is opt-in; the step lacked its agent/output environment variables.
+Only x86-64 receives those variables job-wide. The shared ARM32/MIPS context step
+now explicitly exports both variables, matching other measured target steps.
+The required-suite and hosted cohort checks remain unchanged.
+
+The guarded local verification uses the current production JAR
+`58bd7a71517452ca3f33e372060abd47f29166850cdcf464e3b3cb0f2a2a158b`,
+Ghidra 12.0.3 and Java 21.0.12.1. ARM32 and MIPS big/little endian each pass
+three measured import/reopen JVM sessions, unchanged input/project checks,
+deterministic outputs, GNU/LLVM/strict validators, and compiler/Forge QEMU-GDB
+oracles. Each real integration report requires `context-boundaries` and validates
+all 901 production class identities. These nine sessions establish the local
+collector path, not a complete hosted architecture cohort or a new coverage gain.
+The agent-owned cached installation JAR and launch properties were restored.
+
+`actionlint .github/workflows/ci.yml` and all 304 coverage-admission tests pass.
+Evidence: `.forge-work/scratch/ci-44105084385-mips32le.log`,
+`context-ci-wiring-final/`, `verify-context-ci-wiring-final.log`, and
+`context-ci-wiring-checks.log`. The first local attempt passed the MIPS behavior
+harness but could not start report generation because its Java path omitted the
+extracted package's `usr/lib/jvm` directory; the corrected Java-21 run is the
+accepted evidence. The first attempt is retained and is not reported as a fully
+passing collection/report run.
+
 ## Call-site inventory admission and instruction boundaries
 
 The real Sleigh/ProgramDB fixture now checks explicit fallthrough replacement and
