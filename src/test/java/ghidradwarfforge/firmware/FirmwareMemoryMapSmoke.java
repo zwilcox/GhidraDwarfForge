@@ -23,6 +23,7 @@ public final class FirmwareMemoryMapSmoke {
     }
 
     private static void run() {
+        checks += FirmwareTargetBoundarySmoke.check();
         FirmwareTarget.select("cortex-m3").requireSupported();
         reject(() -> FirmwareTarget.select("arm"), "unsupported");
         reject(() -> new FirmwareTarget("cortex-m3", "ARMv7-M", "AAPCS32-base", 40,

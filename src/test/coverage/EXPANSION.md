@@ -7235,3 +7235,27 @@ and four branches: 1,414 sessions, unchanged JAR58bd, 255 sources/901 classes.
 Overall 28,867/29,802 lines and 22,404/25,902 branches; critical binary/location
 16,235/18,750 branches (640 short of 90%); file operations 3,775/4,250 (50 short).
 Historical cohorts remain; current-head hosted acceptance is still pending.
+
+### Firmware target identity admission (#209)
+
+Acceptance: a numerically valid raw-firmware descriptor does not establish an
+implementation profile. FirmwareTargetBoundarySmoke, invoked by the existing
+firmwareMemoryMapSmoke, changes each explicit identity field separately and
+requires refusal by both profile admission and metadata extraction. It checks
+null/blank/NUL identities, invalid ELF machine/flags widths, address/pointer
+widths and null byte order. Valid lower/upper numeric limits round-trip exactly;
+72 combinations admit only the complete registered Cortex-M3 descriptor.
+Caller edits to returned metadata bytes cannot alter future metadata snapshots,
+and rejected descriptors do not change the registered profile.
+
+Guarded task passed in 2 seconds: 286 new assertions, 3,960 total. Six compiled
+faults were detected by behavioral Java assertions; baseline/source hashes
+verified (1.919 seconds). No production changes or additional architecture
+support claims. Evidence: .forge-work/scratch/firmware-target-boundaries-first.log
+and firmware-target-boundary-mutants/result.json.
+
+Verified diagnostic coverage-recovery/firmware-target-boundaries/ adds two lines
+and 13 branches: 1,415 sessions, unchanged JAR58bd, all 255 production sources
+and 901 classes. Overall 28,869/29,802 lines and 22,417/25,902 branches; critical
+binary/location 16,248/18,750 branches (627 short of 90%); file operations
+3,775/4,250 (50 short). Historical cohorts remain; final hosted acceptance pending.
