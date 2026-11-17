@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Real ARM mode transitions and MIPS delay slots through context, native export and QEMU GDB."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 from pathlib import Path
@@ -9,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 from urllib.parse import unquote, urlsplit
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -36,6 +38,7 @@ def main():
     prepare = harness / 'ghidra_scripts/PrepareArmMixedBody.java'
     shutil.copy2(helper, scripts); shutil.copy2(prepare, scripts)
     module = args.ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+    coverage = Collection('context-boundaries', module / 'lib/GhidraDwarfForge.jar', 'headless')
     arm = args.target == 'arm32'
     stem = 'arm-mixed-body' if arm else 'mips-delay-context'
     sources = [harness.parent / ('fixtures/' + stem + '.S'), harness.parent /
@@ -48,9 +51,11 @@ def main():
     def run(label, command):
         command = list(map(str, command)); commands.append({'label': label, 'argv': command})
         (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (root / (label + '.log')).open('w') as log:
-            process = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=300)
-        assert process.returncode == 0, (label, process.returncode)
+        session = coverage.session(command, label, headless=True) if label in ('import', 'first', 'second') else nullcontext(command)
+        with session as measured:
+            with (root / (label + '.log')).open('w') as log:
+                process = subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, timeout=300)
+            assert process.returncode == 0, (label, process.returncode)
         return (root / (label + '.log')).read_text()
 
     prefix = {'arm32': 'arm-linux-gnueabihf-', 'mips32be': 'mips-linux-gnu-', 'mips32le': 'mipsel-linux-gnu-'}[args.target]
@@ -112,6 +117,7 @@ def main():
         'protectedSha256': protected, 'generations': generations, 'observations': observations,
         'corroboratedWarnings': compiler_warnings,
         'firstReopenBackups': sorted(changed), 'projectSha256': states[-1]}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('context-boundaries-harness=PASS ' + args.target)
 
 
