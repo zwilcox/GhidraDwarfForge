@@ -6850,3 +6850,33 @@ Adds five branches in GhidraInheritanceBindings. Overall 28,847/29,802 lines,
 branches (50 short). Historical sessions remain: not current-head hosted acceptance.
 Local logs: `.forge-work/scratch/inheritance-budgets-first.log` and
 `inheritance-budget-mutants/result.json`. No production code changed.
+
+
+### Synthetic-source dispositions and executable-row boundaries
+
+`SyntheticSourceDispositionSmoke`, included in `syntheticSourceSmoke`, checks
+that exactly one of decompiled text, a failure diagnostic or an intentional
+omission describes each function. Contradictory function-line metadata and
+executable mappings on failed/omitted source are rejected. Empty/whitespace
+source yields a physical source row without invented executable addresses.
+Actual rendered UTF-8 output checks comment escaping, missing header values,
+CRLF/CR normalization, trailing whitespace, and stable address/name ordering.
+An independent expected-row list checks comment/declaration exclusion, duplicate
+address merging, token provenance and refusal of mappings beyond the text.
+Nested mutable token inputs and returned byte arrays cannot alter the snapshot.
+
+Guarded `./gradlew --no-daemon syntheticSourceSmoke`: PASS in 2s, 61 new assertions
+and the existing source/line-plan checks. Eight compiled faults detected by Java
+assertions, unchanged baseline PASS and production hash verified, 3.079s. The
+faults cover missing disposition, failed-source mapping, three comment forms,
+out-of-body rows, token aliasing and trailing tabs. No production code changes.
+
+Verified diagnostic `coverage-recovery/source-dispositions/`: 1,402 sessions,
+same production JAR, all 255 sources / 901 classes; raw/source hashes and exact
+manifest addition verified. Adds 10 lines and 25 branches in SyntheticSourceFile.
+Overall 28,857/29,802 lines and 22,270/25,902 branches; binary/location
+18,620/19,213 lines and 16,101/18,750 branches (774 short of 90%). File operations
+remain 6,502/6,677 lines and 3,775/4,250 branches (50 short). Historical cohorts
+remain; this is diagnostic evidence, not current-head hosted acceptance.
+Logs: `.forge-work/scratch/synthetic-source-dispositions-first.log` and
+`source-disposition-mutants/result.json`. Hosted run 44150222826 remains live.
