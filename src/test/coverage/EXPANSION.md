@@ -6,7 +6,83 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current formatter consumers and measurement
+## Current frame, entry, class, relocation and GUI-loader measurement
+
+**CONFIRMED, local validation:** the following existing suites now have verified
+measurements against production JAR
+`4bd11717ce1ff8e46eba3b0f7091517c4dd90e4e0c82472613f8fd66ca31390c`:
+
+- CFI encoder and explicit/plain/gABI/GNU compiler-frame composition: 104
+  isolated sessions. Ten encoder cases include ELF32/ELF64 and both byte orders,
+  large gaps, compression, deterministic repeats and malformed CIE-pointer
+  rejection. Four x86-64/AArch64 non-PIE/PIE runtime profiles compare generated
+  unwinding to compiler frames in GDB; all four composition modes preserve the
+  compiler prefix and validate the combined stack trace. These explicit plans
+  do not establish additional production frame-recovery support.
+- Function entries and aliases: twelve real headless exports cover non-PIE/PIE,
+  rebasing, deterministic repeats, backward/discontiguous function bodies,
+  true-entry breakpoints, gaps, values and stepping. Original files and the
+  cached installation remain unchanged after the run.
+- Isolated class scopes: one measured producer session emits five variants
+  covering normal bindings, failed source, collisions, ambiguous aliases and
+  unbound collisions. Independent DIE checks, strict/LLVM validation and 26
+  queries in fresh GDB processes pass.
+- Source relocation and derived binding: ten sessions exercise current Java
+  transformations and validators on hash-bound historical x86-64 non-PIE/PIE
+  fixture inputs. Old producer execution data is not included. GDB and LLDB
+  resolve retained source while the old source is hidden; the source is restored
+  afterwards. Each profile passes eleven binding refusals and seven sampled
+  cancellation points. Derived validation uses an explicit test metadata host,
+  not a privileged installation or attachment claim.
+- GUI companion loader: one measured JVM performs actual Swing export selection,
+  cancellation and attachment preparation. Both independent GDB workflows and
+  structural validators pass, including `forge-load` on the exported companion.
+  Geometry calibration, report CLI and nested attachment helpers remain
+  explicitly unmeasured. The cached module is restored after execution.
+
+All runs use `support/storage-guard.py run --cwd <repository> -- ...`, existing
+repository harnesses and the same compiled production classes. Raw receipts,
+source snapshots or committed source bindings, tool/input hashes, debugger logs
+and individual verification records are retained under
+`.forge-work/scratch/coverage-expansion/`. No production code or target threshold
+changed. The CFI consumer has zlib support; the isolated class test uses the
+existing atomic-type-capable consumer.
+
+The first GUI attempt failed at geometry calibration because the cached headless
+JDK lacks `libawt_xawt.so`; it contributes no coverage. The retry uses the existing
+desktop OpenJDK 21.0.13 runtime. A local verification-script path mistake was
+also corrected: loader flags belong to `select/result.txt` and `cancel/result.txt`,
+not the top-level result. The successful GUI execution was verified without
+rerunning it or weakening its assertions. Failed-attempt logs remain retained.
+
+The verified partial union is
+`.forge-work/scratch/coverage-expansion/gui-loader-verified-refresh-4bd11/summary.json`,
+SHA-256 `335fcc6e2add7b2b47b30d73d1df99ad5c94e3a194b3333cdeb3d18e560998ed`.
+Its 1,230 sessions comprise 211 JavaExec, 633 isolated Java/native-path and 386
+headless executions. All 255 production sources and 901 classes remain included.
+This adds 15 covered lines and 19 branches over the 1,102-session checkpoint;
+additional executions also establish missing behavioral/profile evidence.
+
+| Scope | Lines | Branches | Required |
+| --- | --- | --- | --- |
+| Overall Java | 27,908/29,792 (93.7%) | 21,295/25,888 (82.3%) | 85% / 80% |
+| Binary/location correctness | 18,494/19,203 (96.3%) | 15,604/18,736 (83.3%) | 95% / 90% |
+| File transactions/validation | 5,688/6,677 (85.2%) | 3,314/4,250 (78.0%) | 95% / 90% |
+
+**INCOMPLETE:** the required suite-name inventory still lacks production Linux
+attachment (exec, PIE, and no-build-ID) and all three Windows suites. Presence of
+the other suite names is not a full required-profile audit. Fresh hosted results,
+critical-group targets, complete same-run coverage, protected merge and actual-main
+publication remain required. Local noninteractive privileged execution is
+unavailable; no host checks or privileges were simulated to count those branches.
+At this checkpoint, run `44024881065` on `1437e340` has passed native Linux,
+native Windows and workflow lint; extension-build is still running. The Windows
+companion preflight now passes, with the unavailable identity-only `fileKey`
+race still explicitly `NOT_RUN`, not claimed as validated. The completed Windows
+job log confirms `companion-observation-recovery=PASS checks=63` and
+`companion-observation-identity=NOT_RUN reason=basic-file-key-unavailable`.
+
+## Earlier formatter consumers and measurement checkpoint
 
 **CONFIRMED, local validation:** the three existing x86-64 formatter profiles
 pass through the production wrapper with both GDB CLI/MI and LLDB 18.1.3:
@@ -52,9 +128,10 @@ These formatter profiles add 40 lines and 46 branches over the prior checkpoint.
 **INCOMPLETE:** critical targets, fresh Windows execution, remaining full-cohort
 measurement, exact-head hosted acceptance, protected merge and actual-main
 publication. This is a verified partial matching-bytecode union, not the published
-coverage badge or a completed CI acceptance run. Hosted run `44020062360` has
-finished its extension-build step and is measuring Java coverage at this checkpoint;
-its Windows failure and queued correction remain as described below.
+coverage badge or a completed CI acceptance run. Hosted run `44020062360`
+subsequently finished extension-build successfully but failed its Windows
+companion preflight; its downstream acceptance jobs were skipped. The later
+run and correction are recorded above.
 
 ## Saved inheritance, C++ ABI bounds and hosted Linux measurement
 
