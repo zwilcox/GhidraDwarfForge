@@ -48,7 +48,9 @@ def main():
             port = 20000 + pid % 20000 + offsets[target]
             listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
-                listener.bind(("0.0.0.0", port))
+                # Loopback still conflicts with the former wildcard QEMU bind,
+                # without exposing this test listener on external interfaces.
+                listener.bind(("127.0.0.1", port))
                 listener.listen(1)
                 break
             except OSError as error:
