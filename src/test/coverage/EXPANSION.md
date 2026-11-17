@@ -6,6 +6,60 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Existing ELF MMIO cancellation/failure measurement
+
+**CONFIRMED, local validation:** `294ccb43` instruments the existing ELF MMIO
+control process, retaining its 16 cancellation, late-failure, collision,
+saved-project and output-preservation checks. The collection closes only after
+those checks pass and module/harness/artifact hashes remain unchanged. Hosted
+Linux coverage now requires this suite. Raw firmware keeps its separate parent
+measurement contract; this does not add a device-access support claim.
+
+The new admission policy binds the exact analyzer session, source/native/JAR
+identity, unchanged saved program, compiler/Forge static GDB values, deterministic
+baseline output hashes and strict validator result. It requires the precise
+post-control inventory, including the deliberately incompatible formatter input.
+The first admission attempt rejected that intentional `formatters.json` input;
+`afd5a903` corrects the expected inventory by requiring its exact known contents,
+while still rejecting extra files or changed outputs. It also rejects boolean or
+floating-point values in integer debugger observations. All **291 coverage-policy
+tests pass**; workflow lint and whitespace checks pass.
+
+The current-JAR x86-64 run builds its compiler reference, verifies raw register
+bytes and the changed-bytes negative control, imports/curates/exports/repeats,
+checks LLVM/readelf/strict libdwarf, compares static GDB layouts/values/qualifiers
+and alias values, then runs all 16 failure controls. The saved program and all
+four original/output artifacts remain unchanged. The one control JVM contributes
+coverage; preceding reference/export checks establish its artifact baseline.
+The installed JAR/native metadata are restored afterward. The owned 9.0 MB
+Java 21 script cache was removed; raw coverage and selected artifacts remain.
+
+The verified partial current-JAR union is now **801 sessions** (211 JavaExec,
+470 isolated Java/native-path, 120 headless), with all 255 sources/901 classes:
+
+| Scope | Covered lines | Covered branches |
+| --- | ---: | ---: |
+| Overall Java | 27,706 / 29,792 (93.0%) | 21,124 / 25,888 (81.6%) |
+| Binary/location correctness | 18,418 / 19,203 (95.9%) | 15,484 / 18,736 (82.6%) |
+| File transactions/validation | 5,566 / 6,677 (83.4%) | 3,271 / 4,250 (77.0%) |
+
+This adds 33 lines/13 branches in `GhidraMmioProfile` and one exporter branch.
+Evidence is under `.forge-work/scratch/coverage-expansion/mmio-current-4bd11`
+and `mmio-refresh-verified-4bd11`. The final summary SHA-256 is
+`0f2f62b1743f09a889176abf9f734c8ecdba0ee3337546800772f7a06f4ba3e4`.
+The original run checkout is `c71e513a`, with executed harness code committed in
+`294ccb43`. Verification binds runtime sources to `afd5a903`. The admission module
+was captured as unexecuted context before its inventory correction: its original
+hash/copy are retained separately from the applied admission hash and snapshot.
+No runtime source provenance is rewritten. The failed initial admission report
+remains under `mmio-refresh-4bd11`; it is not an accepted measurement.
+
+Issue #209 remains **incomplete**: the unchanged per-critical-group targets,
+fresh Windows/full hosted cohort, protected merge and actual-main publication
+still apply. CI `44015264480` is finishing its extension build; the Windows
+preflight dependency fix and this measurement await the next revision's run.
+Storage is READY: 12.42/100 GiB scratch, 2.03/10 GiB cache, 6.73/10 GiB evidence.
+
 ## ARM32 alias boundary contracts and Windows preflight dependency
 
 **CONFIRMED, local component validation:** `c456355f` adds 321 assertions using
