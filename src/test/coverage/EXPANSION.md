@@ -7426,3 +7426,36 @@ Evidence: .forge-work/scratch/report-inventory-combinations.log,
 report-inventory-mutants/{result.json,*.log}, and
 coverage-recovery/report-inventory-combinations/{result.json,sessions.tsv,
 counts.json,gaps.json,xml/combined.xml}.
+
+### Attachment invocation UTF-8 transport bounds (#209)
+
+Acceptance: ATTACH and REFRESH requests accept exactly262,144 UTF-8 bytes,
+refuse one extra byte independently of the16,384 UTF-16-unit per-path limit,
+require every operation/recovery/tool path to be absolute, and honor cancellation
+before inspecting a missing invocation file. The tests calculate padding from
+the actual serialized envelope and use multibyte path text. Parsing is exercised
+without creating referenced files, running helpers or granting authority; the
+fixture directory snapshot stays unchanged. Missing/extra tool inventories and
+null recovery selection are also rejected.
+
+Guarded Java25/Ghidra12.0.3 `./gradlew --no-daemon attachmentInvocationSmoke`
+passes131 checks in2seconds. Guarded mutation-check.py with compiled main/test
+classes, the same Java/Ghidra installations and repeated --only selectors for
+invocation-counts-characters-not-bytes, invocation-rejects-exact-byte-limit,
+invocation-ignores-tool-inventory and invocation-ignores-operation-paths passes
+its unchanged baseline and detects all four faults by behavioral assertions
+(2.816seconds). No production Java or emitted artifact changes.
+
+Guarded measure-stack.py invocation-transport-boundaries
+ ghidradwarfforge.output.AttachmentInvocationSmoke and verify-local-addition.py
+invocation-transport-boundaries report-inventory-combinations verify the added
+raw session/current test hashes against unchanged production bytecode. Diagnostic
+union gains1line/4branches in AttachmentInvocation, no losses;1,363sessions,
+255sources/901classes retained. Overall28,883/29,802lines22,468/25,902branches;
+file operations3,815/4,250branches(10short90%), binary/location616short90%.
+Historical cohorts remain; full current hosted acceptance is still unproven.
+
+Evidence: .forge-work/scratch/invocation-transport-boundaries.log,
+invocation-transport-mutants/{result.json,*.log}, and
+coverage-recovery/invocation-transport-boundaries/{result.json,sessions.tsv,
+counts.json,gaps.json,xml/combined.xml}.

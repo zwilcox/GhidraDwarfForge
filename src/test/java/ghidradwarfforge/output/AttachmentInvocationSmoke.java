@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
@@ -17,6 +19,7 @@ public final class AttachmentInvocationSmoke {
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("forge-invocation-λ ");
         try {
+            transportBoundaries(root);
             for (String name : new String[] { "target", "sidecar", "source", "exportReport", "previousReceipt",
                     "previousSidecar", "previousSource", "retainedBackup", "helper", "readelf", "llvm", "strict", "configuration" }) {
                 Files.writeString(root.resolve(name), "owned sentinel " + name);
@@ -107,6 +110,73 @@ public final class AttachmentInvocationSmoke {
         var successful = new ClosingInput(valid.getBytes(StandardCharsets.UTF_8));
         AttachmentInvocation.read(successful, () -> false);
         equal(true, successful.closed);
+    }
+
+    private static void transportBoundaries(Path root) throws Exception {
+        var initial = snapshot(root);
+        for (boolean refresh : new boolean[] {false, true}) {
+            int count = refresh ? 19 : 15;
+            var paths = new ArrayList<Path>();
+            for (int i = 0; i < count; i++) paths.add(root.resolve("path" + i));
+            var selected = fromPaths(refresh, paths);
+            // Transport parsing alone grants no filesystem authority: these
+            // paths intentionally do not exist, and are never opened here.
+            for (int i = 0; i < count; i++) {
+                var invalid = new ArrayList<>(paths);
+                invalid.set(i, Path.of("relative"));
+                rejects(() -> fromPaths(refresh, invalid));
+            }
+            rejects(() -> new AttachmentInvocation(selected.operation(), Map.of(), selected.recoveryInvocation()));
+            var extra = new HashMap<>(selected.validatorTools());
+            extra.put("extra", root.resolve("extra"));
+            rejects(() -> new AttachmentInvocation(selected.operation(), extra, selected.recoveryInvocation()));
+            rejects(() -> new AttachmentInvocation(selected.operation(), selected.validatorTools(), null));
+
+            int limit = 256 * 1024;
+            int missing = limit - selected.toJson().getBytes(StandardCharsets.UTF_8).length;
+            int last = -1;
+            for (int i = 0; i < paths.size() && missing > 0; i++) {
+                String old = paths.get(i).toString();
+                int extraBytes = Math.min(missing, (16384 - old.length()) * 2);
+                String padding = "λ".repeat(extraBytes / 2) + (extraBytes % 2 == 0 ? "" : "x");
+                paths.set(i, Path.of(old + padding));
+                missing -= extraBytes;
+                last = i;
+            }
+            equal(0, missing);
+            String exact;
+            try { exact = fromPaths(refresh, paths).toJson(); }
+            catch (IllegalArgumentException refused) { throw new AssertionError("exact byte-limit request refused", refused); }
+            equal(limit, exact.getBytes(StandardCharsets.UTF_8).length);
+            equal(fromPaths(refresh, paths), read(exact));
+            // One extra ASCII byte, while every path stays within its own
+            // UTF-16 limit, isolates the aggregate UTF-8 transport bound.
+            if (paths.get(last).toString().length() >= 16384) throw new AssertionError("no boundary padding room");
+            paths.set(last, Path.of(paths.get(last) + "x"));
+            rejects(() -> fromPaths(refresh, paths).toJson());
+            rejects(() -> read(exact + " "));
+
+            Path missingFile = root.resolve("not-created.json");
+            try {
+                AttachmentInvocation.read(missingFile, () -> true);
+                throw new AssertionError("path cancellation ignored");
+            }
+            catch (CancellationException expected) { checks++; }
+            // A cancellation must win over nonexistent-file rejection.
+            equal(false, Files.exists(missingFile));
+        }
+        equal(initial, snapshot(root));
+    }
+
+    private static AttachmentInvocation fromPaths(boolean refresh, List<Path> paths) {
+        var prior = refresh ? new AttachmentOperation.Refresh(paths.get(15), paths.get(16),
+            paths.get(17), paths.get(18)) : null;
+        var request = new AttachmentOperation.Request(paths.get(0), paths.get(1), paths.get(2),
+            paths.get(3), paths.get(4), paths.get(5), paths.get(6), paths.get(7), paths.get(8), prior);
+        var tools = new HashMap<String, Path>();
+        String[] names = {"helper", "readelf", "llvm", "strict", "configuration"};
+        for (int i = 0; i < names.length; i++) tools.put(names[i], paths.get(10 + i));
+        return new AttachmentInvocation(request, tools, paths.get(9));
     }
 
     private static AttachmentInvocation read(String json) throws IOException {
