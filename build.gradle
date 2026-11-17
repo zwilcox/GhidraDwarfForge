@@ -2087,6 +2087,7 @@ tasks.register("mipsAggregateCallPolicySmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.MipsAggregateCallPolicySmoke"
+    systemProperty "java.io.tmpdir", System.getenv("TMPDIR") ?: System.getProperty("java.io.tmpdir")
 }
 
 tasks.register("lexicalScopeEvidenceSmoke", JavaExec) {

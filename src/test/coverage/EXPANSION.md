@@ -7011,3 +7011,30 @@ and 3,775/4,250 branches (50 short). Raw execution hash, test source hashes and
 unique manifest extension verified. Historical cohorts remain in this diagnostic;
 it is not current-head hosted acceptance. Evidence:
 `.forge-work/scratch/coverage-recovery/mips-wide-signatures/`.
+
+### MIPS O32 metadata admission (#209, local diagnostic)
+
+Acceptance: aggregate-return definitions, declarations and callback types refuse
+independently inconsistent ELF/ABI metadata while preserving recovered signatures,
+existing restrictions and original bytes. Expanded `MipsAggregateCallPolicySmoke`
+with 14 one-field disagreements, all eight PIC/CPIC/NOREORDER flag combinations,
+ET_EXEC/ET_DYN, both accepted odd-register flag values, and an O32 record inside
+ELF64. Both byte orders run the checks. The task honors the guard's TMPDIR.
+
+Guarded `./gradlew --no-daemon mipsAggregateCallPolicySmoke` passed 12,444 checks
+in 3 seconds. The first run correctly hit input-change protection because the
+fixture was mutated after reading its ElfImage snapshot; the test now performs
+metadata cases before taking that snapshot. Production behavior was unchanged.
+Eight targeted compiled mutants were caught by Java assertions, baseline passed,
+and production source hash verified (3.473 seconds). Evidence:
+`.forge-work/scratch/mips-o32-metadata-refreshed.log` and
+`.forge-work/scratch/mips-o32-metadata-mutants/result.json`.
+
+The verified diagnostic adds 14 covered branch outcomes, no lines. It contains
+1,407 unique sessions against unchanged production JAR58bd, 255 sources/901 classes.
+Overall 28,859/29,802 lines and 22,346/25,902 branches; binary/location
+18,622/19,213 lines and 16,177/18,750 branches (698 outcomes short of 90%). File
+operations remain 6,502/6,677 lines and 3,775/4,250 branches (50 short). Raw
+execution/test-source hashes and exact manifest extension verified. Historical
+cohorts remain; this is not hosted acceptance for the current head. Evidence:
+`.forge-work/scratch/coverage-recovery/mips-o32-metadata/`.
