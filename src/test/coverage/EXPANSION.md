@@ -8169,3 +8169,31 @@ are unchanged. This mixed diagnostic cohort is not final hosted acceptance.
 
 Evidence: `.forge-work/scratch/unwind-memory.log`,
 `unwind-memory-mutants/result.json`, and `coverage-recovery/unwind-memory/`.
+
+## Unwind call-summary ownership
+
+`unwindFlowSmoke` now includes 2,446 call-summary cases using independent
+BigInteger arithmetic and byte-level ownership checks across widths one through
+eight. They cover exact/unknown write bounds, signed-bound overflow, positive
+and negative stack adjustments, target-width overflow, unknown/non-affine stack
+anchors, exact register preservation and partial aliases that do not authorize
+whole-register preservation. Caller values and saved slots must match the
+summary, and newly released stack memory cannot remain owned. Summaries with
+out-of-width adjustments are rejected. The input state remains unchanged.
+
+The guarded parent passes in 3 seconds with 2,446 call-summary, 4,760 memory,
+1,808 arithmetic cases and 105 existing checks. Seven compiled faults are caught
+by assertions with a passing baseline in 3.181 seconds: ignoring write bounds,
+dropping exact-boundary slots, wrapping a bound, preserving partial aliases,
+forgetting adjustments, retaining released memory and truncating out-of-width
+summaries. Production code is unchanged. This primarily strengthens assertions
+on paths already executed elsewhere; it adds only one new branch outcome.
+
+Diagnostic `unwind-call-memory` contains 1,339 sessions covering 28,904/29,802
+lines and 22,686/25,902 branches overall. Binary/location critical coverage is
+16,465/18,750 branches, 410 short of 90%. The unchanged production JAR and full
+255-source/901-class denominator remain in use. This mixed diagnostic cohort
+is not final hosted acceptance.
+
+Evidence: `.forge-work/scratch/unwind-call-memory.log`,
+`unwind-call-memory-mutants/result.json`, and `coverage-recovery/unwind-call-memory/`.
