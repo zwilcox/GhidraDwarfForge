@@ -25,12 +25,14 @@ stack_transitions = combined.module('stack_transition_admission', HERE / 'stack-
 producer_failures = combined.module('producer_failure_admission', HERE / 'producer-failure-admission.py')
 qualified_types = combined.module('qualified_type_admission', HERE / 'qualified-type-admission.py')
 function_entries = combined.module('function_entry_admission', HERE / 'function-entry-admission.py')
+build_id_sources = combined.module('build_id_source_admission', HERE / 'build-id-source-bundle-admission.py')
 metadata_failures = combined.module('metadata_failure_admission', HERE / 'linux-metadata-failure-admission.py')
 windows_metadata_failures = combined.module('windows_metadata_failure_admission', HERE / 'windows-metadata-failure-admission.py')
 windows_directory_failures = combined.module('windows_directory_failure_admission', HERE / 'windows-directory-failure-admission.py')
 REQUIRED = {
     'linux': ('target-preflight', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation', 'build-id-identity',
+        'build-id-source-bundle',
         'instruction-context', 'source-context', 'annotation-inventory', 'equate-evidence',
         'equate-constants', 'equate-retained-names', 'bitfield-values',
         'annotation-export', 'failed-source-export', 'class-scopes', 'inheritance-producer',
@@ -515,6 +517,8 @@ def load_job(root, jar, kind, commit, run):
                 source_bundle_binding_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] in ('function-entry-export', 'function-entry-alias-export'):
                 function_entries.oracle(record, files.read(directory / 'oracle.json'))
+            if record['suite'] == 'build-id-source-bundle':
+                build_id_sources.oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'].startswith('gui-script-manager'):
                 gui_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'lexical-shadow':

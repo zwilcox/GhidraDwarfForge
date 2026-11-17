@@ -62,6 +62,7 @@ def main():
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     source = harness / 'fixtures/multifile-source.c'
     protected_paths = [source, Path(__file__), harness / 'multifile-target-gdb.py',
+        harness / 'build-id-source-bundle.py',
         harness / 'multifile-target-gdb.sh', harness / 'check-multifile-semantics.py',
         harness / 'qemu-socket.sh', harness / 'check-dwarfdump.py',
         harness / 'ghidra_scripts/RebaseFixtureProgram.java',
@@ -142,6 +143,14 @@ def main():
             '--report', case / 'multi-report.json', '--original', original, '--sidecar', sidecar,
             '--index', Path(str(sidecar) + '.c'), '--work', case / 'attachment-source-binding',
             '--java', args.java or shutil.which('java')])
+        if args.role == 'exec':
+            strict = os.environ.get('DWARFDUMP') or shutil.which('dwarfdump')
+            assert strict, 'split-source installation requires the pinned strict validator'
+            run('build-id-source-bundle', ['python3', harness / 'build-id-source-bundle.py',
+                '--export', case, '--ghidra', ghidra, '--jar', module / 'lib/GhidraDwarfForge.jar',
+                '--java', args.java or shutil.which('java'), '--strict-validator', strict,
+                '--helper', module / 'os/linux_x86_64/forge-validator-supervisor',
+                '--work', case / 'build-id-source-bundle'])
     assert protected == {path: digest(Path(path)) for path in protected}
     (case / 'acceptance.json').write_text(json.dumps({'status': 'MULTIFILE_TARGET_PASS',
         'target': args.target, 'role': args.role, 'sourceInventory': inventory, 'protected': protected,
