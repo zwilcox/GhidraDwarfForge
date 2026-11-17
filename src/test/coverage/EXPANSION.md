@@ -7958,3 +7958,34 @@ historical cohort does not satisfy final hosted acceptance.
 Evidence: `.forge-work/scratch/unwind-metadata-contracts-final.log`,
 `unwind-metadata-contracts-mutants/result.json`, and
 `coverage-recovery/unwind-metadata-contracts/`.
+
+## Current-run Linux host and firmware evidence
+
+The successful `extension-build` and `cortex-m-profile` jobs from run
+`44150222826` now replace their older diagnostic coverage sessions. Their exact
+job IDs are `134276166465` and `134300299426`; both are completed successfully,
+with every recorded step successful or intentionally skipped. The producing
+merge `3bdd9b76f85c0d4d49b169a049b23caaf6e824cd` contains PR head
+`a5a29b1d9512d81f1923da2d23ea2d4a2ff35ebd`. Production sources are unchanged
+between that head and the queued local work, and all sessions match the existing
+production JAR SHA-256 and class inventory.
+
+Authenticated artifacts are Linux host `14360978132` (277,435 bytes, SHA-256
+`87b5ded986a889d1999cddf05938e30bd2f1c104a768f023b379eb5173a571c3`) and
+firmware `14360614334` (280,253 bytes, SHA-256
+`192adf5e16962e449413b18d8df2853cc0cea5bc5f72c4effa63fc7deaf16b11`). Downloads
+and extraction ran under the storage guard, with archive and extraction caps.
+Current admission checks validate receipts, oracle evidence and raw session
+bindings; independently regenerated reports reproduce the hosted layer counts.
+
+The 45 current Linux host sessions replace 90 older sessions, and four current
+firmware sessions replace eight older sessions. The resulting diagnostic union
+has 1,329 unique sessions and unchanged coverage: 28,899/29,802 lines,
+22,634/25,902 branches, with the binary/location critical group still 462 branch
+outcomes short of 90%. No coverage gain is claimed for this evidence refresh.
+Other historical sessions remain, and this run does not validate queued local
+commits; full hosted acceptance remains outstanding.
+
+Evidence is under `.forge-work/scratch/coverage-recovery/`: authenticated archives
+and manifests in `current-44150222826/`, job and origin records, regenerated
+reports and unions in `linux-host-44150222826/` and `firmware-44150222826/`.
