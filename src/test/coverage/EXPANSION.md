@@ -8993,3 +8993,25 @@ Overall 28,934/29,802 lines and 22,949/25,902 branches; binary/location critical
 16,724/18,750 branches, 151 short of 90%. Same authenticated JAR/full 255-source
 scope, file counters unchanged. No production changes. Hosted acceptance and
 protected integration remain pending.
+
+### Annotation composition input boundaries (2026-11-17)
+
+CONFIRMED: annotated source checks now cover empty source/catalog output,
+invalid placement identities, inconsistent token-address placement, negative
+budgets, missing LF termination, out-of-text token/mapped rows and payloads
+exceeding the remaining byte budget. Empty catalog bytes are independently
+specified and verified; inserted rows remain comments without executable
+mapping evidence. Existing inverse-mapping checks and all 538 cancellation
+points still run in the parent suite.
+
+Guarded annotatedSourceSmoke passes in 2 seconds with 24 negative cases.
+Three compiled faults were caught by behavioral assertions in 2.242 seconds:
+empty annotation identity, address-bearing catalog insertion and unterminated
+source acceptance. Evidence `.forge-work/scratch/annotation-composition-bounds.log`
+and `.forge-work/scratch/annotation-composition-mutants/result.json`.
+
+Verified diagnostic annotation-composition-bounds adds three lines and ten
+branches, 1,374 sessions. Overall 28,937/29,802 lines and 22,959/25,902 branches;
+binary/location critical 16,734/18,750 branches, 141 short of 90%. Full unchanged
+255-source scope and authenticated JAR; file counts unchanged. No production
+changes. Hosted acceptance, protected merge and actual-main publication pending.

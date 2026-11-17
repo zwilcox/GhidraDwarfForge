@@ -116,6 +116,7 @@ public final class AnnotatedSourceSmoke {
 
     public static void main(String[] args) throws Exception {
         if (args.length > 1) throw new IllegalArgumentException("[output.c]");
+        compositionBounds();
         var input = SyntheticSourceFile.build("annotation fixture", "test", List.of(
             new FunctionText("first", 0x1000, "int first(int input)\n{\n    return input + 1;\n}\n", null,
                 List.of(new RelativeLine(3, List.of(0x1004L, 0x1104L)))),
@@ -210,5 +211,45 @@ public final class AnnotatedSourceSmoke {
         System.out.println("annotated-source=PASS annotation-lines=" + result.annotationLines().size() +
             " preserved-mapped-rows=" + input.mappedLines().size() + " rejected=" + negatives +
             " cancellation-points=" + calls.get());
+    }
+
+    private static void compositionBounds() {
+        for (String blank : List.of("", " \t")) {
+            reject(() -> new Insertion(blank, "label", "text", 0, null));
+            reject(() -> new Insertion("key", blank, "text", 0, null));
+        }
+        reject(() -> new Insertion("key", "label", "text", -1, null));
+        reject(() -> new Insertion("key", "label", "text", 0, 1L));
+        reject(() -> new Insertion("key", "label", "text", 1, null));
+        var empty = new SyntheticSourceFile(new byte[0], List.of(), List.of(), List.of());
+        verify(empty, AnnotatedSourceFile.compose(empty, List.of(), 0, () -> false));
+        reject(() -> AnnotatedSourceFile.compose(empty, List.of(), -1, () -> false));
+        var note = new Insertion("key", "label", "", 0, null);
+        var catalog = AnnotatedSourceFile.compose(empty, List.of(note), 100, () -> false);
+        verify(empty, catalog);
+        verifyPayload(catalog, List.of(note));
+        if (!new String(catalog.source().utf8(), StandardCharsets.UTF_8).equals("/* label */\n/*  */\n") ||
+                !catalog.annotationLines().equals(List.of(1, 2))) {
+            throw new AssertionError("empty source catalog gained executable content");
+        }
+        var raw = new SyntheticSourceFile("x\n".getBytes(StandardCharsets.UTF_8), List.of(), List.of(), List.of());
+        reject(() -> AnnotatedSourceFile.compose(raw, List.of(new Insertion("key", "label", "text", 2, 1L)),
+            100, () -> false));
+        reject(() -> AnnotatedSourceFile.compose(new SyntheticSourceFile(new byte[] {'x'}, List.of(), List.of()),
+            List.of(), 100, () -> false));
+        for (int line : new int[] {0, 2}) {
+            var badMapped = new SyntheticSourceFile(raw.utf8(), List.of(),
+                List.of(new SyntheticSourceFile.SourceLine(line, List.of(1L))), List.of());
+            reject(() -> AnnotatedSourceFile.compose(badMapped, List.of(), 100, () -> false));
+            var badToken = new SyntheticSourceFile(raw.utf8(), List.of(), List.of(),
+                List.of(new SyntheticSourceFile.FunctionTokens("f", 1,
+                    List.of(new SyntheticSourceFile.SourceLine(line, List.of(1L))))));
+            reject(() -> AnnotatedSourceFile.compose(badToken, List.of(), 100, () -> false));
+        }
+        // Payloads can exceed the remaining budget before escaping or wrapping.
+        for (String payload : List.of("x".repeat(100), "x".repeat(100) + "\n")) {
+            reject(() -> AnnotatedSourceFile.compose(empty,
+                List.of(new Insertion("key", "label", payload, 0, null)), 20, () -> false));
+        }
     }
 }
