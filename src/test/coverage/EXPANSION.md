@@ -7287,3 +7287,36 @@ Verified diagnostic inherited-frame-bytes adds three lines and 11 branches:
 28,872/29,802 lines and 22,428/25,902 branches; critical binary/location
 16,259/18,750 branches (616 short of 90%), file operations 3,775/4,250 (50 short).
 Historical cohorts remain; final hosted acceptance is outstanding.
+
+### Current Windows cleanup evidence and stricter admission (#209)
+
+Windows-host job134302506662 in run44150222826 completed successfully.
+Authenticated coverage artifact14363985635 (414,992 compressed bytes) against
+GitHub's SHA-256, run/head and producing merge3bdd9b76f85c0d4d49b169a049b23caaf6e824cd.
+Bounded extraction, unchanged production JAR58bd and all901 classes verified.
+The current admission path checks all raw sessions, receipts, native failure
+oracles and XML hashes. Regenerating integration-report reproduces the hosted
+layers exactly. The downstream windows-attachment-gdb job subsequently passed
+as well; the architecture lanes are still running.
+
+The existing admission checker did not require the 12 new privilege close
+cases, although the native harness already checked them. It now requires their
+complete ordered inventory, original privilege restoration, exactly one real
+handle release, preserved primary/secondary error precedence and diagnostics.
+Eight admission unit tests pass, including per-field corruption of every close
+case. The authenticated current Windows artifact passes the stricter policy.
+No production Java changes or Linux simulation of Windows privilege behavior.
+
+Diagnostic coverage-recovery/windows-44150222826 replaces all114 historical
+Windows sessions with57 completed current-run sessions. 1,359 total sessions,
+unchanged255sources/901classes; other historical cohorts remain, so this is not
+final hosted acceptance. The union gains4lines/14branches in
+WindowsAttachmentPrivilege without losing any coverage. Overall28,876/29,802
+lines and22,442/25,902branches; critical binary/location16,259/18,750branches
+(616short90%), file operations3,789/4,250branches(36short90%).
+
+Evidence: .forge-work/scratch/windows-close-admission.log,
+coverage-recovery/current-44150222826/integration-java-coverage-windows/,
+coverage-recovery/windows-44150222826/{job.json,producing-merge.json,result.json,
+regenerated/summary.json,sessions.tsv,xml/combined.xml}, and guarded
+coverage-recovery/admit-windows-44150222826.log.

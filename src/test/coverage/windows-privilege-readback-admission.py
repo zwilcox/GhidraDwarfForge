@@ -14,6 +14,11 @@ CASES = (
     'duplicate-privilege',
     'missing-privilege',
 )
+CLOSE_CASES = (
+    'adjust-false', 'adjust-not-assigned', 'previous-short', 'previous-large',
+    'previous-count-negative', 'previous-count-excess', 'previous-other-luid',
+    'restore-readback', 'adjust-runtime', 'close-only', 'adjust-and-close', 'runtime-and-close',
+)
 
 
 def oracle(record, evidence):
@@ -34,6 +39,16 @@ def oracle(record, evidence):
                        for key in ('tokenUnchanged', 'retryPassed', 'scopeRestored'))
                 or not isinstance(row.get('diagnostic'), str) or not row['diagnostic'].strip()):
             raise ValueError('Windows privilege readback fault lacks cleanup, preservation or retry evidence')
+    closing = result.get('closeCases')
+    if (not isinstance(closing, list) or any(not isinstance(row, dict) for row in closing)
+            or [row.get('name') for row in closing] != list(CLOSE_CASES)):
+        raise ValueError('Windows privilege coverage lacks complete restoration/close failures')
+    for row in closing:
+        if (row.get('originalStateRestored') is not True
+                or type(row.get('realHandlesClosed')) is not int or row['realHandlesClosed'] != 1
+                or row.get('suppressedCloseFailure') is not row['name'].endswith('-and-close')
+                or not isinstance(row.get('diagnostic'), str) or not row['diagnostic'].strip()):
+            raise ValueError('Windows privilege close fault lacks restoration, handle release or error precedence evidence')
     if (any(type(result.get(key)) is not int or result[key] <= 0 for key in ('handlesBefore', 'handlesAfter'))
             or result['handlesBefore'] != result['handlesAfter']):
         raise ValueError('Windows privilege readback faults lack stable process handle count')
