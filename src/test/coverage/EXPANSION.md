@@ -7926,3 +7926,35 @@ and 22,628/25,902 branches; critical binary/location branches are 16,407/18,750,
 denominator changed. Final current hosted validation, protected merge and main
 publication remain unfulfilled; CI44150222826 still has three architecture jobs
 live and no failed jobs at the last poll.
+
+## Unwind instruction metadata consistency
+
+The existing `ghidraUnwindInstructionsSmoke` now checks contradictory API
+observations around real x86-64 and AArch64 decoded instructions. A transparent
+API view must reproduce the original graph and evidence. Independently changed
+parsed lengths, byte counts, decoded bytes, short memory reads, unreadable memory,
+and null or nonadjacent fallthroughs must reject capture with the relevant
+reason. Every case preserves code bytes, the saved function body, and the program
+modification counter; a normal retry reproduces the original capture.
+
+The guarded parent task passes in 6 seconds: 135 admission assertions, 882
+call-site effect assertions, and 1,849 existing unwind assertions. Five compiled
+faults that ignore length, byte-count, short-read, stale-byte, or adjacency checks
+are caught by behavioral assertions; the unchanged baseline passes (13.639
+seconds for the mutation run). An initial test compilation failed because the
+iterator adapter lacked `iterator()`; that run contributes no coverage evidence.
+Production code is unchanged, and these API consistency tests make no new ISA
+or emitted-CFI support claim.
+
+Verified diagnostic union `unwind-metadata-contracts` contains 1,378 sessions with
+the same 255 production sources / 901 classes and production JAR SHA-256
+`58bd7a71517452ca3f33e372060abd47f29166850cdcf464e3b3cb0f2a2a158b`.
+The task adds three covered lines and six branch outcomes. Overall counts are
+28,899/29,802 lines and 22,634/25,902 branches. The binary/location critical group
+is 16,413/18,750 branches, still 462 short of its 90% target. File-operation
+critical targets remain met in this diagnostic union only. This mixed local and
+historical cohort does not satisfy final hosted acceptance.
+
+Evidence: `.forge-work/scratch/unwind-metadata-contracts-final.log`,
+`unwind-metadata-contracts-mutants/result.json`, and
+`coverage-recovery/unwind-metadata-contracts/`.

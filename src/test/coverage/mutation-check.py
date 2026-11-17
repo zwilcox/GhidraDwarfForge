@@ -1816,6 +1816,16 @@ ARM_COMPOSITE_MUTANTS = [
 ]
 
 UNWIND_CAPTURE_MUTANTS = [
+    ("unwind-capture-ignores-parsed-length", UNWIND_CAPTURE, UNWIND_CAPTURE_TEST,
+     "instruction.getLength() != instruction.getParsedLength()", "false"),
+    ("unwind-capture-ignores-parsed-byte-count", UNWIND_CAPTURE, UNWIND_CAPTURE_TEST,
+     "bytes.length != instruction.getLength()", "false"),
+    ("unwind-capture-ignores-short-memory-read", UNWIND_CAPTURE, UNWIND_CAPTURE_TEST,
+     "program.getMemory().getBytes(address, live) != live.length", "program.getMemory().getBytes(address, live) < 0"),
+    ("unwind-capture-trusts-stale-decoded-bytes", UNWIND_CAPTURE, UNWIND_CAPTURE_TEST,
+     "!Arrays.equals(bytes, live)", "false"),
+    ("unwind-capture-trusts-nonadjacent-fallthrough", UNWIND_CAPTURE, UNWIND_CAPTURE_TEST,
+     "!next.equals(instruction.getMaxAddress().next())", "false"),
     ("unwind-capture-trusts-thunk-body", UNWIND_CAPTURE, UNWIND_CAPTURE_TEST,
      "function.isExternal() || function.isThunk() || body.isEmpty()", "function.isExternal() || body.isEmpty()"),
     ("unwind-capture-trusts-changed-body", UNWIND_CAPTURE, UNWIND_CAPTURE_TEST,

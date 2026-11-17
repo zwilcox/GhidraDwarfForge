@@ -1,6 +1,8 @@
 package ghidradwarfforge.unwind;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
@@ -14,6 +16,12 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.listing.InstructionIterator;
+import ghidra.program.model.listing.Listing;
+import ghidra.program.model.listing.Program;
+import ghidra.program.model.mem.Memory;
+import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.util.DefaultLanguageService;
@@ -36,6 +44,7 @@ public final class UnwindCaptureAdmissionSmoke {
     static void run() throws Exception {
         checks = 0;
         savedOverrides();
+        metadataConsistency();
         try (var fixture = new Fixture("x86:LE:64:default", HexFormat.of().parseHex("ffe0"))) {
             require(fixture.program.getListing().getInstructionAt(fixture.entry).getFlowType().isComputed(),
                 "actual computed-jump premise");
@@ -128,6 +137,99 @@ public final class UnwindCaptureAdmissionSmoke {
             finally { program.endTransaction(transaction, false); }
             require(accepted(fixture).equals(original), "body change refusal poisoned retry");
         }
+    }
+
+    /** Contradictory API observations around actual decoded bytes, not new ISA support. */
+    private static void metadataConsistency() throws Exception {
+        for (String id : List.of("x86:LE:64:default", "AARCH64:LE:64:v8A")) {
+            String hex = id.startsWith("x86") ? "b80100000090c3" : "200080d21f2003d5c0035fd6";
+            try (var fixture = new Fixture(id, HexFormat.of().parseHex(hex))) {
+                var baseline = accepted(fixture);
+                for (String fault : List.of("control", "parsed-length", "parsed-byte-count",
+                        "stale-bytes", "short-read", "unreadable", "null-fallthrough", "wrong-fallthrough")) {
+                    var first = fixture.program.getListing().getInstructionAt(fixture.entry);
+                    Instruction altered = view(Instruction.class, first, (method, args) -> switch (method) {
+                        case "getParsedLength" -> fault.equals("parsed-length") ? first.getLength() + 1 : DELEGATE;
+                        case "getParsedBytes" -> {
+                            byte[] bytes = first.getParsedBytes();
+                            if (fault.equals("parsed-byte-count")) yield Arrays.copyOf(bytes, bytes.length - 1);
+                            if (fault.equals("stale-bytes")) { bytes[0] ^= 1; yield bytes; }
+                            yield DELEGATE;
+                        }
+                        case "getFallThrough" -> fault.equals("null-fallthrough") ? null :
+                            fault.equals("wrong-fallthrough") ? first.getFallThrough().add(1) : DELEGATE;
+                        default -> DELEGATE;
+                    });
+                    var listing = view(Listing.class, fixture.program.getListing(), (method, args) -> {
+                        if (!method.equals("getInstructions")) return DELEGATE;
+                        var iterator = fixture.program.getListing().getInstructions(fixture.function.getBody(), true);
+                        return new InstructionIterator() {
+                            @Override public java.util.Iterator<Instruction> iterator() { return this; }
+                            @Override public boolean hasNext() { return iterator.hasNext(); }
+                            @Override public Instruction next() {
+                                Instruction next = iterator.next();
+                                return next.getAddress().equals(fixture.entry) ? altered : next;
+                            }
+                        };
+                    });
+                    var memory = view(Memory.class, fixture.program.getMemory(), (method, args) -> {
+                        if (!method.equals("getBytes") || !args[0].equals(fixture.entry)) return DELEGATE;
+                        if (fault.equals("unreadable")) throw new MemoryAccessException("controlled read failure");
+                        if (fault.equals("short-read")) {
+                            byte[] destination = (byte[]) args[1];
+                            fixture.program.getMemory().getBytes(fixture.entry, destination);
+                            return destination.length - 1;
+                        }
+                        return DELEGATE;
+                    });
+                    var program = view(Program.class, fixture.program, (method, args) -> switch (method) {
+                        case "getListing" -> listing;
+                        case "getMemory" -> memory;
+                        default -> DELEGATE;
+                    });
+                    long modification = fixture.program.getModificationNumber();
+                    var body = new AddressSet(fixture.function.getBody());
+                    String label = id + "/" + fault;
+                    try {
+                        var captured = GhidraUnwindInstructions.capture(program, fixture.function, RAW,
+                            instruction -> null, TaskMonitor.DUMMY);
+                        require(fault.equals("control") && captured.equals(baseline), label + " accepted inconsistent metadata");
+                    }
+                    catch (IllegalArgumentException expected) {
+                        String diagnostic = switch (fault) {
+                            case "parsed-length" -> "incomplete, overridden or unsupported instruction";
+                            case "parsed-byte-count", "stale-bytes", "short-read" -> "instruction bytes changed";
+                            case "unreadable" -> "unreadable instruction";
+                            case "null-fallthrough", "wrong-fallthrough" -> "unproved fallthrough";
+                            default -> throw new AssertionError(label + " rejected valid control", expected);
+                        };
+                        require(expected.getMessage().contains(diagnostic), label + " wrong refusal: " + expected);
+                        if (fault.equals("unreadable")) require(expected.getCause() instanceof MemoryAccessException,
+                            label + " lost read failure cause");
+                    }
+                    require(fixture.program.getModificationNumber() == modification && fixture.function.getBody().equals(body),
+                        label + " changed saved program");
+                    fixture.requireCodeUnchanged();
+                    require(accepted(fixture).equals(baseline), label + " poisoned ordinary retry");
+                }
+            }
+        }
+    }
+
+    private static final Object DELEGATE = new Object();
+
+    @FunctionalInterface
+    private interface MethodOverride {
+        Object invoke(String method, Object[] arguments) throws Throwable;
+    }
+
+    private static <T> T view(Class<T> type, T original, MethodOverride override) {
+        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] { type }, (proxy, method, args) -> {
+            Object result = override.invoke(method.getName(), args);
+            if (result != DELEGATE) return result;
+            try { return method.invoke(original, args); }
+            catch (InvocationTargetException failure) { throw failure.getCause(); }
+        }));
     }
 
     private static void delaySlots(String language) throws Exception {
