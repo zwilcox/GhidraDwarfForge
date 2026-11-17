@@ -44,12 +44,13 @@ class DownloadTest(unittest.TestCase):
                 self.assertFalse(self.archive.exists())
                 self.assertEqual([], list(self.root.iterdir()))
             else:
-                builder.download_archive(self.archive)
+                downloaded_from = builder.download_archive(self.archive)
+                self.assertEqual((builder.URL, builder.FALLBACK_URL, builder.URL)[expected_calls - 1], downloaded_from)
                 self.assertEqual(b'abc', self.archive.read_bytes())
                 self.assertEqual([self.archive], list(self.root.iterdir()))
             self.assertEqual(expected_calls, opening.call_count)
-            for call in opening.call_args_list:
-                self.assertEqual((builder.URL,), call.args)
+            for call, expected in zip(opening.call_args_list, (builder.URL, builder.FALLBACK_URL, builder.URL)):
+                self.assertEqual((expected,), call.args)
                 self.assertEqual({'timeout': 60}, call.kwargs)
             self.assertEqual(expected_calls - 1, sleeping.call_count)
             self.assertEqual([2, 4][:expected_calls - 1], [call.args[0] for call in sleeping.call_args_list])
@@ -60,6 +61,7 @@ class DownloadTest(unittest.TestCase):
         self.assertEqual('17.1', builder.VERSION)
         self.assertEqual('14996f5f74c9f68f5a543fdc45bca7800207f91f92aeea6c2e791822c7c6d876', builder.ARCHIVE_SHA256)
         self.assertEqual('https://ftp.gnu.org/gnu/gdb/gdb-17.1.tar.xz', builder.URL)
+        self.assertEqual('https://sourceware.org/pub/gdb/releases/gdb-17.1.tar.xz', builder.FALLBACK_URL)
 
     def test_success(self):
         self.exercise([io.BytesIO(b'abc')], 1)
@@ -80,6 +82,12 @@ class DownloadTest(unittest.TestCase):
 
     def test_wrong_digest_is_not_retried(self):
         self.exercise([io.BytesIO(b'abx')], 1, ValueError)
+
+    def test_wrong_fallback_digest_is_not_retried(self):
+        self.exercise([urllib.error.URLError('primary offline'), io.BytesIO(b'abx')], 2, ValueError)
+
+    def test_interrupted_fallback_is_discarded_before_primary_retry(self):
+        self.exercise([urllib.error.URLError('primary offline'), Interrupted(b'ab'), io.BytesIO(b'abc')], 3)
 
     def test_oversized_response_is_not_retried(self):
         with patch.object(builder, 'MAX_ARCHIVE_BYTES', 2):

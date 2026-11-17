@@ -13,6 +13,13 @@ and its private data-directory path. It never installs over the system debugger.
 See `../../docs/ARM-BE8-PROFILE.md` for the GDB 15.1 failure and the paired 17.1
 reference. These debugger builds are validation tools, not shipped libraries.
 
+Source downloads use GNU's server first, GDB's Sourceware release server after
+a transport failure, then GNU for the final attempt. Every attempt must match
+the same pinned SHA-256; a checksum or size failure stops immediately. Private
+partial downloads are discarded and existing destination files are preserved.
+The build receipt records the successful download URL, or `null` when the caller
+supplied a local archive.
+
 ## Private ARM emulator reference
 
 `build-arm-qemu.py` is a separate, optional compiler-reference tool builder. It
