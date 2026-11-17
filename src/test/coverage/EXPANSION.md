@@ -6,6 +6,34 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Stable and listed memory locations under PIE relocation
+
+**CONFIRMED, local:** `stable-location-pie-verified/` passes twenty profiles
+against the unchanged production JAR `58bd7a71`: the four stable/listed and
+direct/indirect forms on x86-64, AArch64 and both MIPS byte orders, plus all four
+forms on an x86-64 PIE executable. Forty compiler/Forge GDB workflows check the
+program counter, object address, type size and live value at two instruction
+boundaries. PIE checks require a nonzero runtime load bias and the expected
+relocated object address. The indirect cases read through a loader-relocated
+pointer. The fixture changes its value from 42 to 43; its original constant-only
+form let GCC emit `DW_AT_const_value`, which was insufficient evidence of a live
+memory read. No production change was needed for PIE.
+
+Every profile passes GNU, LLVM and strict-libdwarf validation, deterministic
+reruns and original-input preservation. Strict validation retains the existing
+policy for byte-identical inherited-frame diagnostics. The MIPS cases retain
+32 address-overflow refusals and validated retries in total. Both selected
+compiled mutation faults are detected with the revised fixture; compilation or
+class-loading failure is not accepted as detection. All 304 coverage-policy
+tests and workflow lint pass.
+
+CI now requires the four x86-64 PIE cases as well as the existing executable
+cases on all five targets. Admission checks the ELF role and two runtime address
+checks per debugger, rejecting missing or duplicate profiles. ARM32 remains
+unverified locally because its cross-compiler is unavailable. These tests use
+an explicit fixture model through the real native exporter; they do not claim
+Ghidra variable-extraction coverage or a completed combined coverage goal.
+
 ## Stable memory locations: regression found and corrected
 
 **CONFIRMED:** extending the native location fixture to one stable interval exposed

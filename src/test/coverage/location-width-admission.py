@@ -21,9 +21,14 @@ def hash_value(value):
 
 def oracle(record, evidence):
     target, mode = evidence.get('target'), evidence.get('mode')
+    role = evidence.get('role')
     require(record.get('suite') == 'location-width-producer' and record.get('layer') == 'native-java'
         and record.get('host') == 'posix' and evidence.get('status') == 'PASS_LOCATION_WIDTH_PRODUCER'
         and target in TARGETS and mode in MODES, 'location-width profile differs')
+    require(role in ('exec', 'pie') and (role == 'exec' or target == 'x86_64')
+        and type(evidence.get('elfType')) is int and evidence['elfType'] == (3 if role == 'pie' else 2)
+        and type(evidence.get('runtimeAddressChecksPerDebugger')) is int
+        and evidence['runtimeAddressChecksPerDebugger'] == 2, 'location-width runtime addresses missing')
     require(hash_value(evidence.get('productionJarSha256'))
         and record.get('productionJarSha256') == evidence['productionJarSha256'], 'location-width JAR differs')
     require([row.get('label') for row in record.get('sessions', [])] == ['producer']
@@ -44,9 +49,11 @@ def oracle(record, evidence):
         and all(isinstance(key, str) and key and hash_value(value) for key, value in protected.items())
         and {evidence['productionJarSha256'], *sources.values(), *native.values()}.issubset(protected.values()),
         'location-width protected inputs missing')
-    return target, mode
+    return target, role, mode
 
 
 def cohort(cases, target):
-    require(target in TARGETS and sorted(cases) == sorted((target, mode) for mode in MODES),
-        'location-width cohort needs all four location forms on the matching target')
+    roles = ('exec', 'pie') if target == 'x86_64' else ('exec',)
+    require(target in TARGETS
+        and sorted(cases) == sorted((target, role, mode) for role in roles for mode in MODES),
+        'location-width cohort needs all four location forms and required ELF roles on the matching target')

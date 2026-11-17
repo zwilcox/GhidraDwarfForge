@@ -1240,17 +1240,22 @@ jobs:
         run: |
           export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
           export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections"
-          for mode in listed stable listed-indirect stable-indirect; do
-              python3 -B src/test/integration/location-width-producer.py \
-              --target "$TARGET" --mode "$mode" --results "$PWD/build/test-results/location-width-producer/$TARGET/$mode" \
-              --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
-              --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
-              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
-              --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME" --dwarfdump "$DWARFDUMP"
+          roles=(exec)
+          if [[ "$TARGET" == x86_64 ]]; then roles+=(pie); fi
+          for role in "${roles[@]}"; do
+              for mode in listed stable listed-indirect stable-indirect; do
+                  python3 -B src/test/integration/location-width-producer.py \
+                      --target "$TARGET" --role "$role" --mode "$mode" \
+                      --results "$PWD/build/test-results/location-width-producer/$TARGET/$role/$mode" \
+                      --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+                      --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
+                      --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME" --dwarfdump "$DWARFDUMP"
+              done
           done
           if [[ "$TARGET" == mips32be ]]; then
               python3 -B src/test/coverage/location-width-mutations.py \
-                  --baseline "$PWD/build/test-results/location-width-producer/$TARGET/stable" \
+                  --baseline "$PWD/build/test-results/location-width-producer/$TARGET/exec/stable" \
                   --output "$PWD/build/test-results/location-width-mutations" \
                   --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME"
           fi

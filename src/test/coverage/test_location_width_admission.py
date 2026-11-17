@@ -10,10 +10,11 @@ admission = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(admission)
 
 
-def fixture(target='mips32be', mode='stable'):
+def fixture(target='mips32be', mode='stable', role='exec'):
     record = {'suite': 'location-width-producer', 'layer': 'native-java', 'host': 'posix',
         'productionJarSha256': 'a' * 64, 'sessions': [{'label': 'producer'}]}
     evidence = {'status': 'PASS_LOCATION_WIDTH_PRODUCER', 'target': target, 'mode': mode,
+        'role': role, 'elfType': 3 if role == 'pie' else 2, 'runtimeAddressChecksPerDebugger': 2,
         'productionJarSha256': 'a' * 64, 'rejectedOverflowExports': 0 if target in ('x86_64', 'aarch64') else 4,
         'validators': ['readelf', 'llvm', 'strict'], 'compilerGdb': 'PASS', 'exportedGdb': 'PASS',
         'deterministic': True, 'inputPreserved': True, 'sidecarSha256': 'b' * 64,
@@ -33,9 +34,11 @@ class Admission(unittest.TestCase):
 
     def test_all_forms_for_each_target(self):
         for target in admission.TARGETS:
-            cases = [admission.oracle(*fixture(target, mode)) for mode in admission.MODES]
+            roles = ('exec', 'pie') if target == 'x86_64' else ('exec',)
+            cases = [admission.oracle(*fixture(target, mode, role))
+                for role in roles for mode in admission.MODES]
             admission.cohort(cases, target)
-            for i in range(4):
+            for i in range(len(cases)):
                 with self.subTest(target=target, missing=i), self.assertRaises(ValueError):
                     admission.cohort(cases[:i] + cases[i + 1:], target)
             with self.assertRaises(ValueError):
@@ -49,6 +52,8 @@ class Admission(unittest.TestCase):
                 ('productionJarSha256', '0' * 64), ('sessions', []), ('unmeasuredForcedHalts', [{}])]:
             self.reject(lambda r, e: r.update({key: value}))
         for key, value in [('status', 'PASS'), ('target', 'unknown'), ('mode', 'unknown'),
+                ('role', 'pie'), ('role', 'other'), ('elfType', 3), ('elfType', True),
+                ('runtimeAddressChecksPerDebugger', 0), ('runtimeAddressChecksPerDebugger', True),
                 ('rejectedOverflowExports', 0), ('rejectedOverflowExports', 3), ('productionJarSha256', '')]:
             self.reject(lambda r, e: e.update({key: value}))
 
