@@ -8,17 +8,17 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 807 verified
-sessions: 211 JavaExec, 557 native-Java and 39 headless. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 808 verified
+sessions: 211 JavaExec, 558 native-Java and 39 headless. Every available view
 retains all 255 production sources / 901 class files. Windows execution data
 and the remaining integration cohort are still missing; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 27,535 / 29,802 (92.4%) | 21,007 / 25,902 (81.1%) |
+| Overall | 27,538 / 29,802 (92.4%) | 21,011 / 25,902 (81.1%) |
 | Binary and location correctness | 18,314 / 19,213 (95.3%) | 15,439 / 18,750 (82.3%) |
-| File transactions and validation | 5,538 / 6,677 (82.9%) | 3,256 / 4,250 (76.6%) |
+| File transactions and validation | 5,541 / 6,677 (83.0%) | 3,260 / 4,250 (76.7%) |
 
 The production relocation fix remains covered on all 14 changed executable
 lines and 14 changed branches. Both overall numerical targets are met in this
@@ -53,10 +53,37 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-type-evidence-partial/summary.json` in the coverage workspace, SHA-256
-`4b5745869665b557b96f40723d4c5a7bc72596e5e1aa9f0aa17a5de7e30373e1`.
-It replaces the smaller 806-session partial baseline for current progress
+`stable-memory-transaction-path-partial/summary.json` in the coverage workspace, SHA-256
+`92e2af98f849a6cacf5ff7171e7ef45a1811e4f82fc20cd433f74d3429b6c44c`.
+It replaces the smaller 807-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Attachment paths changed during commit and recovery
+
+**CONFIRMED, local:** the expanded `AttachmentTransactionSmoke` passes 1,293
+assertions. Eight additional cases cover initial and refresh operations when
+the real target parent is replaced after preparation or target replacement,
+and when an installed target is replaced by a directory or dangling symlink.
+The parent cases retain the file inodes, content and modeled metadata beneath
+a new parent inode, so file-only checks cannot stand in for traversal identity.
+
+The controller reports `RECOVERY_REQUIRED`, preserves original/prior backups,
+leaves foreign objects untouched and avoids writing a restore image through a
+changed parent. An unobservable target has no reported snapshot. Two compiled
+mutations are caught by outcome/snapshot assertions: ignoring the commit's
+parent check reports `COMMITTED`, while substituting the original snapshot for
+an unobservable current target fabricates an observation. Both unchanged-source
+baseline and eight mutation-outcome classification checks pass.
+
+This uses the existing limited Linux test metadata host with real owned files;
+it does not claim a validated production native host, Windows or ELF/DWARF
+validation. The suite's eight deliberate child-process exits remain unmeasured.
+Sources are committed at `3657242c`. Raw execution, snapshots and verified
+receipt are in `transaction-path-stable-memory/`; selected mutation evidence is
+in `transaction-path-mutations-verified/`. The preceding exploratory mutation
+that removed a recovery check was detected only through its diagnostic and is
+not part of this selected pair. Coverage gains are three lines and four branches
+in file transactions, with no production or denominator changes.
 
 ## Saved parameter provenance and character layout
 
