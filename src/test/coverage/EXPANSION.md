@@ -6,6 +6,99 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Saved inheritance, C++ ABI bounds and hosted Linux measurement
+
+**CONFIRMED, local validation:** `02f18a4d` adds 8,883 independent C++ ABI checks
+and invokes them through the existing `inheritanceModelSmoke` task. BigInteger
+encoding verifies signed 64-bit offset-to-top decoding at primary and secondary
+address points; complete-header enumeration rejects truncated/misaligned table
+views. Unbounded interval arithmetic checks vptr containment and distinguishes
+virtual-base slots from RTTI and offset-to-top entries. The matrix also rejects
+unsupported processor, ELF machine, pointer-width and byte-order combinations.
+Both explicitly supported C++ profiles are exercised; this adds no architecture
+support claim. Production code and JAR remain unchanged.
+
+The isolated run and Gradle task pass the new checks plus the previous 131,136
+admission, 1,879 expression and 80 model assertions. Six separately compiled
+mutations fail the intended new assertions: reversed byte order, a narrowed
+signed displacement, reading the wrong header word, rejecting a vptr ending
+exactly at the object boundary, admitting the RTTI slot as a vbase slot, and
+admitting a misaligned vptr. Compilation/setup failures are not accepted as
+mutation detection. Mutants are unmeasured and their compiled files were removed.
+`CxxAbiProfile` now measures 26/26 lines and 39/39 branches in this partial union.
+
+Additional current-JAR integrations and measurement verification pass:
+
+- Six stack-control-flow profiles (32/64-bit locals, non-PIE/PIE/rebased PIE)
+  retain their complete compiler/Forge debugger observations, independent
+  validators, deterministic outputs and input/project preservation. The first
+  run's pretty JSON exceeded the coverage reader's 1 MiB bound. `83c48201`
+  writes the same observations as compact JSON and checks that bound before
+  writing; it does not enlarge the reader limit or discard trace fields. The
+  complete rerun passes and contributes 18 direct headless sessions. The first
+  over-limit collection remains excluded. A local verifier initially used the
+  wrong export-prefix filename; correcting that path admitted the actual rerun.
+- Packaged call-site workflows pass for non-PIE and PIE, each in original and
+  rebased views. Four measured headless sessions use the production entry point,
+  verify the installed package inventory and preserve the reopened saved
+  program. Compiler and recovered-plan prerequisites, raw debugger observations,
+  strict/LLVM results, output hashes and repeatable exports are checked before
+  admission. The locally assembled package is explicitly validation-only.
+- All 68 saved-inheritance profiles pass across x86-64 and AArch64, with QEMU
+  debugger execution for AArch64. Each target has 34 cases covering non-PIE/PIE,
+  RTTI/no-RTTI, rebasing, adjustment thunks, missing/stale/conflicting evidence,
+  recovered/qualified/duplicate names and retained symbols. The 136 measured
+  JVMs include curation and ordinary-wrapper read-only reopening. Reopening
+  preserves the full saved program and produces identical source/sidecar bytes;
+  original executable hashes, actual GDB observations and independent validators
+  agree. Existing verified compiler references/models are reused with hashes,
+  not counted as fresh producer executions. The cached installation is restored.
+
+**CONFIRMED, completed hosted Linux job:** 45 isolated Java sessions from
+[run 44015264480](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/44015264480)
+are admitted from its successful `extension-build` job. The production JAR
+matches the current `4bd11717` bytecode. Verification authenticates the artifact
+hashes, source merge commit/tree, exact source copies, raw receipts/probes and
+regenerated report. Selected diagnostic files corroborate real `sudo -n` JVM
+invocations, distinct target/backup inodes, non-root ownership, byte preservation,
+mode, timestamps and xattrs. Expected cancellation/refusal subprocess exits are
+checked against their exact labels and diagnostics, rather than mistaken for
+failed test cases. This is isolated host-test evidence, not full public attachment
+or power-loss acceptance. These sessions add 119 lines and 40 branches to the
+preceding 893-session union.
+
+The latest verified partial report is
+`.forge-work/scratch/coverage-expansion/saved-inheritance-abi-refresh-4bd11/summary.json`,
+SHA-256 `c4f040a6ffd56084c2f94e0e14cfefadf55ea0f97af2149ffa45ec192c223991`.
+It unions 1,075 distinct sessions: 211 JavaExec, 517 isolated Java/native-path and
+347 headless sessions, retaining all 255 production sources and 901 classes.
+
+| Scope | Lines | Branches | Required |
+| --- | --- | --- | --- |
+| Overall Java | 27,853/29,792 (93.5%) | 21,230/25,888 (82.0%) | 85% / 80% |
+| Binary/location correctness | 18,441/19,203 (96.0%) | 15,541/18,736 (82.9%) | 95% / 90% |
+| File transactions/validation | 5,686/6,677 (85.2%) | 3,312/4,250 (77.9%) | 95% / 90% |
+
+The denominator is unchanged; no native C coverage is claimed. Fresh Windows,
+remaining integrations, the complete hosted acceptance gate, protected merge and
+actual-main publication are still outstanding. Both critical groups remain below
+their branch targets, and file-operation line coverage remains below its target.
+
+**PRESENT, Windows-unverified correction:** current CI run `44020062360` passed
+workflow lint and native Linux but failed the Windows companion test before the
+native build. The earlier compile-dependency correction worked. The next failure
+was the identity-only fixture assuming a non-null Java `fileKey()`. `362ce60a`
+explicitly reports that probe as `NOT_RUN` when the provider supplies no key,
+retaining content, size, timestamp, publication and recovery checks. The exact
+workflow source subset compiles and passes on Linux; Windows execution of this
+correction is pending. Windows identity-only race detection is not proven by this
+change. The extension-build job remains in progress at this checkpoint.
+
+After verification, 47,242,159 bytes of owned per-run Ghidra caches were removed.
+Raw probes, logs, source snapshots, saved programs, compiler references and
+selected artifacts remain. No additional worktree or unaccounted workspace was
+created.
+
 ## C++/stack transition refresh and decoded call-site effects
 
 **CONFIRMED, local validation:** `2579948b` adds 34 actual decoded instruction
