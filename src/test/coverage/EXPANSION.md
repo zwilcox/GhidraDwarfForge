@@ -8197,3 +8197,31 @@ is not final hosted acceptance.
 
 Evidence: `.forge-work/scratch/unwind-call-memory.log`,
 `unwind-call-memory-mutants/result.json`, and `coverage-recovery/unwind-call-memory/`.
+
+## Current-run JavaExec and AArch64 evidence refresh
+
+Authenticated run `44150222826` at PR head `a5a29b1d` and producing merge
+`3bdd9b76` supplied 212 JavaExec sessions and 26 AArch64 sessions. Both producing
+jobs completed successfully. Raw artifact identities, archive SHA-256 values,
+collection receipts, test/production fingerprints and report-tool hashes were
+checked before admission. The production JAR remains
+`58bd7a71517452ca3f33e372060abd47f29166850cdcf464e3b3cb0f2a2a158b`.
+
+The regenerated JavaExec-only report matches the hosted 24,205/29,802 covered
+lines. The regenerated AArch64 per-layer counters match its uploaded report.
+These sessions replace the corresponding earlier-run sessions; they do not add
+duplicate evidence. The diagnostic union remains 1,339 unique sessions and
+255 sources / 901 production classes, with 28,904/29,802 lines and
+22,686/25,902 branches. Binary/location branches remain 16,465/18,750 (410 short
+of 90%); file-operation branches remain 3,827/4,250. This refresh changes no
+coverage counters. Historical/local evidence remains in the union, so it is
+not final current-head hosted acceptance.
+
+Raw artifacts: `combined-javaexec-input` 14362235659, SHA-256
+`602fcf497d6c06bcb458d14a0fc5a7aaadabe2d559caa7a681b3aeeb4a2eda56`;
+`integration-java-coverage-linux-aarch64` 14373471215, SHA-256
+`482a2f9a8bc425f64e8691c55b5e99f67c8985de26dc5d5ee345081b7e6ac93e`.
+Verification receipts and regenerated XML:
+`.forge-work/scratch/coverage-recovery/javaexec-44150222826/` and
+`aarch64-44150222826/`. The separately downloaded rendered JavaExec report is
+artifact 14360634181; it was not mistaken for raw execution data at admission.
