@@ -259,7 +259,7 @@ public final class AttachmentTransactionSmoke {
 
     /** Refresh cannot substitute an otherwise well-formed previous association. */
     private static void refreshClaimBoundaries(Path root) throws Exception {
-        for (String mismatch : new String[] { "phase", "operation", "target-path", "originalBackup",
+        for (String mismatch : new String[] { "phase", "operation", "target-path", "target-hash", "target-size", "target-metadata", "originalBackup",
                 "sidecar", "source", "crc" }) {
             var fixture = fixture(root, "refresh-claims-" + mismatch, true);
             var request = fixture.request();
@@ -270,6 +270,22 @@ public final class AttachmentTransactionSmoke {
                     var value = files.get(role);
                     files.put(role, new AttachmentReceipt.Artifact(fixture.root().resolve("other-target").toString(),
                         value.sha256(), value.bytes(), value.identity(), value.metadataSha256()));
+                }
+            }
+            else if (mismatch.equals("target-hash") || mismatch.equals("target-size")) {
+                var value = files.get("targetAfter");
+                files.put("targetAfter", new AttachmentReceipt.Artifact(value.path(),
+                    mismatch.equals("target-hash") ? "0".repeat(64) : value.sha256(),
+                    mismatch.equals("target-size") ? value.bytes() + 1 : value.bytes(),
+                    value.identity(), value.metadataSha256()));
+            }
+            else if (mismatch.equals("target-metadata")) {
+                // Keep the historical receipt internally consistent, while
+                // claiming metadata that disagrees with the current image.
+                for (String role : java.util.List.of("targetBefore", "targetAfter", "originalBackup")) {
+                    var value = files.get(role);
+                    files.put(role, new AttachmentReceipt.Artifact(value.path(), value.sha256(),
+                        value.bytes(), value.identity(), "0".repeat(64)));
                 }
             }
             else if (java.util.List.of("originalBackup", "sidecar", "source").contains(mismatch)) {

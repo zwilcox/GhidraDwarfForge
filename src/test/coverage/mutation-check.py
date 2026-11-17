@@ -857,6 +857,10 @@ STORAGE_REFINEMENT_MUTANTS = [
 ]
 
 TRANSACTION_MUTANTS = [
+    ("transaction-refresh-ignores-previous-image-hash", TRANSACTION, TRANSACTION_TEST,
+     "previous.sha256().equals(current.sha256())", "true"),
+    ("transaction-refresh-ignores-previous-image-size", TRANSACTION, TRANSACTION_TEST,
+     "previous.bytes() == current.bytes()", "true"),
     ("transaction-replays-completed-record", TRANSACTION, TRANSACTION_TEST,
      "prepared.phase() != AttachmentReceipt.Phase.PREPARED || prepared.recovery() != null ||",
      "prepared.recovery() != null ||"),

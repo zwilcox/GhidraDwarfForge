@@ -6,7 +6,7 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Stack-slot boundary controls awaiting combined measurement
+## Request admission and stack controls awaiting hosted measurement
 
 Transaction request admission now rejects each missing explicit role, unknown
 roles, all completed phases and a PREPARED recovery journal presented as a new
@@ -22,6 +22,17 @@ the recovered historical 1,252-session cohort. Current hosted acceptance and the
 full critical-group targets remain pending. Evidence is in
 `.forge-work/scratch/transaction-admission-mutations/` and
 `coverage-recovery/transaction-admission/` under the same scratch directory.
+
+Refresh controls additionally alter the previous image's hash, byte count and
+metadata claims while keeping the prior receipt internally valid and rebinding
+its outer hash. Each case preserves the selected target and changed receipt and
+creates no new transaction outputs. The controller suite passes 1,348 checks;
+two compiled faults omitting prior-image hash/size agreement are detected.
+The refreshed diagnostic comparison adds three branch outcomes beyond the
+admission batch (ten branches/four lines over the historical cohort in total).
+Evidence: `transaction-refresh-mutations/` and
+`coverage-recovery/transaction-refresh/` under guarded scratch. Production code
+is unchanged; current hosted acceptance is still outstanding.
 
 Eight new x86-64 component cases use actual decoded byte/word stores immediately
 before, after, or across either edge of four- and eight-byte saved parameters.
