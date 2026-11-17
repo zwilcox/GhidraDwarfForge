@@ -6,6 +6,50 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current instruction context, static objects and lexical composition
+
+**CONFIRMED, partial local measurement:** refreshed existing integration suites
+against the unchanged production JAR, with harness source snapshot `78611660`.
+No production code or native libraries changed.
+
+- Five instruction/source-context JVMs verify repeatable saved-program reads,
+  cancellation and bounded context composition. These are component checks;
+  annotation export has separate end-to-end validator/debugger evidence.
+- Thirty-seven static-object JVMs cover x86-64 non-PIE explicit/recovered static
+  ownership, lexical shadowing, stale/conflicting evidence, failure isolation
+  and cancellation. The existing admission policy verifies the complete five
+  collection types for this role. Compiler, isolated-producer and exported GDB
+  observations exercise nine execution boundaries, values, addresses and types.
+- Four lexical JVMs combine discontiguous visibility, inspected calls and split
+  source. Baseline and split-source GDB observations/calls match. Output pairs
+  and source inventory are deterministic; target inputs remain unchanged.
+
+The static and lexical artifacts pass readelf, LLVM and strict libdwarf checks.
+Fresh raw probes are admitted only after checking class identity, behavioral
+receipts, harness snapshots, retained output hashes and debugger observations.
+Temporary cached-extension changes are restored and checked.
+
+The verified union contains **748 distinct sessions**: 211 JavaExec,
+453 isolated Java/native-path and 84 headless. All **255 production sources /
+901 classes** remain included:
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall | 27,649 / 29,792 (92.8%) | 21,075 / 25,888 (81.4%) |
+| Binary/location correctness | 18,361 / 19,203 (95.6%) | 15,435 / 18,736 (82.4%) |
+| File transactions/validation | 5,566 / 6,677 (83.4%) | 3,271 / 4,250 (77.0%) |
+
+This adds **97 lines and 112 branch outcomes** to the preceding attachment
+checkpoint. Evidence is under `.forge-work/scratch/coverage-expansion/` in
+`context-current-4bd11`, `statics-current-4bd11`, `lexical-current-4bd11` and their
+respective `*-refresh-4bd11` directories. Final summary SHA-256:
+`aa669f97bdda2bbce33a3d0bdf881a8841e894fc17d23a2a65ec04cc6390ebba`.
+
+Issue #209 remains **incomplete**. These local profiles do not replace the
+remaining roles, fresh Windows measurement, full hosted cohort, critical-group
+95%/90% targets, protected merge or publication from actual `main`. Original
+JavaExec collection snapshots remain intact; a full suite rerun is not claimed.
+
 ## Incoming-reference contracts and attachment validation refresh
 
 **CONFIRMED, partial local measurement:** test commit `6d290908` adds an actual
