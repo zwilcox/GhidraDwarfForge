@@ -5,6 +5,10 @@ if [[ $# -ne 3 ]]; then
     echo "usage: $0 <ghidra-dir> <libdwarf> <libdwarfp>" >&2
     exit 2
 fi
+if [[ -n ${FORGE_INTEGRATION_COVERAGE_OUTPUT:-}${FORGE_INTEGRATION_COVERAGE_AGENT:-} &&
+        -z ${FORGE_ENTRY_COVERAGE_LAUNCHERS:-} ]]; then
+    exec python3 "$(dirname "$0")/function-entry-coverage.py" "$@"
+fi
 ghidra_dir=$(realpath "$1")
 consumer=$(realpath "$2")
 producer=$(realpath "$3")
@@ -47,7 +51,11 @@ run_case() {
     mapfile -t addresses < <(awk '{ print $2 }' "$labels")
     local before
     before=$(sha256sum "$input" | cut -d' ' -f1)
-    "$ghidra_dir/support/analyzeHeadless" "$projects" "Entry_${role}_${name}" \
+    local analyzer="$ghidra_dir/support/analyzeHeadless"
+    if [[ -n ${FORGE_ENTRY_COVERAGE_LAUNCHERS:-} ]]; then
+        analyzer="$FORGE_ENTRY_COVERAGE_LAUNCHERS/$role/$name/support/analyzeHeadless"
+    fi
+    "$analyzer" "$projects" "Entry_${role}_${name}" \
         -deleteProject -import "$input" -analysisTimeoutPerFile 120 \
         -scriptPath "$repository_dir/src/test/integration/ghidra_scripts" \
         "${rebase[@]}" -postScript PrepareFunctionEntryRanges.java "${addresses[@]}" "${alias_args[@]}" \

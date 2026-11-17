@@ -24,6 +24,7 @@ recovered_signatures = combined.module('recovered_signature_admission', HERE / '
 stack_transitions = combined.module('stack_transition_admission', HERE / 'stack-transition-admission.py')
 producer_failures = combined.module('producer_failure_admission', HERE / 'producer-failure-admission.py')
 qualified_types = combined.module('qualified_type_admission', HERE / 'qualified-type-admission.py')
+function_entries = combined.module('function_entry_admission', HERE / 'function-entry-admission.py')
 metadata_failures = combined.module('metadata_failure_admission', HERE / 'linux-metadata-failure-admission.py')
 windows_metadata_failures = combined.module('windows_metadata_failure_admission', HERE / 'windows-metadata-failure-admission.py')
 windows_directory_failures = combined.module('windows_directory_failure_admission', HERE / 'windows-directory-failure-admission.py')
@@ -36,7 +37,7 @@ REQUIRED = {
         'inheritance-names', 'build-id-command', 'cfi-encoder', 'cfi-composition-explicit',
         'cfi-composition-plain', 'cfi-composition-gabi', 'cfi-composition-gnu',
         'linux-attachment-exec', 'linux-attachment-pie', 'linux-attachment-exec-no-build-id',
-        'sectionless-validation', 'source-bundle-binding',
+        'sectionless-validation', 'source-bundle-binding', 'function-entry-export', 'function-entry-alias-export',
         'gui-script-manager', 'gui-script-manager-loader', 'gui-script-manager-compressed',
         'gui-script-manager-unwind', 'lexical-shadow', 'object-parameter', 'object-return', 'formatter-export',
         'calling-convention', 'custom-call-storage', 'call-site-packaged',
@@ -512,6 +513,8 @@ def load_job(root, jar, kind, commit, run):
                 sectionless_validation_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'source-bundle-binding':
                 source_bundle_binding_oracle(record, files.read(directory / 'oracle.json'))
+            if record['suite'] in ('function-entry-export', 'function-entry-alias-export'):
+                function_entries.oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'].startswith('gui-script-manager'):
                 gui_oracle(record, files.read(directory / 'oracle.json'))
             if record['suite'] == 'lexical-shadow':
