@@ -6,6 +6,43 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Saved-program unwind capture admission
+
+The existing `ghidraUnwindInstructionsSmoke` task now includes 67 additional
+assertions using real ProgramDB instructions and saved function edits. Capture
+refuses length/fallthrough overrides, changed flow references, external and
+thunk functions, an oversized body, unresolved computed jumps, and MIPS delay
+slots in both byte orders. A controlled policy callback changes the body during
+capture; the stale graph must be refused. Refusals preserve code bytes and the
+saved state they inspect, and transaction rollback restores identical capture
+evidence for the small accepted fixture.
+
+A bounded x86 fixture proves admission of exactly 65,536 decoded instructions
+and refusal of the first excess. Its explicit disassembly region avoids Ghidra's
+default repeated-byte stopping heuristic. The initial test attempt stopped
+decoding the repeated NOPs and was correctly rejected; that fixture setup failure
+is retained separately from the final passing run.
+
+The guarded full task passes, including the existing 1,849 unwind checks and
+882 call-site checks. Three compiled mutations are detected by Java assertions:
+trusting a thunk body, accepting a body changed during capture, and rejecting the
+valid instruction-count boundary. The initial mutation attempt surfaced an
+uncaught exception for the last case; it was not credited. Accepted-fixture
+assertions now explicitly distinguish that regression, and the final baseline
+and all three mutation checks pass.
+
+The new helper's production-only measured execution adds one line and nine
+critical branches. The diagnostic union has 1,382 sessions, 28,829/29,802 lines
+and 22,143/25,902 branches. Critical binary/location branches are 15,987/18,750
+(888 short of 90%); file operations remain 3,775/4,250 (50 short). No production
+code, target, denominator or critical classification changed. These decoder and
+admission tests do not claim new exported CFI or architecture support. Complete
+current-head hosted acceptance remains pending.
+
+Evidence: `.forge-work/scratch/unwind-capture-boundaries-final.log`,
+`unwind-capture-boundary-mutants-final/result.json`, and
+`coverage-recovery/unwind-capture-boundaries/`.
+
 ## Dynamic symbol count sources and exact inventory limits
 
 `sectionlessDynamicSymbolsSmoke` now checks an independently encoded named
