@@ -6,7 +6,43 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current variable location contract checkpoint
+## Current function relationship and class witness checkpoint
+
+CONFIRMED: commit `e0dd5325` adds `ScopeRelationshipBoundarySmoke` through
+`functionRelationsSmoke`. The focused run passes 22 boundary assertions and
+13 existing checks. Shared external targets retain exact saved identities;
+same-named declarations cannot substitute for one another. A shuffled chain
+of 65,536 edges retains every edge, evidence string and canonical order. A
+larger graph and a long cycle within the capacity limit are rejected.
+Caller-owned collections cannot change admitted graphs or class ownership.
+Class layout inference requires an actual object-parameter witness; ordinary
+pointer parameters, scalar receivers and same-named unions do not establish it.
+Explicitly saved layout remains valid without an inferred receiver.
+
+Seven compiled mutations fail their intended behavioral assertions: ignoring
+origin or endpoint presence, allowing two saved IDs for an endpoint, admitting
+excessive graphs or cycles, accepting unwitnessed layout inference, and accepting
+a union as a class structure. These are pure Java model checks; production
+source/JAR bytes are unchanged and no new native/debugger claim is made.
+
+The verified session adds one line and eight critical branch outcomes. All
+prior raw receipts, hashes and class/session identities were rechecked.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall, 1,856 distinct sessions | 28,665 / 29,790 (96.2%) | 21,662 / 25,884 (83.7%) |
+| Binary/location | 18,454 / 19,201 (96.1%) | 15,580 / 18,732 (83.2%) |
+| File/validation | 6,485 / 6,677 (97.1%) | 3,701 / 4,250 (87.1%) |
+
+Evidence: `.forge-work/scratch/coverage-expansion/scope-relationship-boundaries-2f181/`
+and `scope-relationship-mutations-2f181/`. Mutant probes are excluded; disposable
+mutant classes were removed after verification. All 255 production sources/901
+classes remain in the denominator. **Still incomplete:** 1,279 binary/location
+and 124 file/validation branch outcomes for the critical targets, current hosted
+acceptance, protected merge and actual-main publication. No full JavaExec rerun
+or new Windows validation is claimed for this increment.
+
+## Earlier variable location contract checkpoint
 
 CONFIRMED: commit `65bf9ae8` adds `VariableLocationContractSmoke` through the
 existing `variableStorageSmoke` task. A deterministic point-by-point oracle
