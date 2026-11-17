@@ -384,7 +384,8 @@ Same-State $crossFacts $crossMarker
 Save-Json (Join-Path $root 'rename-cross-volume.json') $crossResult
 Remove-Item -LiteralPath $crossMarker
 Remove-Item -LiteralPath $crossRoot
-$null = Run-Rename 'rename-handle-lifetime' @('lifetime',$renameStage,$renameTarget) $true $true
+$renameLifetime = Run-Rename 'rename-handle-lifetime' @('lifetime',$renameStage,$renameTarget) $true $true
+Require ($renameLifetime.stdout.Contains('windows-rename-controlled-replies=PASS cases=5')) 'Rename reply controls did not complete'
 Same-State $beforeStage $renameStage
 Require (-not (Test-Path -LiteralPath $renameTarget)) 'Lifetime test left a target'
 

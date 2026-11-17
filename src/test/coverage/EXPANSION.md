@@ -6,6 +6,23 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Windows rename replies — PRESENT, UNVERIFIED
+
+The existing Windows rename lifetime probe now forwards real kernel calls with
+five controlled replies: null/invalid stage handles, failed rename, a close error
+after the real handle was released, and cancellation immediately after successful
+rename. Assertions distinguish unchanged and published namespaces, retain exact
+file identity/bytes/preservation metadata, and balance opened/closed handles.
+Exceptional test cleanup releases any retained owned handles. Controls run before
+and during the existing warmed lifetime measurement; the PowerShell harness
+requires their success marker and independently rechecks the final stage.
+
+Guarded `testClasses` compilation passes (`windows-rename-replies-final-compile.log`
+under scratch). Windows execution, handle-count stability and coverage gains
+are **unverified** until a new hosted run includes this commit. PowerShell is
+unavailable locally; no runtime or parser pass is claimed. Production code is
+unchanged.
+
 ## Target descriptors and complete register mappings
 
 `RegisterProfileAgreementSmoke` uses actual pinned language registers to reject
