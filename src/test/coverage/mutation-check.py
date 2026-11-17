@@ -743,6 +743,12 @@ STORAGE_REFINEMENT_MUTANTS = [
 ]
 
 TRANSACTION_MUTANTS = [
+    ("transaction-ignores-replaced-parent", TRANSACTION, TRANSACTION_TEST,
+     'if (!plan.targetParentIdentity().equals(host.directoryIdentity(plan.snapshots().get("targetBefore").path().getParent())))',
+     'if (false)'),
+    ("transaction-reports-stale-target", TRANSACTION, TRANSACTION_TEST,
+     'catch (IOException | RuntimeException unavailable) { observed = null; }',
+     'catch (IOException | RuntimeException unavailable) { observed = before; }'),
     ("transaction-accepts-mismatched-sidecar-crc", TRANSACTION, TRANSACTION_TEST,
      'request.prepared().debuglinkCrc32() != snapshots.get("sidecar").digest().gnuDebuglinkCrc32()', "false"),
     ("transaction-refresh-reuses-operation-identity", TRANSACTION, TRANSACTION_TEST,

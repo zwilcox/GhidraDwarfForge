@@ -53,12 +53,86 @@ public final class AttachmentTransactionSmoke {
             changedOperationRecord(root);
             recoveryRecordObservation(root);
             recoveryDiagnosticBoundaries(root);
+            replacedParentBoundaries(root);
+            unobservableRecoveryTargets(root);
             System.out.println("attachment-transaction-smoke=PASS checks=" + checks +
                 " abrupt-process-exits=8 initial-and-refresh=true native-windows=false elf-validation=false");
         }
         finally {
             try (var paths = Files.walk(root)) {
                 for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
+            }
+        }
+    }
+
+    /** File identity alone does not authorize writes through a replaced parent. */
+    private static void replacedParentBoundaries(Path root) throws Exception {
+        for (boolean refresh : new boolean[] { false, true }) {
+            for (var boundary : new AttachmentTransaction.Boundary[] {
+                    AttachmentTransaction.Boundary.PREPARED, AttachmentTransaction.Boundary.TARGET_REPLACED }) {
+                var fixture = fixture(root, "parent-replaced-" + refresh + "-" + boundary, refresh);
+                var request = fixture.request();
+                String parent = HOST.directoryIdentity(fixture.root());
+                var result = AttachmentTransaction.commit(request, HOST, () -> false, point -> {
+                    if (point != boundary) return;
+                    // Move the actual directory aside and put the same file inodes
+                    // beneath a fresh directory at the selected path. File hashes,
+                    // link counts and modeled metadata stay unchanged; the parent
+                    // identity check must still reject this new traversal.
+                    Path retained = fixture.root().resolveSibling(fixture.root().getFileName() + "-old-parent");
+                    Files.move(fixture.root(), retained);
+                    Files.createDirectory(fixture.root());
+                    try (var files = Files.list(retained)) {
+                        for (Path file : files.toList()) Files.move(file, fixture.root().resolve(file.getFileName()));
+                    }
+                    equal(false, parent.equals(HOST.directoryIdentity(fixture.root())));
+                    if (boundary == AttachmentTransaction.Boundary.TARGET_REPLACED) {
+                        throw new IOException("injected failure after parent replacement");
+                    }
+                }, AttachmentTransaction.RECEIPTS);
+                equal(AttachmentReceipt.Phase.RECOVERY_REQUIRED, result.outcome());
+                equal(true, result.diagnostic().contains("target parent changed"));
+                var expected = fixture.snapshots().get(boundary == AttachmentTransaction.Boundary.PREPARED
+                    ? "targetBefore" : "targetAfter");
+                equal(expected.digest(), result.observedTarget().digest());
+                equal(expected.fingerprint(), result.observedTarget().fingerprint());
+                equal(AttachmentReceipt.Phase.PREPARED,
+                    AttachmentReceiptStore.read(request.receipt(), HOST, () -> false).receipt().phase());
+                equal(false, Files.exists(request.recoveryReceipt()));
+                equal(false, Files.exists(request.restoreImage()));
+                retained(fixture);
+            }
+        }
+    }
+
+    private static void unobservableRecoveryTargets(Path root) throws Exception {
+        for (boolean refresh : new boolean[] { false, true }) {
+            for (boolean link : new boolean[] { false, true }) {
+                var fixture = fixture(root, "unobservable-target-" + refresh + "-" + link, refresh);
+                var request = fixture.request();
+                Path target = request.files().get("targetBefore");
+                Path saved = fixture.root().resolve("retained-installed-target");
+                Path destination = fixture.root().resolve("absent-link-destination");
+                var result = AttachmentTransaction.commit(request, HOST, () -> false, point -> {
+                    if (point != AttachmentTransaction.Boundary.TARGET_REPLACED) return;
+                    Files.move(target, saved);
+                    if (link) Files.createSymbolicLink(target, destination);
+                    else Files.createDirectory(target);
+                    throw new IOException("injected failure after concurrent target replacement");
+                }, AttachmentTransaction.RECEIPTS);
+                equal(AttachmentReceipt.Phase.RECOVERY_REQUIRED, result.outcome());
+                equal(null, result.observedTarget());
+                equal(false, result.cancelled());
+                equal(AttachmentReceipt.Phase.RECOVERY_REQUIRED, result.recoveryReceipt().receipt().phase());
+                equal(fixture.snapshots().get("targetAfter").digest(), FileDigests.read(saved, () -> false));
+                if (link) equal(destination, Files.readSymbolicLink(target));
+                else {
+                    equal(true, Files.isDirectory(target, java.nio.file.LinkOption.NOFOLLOW_LINKS));
+                    try (var entries = Files.list(target)) { equal(0L, entries.count()); }
+                }
+                equal(false, Files.exists(destination, java.nio.file.LinkOption.NOFOLLOW_LINKS));
+                equal(false, Files.exists(request.restoreImage()));
+                retained(fixture);
             }
         }
     }
