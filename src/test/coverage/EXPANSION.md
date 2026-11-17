@@ -7498,3 +7498,53 @@ validator-observation-mutants/{result.json,*.log}, and
 coverage-recovery/validator-observation-boundaries/{result.json,sessions.tsv,
 counts.json,gaps.json,xml/combined.xml}. CI44150222826 still has five live
 architecture jobs and no failed completed jobs; this change stays queued locally.
+
+### Debuglink bytes and formatter selection bounds (#209)
+
+Acceptance: filename encoding accepts exactly65,536 bytes and refuses one byte
+more; directory roots/control characters cannot be debuglink basenames, and
+missing/invalid advertised encoding metadata fails closed. DebuglinkBasenameSmoke
+checks ASCII, two-byte and four-byte UTF-8 characters with exact byte equality.
+Host properties are restored in finally blocks. The invalid-property controls
+exercise refusal policy, not a simulated supported host or a changed native
+encoding. Large names are encoder-format fixtures; no filesystem support or
+GDB discovery claim is made for such names.
+
+Guarded Java25/Ghidra12.0.3 `./gradlew --no-daemon debuglinkBasenameSmoke` passes
+78 checks in2seconds. Four guarded compiled mutants (debuglink-allows-extra-byte,
+debuglink-rejects-exact-byte-bound, debuglink-counts-characters-not-bytes,
+debuglink-ignores-native-encoding) plus unchanged baseline pass in1.386seconds;
+each fault is detected by a behavioral assertion. Diagnostic
+measure-stack.py debuglink-byte-boundaries ghidradwarfforge.output.DebuglinkBasenameSmoke
+and verify-local-addition.py debuglink-byte-boundaries validator-observation-boundaries
+verify +5lines/+5branches and1,365 sessions.
+
+FormatterPlanSmoke additionally accepts exactly128 explicit canonical choices,
+rejects129, blank keys and repeated keys with equal or different modes, preserves
+canonical ordering and immutable copies, and leaves rejected selection files
+unchanged. Guarded `./gradlew --no-daemon formatterPlanSmoke` passes in2seconds,
+including existing60 witness-admission checks. Four guarded compiled mutants
+(formatter-selection-accepts-129, formatter-selection-rejects-128,
+formatter-selection-ignores-blank-key, formatter-selection-ignores-duplicate)
+are detected by behavioral assertions; unchanged baseline passes (2.813seconds).
+The initial mutation baseline lacked the packaged formatter runtime resource;
+that setup failure is not detection evidence. The corrected harness includes
+the checked-in runtime resources, as the Gradle test and production bundle do.
+
+Guarded measure-stack.py formatter-selection-boundaries
+ ghidradwarfforge.formatters.FormatterPlanSmoke and
+verify-local-addition.py formatter-selection-boundaries debuglink-byte-boundaries
+verify another +1line/+3branches. Final diagnostic1,366sessions, unchanged
+production JAR and all255sources/901classes: overall28,891/29,802lines and
+22,480/25,902branches. File operations6,521/6,677lines(97.66%) and
+3,827/4,250branches(90.05%) meet numerical critical-group targets in this
+historical/current diagnostic union. Binary/location remains616short90%.
+Full current hosted admission, review, protected merge and main publication
+remain outstanding; this milestone does not complete #209.
+
+Evidence under .forge-work/scratch/: debuglink-byte-boundaries.log,
+debuglink-byte-mutants/result.json, formatter-selection-boundaries.log,
+formatter-selection-mutants-final/result.json and coverage-recovery/
+{debuglink-byte-boundaries,formatter-selection-boundaries}/ containing raw
+sessions, source hashes, verified manifests, counts, gaps and combined XML.
+No production Java or emitted ELF/DWARF changed.

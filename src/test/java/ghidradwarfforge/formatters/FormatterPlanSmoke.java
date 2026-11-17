@@ -16,6 +16,7 @@ public final class FormatterPlanSmoke {
         try {
             FormatterWitnessAdmissionSmoke.run(root);
             Path selection = root.resolve("selection.json");
+            selectionBoundaries(selection);
             String good = "{\"schema\":1,\"types\":[{\"key\":\"flags\",\"mode\":\"flags\"}]}";
             Files.writeString(selection, good);
             var choices = FormatterSelection.read(selection, () -> false);
@@ -57,6 +58,49 @@ public final class FormatterPlanSmoke {
                 for (Path path : files.sorted(java.util.Comparator.reverseOrder()).toList()) Files.delete(path);
             }
         }
+    }
+
+    private static void selectionBoundaries(Path file) throws Exception {
+        var mutable = new java.util.LinkedHashMap<String, String>();
+        var rows = new java.util.ArrayList<String>();
+        for (int i = 127; i >= 0; i--) {
+            String key = "canonical" + i;
+            String mode = i % 2 == 0 ? "flags" : "structure";
+            mutable.put(key, mode);
+            rows.add("{\"key\":\"" + key + "\",\"mode\":\"" + mode + "\"}");
+        }
+        FormatterSelection exact;
+        try { exact = new FormatterSelection(mutable); }
+        catch (IllegalArgumentException refused) { throw new AssertionError("exact 128-selection limit refused", refused); }
+        require(exact.modes().equals(mutable), "formatter selection lost canonical choices");
+        var expectedOrder = mutable.keySet().stream().sorted().toList();
+        require(List.copyOf(exact.modes().keySet()).equals(expectedOrder), "formatter selection order is not canonical");
+        mutable.clear();
+        require(exact.modes().size() == 128, "formatter selection retained mutable map");
+        try { exact.modes().clear(); throw new AssertionError("formatter choices are mutable"); }
+        catch (UnsupportedOperationException expected) { }
+        mutable.putAll(exact.modes());
+        mutable.put("extra", "flags");
+        try { new FormatterSelection(mutable); throw new AssertionError("129 formatter selections accepted"); }
+        catch (IllegalArgumentException expected) { }
+        for (String blank : List.of("", " ", "\t\n")) {
+            try { new FormatterSelection(Map.of(blank, "flags")); throw new AssertionError("blank canonical key accepted"); }
+            catch (IllegalArgumentException expected) { }
+        }
+        String prefix = "{\"schema\":1,\"types\":[";
+        String valid = prefix + String.join(",", rows) + "]}";
+        Files.writeString(file, valid);
+        require(FormatterSelection.read(file, () -> false).equals(exact), "128 formatter choices changed during parsing");
+        for (String bad : List.of(prefix + String.join(",", rows) + "," + rows.getFirst() + "]}",
+                prefix + rows.getFirst() + "," + rows.getFirst().replace("structure", "flags") + "]}",
+                prefix + String.join(",", rows) + ",{\"key\":\"extra\",\"mode\":\"flags\"}]}")) {
+            Files.writeString(file, bad);
+            byte[] before = Files.readAllBytes(file);
+            try { FormatterSelection.read(file, () -> false); throw new AssertionError("duplicate or oversized formatter selection accepted"); }
+            catch (java.io.IOException expected) { }
+            require(java.util.Arrays.equals(before, Files.readAllBytes(file)), "formatter rejection changed selection file");
+        }
+        System.out.println("formatter-selection-boundaries=PASS exact=128 overflow=129 duplicate-modes=refused");
     }
 
     private static void require(boolean condition, String message) {

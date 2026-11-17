@@ -49,6 +49,7 @@ INTRA_RAW_TEST = "ghidradwarfforge.IntraInstructionBoundarySmoke"
 CUSTOM_SCALAR = "ghidradwarfforge/GhidraCustomCallStorage.java"
 CUSTOM_SCALAR_TEST = "ghidradwarfforge.CustomScalarCallStorageSmoke"
 FRAME_DISCOVERY = "ghidradwarfforge/elf/SectionlessUnwind.java"
+FORMATTER_SELECTION_TEST = "ghidradwarfforge.formatters.FormatterPlanSmoke"
 VALIDATOR_OBSERVATION_TEST = "ghidradwarfforge.output.ValidatorObservationBoundarySmoke"
 INVOCATION_BOUNDARY_TEST = "ghidradwarfforge.output.AttachmentInvocationSmoke"
 REPORT_INVENTORY_TEST = "ghidradwarfforge.output.ExportReportDetailsSmoke"
@@ -630,6 +631,17 @@ REPORT_TEXT_MUTANTS = [
     ("report-accepts-unsupported-address-size", REPORT_TEXT, REPORT_TEXT_TEST,
      'addressBits != 32 && addressBits != 64', 'false'),
 ]
+FORMATTER_SELECTION_MUTANTS = [
+    ('formatter-selection-accepts-129', "ghidradwarfforge/output/FormatterSelection.java", FORMATTER_SELECTION_TEST,
+     'modes.size() > 128', 'modes.size() > 129'),
+    ('formatter-selection-rejects-128', "ghidradwarfforge/output/FormatterSelection.java", FORMATTER_SELECTION_TEST,
+     'modes.size() > 128', 'modes.size() >= 128'),
+    ('formatter-selection-ignores-blank-key', "ghidradwarfforge/output/FormatterSelection.java", FORMATTER_SELECTION_TEST,
+     'entry.getKey().isBlank() ||', ''),
+    ('formatter-selection-ignores-duplicate', "ghidradwarfforge/output/FormatterSelection.java", FORMATTER_SELECTION_TEST,
+     'modes.putIfAbsent(row.get("key"), row.get("mode")) != null',
+     'modes.putIfAbsent(row.get("key"), row.get("mode")) != null && false'),
+]
 VALIDATOR_OBSERVATION_MUTANTS = [
     ('validator-observation-accepts-empty-identity', "ghidradwarfforge/output/ValidatorInput.java", VALIDATOR_OBSERVATION_TEST,
      'identity.isEmpty() ||', ''),
@@ -673,6 +685,16 @@ FIRMWARE_INPUT_MUTANTS = [
      ' || !indices.add(input.fileBytesIndex())', ''),
     ('firmware-input-retains-caller-list', "ghidradwarfforge/output/FirmwareInputs.java", FIRMWARE_INPUT_TEST,
      'inputs = List.copyOf(inputs);', ''),
+]
+DEBUGLINK_BOUNDARY_MUTANTS = [
+    ('debuglink-allows-extra-byte', "ghidradwarfforge/output/DebuglinkBasename.java", "ghidradwarfforge.output.DebuglinkBasenameSmoke",
+     'encoded.remaining() > 65536', 'encoded.remaining() > 65537'),
+    ('debuglink-rejects-exact-byte-bound', "ghidradwarfforge/output/DebuglinkBasename.java", "ghidradwarfforge.output.DebuglinkBasenameSmoke",
+     'encoded.remaining() > 65536', 'encoded.remaining() >= 65536'),
+    ('debuglink-counts-characters-not-bytes', "ghidradwarfforge/output/DebuglinkBasename.java", "ghidradwarfforge.output.DebuglinkBasenameSmoke",
+     'encoded.remaining() > 65536', 'name.length() > 65536'),
+    ('debuglink-ignores-native-encoding', "ghidradwarfforge/output/DebuglinkBasename.java", "ghidradwarfforge.output.DebuglinkBasenameSmoke",
+     'nativeEncoding == null || !Charset.forName(nativeEncoding).equals(StandardCharsets.UTF_8)', 'false'),
 ]
 ATTACHMENT_PATH_MUTANTS = [
     ('attachment-path-accepts-129', "ghidradwarfforge/output/AttachmentPaths.java", "ghidradwarfforge.output.AttachmentPathBoundarySmoke",
@@ -1767,7 +1789,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = ATTACHMENT_PATH_MUTANTS + FRAME_CORROBORATE_MUTANTS + FIRMWARE_TARGET_MUTANTS + FIRMWARE_MAP_MUTANTS + MIPS_AGGREGATE_MUTANTS + MIPS_SIGNATURE_MUTANTS + ARM_SIGNATURE_MUTANTS + SOURCE_DISPOSITION_MUTANTS + FRAME_DISCOVERY_MUTANTS + RELOCATED_POINTER_MUTANTS + MUTANTS + ALLOCATION_CHANGE_MUTANTS + ALLOCATION_BOUNDARY_MUTANTS + ELF_READER_MUTANTS + ELF_BUILD_ID_MUTANTS + GDB_COMPANION_MUTANTS + RUNTIME_RELOCATION_MUTANTS + RELOCATION_EFFECTS_MUTANTS + REGISTER_MAP_MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + LEXICAL_SCOPE_MUTANTS + CLASS_EVIDENCE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (VALIDATOR_OBSERVATION_MUTANTS + INVOCATION_BOUNDARY_MUTANTS + REPORT_INVENTORY_MUTANTS + FIRMWARE_INPUT_MUTANTS + LEXICAL_RECORD_MUTANTS + STATIC_RECORD_MUTANTS + STACK_TRANSFER_MUTANTS + ARM_ABI_METADATA_MUTANTS + INHERITANCE_BUDGET_MUTANTS + OMISSION_AUTHORITY_MUTANTS + INTRA_RAW_MUTANTS + CUSTOM_SCALAR_MUTANTS + FIRMWARE_CAPTURE_MUTANTS + ARM_HFA_MUTANTS + ARM_COMPOSITE_MUTANTS + UNWIND_CAPTURE_MUTANTS + STORAGE_REFINEMENT_MUTANTS + REPORT_LEXICAL_MUTANTS + PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + BUILD_ID_LOCK_MUTANTS + LOCAL_MAPPING_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CALL_PARAMETERS_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + AARCH64_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + DYNAMIC_STORAGE_MUTANTS + CALL_EVIDENCE_MUTANTS + ALLOCATION_OVERRIDE_MUTANTS + CLOSED_FLOW_MUTANTS + COMPOSITE_FLOW_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
+    mutants = DEBUGLINK_BOUNDARY_MUTANTS + ATTACHMENT_PATH_MUTANTS + FRAME_CORROBORATE_MUTANTS + FIRMWARE_TARGET_MUTANTS + FIRMWARE_MAP_MUTANTS + MIPS_AGGREGATE_MUTANTS + MIPS_SIGNATURE_MUTANTS + ARM_SIGNATURE_MUTANTS + SOURCE_DISPOSITION_MUTANTS + FRAME_DISCOVERY_MUTANTS + RELOCATED_POINTER_MUTANTS + MUTANTS + ALLOCATION_CHANGE_MUTANTS + ALLOCATION_BOUNDARY_MUTANTS + ELF_READER_MUTANTS + ELF_BUILD_ID_MUTANTS + GDB_COMPANION_MUTANTS + RUNTIME_RELOCATION_MUTANTS + RELOCATION_EFFECTS_MUTANTS + REGISTER_MAP_MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + LEXICAL_SCOPE_MUTANTS + CLASS_EVIDENCE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (FORMATTER_SELECTION_MUTANTS + VALIDATOR_OBSERVATION_MUTANTS + INVOCATION_BOUNDARY_MUTANTS + REPORT_INVENTORY_MUTANTS + FIRMWARE_INPUT_MUTANTS + LEXICAL_RECORD_MUTANTS + STATIC_RECORD_MUTANTS + STACK_TRANSFER_MUTANTS + ARM_ABI_METADATA_MUTANTS + INHERITANCE_BUDGET_MUTANTS + OMISSION_AUTHORITY_MUTANTS + INTRA_RAW_MUTANTS + CUSTOM_SCALAR_MUTANTS + FIRMWARE_CAPTURE_MUTANTS + ARM_HFA_MUTANTS + ARM_COMPOSITE_MUTANTS + UNWIND_CAPTURE_MUTANTS + STORAGE_REFINEMENT_MUTANTS + REPORT_LEXICAL_MUTANTS + PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + BUILD_ID_LOCK_MUTANTS + LOCAL_MAPPING_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CALL_PARAMETERS_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + AARCH64_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + DYNAMIC_STORAGE_MUTANTS + CALL_EVIDENCE_MUTANTS + ALLOCATION_OVERRIDE_MUTANTS + CLOSED_FLOW_MUTANTS + COMPOSITE_FLOW_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
     if args.only:
         selected = set(args.only)
         unknown = selected - {row[0] for row in mutants}
@@ -1794,6 +1816,7 @@ def main():
             # The production publisher's private exception is never serialized;
             # its existing missing serialVersionUID is unrelated to these mutants.
             selected_dependencies = dependencies if test in (
+                FORMATTER_SELECTION_TEST,
                 VALIDATOR_OBSERVATION_TEST,
                 INVOCATION_BOUNDARY_TEST,
                 REPORT_INVENTORY_TEST,
@@ -1821,8 +1844,8 @@ def main():
             if compiled.returncode:
                 raise AssertionError(f"{label}: compilation failed, not a detected mutant\n{compiled.stdout}")
             classpath = os.pathsep.join(map(str, [root, classes, tests, *selected_dependencies]))
-            if test == GDB_COMPANION_TEST:
-                # Rendering requires the same checked-in loader resource packaged by CI.
+            if test in (GDB_COMPANION_TEST, FORMATTER_SELECTION_TEST):
+                # Rendering requires the same checked-in runtime resources packaged by CI.
                 classpath += os.pathsep + str(REPO / "src/main/resources")
             test_args = [args.ghidra.resolve()] if test in (STACK_TRANSFER_TEST, INHERITANCE_BUDGET_TEST, OMISSION_AUTHORITY_TEST, INTRA_RAW_TEST, CUSTOM_SCALAR_TEST, FIRMWARE_CAPTURE_TEST, ARM_HFA_TEST, ARM_COMPOSITE_TEST, UNWIND_CAPTURE_TEST, ARM_SECTION_EVIDENCE_TEST, ARM_SAVED_MODES_TEST, LOCAL_MAPPING_TEST, PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, STATIC_BINDING_TEST, LEXICAL_RECORD_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CALL_PARAMETERS_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST, AARCH64_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, DYNAMIC_STORAGE_TEST, CALL_EVIDENCE_TEST, ALLOCATION_OVERRIDE_TEST, CLOSED_FLOW_TEST, COMPOSITE_FLOW_TEST, MIXED_PREFIX_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST) else []
             if test == CALL_EVIDENCE_TEST:
