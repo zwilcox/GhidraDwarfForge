@@ -8,16 +8,16 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 952 verified
-sessions: 211 JavaExec, 627 native-Java, 57 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 971 verified
+sessions: 211 JavaExec, 646 native-Java, 57 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,435 / 29,802 (95.4%) | 21,624 / 25,902 (83.5%) |
+| Overall | 28,448 / 29,802 (95.5%) | 21,642 / 25,902 (83.6%) |
 | Binary and location correctness | 18,355 / 19,213 (95.5%) | 15,543 / 18,750 (82.9%) |
-| File transactions and validation | 6,349 / 6,677 (95.1%) | 3,700 / 4,250 (87.1%) |
+| File transactions and validation | 6,362 / 6,677 (95.3%) | 3,718 / 4,250 (87.5%) |
 
 The production relocation fix remains covered on all 14 changed executable
 lines and 14 changed branches. Both overall numerical targets are met in this
@@ -54,10 +54,41 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-hosts-mips-partial/summary.json` in the coverage workspace, SHA-256
-`4be583fffe5bb5bedcf72537747c5306cf939409e06f9633a9ee41f28dc89b35`.
-It replaces the smaller 899-session partial baseline for current progress
+`stable-memory-hosts-canary-multifile-partial/summary.json` in the coverage workspace, SHA-256
+`6c5bca861e2d414e1a30839b0767fd9ec5aff13bc636c797772da355c00b43f6`.
+It replaces the smaller 952-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Owned canary safety and multi-file build-ID refresh
+
+**CONFIRMED, local:** commit `dc12574c` extends the actual Linux metadata
+visibility smoke test. It rejects five invalid nonce lengths and three owned
+file states (nonempty, hard-linked and non-private), checking that rejected
+files retain their bytes and metadata. An explicit input-policy matrix rejects
+158 unsupported inode-policy values and accepts the documented ordinary flags.
+These policy values are test inputs, not claims about features on this host.
+The full unprivileged run passes 359 checks. No local privileged run is claimed.
+
+Four separately compiled faults are detected by behavioral assertions: bypassed
+canary link checks, and accepted extent-size, project-ID or copy-on-write extent
+policies. The unmodified baseline and eight mutation-outcome harness tests pass.
+This new session excludes only the compiled test class from instrumentation;
+all production classes remain in the report population.
+
+The existing x86-64 non-PIE multi-file exporter workflow also passes against the
+same production JAR. Both single/multi-file outputs pass strict libdwarf and
+LLVM validation and ten GDB observations each. Source-bundle binding and build-ID
+installation contribute eighteen authenticated native sessions. The binding
+controls use their documented test metadata host; installation uses the actual
+Linux build-ID host. Installed cached exporter files were restored after the run.
+
+Both collections pass source-snapshot, raw-receipt and oracle verification before
+admission. Together they add thirteen lines and eighteen branches to the prior
+952-session report. File operations now need 107 additional branch outcomes to
+reach 90%; binary/location correctness still needs 1,332. Full current hosted
+acceptance, protected integration and actual-main publication remain incomplete.
+Evidence is under `metadata-canary-stable-memory`, `metadata-canary-mutations`
+and `build-id-multifile-stable-memory` in the bounded coverage workspace.
 
 ## Authenticated Linux-host and partial MIPS CI measurements
 
