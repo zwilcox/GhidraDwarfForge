@@ -6,6 +6,33 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Complete ARM section allocation boundaries
+
+`GhidraArm32SectionModesSmoke` checks allocations that begin inside an ARM
+instruction, end inside a defined literal, or extend beyond the initialized
+ProgramDB memory. NOBITS allocations are refused as lacking file backing. A
+256-MiB NOBITS extent reaches that backing check, while the first excess is
+refused by the byte budget; these are tiny metadata fixtures, not large payloads
+or successful 256-MiB exports. A virtual selection list tests the first comparison
+budget excess without allocating millions of entries.
+
+The actual saved literal block is also split and converted to uninitialized
+memory. Selection-address overflow, removal of the selected mixed-mode function,
+and unknown current instruction mode all have explicit outcomes. Refusals preserve
+the ELF bytes and saved program modification counter; retries against the original
+allocation reproduce the exact baseline mapping. Owned temporary ELF fixtures
+are removed after the task.
+
+The guarded task passes 126 checks. Three compiled mutations fail behavioral
+assertions: accepting a partial code unit, ignoring file backing, and rejecting
+the exact byte-budget boundary. The matching-production diagnostic adds four
+lines and ten branches against the 1,377-session ARM admission baseline.
+Production Java is unchanged, and complete hosted acceptance remains outstanding.
+
+Evidence: `.forge-work/scratch/arm-section-boundaries-test.log`,
+`arm-section-boundary-mutants/result.json`, and
+`coverage-recovery/arm-section-boundaries/`.
+
 ## Saved ARM mode evidence after analyst edits
 
 `GhidraArm32FunctionModesSmoke` now retains an extracted function selection while
@@ -29,7 +56,7 @@ test; that compilation failure was not counted as detection. The corrected
 baseline and all four controls pass, as do the eight mutation-outcome tests.
 
 Production code remains unchanged. The measured task adds five lines and 13
-branches. Together with the ARM inventory tests above, the refreshed diagnostic
+branches. Together with the preceding ARM inventory test expansion, the refreshed diagnostic
 contains 1,377 matching-production sessions, adding 15 lines and 41 branches to
 the preceding inventory diagnostic. It retains all 255 production sources and
 901 classes. This mixed historical/current union is still not full current-head

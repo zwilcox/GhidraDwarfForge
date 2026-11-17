@@ -4,6 +4,8 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HexFormat;
@@ -63,6 +65,7 @@ public final class GhidraArm32SectionModesSmoke {
             program.endTransaction(transaction, true);
             require(extract(program, image, 0, TaskMonitor.DUMMY, new ArrayList<>()).equals(List.of(Arm32SectionModesSmoke.evidence())),
                 "exact complete section evidence includes explicit undefined4 data");
+            allocationBoundaries(program, image, start);
             transaction = program.startTransaction("literal is unknown");
             try {
                 program.getListing().clearCodeUnits(start.add(40), start.add(43), false);
@@ -125,8 +128,95 @@ public final class GhidraArm32SectionModesSmoke {
             }
             finally { program.endTransaction(transaction, false); }
         }
-        finally { program.release(owner); }
+        finally {
+            program.release(owner);
+            Files.delete(input);
+        }
         System.out.println("ghidra-arm32-section-modes-smoke=PASS checks=" + checks);
+    }
+
+    private static void allocationBoundaries(ProgramDB program, ElfImage original, Address start)
+            throws Exception {
+        var baseline = List.of(Arm32SectionModesSmoke.evidence());
+        // Each tuple is section type, address displacement, file displacement and
+        // extent. Only the tiny metadata changes; large NOBITS extents allocate no payload.
+        int[][] cases = {
+            {1, 2, 2, 42}, // begins inside the first ARM instruction
+            {1, 0, 0, 42}, // ends inside the explicit four-byte literal
+            {1, 0, 0, 48}, // mapped original allocation exceeds saved initialized memory
+            {8, 0, 0, 44},
+            {8, 0, 0, 256 * 1024 * 1024},
+            {8, 0, 0, 256 * 1024 * 1024 + 1}
+        };
+        String[] reasons = {"not exactly tiled", "not exactly tiled", "unmapped or uninitialized",
+            "not completely file-backed", "not completely file-backed", "mapping byte budget exceeded"};
+        var path = Files.createTempFile("arm-mapping-allocation-", ".elf");
+        try {
+            for (int index = 0; index < cases.length; index++) {
+                byte[] bytes = Arm32SectionModesSmoke.fixture();
+                var fields = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
+                int row = fields.getInt(32) + 40;
+                fields.putInt(row + 4, cases[index][0]);
+                fields.putInt(row + 12, (int) Arm32SectionModesSmoke.START + cases[index][1]);
+                fields.putInt(row + 16, 0x100 + cases[index][2]);
+                fields.putInt(row + 20, cases[index][3]);
+                Files.write(path, bytes);
+                var changed = ElfImage.read(path);
+                long modification = program.getModificationNumber();
+                omitted(program, changed, reasons[index]);
+                require(program.getModificationNumber() == modification, "allocation rejection changed saved program");
+                require(java.util.Arrays.equals(bytes, Files.readAllBytes(path)), "allocation rejection changed ELF");
+                require(extract(program, original, 0, TaskMonitor.DUMMY, new ArrayList<>()).equals(baseline),
+                    "rejected allocation contaminated the complete mapping retry");
+            }
+        }
+        finally { Files.delete(path); }
+
+        var selected = GhidraFunctionSymbols.extract(program, TaskMonitor.DUMMY, ignored -> { }, 0);
+        for (long delta : new long[] {-Arm32SectionModesSmoke.START - 1,
+                0x1_0000_0000L - Arm32SectionModesSmoke.START, Long.MAX_VALUE}) {
+            var messages = new ArrayList<String>();
+            long modification = program.getModificationNumber();
+            require(GhidraArm32SectionModes.extract(program, original, selected, TARGET, delta,
+                TaskMonitor.DUMMY, messages::add).isEmpty(), "invalid selection coordinate cannot wrap");
+            require(messages.size() == 1 && messages.getFirst().startsWith("Omitted ARM32 section mapping selection for mixed:"),
+                "selection address failure has a function-specific diagnostic");
+            require(program.getModificationNumber() == modification, "selection address check changed program");
+        }
+        var messages = new ArrayList<String>();
+        require(GhidraArm32SectionModes.extract(program, original,
+            java.util.Collections.nCopies(16 * 1024 * 1024 + 1, selected.getFirst()), TARGET, 0,
+            TaskMonitor.DUMMY, messages::add).isEmpty() && messages.size() == 1 &&
+            messages.getFirst().contains("selection comparison budget exceeded"),
+            "first selection comparison excess refused without expanding the virtual list");
+
+        int transaction = program.startTransaction("literal became uninitialized");
+        try {
+            var memory = program.getMemory();
+            memory.split(memory.getBlock(start), start.add(40));
+            memory.convertToUninitialized(memory.getBlock(start.add(40)));
+            require(!memory.getBlock(start.add(40)).isInitialized(), "literal fixture actually uninitialized");
+            long modification = program.getModificationNumber();
+            omitted(program, original, "unmapped or uninitialized");
+            require(program.getModificationNumber() == modification, "uninitialized refusal changed program");
+        }
+        finally { program.endTransaction(transaction, false); }
+
+        transaction = program.startTransaction("selected mixed function removed");
+        try {
+            require(program.getFunctionManager().removeFunction(start), "mixed function removed");
+            messages.clear();
+            long modification = program.getModificationNumber();
+            require(GhidraArm32SectionModes.extract(program, original, selected, TARGET, 0,
+                TaskMonitor.DUMMY, messages::add).isEmpty() && messages.isEmpty(),
+                "removed selection cannot authorize a section mapping");
+            require(program.getModificationNumber() == modification, "removed selection check changed program");
+        }
+        finally { program.endTransaction(transaction, false); }
+        omitted(context(program, start, new RegisterValue(program.getRegister("TMode"))), original, "instruction TMode is unknown");
+        require(extract(program, original, 0, TaskMonitor.DUMMY, new ArrayList<>()).equals(baseline),
+            "saved mapping is unchanged after all admission controls");
+        System.out.println("arm-section-allocation-boundaries=PASS");
     }
 
     private static Program context(Program real, Address at, RegisterValue value) {
