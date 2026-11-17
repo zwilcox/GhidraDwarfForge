@@ -6,7 +6,44 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current function relationship and class witness checkpoint
+## Current unreachable local-definition checkpoint
+
+CONFIRMED: commit `1682df53` adds `UnreachableLocalDefinitionSmoke` through
+`localDefinitionFlowSmoke`. Sixteen real Ghidra ProgramDB fixtures cover x86-64
+and AArch64, 32/64-bit locals, low/above-4-GiB addresses, and dead predecessor
+blocks or dead cycles. Every byte is decoded into actual instructions; the
+saved function body explicitly retains the unreachable blocks. A pointwise
+oracle requires unavailable locations before the real definition completes
+and throughout dead blocks, with valid locations at the reachable join/return.
+An unreachable recorded definition and an external entry into the previously
+dead block both cause refusal. Removing the extra entry restores the original
+proof. Extraction leaves saved program state and machine bytes unchanged.
+
+The focused run passes 808 new assertions and 508 existing local-definition
+checks. Four compiled faults trigger intended behavioral assertions: initializing
+dead blocks as reachable, letting a dead predecessor suppress a live value,
+publishing the definition before execution, and assigning locations to unvisited
+blocks. No production source/JAR changes or new emitted-DWARF/debugger claims.
+
+The verified JVM adds three binary/location branch outcomes. All prior raw
+receipts, hashes and class/session identities were rechecked before unioning.
+`RegisterDefinitionFlow` now measures 169/171 lines and 208/263 branches.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Overall, 1,857 distinct sessions | 28,665 / 29,790 (96.2%) | 21,665 / 25,884 (83.7%) |
+| Binary/location | 18,454 / 19,201 (96.1%) | 15,583 / 18,732 (83.2%) |
+| File/validation | 6,485 / 6,677 (97.1%) | 3,701 / 4,250 (87.1%) |
+
+Evidence: `.forge-work/scratch/coverage-expansion/unreachable-local-definitions-2f181/`
+and `unreachable-local-mutations-2f181/`. Mutant probes are excluded and compiled
+mutant classes removed after verification. All 255 production sources/901 classes
+remain included. **Still incomplete:** 1,276 binary/location and 124 file/validation
+branch outcomes for the critical targets, current hosted acceptance, protected
+merge and actual-main publication. The queued Windows security/backup controls
+remain unverified on their native host and contribute no measured coverage yet.
+
+## Earlier function relationship and class witness checkpoint
 
 CONFIRMED: commit `e0dd5325` adds `ScopeRelationshipBoundarySmoke` through
 `functionRelationsSmoke`. The focused run passes 22 boundary assertions and
