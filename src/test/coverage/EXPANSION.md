@@ -8,16 +8,16 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 806 verified
-sessions: 211 JavaExec, 556 native-Java and 39 headless. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 807 verified
+sessions: 211 JavaExec, 557 native-Java and 39 headless. Every available view
 retains all 255 production sources / 901 class files. Windows execution data
 and the remaining integration cohort are still missing; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 27,530 / 29,802 (92.4%) | 21,003 / 25,902 (81.1%) |
-| Binary and location correctness | 18,309 / 19,213 (95.3%) | 15,435 / 18,750 (82.3%) |
+| Overall | 27,535 / 29,802 (92.4%) | 21,007 / 25,902 (81.1%) |
+| Binary and location correctness | 18,314 / 19,213 (95.3%) | 15,439 / 18,750 (82.3%) |
 | File transactions and validation | 5,538 / 6,677 (82.9%) | 3,256 / 4,250 (76.6%) |
 
 The production relocation fix remains covered on all 14 changed executable
@@ -53,10 +53,41 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-closed-flow-partial/summary.json` in the coverage workspace, SHA-256
-`e0ed4b2876ffa49482c7f5283b517286706a703f13762ddb820fb4369f3079de`.
-It replaces the smaller 805-session partial baseline for current progress
+`stable-memory-type-evidence-partial/summary.json` in the coverage workspace, SHA-256
+`4b5745869665b557b96f40723d4c5a7bc72596e5e1aa9f0aa17a5de7e30373e1`.
+It replaces the smaller 806-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Saved parameter provenance and character layout
+
+**CONFIRMED, local:** the expanded `CuratedTypeBoundarySmoke` passes 469
+assertions through the existing floating-layout task, whose 73 checks also pass.
+Seven real Ghidra language/compiler profiles cover x86-32 GCC/Windows, x86-64,
+AArch64, ARM32 and both MIPS32 byte orders. Windows here describes a target
+compiler model on Linux, not execution on a Windows host.
+
+For every profile, five saved parameters exercise USER_DEFINED, IMPORTED, AI,
+ANALYSIS and DEFAULT sources. Extraction preserves their names, available
+register storage and exact confidence labels. A selected function with no saved
+signature produces a diagnostic instead of an invented signature. Character
+signedness/width follows the target data organization. Extraction leaves the
+saved program unchanged. Four compiled mutation controls detect changed AI or
+imported provenance, inverted character signedness and a hidden missing-signature
+diagnostic; the unchanged-source baseline passes.
+
+Sources are committed at `d7f873e5`; `type-evidence-stable-memory/` holds the raw
+session, verified receipt and source snapshots. `type-evidence-mutations/`
+records the four controls. This adds five covered lines and four branches over
+the preceding partial report, with no production change or denominator change.
+
+**CONFIRMED CI failure:** run `44042799768`, ARM32 job `133915220887`, failed
+`prepareHeadlessCoverage` because Maven Central returned HTTP 429 for the pinned
+JaCoCo 0.8.16 POM. Its isolated producer checks passed before coverage setup.
+The workflow now gives Linux target and Windows coverage preparation the same
+three-attempt limit used by extension-build, waiting 15 then 30 seconds. Only
+dependency preparation is retried; test failures remain failures. Actionlint and
+four Linux command-control cases pass, including permanent-failure propagation.
+PowerShell retry execution and the hosted retry remain **PRESENT, UNVERIFIED**.
 
 ## Conditional transfers and saved delay-slot references
 

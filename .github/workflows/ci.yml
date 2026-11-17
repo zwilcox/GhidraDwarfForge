@@ -1158,7 +1158,18 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          ./gradlew --no-daemon -PtestCoverage=true prepareIntegrationCoverage
+          set -euo pipefail
+          # Fresh target runners may receive Maven Central HTTP 429 responses.
+          # Retry dependency preparation only; behavioral tests run once.
+          for attempt in 1 2 3; do
+              if ./gradlew --no-daemon -PtestCoverage=true prepareIntegrationCoverage; then
+                  break
+              fi
+              if [[ "$attempt" -eq 3 ]]; then
+                  exit 1
+              fi
+              sleep "$((attempt * 15))"
+          done
           if [[ "$TARGET" == x86_64 ]]; then
               echo "FORGE_INTEGRATION_COVERAGE_AGENT=$PWD/build/test-coverage-tools/jacocoagent.jar" >> "$GITHUB_ENV"
               echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"
@@ -4193,8 +4204,13 @@ jobs:
       - name: Prepare separate Windows integration coverage
         shell: pwsh
         run: |
-          .\gradlew.bat --no-daemon -PtestCoverage=true prepareIntegrationCoverage
-          if ($LASTEXITCODE -ne 0) { throw 'Integration coverage preparation failed' }
+          # Bound retries to dependency preparation, matching Linux runners.
+          foreach ($attempt in 1..3) {
+            .\gradlew.bat --no-daemon -PtestCoverage=true prepareIntegrationCoverage
+            if ($LASTEXITCODE -eq 0) { break }
+            if ($attempt -eq 3) { throw 'Integration coverage preparation failed' }
+            Start-Sleep -Seconds ($attempt * 15)
+          }
           $env:FORGE_INTEGRATION_COVERAGE_AGENT = (Resolve-Path 'build/test-coverage-tools/jacocoagent.jar').Path
           $env:FORGE_INTEGRATION_COVERAGE_OUTPUT = Join-Path $PWD 'build/integration-coverage/collections'
           python -B src/test/coverage/integration-coverage-execution.py `
