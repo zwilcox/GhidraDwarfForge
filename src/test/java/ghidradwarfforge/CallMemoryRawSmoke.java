@@ -19,6 +19,7 @@ import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.address.AddressSpace;
+import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.lang.CompilerSpec;
 import ghidra.program.model.lang.Language;
 import ghidra.program.model.lang.LanguageID;
@@ -29,6 +30,9 @@ import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.symbol.RefType;
 import ghidra.program.util.DefaultLanguageService;
 import ghidra.util.task.TaskMonitor;
+import ghidradwarfforge.locations.TargetRegisterMap;
+import ghidradwarfforge.locations.VariableStorageModel.RegisterStorage;
+import ghidradwarfforge.locations.VariableStorageModel.RegisterRelativeStorage;
 
 /** Raw memory-proof contracts in real language contexts, not machine-code support claims. */
 public final class CallMemoryRawSmoke {
@@ -191,10 +195,38 @@ public final class CallMemoryRawSmoke {
             var empty = new CallMemoryEffects.Summary(0, Set.of());
             for (String defect : List.of("transparent", "missing-stack-pointer", "partial-stack-pointer", "missing-memory",
                     "overlay", "register-space", "word-addressed", "zero-pointer", "wide-pointer", "pointer-mismatch")) {
-                test(profile(defect, true), "target profile " + defect, defect.equals("transparent") ? empty : null,
+                Program selected = profile(defect, true);
+                test(selected, "target profile " + defect, defect.equals("transparent") ? empty : null,
                     new PcodeOp[0], new PcodeOp[0]);
+                var state = StackValueFlow.forStackLocal(selected, width, 0);
+                require((state != null) == defect.equals("transparent"), "stack local accepted invalid target: " + defect);
+                require((StackValueFlow.forIncomingPiece(selected, carrier) != null) == defect.equals("transparent"),
+                    "incoming value accepted invalid target: " + defect);
+                if (state != null) initializedLocation(state, selected);
                 test("target profile retry", empty, new PcodeOp[0], new PcodeOp[0]);
             }
+            require(StackValueFlow.forStackLocal(profile("unregistered-memory", true), width, 0) == null,
+                "stack proof used an unregistered memory-space identity");
+            for (int invalid : new int[] { 0, -1 }) {
+                require(StackValueFlow.forStackLocal(program, invalid, 0) == null, "nonpositive local width acquired a state");
+            }
+            for (Varnode invalid : List.of(sp, new Varnode(carrier.getAddress(), 0),
+                    new Varnode(carrier.getAddress(), width * 2), new Varnode(entry, width), constant(7, width),
+                    new Varnode(program.getAddressFactory().getUniqueSpace().getAddress(0x100), width))) {
+                require(StackValueFlow.forIncomingPiece(program, invalid) == null,
+                    "non-value carrier acquired an incoming fact: " + invalid);
+            }
+            var map = registerMap();
+            var incoming = StackValueFlow.forIncomingPiece(program, carrier);
+            require(incoming != null && incoming.location(map) instanceof RegisterStorage register &&
+                register.register().dwarfNumber() == 0 && register.bitSize() == width * 8,
+                "valid incoming register did not retain its exact location");
+            var slot = new Varnode(program.getAddressFactory().getStackSpace().getAddress(16), width);
+            var stack = StackValueFlow.forIncomingPiece(program, slot);
+            require(stack != null && stack.location(map) instanceof RegisterRelativeStorage relative &&
+                relative.register().dwarfNumber() == stackNumber() && relative.byteOffset() == 16,
+                "valid incoming stack piece did not retain its exact coordinate");
+            initializedLocation(StackValueFlow.forStackLocal(program, width, 0), program);
             // This is a raw memory-proof contract, not a claim of an upward-stack ABI.
             // An increase releases [old,new) on a downward stack; a decrease releases
             // [new,old) on an upward stack. Allocation must not count as a write/release.
@@ -210,6 +242,32 @@ public final class CallMemoryRawSmoke {
                         expected, new PcodeOp[] { op(PcodeOp.INT_ADD, sp, sp, constant(delta, width)) }, new PcodeOp[0]);
                 }
             }
+        }
+
+        TargetRegisterMap registerMap() {
+            return TargetRegisterMap.forTarget(program.getLanguageID().toString().startsWith("x86") ?
+                (width == 8 ? "x86_64" : "x86") : "aarch64");
+        }
+
+        int stackNumber() {
+            return program.getLanguageID().toString().startsWith("x86") ? (width == 8 ? 7 : 4) : 31;
+        }
+
+        void initializedLocation(StackValueFlow state, Program selected) throws Exception {
+            require(state != null && !state.location(registerMap()).available(), "local acquired a value before its definition");
+            PcodeOp[] operations = { op(PcodeOp.STORE, null, space, sp, constant(7, width)) };
+            var instruction = (Instruction) Proxy.newProxyInstance(Instruction.class.getClassLoader(),
+                new Class<?>[] { Instruction.class }, (proxy, method, args) -> {
+                    if (method.getName().equals("getPcode")) return operations;
+                    if (method.getName().equals("getResultObjects")) return new Object[0];
+                    if (method.getName().equals("getProgram")) return selected;
+                    try { return method.invoke(instructions.getFirst(), args); }
+                    catch (InvocationTargetException failure) { throw failure.getCause(); }
+                });
+            require(state.advance(instruction, true, TaskMonitor.DUMMY), "exact defining STORE was not admitted");
+            require(state.location(registerMap()) instanceof RegisterRelativeStorage relative &&
+                relative.register().dwarfNumber() == stackNumber() && relative.byteOffset() == 0,
+                "completed STORE did not establish the exact stack location");
         }
 
         Program profile(String defect, boolean growsNegative) {
@@ -234,6 +292,13 @@ public final class CallMemoryRawSmoke {
                     try { return method.invoke(program.getLanguage(), args); }
                     catch (InvocationTargetException failure) { throw failure.getCause(); }
                 });
+            var factory = (AddressFactory) Proxy.newProxyInstance(AddressFactory.class.getClassLoader(),
+                new Class<?>[] { AddressFactory.class }, (proxy, method, args) -> {
+                    if (!defect.equals("unregistered-memory") && method.getName().equals("getAddressSpace") &&
+                            args[0] instanceof Integer id && id == originalSpace.getSpaceID()) return selectedSpace;
+                    try { return method.invoke(program.getAddressFactory(), args); }
+                    catch (InvocationTargetException failure) { throw failure.getCause(); }
+                });
             var compiler = (CompilerSpec) Proxy.newProxyInstance(CompilerSpec.class.getClassLoader(),
                 new Class<?>[] { CompilerSpec.class }, (proxy, method, args) -> {
                     if (method.getName().equals("getStackPointer")) {
@@ -253,6 +318,7 @@ public final class CallMemoryRawSmoke {
                 (proxy, method, args) -> {
                     if (method.getName().equals("getLanguage")) return language;
                     if (method.getName().equals("getCompilerSpec")) return compiler;
+                    if (method.getName().equals("getAddressFactory")) return factory;
                     try { return method.invoke(program, args); }
                     catch (InvocationTargetException failure) { throw failure.getCause(); }
                 });

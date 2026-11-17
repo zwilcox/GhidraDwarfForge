@@ -8403,3 +8403,33 @@ Evidence: `.forge-work/scratch/merged-local-metadata-build.log`,
 22,760/25,902 branches. Critical binary/location branches are 16,535/18,750,
 340 short of 90%; file operations remain 3,831/4,250. Full-denominator scope
 is unchanged. Hosted validation of these local additions remains pending.
+
+## Stack-value target admission and observable initialization
+
+The existing raw memory fixture adds 117 checks for stack-value tracking in
+i386, x86-64 and AArch64 language contexts. Target metadata refusals also apply
+to local-state creation and incoming pieces. A memory space with the correct
+ID but without the matching registered identity must be refused. Nonpositive
+local widths, SP-as-value, overwide/zero-width register spans and memory,
+constant or unique-space carriers cannot invent incoming facts.
+
+Positive controls verify observable semantics: a local has no location before
+its defining store, the completed store establishes the exact SP-relative
+coordinate, and incoming register/stack values retain their exact register
+number, width and offset. Transparent API views preserve these observations;
+the original program's bytes and modification counter remain unchanged.
+
+`callMemoryEffectsSmoke` passes in five seconds (456 raw checks, 525 boundary
+checks and 165 parent checks). Eight compiled faults are caught by behavioral
+assertions, including an invented location for a non-value carrier and accepting
+a foreign memory-space identity. The unchanged baseline passes (26.622 seconds
+total). These raw contracts do not establish additional target support.
+
+Evidence: `.forge-work/scratch/stack-value-target-build.log`,
+`stack-value-target-mutants/result.json`, and
+`coverage-recovery/stack-value-targets/`. The verified 1,351-session diagnostic
+union adds one line and 15 branches: 28,910/29,802 lines and 22,775/25,902
+branches overall. Critical binary/location branches are 16,550/18,750,
+325 short of 90%; file operations remain 3,831/4,250. All 255 production
+sources / 901 classes remain in scope with unchanged production bytecode.
+These local additions still require hosted validation.

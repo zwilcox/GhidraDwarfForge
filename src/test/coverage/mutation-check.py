@@ -1194,7 +1194,25 @@ CALL_PARAMETERS_MUTANTS = [
      '// hidden return guard omitted'),
 ]
 
+STACK_FACTORY_GUARD = '        if (bytes <= 0 || pointer == null || pointer != pointer.getBaseRegister() ||\n                memory == null || memory.isOverlaySpace() || memory.getType() != AddressSpace.TYPE_RAM ||\n                memory.getAddressableUnitSize() != 1 || memory.getPointerSize() <= 0 ||\n                memory.getPointerSize() > Long.BYTES || pointer.getBitLength() != memory.getPointerSize() * 8 ||\n                program.getAddressFactory().getAddressSpace(memory.getSpaceID()) != memory) return null;'
+
 CALL_MEMORY_MUTANTS = [
+    ("stack-factory-admits-zero-width", STACK_FLOW, CALL_MEMORY_TEST,
+     STACK_FACTORY_GUARD, STACK_FACTORY_GUARD.replace('bytes <= 0 || ', '')),
+    ("stack-factory-admits-overlay", STACK_FLOW, CALL_MEMORY_TEST,
+     STACK_FACTORY_GUARD, STACK_FACTORY_GUARD.replace('memory.isOverlaySpace() || ', '')),
+    ("stack-factory-admits-register-space", STACK_FLOW, CALL_MEMORY_TEST,
+     STACK_FACTORY_GUARD, STACK_FACTORY_GUARD.replace('memory.getType() != AddressSpace.TYPE_RAM ||', '')),
+    ("stack-factory-admits-word-addressing", STACK_FLOW, CALL_MEMORY_TEST,
+     STACK_FACTORY_GUARD, STACK_FACTORY_GUARD.replace('memory.getAddressableUnitSize() != 1 || ', '')),
+    ("stack-factory-ignores-pointer-width", STACK_FLOW, CALL_MEMORY_TEST,
+     STACK_FACTORY_GUARD, STACK_FACTORY_GUARD.replace('pointer.getBitLength() != memory.getPointerSize() * 8 ||', '')),
+    ("stack-factory-admits-unregistered-space", STACK_FLOW, CALL_MEMORY_TEST,
+     STACK_FACTORY_GUARD, STACK_FACTORY_GUARD.replace('program.getAddressFactory().getAddressSpace(memory.getSpaceID()) != memory', 'false')),
+    ("incoming-piece-admits-stack-pointer-value", STACK_FLOW, CALL_MEMORY_TEST,
+     'register == null || register.getBaseRegister() == state.pointer', 'register == null'),
+    ("incoming-piece-invents-memory-value", STACK_FLOW, CALL_MEMORY_TEST,
+     'else return null;\n        return state;', 'else state.slots.put(incoming.getOffset(), true);\n        return state;'),
     ("call-memory-profile-admits-overlay", CALL_MEMORY, CALL_MEMORY_TEST,
      'memory.isOverlaySpace() ||', ''),
     ("call-memory-profile-admits-register-space", CALL_MEMORY, CALL_MEMORY_TEST,
