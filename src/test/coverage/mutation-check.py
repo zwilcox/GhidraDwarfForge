@@ -1521,6 +1521,14 @@ STORAGE_REFINEMENT_MUTANTS = [
 ]
 
 LOCAL_MAPPING_MUTANTS = [
+    ('local-map-ignores-variable-owner', LOCAL_MAPPING, LOCAL_MAPPING_TEST,
+     'variable.getFunction() != function', 'false'),
+    ('local-map-ignores-variable-program', LOCAL_MAPPING, LOCAL_MAPPING_TEST,
+     'variable.getProgram() != program', 'false'),
+    ('local-map-ignores-register-identity', LOCAL_MAPPING, LOCAL_MAPPING_TEST,
+     '!storage.getFirstVarnode().getAddress().equals(register.getAddress())', 'false'),
+    ('local-map-ignores-assignment', LOCAL_MAPPING, LOCAL_MAPPING_TEST,
+     '!variable.hasAssignedStorage()', 'false'),
     ("local-map-accepts-duplicate-definition-pc", LOCAL_MAPPING, LOCAL_MAPPING_TEST,
      'mapping.definition().equals(savedDefinition)', 'false'),
     ("local-map-accepts-nonpoint-definition", LOCAL_MAPPING, LOCAL_MAPPING_TEST,

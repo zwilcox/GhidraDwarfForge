@@ -8518,3 +8518,34 @@ union adds five branches: 22,806/25,902 overall and 16,581/18,750 binary/locatio
 (294 short of 90%); other counters are unchanged. Production code is unchanged.
 This remains diagnostic evidence; hosted current-head gates, merge and main
 publication are still pending for #209.
+
+## Saved local merge metadata agreement
+
+`SavedMappingMetadataSmoke` runs through `localMappingsSmoke` with actual saved
+three-member Ghidra merge groups on x86-64, AArch64 and MIPS in both byte orders.
+108 cases/324 assertions check each member's owner, program, validity, assignment,
+register identity, width and first-use consistency. Transparent views preserve
+all canonical symbol IDs, ordered definitions and physical registers; negative
+views cannot include the inconsistent member or skip a gap. Saved state and
+subsequent clean extraction remain unchanged. These are listing-identity tests,
+not new emitted-artifact or runtime architecture claims.
+
+The first fixture incorrectly demanded an empty result when Ghidra filtered an
+invalid trailing member before encoding. The corrected oracle permits its
+complete valid prefix, matching the independently tested missing-ordinal rule;
+it never permits the rejected member or a later member across the gap. A wrong
+register control uses another register of the same width, isolating identity
+from width validation.
+
+Guarded `localMappingsSmoke` passes in four seconds: 324 new assertions, 92
+parent checks and 592 existing encoding checks. Four compiled faults are caught
+by behavioral assertions (variable owner/program, register identity and assigned
+storage); baseline passes, total 10.022 seconds. Production code is unchanged.
+Evidence: `.forge-work/scratch/saved-mapping-metadata-same-width.log`,
+`saved-mapping-metadata-mutants/result.json`, and
+`coverage-recovery/saved-mapping-metadata/`. Raw SHA-256:
+`d2dcd37b947401971da57f9737fd5f83f7c4ebbb6ce16c3043f3ec9888655035`.
+Source hashes, unique raw session and all 255 sources verify. The 1,355-session
+diagnostic union adds eight branches: 22,814/25,902 overall and 16,589/18,750
+binary/location branches (286 short of 90%). Line and file-operation counters
+are unchanged. Hosted current-head acceptance remains outstanding for #209.

@@ -68,6 +68,7 @@ public final class LocalMappingsSmoke {
                     .equals(List.of(first, second, second)), "physical storage changes and reuse");
                 require(function.getLocalVariables().length == 3 && copy.getName().equals("value$1"),
                     "extraction must not rewrite saved locals");
+                SavedMappingMetadataSmoke.check(program, function, groups);
                 LocalMappingEncodingSmoke.run(program, function, false);
 
                 copy.setName("unrelated", SourceType.USER_DEFINED);
