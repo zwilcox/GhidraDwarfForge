@@ -6,6 +6,34 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## MIPS STORE regression measurement
+
+**CONFIRMED:** the existing freestanding O32/N32 integer STORE regression now
+supports opt-in per-export coverage without changing its fixtures or oracle.
+Local run `85546` passed for big- and little-endian MIPS: four source-built
+fixtures, eight measured exporter JVMs, compiler and Forge QEMU/GDB observations,
+GNU/LLVM/strict validation, identical repeated sidecar/source bytes, and unchanged
+protected inputs. The original installed JAR and native metadata were restored.
+This remains a bounded ET_EXEC integer-storage test, not a broader N32 libc,
+floating-point, PIE/shared or debugger-call ABI support claim.
+
+The wrapper leaves initial analysis unmeasured and instruments the curated and
+read-only repeated exports separately. New admission checks require both ABIs,
+all four exporter sessions, compiler/Forge values and normal exits, zero strict
+errors, artifact hashes and harness provenance. Each MIPS CI lane now reports
+its own cohort. Both cohorts are required by combined reporting and publication;
+one endian lane cannot substitute for the other. Coverage source inventory and
+targets are unchanged. No production Java code changed.
+
+Validation: guarded full coverage-policy suite passed **301 tests**; after adding
+the hosted-lane substitution/omission test, the focused suite passed **six tests**.
+`bash -n`, `actionlint` and `git diff --check` passed. Raw execution data is retained
+under `mips-truncated-current-4bd11/` in the bounded coverage workspace. Exact-class
+verification and the resulting combined counters are recorded separately below
+when complete. New hosted collection remains **PRESENT, UNVERIFIED** until CI runs
+this revision. Run `44024881065` still has eleven passing jobs and five live
+architecture lanes; it predates this change and has not been cancelled.
+
 ## Verified Windows measurements and callable producer behavior
 
 **CONFIRMED:** Windows-host job `133854290162` passed in

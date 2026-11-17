@@ -60,10 +60,11 @@ class CombinedPublication(unittest.TestCase):
             self.xml(layer, complete=layer == 'combined')
             layers[layer], _ = render.read_xml(self.directory / 'xml' / (layer + '.xml'))
         self.record = {'schema': 1, 'status': 'VERIFIED_HOSTED_MEASUREMENT', 'nativeCMeasured': False,
-            'cohort': {'commit': self.commit, 'run': '7'}, 'sessions': 6,
+            'cohort': {'commit': self.commit, 'run': '7'}, 'sessions': 8,
             'productionJarSha256': 'a' * 64, 'inventorySha256': render.policy.javaexec.digest(self.inventory),
             'origins': [{'kind': kind, 'commit': self.commit, 'run': '7', 'sessions': 1}
-                for kind in ('javaexec', 'linux', 'linux_aarch64', 'linux_host', 'windows', 'firmware')], 'layers': layers}
+                for kind in ('javaexec', 'linux', 'linux_aarch64', 'linux_mips32be', 'linux_mips32le',
+                    'linux_host', 'windows', 'firmware')], 'layers': layers}
         self.reassess()
 
     def git(self, *arguments):

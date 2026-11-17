@@ -1155,7 +1155,7 @@ jobs:
             --sections "$results/sections" --output "$results/validation"
 
       - name: Prepare separate coverage for existing integration JVMs
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+        if: matrix.target == 'x86_64' || matrix.target == 'aarch64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2942,7 +2942,10 @@ jobs:
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
         env:
           TARGET: ${{ matrix.target }}
-        run: src/test/integration/mips-truncated-space-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+        run: |
+          FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar" \
+          FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections" \
+              python3 -B src/test/integration/mips-truncated-space.py "$GHIDRA_INSTALL_DIR" "$TARGET"
 
       - name: MIPS N32 and N64 scalar ABI runtime and loader profiles
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
@@ -3470,6 +3473,25 @@ jobs:
         if: always() && matrix.target == 'aarch64'
         with:
           name: integration-java-coverage-linux-aarch64
+          path: build/integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Verify and report MIPS STORE integration coverage
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 -B src/test/coverage/integration-report.py \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --collections build/integration-coverage/collections --output build/integration-coverage/report \
+              --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite mips-truncated-space
+
+      - uses: actions/upload-artifact@v7
+        if: always() && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
+        with:
+          name: integration-java-coverage-linux-${{ matrix.target }}
           path: build/integration-coverage/
           if-no-files-found: error
           retention-days: 14
@@ -4432,6 +4454,14 @@ jobs:
           path: build/combined-inputs/linux-aarch64
       - uses: actions/download-artifact@v8
         with:
+          name: integration-java-coverage-linux-mips32be
+          path: build/combined-inputs/linux-mips32be
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-linux-mips32le
+          path: build/combined-inputs/linux-mips32le
+      - uses: actions/download-artifact@v8
+        with:
           name: integration-java-coverage-windows
           path: build/combined-inputs/windows
       - uses: actions/download-artifact@v8
@@ -4453,6 +4483,8 @@ jobs:
               --bundle build/combined-inputs/javaexec --expected-tasks src/test/coverage/javaexec-tasks.json \
               --linux build/combined-inputs/linux --linux-host build/combined-inputs/linux-host \
               --linux-aarch64 build/combined-inputs/linux-aarch64 \
+              --linux-mips32be build/combined-inputs/linux-mips32be \
+              --linux-mips32le build/combined-inputs/linux-mips32le \
               --windows build/combined-inputs/windows --firmware build/combined-inputs/firmware \
               --inventory src/test/coverage/critical-sources.json --sources src/main/java \
               --java "$JAVA_HOME/bin/java" --output build/combined-java-coverage \

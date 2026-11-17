@@ -86,7 +86,8 @@ def verify(directory, inventory, sources, repository, commit, run_id, local_prev
         if record.get('cohort') != cohort:
             raise ValueError('combined measurement does not belong to this CI run')
         origins = record.get('origins', [])
-        expected = {'javaexec', 'linux', 'linux_aarch64', 'linux_host', 'windows', 'firmware'}
+        expected = {'javaexec', 'linux', 'linux_aarch64', 'linux_mips32be', 'linux_mips32le',
+            'linux_host', 'windows', 'firmware'}
         if (len(origins) != len(expected) or {origin.get('kind') for origin in origins} != expected
                 or any(origin.get('commit') != commit or origin.get('run') != str(run_id) for origin in origins)
                 or sum(origin.get('sessions', 0) for origin in origins) != record.get('sessions')):
