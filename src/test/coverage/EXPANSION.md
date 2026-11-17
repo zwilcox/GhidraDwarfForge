@@ -6,6 +6,37 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current-run AArch64 coverage independently regenerated
+
+The AArch64 job in [CI run 44105084385](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/44105084385)
+passed at remote head `6104599a775cddad303078a92de00ed3052bc099`, using producing
+merge `8f9d946cedee0ca8ad370c6daf45057514534c3e`. Artifact `14351816980` was downloaded
+under the storage guard; its byte count and GitHub SHA-256 digest were verified
+before bounded extraction. Its 26 sessions comprise 14 headless and 12 native-Java
+sessions across all four required suites: bitfields, stack transitions, location
+widths and namespace globals.
+
+Every raw collection receipt passed validation against the unchanged production
+JAR. Local report regeneration reproduces the hosted layer data exactly, including
+per-source counters, receipt hashes and XML hashes. All 901 production classes
+and 255 sources remain represented. The verification also checks the successful
+AArch64 job, producing cohort and unchanged production source since its head.
+
+The diagnostic replaces the 26 older AArch64 sessions instead of accumulating
+duplicate runs, and admits the final formatter admission session. Its total is
+1,380 sessions, with **28,827/29,802 lines (96.7%) and 22,121/25,902 branches
+(85.4%)**. Replacement of the AArch64 cohort changes no covered counters; the
+nine-branch increase comes from the formatter task. Both critical-group branch
+targets remain unmet. Other historical sessions remain in the diagnostic, and
+the queued local changes have not passed full current-head hosted validation.
+x86-64 and ARM32 were still running; both MIPS coverage-report failures have a
+separately validated collector fix queued for the next run.
+
+Evidence: `.forge-work/scratch/coverage-recovery/fetch-aarch64-current.log`,
+`verify-aarch64-current.log`, and
+`current-44105084385/aarch64-current-diagnostic/` (job identity, regenerated layer
+reports, union manifest, full report and updated gaps).
+
 ## Formatter type-name admission before native production
 
 The existing `formatterPlanSmoke` task now runs 60 additional assertions against
