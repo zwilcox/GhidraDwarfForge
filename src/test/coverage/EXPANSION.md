@@ -6776,3 +6776,43 @@ Evidence is under `javaexec-baseline-34/`, `register-profile-selected-mutations/
 The initial surviving-mutant evidence remains in `register-profile-mutation-checks/`
 and `register-profile-mutations.log`. Both MIPS target CI jobs now pass; x86-64,
 AArch64 and ARM32 were still running at this checkpoint.
+
+
+### Allocation omission authority: definitions and external declarations
+
+`AllocationOmissionAuthoritySmoke`, included in `i386ParameterAllocationSmoke`,
+uses real i386 GCC ProgramDB signatures with either an integer result or the
+compiler-generated hidden pointer for an extended floating result. The audited
+allocation policy retains the explicit analyst name/type, omits only the hidden
+pointer, and supplies the four-byte explicit input at stack offset four. Formal
+extended return metadata remains 12-byte ABI size / 10-byte value width.
+Fault policies request omission of the explicit parameter independently for
+function definitions and external declarations. Extraction must reject each,
+preserve saved names/types/storage/ordinals and the modification number, and
+produce the original complete model on a clean retry. Original ELF bytes remain
+unchanged. This tests model extraction, not a new debugger or target profile.
+
+Guarded validation:
+
+- `./gradlew --no-daemon i386ParameterAllocationSmoke`: PASS, 32 new authority
+  assertions plus 17 stack-proof, 4,859 boundary and 1,246 existing allocation
+  assertions. Initial test incorrectly expected floating payload size to equal
+  ABI size; corrected to the independently specified i386 12/10-byte contract.
+- `mutation-check.py` with the four `allocation-omits-explicit-*` and
+  `allocation-retains-hidden-*` labels: PASS, unchanged-source baseline and
+  four compiled faults detected by Java behavioral assertions, 10.874 seconds.
+  Production source hash verified; no production code changes.
+- Matching-bytecode diagnostic union: 1,400 unique sessions, 255 production
+  sources / 901 classes. Verified raw execution hash, test-source hashes and
+  exact manifest addition. Adds one line and four branches in GhidraTypeGraph.
+  Overall 28,847/29,802 lines and 22,240/25,902 branches; binary/location
+  18,610/19,213 lines and 16,071/18,750 branches (804 short of 90%); file
+  operations unchanged at 6,502/6,677 lines and 3,775/4,250 branches (50 short).
+  Historical cohorts remain: this is not current-head hosted acceptance.
+
+Local evidence: `.forge-work/scratch/allocation-omission-authority-aligned.log`,
+`allocation-omission-authority-mutants/result.json`, and
+`coverage-recovery/allocation-omission-authority/`. All commands ran through the
+storage guard. CI run 44105084385 finished with x86-64/AArch64/Windows passing;
+ARM32 and both MIPS lanes failed final coverage collection. Its collector fix
+and previous tests are pushed at a5a29b1d; fresh run 44150222826 is pending.
