@@ -8044,3 +8044,36 @@ validate queued local commits. Full issue #209 acceptance remains outstanding.
 Evidence: `.forge-work/scratch/coverage-recovery/current-44150222826/` contains
 the authenticated ARM32 archive and artifact metadata; `arm32-44150222826/`
 contains job/origin records, regenerated reports and the diagnostic union.
+
+## Raw call-transfer contracts
+
+The existing `callSiteEvidenceSmoke` now runs 146 additional cases around real
+x86-64 and AArch64 direct/indirect calls, direct/conditional/computed tail
+candidates, and rebased direct calls. Original ELF byte matching remains active.
+Controlled raw p-code changes test missing/duplicate transfers, forbidden outputs,
+missing/extra operands, opaque effects, effects after calls, internal branch
+control, contradictory call/branch kinds and mismatched targets. Invalid evidence
+must become an explicit UNAVAILABLE transfer without a target, return PC or
+callee; unchanged retry and transparent views preserve the original transfer.
+The raw-operation cap accepts exactly 4,096 operations and refuses 4,097.
+Program modification counts and decoded bytes remain unchanged, and the parent
+suite confirms the input ELF is unchanged. This is evidence capture testing,
+not a new call-site emission or tail-call proof claim.
+
+The guarded parent task passes in 6 seconds with its existing 527 checks plus
+146 new transfer cases. Seven compiled faults are caught through behavioral
+assertions, with a passing unchanged baseline (18.984 seconds). The first test
+attempt selected BRANCH as a contradictory call opcode, which the earlier
+intra-instruction-control guard rejected; using RETURN isolates the intended
+call-kind check. That failed attempt contributes no coverage evidence.
+
+Verified diagnostic `call-transfer-contracts` contains 1,335 sessions with the
+unchanged production JAR, 255 sources and 901 classes. It adds one line and
+15 branch outcomes: 28,904/29,802 lines and 22,664/25,902 branches overall.
+Binary/location critical coverage is 16,443/18,750 branches, 432 outcomes short
+of 90%. File-operation critical targets remain met in the diagnostic union only;
+the mixed cohort and queued local commits still need final hosted acceptance.
+
+Evidence: `.forge-work/scratch/call-transfer-contracts-final.log`,
+`call-transfer-contracts-mutants/result.json`, and
+`coverage-recovery/call-transfer-contracts/`.

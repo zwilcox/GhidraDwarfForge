@@ -240,6 +240,9 @@ public final class GhidraCallSiteEvidenceSmoke {
                 }
                 require(GhidraCallSiteEvidence.capture(program, List.of(function), image, delta, TaskMonitor.DUMMY).getFirst()
                     .equals(evidence), "retry changed immutable evidence");
+                if (List.of("call", "indirect-call", "tail", "conditional-tail", "indirect-tail", "rebase").contains(mode)) {
+                    CallTransferContractsSmoke.check(program, first, image, delta);
+                }
                 if (mode.equals("call")) {
                     admissionBoundaries(program, image, delta);
                     Path wrongTarget = output.resolve((arm ? "arm" : "x86") + "-wrong-target.elf");

@@ -202,6 +202,22 @@ ALLOCATION_OVERRIDE_MUTANTS = [
 CALL_EVIDENCE = "ghidradwarfforge/calls/GhidraCallSiteEvidence.java"
 CALL_EVIDENCE_TEST = "ghidradwarfforge.calls.GhidraCallSiteEvidenceSmoke"
 CALL_EVIDENCE_MUTANTS = [
+    ("call-evidence-accepts-transfer-output", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "transfer.output() == null && !transfer.inputs().isEmpty()", "!transfer.inputs().isEmpty()"),
+    ("call-evidence-accepts-extra-call-operand", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "transfer.inputs().size() == 1 &&", "true &&"),
+    ("call-evidence-accepts-effects-after-call", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "operations.getLast() == transfer &&", "true &&"),
+    ("call-evidence-ignores-conditional-internal-flow", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "operations.stream().noneMatch(operation -> operation.opcode() == PcodeOp.BRANCH ||\n"
+     "                operation.opcode() == PcodeOp.CBRANCH)",
+     "operations.stream().noneMatch(operation -> operation.opcode() == PcodeOp.BRANCH)"),
+    ("call-evidence-trusts-contradictory-target", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "targets.getFirst().equals(transfer.inputs().getFirst().address()) &&", "true &&"),
+    ("call-evidence-accepts-excess-raw-operations", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "raw.length > 4096", "raw.length > 4097"),
+    ("call-evidence-ignores-branch-condition", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "(opcode == PcodeOp.CBRANCH) == flow.isConditional()", "true"),
     ("call-evidence-rejects-exact-body-budget", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
      'body.getNumAddresses() > 1_048_576', 'body.getNumAddresses() >= 1_048_576'),
     ("call-evidence-accepts-foreign-function", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
