@@ -6,7 +6,54 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Stack coordinates and actual ARM literal memory effects
+## Line-program boundaries and ARM aggregate shapes
+
+**CONFIRMED:** `fea5d401` extends the existing line-table smoke task with 900
+complete program decodes. Expected rows are derived from the supplied source
+evidence, including forward/backward signed line changes around LEB128 limits,
+line zero, large line numbers, high ELF32/ELF64 addresses, both byte orders,
+discontiguous sequence reset and exact end addresses. Reordered evidence must
+produce identical bytes. Tests also reject invalid filenames, duplicate partition
+names, mismatched partition counts, negative positions and unsupported address
+widths, and verify that returned bytes and file tables cannot mutate the result.
+Five separately compiled faults fail behavioral assertions: unsigned line deltas,
+premature signed-LEB termination, address truncation, embedded NUL acceptance and
+mutable section bytes. The ordinary `dwarfLineTableSmoke` task passes in three
+seconds. These are encoder tests, not additional end-to-end debugger claims.
+
+**CONFIRMED:** `7e602fe8` extends the actual Ghidra ARM aggregate allocation test
+with 144 array and typedef scenarios. Both byte orders and audited conventions
+cover register-only, register/stack split and exhausted-register allocations.
+The independent byte-placement oracle remains unchanged. New checks preserve
+formal types and saved storage through cancellation, variadic refusal and retry;
+explicit analyst storage remains authoritative. The isolated and ordinary
+`armCompositeParameterAllocationSmoke` runs pass 2,592 checks; the Gradle task
+takes four seconds. Three faults are detected using only the new scenarios:
+skipped typedef unwrapping, skipped array correction and variadic correction.
+This tests existing allocation policy without extending runtime ABI claims.
+
+No production code changed. Mutant bytecode is excluded from coverage and was
+removed. Source snapshots, test classes, logs and raw session receipts bind both
+successful measurements to their committed tests. The current verified partial
+union is `.forge-work/scratch/coverage-expansion/arm-composite-shapes-refresh-4bd11/summary.json`,
+SHA-256 `58c9988892b5fc38e16d515d3985db628b310366e30567057a33f84bb73a6c3c`.
+All 255 production sources / 901 classes remain included, against production JAR
+`4bd11717ce1ff8e46eba3b0f7091517c4dd90e4e0c82472613f8fd66ca31390c`.
+The 1,234 sessions comprise 211 JavaExec, 637 native-Java-path and 386 headless
+sessions. These additions cover three more lines and seventeen more branches.
+
+| Scope | Lines | Branches | Required |
+| --- | --- | --- | --- |
+| Overall Java | 27,918/29,792 (93.7%) | 21,323/25,888 (82.4%) | 85% / 80% |
+| Binary/location correctness | 18,504/19,203 (96.4%) | 15,632/18,736 (83.4%) | 95% / 90% |
+| File transactions/validation | 5,688/6,677 (85.2%) | 3,314/4,250 (78.0%) | 95% / 90% |
+
+**INCOMPLETE:** critical-group thresholds, fresh Windows and remaining complete
+hosted measurements, protected integration and actual-main publication are still
+required. CI `44024881065` is advancing on the earlier remote head `1437e340`;
+these local test commits require their own validation before integration.
+
+## Earlier stack coordinates and actual ARM literal memory effects
 
 **CONFIRMED:** `208efbca` adds `StackCoordinateProjectionSmoke`, invoked by the
 existing `truncatedStackDepthSmoke` Gradle task. Its 13,483 checks independently
