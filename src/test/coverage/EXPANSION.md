@@ -8433,3 +8433,31 @@ branches overall. Critical binary/location branches are 16,550/18,750,
 325 short of 90%; file operations remain 3,831/4,250. All 255 production
 sources / 901 classes remain in scope with unchanged production bytecode.
 These local additions still require hosted validation.
+
+## Later register-local metadata agreement
+
+The existing `laterRegisterLocalSmoke` now checks 80 metadata cases (240 new
+assertions) over the real decoded x86-64/AArch64 four/eight-byte local fixtures.
+Transparent views preserve the independently specified available interval;
+contradictory owner/program, validity, assignment, storage, type extent and
+register metadata must not invent a location. Each case preserves saved state
+and permits a clean retry. The narrow AArch64 w9 control remains valid for a
+four-byte local. These are admission tests, not additional architecture claims.
+
+Guarded `laterRegisterLocalSmoke` passes in four seconds: 401 ownership checks
+and 112 parent checks. Five compiled faults are caught by behavioral assertions
+(validity, assignment, type extent, foreign storage and indirect storage), with
+the baseline passing; mutation run takes 13.201 seconds. A candidate removing
+only the register-address guard survived because later lifetime checks still
+refuse the mismatched register; it is not counted as detected or retained as a
+required mutation. No production code changed.
+
+Evidence: `.forge-work/scratch/later-local-metadata.log`,
+`later-register-metadata-behavior-mutants/result.json`, and
+`coverage-recovery/later-local-metadata/`. Raw execution SHA-256:
+`cc6758b836b2d8492116bac2b025bd8c198d6fa6f8e445c4d736e685fd9beeb1`.
+Source hashes, unique session addition and all 255 production sources verify.
+The 1,352-session diagnostic union adds 13 branches, reaching 22,788/25,902
+overall and 16,563/18,750 binary/location branches (312 short of 90%). Line
+counts and file-operation coverage are unchanged. This mixed diagnostic union
+is not current-head hosted acceptance; PR #210 and issue #209 remain incomplete.
