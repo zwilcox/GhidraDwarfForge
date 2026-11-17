@@ -6816,3 +6816,37 @@ Local evidence: `.forge-work/scratch/allocation-omission-authority-aligned.log`,
 storage guard. CI run 44105084385 finished with x86-64/AArch64/Windows passing;
 ARM32 and both MIPS lanes failed final coverage collection. Its collector fix
 and previous tests are pushed at a5a29b1d; fresh run 44150222826 is pending.
+
+
+### Saved inheritance byte and physical-layout budgets
+
+`InheritanceBudgetSmoke`, invoked by `inheritanceBindingEvidenceSmoke`, uses
+actual saved class/type bindings in an x86-64 ProgramDB. A 128-base model with
+bounded ASCII provenance fills exactly 1 MiB and round trips; adding one byte
+must preserve the previous valid generation. The decoder separately rejects
+1 MiB + 1 decoded bytes even though the Base64 text has the same length. Rejected
+reads preserve the supplied record. Cancellation is calibrated at entry, within
+traversal and at the last pre-publication check; each retains prior metadata and
+the saved program modification number. A clean retry is deterministic.
+
+Real physical layouts exercise exactly 65,536 traversal visits and exactly
+4,096 distinct nodes, then one extra visit/node and an excessive component
+inventory. Rejected saves preserve the old record and the analyst's layout edit;
+restoring the physical layout makes the old evidence usable again. These are
+metadata/model tests, not additional C++ ABI or runtime debugger claims.
+
+Guarded `./gradlew --no-daemon inheritanceBindingEvidenceSmoke`: PASS in 5s,
+36 new assertions and 188 existing assertions across x86-64/AArch64.
+Eight registered compiled faults (both sides of byte, traversal and graph
+bounds, decoded-byte bypass and component-budget bypass) were detected by Java
+assertions, with baseline PASS, unchanged production source hash, 22.172s.
+
+Verified diagnostic addition `coverage-recovery/inheritance-budgets/` contains
+1,401 unique sessions with the same production JAR, all 255 sources / 901 classes,
+and authenticated raw execution/test-source hashes and manifest addition.
+Adds five branches in GhidraInheritanceBindings. Overall 28,847/29,802 lines,
+22,245/25,902 branches; binary/location 18,610/19,213 lines,16,076/18,750 branches
+(799 short of 90%); file operations unchanged at 6,502/6,677 lines,3,775/4,250
+branches (50 short). Historical sessions remain: not current-head hosted acceptance.
+Local logs: `.forge-work/scratch/inheritance-budgets-first.log` and
+`inheritance-budget-mutants/result.json`. No production code changed.
