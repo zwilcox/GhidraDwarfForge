@@ -46,6 +46,7 @@ public final class AttachmentTransactionSmoke {
             missingTarget(root);
             refreshAfterRollback(root);
             recoveryJournalFailure(root);
+            recoveryJournalBoundaries(root);
             preparedClaimBoundaries(root);
             recoveryClaimBoundaries(root);
             refreshClaimBoundaries(root);
@@ -497,6 +498,75 @@ public final class AttachmentTransactionSmoke {
         equal(AttachmentReceipt.Phase.ROLLED_BACK, result.recoveryReceipt().receipt().phase());
         equal(result.recoveryReceipt(), AttachmentReceiptStore.read(fixture.request().recoveryReceipt(), HOST, () -> false));
         retained(fixture);
+    }
+
+    /** Journal faults retain fresh owned observations, never a stale or foreign terminal record. */
+    private static void recoveryJournalBoundaries(Path root) throws Exception {
+        for (boolean refresh : new boolean[] {false, true}) {
+            for (String fault : new String[] {"prepare-before", "prepare-after", "advance-before",
+                    "advance-after", "foreign-terminal", "removed-terminal"}) {
+                var fixture = fixture(root, "journal-boundary-" + refresh + "-" + fault, refresh);
+                var request = fixture.request();
+                var receipts = new ReceiptProxy() {
+                    @Override public AttachmentReceiptStore.State prepare(Path path, AttachmentReceipt receipt,
+                            AttachmentReceiptStore.Host host, BooleanSupplier cancelled) throws IOException {
+                        if (receipt.recovery() != null && fault.equals("prepare-before")) {
+                            throw new IOException("injected recovery prepare failure before publication");
+                        }
+                        var state = super.prepare(path, receipt, host, cancelled);
+                        if (receipt.recovery() != null && fault.equals("prepare-after")) {
+                            throw new IOException("injected recovery prepare failure after publication");
+                        }
+                        return state;
+                    }
+
+                    @Override public AttachmentReceiptStore.State advance(AttachmentReceiptStore.State previous,
+                            AttachmentReceipt.Phase next, String diagnostic, AttachmentReceiptStore.Host host,
+                            BooleanSupplier cancelled) throws IOException {
+                        if (previous.receipt().recovery() == null) {
+                            return super.advance(previous, next, diagnostic, host, cancelled);
+                        }
+                        if (fault.equals("advance-before")) {
+                            throw new IOException("injected recovery advance failure before publication");
+                        }
+                        var state = super.advance(previous, next, diagnostic, host, cancelled);
+                        if (fault.equals("foreign-terminal")) {
+                            // A syntactically valid terminal record is insufficient: its exact claims must agree.
+                            Files.writeString(state.path(), previous.receipt().advance(next, "foreign diagnostic").toJson());
+                        }
+                        else if (fault.equals("removed-terminal")) Files.delete(state.path());
+                        throw new IOException("injected recovery advance failure after publication");
+                    }
+                };
+                var result = AttachmentTransaction.commit(request, HOST, () -> false, point -> {
+                    if (point == AttachmentTransaction.Boundary.TARGET_REPLACED) {
+                        throw new IOException("post-replacement failure");
+                    }
+                }, receipts);
+                equal(AttachmentReceipt.Phase.RECOVERY_REQUIRED, result.outcome());
+                equal(false, result.cancelled());
+                equal(true, result.diagnostic().contains("recovery journal:"));
+                equal(fixture.snapshots().get("targetBefore").digest(), result.observedTarget().digest());
+                equal(result.observedTarget(), AttachmentFileStore.observe(request.files().get("targetBefore"), HOST, () -> false));
+                equal(result.receipt(), AttachmentReceiptStore.read(request.receipt(), HOST, () -> false));
+                if (fault.equals("prepare-before") || fault.equals("removed-terminal")) {
+                    equal(null, result.recoveryReceipt());
+                    equal(false, Files.exists(request.recoveryReceipt()));
+                }
+                else if (fault.equals("foreign-terminal")) {
+                    equal(null, result.recoveryReceipt());
+                    equal("foreign diagnostic", AttachmentReceipt.read(request.recoveryReceipt(), () -> false).diagnostic());
+                }
+                else {
+                    var observed = AttachmentReceiptStore.read(request.recoveryReceipt(), HOST, () -> false);
+                    equal(observed, result.recoveryReceipt());
+                    equal(fault.equals("advance-after") ? AttachmentReceipt.Phase.ROLLED_BACK :
+                        AttachmentReceipt.Phase.PREPARED, observed.receipt().phase());
+                    equal(result.observedTarget().artifact(), observed.receipt().recovery().observedTarget());
+                }
+                retained(fixture);
+            }
+        }
     }
 
     private static void crashChild(String[] args) throws Exception {

@@ -857,6 +857,12 @@ STORAGE_REFINEMENT_MUTANTS = [
 ]
 
 TRANSACTION_MUTANTS = [
+    ("transaction-accepts-foreign-recovery-terminal", TRANSACTION, TRANSACTION_TEST,
+     "current.receipt().equals(intendedRecovery)",
+     "current.receipt().phase() != AttachmentReceipt.Phase.PREPARED"),
+    ("transaction-discards-published-recovery-preparation", TRANSACTION, TRANSACTION_TEST,
+     "current.receipt().equals(recoveryClaims) || current.receipt().equals(intendedRecovery)",
+     "current.receipt().equals(intendedRecovery)"),
     ("transaction-refresh-ignores-previous-image-hash", TRANSACTION, TRANSACTION_TEST,
      "previous.sha256().equals(current.sha256())", "true"),
     ("transaction-refresh-ignores-previous-image-size", TRANSACTION, TRANSACTION_TEST,

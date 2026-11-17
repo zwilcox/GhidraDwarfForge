@@ -34,6 +34,18 @@ Evidence: `transaction-refresh-mutations/` and
 `coverage-recovery/transaction-refresh/` under guarded scratch. Production code
 is unchanged; current hosted acceptance is still outstanding.
 
+Recovery-journal controls exercise failure before/after preparation and terminal
+publication, disappearance of the published record, and a valid terminal record
+with foreign claims, for initial attachment and refresh. They check fresh target
+and receipt observations, preserved backups, and `RECOVERY_REQUIRED` whenever
+durable journaling failed. The controller suite passes 1,540 checks; both faults
+that accept a foreign terminal record or discard an owned published preparation
+are detected. Diagnostic measurement adds **one branch** beyond the refresh batch
+(four lines/eleven branches over the historical cohort). Evidence is in guarded
+scratch `transaction-journal-mutations/`, `transaction-journal-test-configured.log`
+and `coverage-recovery/transaction-journal/`. An initial build invocation lacked
+`GHIDRA_INSTALL_DIR` and failed before tests; the configured invocation passed.
+
 Eight new x86-64 component cases use actual decoded byte/word stores immediately
 before, after, or across either edge of four- and eight-byte saved parameters.
 An independent byte-memory oracle determines whether the saved value survives.
