@@ -423,6 +423,13 @@ TRUNCATED_DEPTH_MUTANTS = [
 ORIGINAL_OBJECTS = "ghidradwarfforge/elf/MatchedElfSidecarWriter.java"
 ORIGINAL_OBJECTS_TEST = "ghidradwarfforge.elf.LocalSymbolMergeSmoke"
 ORIGINAL_OBJECT_MUTANTS = [
+    ("symbol-inventory-accepts-oversized-name", ORIGINAL_OBJECTS, ORIGINAL_OBJECTS_TEST,
+     'end - nameIndex > ElfImage.MAX_NAME_BYTES ||', ''),
+    ("symbol-inventory-ignores-decoded-name-budget", ORIGINAL_OBJECTS, ORIGINAL_OBJECTS_TEST,
+     '(nameBytes += end - nameIndex) > ElfImage.MAX_NAME_TABLE_BYTES', 'false'),
+    ("symbol-inventory-accepts-zero-extended-index", ORIGINAL_OBJECTS, ORIGINAL_OBJECTS_TEST,
+     'extra == null || extendedIndex == 0 || extendedIndex >= image.sections().size()',
+     'extra == null || extendedIndex >= image.sections().size()'),
     ("object-match-forgets-earlier-conflict", ORIGINAL_OBJECTS, ORIGINAL_OBJECTS_TEST,
      '(old, current) -> old == OriginalObjectMatch.CONFLICT ? old : current',
      '(old, current) -> current'),

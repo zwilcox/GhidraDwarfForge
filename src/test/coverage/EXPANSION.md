@@ -6,6 +6,34 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Static ELF symbol inventory limits
+
+`LocalSymbolMergeSmoke` adds malformed table links, partial records, excess local
+counts, empty or incorrectly terminated strings, addressed index sections, and
+zero extended indices in ELF32/ELF64 with both byte orders. Existing refusal
+checks require unchanged source bytes, unchanged destination sentinels and no
+partially published files. Positive merges compare original symbol records and
+string bytes exactly, including their positions after local-symbol insertion.
+
+The name-size boundary accepts 65,536 bytes and rejects 65,537. A compact string
+table with overlapping suffixes also exercises the decoded-work budget: 256
+unique suffixes remain below 16 MiB, while the 257th exceeds it. These tests use
+independently constructed ELF records; their placeholder debug payload is not
+claimed to be valid DWARF or a runnable architecture fixture.
+
+Guarded `localSymbolMergeSmoke` passes **3,636 checks**. All three compiled mutants
+are detected by Java assertions, with the baseline passing (3.640 seconds): an
+oversized name, excessive aggregate decoded names, and a zero extended index.
+The suite now removes only its freshly created temporary fixture tree in
+`finally`; the measured run leaves no `forge-symbol-merge-*` tree behind.
+
+Production-only measurement adds **1 line / 10 branches** in
+`MatchedElfSidecarWriter` against the 1,373-session partial diagnostic. Production
+code and accepted targets are unchanged. Evidence:
+`.forge-work/scratch/symbol-inventory-boundaries-test.log`,
+`symbol-inventory-mutants/result.json`, and
+`coverage-recovery/symbol-inventory-boundaries/result.json`.
+
 ## Preserve explicit analyst call overrides during allocation correction
 
 `AllocationDecompilerSmoke` starts with Ghidra's actual encoded i386 function and

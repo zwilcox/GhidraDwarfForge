@@ -21,6 +21,15 @@ public final class LocalSymbolMergeSmoke {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("forge-symbol-merge-");
+        try { run(root); }
+        finally {
+            try (var paths = Files.walk(root)) {
+                for (Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) Files.delete(path);
+            }
+        }
+    }
+
+    private static void run(Path root) throws Exception {
         for (boolean wide : List.of(false, true)) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                 byte[] original = fixture(wide, order, false, false);
@@ -29,6 +38,7 @@ public final class LocalSymbolMergeSmoke {
                     new ElfLocalFunctionSymbol("curated::alias", 0x1040, 16, 1),
                     new ElfLocalFunctionSymbol("curated::\u03bb", 0x1050, 16, 1));
                 checkMerge(root, original, additions, 2, false);
+                inventoryBoundaries(root, original, additions, wide, order);
                 byte[] dataAllocation = original.clone();
                 field(dataAllocation, 4, "flags", 3);
                 field(dataAllocation, 4, "address", 0x2000);
@@ -168,6 +178,63 @@ public final class LocalSymbolMergeSmoke {
             }
         }
         System.out.println("local-symbol-merge-smoke=PASS checks=" + checks);
+    }
+
+    private static void inventoryBoundaries(Path root, byte[] original,
+            List<ElfLocalFunctionSymbol> additions, boolean wide, ByteOrder order) throws Exception {
+        int width = wide ? 24 : 16;
+        for (long link : new long[] { 0, 6, 0xffff_ffffL }) {
+            byte[] bad = original.clone();
+            field(bad, 3, "link", link);
+            reject(root, bad, additions, "unsupported static symbol table metadata", () -> false);
+        }
+        for (long size : new long[] { width + 1, width * 4 - 1 }) {
+            byte[] bad = original.clone();
+            field(bad, 3, "size", size);
+            reject(root, bad, additions, "unsupported static symbol table metadata", () -> false);
+        }
+        byte[] excessLocals = original.clone();
+        field(excessLocals, 3, "info", 5);
+        reject(root, excessLocals, additions, "unsupported static symbol table metadata", () -> false);
+        byte[] emptyNames = original.clone();
+        field(emptyNames, 2, "size", 0);
+        reject(root, emptyNames, additions, "unsupported static symbol string table", () -> false);
+        byte[] firstName = original.clone();
+        firstName[0x180] = 1;
+        reject(root, firstName, additions, "boundary terminators", () -> false);
+        byte[] addressedIndices = fixture(wide, order, true, false);
+        field(addressedIndices, 4, "address", 1);
+        reject(root, addressedIndices, additions, "dependent symbol-index", () -> false);
+        byte[] zeroIndex = fixture(wide, order, true, false);
+        bytes(zeroIndex).putShort(symbolOffset(zeroIndex, 1) + (wide ? 6 : 14), (short) 0xffff);
+        reject(root, zeroIndex, additions, "invalid extended static symbol index", () -> false);
+
+        // A long raw ELF name is valid at the byte limit; the first excess is
+        // rejected. This does not rely on Java UTF-8 decoding of original names.
+        for (int length : new int[] { 65_536, 65_537 }) {
+            byte[] names = Arrays.copyOf(original, 0x1000 + length + 2);
+            Arrays.fill(names, 0x1001, 0x1001 + length, (byte) 'x');
+            field(names, 2, "offset", 0x1000);
+            field(names, 2, "size", length + 2);
+            if (length == 65_536) checkMerge(root, names, additions, 2, false);
+            else reject(root, names, additions, "static symbol names exceed supported bounds", () -> false);
+        }
+        // Overlapping string suffixes are legal. Bound decoded work as well as
+        // stored bytes: the 257th distinct suffix crosses 16 MiB of name data.
+        for (int names : new int[] { 256, 257 }) {
+            byte[] suffixes = Arrays.copyOf(original, 0x4000 + 65_538);
+            Arrays.fill(suffixes, 0x4001, 0x4001 + 65_536, (byte) 'x');
+            field(suffixes, 2, "offset", 0x4000);
+            field(suffixes, 2, "size", 65_538);
+            field(suffixes, 3, "offset", 0x1000);
+            field(suffixes, 3, "size", (long) (names + 1) * width);
+            field(suffixes, 3, "info", names + 1);
+            for (int index = 1; index <= names; index++) {
+                bytes(suffixes).putInt(0x1000 + index * width, index);
+            }
+            if (names == 256) checkMerge(root, suffixes, additions, names + 1, false);
+            else reject(root, suffixes, additions, "static symbol names exceed supported bounds", () -> false);
+        }
     }
 
     /** Compare exact identities in independently encoded ELF32/64 symbol records. */
