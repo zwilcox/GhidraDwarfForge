@@ -6,6 +6,40 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Dynamic symbol count sources and exact inventory limits
+
+`sectionlessDynamicSymbolsSmoke` now checks an independently encoded named
+`SHT_DYNSYM` alongside `PT_DYNAMIC` across ELF32/64 and both byte orders. The
+original-record reader must preserve the raw records, accept the exact 262,144
+record cap, and reject its first excess. Disagreements in address, record width,
+size, allocation/compression flags, file mapping, duplicate tables and SysV
+count evidence are rejected with specific diagnostics. Unrelated sections do
+not change the count or records. These metadata fixtures use bounded files of
+at most about 6 MiB; they are not new executable architecture fixtures.
+
+Additional mirror controls preserve absolute/common indices and reject duplicate
+dynamic segments, partially file-backed string extents and an excluded GNU bucket
+index. Existing malformed-input checks also exercise alias omission and preserve
+the original input and prior output. The task now removes its owned fixture tree
+on both success and failure.
+
+The final guarded task passes 3,430 assertions. Five compiled mutations are
+detected by behavioral assertions: ignored named record width, accepted compressed
+records, ignored file mapping, rejection of the exact cap, and ignored count
+disagreement. The unmodified baseline passes. Production Java is unchanged.
+
+Matching-production measurement adds one line and 13 branches. The diagnostic
+union now has 1,381 sessions: 28,828/29,802 lines and 22,134/25,902 branches.
+Critical binary/location coverage is 15,978/18,750 branches, leaving 897 to
+reach 90%; file operations remain 3,775/4,250, leaving 50. The full denominator
+and existing critical inventory are retained. Historical cohorts remain in
+this diagnostic; full current-head hosted acceptance is still pending.
+
+Evidence: `.forge-work/scratch/dynamic-count-boundaries-final.log`,
+`dynamic-count-boundary-mutants-final/result.json`, and
+`coverage-recovery/dynamic-count-boundaries/` (raw execution hash, test source
+hashes, command, union manifest, report, counters and remaining gaps).
+
 ## Current-run AArch64 coverage independently regenerated
 
 The AArch64 job in [CI run 44105084385](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/44105084385)

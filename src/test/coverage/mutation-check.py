@@ -1212,6 +1212,17 @@ PROGRAM_TYPE_MUTANTS = [
 ]
 
 SECTIONLESS_MUTANTS = [
+    ("sectionless-trusts-mismatched-named-width", SECTIONLESS, SECTIONLESS_TEST,
+     "section.entrySize == width &&", "true &&"),
+    ("sectionless-trusts-compressed-named-records", SECTIONLESS, SECTIONLESS_TEST,
+     "(section.flags & 0x802) == 2", "(section.flags & 2) == 2"),
+    ("sectionless-ignores-named-file-mapping", SECTIONLESS, SECTIONLESS_TEST,
+     "reader.locate(section.address, section.size) == section.offset", "true"),
+    ("sectionless-rejects-exact-named-record-cap", SECTIONLESS, SECTIONLESS_TEST,
+     "section.size / width <= MAX_SYMBOLS", "section.size / width < MAX_SYMBOLS"),
+    ("sectionless-trusts-conflicting-count-sources", SECTIONLESS, SECTIONLESS_TEST,
+     'require(count == observed, "PT_DYNAMIC symbol count sources disagree");',
+     'require(true, "PT_DYNAMIC symbol count sources disagree");'),
     ("sectionless-sign-extends-relocation-size", SECTIONLESS, SECTIONLESS_TEST,
      "Integer.toUnsignedLong(data.getInt(at + 8))", "(long) data.getInt(at + 8)"),
     ("sectionless-accepts-empty-sysv-buckets", SECTIONLESS, SECTIONLESS_TEST,
