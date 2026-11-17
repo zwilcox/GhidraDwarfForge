@@ -8701,3 +8701,42 @@ The unchanged production JAR SHA-256 is
 `58bd7a71517452ca3f33e372060abd47f29166850cdcf464e3b3cb0f2a2a158b`;
 all 255 sources remain measured. This mixed local diagnostic does not replace
 fresh hosted acceptance, protected integration, or actual-main publication.
+
+### Native class-method declaration metadata (2026-11-17)
+
+CONFIRMED locally: the isolated `ClassScopeSmoke` adds two addressless class
+methods. One is variadic/no-return with an unnamed scalar parameter and an
+artificial return-storage variable; the other explicitly disables debugger calls.
+Both have an unknown convention. The independent DIE checker verifies root and
+class declarations, specification ownership, exact parameter/variable tags and
+types, missing locations/addresses, omitted unknown calling convention, and
+`DW_CC_nocall` for the restricted declaration. It now detects 15 malformed-DIE
+controls per ordinary variant and 13 for the failed-source variant.
+
+The guarded `class-scope-native.py` harness passed normal, failed-source,
+collision, ambiguous, and unbound-collision variants using the pinned 2.3.2
+producer/consumer and unchanged current production JAR. All five passed GNU
+readelf, LLVM verification, strict pinned-libdwarf checks, and DIE assertions.
+The four non-failed variants passed 26 fresh GDB queries; class views preserve
+`static int metadata(int, ...)` and `static int disabled(int)`. Repeated ordinary
+export remained byte-identical and the original executable hash was unchanged.
+
+An initial direct GDB lookup of the addressless external method failed: GDB did
+not index it as a standalone function. The final test checks the containing
+class, without inventing executable addresses or relaxing metadata assertions.
+That incomplete collection is excluded from the coverage addition.
+
+Guarded driver: `.forge-work/scratch/run-class-metadata.py`; final log:
+`.forge-work/scratch/class-method-metadata-final.log`; successful harness output:
+`build/test-results/class-scope-native/tmp6pdqh5ju`; validated collection:
+`.forge-work/scratch/class-method-metadata/collections/class-scopes-_ps85kny`.
+Its raw execution SHA-256 is
+`172d018fead8668fc51967f9224ece69902bbdda389f93e818a7bd948477859c`.
+The matching native-Java session adds six covered exporter branches, no lines,
+to the diagnostic union (1361 sessions). Overall is 28,918/29,802 lines and
+22,846/25,902 branches; binary/location is 16,621/18,750 branches, 254 short of
+90%. File-operation counters remain unchanged. Execution identities, artifact
+and oracle hashes, full 255-source denominator and harness sources are retained
+in `coverage-recovery/class-method-metadata/result.json`. No production code or
+native ABI changed. Fresh hosted acceptance and actual-main publication remain
+required for issue #209 completion.
