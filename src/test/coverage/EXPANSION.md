@@ -6,6 +6,45 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Custom scalar storage and finite compiler-model input regions
+
+The existing `customCallStorageSmoke` now invokes 688 additional assertions on
+actual x86-64, i386, AArch64, ARM32, MIPS big-endian and MIPS little-endian programs.
+Integer, floating, boolean, pointer and enum signatures are checked directly and
+through one or 65 typedef wrappers. Ghidra resolves the typedef base; these cases
+do not claim to exercise a cyclic/over-budget alias guard. Unsupported aggregate
+and undefined types are applied explicitly to saved custom parameter/return
+storage and must remain restricted. Nondefault model selection and cancellation
+partway through classification are also checked. Repeated observations preserve
+formal types, parameter/return storage and the program modification counter.
+
+The pinned x86-64 GCC model provides six integer argument registers and a finite
+500-byte stack input region aligned to eight bytes. A 68-integer signature reaches
+the last proven slot (four bytes at offset 496); parameter 68 in a 69-argument
+signature is unassigned and must cause refusal. A 4,096-argument signature still
+requires refusal for that storage gap, while 4,097 exceeds the separate count
+budget. Count eligibility is not evidence of a callable signature.
+
+The guarded suite passes the 688 new and 486 existing checks, including the
+existing saved/immutable-program observations. Six compiled faults are detected
+by assertions with a passing baseline: rejecting enums, pointers, floating types
+or typedefs, bypassing scalar classification, and accepting unassigned storage.
+The initial fixture used the wrong enum constructor; subsequent fixture attempts
+incorrectly expected full allocation at 4,096 arguments and passed an aggregate
+through Ghidra's dynamic-to-custom conversion, which can convert an indirect
+return to a pointer. Those test premises were corrected using the pinned model
+and explicit saved types. Production code was not changed.
+
+Evidence: `.forge-work/scratch/custom-scalar-call-storage-explicit.log`,
+`custom-scalar-call-mutants/result.json`, and
+`coverage-recovery/custom-scalar-call-storage/`. The verified diagnostic union
+has 1,398 sessions, 901 unchanged production classes and all 255 sources. It adds
+three lines and nine branches: 28,846/29,802 lines and 22,229/25,902 branches
+overall; critical binary/location 18,609/19,213 lines and 16,060/18,750 branches
+(815 short of 90%). File operations remain 50 branches short. Historical cohorts
+remain, so this is not current-head hosted acceptance. An empty additional
+custom-storage restriction does not certify general ABI or debugger-call support.
+
 ## Sectionless unwind framing and exact record limits
 
 The existing `sectionlessUnwindSmoke` now invokes an independent CIE/FDE and

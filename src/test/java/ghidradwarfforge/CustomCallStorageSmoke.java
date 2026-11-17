@@ -40,6 +40,7 @@ public final class CustomCallStorageSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        CustomScalarCallStorageSmoke.run();
         for (Target target : List.of(new Target("x86:LE:64:default", "x86_64", "ECX"),
                 new Target("x86:LE:32:default", "x86", "ECX"),
                 new Target("AARCH64:LE:64:v8A", "aarch64", "w1"),
