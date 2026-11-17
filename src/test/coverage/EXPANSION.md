@@ -8077,3 +8077,36 @@ the mixed cohort and queued local commits still need final hosted acceptance.
 Evidence: `.forge-work/scratch/call-transfer-contracts-final.log`,
 `call-transfer-contracts-mutants/result.json`, and
 `coverage-recovery/call-transfer-contracts/`.
+
+## Call-transfer metadata and memory observations
+
+The existing call-site evidence task now adds 174 metadata cases to the 146
+raw-transfer cases above. Real x86-64/AArch64 calls and tail candidates, including
+rebased calls, reject inconsistent lengths, contradictory flow/fallthrough,
+delay ownership, register/foreign memory address spaces, stale/short parsed
+bytes, short memory reads, unreadable instructions and nonadjacent return PCs.
+Transparent views remain accepted. Refusals must be UNAVAILABLE with a nonblank
+diagnostic and no target, return PC or callee. Tests preserve live and parsed
+code bytes and the program modification number; normal retries reproduce the
+original transfer. The parent still checks unchanged original ELF bytes.
+
+The guarded parent task passes in 6 seconds (527 existing assertions, 146 raw
+transfer cases and 174 metadata cases). Five compiled faults are detected by
+behavioral assertions with a passing baseline in 14.661 seconds: accepting delay
+owners/slots, ignoring parsed-byte counts or short reads, and accepting a
+nonadjacent return PC. The initial strict-diagnostic mutation run appeared to
+detect six faults, but requiring safe omission without a particular guard's
+message exposed a surviving address-space mutation. It still safely omitted
+these fixtures via other checks. That mutation is not counted as detected; the
+final semantic run contains only the five demonstrated faults. Production code
+is unchanged.
+
+Verified diagnostic `call-transfer-metadata` adds 11 branch outcomes and no lines
+to the full, unchanged production denominator. Its 1,336 sessions cover
+28,904/29,802 lines and 22,675/25,902 branches overall. The binary/location group
+covers 16,454/18,750 branches, still 421 outcomes short of 90%. This mixed cohort
+does not establish final hosted acceptance or validate queued local commits.
+
+Evidence: `.forge-work/scratch/call-transfer-metadata-final.log`,
+`call-transfer-metadata-mutants-semantic/result.json`, and
+`coverage-recovery/call-transfer-metadata/`.

@@ -202,6 +202,16 @@ ALLOCATION_OVERRIDE_MUTANTS = [
 CALL_EVIDENCE = "ghidradwarfforge/calls/GhidraCallSiteEvidence.java"
 CALL_EVIDENCE_TEST = "ghidradwarfforge.calls.GhidraCallSiteEvidenceSmoke"
 CALL_EVIDENCE_MUTANTS = [
+    ("call-evidence-accepts-delay-owner", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "instruction.getDelaySlotDepth() == 0 &&", "true &&"),
+    ("call-evidence-accepts-delay-slot", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "!instruction.isInDelaySlot()", "true"),
+    ("call-evidence-ignores-parsed-byte-count", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "parsed.length == instruction.getLength() &&", "true &&"),
+    ("call-evidence-ignores-short-read", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "program.getMemory().getBytes(address, live) == live.length", "program.getMemory().getBytes(address, live) >= 0"),
+    ("call-evidence-accepts-nonadjacent-return-pc", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
+     "Objects.equals(instruction.getFallThrough(), instruction.getMaxAddress().next())", "true"),
     ("call-evidence-accepts-transfer-output", CALL_EVIDENCE, CALL_EVIDENCE_TEST,
      "transfer.output() == null && !transfer.inputs().isEmpty()", "!transfer.inputs().isEmpty()"),
     ("call-evidence-accepts-extra-call-operand", CALL_EVIDENCE, CALL_EVIDENCE_TEST,

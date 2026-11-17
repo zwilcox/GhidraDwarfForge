@@ -5,11 +5,17 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
+import ghidra.program.model.address.AddressSpace;
+import ghidra.program.model.address.GenericAddressSpace;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.mem.Memory;
+import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.Varnode;
+import ghidra.program.model.symbol.RefType;
 import ghidra.util.task.TaskMonitor;
 import ghidradwarfforge.elf.ElfCodeBytes;
 import ghidradwarfforge.elf.ElfImage;
@@ -110,7 +116,101 @@ final class CallTransferContractsSmoke {
                     delta, TaskMonitor.DUMMY, () -> false).equals(baseline), test.name() + " poisoned original retry");
             }
             System.out.println("call-transfer-contracts=PASS kind=" + baseline.kind() + " cases=" + cases.size());
+            metadata(program, instruction, elf, effects, delta, baseline);
         }
+    }
+
+    private static void metadata(Program program, Instruction instruction, ElfCodeBytes elf,
+            ElfRelocationEffects effects, long delta, GhidraCallSiteEvidence.Transfer baseline) throws Exception {
+        byte[] original = instruction.getParsedBytes();
+        byte[] stale = original.clone();
+        stale[0] ^= 1;
+        var cases = new ArrayList<Metadata>();
+        cases.add(new Metadata("transparent", Map.of(), null));
+        cases.add(new Metadata("zero length", Map.of("getLength", 0), "partial or overridden instruction length"));
+        cases.add(new Metadata("wrong parsed length", Map.of("getParsedLength", instruction.getLength() + 1),
+            "partial or overridden instruction length"));
+        cases.add(new Metadata("overridden length", Map.of("isLengthOverridden", true), "partial or overridden instruction length"));
+        cases.add(new Metadata("delay owner", Map.of("getDelaySlotDepth", 1), "delayed transfer requires a separate return-address proof"));
+        cases.add(new Metadata("delay slot", Map.of("isInDelaySlot", true), "delayed transfer requires a separate return-address proof"));
+        cases.add(new Metadata("contradictory flow", Map.of("getFlowType", RefType.TERMINATOR), "listing control flow differs from raw decode"));
+        var wrongNext = instruction.getMaxAddress().add(2);
+        cases.add(new Metadata("contradictory fallthrough", Map.of("getFallThrough", wrongNext), "fallthrough differs from raw decode"));
+        cases.add(new Metadata("short parsed bytes", Map.of("getParsedBytes", Arrays.copyOf(original, original.length - 1)),
+            "instruction bytes changed after decoding"));
+        cases.add(new Metadata("stale parsed bytes", Map.of("getParsedBytes", stale), "instruction bytes changed after decoding"));
+        for (AddressSpace space : List.of(program.getAddressFactory().getRegisterSpace(),
+                new GenericAddressSpace("fixture_foreign_ram", 64, AddressSpace.TYPE_RAM, 70))) {
+            var address = space.getAddress(0x1000);
+            cases.add(new Metadata("foreign address " + space.getName(),
+                Map.of("getAddress", address, "getMaxAddress", address.add(original.length - 1)), "unsupported instruction address space"));
+        }
+        if (instruction.getFlowType().isCall()) {
+            cases.add(new Metadata("nonadjacent return address", Map.of("getFallThrough", wrongNext,
+                "getDefaultFallThrough", wrongNext), "call lacks an ordinary decoded return address"));
+        }
+        long modification = program.getModificationNumber();
+        int count = 0;
+        for (Metadata test : cases) {
+            var altered = view(Instruction.class, instruction, test.overrides());
+            var actual = GhidraCallSiteEvidence.incomingTransfer(program, altered, elf, effects,
+                delta, TaskMonitor.DUMMY, () -> false);
+            if (test.reason() == null) require(actual.equals(baseline), "transparent metadata changed transfer");
+            else unavailable(actual, test.reason(), test.name());
+            unchanged(program, instruction, elf, effects, delta, baseline, modification, original, test.name());
+            count++;
+        }
+        for (boolean unreadable : List.of(false, true)) {
+            var memory = (Memory) Proxy.newProxyInstance(Memory.class.getClassLoader(), new Class<?>[] { Memory.class },
+                (proxy, method, args) -> {
+                    if (method.getName().equals("getBytes")) {
+                        if (unreadable) throw new MemoryAccessException("controlled instruction read failure");
+                        byte[] live = (byte[]) args[1];
+                        program.getMemory().getBytes(instruction.getAddress(), live);
+                        return live.length - 1;
+                    }
+                    try { return method.invoke(program.getMemory(), args); }
+                    catch (InvocationTargetException failure) { throw failure.getCause(); }
+                });
+            var observed = view(Program.class, program, Map.of("getMemory", memory));
+            var actual = GhidraCallSiteEvidence.incomingTransfer(observed, instruction, elf, effects,
+                delta, TaskMonitor.DUMMY, () -> false);
+            String reason = unreadable ? "controlled instruction read failure" : "instruction bytes changed after decoding";
+            unavailable(actual, reason, "memory observation");
+            unchanged(program, instruction, elf, effects, delta, baseline, modification, original, reason);
+            count++;
+        }
+        System.out.println("call-transfer-metadata=PASS kind=" + baseline.kind() + " cases=" + count);
+    }
+
+    private static void unavailable(GhidraCallSiteEvidence.Transfer actual, String reason, String label) {
+        // Several independent guards can reject inconsistent observations.
+        // Require safe omission, without depending on which guard runs first.
+        require(actual.kind() == GhidraCallSiteEvidence.Kind.UNAVAILABLE && !actual.reason().isBlank(),
+            label + " expected omission for " + reason + ": " + actual);
+        require(actual.target() == null && actual.returnPc() == null && actual.callee() == null,
+            label + " retained unproved identity");
+    }
+
+    private static void unchanged(Program program, Instruction instruction, ElfCodeBytes elf,
+            ElfRelocationEffects effects, long delta, GhidraCallSiteEvidence.Transfer baseline,
+            long modification, byte[] original, String label) throws Exception {
+        byte[] live = new byte[original.length];
+        require(program.getModificationNumber() == modification && Arrays.equals(original, instruction.getParsedBytes()) &&
+            program.getMemory().getBytes(instruction.getAddress(), live) == live.length && Arrays.equals(original, live),
+            label + " modified original program or code");
+        require(GhidraCallSiteEvidence.incomingTransfer(program, instruction, elf, effects,
+            delta, TaskMonitor.DUMMY, () -> false).equals(baseline), label + " poisoned ordinary retry");
+    }
+
+    private record Metadata(String name, Map<String, Object> overrides, String reason) { }
+
+    private static <T> T view(Class<T> type, T original, Map<String, Object> overrides) {
+        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] { type }, (proxy, method, args) -> {
+            if (overrides.containsKey(method.getName())) return overrides.get(method.getName());
+            try { return method.invoke(original, args); }
+            catch (InvocationTargetException failure) { throw failure.getCause(); }
+        }));
     }
 
     private record Case(String name, PcodeOp[] operations, String reason) { }
