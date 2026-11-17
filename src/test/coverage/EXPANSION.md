@@ -8379,3 +8379,27 @@ adds 12 branches and no lines: 1,349 sessions, 28,909/29,802 lines and
 356 short of 90%; file operations remain 3,831/4,250. All 255 production
 sources / 901 classes remain measured. Current-head hosted acceptance remains
 pending; these additions follow the revision running in CI 44185360886.
+
+## Merged-local saved metadata consistency
+
+The existing merged-local lifetime task now tests 188 additional metadata cases
+(564 assertions) over eight real x86-64/AArch64 fixtures: register-backed and
+stack-backed identities, each at four/eight bytes. Canonical and later members
+are tested separately. Transparent views retain the independently asserted
+initialization, handoff, update and retirement intervals. Foreign ownership,
+invalid/unassigned variables, width/type conflicts, detached members, and
+foreign/indirect/short/missing stack-path carriers must not create a merged
+lifetime. Every refusal checks clean retry and unchanged saved state.
+
+`mergedLocalLifetimeSmoke` passes in five seconds: 1,444 ownership checks and
+248 existing parent checks. Eight compiled guard faults are caught by behavioral
+assertions; the unchanged baseline passes (19.659 seconds total). Production
+code is unchanged.
+
+Evidence: `.forge-work/scratch/merged-local-metadata-build.log`,
+`merged-local-metadata-mutants/result.json`, and
+`coverage-recovery/merged-local-metadata/`. The verified diagnostic union adds
+16 branches and no lines: 1,350 sessions, 28,909/29,802 lines and
+22,760/25,902 branches. Critical binary/location branches are 16,535/18,750,
+340 short of 90%; file operations remain 3,831/4,250. Full-denominator scope
+is unchanged. Hosted validation of these local additions remains pending.

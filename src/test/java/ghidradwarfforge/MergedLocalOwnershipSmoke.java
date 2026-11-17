@@ -1,8 +1,11 @@
 package ghidradwarfforge;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -11,15 +14,18 @@ import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.ByteDataType;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.LongLongDataType;
 import ghidra.program.model.data.UnsignedIntegerDataType;
 import ghidra.program.model.data.UnsignedLongLongDataType;
 import ghidra.program.model.lang.LanguageID;
+import ghidra.program.model.lang.DynamicVariableStorage;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.LocalVariable;
 import ghidra.program.model.listing.LocalVariableImpl;
+import ghidra.program.model.listing.Variable;
 import ghidra.program.model.listing.VariableStorage;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.util.DefaultLanguageService;
@@ -64,6 +70,7 @@ final class MergedLocalOwnershipSmoke {
         require(at(baseline, f.thirdReady) instanceof RegisterStorage r && r.register().dwarfNumber() == latest,
             "updated logical value uses the current register");
         require(!at(baseline, f.lost).available(), "clobbered value cannot reappear from a stale physical backup");
+        metadata(f, group, baseline);
 
         // These are explicit proof-boundary inputs, not claims that the saved
         // Ghidra extractor itself produces malformed mapping lists.
@@ -164,6 +171,84 @@ final class MergedLocalOwnershipSmoke {
             f.reject(finalGroup, "a saved owner with unknown extent may overlap the merged value");
         }
         finally { f.program.endTransaction(tx, true); }
+    }
+
+    /** Public API views isolate one stale claim while retaining the real decode and saved mapping list. */
+    private static void metadata(Fixture f, GhidraLocalMappings.Group group,
+            List<GhidraVariableStorage.StorageInterval> expected) throws Exception {
+        var foreign = new ProgramDB("foreign-merged-owner", f.program.getLanguage(),
+            f.program.getLanguage().getCompilerSpecByID(f.program.getCompilerSpec().getCompilerSpecID()), f.owner);
+        try {
+            long modification = f.program.getModificationNumber();
+            String snapshot = f.snapshot();
+            for (int target : new int[] { 0, 1 }) {
+                Variable selected = group.mappings().get(target).variable();
+                var cases = new ArrayList<>(List.of("transparent", "foreign-program", "wrong-function", "invalid",
+                    "unassigned", "zero-width", "negative-width", "short-width", "wrong-type", "detached"));
+                if (f.stack) {
+                    cases.addAll(List.of("foreign-storage", "indirect-storage", "short-storage"));
+                    if (target == 1) cases.add("missing-storage");
+                }
+                for (String defect : cases) {
+                    Function[] function = new Function[1];
+                    var views = new IdentityHashMap<Variable, Variable>();
+                    function[0] = (Function) Proxy.newProxyInstance(Function.class.getClassLoader(),
+                        new Class<?>[] { Function.class }, (proxy, method, args) -> {
+                            if (method.getName().equals("getAllVariables")) {
+                                return Arrays.stream(f.function.getAllVariables())
+                                    .filter(value -> !defect.equals("detached") || value != selected)
+                                    .map(value -> views.getOrDefault(value, value)).toArray(Variable[]::new);
+                            }
+                            try { return method.invoke(f.function, args); }
+                            catch (InvocationTargetException failure) { throw failure.getCause(); }
+                        });
+                    for (var mapping : group.mappings()) {
+                        Variable saved = mapping.variable();
+                        var view = (Variable) Proxy.newProxyInstance(Variable.class.getClassLoader(),
+                            new Class<?>[] { LocalVariable.class }, (proxy, method, args) -> {
+                                String name = method.getName();
+                                if (name.equals("equals")) return proxy == args[0];
+                                if (name.equals("hashCode")) return System.identityHashCode(proxy);
+                                if (name.equals("getFunction")) {
+                                    return saved == selected && defect.equals("wrong-function") ? f.function : function[0];
+                                }
+                                if (saved == selected) {
+                                    if (name.equals("getProgram") && defect.equals("foreign-program")) return foreign;
+                                    if (name.equals("isValid") && defect.equals("invalid")) return false;
+                                    if (name.equals("hasAssignedStorage") && defect.equals("unassigned")) return false;
+                                    if (name.equals("getLength")) {
+                                        if (defect.equals("zero-width")) return 0;
+                                        if (defect.equals("negative-width")) return -1;
+                                        if (defect.equals("short-width")) return f.bytes - 1;
+                                    }
+                                    if (name.equals("getDataType") && defect.equals("wrong-type")) return ByteDataType.dataType;
+                                    if (name.equals("getVariableStorage")) {
+                                        if (defect.equals("missing-storage")) return null;
+                                        var storage = saved.getVariableStorage();
+                                        if (defect.equals("foreign-storage")) return new VariableStorage(foreign, storage.getVarnodes());
+                                        if (defect.equals("indirect-storage")) return new DynamicVariableStorage(f.program, true, storage.getVarnodes());
+                                        if (defect.equals("short-storage")) return new VariableStorage(f.program,
+                                            new ghidra.program.model.pcode.Varnode(storage.getFirstVarnode().getAddress(), f.bytes - 1));
+                                    }
+                                }
+                                try { return method.invoke(saved, args); }
+                                catch (InvocationTargetException failure) { throw failure.getCause(); }
+                            });
+                        views.put(saved, view);
+                    }
+                    var observed = new GhidraLocalMappings.Group(views.get(group.canonical()),
+                        group.mappings().stream().map(mapping -> new GhidraLocalMappings.Mapping(
+                            views.get(mapping.variable()), mapping.definition(), mapping.register())).toList());
+                    var actual = MergedLocalLifetime.prove(f.program, function[0], observed, f.registers, TaskMonitor.DUMMY);
+                    require(defect.equals("transparent") ? actual.equals(expected) : actual.isEmpty(),
+                        "merged identity accepted unproven metadata: " + f.label + "/" + target + "/" + defect + " " + actual);
+                    require(f.prove(group).equals(expected), "metadata refusal changed subsequent merged proof");
+                    require(f.program.getModificationNumber() == modification && f.snapshot().equals(snapshot),
+                        "metadata proof changed saved merged identity");
+                }
+            }
+        }
+        finally { foreign.flushEvents(); foreign.release(f.owner); }
     }
 
     private static final class CountingMonitor extends TaskMonitorAdapter {
