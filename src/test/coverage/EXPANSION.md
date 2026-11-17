@@ -8,15 +8,15 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,041 verified
-sessions: 211 JavaExec, 676 native-Java, 97 headless and 57 Windows. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 1,091 verified
+sessions: 211 JavaExec, 677 native-Java, 146 headless and 57 Windows. Every available view
 retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 28,523 / 29,802 (95.7%) | 21,713 / 25,902 (83.8%) |
-| Binary and location correctness | 18,414 / 19,213 (95.8%) | 15,606 / 18,750 (83.2%) |
+| Overall | 28,537 / 29,802 (95.8%) | 21,743 / 25,902 (83.9%) |
+| Binary and location correctness | 18,424 / 19,213 (95.9%) | 15,630 / 18,750 (83.4%) |
 | File transactions and validation | 6,378 / 6,677 (95.5%) | 3,726 / 4,250 (87.7%) |
 
 Across all four production sources changed from PR base `c6265e1`, all 30
@@ -56,10 +56,41 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-hosts-statics-classes-partial/summary.json` in the coverage workspace, SHA-256
-`26b76dd899cfb0cb74c2da115963294829e5fee69e9e19bfef37523765742af9`.
-It replaces the smaller 1,003-session partial baseline for current progress
+`stable-memory-hosts-object-lexical-partial/summary.json` in the coverage workspace, SHA-256
+`4046b59367ae29f8a658729bf3a6cb6a6f1f38e653afeeeabe4e9e7472ed00ef`.
+It replaces the smaller 1,041-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Object bindings, lexical visibility and preservation of saved associations
+
+**CONFIRMED, local:** fifteen object-parameter/return profiles pass against the
+current JAR: inferred, explicit, stale, conflicting and aggregate-return cases
+for x86-64 non-PIE, PIE and rebased PIE. The 45 measured headless sessions retain
+compiler/Forge GDB observations, independent validators, deterministic output,
+project-change inventories, failed-source fallback and explicit cancellation
+checks. Current object-oracle and full-role admission pass. A separate four-run
+lexical fixture passes discontiguous blocks, calls, shadowed locals and partitioned
+source, including exact source inventory and compiler/baseline/Forge comparisons.
+Both runs restore the cached installed JAR and native metadata. No LLDB execution
+or new architecture-support claim follows from these local runs.
+
+Commit `a5df91cd` extends the existing static-association smoke test. Saving an
+unknown block in an otherwise valid lexical tree must preserve the old binding;
+a defined, loaded overlay object in a different address space must not acquire
+an association with the image function. Existing associations remain readable.
+All 505 assertions pass on five real ProgramDB language profiles (x86-64,
+AArch64, ARM, MIPS big-endian and MIPS little-endian), including saved/reopened
+programs, rebasing and cancellation. This adds 45 assertions to the prior suite.
+A compiled fault accepting a missing lexical block is detected; the unmodified
+baseline and eight mutation-outcome tests pass. Production source is unchanged.
+
+The 50 new measured sessions pass committed harness, raw-receipt, oracle and
+protected-input verification. They add fourteen lines and thirty branch outcomes
+to the prior matching union. Critical branch deficits remain 1,245 binary/location
+and 99 file-operation outcomes. Evidence roots are `object-stable-memory`,
+`lexical-stable-memory`, `static-binding-boundaries-stable-memory` and
+`static-binding-boundaries-mutations` in the bounded workspace. Full updated CI,
+protected merge and actual-main publication remain incomplete.
 
 ## Refreshed static recovery and isolated class scopes
 
