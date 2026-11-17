@@ -165,7 +165,10 @@ public final class OutsideBodyFlowSmoke {
             }
             finally { program.endTransaction(transaction, true); }
         }
-        finally { program.release(owner); }
+        finally {
+            try { program.flushEvents(); }
+            finally { program.release(owner); }
+        }
     }
 
     private static void require(boolean condition, String message) {

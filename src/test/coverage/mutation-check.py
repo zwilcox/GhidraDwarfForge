@@ -235,6 +235,23 @@ COMPOSITE_FLOW_MUTANTS = [
      'result.getLast().storage().equals(value)'),
 ]
 CLOSED_FLOW_MUTANTS = [
+    ("closed-flow-accepts-negative-delay-depth", REGISTER_PROFILE, CLOSED_FLOW_TEST,
+     "instruction.getDelaySlotDepth() < 0) {", "false) {"),
+    ("closed-flow-accepts-shared-delay-slot", REGISTER_PROFILE, CLOSED_FLOW_TEST,
+     "delayOwners.put(next, instruction.getAddress()) != null",
+     "(delayOwners.put(next, instruction.getAddress()) != null && false)"),
+    ("closed-flow-accepts-entry-in-delay-slot", REGISTER_PROFILE, CLOSED_FLOW_TEST,
+     "if (delayOwners.containsKey(function.getEntryPoint()))", "if (false)"),
+    ("closed-flow-accepts-orphan-delay-slot", REGISTER_PROFILE, CLOSED_FLOW_TEST,
+     "!delayOwners.containsKey(instruction.getAddress())", "false"),
+    ("closed-flow-ignores-slot-default-targets", REGISTER_PROFILE, CLOSED_FLOW_TEST,
+     "(defaults != null && defaults.length != 0) ||\n"
+     "                        (references != null && references.length != 0)",
+     "(references != null && references.length != 0)"),
+    ("closed-flow-accepts-branch-into-delay-slot", REGISTER_PROFILE, CLOSED_FLOW_TEST,
+     "!decoded.containsKey(target) || delayOwners.containsKey(target)", "!decoded.containsKey(target)"),
+    ("closed-flow-accepts-return-without-return-op", REGISTER_PROFILE, CLOSED_FLOW_TEST,
+     "operations[operations.length - 1].getOpcode() != PcodeOp.RETURN", "false"),
     ("closed-flow-accepts-conditional-return", REGISTER_PROFILE, CLOSED_FLOW_TEST,
      'if (flow.isConditional() || flow.isJump() || flow.hasFallthrough() ||\n'
      '                        operations.length == 0 ||\n'

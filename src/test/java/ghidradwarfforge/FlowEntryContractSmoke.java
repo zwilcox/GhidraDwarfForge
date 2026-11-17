@@ -117,7 +117,8 @@ public final class FlowEntryContractSmoke {
             }
             finally {
                 program.endTransaction(transaction, false);
-                program.release(owner);
+                try { program.flushEvents(); }
+                finally { program.release(owner); }
             }
         }
         System.out.println("flow-entry-contract=PASS cases=" + cases + " checks=" + checks + " profiles=5");

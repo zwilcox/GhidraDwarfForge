@@ -7989,3 +7989,37 @@ commits; full hosted acceptance remains outstanding.
 Evidence is under `.forge-work/scratch/coverage-recovery/`: authenticated archives
 and manifests in `current-44150222826/`, job and origin records, regenerated
 reports and unions in `linux-host-44150222826/` and `firmware-44150222826/`.
+
+## Closed register flow and delay-slot ownership
+
+`outsideBodyFlowSmoke` now includes 35 controlled metadata cases around real ARM
+and little-/big-endian MIPS instruction decoding. They reject missing entry or
+slot observations, negative/nested delay depths, unmarked/orphan/shared slots,
+a function entry or branch into a delay slot, slot control transfers, and
+terminal instructions with fallthrough or without a final RETURN operation.
+Transparent views and null empty target lists remain accepted. Tests preserve
+input graph entries by identity, code bytes, saved function bodies and program
+modification counters; the original graph remains valid after each refusal.
+These API consistency controls make no new architecture-support claim.
+
+The guarded parent task passes in 6 seconds (328 closed-flow assertions,
+17,419 entry-contract assertions and 85 body-flow assertions). Seven compiled
+faults are detected by behavioral assertions, with a passing unchanged baseline
+in 21.924 seconds. The initial negative-depth mutant survived because MIPS's
+independent orphan-slot check still rejected the graph; an ordinary ARM return
+now isolates the depth check and detects that fault. An initial proxy equality
+assertion was corrected to compare graph-entry identity. An asynchronous Ghidra
+listener error observed during fixture teardown prompted flushing queued events
+before releasing the three affected fixture types; the final parent and measured
+runs contain no such error. Failed/intermediate runs are not coverage evidence.
+
+Diagnostic `closed-delay-ownership` has 1,330 sessions and adds four lines and
+15 branch outcomes, all in `GhidraVariableStorage`. With the unchanged production
+JAR/classes and full denominator, overall counts are 28,903/29,802 lines and
+22,649/25,902 branches. Binary/location critical coverage is 16,428/18,750
+branches, 447 outcomes short of 90%. This remains a mixed diagnostic cohort,
+not final hosted acceptance; production code is unchanged.
+
+Evidence: `.forge-work/scratch/closed-delay-ownership-complete.log`,
+`closed-delay-ownership-mutants-complete/result.json`, and
+`coverage-recovery/closed-delay-ownership/`.
