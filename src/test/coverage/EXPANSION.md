@@ -8,6 +8,21 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Stack-slot boundary controls awaiting combined measurement
 
+Transaction request admission now rejects each missing explicit role, unknown
+roles, all completed phases and a PREPARED recovery journal presented as a new
+transaction, for both initial attachment and refresh. The fixture verifies that
+selected file snapshots remain unchanged and no receipt/recovery/restore outputs
+are created. The normal request remains accepted. These are controller admission
+checks using filesystem fixtures, not ELF/DWARF or native Windows validation.
+Guarded `attachmentTransactionSmoke` passes 1,330 checks, including its existing
+eight abrupt process exits. Three compiled admission faults are detected by the
+new assertions; the unmodified baseline passes. Diagnostic raw-probe verification
+adds four lines and seven branch outcomes in `AttachmentTransaction` relative to
+the recovered historical 1,252-session cohort. Current hosted acceptance and the
+full critical-group targets remain pending. Evidence is in
+`.forge-work/scratch/transaction-admission-mutations/` and
+`coverage-recovery/transaction-admission/` under the same scratch directory.
+
 Eight new x86-64 component cases use actual decoded byte/word stores immediately
 before, after, or across either edge of four- and eight-byte saved parameters.
 An independent byte-memory oracle determines whether the saved value survives.

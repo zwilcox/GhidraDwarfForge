@@ -55,6 +55,7 @@ public final class AttachmentTransactionSmoke {
             recoveryDiagnosticBoundaries(root);
             replacedParentBoundaries(root);
             unobservableRecoveryTargets(root);
+            requestAdmission(root);
             System.out.println("attachment-transaction-smoke=PASS checks=" + checks +
                 " abrupt-process-exits=8 initial-and-refresh=true native-windows=false elf-validation=false");
         }
@@ -62,6 +63,53 @@ public final class AttachmentTransactionSmoke {
             try (var paths = Files.walk(root)) {
                 for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
             }
+        }
+    }
+
+    /** A completed/recovery journal or incomplete explicit selection cannot start a new transaction. */
+    private static void requestAdmission(Path root) throws Exception {
+        for (boolean refresh : new boolean[] {false, true}) {
+            var fixture = fixture(root, "request-admission-" + refresh, refresh);
+            var request = fixture.request();
+            for (String missing : request.files().keySet()) {
+                var selected = new HashMap<>(request.files());
+                selected.remove(missing);
+                invalidRequest(() -> new AttachmentTransaction.Request(request.prepared(), selected,
+                    request.receipt(), request.recoveryReceipt(), request.restoreImage()));
+            }
+            var extra = new HashMap<>(request.files());
+            extra.put("unrecognizedBackup", fixture.root().resolve("unselected-file"));
+            invalidRequest(() -> new AttachmentTransaction.Request(request.prepared(), extra,
+                request.receipt(), request.recoveryReceipt(), request.restoreImage()));
+            for (var phase : new AttachmentReceipt.Phase[] {AttachmentReceipt.Phase.COMMITTED,
+                    AttachmentReceipt.Phase.ROLLED_BACK, AttachmentReceipt.Phase.RECOVERY_REQUIRED}) {
+                var receipt = request.prepared().advance(phase,
+                    phase == AttachmentReceipt.Phase.COMMITTED ? null : "prior operation outcome");
+                invalidRequest(() -> withClaims(request, receipt));
+            }
+            Path prior = Files.writeString(fixture.root().resolve("independent-prior-receipt"),
+                request.prepared().toJson());
+            var observedPrior = AttachmentFileStore.observe(prior, HOST, () -> false);
+            var p = request.prepared();
+            var recovery = new AttachmentReceipt(p.operationId(), p.mode(), p.phase(), p.receiptPath(),
+                p.backend(), p.hostContract(), p.durability(), p.debuglinkCrc32(), p.files(), null,
+                new AttachmentReceipt.Recovery(observedPrior.artifact(), null));
+            invalidRequest(() -> withClaims(request, recovery));
+            AttachmentFileStore.unchanged(observedPrior, HOST, () -> false);
+            for (var snapshot : fixture.snapshots().values()) {
+                AttachmentFileStore.unchanged(snapshot, HOST, () -> false);
+            }
+            equal(false, Files.exists(request.receipt()));
+            equal(false, Files.exists(request.recoveryReceipt()));
+            equal(false, Files.exists(request.restoreImage()));
+            equal(request, withClaims(request, p));
+        }
+    }
+
+    private static void invalidRequest(Runnable action) {
+        try { action.run(); throw new AssertionError("invalid transaction request was accepted"); }
+        catch (IllegalArgumentException expected) {
+            equal("transaction requires a normal PREPARED record and every explicit file role", expected.getMessage());
         }
     }
 

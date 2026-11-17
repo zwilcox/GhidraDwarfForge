@@ -857,6 +857,14 @@ STORAGE_REFINEMENT_MUTANTS = [
 ]
 
 TRANSACTION_MUTANTS = [
+    ("transaction-replays-completed-record", TRANSACTION, TRANSACTION_TEST,
+     "prepared.phase() != AttachmentReceipt.Phase.PREPARED || prepared.recovery() != null ||",
+     "prepared.recovery() != null ||"),
+    ("transaction-admits-recovery-as-new-request", TRANSACTION, TRANSACTION_TEST,
+     "prepared.phase() != AttachmentReceipt.Phase.PREPARED || prepared.recovery() != null ||",
+     "prepared.phase() != AttachmentReceipt.Phase.PREPARED ||"),
+    ("transaction-admits-mismatched-file-roles", TRANSACTION, TRANSACTION_TEST,
+     "!files.keySet().equals(prepared.files().keySet())", "false"),
     ("target-accepts-changed-installed-bytes", TARGET_STORE, TARGET_STORE_TEST,
         "!installed.digest().equals(ownedStage.digest())", "false"),
     ("target-accepts-changed-installed-fingerprint", TARGET_STORE, TARGET_STORE_TEST,
