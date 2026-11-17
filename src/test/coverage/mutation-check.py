@@ -587,6 +587,16 @@ CALL_MEMORY_MUTANTS = [
 ]
 
 CURATED_TYPE_MUTANTS = [
+    ("types-promote-ai-to-user-evidence", CURATED_TYPES, CURATED_TYPES_TEST,
+     'case AI -> Confidence.DECOMPILER;', 'case AI -> Confidence.USER_DEFINED;'),
+    ("types-erase-imported-evidence", CURATED_TYPES, CURATED_TYPES_TEST,
+     'case IMPORTED -> Confidence.IMPORTED;', 'case IMPORTED -> Confidence.ANALYSIS;'),
+    ("types-invert-character-signedness", CURATED_TYPES, CURATED_TYPES_TEST,
+     '? BaseEncoding.SIGNED_CHAR : BaseEncoding.UNSIGNED_CHAR',
+     '? BaseEncoding.UNSIGNED_CHAR : BaseEncoding.SIGNED_CHAR'),
+    ("types-hide-missing-signature", CURATED_TYPES, CURATED_TYPES_TEST,
+     'diagnostic.accept("No Ghidra signature found for exported function " +\n'
+     '                missing.name());', ''),
     ("curated-type-loses-utf-encoding", CURATED_TYPES, CURATED_TYPES_TEST,
      "positiveSize(type), BaseEncoding.UTF", "positiveSize(type), BaseEncoding.UNSIGNED"),
     ("curated-type-changes-member-const", CURATED_TYPES, CURATED_TYPES_TEST,

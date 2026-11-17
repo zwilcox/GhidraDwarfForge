@@ -2,12 +2,19 @@ package ghidradwarfforge;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HexFormat;
 
+import ghidra.app.cmd.disassemble.DisassembleCommand;
 import ghidra.program.database.ProgramDB;
+import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.*;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.task.TaskMonitor;
+import ghidradwarfforge.locations.VariableStorageModel.Confidence;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import ghidradwarfforge.types.ProgramTypeModel;
 import ghidradwarfforge.types.TypeGraph;
 
@@ -33,6 +40,9 @@ public final class CuratedTypeBoundarySmoke {
             program.getSymbolTable().createLabel(address, "wide_" + offset, SourceType.USER_DEFINED);
             offset += 32;
         }
+        var character = new CharDataType(manager);
+        program.getListing().createData(start.add(0x80), character);
+        program.getSymbolTable().createLabel(start.add(0x80), "target_character", SourceType.USER_DEFINED);
         var structure = new StructureDataType("QualifiedMembers", 0, manager);
         structure.add(new IntegerDataType(manager), null, "unnamed member retains its default name");
         structure.add(new IntegerDataType(manager), "constant_member", null);
@@ -82,6 +92,10 @@ public final class CuratedTypeBoundarySmoke {
             require(base.encoding() == TypeGraph.BaseEncoding.UTF && base.byteSize() == expected
                 && base.valueByteSize() == expected, "wide character encoding/width differs from saved data organization");
         }
+        var charType = (TypeGraph.BaseType) globalType(model, "target_character");
+        require(charType.encoding() == (character.isSigned() ? TypeGraph.BaseEncoding.SIGNED_CHAR
+            : TypeGraph.BaseEncoding.UNSIGNED_CHAR) && charType.byteSize() == character.getLength(),
+            "character signedness/width differs from target data organization");
         var aggregate = (TypeGraph.AggregateType) globalType(model, "qualified_object");
         require(aggregate.members().size() == 3 && aggregate.byteSize() == saved.getLength(), "structure layout changed");
         for (int index = 0; index < 3; index++) {
@@ -125,7 +139,77 @@ public final class CuratedTypeBoundarySmoke {
             }
         }
         require(program.getModificationNumber() == modification, "extraction modified analyst program state");
+        sourceEvidence(program, target, start.add(0xa00));
         System.out.println("curated-type-boundaries=PASS target=" + target + " checks=" + checks);
+    }
+
+    private static void sourceEvidence(ProgramDB program, String target, Address start) throws Exception {
+        String register = switch (target) {
+            case "x86" -> "EAX";
+            case "x86_64" -> "EDI";
+            case "aarch64" -> "w0";
+            case "arm" -> "r0";
+            case "mips", "mipsel" -> "a1";
+            default -> throw new AssertionError("missing fixture profile " + target);
+        };
+        String code = switch (target) {
+            case "x86", "x86_64" -> "90c3";
+            case "aarch64" -> "1f2003d5c0035fd6";
+            case "arm" -> "00f020e31eff2fe1";
+            case "mips" -> "03e0000800000000";
+            case "mipsel" -> "0800e00300000000";
+            default -> throw new AssertionError("missing fixture profile " + target);
+        };
+        byte[] bytes = HexFormat.of().parseHex(code);
+        var sources = List.of(SourceType.USER_DEFINED, SourceType.IMPORTED, SourceType.AI,
+            SourceType.ANALYSIS, SourceType.DEFAULT);
+        var confidences = List.of(Confidence.USER_DEFINED, Confidence.IMPORTED, Confidence.DECOMPILER,
+            Confidence.ANALYSIS, Confidence.ANALYSIS);
+        var symbols = new ArrayList<FunctionSymbol>();
+        var functions = new ArrayList<Function>();
+        for (int index = 0; index < sources.size(); index++) {
+            Address entry = start.add(index * 64);
+            var body = new AddressSet(entry, entry.add(bytes.length - 1));
+            program.getMemory().setBytes(entry, bytes);
+            if (target.equals("arm")) {
+                program.getProgramContext().setValue(program.getRegister("TMode"), entry,
+                    body.getMaxAddress(), java.math.BigInteger.ZERO);
+            }
+            require(new DisassembleCommand(entry, body, true).applyTo(program, TaskMonitor.DUMMY),
+                "evidence fixture decode");
+            String name = "evidence_" + index;
+            var function = program.getFunctionManager().createFunction(name, entry, body, SourceType.USER_DEFINED);
+            SourceType source = sources.get(index);
+            function.replaceParameters(Function.FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED,
+                new ParameterImpl(source == SourceType.DEFAULT ? null : "input", IntegerDataType.dataType,
+                    program.getRegister(register), program, source));
+            require(function.getParameter(0).getSource() == source, "saved parameter provenance changed");
+            functions.add(function);
+            symbols.add(new FunctionSymbol(name, entry.getOffset(), bytes.length));
+        }
+        symbols.add(new FunctionSymbol("missing_signature", start.add(0x300).getOffset(), 4));
+        long modification = program.getModificationNumber();
+        var diagnostics = new ArrayList<String>();
+        var model = GhidraTypeGraph.extract(program, symbols, target, 0, TaskMonitor.DUMMY, diagnostics::add);
+        require(model.functions().size() == sources.size(), "missing function gained an invented signature");
+        require(diagnostics.stream().filter(message -> message.equals(
+            "No Ghidra signature found for exported function missing_signature")).count() == 1,
+            "missing signature must have a diagnostic");
+        for (int index = 0; index < sources.size(); index++) {
+            var function = functions.get(index);
+            var variables = model.variableStorage().variables().stream()
+                .filter(value -> value.functionAddress() == function.getEntryPoint().getOffset()).toList();
+            require(variables.size() == 1, "parameter lost or duplicated");
+            var variable = variables.getFirst();
+            require(variable.name().equals(function.getParameter(0).getName()), "parameter name changed");
+            var expected = confidences.get(index);
+            String origin = sources.get(index).toString();
+            require(variable.locations().stream().allMatch(location -> location.storage().available()
+                && location.evidence().confidence() == expected
+                && location.evidence().source().contains("(" + origin + ")")),
+                "parameter provenance or proven location changed: " + origin);
+        }
+        require(program.getModificationNumber() == modification, "evidence extraction changed saved state");
     }
 
     private static TypeGraph.TypeNode globalType(ProgramTypeModel model, String name) {
