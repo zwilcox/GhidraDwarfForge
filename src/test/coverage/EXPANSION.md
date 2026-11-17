@@ -6,6 +6,62 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## ARM32 alias boundary contracts and Windows preflight dependency
+
+**CONFIRMED, local component validation:** `c456355f` adds 321 assertions using
+actual ARM32 ProgramDB instructions. ARM, Thumb and mixed-width Thumb bodies are
+placed at low addresses, `0x80000000`, and the top of the 32-bit address space.
+Thirty-six address/rebase combinations verify exact byte hashes, function extents,
+mode tags, saved-body/input preservation and the intentionally silent ARM-only
+primary-symbol path. Invalid analysis rebases are omitted without wrapping or
+contaminating a later valid extraction.
+
+Real analyst edits cover a changed body with the same range count, cleared
+instructions, changed/redecoded bytes and a removed owner. Stale aliases must be
+omitted with the specific diagnostic; fresh evidence must bind the changed code.
+No impossible Ghidra return values or proxy-based inconsistent metadata are used
+in these new cases. This is component evidence, not an additional emitted-DWARF
+or debugger support claim.
+
+The existing Gradle `ghidraArm32FunctionModesSmoke` task passes **380 checks**
+(321 new plus 59 existing). Five isolated, compiled mutations are each caught by
+the new assertions: ignoring a rebase, narrowing an analysis address to 32-bit
+signed, ignoring a changed body size, accepting stale code hashes and dropping
+the Thumb tag. Mutation executions do not contribute coverage. Production source
+and the JAR remain unchanged.
+
+The current-JAR union now contains **800 sessions** (211 JavaExec, 470 isolated
+Java/native-path, 119 headless), still all 255 production sources/901 classes:
+
+| Scope | Covered lines | Covered branches |
+| --- | ---: | ---: |
+| Overall Java | 27,673 / 29,792 (92.9%) | 21,110 / 25,888 (81.5%) |
+| Binary/location correctness | 18,385 / 19,203 (95.7%) | 15,470 / 18,736 (82.6%) |
+| File transactions/validation | 5,566 / 6,677 (83.4%) | 3,271 / 4,250 (77.0%) |
+
+All five additional covered branches are in `GhidraArm32FunctionModes`.
+Evidence under `.forge-work/scratch/coverage-expansion/` includes
+`arm32-alias-boundaries-4bd11`, `arm32-alias-mutations-4bd11`, the successful
+`arm32-alias-gradle.log`, and `arm32-alias-refresh-4bd11/summary.json`, SHA-256
+`2cba45107556689cad33f370be3527ba965b2e274ea7ea2ad79945bbcf79a260`.
+The run checkout was `6589d929`; the verified harness snapshot is `b41c3d20`,
+which contains test commit `c456355f`. Original run/source provenance is retained.
+
+**CONFIRMED CI failure, fix awaiting Windows validation:** run `44015264480`
+failed its native-Windows preflight compilation because the explicit `javac`
+source list omitted `CompanionObservationRecoverySmoke`, now called by
+`CompanionArtifactPublisherSmoke`. Commit `b41c3d20` adds that dependency.
+The exact six-file workflow list compiles under Java 21 and both publication
+and recovery workflows pass locally on Linux (including 68 recovery assertions);
+workflow lint passes. A first local wrapper used incorrect expected output
+markers after the tests passed; corrected marker verification passes separately
+in `windows-companion-source-list-verified`. No Windows runtime pass is claimed.
+The failed CI log is retained as `ci-44015264480-native-windows.log`.
+
+Issue #209 remains **incomplete**, with unchanged 85%/80% overall and 95%/90%
+per-critical-group targets, full hosted/Windows measurement, protected merge and
+actual-main publication requirements. Storage remains READY within its budgets.
+
 ## Current-JAR signature and calling-convention refresh
 
 **CONFIRMED, partial local measurement:** the existing recovered-return,
