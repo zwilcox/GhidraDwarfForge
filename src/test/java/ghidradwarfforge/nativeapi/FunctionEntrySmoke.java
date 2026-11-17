@@ -4,6 +4,8 @@ import java.nio.ByteOrder;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import ghidradwarfforge.dwarf.Dwarf5LineTable;
@@ -19,6 +21,7 @@ public final class FunctionEntrySmoke {
     }
 
     public static void main(String[] arguments) throws Exception {
+        modelBoundaries();
         List<FunctionSymbol> functions = functions(0x1000);
         for (int width : new int[] { 4, 8 }) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
@@ -60,6 +63,106 @@ public final class FunctionEntrySmoke {
                 "usage: FunctionEntrySmoke [<libdwarf> <libdwarfp> <input> <output>]");
         }
         System.out.println("function-entry-smoke=PASS");
+    }
+
+    private static void modelBoundaries() {
+        var body = List.of(new FunctionRange(0x1000, 8), new FunctionRange(0x1020, 8));
+        for (String name : Arrays.asList(null, "", " \t")) {
+            invalid(() -> new FunctionSymbol(name, 0x1000, body),
+                "function name is required");
+        }
+        List<List<String>> badNamespaces = Arrays.asList(null,
+            Arrays.asList("outer", null), List.of("outer", ""), List.of(" "));
+        for (var namespace : badNamespaces) {
+            invalid(() -> new FunctionSymbol("f", 0x1000, body, namespace),
+                "invalid function namespace path");
+        }
+        invalid(() -> new FunctionSymbol("f", -1, body), "function ranges are required");
+        invalid(() -> new FunctionSymbol("f", 0x1000, (List<FunctionRange>) null),
+            "function ranges are required");
+        invalid(() -> new FunctionSymbol("f", 0x1000, List.of()),
+            "function ranges are required");
+        invalid(() -> new FunctionSymbol("f", 0x1000,
+            List.of(body.get(1), body.get(0))), "ranges overlap or are unsorted");
+        invalid(() -> new FunctionSymbol("f", 0x1000,
+            List.of(body.get(0), new FunctionRange(0x1007, 8))),
+            "ranges overlap or are unsorted");
+        invalid(() -> new FunctionRange(-1, 1), "invalid function address range");
+        invalid(() -> new FunctionRange(0, 0), "invalid function address range");
+        invalid(() -> new FunctionRange(0, -1), "invalid function address range");
+        try {
+            new FunctionRange(Long.MAX_VALUE, 1);
+            throw new AssertionError("function address overflow was accepted");
+        }
+        catch (ArithmeticException expected) {
+            // An overflowing end must never become a wrapped valid interval.
+        }
+
+        // The model uses nonnegative signed addresses and half-open intervals.
+        for (long base : new long[] { 0, 0x1000, 0xffff_ffffL, Long.MAX_VALUE - 16 }) {
+            var range = new FunctionRange(base, 16);
+            require(range.endExclusive() == base + 16, "wrong exclusive end");
+            for (int offset = -1; offset <= 16; offset++) {
+                require(range.contains(base + offset) == (offset >= 0 && offset < 16),
+                    "incorrect half-open range membership");
+            }
+            var ordinary = new FunctionSymbol("f", base, List.of(range));
+            var interior = new FunctionSymbol("f", base + 1, List.of(range));
+            require(ordinary.contiguous() && ordinary.size() == 16 && !ordinary.usesRangeList(),
+                "ordinary entry changed its representation");
+            require(interior.contiguous() && interior.size() == 16 && interior.usesRangeList(),
+                "interior entry lost its range-list requirement");
+        }
+
+        var mutableBody = new ArrayList<>(body);
+        var mutableNamespace = new ArrayList<>(List.of("outer", "inner"));
+        var split = new FunctionSymbol("f", 0x1022, mutableBody, mutableNamespace);
+        mutableBody.clear();
+        mutableNamespace.clear();
+        require(split.ranges().equals(body) && split.namespacePath().equals(List.of("outer", "inner")),
+            "caller mutation changed captured function identity");
+        require(split.qualifiedDisplayName().equals("outer::inner::f") &&
+            !split.contiguous() && split.usesRangeList(), "split function identity changed");
+        for (long address = 0xfff; address <= 0x1028; address++) {
+            require(split.contains(address) == ((address >= 0x1000 && address < 0x1008) ||
+                (address >= 0x1020 && address < 0x1028)), "split body invented gap coverage");
+        }
+        try {
+            split.size();
+            throw new AssertionError("discontiguous body acquired a single size");
+        }
+        catch (IllegalStateException expected) {
+            require(expected.getMessage().contains("discontiguous function"),
+                "wrong discontiguous-size diagnostic");
+        }
+        var adjacent = new FunctionSymbol("adjacent", 0x1008,
+            List.of(new FunctionRange(0x1000, 8), new FunctionRange(0x1008, 8)));
+        require(adjacent.contains(0x1008) && adjacent.usesRangeList(),
+            "adjacent body ranges were rejected or lost");
+        FunctionSymbol.validateDisplayNames(List.of(split,
+            new FunctionSymbol("f", 0x2000, List.of(new FunctionRange(0x2000, 8)),
+                List.of("outer", "inner"))));
+        var delimiter = new FunctionSymbol("inner::f", 0x1000, body, List.of("outer"));
+        invalid(() -> FunctionSymbol.validateDisplayNames(List.of(split, delimiter)),
+            "ambiguous qualified function display");
+        invalid(() -> FunctionSymbol.validateDisplayNames(List.of(delimiter, split)),
+            "ambiguous qualified function display");
+        System.out.println("function-model-boundaries=PASS");
+    }
+
+    private static void invalid(Runnable operation, String diagnostic) {
+        try {
+            operation.run();
+            throw new AssertionError("accepted invalid function model: " + diagnostic);
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage() != null && expected.getMessage().contains(diagnostic),
+                "wrong function-model rejection: " + expected);
+        }
+    }
+
+    private static void require(boolean condition, String message) {
+        if (!condition) throw new AssertionError(message);
     }
 
     private static void checkRanges(Dwarf5RangeLists.Result result, FunctionSymbol function,

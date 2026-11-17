@@ -8668,3 +8668,36 @@ union adds one line and four branches: 28,914/29,802 lines and 22,832/25,902 bra
 overall; binary/location 18,657/19,213 lines and 16,607/18,750 branches (268 short
 of 90%). File-operation counters remain unchanged. Hosted current-head gates,
 protected merge and actual main publication remain outstanding for #209.
+
+### Function model admission and capture boundaries (2026-11-17)
+
+CONFIRMED locally: `FunctionEntrySmoke` now rejects absent/blank lexical names,
+invalid namespace components, absent/empty/overlapping/unsorted bodies, negative
+addresses, invalid extents, and overflowing exclusive ends. Positive controls
+exercise zero, the 32-bit address boundary, the highest supported signed end,
+interior entries, adjacent ranges, split bodies, and duplicate qualified identities
+at different addresses. Independent interval predicates verify membership without
+invented gap coverage. Captured body and namespace lists survive caller mutation;
+delimiter collisions are rejected in either order.
+
+Acceptance addressed: issue #209 malformed-input/address-boundary assertions and
+representative fault controls, preserving all production classes and behavior.
+Guarded `./gradlew --no-daemon functionEntrySmoke` passed in 2 seconds. Existing
+32/64-bit, both-byte-order range/line checks also passed. Four compiled mutations
+were detected by behavioral assertions: body aliasing, namespace aliasing,
+accepted overlap, and inclusive exclusive-end membership (3.544 seconds).
+Commands used Java 25 and Ghidra 12.0.3; native producer mode was not invoked by
+this local model check. No emitted-artifact implementation changed.
+
+Evidence: `.forge-work/scratch/function-model-boundaries.log`,
+`.forge-work/scratch/function-model-mutants/result.json`, and
+`.forge-work/scratch/coverage-recovery/function-model-boundaries/`.
+The independently verified diagnostic union adds one unique session (1360 total),
+four lines and eight branches, all in `MinimalDwarfSidecarExporter`. Overall:
+28,918/29,802 lines and 22,840/25,902 branches. Binary/location critical group:
+18,661/19,213 lines and 16,615/18,750 branches, 260 branches short of 90%.
+File critical counters remain 6,522/6,677 lines and 3,831/4,250 branches.
+The unchanged production JAR SHA-256 is
+`58bd7a71517452ca3f33e372060abd47f29166850cdcf464e3b3cb0f2a2a158b`;
+all 255 sources remain measured. This mixed local diagnostic does not replace
+fresh hosted acceptance, protected integration, or actual-main publication.
