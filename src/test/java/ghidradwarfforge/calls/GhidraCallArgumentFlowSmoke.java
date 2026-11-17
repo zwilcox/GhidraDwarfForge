@@ -296,6 +296,7 @@ public final class GhidraCallArgumentFlowSmoke {
                 List.of(new GhidraCallParameters.Piece(low.getAddress().add(1), 4)), true, false);
             require(GhidraCallParameters.bind(program, callee, signature, types.types(), List.of(high), state,
                 registers, image, delta, TaskMonitor.DUMMY).arguments().isEmpty(), "accepted high register slice as a whole register");
+            bindingBoundaries(program, callee, signature, types.types(), old, state, registers, image, delta, arm);
             int[] polls = {0};
             GhidraCallParameters.bind(program, callee, signature, types.types(), entries, state, registers, image, delta,
                 new TaskMonitorAdapter(true) { @Override public void checkCancelled() { polls[0]++; } });
@@ -350,5 +351,104 @@ public final class GhidraCallArgumentFlowSmoke {
             bound.arguments().getFirst().ordinal() == 0 && bound.arguments().getFirst().name().equals("value") &&
             bound.arguments().getFirst().dwarfRegister() == (arm ? 0 : 4), "omitted automatic carrier shifted formal binding");
         callee.setReturnType(originalReturn, SourceType.USER_DEFINED);
+    }
+
+    private static void bindingBoundaries(ghidra.program.model.listing.Program program, Function callee,
+            ghidradwarfforge.types.ProgramTypeModel.FunctionSignature signature,
+            ghidradwarfforge.types.TypeGraph graph, GhidraCallParameters.Entry saved,
+            GhidraCallArgumentFlow.State state, TargetRegisterMap registers, ElfImage image, long delta,
+            boolean arm) throws Exception {
+        int before = checks;
+        var baseline = GhidraCallParameters.bind(program, callee, signature, graph, List.of(saved), state,
+            registers, image, delta, TaskMonitor.DUMMY);
+        require(baseline.arguments().size() == 1 && baseline.omissions().isEmpty(), "missing boundary baseline");
+        for (boolean missingSignature : List.of(false, true)) {
+            var unavailable = GhidraCallParameters.bind(program, callee, missingSignature ? null : signature,
+                graph, List.of(saved), missingSignature ? state : null, registers, image, delta, TaskMonitor.DUMMY);
+            require(unavailable.arguments().isEmpty() && unavailable.omissions().size() == 1,
+                "missing proof acquired an argument");
+        }
+        var movedSignature = new ghidradwarfforge.types.ProgramTypeModel.FunctionSignature(signature.name(),
+            signature.address() + 1, signature.returnType(), signature.parameters(), signature.locals(),
+            signature.variadic(), signature.noReturn(), signature.callingConvention(), signature.signatureSource());
+        rejectBinding(() -> GhidraCallParameters.bind(program, callee, movedSignature, graph, List.of(saved),
+            state, registers, image, delta, TaskMonitor.DUMMY), "callee signature address differs from entry storage");
+        var staleId = new GhidraCallParameters.Entry(saved.functionId() + 1, saved.function(), saved.ordinal(),
+            saved.formal(), saved.pieces(), saved.assigned(), saved.indirect());
+        var staleAddress = new GhidraCallParameters.Entry(saved.functionId(), saved.function().add(1), saved.ordinal(),
+            saved.formal(), saved.pieces(), saved.assigned(), saved.indirect());
+        for (var invalid : List.of(List.of(staleId), List.of(staleAddress), List.of(saved, saved))) {
+            rejectBinding(() -> GhidraCallParameters.bind(program, callee, signature, graph, invalid, state,
+                registers, image, delta, TaskMonitor.DUMMY), "stale or duplicate callee entry-storage identity");
+        }
+        var piece = saved.pieces().getFirst();
+        var wrongWidth = new GhidraCallParameters.Piece(piece.address(), piece.bytes() - 1);
+        var memory = new GhidraCallParameters.Piece(callee.getEntryPoint(), piece.bytes());
+        for (var pieces : List.of(List.<GhidraCallParameters.Piece>of(), List.of(piece, piece),
+                List.of(memory), List.of(wrongWidth))) {
+            var invalid = new GhidraCallParameters.Entry(saved.functionId(), saved.function(), saved.ordinal(),
+                saved.formal(), pieces, true, false);
+            var unavailable = GhidraCallParameters.bind(program, callee, signature, graph, List.of(invalid), state,
+                registers, image, delta, TaskMonitor.DUMMY);
+            require(unavailable.arguments().isEmpty() && unavailable.omissions().size() == 1,
+                "non-scalar register evidence acquired an argument: " + pieces);
+        }
+        var unassigned = new GhidraCallParameters.Entry(saved.functionId(), saved.function(), saved.ordinal(),
+            saved.formal(), List.of(), false, false);
+        require(GhidraCallParameters.bind(program, callee, signature, graph, List.of(unassigned), state,
+            registers, image, delta, TaskMonitor.DUMMY).arguments().isEmpty(), "unassigned entry acquired an argument");
+
+        // Qualifiers retain the integer's value semantics; a hidden return carrier is not an argument.
+        var qualified = new ghidradwarfforge.types.TypeGraph.QualifiedType("entry-qualified", "const entry integer", 4,
+            List.of(ghidradwarfforge.types.TypeGraph.Qualifier.CONST), saved.formal().type());
+        var nodes = new ArrayList<>(graph.nodes());
+        nodes.add(qualified);
+        var qualifiedGraph = new ghidradwarfforge.types.TypeGraph(nodes);
+        for (boolean hidden : List.of(false, true)) {
+            var formal = new ghidradwarfforge.types.TypeGraph.Parameter(saved.formal().name(),
+                new ghidradwarfforge.types.TypeGraph.TypeRef(qualified.key()), hidden, hidden);
+            var changedSignature = new ghidradwarfforge.types.ProgramTypeModel.FunctionSignature(signature.name(),
+                signature.address(), signature.returnType(), List.of(formal), signature.locals(), signature.variadic(),
+                signature.noReturn(), signature.callingConvention(), signature.signatureSource());
+            var entry = new GhidraCallParameters.Entry(saved.functionId(), saved.function(), 0, formal,
+                saved.pieces(), true, false);
+            var bound = GhidraCallParameters.bind(program, callee, changedSignature, qualifiedGraph, List.of(entry), state,
+                registers, image, delta, TaskMonitor.DUMMY);
+            require(bound.arguments().size() == (hidden ? 0 : 1), "hidden/qualified formal admission changed");
+            if (!hidden) require(bound.arguments().getFirst().value().equals(baseline.arguments().getFirst().value()),
+                "qualification changed recovered value");
+        }
+
+        // Exercise the actual extraction correction hook: two distinct formals mapped to one carrier
+        // must both be omitted, rather than giving either formal ownership of an ambiguous register.
+        callee.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_FORMAL_PARAMS, true, SourceType.USER_DEFINED,
+            new ParameterImpl("first", IntegerDataType.dataType, program),
+            new ParameterImpl("second", IntegerDataType.dataType, program));
+        try {
+            var carrier = new ghidra.program.model.listing.VariableStorage(program, program.getRegister(arm ? "w0" : "EDI"));
+            var overlapping = new ArrayList<GhidraCallParameters.Entry>();
+            var model = GhidraTypeGraph.extract(program, List.of(new FunctionSymbol("callee", 0x2000, arm ? 4 : 1)),
+                registers, delta, TaskMonitor.DUMMY, ignored -> { }, java.util.Map.of(), java.util.Map.of(),
+                java.util.Map.of(), (function, monitor, diagnostic) -> java.util.Map.of(0, carrier, 1, carrier), overlapping::add);
+            require(overlapping.size() == 2, "overlap fixture did not capture both formals");
+            var bound = GhidraCallParameters.bind(program, callee, model.functions().getFirst(), model.types(), overlapping,
+                state, registers, image, delta, TaskMonitor.DUMMY);
+            require(bound.arguments().isEmpty() && bound.omissions().size() == 2 &&
+                bound.omissions().stream().allMatch(text -> text.endsWith("destination register overlaps another formal")),
+                "ambiguous register was assigned to a formal: " + bound);
+        }
+        finally {
+            callee.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_FORMAL_PARAMS, true, SourceType.USER_DEFINED,
+                new ParameterImpl("value", IntegerDataType.dataType, program));
+        }
+        require(baseline.equals(GhidraCallParameters.bind(program, callee, signature, graph, List.of(saved), state,
+            registers, image, delta, TaskMonitor.DUMMY)), "refusal changed binding on retry");
+        System.out.println("call-parameter-boundaries=PASS target=" + (arm ? "aarch64" : "x86_64") + " checks=" + (checks - before));
+    }
+
+    @FunctionalInterface private interface BindingAction { void run() throws Exception; }
+    private static void rejectBinding(BindingAction action, String reason) throws Exception {
+        try { action.run(); throw new AssertionError("invalid entry binding accepted: " + reason); }
+        catch (IllegalArgumentException expected) { require(reason.equals(expected.getMessage()), "unexpected binding refusal: " + expected); }
     }
 }

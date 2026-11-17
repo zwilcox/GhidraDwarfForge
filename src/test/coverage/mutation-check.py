@@ -75,6 +75,8 @@ CURATED_TYPES = "ghidradwarfforge/GhidraTypeGraph.java"
 CURATED_TYPES_TEST = "ghidradwarfforge.FloatingTypeLayoutSmoke"
 CALL_MEMORY = "ghidradwarfforge/CallMemoryEffects.java"
 CALL_MEMORY_TEST = "ghidradwarfforge.CallMemoryEffectsSmoke"
+CALL_PARAMETERS = "ghidradwarfforge/GhidraCallParameters.java"
+CALL_PARAMETERS_TEST = "ghidradwarfforge.calls.GhidraCallArgumentFlowSmoke"
 
 CXX_PROFILE = "ghidradwarfforge/GhidraCxxProfile.java"
 CXX_PROFILE_TEST = "ghidradwarfforge.CxxProfileSmoke"
@@ -621,6 +623,21 @@ CXX_PROFILE_MUTANTS = [
      "prior != null && prior != table.classId()", "false"),
 ]
 
+CALL_PARAMETERS_MUTANTS = [
+    ("call-parameters-accept-stale-owner", CALL_PARAMETERS, CALL_PARAMETERS_TEST,
+     "entry.functionId() != callee.getID()", "false"),
+    ("call-parameters-accept-duplicate-snapshot", CALL_PARAMETERS, CALL_PARAMETERS_TEST,
+     "snapshots.put(entry.ordinal(), entry) != null", "(snapshots.put(entry.ordinal(), entry) != null && false)"),
+    ("call-parameters-assign-overlapping-carrier", CALL_PARAMETERS, CALL_PARAMETERS_TEST,
+     "if (counts.get(argument.dwarfRegister()) == 1) return false;", "if (counts.get(argument.dwarfRegister()) >= 1) return false;"),
+    ("call-parameters-reject-qualified-integer", CALL_PARAMETERS, CALL_PARAMETERS_TEST,
+     "else if (node instanceof TypeGraph.QualifiedType qualified) node = nodes.get(qualified.target().key());",
+     "else if (node instanceof TypeGraph.QualifiedType qualified) return -1;"),
+    ("call-parameters-bind-hidden-return", CALL_PARAMETERS, CALL_PARAMETERS_TEST,
+     'require(!formal.returnStorage(), "hidden return carrier is not a formal argument");',
+     '// hidden return guard omitted'),
+]
+
 CALL_MEMORY_MUTANTS = [
     ("call-memory-accepts-absolute-store", CALL_MEMORY, CALL_MEMORY_TEST,
      "address != null && address.stack() ? address.offset() : null",
@@ -1074,7 +1091,7 @@ def main():
         raise ValueError("compiled production and test directories are required")
     output.mkdir(parents=True, exist_ok=False)
     java, javac = args.java_home.resolve() / "bin/java", args.java_home.resolve() / "bin/javac"
-    mutants = MUTANTS + ALLOCATION_CHANGE_MUTANTS + ALLOCATION_BOUNDARY_MUTANTS + ELF_READER_MUTANTS + RUNTIME_RELOCATION_MUTANTS + REGISTER_MAP_MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + LEXICAL_SCOPE_MUTANTS + CLASS_EVIDENCE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (STORAGE_REFINEMENT_MUTANTS + REPORT_LEXICAL_MUTANTS + PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + AARCH64_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + CLOSED_FLOW_MUTANTS + COMPOSITE_FLOW_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
+    mutants = MUTANTS + ALLOCATION_CHANGE_MUTANTS + ALLOCATION_BOUNDARY_MUTANTS + ELF_READER_MUTANTS + RUNTIME_RELOCATION_MUTANTS + REGISTER_MAP_MUTANTS + STRICT_REPORT_MUTANTS + PROGRAM_TYPE_MUTANTS + LEXICAL_SCOPE_MUTANTS + CLASS_EVIDENCE_MUTANTS + SECTIONLESS_MUTANTS + DYNAMIC_MUTANTS + FRAME_REREAD_MUTANTS + ORIGINAL_OBJECT_MUTANTS + FRAME_RANGE_MUTANTS + PUBLICATION_TIME_MUTANTS + ARM_MAPPING_MUTANTS + (STORAGE_REFINEMENT_MUTANTS + REPORT_LEXICAL_MUTANTS + PROJECT_MUTANTS + RECORD_MUTANTS + UNWIND_REPORT_MUTANTS + MMIO_MUTANTS + CXX_SELECTION_MUTANTS + RECEIPT_MUTANTS + SOURCE_FILES_MUTANTS + REPORT_CLAIMS_MUTANTS + TRANSACTION_MUTANTS + MIPS_ALLOCATION_MUTANTS + STACK_FLOW_MUTANTS + VTABLE_BINDING_MUTANTS + STATIC_RECOVERY_MUTANTS + BOUNDED_SWITCH_MUTANTS + ARM_MODE_INVENTORY_MUTANTS + CURATED_TYPE_MUTANTS + CALL_MEMORY_MUTANTS + CALL_PARAMETERS_MUTANTS + CXX_PROFILE_MUTANTS + CALL_VALUE_MUTANTS + VALIDATOR_STATUS_MUTANTS + I386_ALLOCATION_MUTANTS + AARCH64_ALLOCATION_MUTANTS + MERGED_LIFETIME_MUTANTS + STACK_CARRIER_MUTANTS + REGISTER_PROFILE_MUTANTS + CLOSED_FLOW_MUTANTS + COMPOSITE_FLOW_MUTANTS + MIXED_PREFIX_MUTANTS + BACKUP_READBACK_MUTANTS + REPORT_TEXT_MUTANTS + BUILD_ID_HELPER_MUTANTS + LINUX_METADATA_MUTANTS + LINUX_MOUNT_MUTANTS + STACK_SPILL_MUTANTS + TRUNCATED_DEPTH_MUTANTS + LOCAL_OWNERSHIP_MUTANTS + ATTACHMENT_PREVIEW_MUTANTS if args.ghidra else [])
     if args.only:
         selected = set(args.only)
         unknown = selected - {row[0] for row in mutants}
@@ -1103,7 +1120,7 @@ def main():
             selected_dependencies = dependencies if test in (
                 STORAGE_REFINEMENT_TEST, REPORT_LEXICAL_TEST, PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
-                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, TARGET_STORE_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, STATIC_BINDING_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, AARCH64_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, CLOSED_FLOW_TEST, COMPOSITE_FLOW_TEST, MIXED_PREFIX_TEST, BACKUP_READBACK_TEST, REPORT_TEXT_TEST, BUILD_ID_HELPER_TEST, LINUX_METADATA_TEST, LINUX_APPLICATION_TEST, LINUX_CANARY_TEST, LINUX_MOUNT_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST, ATTACHMENT_PREVIEW_TEST) else []
+                REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, TARGET_STORE_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, STATIC_BINDING_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CALL_PARAMETERS_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, AARCH64_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, CLOSED_FLOW_TEST, COMPOSITE_FLOW_TEST, MIXED_PREFIX_TEST, BACKUP_READBACK_TEST, REPORT_TEXT_TEST, BUILD_ID_HELPER_TEST, LINUX_METADATA_TEST, LINUX_APPLICATION_TEST, LINUX_CANARY_TEST, LINUX_MOUNT_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST, ATTACHMENT_PREVIEW_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
@@ -1124,7 +1141,7 @@ def main():
             if compiled.returncode:
                 raise AssertionError(f"{label}: compilation failed, not a detected mutant\n{compiled.stdout}")
             classpath = os.pathsep.join(map(str, [root, classes, tests, *selected_dependencies]))
-            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, STATIC_BINDING_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST, AARCH64_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, CLOSED_FLOW_TEST, COMPOSITE_FLOW_TEST, MIXED_PREFIX_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST) else []
+            test_args = [args.ghidra.resolve()] if test in (PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, STATIC_BINDING_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CALL_PARAMETERS_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST, AARCH64_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, CLOSED_FLOW_TEST, COMPOSITE_FLOW_TEST, MIXED_PREFIX_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST) else []
             if test == STRICT_REPORT_TEST:
                 test_args.append(REPO / "src/test/fixtures/dwarfdump")
             if test == LINUX_MOUNT_TEST:
@@ -1135,14 +1152,20 @@ def main():
                 test_args.append(root / "fixtures")
             if test == CALL_VALUE_TEST:
                 test_args.append(root / "vectors.json")
+            if test == CALL_PARAMETERS_TEST:
+                test_args.append(root / "argument-vectors")
             run, run_seconds = execute([java, "-Djava.io.tmpdir=" + str(root),
                 "-Dapplication.settingsdir=" + str(root / "settings"), "-Djava.awt.headless=true",
                 "-cp", classpath, test, *test_args])
             oracle, oracle_evidence = None, None
-            if test == CALL_VALUE_TEST and run.returncode == 0:
-                oracle, oracle_seconds = execute([sys.executable, "-B", CALL_VALUE_ORACLE, root / "vectors.json"])
+            if test in (CALL_VALUE_TEST, CALL_PARAMETERS_TEST) and run.returncode == 0:
+                vectors_path = root / ("argument-vectors/vectors.json" if test == CALL_PARAMETERS_TEST else "vectors.json")
+                oracle_command = [sys.executable, "-B", CALL_VALUE_ORACLE, vectors_path]
+                if test == CALL_PARAMETERS_TEST:
+                    oracle_command.extend(["--min-count", "240"])
+                oracle, oracle_seconds = execute(oracle_command)
                 oracle_evidence = {"source": str(CALL_VALUE_ORACLE.relative_to(REPO)),
-                    "sha256": digest(CALL_VALUE_ORACLE), "vectorsSha256": digest(root / "vectors.json"),
+                    "sha256": digest(CALL_VALUE_ORACLE), "vectorsSha256": digest(vectors_path),
                     "exitCode": oracle.returncode, "seconds": oracle_seconds}
                 run_seconds += oracle_seconds
             (output / (label + ".log")).write_text(run.stdout + ("\nIndependent DWARF oracle:\n" + oracle.stdout if oracle else ""))
