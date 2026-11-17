@@ -13,6 +13,7 @@ public final class Dwarf5RangeListsSmoke {
     }
 
     public static void main(String[] args) {
+        RangeListScopeBoundarySmoke.main(args);
         FunctionSymbol contiguous = new FunctionSymbol("contiguous", 0x1000, 0x10);
         FunctionSymbol split = new FunctionSymbol("split", 0x2000, List.of(
             new FunctionRange(0x2000, 0x10), new FunctionRange(0x3000, 0x08)));
