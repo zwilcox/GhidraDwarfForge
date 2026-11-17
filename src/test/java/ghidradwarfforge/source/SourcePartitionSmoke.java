@@ -89,7 +89,70 @@ public final class SourcePartitionSmoke {
             List.of(), List.of());
         require(SourcePartitionPlan.build(declarations, 1, () -> false).parts().size() == 1,
             "indivisible global preamble split");
+        boundaryEvidence(source);
         System.out.println("source-partition-smoke=PASS");
+    }
+
+    private static void boundaryEvidence(SyntheticSourceFile source) {
+        for (int[] pair : new int[][] {{0, 1}, {1, 0}, {-1, 1}, {1, -1}}) {
+            rejected(() -> new SourcePartitionPlan.Position(pair[0], pair[1]));
+        }
+        byte[] bytes = "first\nsecond\nthird\n".getBytes(StandardCharsets.UTF_8);
+        var complete = new FunctionLines("whole", 0x1000, 1, 3, true, null);
+        var raw = new SyntheticSourceFile(bytes, List.of(complete), List.of(new SourceLine(3, List.of(0x1000L))),
+            List.of(new SyntheticSourceFile.FunctionTokens("whole", 0x1000, List.of(new SourceLine(3, List.of(0x1000L))))));
+        for (int limit : new int[] {2, 3, Integer.MAX_VALUE}) {
+            var plan = SourcePartitionPlan.build(raw, limit, () -> false);
+            require(plan.parts().size() == 1 && plan.parts().getFirst().oversized() == (limit == 2),
+                "function starting at line one lost its indivisible boundary");
+            require(plan.logicalLineCount() == 3 && plan.locate(3).equals(new SourcePartitionPlan.Position(1, 5)),
+                "last executable line shifted incorrectly past the synthetic header");
+            plan.requireSource(raw);
+            plan.requireSource(new SyntheticSourceFile(bytes.clone(), List.of(complete), raw.mappedLines(), raw.functionTokens()));
+            rejected(() -> plan.requireSource(null));
+            rejected(() -> plan.requireSource(new SyntheticSourceFile(
+                "first\nsecond\nother\n".getBytes(StandardCharsets.UTF_8), List.of(complete), List.of())));
+            byte[] header = SourcePartitionPlan.syntheticHeader();
+            byte[] expected = new byte[header.length + bytes.length];
+            System.arraycopy(header, 0, expected, 0, header.length);
+            System.arraycopy(bytes, 0, expected, header.length, bytes.length);
+            require(Arrays.equals(expected, plan.parts().getFirst().utf8()), "partition altered source bytes");
+            header[0] = 0;
+            byte[] returned = plan.parts().getFirst().utf8();
+            returned[0] = 0;
+            require(Arrays.equals(expected, plan.parts().getFirst().utf8()) && SourcePartitionPlan.syntheticHeader()[0] == '/',
+                "caller mutation changed partition bytes or shared header");
+        }
+        rejected(() -> SourcePartitionPlan.build(new SyntheticSourceFile(new byte[0], List.of(), List.of()), 1, () -> false));
+        for (int[] range : new int[][] {{0, 1}, {2, 1}, {1, 4}}) {
+            var invalid = new FunctionLines("invalid", 0x1000, range[0], range[1], true, null);
+            rejected(() -> SourcePartitionPlan.build(new SyntheticSourceFile(bytes, List.of(invalid), List.of()), 1, () -> false));
+        }
+        for (int line : new int[] {0, 4}) {
+            var invalid = new SourceLine(line, List.of(0x1000L));
+            rejected(() -> SourcePartitionPlan.build(new SyntheticSourceFile(bytes, List.of(complete), List.of(invalid)), 1, () -> false));
+            rejected(() -> SourcePartitionPlan.build(new SyntheticSourceFile(bytes, List.of(complete), List.of(),
+                List.of(new SyntheticSourceFile.FunctionTokens("whole", 0x1000, List.of(invalid)))), 1, () -> false));
+        }
+        int[] polls = {0};
+        var baseline = SourcePartitionPlan.build(source, 7, () -> { polls[0]++; return false; });
+        for (int stop = 1; stop <= polls[0]; stop++) {
+            int selected = stop;
+            int[] seen = {0};
+            try {
+                SourcePartitionPlan.build(source, 7, () -> ++seen[0] == selected);
+                throw new AssertionError("partitioning ignored cancellation at " + selected);
+            }
+            catch (CancellationException expected) { }
+            var retry = SourcePartitionPlan.build(source, 7, () -> false);
+            require(baseline.sourceSha256().equals(retry.sourceSha256()) && baseline.parts().size() == retry.parts().size(),
+                "cancelled partitioning contaminated retry");
+            for (int part = 0; part < baseline.parts().size(); part++) {
+                require(Arrays.equals(baseline.parts().get(part).utf8(), retry.parts().get(part).utf8()),
+                    "cancelled partitioning changed a later output part");
+            }
+        }
+        System.out.println("source-partition-boundaries=PASS cancellation=" + polls[0]);
     }
 
     private static void rejected(Runnable operation) {

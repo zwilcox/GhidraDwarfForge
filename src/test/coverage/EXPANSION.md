@@ -8880,3 +8880,32 @@ AttachmentProtocolSmoke: 286 path-boundary and 11,335 protocol checks passed.
 Evidence: `.forge-work/scratch/attachment-compilation-result.json` and
 `.forge-work/scratch/attachment-compilation.log`. Fresh hosted confirmation is
 PRESENT, UNVERIFIED. No production code or target behavior was changed.
+
+### Source partition and unwind model bounds (2026-11-17)
+
+CONFIRMED: SourcePartitionSmoke now verifies exact indivisible-function limits,
+invalid function/line bounds, immutable output bytes, source-digest binding and
+all 151 cancellation checkpoints with deterministic clean retries. The expected
+single-part bytes are built independently from the header and original source.
+CallFrameEncoderSmoke verifies exact 512-register, 65,536-row and 65,536-frame
+limits, one-over-limit rejection, empty models and immutable captured inputs.
+
+Guarded sourcePartitionSmoke and callFrameEncoderSmoke passed in 2 and 3 seconds.
+The latter retains 7,992 encoding-boundary, 58,554 append-coverage and 376 parent
+checks. Seven compiled mutations were detected by behavioral assertions in
+2.994 seconds, including rejecting exact limits, accepting invalid source
+ranges, exposing mutable bytes and ignoring the source digest. Evidence:
+`.forge-work/scratch/source-partition-boundaries.log`,
+`.forge-work/scratch/frame-plan-budgets.log`, and
+`.forge-work/scratch/source-frame-boundary-mutants/result.json`.
+
+Independently verified diagnostic sessions source-partition-boundaries and
+frame-model-budgets add five lines and fifteen branches together. The diagnostic
+union now contains 1,367 unique sessions, the same production JAR and all 255
+source files: 28,927/29,802 lines and 22,905/25,902 branches overall. Binary/location
+critical: 18,670/19,213 lines and 16,680/18,750 branches, 195 short of 90%.
+File counters remain 6,522/6,677 lines and 3,831/4,250 branches. These historical
+plus local sessions guide test selection; they are not fresh hosted acceptance.
+Evidence: `.forge-work/scratch/coverage-recovery/frame-model-budgets/`.
+No production code or denominator changed. Protected merge and actual-main
+publication remain pending.
