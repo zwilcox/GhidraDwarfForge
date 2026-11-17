@@ -40,7 +40,8 @@ def main():
     jar = (args.jar or repository / 'build/libs/GhidraDwarfForge.jar').resolve(strict=True)
     fixture = repository / 'src/test/fixtures/curated-thunk.c'
     sources = [repository / 'src/test/java/ghidradwarfforge' / relative for relative in
-        ['types/FunctionRelationsSmoke.java', 'elf/FunctionRelationshipProducer.java']]
+        ['types/FunctionRelationsSmoke.java', 'types/ScopeRelationshipBoundarySmoke.java',
+            'elf/FunctionRelationshipProducer.java']]
     protected = {str(p): digest(p) for p in [jar, fixture, *sources, *sorted(directory.iterdir())] if p.is_file()}
     classes = out / 'classes'
     classes.mkdir()

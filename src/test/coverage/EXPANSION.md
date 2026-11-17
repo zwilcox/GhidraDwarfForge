@@ -34,6 +34,22 @@ unverified locally because its cross-compiler is unavailable. These tests use
 an explicit fixture model through the real native exporter; they do not claim
 Ghidra variable-extraction coverage or a completed combined coverage goal.
 
+The twenty native sessions are independently authenticated against committed
+harness snapshot `652fe943` and matching production classes. Their local manifest
+is `stable-location-pie-verified/measurements.json`, SHA-256
+`ea2b3af6de42318365bdfe8874dc22a75d66a033d9e998cba25e5d34da4b28bf`.
+Hosted acceptance is still pending; this measurement does not supply Windows
+or the rest of the required integration cohort.
+
+**CONFIRMED:** the earlier hosted run `44024881065` failed its AArch64 isolated
+function-relationship scenario during Java compilation. A local reproduction
+reported the missing `ScopeRelationshipBoundarySmoke` helper. Its explicit
+source list now includes that dependency. The complete scenario passes locally
+against the current production JAR for x86-64 and AArch64, both executable and
+PIE: twelve compiler/plain/related GDB workflows and twenty-eight native exports
+with structural validation, serialization rejection controls and preserved
+inputs. This run is behavioral evidence, not an additional measured Java session.
+
 ## Stable memory locations: regression found and corrected
 
 **CONFIRMED:** extending the native location fixture to one stable interval exposed
