@@ -1234,6 +1234,17 @@ jobs:
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
 
+      - name: Location address width, preserved failures and debugger values
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 -B src/test/integration/location-width-producer.py \
+              --target "$TARGET" --results "$PWD/build/test-results/location-width-producer/$TARGET" \
+              --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME" --dwarfdump "$DWARFDUMP"
+
       - name: Isolated producer failure cleanup and validated retries
         if: matrix.target == 'x86_64'
         run: |

@@ -208,6 +208,9 @@ public final class Dwarf5LocationLists {
 
     private static void writeUnsigned(ByteArrayOutputStream output, long value,
             int width, ByteOrder order) {
+        if (width < Long.BYTES && value >>> (width * 8) != 0) {
+            throw new IllegalArgumentException("location-list value exceeds serialized width");
+        }
         for (int index = 0; index < width; index++) {
             int shift = order == ByteOrder.LITTLE_ENDIAN ? index * 8 :
                 (width - index - 1) * 8;

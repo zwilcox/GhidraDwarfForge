@@ -6,6 +6,43 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current location-list narrowing fix and new measurement baseline
+
+CONFIRMED: boundary tests found that `Dwarf5LocationLists` silently serialized
+`0x100000007` as `0x7` for 32-bit targets. The old production JAR reproduces this
+through the real native exporter on both MIPS byte orders. The encoder now
+rejects fixed-width values that cannot fit, covering live-range bounds and
+absolute addresses inside direct or indirect memory expressions.
+
+The new `LocationListBoundarySmoke` passes 8,358 checks through the existing
+`dwarfLocationListsSmoke` task: independent address/LEB decoding, both byte orders,
+32/64-bit boundaries, signed-long offsets, long composite expressions, exact
+range gaps, cancellation at every observed callback and deterministic retry.
+It fails against the old JAR with the intended overflow assertion. The changed
+production guard has both executable lines and all four branch outcomes covered.
+
+All 211 JavaExec tasks and 53,432 independent call-value vectors pass in the
+fresh build. `Dwarf5LocationLists` measures 119/124 lines and 62/67 branches.
+The new production JAR SHA-256 is
+`4bd11717ce1ff8e46eba3b0f7091517c4dd90e4e0c82472613f8fd66ca31390c`.
+Its JavaExec-only measurement is **23,928/29,792 lines (80.3%) and
+18,996/25,888 branches (73.4%)**, with all 255 sources/901 classes retained.
+The previous 96.2%/83.7% combined result belongs to the old JAR and is now
+**HISTORICAL**. Old execution data must not be silently reused as current-JAR
+coverage. Current combined coverage and hosted acceptance need revalidation.
+
+The new native harness passes on x86-64, AArch64, MIPS32 big-endian and MIPS32
+little-endian: readelf, LLVM and strict libdwarf validation; compiler-reference
+and exported GDB reads before/after a real instruction boundary; deterministic
+reruns; unchanged original input/source; and four rejected overflow exports per
+32-bit target with existing/absent final artifacts preserved. Native probes use
+explicit compiler-fixture models and do not claim Ghidra extraction coverage.
+ARM32 is wired into CI but was not run locally because its compiler is unavailable.
+Workflow lint passes. The new native runs are behavioral evidence, not added
+JaCoCo sessions. Evidence roots under `.forge-work/scratch/coverage-expansion/`:
+`location-width-repro`, `location-width-build`, `location-width-native` and
+`location-width-old-native`. The previous JAR/build remains intact for auditing.
+
 ## Latest completed Windows job verification
 
 CONFIRMED: the `windows-host` job in run `43991284160` passes at PR head
