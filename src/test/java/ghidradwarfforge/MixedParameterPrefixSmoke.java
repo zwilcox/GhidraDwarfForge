@@ -48,6 +48,11 @@ public final class MixedParameterPrefixSmoke {
             check(bigEndian, "000000ef0030a0e31eff2fe1", -1, false);
             check(bigEndian, "0030a0e3000000ef1eff2fe1", -1, false);
             check(bigEndian, "000000eb0030a0e31eff2fe1", -1, false);
+            // NOP; STR/LDR r0,[pc,#0x100]; BX lr. A fixed-address store still
+            // ends the conservative mixed prefix; a read into r0 does not
+            // modify either the r3 piece or its incoming stack companion.
+            check(bigEndian, "00f020e300018fe51eff2fe1", 8, false);
+            check(bigEndian, "00f020e300019fe51eff2fe1", 12, false);
         }
         System.out.println("mixed-parameter-prefix-smoke=PASS checks=" + checks);
     }
@@ -78,6 +83,21 @@ public final class MixedParameterPrefixSmoke {
                 program.getProgramContext().setValue(program.getRegister("TMode"), start,
                     body.getMaxAddress(), BigInteger.ZERO);
                 require(new DisassembleCommand(start, body, true).applyTo(program, TaskMonitor.DUMMY), "decode failed");
+                if (encoded.contains("00018fe5") || encoded.contains("00019fe5")) {
+                    var access = program.getListing().getInstructionAt(start.add(4));
+                    boolean writes = encoded.contains("00018fe5");
+                    require(access.getMnemonicString().equals(writes ? "str" : "ldr"), "unexpected literal access");
+                    require(Arrays.stream(access.getPcode()).anyMatch(op -> op.getOpcode() ==
+                        (writes ? ghidra.program.model.pcode.PcodeOp.STORE : ghidra.program.model.pcode.PcodeOp.LOAD)),
+                        "literal access lost its raw memory effect");
+                    var operation = Arrays.stream(access.getPcode()).filter(op -> op.getOpcode() ==
+                        (writes ? ghidra.program.model.pcode.PcodeOp.STORE : ghidra.program.model.pcode.PcodeOp.LOAD))
+                        .findFirst().orElseThrow();
+                    require(operation.getInput(1).isConstant() && operation.getInput(1).getOffset() == 0x110c,
+                        "raw literal address is not the independently calculated PC+8+0x100");
+                    require(Arrays.stream(access.getResultObjects()).anyMatch(start.add(0x10c)::equals) == writes,
+                        "listing does not distinguish literal memory write from register-only load result");
+                }
                 Function function = program.getFunctionManager().createFunction("mixed", start, body, SourceType.USER_DEFINED);
                 var integer = new IntegerDataType(program.getDataTypeManager());
                 var pair = new StructureDataType("MixedPair", 0, program.getDataTypeManager());
