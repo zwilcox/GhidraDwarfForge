@@ -8,16 +8,16 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 805 verified
-sessions: 211 JavaExec, 555 native-Java and 39 headless. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 806 verified
+sessions: 211 JavaExec, 556 native-Java and 39 headless. Every available view
 retains all 255 production sources / 901 class files. Windows execution data
 and the remaining integration cohort are still missing; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 27,529 / 29,802 (92.4%) | 20,999 / 25,902 (81.1%) |
-| Binary and location correctness | 18,308 / 19,213 (95.3%) | 15,431 / 18,750 (82.3%) |
+| Overall | 27,530 / 29,802 (92.4%) | 21,003 / 25,902 (81.1%) |
+| Binary and location correctness | 18,309 / 19,213 (95.3%) | 15,435 / 18,750 (82.3%) |
 | File transactions and validation | 5,538 / 6,677 (82.9%) | 3,256 / 4,250 (76.6%) |
 
 The production relocation fix remains covered on all 14 changed executable
@@ -53,10 +53,40 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-unwind-partial/summary.json` in the coverage workspace, SHA-256
-`ff850d6bd03dea190b5944ed2acb68ed579880f72860252800ca46d8479c8205`.
-It replaces the smaller 690-session partial baseline for current progress
+`stable-memory-closed-flow-partial/summary.json` in the coverage workspace, SHA-256
+`e0ed4b2876ffa49482c7f5283b517286706a703f13762ddb820fb4369f3079de`.
+It replaces the smaller 805-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
+
+## Conditional transfers and saved delay-slot references
+
+**CONFIRMED, local:** `ClosedFlowBoundarySmoke`, invoked by the existing
+`outsideBodyFlowSmoke` task, passes 16 real ProgramDB cases and 122 assertions.
+ARM cases distinguish ordinary and conditional returns, direct and conditional
+calls, and computed calls. MIPS cases cover both byte orders, data references
+and saved jump/call references attached to a decoded NOP delay slot. Assertions
+check the control-flow proof, public stable-parameter availability, and proof
+recovery after removing saved references. No fake instruction objects are used.
+
+The complete measured task also passes 17,419 existing entry-contract checks
+and 85 outside-body checks. This adds one covered production line and four
+covered branches to the preceding partial report; rounded percentages remain
+unchanged. The production JAR and all denominator entries are unchanged.
+
+Two compiled controls in `mutation-check.py` prove that removing terminal-flow
+validation or ignoring saved delay-slot references triggers the intended Java
+assertion. The unchanged-source baseline passes, and compilation/class-loading
+failures do not count as detection. They run in the normal Ghidra-enabled
+mutation suite; `--only closed-flow-accepts-conditional-return --only
+closed-flow-ignores-slot-references` selects this pair and its baseline for a
+focused local replay. All eight mutation-outcome classification checks pass.
+
+Evidence: `closed-flow-stable-memory/` contains the raw execution data, source
+snapshots and verified receipt; `closed-flow-mutations/result.json` records both
+controls. Test sources are committed at `1f6db49c`. The existing JavaExec data
+remains attributed to its original source snapshot, while this new native-Java
+session records the expanded tests. This is control-flow/storage evidence;
+it does not claim a new ELF export or runtime debugger validation.
 
 ## Stable and listed memory locations under PIE relocation
 
