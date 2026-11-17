@@ -7394,3 +7394,35 @@ attachment-path-mutants/{result.json,*.log}, and
 coverage-recovery/attachment-path-boundaries/{result.json,sessions.tsv,counts.json,
 gaps.json,xml/combined.xml}. Both earlier and final smoke runs pass; final run
 and mutants use the stronger same-inode parent-substitution fixture.
+
+### Independent report inventory/count consistency (#209)
+
+Acceptance: completed detailed reports bind every diagnostic inventory to its
+own reported count and derive SUCCESS/PARTIAL from all five inventories without
+upgrading NOT_RUN validation. Exercise all32 presence combinations, independently
+change each count and retained inventory, reverse status in the wire document
+and direct Detailed constructor, and clear every caller-owned list after
+construction. Earlier populated inventories must not conceal a later mismatch.
+
+Guarded Java25/Ghidra12.0.3 `./gradlew --no-daemon exportReportDetailsSmoke`
+passes1,840 checks in3seconds. Guarded mutation-check.py with compiled main/test
+classes, the same Java/Ghidra installations and repeated --only selectors
+report-inventory-ignores-{failed,skipped,omitted,unsupported,diagnostics,status}
+passes the unchanged baseline and detects all six compiled faults by behavioral
+assertions (5.688seconds). Production Java and emitted artifacts are unchanged.
+
+Guarded measure-stack.py report-inventory-combinations
+ ghidradwarfforge.output.ExportReportDetailsSmoke and subsequent
+verify-local-addition.py report-inventory-combinations attachment-path-boundaries
+verify unchanged production bytecode, current test hashes and the raw session.
+The1,362-session diagnostic union adds4branches in ExportReportClaims without
+losses: overall28,882/29,802lines22,464/25,902branches, file operations3,811/4,250
+branches (14short90%). Binary/location remains616short90%. All255sources and
+901classes remain measured. Historical cohorts mean this is not current hosted
+acceptance. CI44150222826 remains live in five architecture jobs with all
+completed jobs successful; current changes stay queued locally.
+
+Evidence: .forge-work/scratch/report-inventory-combinations.log,
+report-inventory-mutants/{result.json,*.log}, and
+coverage-recovery/report-inventory-combinations/{result.json,sessions.tsv,
+counts.json,gaps.json,xml/combined.xml}.
