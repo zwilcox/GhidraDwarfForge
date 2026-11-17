@@ -8,17 +8,16 @@ input-preservation, determinism, cancellation and recovery assertions.
 
 ## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 808 verified
-sessions: 211 JavaExec, 558 native-Java and 39 headless. Every available view
-retains all 255 production sources / 901 class files. Windows execution data
-and the remaining integration cohort are still missing; hosted acceptance is
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 866 verified
+sessions: 211 JavaExec, 559 native-Java, 39 headless and 57 Windows. Every available view
+retains all 255 production sources / 901 class files. The remaining integration cohort is still incomplete; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 27,538 / 29,802 (92.4%) | 21,011 / 25,902 (81.1%) |
-| Binary and location correctness | 18,314 / 19,213 (95.3%) | 15,439 / 18,750 (82.3%) |
-| File transactions and validation | 5,541 / 6,677 (83.0%) | 3,260 / 4,250 (76.7%) |
+| Overall | 28,228 / 29,802 (94.7%) | 21,430 / 25,902 (82.7%) |
+| Binary and location correctness | 18,315 / 19,213 (95.3%) | 15,458 / 18,750 (82.4%) |
+| File transactions and validation | 6,230 / 6,677 (93.3%) | 3,660 / 4,250 (86.1%) |
 
 The production relocation fix remains covered on all 14 changed executable
 lines and 14 changed branches. Both overall numerical targets are met in this
@@ -53,14 +52,14 @@ fixtures may be preserved historical inputs; measured production Java is the
 current JAR. Native-C coverage and a complete hosted cohort are not claimed.
 
 The immutable partial summary is
-`stable-memory-transaction-path-partial/summary.json` in the coverage workspace, SHA-256
-`92e2af98f849a6cacf5ff7171e7ef45a1811e4f82fc20cd433f74d3429b6c44c`.
-It replaces the smaller 807-session partial baseline for current progress
+`stable-memory-windows-lexical-partial/summary.json` in the coverage workspace, SHA-256
+`0aec10f31ea596fd7a24a1cea330b9be5766e123ef89f35eff0f8a307258e586`.
+It replaces the smaller 808-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
 
-## Matching Windows artifact awaiting full job completion
+## Matching Windows artifact and completed host job
 
-**CONFIRMED, artifact only:** run `44042799768` published Windows coverage
+**CONFIRMED:** run `44042799768` published Windows coverage
 artifact `14313128001` (414,544 compressed bytes; 3,524,218 extracted bytes).
 Its SHA-256 is
 `a89ce2752893028e046e9b8f7c49c8f0a60c0abb45480fc15ac05379afa5a8e4`.
@@ -71,14 +70,41 @@ Raw execution validation, current admission controls, committed harness hashes
 (including the recorded Windows CRLF transformation), and regenerated coverage
 counters all pass. The artifact's source is PR merge commit
 `4d3960f95ae97c433d204a7d6b383ad62018e109`, whose parent includes branch head
-`9e0cc53a79f3a20394da831cd270deefa42375ef`. The coverage-reporting step succeeded;
-the overall Windows job was still running its formatter/GUI checks at this
-checkpoint. These sessions are **not yet added** to the 808-session partial
-summary above, and do not establish a passing complete host job or full CI gate.
+`9e0cc53a79f3a20394da831cd270deefa42375ef`. The entire Windows job `133916861927` subsequently completed successfully,
+including its remaining formatter, GUI and clean installed-release checks.
+The 57 sessions are now included in the partial summary above. Adding them
+contributes 689 covered lines and 400 branches relative to the Linux-only
+808-session report. This does not establish a passing full architecture gate;
+ARM32 failed dependency setup and the other target lanes remain in progress.
 
 Evidence is in `hosted-windows-44042799768/`, including `artifact.json`, the
 bounded ZIP, source-tree authentication, regenerated report and
-`raw-verified.json`. No old-production Windows execution data is reused.
+`raw-verified.json` and final `verified.json`. Its independently verified
+865-session union has summary SHA-256
+`254668536b7dff95cae1073b538d7fbe592dad16d871c8de401c42781e3e7876`.
+No old-production Windows execution data is reused.
+
+## Finite lexical visibility oracle
+
+**CONFIRMED, local:** `LexicalScopeBoundarySmoke`, called by the existing
+`lexicalScopeModelSmoke` task, checks all 12,096 combinations of six-address
+visibility/storage masks at three address bases, including above 32 bits and
+near the signed-address ceiling. It compares each output address against an
+independent pointwise oracle, checking exact scope visibility, preserved storage
+and provenance, unavailable gaps, immutable input and idempotence. Malformed
+saved identities, missing entry/owners and ambiguous local ownership are refused.
+
+The oracle passes 267,867 assertions, alongside 105 existing lexical/range-byte
+checks. Two compiled controls detect an extended location endpoint and a missing
+unproved prefix. The latter initially survived a matrix with singleton visibility
+ranges; the final matrix includes contiguous visibility extents with interior
+proof gaps and detects both faults. The unchanged-source baseline passes.
+
+Sources are committed at `8de94232`. Final raw execution and verified receipt
+are in `lexical-boundary-stable-memory-verified/`; mutation evidence is in
+`lexical-boundary-mutations-verified/`. This adds one covered line and 19 branches:
+`LexicalScopeModel` now has 88/88 lines and 93/96 branches in the combined report.
+This is model and range-encoding evidence, not a new runtime debugger claim.
 
 ## Attachment paths changed during commit and recovery
 
