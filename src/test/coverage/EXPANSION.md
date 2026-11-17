@@ -7153,3 +7153,30 @@ zero lines: 1,411 unique sessions against unchanged JAR58bd, all 255 sources and
 901 classes. Overall 28,861/29,802 lines and 22,366/25,902 branches. Critical
 binary/location 16,197/18,750 branches (678 short of 90%), file operations
 3,775/4,250 (50 short). Historical cohorts remain; final hosted acceptance pending.
+
+### Saved static-binding identity fields (#209)
+
+Acceptance: each serialized namespace, address offset, type ID/path/size and
+universal identity must match the current object; changed records are rejected
+without repair or inferred fallback. The owner must resolve to a function.
+StaticBindingRecordSmoke, called by existing staticBindingEvidenceSmoke, edits
+each field independently through a reference v1 codec that first reproduces the
+original bytes exactly. It verifies valid/rejected/absent result invariants,
+invalid symbol keys, null owners/objects, malformed text and exact Unicode text
+limits. A real saved structure exercises both present and missing universal IDs.
+A 65,537-byte payload fits the Base64 length ceiling but must fail the decoded
+size bound. Every rejected read preserves the payload and program modification
+counter; restoring the original identity restores validity.
+
+Guarded task passed in 4 seconds on x86-64, AArch64, ARM32 and both MIPS byte
+orders: 61 new assertions per profile plus 505 parent assertions. Six compiled
+faults were detected by behavioral Java assertions, with passing baseline and
+source hashes verified (13.819 seconds). No production changes. Evidence:
+.forge-work/scratch/static-binding-record-final.log and
+static-binding-record-mutants/result.json.
+
+Verified diagnostic coverage-recovery/static-binding-record/ adds one line and
+18 branch outcomes: 1,412 sessions, unchanged JAR58bd, 255 sources/901 classes.
+Overall 28,862/29,802 lines and 22,384/25,902 branches; critical binary/location
+16,215/18,750 branches (660 short of 90%), file operations 3,775/4,250 (50 short).
+Historical cohorts remain; current-head hosted acceptance is outstanding.

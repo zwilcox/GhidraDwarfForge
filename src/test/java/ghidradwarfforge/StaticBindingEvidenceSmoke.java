@@ -96,6 +96,7 @@ public final class StaticBindingEvidenceSmoke {
                 GhidraStaticBindings.save(program, symbol, owner, "inner", "shadow", "explicit static ownership", TaskMonitor.DUMMY);
                 var options = program.getOptions(GROUP);
                 String original = options.getString(key, null);
+                StaticBindingRecordSmoke.check(program, symbol, owner, original);
                 observe(program, symbolId, ownerId, "inner");
                 GhidraStaticBindings.save(program, symbol, owner, "inner", "shadow", "explicit static ownership", TaskMonitor.DUMMY);
                 require(original.equals(options.getString(key, null)), "deterministic record");
