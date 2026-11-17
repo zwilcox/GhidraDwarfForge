@@ -69,7 +69,7 @@ def main():
     runtime = [args.jar.resolve(strict=True), ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar',
                ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar']
     sources = [ROOT / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in
-        ('AttachmentProtocolSmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe', 'AttachmentValidatorProbe')]
+        ('AttachmentProtocolSmoke', 'AttachmentPathBoundarySmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe', 'AttachmentValidatorProbe')]
     coverage = Collection('sectionless-validation', args.jar, 'native-java', test_classes=tuple(
         'ghidradwarfforge.output.' + path.stem for path in sources))
     bundle = args.strict_validator.resolve(strict=True).parents[1]

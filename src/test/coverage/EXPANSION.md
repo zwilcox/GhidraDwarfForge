@@ -8861,3 +8861,22 @@ Evidence: `.forge-work/scratch/attachment-canonical-parent-final.log` and
 https://github.com/zwilcox/GhidraDwarfForge/actions/runs/44185360886/job/134436289697.
 Windows verification of this correction is PRESENT, UNVERIFIED until the next
 hosted run. The current architecture jobs are retained; no run was cancelled.
+
+### Isolated attachment compiler dependency correction (2026-11-17)
+
+CONFIRMED: ARM32 job 134428741892 in hosted run 44185360886 failed compiling
+AttachmentProtocolSmoke because its new AttachmentPathBoundarySmoke dependency
+was absent from the isolated attachment controller's explicit source list.
+The export and structural validation before this compile step passed; this does
+not establish a completed ARM32 lane. The same missing dependency existed in
+six integration harnesses. All six now include the helper in their source lists,
+which also feed their existing provenance and test-class inventories.
+
+Guarded `python3 .forge-work/scratch/check-attachment-compilation.py` compiled
+all six exact source lists separately with `javac --release 21 -proc:none`, the
+unchanged authenticated production JAR (58bd7a71...), Gson and JNA. No other test
+classes were on the classpath. The first isolated output also ran the parent
+AttachmentProtocolSmoke: 286 path-boundary and 11,335 protocol checks passed.
+Evidence: `.forge-work/scratch/attachment-compilation-result.json` and
+`.forge-work/scratch/attachment-compilation.log`. Fresh hosted confirmation is
+PRESENT, UNVERIFIED. No production code or target behavior was changed.

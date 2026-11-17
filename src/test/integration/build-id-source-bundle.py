@@ -22,7 +22,7 @@ def main():
     harness = Path(__file__).resolve().parent
     repo = harness.parents[2]
     names = ('BuildIdInstallationProbe', 'AttachmentElfTransactionProbe',
-        'AttachmentReceiptStoreSmoke', 'AttachmentProtocolSmoke')
+        'AttachmentReceiptStoreSmoke', 'AttachmentProtocolSmoke', 'AttachmentPathBoundarySmoke')
     sources = [repo / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in names]
     runtime = [args.jar.resolve(strict=True), args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar',
         args.ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar']

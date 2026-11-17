@@ -100,7 +100,7 @@ def main():
     gson = args.ghidra.resolve() / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar'
     jna = args.ghidra.resolve() / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'
     sources = [ROOT / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in
-               ['AttachmentProtocolSmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe',
+               ['AttachmentProtocolSmoke', 'AttachmentPathBoundarySmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe',
                 'StrictDwarfCheckProbe', 'AttachmentValidatorProbe', 'LinuxAttachmentRecoveryProbe']]
     coverage_sources = [ROOT / 'src/test/integration/integration_coverage.py',
                         ROOT / 'src/test/coverage/launcher-java.py']

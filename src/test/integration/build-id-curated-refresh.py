@@ -229,7 +229,7 @@ def main():
         classes = scratch / 'classes'
         classes.mkdir()
         java_sources = [scripts.parent.parent / 'test/java/ghidradwarfforge/output' / (name + '.java') for name in
-            ['AttachmentProtocolSmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe', 'BuildIdInstallationProbe']]
+            ['AttachmentProtocolSmoke', 'AttachmentPathBoundarySmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe', 'BuildIdInstallationProbe']]
         dependencies = [module / 'lib/GhidraDwarfForge.jar', ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar',
             ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar']
         protected.update({str(path): digest(path) for path in java_sources + dependencies})

@@ -24,7 +24,7 @@ def main():
     work = args.work.resolve()
     work.mkdir(parents=True, exist_ok=False)
     repo = Path(__file__).resolve().parents[3]
-    names = ('AttachmentBundleBindingProbe', 'AttachmentReceiptStoreSmoke', 'AttachmentProtocolSmoke')
+    names = ('AttachmentBundleBindingProbe', 'AttachmentReceiptStoreSmoke', 'AttachmentProtocolSmoke', 'AttachmentPathBoundarySmoke')
     sources = [repo / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in names]
     index = args.index.resolve(strict=True)
     manifest_name, = re.findall(r'^ \* Manifest: (forge-src-[0-9a-f]{64}\.json)$', index.read_text(), re.M)
