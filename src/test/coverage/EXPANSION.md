@@ -6,6 +6,74 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## C++/stack transition refresh and decoded call-site effects
+
+**CONFIRMED, local validation:** `2579948b` adds 34 actual decoded instruction
+cases across x86-32, x86-64, ARM32 and AArch64 to the existing
+`ghidraUnwindInstructionsSmoke` task. The new 882 assertions check conditional
+destination invalidation, independent register/stack preservation, ordinary
+copy/add/subtract effects, and conservative rejection of unproved calls,
+computed jumps, repeated stores and floating operations. Cancellation at every
+observed poll must stop promptly, preserve program bytes/state, and allow a
+deterministic retry. This is component evidence, not a new CFI or architecture
+support claim. Production source and JAR are unchanged.
+
+An initial ARM conditional-load expectation failed. The diagnostic rerun showed
+actual Sleigh p-code containing conditional address arithmetic, for which this
+decoder deliberately returns a whole-instruction omission. The corrected test
+requires that conservative result and verifies that no register/memory facts
+survive. Both failed collections remain excluded. The passing run is
+`callsite-effects-verified-4bd11`; four separately compiled mutations are rejected
+by its new assertions: retaining a conditional destination, ignoring opaque
+effects, treating subtraction as addition, and retaining a copy's destination.
+Mutation executions do not contribute coverage. The existing Gradle task passes
+the new 882 plus 1,849 prior assertions; no full JavaExec rerun is claimed.
+
+Existing production integrations also pass against current JAR `4bd11717`:
+
+- Fifteen C++ profiles cover inferred/explicit object bindings, stale/conflicting
+  class evidence and aggregate returns for non-PIE, PIE and rebased PIE. Compiler
+  and Forge GDB, independent validators, deterministic artifacts and preservation
+  checks pass. Their 45 direct headless sessions are measured; nested real
+  decompiler-failure and copy-cancellation controls remain behavioral evidence
+  only and are explicitly excluded from this measurement.
+- Six x86-64/AArch64 stack-transition profiles cover non-PIE, PIE and rebased PIE.
+  Each checks twelve 32/64-bit functions with three signed input values at every
+  instruction, raw register/stack observations, availability gaps, return values,
+  source stepping, exact serialized location intervals, validators and repeatable
+  outputs. All 24 direct headless sessions are measured, including QEMU-backed
+  AArch64 debugger execution. Both original bytes and saved programs are preserved.
+
+Raw receipts, actual harness snapshots and installed JAR/native metadata
+restoration are verified. The original run checkout is `19524e34`; the new test
+snapshot is `2579948b`. The two owned Java 21 script caches (21.9 MB total) were
+removed after verification; raw measurements and selected artifacts remain.
+
+The current-JAR partial union is **871 sessions** (211 JavaExec, 471 isolated
+Java/native-path, 189 headless), with all 255 production sources/901 classes:
+
+| Scope | Covered lines | Covered branches |
+| --- | ---: | ---: |
+| Overall Java | 27,722 / 29,792 (93.1%) | 21,149 / 25,888 (81.7%) |
+| Binary/location correctness | 18,430 / 19,203 (96.0%) | 15,504 / 18,736 (82.7%) |
+| File transactions/validation | 5,566 / 6,677 (83.4%) | 3,271 / 4,250 (77.0%) |
+
+Relative to the prior MMIO checkpoint, this adds 16 lines and 25 branches. The
+new instruction tests account for three lines/four branches in
+`GhidraUnwindInstructions`; the other gains come from the integration refresh.
+Evidence is under `.forge-work/scratch/coverage-expansion/`, including
+`object-current-4bd11`, `transitions-current-4bd11`,
+`callsite-effects-verified-4bd11`, `callsite-effects-mutations-4bd11`,
+`callsite-effects-gradle.log` and `callsite-effects-refresh-4bd11/summary.json`.
+The final summary SHA-256 is
+`95ed0fa4e04cffe017f4bbf388ccb98b0de2f27da1cba9b7cabe2113b70e580c`.
+
+Issue #209 remains **incomplete**: the unchanged critical-group 95%/90% targets,
+fresh Windows/privileged/full-hosted measurements, protected integration and
+actual-main publication remain required. Run `44015264480` still has its
+extension build in progress; its known native-Windows compilation dependency
+failure is fixed locally in `b41c3d20`, awaiting the next CI revision.
+
 ## Existing ELF MMIO cancellation/failure measurement
 
 **CONFIRMED, local validation:** `294ccb43` instruments the existing ELF MMIO
