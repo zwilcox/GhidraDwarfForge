@@ -79,6 +79,17 @@ public final class CompanionObservationRecoverySmoke {
 
     private static void observationRace(Path root, String change) throws Exception {
         var fixture = Fixture.create(root.resolve("observed-" + change));
+        // BasicFileAttributes permits an unavailable file key. OpenJDK 21's
+        // Windows provider returns null, so identical replacement bytes/mtime
+        // cannot exercise the production key-comparison branch on that host.
+        // Keep the other real race/recovery controls and disclose this gap;
+        // a null key is not evidence of preserved or changed file identity.
+        if (change.equals("identity") && fixture.prior.getFirst().key == null) {
+            fixture.unchanged();
+            fixture.noStages(4);
+            System.out.println("companion-observation-identity=NOT_RUN reason=basic-file-key-unavailable");
+            return;
+        }
         Path output = fixture.outputs.getFirst();
         int[] polls = {0};
         boolean[] changed = {false};
