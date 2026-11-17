@@ -8640,3 +8640,31 @@ Source/raw/session/all-255-source verification passes. The 1,358-session diagnos
 union adds seven branches: 22,828/25,902 overall and 16,603/18,750 binary/location
 (272 short of 90%). Other counters remain unchanged. Hosted current-head gates,
 protected merge and main publication are still required for #209.
+
+## Inheritance physical member snapshots
+
+`InheritancePhysicalLayoutSmoke`, called by the existing inheritance evidence
+task, adds 68 assertions over real x86-64/AArch64 program databases. A 16-byte
+class contains a three-bit field in one byte of storage, a four-byte typedef and
+an eight-byte pointer. Changing bit offset or width while retaining outer extent,
+changing the typedef base while retaining its universal ID/size, and changing
+pointer targets invalidate saved relationships. Restoring each physical layout
+restores the prior valid evidence. Display names/comments leave the serialized
+snapshot unchanged. Valid and rejected reads preserve the saved record and
+program modification counter; no stale evidence is silently repaired.
+
+Guarded `inheritanceBindingEvidenceSmoke` passes in five seconds: 68 new physical
+checks, 188 existing parent checks and 36 budget checks. Four compiled faults
+are detected by behavioral assertions: omitting bit offset, bit width, typedef
+base traversal or pointer-target identity from the fingerprint. Baseline passes;
+mutation run takes 13.208 seconds. No production code changed.
+
+Evidence: `.forge-work/scratch/inheritance-physical-layout-final.log`,
+`inheritance-physical-layout-mutants/result.json`, and
+`coverage-recovery/inheritance-physical-layout/`. Raw SHA-256:
+`b552e04d7f6ac5f5789745ceff54e8883b7718b7030476b193c5058a314be59d`.
+Source/raw/session/all-255-source verification passes. The 1,359-session diagnostic
+union adds one line and four branches: 28,914/29,802 lines and 22,832/25,902 branches
+overall; binary/location 18,657/19,213 lines and 16,607/18,750 branches (268 short
+of 90%). File-operation counters remain unchanged. Hosted current-head gates,
+protected merge and actual main publication remain outstanding for #209.
