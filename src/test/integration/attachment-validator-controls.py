@@ -19,7 +19,9 @@ def exercise(java, runtime, report, original, sidecar, source, tools, root, run)
 
     def replay(name, role, body):
         path = root / (name + '-tool')
-        version = 'GNU readelf (GNU Binutils) 2.42\n' if role == 'gnu' else 'LLVM version 18.1.3\n'
+        version = {'gnu': 'GNU readelf (GNU Binutils) 2.42\n',
+                   'llvm': 'LLVM version 18.1.3\n',
+                   'strict': 'libdwarf 2.3.2 dwarfdump 2.3.2\n'}[role]
         path.write_text('#!/usr/bin/env python3\nimport os, signal, sys, time\nfrom pathlib import Path\n' +
                         'if sys.argv[1:] == ["--version"]:\n    sys.stdout.write(' + repr(version) +
                         ')\n    sys.exit(0)\n' + body + '\n')
@@ -54,6 +56,17 @@ def exercise(java, runtime, report, original, sidecar, source, tools, root, run)
     fake_llvm = replay('contradictory-llvm', 'llvm',
                        'sys.stdout.write(' + repr('error: deliberately inconsistent report\n' + llvm_output) + ')')
     rejected('contradictory-llvm', [*tools[:2], fake_llvm, *tools[3:]], expected=b'LLVM report lacks complete')
+    # A zero exit and a plausible banner are insufficient: require an actual
+    # unit check and exactly one final success marker, with nothing after it.
+    for name, text in {
+            'missing-unit-llvm': 'Verifying .debug_info Unit Header Chain...\nNo errors.\n',
+            'unfinished-llvm': 'Verifying .debug_info Unit Header Chain...\nVerifying unit:\n',
+            'duplicate-success-llvm': 'Verifying .debug_info Unit Header Chain...\nVerifying unit:\nNo errors.\nNo errors.\n',
+    }.items():
+        fake_llvm = replay(name, 'llvm', 'sys.stdout.write(' + repr(text) + ')')
+        rejected(name, [*tools[:2], fake_llvm, *tools[3:]], expected=b'LLVM report lacks complete')
+    fake_strict = replay('stderr-strict', 'strict', 'sys.stderr.write("warning: deliberate strict diagnostic\\n")')
+    rejected('stderr-strict', [*tools[:3], fake_strict, tools[4]], expected=b'strict checker wrote unexplained stderr')
     wrong_configuration = root / 'wrong.conf'
     wrong_configuration.write_bytes(tools[4].read_bytes() + b'\n# changed\n')
     rejected('wrong-config', [*tools[:4], wrong_configuration], expected=b'configuration differs')
