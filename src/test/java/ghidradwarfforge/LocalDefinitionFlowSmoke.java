@@ -38,6 +38,7 @@ public final class LocalDefinitionFlowSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        UnreachableLocalDefinitionSmoke.check();
         for (boolean x86 : new boolean[] { true, false }) {
             for (int bytes : new int[] { 4, 8 }) {
                 for (String shape : List.of("diamond", "loop", "split", "bypass")) {
