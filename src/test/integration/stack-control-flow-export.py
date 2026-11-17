@@ -40,7 +40,15 @@ def main():
         raise ValueError('comparative packages must not contribute to one coverage collection')
 
     def write(name, value):
-        (case / name).write_text(json.dumps(value, indent=4) + '\n')
+        # Full instruction traces and the installed-file inventory can exceed
+        # the coverage reader's bound when indented. Preserve every observation
+        # while avoiding formatting overhead in this machine-readable receipt.
+        measured = name == 'coverage-oracle.json'
+        text = json.dumps(value, separators=(',', ':')) if measured else json.dumps(value, indent=4)
+        text += '\n'
+        if measured and len(text.encode('utf-8')) > 1024 * 1024:
+            raise ValueError('stack-flow coverage evidence exceeds the 1 MiB reader bound')
+        (case / name).write_text(text, encoding='utf-8')
 
     def run(name, command, **kwargs):
         context = collection.session(command, name, headless=True) \
