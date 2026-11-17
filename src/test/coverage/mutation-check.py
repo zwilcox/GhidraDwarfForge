@@ -91,6 +91,7 @@ CALL_VALUE_TEST = "ghidradwarfforge.calls.CallValueSmoke"
 CALL_VALUE_ORACLE = REPO / "src/test/integration/check-call-values.py"
 VALIDATOR_STATUS = "ghidradwarfforge/output/ValidatorSupervisor.java"
 VALIDATOR_STATUS_TEST = "ghidradwarfforge.output.ValidatorStatusBoundarySmoke"
+VALIDATOR_PROVENANCE_TEST = "ghidradwarfforge.output.ValidatorLaunchBoundarySmoke"
 REPORT_LEXICAL = "ghidradwarfforge/output/ReportJsonReader.java"
 REPORT_LEXICAL_TEST = "ghidradwarfforge.output.ReportValueReaderSmoke"
 REPORT_LEXICAL_MUTANTS = [
@@ -615,6 +616,14 @@ I386_ALLOCATION_MUTANTS = [
 ]
 
 VALIDATOR_STATUS_MUTANTS = [
+    ("validator-provenance-ignores-file-identity", VALIDATOR_STATUS, VALIDATOR_PROVENANCE_TEST,
+     '!Objects.equals(before.fileKey(), after.fileKey()) || ', ''),
+    ("validator-provenance-ignores-file-size", VALIDATOR_STATUS, VALIDATOR_PROVENANCE_TEST,
+     'before.size() != after.size() ||', ''),
+    ("validator-provenance-ignores-modification-time", VALIDATOR_STATUS, VALIDATOR_PROVENANCE_TEST,
+     '!before.lastModifiedTime().equals(after.lastModifiedTime()) || ', ''),
+    ("validator-provenance-ignores-observed-byte-count", VALIDATOR_STATUS, VALIDATOR_PROVENANCE_TEST,
+     ' || after.size() != digest.byteCount()', ''),
     ("validator-status-allows-extra-byte", VALIDATOR_STATUS, VALIDATOR_STATUS_TEST,
      "bytes.length > 4096", "bytes.length > 4097"),
     ("validator-status-allows-duplicate-fields", VALIDATOR_STATUS, VALIDATOR_STATUS_TEST,
@@ -1229,7 +1238,7 @@ def main():
             # The production publisher's private exception is never serialized;
             # its existing missing serialVersionUID is unrelated to these mutants.
             selected_dependencies = dependencies if test in (
-                LOCAL_MAPPING_TEST, BUILD_ID_LOCK_TEST, TARGET_DESCRIPTOR_TEST, TYPE_IDENTITY_TEST, STORAGE_REFINEMENT_TEST, REPORT_LEXICAL_TEST, PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
+                VALIDATOR_PROVENANCE_TEST, LOCAL_MAPPING_TEST, BUILD_ID_LOCK_TEST, TARGET_DESCRIPTOR_TEST, TYPE_IDENTITY_TEST, STORAGE_REFINEMENT_TEST, REPORT_LEXICAL_TEST, PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
                 REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, TARGET_STORE_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, STATIC_BINDING_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CALL_PARAMETERS_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, AARCH64_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, CLOSED_FLOW_TEST, COMPOSITE_FLOW_TEST, MIXED_PREFIX_TEST, BACKUP_READBACK_TEST, REPORT_TEXT_TEST, BUILD_ID_HELPER_TEST, LINUX_METADATA_TEST, LINUX_APPLICATION_TEST, LINUX_CANARY_TEST, LINUX_MOUNT_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST, ATTACHMENT_PREVIEW_TEST) else []
             compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
@@ -1256,6 +1265,8 @@ def main():
                 # Rendering requires the same checked-in loader resource packaged by CI.
                 classpath += os.pathsep + str(REPO / "src/main/resources")
             test_args = [args.ghidra.resolve()] if test in (LOCAL_MAPPING_TEST, PROTECT_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, STATIC_BINDING_TEST, BOUNDED_SWITCH_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CALL_PARAMETERS_TEST, CXX_PROFILE_TEST, I386_ALLOCATION_TEST, AARCH64_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, REGISTER_PROFILE_TEST, CLOSED_FLOW_TEST, COMPOSITE_FLOW_TEST, MIXED_PREFIX_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST) else []
+            if test == VALIDATOR_PROVENANCE_TEST:
+                test_args.append(root / "provenance-fixtures")
             if test == BUILD_ID_LOCK_TEST:
                 test_args.extend(["exercise", root / "owned-lock"])
             if test == STRICT_REPORT_TEST:

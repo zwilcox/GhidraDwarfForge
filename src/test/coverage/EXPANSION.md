@@ -6,6 +6,34 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Validator helper changes during provenance observation
+
+`ValidatorLaunchBoundarySmoke` uses owned executable fixtures and synchronizes
+actual file changes at digest cancellation polls. Identity replacement preserves
+bytes/size/mtime; a size change preserves mtime; a timestamp change preserves
+identity/bytes. A fourth case appends before the digest read and restores the
+original bytes/size/mtime before EOF, so equal metadata snapshots still must
+reject a mismatched observed byte count. Each case requires the specific
+provenance error, verifies the intended filesystem control, and requires an
+empty evidence directory. These are Linux prelaunch refusal tests; they do not
+claim hostile-race protection against undetectable change-and-restore attacks.
+
+Guarded `gcc -std=c11 -O2 -Wall -Wextra -Werror` builds the current native Linux
+supervisor. The full `validatorSupervisorSmoke` task passes with that helper:
+270 status checks, 69 launch checks, 15 negative helper-protocol controls, and
+38 supervisor checks, including real child cleanup, cancellation and interruption.
+Four compiled mutations independently removing identity, size, modification-time
+or observed-byte-count verification are detected by behavioral assertions;
+the unchanged baseline passes (3.004 seconds total mutation run).
+
+Diagnostic measurement against the refreshed mixed-cohort baseline adds
+**1 line / 4 branches** in `ValidatorSupervisor`. Production code is unchanged.
+Evidence under scratch: `provenance-supervisor-build.log`,
+`validator-provenance-test.log`, `validator-provenance-compile.log`,
+`validator-provenance-mutations/result.json`, and
+`coverage-recovery/validator-provenance/`. No new Windows runtime evidence or
+complete-current coverage percentage is claimed.
+
 ## Refreshed diagnostic evidence from CI 44105084385
 
 **CONFIRMED, diagnostic only:** completed artifacts from the run at `6104599a`

@@ -20,6 +20,18 @@ final class ValidatorLaunchBoundarySmoke {
 
     private ValidatorLaunchBoundarySmoke() { }
 
+    /** Isolated negative admission checks for mutation testing; no success protocol is fabricated. */
+    public static void main(String[] args) throws Exception {
+        if (args.length != 1 || !System.getProperty("os.name").equals("Linux")) {
+            throw new IllegalArgumentException("supply a new Linux fixture directory");
+        }
+        Path root = Files.createDirectory(Path.of(args[0]));
+        Path tool = Files.writeString(root.resolve("owned-tool"), "#!/bin/sh\nexit 0\n");
+        Files.setPosixFilePermissions(tool, Set.of(PosixFilePermission.OWNER_READ,
+            PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE));
+        provenanceRaces(tool, root);
+    }
+
     static void run(ValidatorSupervisor runner, Path python, Path script, Path root) throws Exception {
         checks = 0;
         Path evidence = Files.createDirectory(root.resolve("launch-boundaries"));
@@ -63,6 +75,7 @@ final class ValidatorLaunchBoundarySmoke {
                 invalidTool(evidence, () -> runner.run(bad, quiet, evidence, Duration.ofSeconds(5), 1, () -> false));
             }
             finally { Files.delete(bad); }
+            provenanceRaces(python, root);
         }
 
         var minimumStream = runner.run(python, quiet, evidence, Duration.ofSeconds(5), 1, () -> false);
@@ -93,6 +106,80 @@ final class ValidatorLaunchBoundarySmoke {
             require(expected.directory().equals(expected.evidence().directory()), "failure exposes its actual retained evidence directory");
         }
         System.out.println("validator-launch-boundaries=PASS checks=" + checks);
+    }
+
+    /** Real file changes synchronized at digest cancellation polls, before any child is launched. */
+    private static void provenanceRaces(Path tool, Path root) throws Exception {
+        for (String mode : List.of("identity", "size", "modified", "read-length")) {
+            Path directory = Files.createDirectory(root.resolve("provenance-" + mode));
+            Path evidence = Files.createDirectory(directory.resolve("evidence"));
+            Path helper = Files.writeString(directory.resolve("owned-helper"), "#!/bin/sh\nexit 0\n");
+            var permissions = Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE,
+                PosixFilePermission.OWNER_EXECUTE);
+            Files.setPosixFilePermissions(helper, permissions);
+            byte[] bytes = Files.readAllBytes(helper);
+            var before = Files.readAttributes(helper, java.nio.file.attribute.BasicFileAttributes.class);
+            require(before.fileKey() != null, "provenance fixture needs observable file identity");
+            var runner = new ValidatorSupervisor(helper);
+            var polls = new java.util.concurrent.atomic.AtomicInteger();
+            var changes = new java.util.concurrent.atomic.AtomicInteger();
+            try {
+                runner.run(tool, List.of(), evidence, Duration.ofSeconds(5), 1, () -> {
+                    int poll = polls.incrementAndGet();
+                    try {
+                        // Poll 1 admits the request; poll 2 precedes the helper's digest open.
+                        if (poll == 2 && !mode.equals("read-length")) {
+                            switch (mode) {
+                                case "identity" -> {
+                                    Files.move(helper, directory.resolve("previous-helper"));
+                                    Files.write(helper, bytes, StandardOpenOption.CREATE_NEW);
+                                    Files.setPosixFilePermissions(helper, permissions);
+                                    Files.setLastModifiedTime(helper, before.lastModifiedTime());
+                                }
+                                case "size" -> {
+                                    Files.write(helper, new byte[] {32}, StandardOpenOption.APPEND);
+                                    Files.setLastModifiedTime(helper, before.lastModifiedTime());
+                                }
+                                case "modified" -> Files.setLastModifiedTime(helper,
+                                    java.nio.file.attribute.FileTime.fromMillis(before.lastModifiedTime().toMillis() + 2000));
+                                default -> throw new AssertionError(mode);
+                            }
+                            changes.incrementAndGet();
+                        }
+                        // The small file fits one digest buffer. Append before its read, then
+                        // restore length/mtime before EOF: equal stat snapshots cannot justify
+                        // accepting a digest that observed a different byte count.
+                        if (mode.equals("read-length") && poll == 3) {
+                            Files.write(helper, new byte[] {32}, StandardOpenOption.APPEND);
+                            changes.incrementAndGet();
+                        }
+                        if (mode.equals("read-length") && poll == 4) {
+                            try (var channel = FileChannel.open(helper, StandardOpenOption.WRITE)) {
+                                channel.truncate(bytes.length);
+                            }
+                            Files.setLastModifiedTime(helper, before.lastModifiedTime());
+                            changes.incrementAndGet();
+                        }
+                    }
+                    catch (IOException failure) { throw new java.io.UncheckedIOException(failure); }
+                    return false;
+                });
+                throw new AssertionError("changed helper admitted: " + mode);
+            }
+            catch (IOException expected) {
+                require(expected.getMessage().contains("changed while observing provenance"),
+                    "wrong provenance refusal for " + mode + ": " + expected);
+            }
+            require(changes.get() == (mode.equals("read-length") ? 2 : 1), "provenance race was not exercised");
+            requireEmpty(evidence);
+            var after = Files.readAttributes(helper, java.nio.file.attribute.BasicFileAttributes.class);
+            require(before.fileKey().equals(after.fileKey()) == !mode.equals("identity"), "wrong identity control");
+            require((before.size() == after.size()) == !mode.equals("size"), "wrong size control");
+            require(before.lastModifiedTime().equals(after.lastModifiedTime()) == !mode.equals("modified"), "wrong timestamp control");
+            if (mode.equals("read-length")) require(Arrays.equals(bytes, Files.readAllBytes(helper)),
+                "read-length race did not restore the complete fixture bytes");
+        }
+        System.out.println("validator-provenance-races=PASS cases=4 scope=prelaunch-linux");
     }
 
     @FunctionalInterface
