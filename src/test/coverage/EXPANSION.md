@@ -42,6 +42,31 @@ and 124 file/validation branch outcomes for the critical targets, current hosted
 acceptance, protected merge and actual-main publication. No full JavaExec rerun
 or new Windows validation is claimed for this increment.
 
+### Queued Windows security and CI transport validation
+
+PRESENT, UNVERIFIED on Windows: `1199abc3` adds 18 controlled native security
+failure cases, run only after actual Windows x64 host admission. They cover
+sizing success/error inconsistencies, small/large/unsigned capacities and returned
+lengths, native errors, invalid descriptor controls, inconsistent SACL presence
+and changed readback. Each case requires the intended diagnostic, one injected
+fault, balanced handles, unchanged source bytes/full security and a passing retry.
+The existing isolated Windows suite gains a seventh direct JVM. Hosted coverage
+admission requires the complete case inventory and preservation/cleanup receipts.
+Local Java 21 compilation and all 267 coverage-tool tests pass; no Windows probe
+or coverage gain is claimed before native execution. Evidence:
+`.forge-work/scratch/coverage-expansion/windows-security-preflight-2f181/`.
+
+CONFIRMED: CI `43991284160` failed MIPS big-endian preflight while downloading
+GDB: all three attempts to GNU failed with network-unreachable errors, before
+exporter validation. Commit `617f498f` adds the upstream Sourceware fallback to
+bounded transport retries, preserving the exact release pin, size bound,
+no-overwrite publication and refusal to retry integrity failures. All 16
+downloader tests pass. A controlled primary outage followed by a real Sourceware
+request retrieved 24,663,896 bytes matching the unchanged GDB 17.1 checksum.
+The owned archive was removed without extraction. Evidence:
+`.forge-work/scratch/coverage-expansion/gdb-source-fallback/`. This proves the
+fallback locally; the hosted lane still needs a successful subsequent run.
+
 ## Earlier variable location contract checkpoint
 
 CONFIRMED: commit `65bf9ae8` adds `VariableLocationContractSmoke` through the
