@@ -7727,3 +7727,22 @@ The verified diagnostic addition `coverage-recovery/call-memory-raw` contributes
 lines and 22,549/25,902 branches; binary/location branches are 16,328/18,750,
 547 below the 90% target. File targets remain met. These numbers do not establish
 hosted acceptance of queued HEAD, merge readiness or main publication.
+
+### Current hosted MIPS big-endian coverage admitted (2026-11-17)
+
+CONFIRMED: job 134300299616 (`target-preflight (mips32be)`) completed
+successfully in run 44150222826 at head a5a29b1d9512d81f1923da2d23ea2d4a2ff35ebd.
+Authenticated artifact 14366797765 is 560,121 bytes, SHA-256
+`16bbf1905a09aafd2d81a51817169bae8eccfc9a9a7380a6edde7f9a5cf56262`.
+Guarded bounded download rejects unsafe paths/symlinks and caps extraction at
+20 MiB. Current admission policy verifies the producing merge, unchanged
+production JAR/classes, suite oracles, raw sessions and their receipts. Locally
+regenerated per-layer counters match the hosted report exactly.
+
+Eleven current sessions (four native producer, seven headless) replace eight
+historical hosted and three local context-boundary sessions, without adding or
+losing covered lines/branches. Result and provenance:
+`.forge-work/scratch/coverage-recovery/mips32be-44150222826/result.json`.
+The mixed diagnostic remains 1,370 sessions, 28,894/29,802 lines,
+22,549/25,902 branches. Other historical cohorts remain, so this does not prove
+complete current-HEAD coverage or final acceptance of #209.
