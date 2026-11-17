@@ -2013,6 +2013,10 @@ CODE_MAPPING_MUTANTS = [
 ]
 
 SYMBOL_LOCATION_MODEL_MUTANTS = [
+    ('function-symbol-accepts-empty-extent', "ghidradwarfforge/elf/ElfLocalFunctionSymbol.java", "ghidradwarfforge.elf.LocalSymbolMergeSmoke",
+     'size <= 0', 'size < 0'),
+    ('mapping-symbol-accepts-negative-address', "ghidradwarfforge/elf/ElfLocalMappingSymbol.java", "ghidradwarfforge.elf.LocalSymbolMergeSmoke",
+     'value < 0', 'false'),
     ('object-model-accepts-zero-section', "ghidradwarfforge/elf/ElfLocalObjectSymbol.java", "ghidradwarfforge.elf.LocalSymbolMergeSmoke",
      'sectionIndex <= 0', 'sectionIndex < 0'),
     ('mode-cue-accepts-overflow', "ghidradwarfforge/elf/ElfFunctionModeCue.java", "ghidradwarfforge.elf.Arm32ModeSymbolsSmoke",

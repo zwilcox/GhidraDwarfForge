@@ -9084,3 +9084,22 @@ JAR. Overall 28,939/29,802 lines and 22,974/25,902 branches; binary/location
 critical 18,682/19,213 lines and 16,749/18,750 branches, 126 short of 90%.
 File counts remain unchanged. Fresh hosted acceptance, protected merge and
 actual-main publication remain outstanding.
+
+### Function and mapping symbol model boundaries (2026-11-17)
+
+CONFIRMED: LocalSymbolMergeSmoke now rejects invalid names, negative values,
+empty function extents and nonpositive section indexes for function/mapping
+models. Exact name bounds, wide values and extended section indexes survive;
+mapping symbols retain zero extent and STT_NOTYPE, functions STT_FUNC. Existing
+four-format writer checks pass: 3,667 checks, guarded Gradle in 4 seconds.
+Two compiled faults (empty function extent, negative mapping address) are
+detected through behavioral assertions. Evidence local-symbol-role-bounds.log
+and local-symbol-role-mutants/result.json under .forge-work/scratch.
+
+Verified local-symbol-role-bounds diagnostic adds one line/twelve branches:
+1,377 unique sessions, 28,940/29,802 lines and 22,986/25,902 branches overall;
+binary/location 18,683/19,213 lines and 16,761/18,750 branches, 114 short of
+90%. File group unchanged at 6,522/6,677 lines and 3,831/4,250 branches.
+Full 255-source denominator and authenticated production JAR unchanged.
+This historical/local union is not hosted acceptance. Fresh full CI, protected
+merge and actual-main publication remain outstanding.

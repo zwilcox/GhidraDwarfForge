@@ -511,13 +511,20 @@ public final class LocalSymbolMergeSmoke {
     private static void objectContracts() {
         for (String name : Arrays.asList(null, "", " \t", "bad\0name", "x".repeat(65537))) {
             objectRejected(() -> new ElfLocalObjectSymbol(name, 0, 1, 1));
+            objectRejected(() -> new ElfLocalFunctionSymbol(name, 0, 1, 1));
+            objectRejected(() -> new ElfLocalMappingSymbol(name, 0, 1));
         }
         objectRejected(() -> new ElfLocalObjectSymbol("object", -1, 1, 1));
+        objectRejected(() -> new ElfLocalFunctionSymbol("function", -1, 1, 1));
+        objectRejected(() -> new ElfLocalMappingSymbol("mapping", -1, 1));
         for (long size : new long[] {0, -1}) {
             objectRejected(() -> new ElfLocalObjectSymbol("object", 0, size, 1));
+            objectRejected(() -> new ElfLocalFunctionSymbol("function", 0, size, 1));
         }
         for (int section : new int[] {0, -1}) {
             objectRejected(() -> new ElfLocalObjectSymbol("object", 0, 1, section));
+            objectRejected(() -> new ElfLocalFunctionSymbol("function", 0, 1, section));
+            objectRejected(() -> new ElfLocalMappingSymbol("mapping", 0, section));
         }
         // Section membership and target width are checked by the writer; the
         // model must preserve large positive values for that decision.
@@ -525,12 +532,19 @@ public final class LocalSymbolMergeSmoke {
         require(object.name().length() == 65536 && object.value() == 0x100000007L &&
             object.size() == 0x100000009L && object.sectionIndex() == 0xff01 && object.type() == 1,
             "ordinary object identity was truncated or changed to a function");
+        var function = new ElfLocalFunctionSymbol(object.name(), object.value(), object.size(), object.sectionIndex());
+        var mapping = new ElfLocalMappingSymbol(object.name(), object.value(), object.sectionIndex());
+        require(function.name().equals(object.name()) && function.value() == object.value() && function.size() == object.size() &&
+            function.sectionIndex() == object.sectionIndex() && function.type() == 2,
+            "wide function identity or function symbol type changed");
+        require(mapping.name().equals(object.name()) && mapping.value() == object.value() && mapping.sectionIndex() == object.sectionIndex() &&
+            mapping.size() == 0 && mapping.type() == 0, "mapping boundary acquired an object extent or type");
     }
 
     private static void objectRejected(Runnable action) {
         try { action.run(); }
         catch (IllegalArgumentException expected) { checks++; return; }
-        throw new AssertionError("invalid ordinary object symbol was accepted");
+        throw new AssertionError("invalid local symbol model was accepted");
     }
 
     private static void require(boolean condition, String description) {
