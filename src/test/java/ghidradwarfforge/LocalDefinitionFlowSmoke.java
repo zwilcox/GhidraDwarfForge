@@ -31,7 +31,7 @@ import ghidradwarfforge.locations.VariableStorageModel.Storage;
 import ghidradwarfforge.locations.VariableStorageModel.OmissionReason;
 import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
 
-/** Real decoded diamonds, loops and split bodies; no fabricated instruction graph. */
+/** Real decoded diamonds, loops and split bodies, plus isolated raw-control contracts. */
 public final class LocalDefinitionFlowSmoke {
     private static int checks;
 
@@ -39,6 +39,7 @@ public final class LocalDefinitionFlowSmoke {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
         UnreachableLocalDefinitionSmoke.check();
+        RegisterControlBoundarySmoke.run();
         for (boolean x86 : new boolean[] { true, false }) {
             for (int bytes : new int[] { 4, 8 }) {
                 for (String shape : List.of("diamond", "loop", "split", "bypass")) {

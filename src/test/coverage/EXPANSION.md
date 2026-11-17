@@ -7548,3 +7548,40 @@ formatter-selection-mutants-final/result.json and coverage-recovery/
 {debuglink-byte-boundaries,formatter-selection-boundaries}/ containing raw
 sessions, source hashes, verified manifests, counts, gaps and combined XML.
 No production Java or emitted ELF/DWARF changed.
+
+### Raw branch/return admission through the decoder (#209)
+
+Acceptance: raw control transfers agree with instruction flow metadata, target
+space/address, operand count/width, absent output and final-operation ordering.
+RegisterControlBoundarySmoke supplies controlled raw p-code views over real
+three-instruction x86-32, x86-64 and AArch64 program contexts and calls
+RegisterDefinitionFlow.decodedInstructions. Positive branch/conditional/return
+controls are admitted; malformed cases return no decoded proof and never crash
+or modify saved program state/executable bytes. These boundary fixtures do not
+establish new architecture support. Existing real local-flow tests remain.
+
+Guarded Java25/Ghidra12.0.3 `./gradlew --no-daemon localDefinitionFlowSmoke`
+passes147 new assertions,808 unreachable-definition assertions and508 existing
+local-flow assertions in5seconds. Guarded mutation-check.py with compiled
+main/test classes, the same Java/Ghidra installations and repeated --only
+selectors register-control-ignores-{condition-width,return-width,branch-output,
+return-output,branch-target} and register-control-allows-effects-after-branch
+passes its unchanged baseline and detects all six faults by behavioral
+assertions (14.576seconds). No production Java or emitted artifacts changed.
+
+A measurement launch while the mutant run was active was refused by the storage
+guard; no workload started and no evidence was admitted from that refusal.
+After observing the mutant process complete, the guarded measurement ran.
+measure-stack.py register-control-boundaries ghidradwarfforge.RegisterControlBoundarySmoke
+and verify-local-addition.py register-control-boundaries formatter-selection-boundaries
+verify the raw session/current test hashes, unchanged production JAR and all255
+sources/901classes. Diagnostic1,367sessions: +15branches in RegisterDefinitionFlow,
+no losses. Overall28,891/29,802lines22,495/25,902branches; binary/location
+16,274/18,750branches (601short90%). File group stays97.66%line/90.05%branch.
+Historical cohorts remain; full current hosted acceptance is not yet established.
+
+Evidence: .forge-work/scratch/register-control-boundaries.log,
+register-control-mutants/result.json,register-control-measure-final.log and
+coverage-recovery/register-control-boundaries/{result.json,sessions.tsv,
+counts.json,gaps.json,xml/combined.xml}. CI44150222826 still live; MIPSLE reached
+archive step, no failed steps observed. Hold queued changes while CI continues.
