@@ -8351,3 +8351,31 @@ Evidence: `.forge-work/scratch/stack-local-admission-final-build.log`,
 22,732/25,902 branches. Critical binary/location branches are 16,507/18,750,
 368 short of 90%. File operations remain 3,831/4,250. Full-denominator scope
 and production JAR are unchanged; current-head hosted acceptance is pending.
+
+## Call-memory target profiles and stack direction
+
+The raw call-memory fixture adds 105 checks in i386, x86-64 and AArch64
+language contexts. Transparent target views retain their empty-write summary;
+missing/partial stack pointers, missing/overlay/non-RAM spaces, word addressing,
+zero/oversized pointers and pointer/register-width disagreement must be refused
+without crashing. Each rejected profile is followed by an unchanged-program
+retry. Both stack directions exercise zero, small positive/negative and signed
+32/64-bit endpoint adjustments, checking exact release ranges and final SP
+coordinates. These are raw proof contracts, not new processor/ABI support claims.
+
+`callMemoryEffectsSmoke` passes in five seconds: 339 raw checks, 525 existing
+boundary checks and 165 parent checks. Five compiled faults are detected by
+behavioral assertions: accepting overlay/register/word-addressed memory,
+ignoring pointer-width disagreement, and assuming a downward stack. The
+unchanged baseline passes (17.299 seconds total). A candidate mutation removing
+only the partial-register guard remains safely rejected by the independent
+width guard, so it is not counted as a detected fault. No production changes.
+
+Evidence: `.forge-work/scratch/call-memory-profile-build.log`,
+`call-memory-profile-behavior-mutants/result.json`, and
+`coverage-recovery/call-memory-target-profiles/`. The verified diagnostic union
+adds 12 branches and no lines: 1,349 sessions, 28,909/29,802 lines and
+22,744/25,902 branches. Critical binary/location branches are 16,519/18,750,
+356 short of 90%; file operations remain 3,831/4,250. All 255 production
+sources / 901 classes remain measured. Current-head hosted acceptance remains
+pending; these additions follow the revision running in CI 44185360886.

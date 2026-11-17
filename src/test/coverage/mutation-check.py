@@ -1176,6 +1176,17 @@ CALL_PARAMETERS_MUTANTS = [
 ]
 
 CALL_MEMORY_MUTANTS = [
+    ("call-memory-profile-admits-overlay", CALL_MEMORY, CALL_MEMORY_TEST,
+     'memory.isOverlaySpace() ||', ''),
+    ("call-memory-profile-admits-register-space", CALL_MEMORY, CALL_MEMORY_TEST,
+     'memory.getType() != AddressSpace.TYPE_RAM ||', ''),
+    ("call-memory-profile-admits-word-addressing", CALL_MEMORY, CALL_MEMORY_TEST,
+     'memory.getAddressableUnitSize() != 1 ||', ''),
+    ("call-memory-profile-ignores-pointer-width", CALL_MEMORY, CALL_MEMORY_TEST,
+     'pointer.getBitLength() != memory.getPointerSize() * 8', 'false'),
+    ("call-memory-profile-assumes-downward-stack", CALL_MEMORY, CALL_MEMORY_TEST,
+     'program.getCompilerSpec().stackGrowsNegative() ? derived.offset() > before.offset() : derived.offset() < before.offset()',
+     'derived.offset() > before.offset()'),
     ("call-memory-accepts-extra-store-operand", CALL_MEMORY, CALL_MEMORY_TEST,
      "operation.getNumInputs() != 3 ||", "operation.getNumInputs() < 3 ||"),
     ("call-memory-truncates-space-id", CALL_MEMORY, CALL_MEMORY_TEST,

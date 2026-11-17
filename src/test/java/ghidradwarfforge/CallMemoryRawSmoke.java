@@ -2,6 +2,7 @@ package ghidradwarfforge;
 
 import java.io.File;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
@@ -17,8 +18,12 @@ import ghidra.framework.HeadlessGhidraApplicationConfiguration;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
+import ghidra.program.model.address.AddressSpace;
+import ghidra.program.model.lang.CompilerSpec;
+import ghidra.program.model.lang.Language;
 import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.listing.Program;
 import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.symbol.RefType;
@@ -78,6 +83,7 @@ public final class CallMemoryRawSmoke {
 
         void check() throws Exception {
             long modification = program.getModificationNumber();
+            profiles();
             var oneByte = new CallMemoryEffects.Summary(0, Set.of(new CallMemoryEffects.Range(0, 1)));
             var empty = new CallMemoryEffects.Summary(0, Set.of());
             PcodeOp store = op(PcodeOp.STORE, null, space, sp, value);
@@ -154,6 +160,11 @@ public final class CallMemoryRawSmoke {
         }
 
         void test(String label, CallMemoryEffects.Summary expected, PcodeOp[] first, PcodeOp[] second) throws Exception {
+            test(program, label, expected, first, second);
+        }
+
+        void test(Program selectedProgram, String label, CallMemoryEffects.Summary expected,
+                PcodeOp[] first, PcodeOp[] second) throws Exception {
             List<Instruction> selected = new ArrayList<>();
             for (int i = 0; i < 3; i++) {
                 Instruction original = instructions.get(i);
@@ -170,13 +181,84 @@ public final class CallMemoryRawSmoke {
                     }));
             }
             try {
-                var actual = CallMemoryEffects.summarize(program, entry, selected, Map.of(), Map.of(), TaskMonitor.DUMMY);
+                var actual = CallMemoryEffects.summarize(selectedProgram, entry, selected, Map.of(), Map.of(), TaskMonitor.DUMMY);
                 require(Objects.equals(expected, actual), label + " expected=" + expected + " actual=" + actual);
             }
             catch (RuntimeException failure) { throw new AssertionError(label + " must refuse without crashing", failure); }
         }
 
-        @Override public void close() { program.release(owner); }
+        void profiles() throws Exception {
+            var empty = new CallMemoryEffects.Summary(0, Set.of());
+            for (String defect : List.of("transparent", "missing-stack-pointer", "partial-stack-pointer", "missing-memory",
+                    "overlay", "register-space", "word-addressed", "zero-pointer", "wide-pointer", "pointer-mismatch")) {
+                test(profile(defect, true), "target profile " + defect, defect.equals("transparent") ? empty : null,
+                    new PcodeOp[0], new PcodeOp[0]);
+                test("target profile retry", empty, new PcodeOp[0], new PcodeOp[0]);
+            }
+            // This is a raw memory-proof contract, not a claim of an upward-stack ABI.
+            // An increase releases [old,new) on a downward stack; a decrease releases
+            // [new,old) on an upward stack. Allocation must not count as a write/release.
+            long minimum = width == 8 ? Long.MIN_VALUE : Integer.MIN_VALUE;
+            long maximum = width == 8 ? Long.MAX_VALUE : Integer.MAX_VALUE;
+            for (boolean negative : new boolean[] { true, false }) {
+                for (long delta : new long[] { minimum, -width, -1, 0, 1, width, maximum }) {
+                    boolean releases = negative ? delta > 0 : delta < 0;
+                    var ranges = releases ? Set.of(new CallMemoryEffects.Range(Math.min(0, delta), Math.max(0, delta)))
+                        : Set.<CallMemoryEffects.Range>of();
+                    var expected = new CallMemoryEffects.Summary(delta, ranges);
+                    test(profile("transparent", negative), "stack direction=" + negative + " delta=" + delta,
+                        expected, new PcodeOp[] { op(PcodeOp.INT_ADD, sp, sp, constant(delta, width)) }, new PcodeOp[0]);
+                }
+            }
+        }
+
+        Program profile(String defect, boolean growsNegative) {
+            var originalSpace = program.getLanguage().getDefaultDataSpace();
+            var selectedSpace = (AddressSpace) Proxy.newProxyInstance(AddressSpace.class.getClassLoader(),
+                new Class<?>[] { AddressSpace.class }, (proxy, method, args) -> {
+                    String name = method.getName();
+                    if (name.equals("isOverlaySpace") && defect.equals("overlay")) return true;
+                    if (name.equals("getType") && defect.equals("register-space")) return AddressSpace.TYPE_REGISTER;
+                    if (name.equals("getAddressableUnitSize") && defect.equals("word-addressed")) return 2;
+                    if (name.equals("getPointerSize")) {
+                        if (defect.equals("zero-pointer")) return 0;
+                        if (defect.equals("wide-pointer")) return 9;
+                        if (defect.equals("pointer-mismatch")) return width - 1;
+                    }
+                    try { return method.invoke(originalSpace, args); }
+                    catch (InvocationTargetException failure) { throw failure.getCause(); }
+                });
+            var language = (Language) Proxy.newProxyInstance(Language.class.getClassLoader(), new Class<?>[] { Language.class },
+                (proxy, method, args) -> {
+                    if (method.getName().equals("getDefaultDataSpace")) return defect.equals("missing-memory") ? null : selectedSpace;
+                    try { return method.invoke(program.getLanguage(), args); }
+                    catch (InvocationTargetException failure) { throw failure.getCause(); }
+                });
+            var compiler = (CompilerSpec) Proxy.newProxyInstance(CompilerSpec.class.getClassLoader(),
+                new Class<?>[] { CompilerSpec.class }, (proxy, method, args) -> {
+                    if (method.getName().equals("getStackPointer")) {
+                        if (defect.equals("missing-stack-pointer")) return null;
+                        if (defect.equals("partial-stack-pointer")) {
+                            var alias = program.getRegister(program.getLanguageID().toString().startsWith("x86") ?
+                                (width == 8 ? "ESP" : "SP") : "wsp");
+                            require(alias != null && alias != alias.getBaseRegister(), "partial pointer fixture lacks an alias");
+                            return alias;
+                        }
+                    }
+                    if (method.getName().equals("stackGrowsNegative")) return growsNegative;
+                    try { return method.invoke(program.getCompilerSpec(), args); }
+                    catch (InvocationTargetException failure) { throw failure.getCause(); }
+                });
+            return (Program) Proxy.newProxyInstance(Program.class.getClassLoader(), new Class<?>[] { Program.class },
+                (proxy, method, args) -> {
+                    if (method.getName().equals("getLanguage")) return language;
+                    if (method.getName().equals("getCompilerSpec")) return compiler;
+                    try { return method.invoke(program, args); }
+                    catch (InvocationTargetException failure) { throw failure.getCause(); }
+                });
+        }
+
+        @Override public void close() { program.flushEvents(); program.release(owner); }
     }
 
     private static void require(boolean condition, String label) {
