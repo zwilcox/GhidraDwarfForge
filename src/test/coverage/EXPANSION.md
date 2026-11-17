@@ -8282,3 +8282,46 @@ with no new lines or denominator changes. The 1,343-session diagnostic union
 reports 28,904/29,802 lines and 22,703/25,902 branches. Binary/location branches
 are 16,482/18,750, 393 short of 90%; file-operation branches remain 3,827/4,250.
 These local additions still need validation in a complete hosted cohort.
+
+## Completed hosted cohort 44150222826 and refreshed x86-64 evidence
+
+Run `44150222826` completed at head `a5a29b1d` / producing merge `3bdd9b76`.
+All native, architecture, Windows, firmware, GUI, packaging and performance
+jobs passed. The combined target gate failed with `COVERAGE_TARGETS_UNMET`;
+required-validation consequently failed and publication was skipped.
+
+The complete hosted report was independently regenerated from all 1,270
+authenticated raw sessions. Production class/probe identities, exact session
+sets, and every per-source line/branch counter match the uploaded combined,
+JavaExec, native-Java, headless and Windows XML reports. Hosted totals are
+28,853/29,802 lines (96.8%) and 22,250/25,902 branches (85.9%). Critical
+binary/location coverage is 18,611/19,213 lines and 16,063/18,750 branches;
+file operations are 6,507/6,677 lines and 3,793/4,250 branches. Changed production
+Java meets 30/30 lines and 50/54 branches. Thus this cohort proves the overall
+and changed-code targets, but not either critical branch target.
+
+The fresh x86-64 artifact replaces 893 historical sessions with 897 current
+sessions. The current qualifier admission policy initially rejected its older
+receipt: the queued flexible/incomplete-type tests did not exist at the producing
+revision. For diagnostic admission only, that receipt was verified with the
+exact producing-merge qualifier policy (SHA-256
+`08e142b598b1e6e1102ed0cd23662ff44e187b1cf089ecc00fe234820bc89d94`).
+The current policy remains strict and unchanged; a new hosted cohort must
+exercise the extended fixture. Local extended-type evidence remains separate.
+
+This refresh adds five lines and 13 branches to the diagnostic union. Its
+1,347 sessions now cover 28,909/29,802 lines and 22,716/25,902 branches. Critical
+binary/location: 18,652/19,213 lines and 16,491/18,750 branches (384 short of 90%).
+File operations: 6,522/6,677 lines and 3,831/4,250 branches. Local-only additions
+still prevent treating this union as current-head hosted acceptance.
+
+Evidence under `.forge-work/scratch/coverage-recovery/`:
+`complete-44150222826/` independently reproduces the full hosted report;
+`linux-44150222826-producing-policy/` records the diagnostic refresh.
+Raw Linux artifact 14373258357 has SHA-256
+`cf6fc29f0f06bef9b7132b026c3af40b4e34d64a31a3ab828d3c9aa00a7b1b6f`;
+combined report artifact 14374180886 has SHA-256
+`6b1a012b700394b6c4c19958adaa334f15fc3fd40e0d48ee84e6719bd593b3bd`.
+Before the next push, 139 admission tests and actionlint pass; production Java
+is unchanged from the completed run. The next run must validate the queued
+tests and stronger admission requirements. PR #210 remains draft.
