@@ -21,6 +21,7 @@ public final class FunctionRelationsSmoke {
     }
 
     public static void main(String[] args) {
+        ScopeRelationshipBoundarySmoke.check();
         var first = FunctionReference.definition("gateway", 0x1000);
         var second = FunctionReference.definition("bridge", 0x2000);
         var target = FunctionReference.definition("implementation", 0x3000);
