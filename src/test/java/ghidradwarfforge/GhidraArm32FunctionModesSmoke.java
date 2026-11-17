@@ -51,6 +51,7 @@ public final class GhidraArm32FunctionModesSmoke {
             controls(fixture);
             aliasControls(fixture);
         }
+        checks += Arm32AliasEvidenceBoundarySmoke.run();
         System.out.println("ghidra-arm32-function-modes-smoke=PASS checks=" + checks);
     }
 
