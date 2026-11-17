@@ -99,6 +99,24 @@ public final class StaticBindingEvidenceSmoke {
                 observe(program, symbolId, ownerId, "inner");
                 GhidraStaticBindings.save(program, symbol, owner, "inner", "shadow", "explicit static ownership", TaskMonitor.DUMMY);
                 require(original.equals(options.getString(key, null)), "deterministic record");
+                // A valid saved scope tree does not authorize an unknown block.
+                reject(() -> GhidraStaticBindings.save(program, symbol, owner, "missing", "shadow",
+                    "unknown block in a valid tree", TaskMonitor.DUMMY));
+                require(original.equals(options.getString(key, null)), "unknown block replaced a valid association");
+                observe(program, symbolId, ownerId, "inner");
+                // An overlay object at the same numeric offset belongs to a different
+                // address space and cannot be bound to this image function.
+                var overlay = program.getMemory().createInitializedBlock("static-overlay", dataAddress, 8,
+                    (byte) 0, TaskMonitor.DUMMY, true);
+                var overlayData = program.getListing().createData(overlay.getStart(), IntegerDataType.dataType);
+                var overlaySymbol = program.getSymbolTable().createLabel(overlay.getStart(), "overlay_static", SourceType.USER_DEFINED);
+                overlaySymbol.setPrimary();
+                require(overlay.isLoaded() && overlayData.isDefined() && overlaySymbol.isPrimary() &&
+                    !overlay.getStart().getAddressSpace().equals(entry.getAddressSpace()), "overlay refusal premise");
+                reject(() -> GhidraStaticBindings.save(program, overlaySymbol, owner, "inner", "shadow",
+                    "foreign address space", TaskMonitor.DUMMY));
+                require(!options.contains("static-" + overlaySymbol.getID()) && original.equals(options.getString(key, null)),
+                    "cross-space rejection changed saved associations");
                 symbol.setName("changed", SourceType.USER_DEFINED);
                 rejected(program, symbolId, "renamed symbol");
                 symbol.setName("hidden", SourceType.IMPORTED);
