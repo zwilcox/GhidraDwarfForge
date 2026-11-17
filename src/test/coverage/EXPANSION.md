@@ -9167,3 +9167,30 @@ Verified program-byte-observations diagnostic adds three lines/five branches,
 binary/location 18,694/19,213 lines, 16,795/18,750 branches, 80 short of 90%.
 File group unchanged. Full 255 sources and production JAR unchanged. This is
 not hosted acceptance; a full passing cohort, merge and publication are pending.
+
+### Direct-call raw/listing agreement (2026-11-17)
+
+CONFIRMED: DirectLeafCallSmoke adds explicit raw/listing contract controls around
+real decoded x86-64/AArch64 calls. Missing/multiple/default target mismatch,
+fallthrough disagreement, invalid instruction extents, malformed CALL operands,
+unproved outputs, foreign address spaces, missing calls and extra control
+transfers are refused. Ordinary preparation before the final CALL remains
+admissible. Views do not modify the real saved Program. These adversarial
+views test proof admission; they do not claim new machine-code support.
+
+Guarded directLeafCallSmoke PASS in 4 seconds, 204 checks. Three compiled faults
+(output admission, foreign-space admission and missing transfer admission)
+are detected by behavioral assertions. Logs: direct-call-shape-contracts.log
+and direct-call-shape-mutants/result.json under .forge-work/scratch.
+Verified direct-call-shape-contracts diagnostic adds 22 branches, 1,381 sessions:
+overall 28,951/29,802 lines and 23,042/25,902 branches; binary/location
+18,694/19,213 lines and 16,817/18,750 branches, 58 short of 90%. File group
+unchanged. Full 255-source denominator and production JAR unchanged. Hosted
+acceptance, protected merge and actual-main publication remain outstanding.
+
+CI 44185360886 x86-64 also failed the missing AttachmentPathBoundarySmoke
+compilation dependency already fixed locally in e66dd020. Artifact 14381088547
+(4,193,575 bytes) authenticated SHA-256
+eede08aaa951e536447d00dd35ecd679fd65c2d97856fcf4645ee61c0e5d4267; only
+compile.stderr retained, temporary archive automatically deleted by the guarded
+reader. Evidence x86-compile-44185360886/result.json. AArch64 remains live.
