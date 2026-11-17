@@ -6,7 +6,65 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Line-program boundaries and ARM aggregate shapes
+## Verified Windows measurements and callable producer behavior
+
+**CONFIRMED:** Windows-host job `133854290162` passed in
+[run 44024881065](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/44024881065).
+Its authenticated coverage artifact `14304952661` has SHA-256
+`73b7c95c3a05cf73fa2ec60edff6f6f17226c18372041947d33519d98242fa2c`;
+the 414,396-byte download expands to 3,523,735 bytes. Its production JAR exactly
+matches the current local measurement. The verifier checks the successful job,
+CI merge commit `35630411a00470eeb2a72149823494e23b180222`, source tree, native
+Windows test-source hashes (including the checkout's CRLF transformation),
+collection hashes, current behavioral admission policy and production class IDs.
+Regenerating the Windows report reproduces its counters and report contents.
+
+The 57 Windows sessions cover host primitives, attachment and build-ID
+installation. Actual Windows APIs are exercised with controlled failure replies
+for metadata, directory sync, security, backup streams and privilege readback;
+the receipts retain handle-count and state-preservation checks. Fourteen deliberate
+process halts remain behavioral evidence only: they do not contribute fabricated
+JaCoCo sessions. Nested lock contenders remain explicitly unmeasured. The
+Windows GUI job passed, but this artifact's coverage scope remains the three
+named suites. No GUI coverage is inferred from the job's success alone.
+
+**CONFIRMED:** `86158ec3` adds an explicit C callable fixture through the production
+native exporter. Three deterministic variants preserve variadic function and
+function-pointer types, unnamed parameters, and address-free `noreturn` external
+declarations with normal, unknown and explicitly blocked calling conventions.
+Compiler-reference and exported-artifact GDB runs check pointer targets, sizes,
+signatures and program execution; GNU readelf, LLVM and the strict standalone
+checker accept every variant. Twenty-one parsed-DIE corruption controls and three
+separately compiled producer faults are detected. This tests serialization of an
+explicit fixture model, not recovered parameter locations or injected-call ABI
+support. Native library/JAR/source/input hashes and raw probes are retained.
+
+CI requires this suite and its evidence; 82 admission/hosted-report/publication
+unit tests and workflow lint pass. The ordinary Gradle test compilation passes.
+No production bytecode changed. The new suite adds two covered lines and eight
+branches before incorporating Windows; Windows contributes another 689 lines and
+400 branches. The verified combined report is
+`.forge-work/scratch/coverage-expansion/hosted-windows-44024881065/union/summary.json`,
+SHA-256 `5716a0ad77ebe093e9ceb16708e90c6cde32aa75c25817e110be886a6f587b40`.
+Its 1,292 sessions comprise 211 JavaExec, 638 native-Java-path, 386 headless and
+57 Windows sessions. Each view retains all 255 production sources / 901 classes;
+production JAR SHA-256 remains
+`4bd11717ce1ff8e46eba3b0f7091517c4dd90e4e0c82472613f8fd66ca31390c`.
+
+| Scope | Lines | Branches | Required |
+| --- | --- | --- | --- |
+| Overall Java | 28,609/29,792 (96.0%) | 21,731/25,888 (83.9%) | 85% / 80% |
+| Binary/location correctness | 18,506/19,203 (96.4%) | 15,640/18,736 (83.5%) | 95% / 90% |
+| File transactions/validation | 6,377/6,677 (95.5%) | 3,714/4,250 (87.4%) | 95% / 90% |
+
+**INCOMPLETE:** both critical groups still require 90% branch coverage. The full
+architecture/role inventory, privileged Linux attachment measurements, validation
+of the queued commits, protected merge and actual-main publication remain open.
+This mixed-origin report has `hostedAcceptance=false` and
+`completeCombinedCohort=false`; it does not replace the published badge. The
+architecture jobs in the current earlier-head CI run are still advancing.
+
+## Earlier line-program boundaries and ARM aggregate shapes
 
 **CONFIRMED:** `fea5d401` extends the existing line-table smoke task with 900
 complete program decodes. Expected rows are derived from the supplied source
