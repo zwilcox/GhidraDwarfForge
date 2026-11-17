@@ -469,6 +469,7 @@ public final class OriginalFrameSourcesSmoke {
         try {
             for (boolean wide : List.of(false, true)) for (var order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                 check(root.resolve("fixture"), wide, order);
+                InheritedFrameBytesSmoke.check(root, wide, order);
             }
         }
         finally {

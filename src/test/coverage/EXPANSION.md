@@ -7259,3 +7259,31 @@ and 13 branches: 1,415 sessions, unchanged JAR58bd, all 255 production sources
 and 901 classes. Overall 28,869/29,802 lines and 22,417/25,902 branches; critical
 binary/location 16,248/18,750 branches (627 short of 90%); file operations
 3,775/4,250 (50 short). Historical cohorts remain; final hosted acceptance pending.
+
+### Inherited-frame diagnostic corroboration (#209)
+
+Acceptance: allowing an inherited-frame diagnostic requires matching ELF
+identity, frame address/flags/extent and exact original bytes. The new
+InheritedFrameBytesSmoke runs through existing originalFrameSourcesSmoke and
+uses the real bounded CIE/FDE search-table fixture, both ELF classes/orders,
+with named and sectionless originals. It checks the independent SHA-256,
+original offset and discovery provenance, including relocation of the unchanged
+frame bytes within the comparison ELF. Twelve independent metadata/payload
+faults, absent discovery, duplicate sections and cancellation at every observed
+poll must fail without changing either file. Retry must reproduce the evidence.
+
+The first fixture incorrectly expected the named section's four-byte terminator
+to be proven by the sectionless search table; it was corrected to expect 44
+named bytes versus 40 proven sectionless bytes. The production exact-extent
+policy was unchanged. Guarded originalFrameSourcesSmoke then passed in 3 seconds
+(1,884 parent checks); standalone corroboration passes 488 assertions. Six
+compiled faults were detected by Java assertions, baseline/source hashes
+verified (2.117 seconds). No production edits. Evidence:
+.forge-work/scratch/inherited-frame-bytes-final.log, inherited-frame-byte-mutants/
+and coverage-recovery/inherited-frame-bytes/test.log.
+
+Verified diagnostic inherited-frame-bytes adds three lines and 11 branches:
+1,416 sessions, unchanged JAR58bd, all 255 sources/901 classes. Overall
+28,872/29,802 lines and 22,428/25,902 branches; critical binary/location
+16,259/18,750 branches (616 short of 90%), file operations 3,775/4,250 (50 short).
+Historical cohorts remain; final hosted acceptance is outstanding.
