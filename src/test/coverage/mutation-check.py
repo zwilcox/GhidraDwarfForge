@@ -1202,6 +1202,22 @@ CXX_PROFILE_MUTANTS = [
 ]
 
 CALL_PARAMETERS_MUTANTS = [
+    ('argument-subtracts-as-add', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'case PcodeOp.INT_SUB -> Op.SUBTRACT;', 'case PcodeOp.INT_SUB -> Op.ADD;'),
+    ('argument-multiplies-as-add', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'case PcodeOp.INT_MULT -> Op.MULTIPLY;', 'case PcodeOp.INT_MULT -> Op.ADD;'),
+    ('argument-and-as-or', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'case PcodeOp.INT_AND, PcodeOp.BOOL_AND -> Op.AND;', 'case PcodeOp.INT_AND, PcodeOp.BOOL_AND -> Op.OR;'),
+    ('argument-or-as-and', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'case PcodeOp.INT_OR, PcodeOp.BOOL_OR -> Op.OR;', 'case PcodeOp.INT_OR, PcodeOp.BOOL_OR -> Op.AND;'),
+    ('argument-xor-as-or', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'case PcodeOp.INT_XOR, PcodeOp.BOOL_XOR -> Op.XOR;', 'case PcodeOp.INT_XOR, PcodeOp.BOOL_XOR -> Op.OR;'),
+    ('argument-shifts-left-as-right', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'case PcodeOp.INT_LEFT -> Op.SHIFT_LEFT;', 'case PcodeOp.INT_LEFT -> Op.SHIFT_RIGHT;'),
+    ('argument-shifts-right-as-left', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'case PcodeOp.INT_RIGHT -> Op.SHIFT_RIGHT;', 'case PcodeOp.INT_RIGHT -> Op.SHIFT_LEFT;'),
+    ('argument-loses-sign-extension', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
+     'CallValue.extend(a, opcode == PcodeOp.INT_SEXT, bytes)', 'CallValue.extend(a, false, bytes)'),
     ('entry-location-drops-prefix', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
      'if (range.start() < elfEntryAddress) ranges.add', 'if (false) ranges.add'),
     ('entry-location-drops-suffix', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
@@ -2244,7 +2260,7 @@ def main():
                 vectors_path = root / ("argument-vectors/vectors.json" if test == CALL_PARAMETERS_TEST else "vectors.json")
                 oracle_command = [sys.executable, "-B", CALL_VALUE_ORACLE, vectors_path]
                 if test == CALL_PARAMETERS_TEST:
-                    oracle_command.extend(["--min-count", "240"])
+                    oracle_command.extend(["--min-count", "576"])
                 oracle, oracle_seconds = execute(oracle_command)
                 oracle_evidence = {"source": str(CALL_VALUE_ORACLE.relative_to(REPO)),
                     "sha256": digest(CALL_VALUE_ORACLE), "vectorsSha256": digest(vectors_path),

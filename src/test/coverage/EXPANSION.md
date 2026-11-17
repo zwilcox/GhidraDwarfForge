@@ -8549,3 +8549,37 @@ Source hashes, unique raw session and all 255 sources verify. The 1,355-session
 diagnostic union adds eight branches: 22,814/25,902 overall and 16,589/18,750
 binary/location branches (286 short of 90%). Line and file-operation counters
 are unchanged. Hosted current-head acceptance remains outstanding for #209.
+
+## Decoded call-argument arithmetic and independent numeric checks
+
+The existing call-argument suite now covers 49 decoded fixtures, adding twelve
+arithmetic/bit-operation shapes per x86-64/AArch64 target. GNU target assemblers
+and disassemblers independently confirm the fixture encodings; instruction text
+is recorded beside each byte string. Accepted cases cover subtraction, multiply,
+AND/OR/XOR, shifts, complement, signed/unsigned byte extension and zero comparisons
+where the existing profile admits them. The selected profile rejects x86 `setz`
+and AArch64 `mul`/`mvn`; those three controls assert explicit refusal and no value
+proof. The first run identified the existing `setz` restriction, which was kept;
+no production profile was widened to make these tests pass.
+
+Guarded `callArgumentFlowSmoke` passes in six seconds (858 checks, 49 fixtures).
+The independent DWARF VM validates 576 numerical vectors, checking both low-word
+and bound whole-register values for zero, positive, negative, signed boundaries
+and high-word-only inputs. Original ELF bytes are preserved and repeat analyses
+agree. Eight compiled arithmetic faults are detected through behavioral/value
+assertions: wrong subtraction, multiplication, AND/OR/XOR, left/right shifts and
+lost sign extension. Baseline passes; mutation run takes 34.412 seconds. CI and
+mutation checks now require at least 576 vectors. Workflow lint and all eight
+mutation-outcome classifier tests pass.
+
+Evidence: `.forge-work/scratch/call-arithmetic-assembly/`,
+`call-argument-arithmetic-profiled.log`, `call-argument-arithmetic-mutants/result.json`,
+`call-argument-arithmetic-measured-oracle.log`, and
+`coverage-recovery/call-argument-arithmetic/`. Measured raw SHA-256:
+`836031b1089e9e3b8a10f39bde41faa31cb3c77be120a19093d700e616331275`.
+Raw/source/session/full-denominator verification passes. The 1,356-session
+diagnostic union adds two lines and six branches: 28,912/29,802 lines,
+22,820/25,902 branches overall; binary/location 18,655/19,213 lines,
+16,595/18,750 branches (280 short of 90%). Production code/bytecode is unchanged.
+This is not a fresh hosted acceptance cohort; #209 still requires its hosted
+gates, protected merge and main publication.
