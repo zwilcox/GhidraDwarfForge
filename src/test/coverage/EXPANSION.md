@@ -6,6 +6,41 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Loader write ranges and file-backed intersections
+
+`elfRelocationEffectsSmoke` now checks an independent interval oracle over COPY
+write sizes 0, 1, 7, 8, 37 and 256 at four locations spanning ordinary file bytes,
+the file/BSS boundary and BSS. Exact write records, protected-address queries and
+protected-file queries must match the fixture's declared LOAD boundaries. Tests
+include interior zero-length file queries, exact endpoints, overflow and negative
+extents. Every fixture inspection, successful or rejected, preserves input bytes,
+file identity and modification time.
+
+Both existing AMD64 and AArch64 metadata profiles additionally check global/weak
+COPY objects, refused local/reserved bindings and section indices, profile-specific
+alignment, REL/RELA prefix counts, duplicate ordinary tags versus repeated
+`DT_NEEDED`, `DF_TEXTREL`, and empty versus unqualified nonempty `.sframe`. These
+are bounded hand-built metadata tests, not new native-loader or debugger support
+claims. Existing compiler/runtime oracles remain separate and unchanged.
+
+The guarded final suite passes 2,269 assertions. Six compiled mutations are
+detected: assigning file bytes to BSS, refusing weak COPY, rejecting an empty
+file query, inventing a zero-size write, refusing a zero prefix count without
+a table, and trusting unqualified SFrame. The first mutation attempt exposed
+a missing test: empty queries only touched write endpoints. It was not credited;
+the added interior query detects the fault in the final passing run.
+
+Production-only measurement adds 18 critical branches, with no line-count change.
+The mixed diagnostic now has 1,383 sessions, 28,829/29,802 lines and
+22,161/25,902 branches. Binary/location coverage is 16,005/18,750 branches,
+870 short of 90%; file operations remain 3,775/4,250, 50 short. Production code,
+critical classification and the full denominator remain unchanged. Complete
+current-head hosted validation is still pending.
+
+Evidence: `.forge-work/scratch/relocation-write-boundaries-final.log`,
+`relocation-write-boundary-mutants-final/result.json`, and
+`coverage-recovery/relocation-write-boundaries/`.
+
 ## Saved-program unwind capture admission
 
 The existing `ghidraUnwindInstructionsSmoke` task now includes 67 additional

@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 
@@ -45,13 +46,20 @@ public final class ElfRelocationEffectsSmoke {
     }
     private static ElfRelocationEffects inspect(Path path, byte[] bytes) throws Exception {
         Files.write(path, bytes);
-        return ElfRelocationEffects.inspect(ElfImage.read(path), () -> false);
+        var identity = Files.readAttributes(path, java.nio.file.attribute.BasicFileAttributes.class);
+        try { return ElfRelocationEffects.inspect(ElfImage.read(path), () -> false); }
+        finally {
+            var after = Files.readAttributes(path, java.nio.file.attribute.BasicFileAttributes.class);
+            require(Arrays.equals(bytes, Files.readAllBytes(path)) && identity.lastModifiedTime().equals(after.lastModifiedTime()) &&
+                java.util.Objects.equals(identity.fileKey(), after.fileKey()), "inspection changed original input");
+        }
     }
     private static OriginalFrameSources.Inventory frames(long offset, long size) {
         return new OriginalFrameSources.Inventory(List.of(new OriginalFrameSources.Source(".eh_frame", offset,
             size, size, 0x1000 + offset, false, "", "", null)));
     }
     private static void variants(Path path, int machine, long relative, long descriptor, long copy, long indirect) throws Exception {
+        rangeAndMetadataBoundaries(path, machine, relative, copy);
         var effects = inspect(path, fixture(machine, relative, 0, 0x1800));
         require(effects.writes().size() == 1 && effects.writes().getFirst().size() == 8, "relative footprint");
         effects.requireUnchanged(0x17ff, 1, () -> false);
@@ -210,6 +218,105 @@ public final class ElfRelocationEffectsSmoke {
         try { effects.requireUnchanged(new OriginalFrameSources.Inventory(List.of()), () -> true); throw new AssertionError("empty source cancellation"); }
         catch (CancellationException expected) { checks++; }
     }
+
+    private static void rangeAndMetadataBoundaries(Path path, int machine, long relative, long copy) throws Exception {
+        // The expected file intersection follows the fixture's independently
+        // encoded LOAD [0x1000,0x3000), with file backing only to 0x2000.
+        for (long address : List.of(0x1800L, 0x1ff8L, 0x2000L, 0x2100L)) {
+            for (long size : List.of(0L, 1L, 7L, 8L, 37L, 256L)) {
+                byte[] bytes = fixture(machine, copy, 1, address);
+                buffer(bytes).putLong(0x528, size);
+                var effects = inspect(path, bytes);
+                long fileSize = Math.max(0, Math.min(address + size, 0x2000) - Math.min(address, 0x2000));
+                long offset = address - 0x1000;
+                if (size == 0) require(effects.writes().isEmpty(), "zero-size COPY invented a write");
+                else {
+                    var expected = new ElfRelocationEffects.Write("DT_RELA", 0x400, copy, 1, address, size,
+                        fileSize == 0 ? -1 : offset, fileSize);
+                    require(effects.writes().equals(List.of(expected)), "wrong file/BSS COPY extent");
+                }
+                for (long start : List.of(address - 1, address, address + size / 2, address + size, address + size + 1)) {
+                    for (long length : List.of(1L, 2L, 257L)) {
+                        boolean overlap = size > 0 && start < address + size && address < start + length;
+                        if (overlap) reject(() -> effects.requireUnchanged(start, length, () -> false), "overlaps a runtime relocation");
+                        else { effects.requireUnchanged(start, length, () -> false); checks++; }
+                        long fileStart = start - 0x1000;
+                        boolean fileOverlap = fileSize > 0 && fileStart < offset + fileSize && offset < fileStart + length;
+                        if (fileOverlap) reject(() -> effects.requireFileUnchanged(fileStart, length, () -> false), "frame source overlaps");
+                        else { effects.requireFileUnchanged(fileStart, length, () -> false); checks++; }
+                    }
+                    effects.requireFileUnchanged(start - 0x1000, 0, () -> false);
+                    checks++;
+                }
+            }
+        }
+        var effects = inspect(path, fixture(machine, relative, 0, 0x1800));
+        for (long[] extent : List.of(new long[] {-1, 1}, new long[] {0, 0}, new long[] {0, -1})) {
+            reject(() -> effects.requireUnchanged(extent[0], extent[1], () -> false), "invalid protected address extent");
+        }
+        for (long[] extent : List.of(new long[] {-1, 1}, new long[] {0, -1})) {
+            reject(() -> effects.requireFileUnchanged(extent[0], extent[1], () -> false), "negative relocation extent");
+        }
+        reject(() -> effects.requireUnchanged(Long.MAX_VALUE, 1, () -> false), "extent overflows");
+        reject(() -> effects.requireFileUnchanged(Long.MAX_VALUE, 1, () -> false), "extent overflows");
+        effects.requireUnchanged(Long.MAX_VALUE - 1, 1, () -> false);
+        effects.requireFileUnchanged(Long.MAX_VALUE, 0, () -> false);
+
+        for (int info : List.of(0x10, 0x11, 0x20, 0x21)) {
+            byte[] bytes = fixture(machine, copy, 1, 0x1800);
+            buffer(bytes).put(0x51c, (byte) info);
+            require(inspect(path, bytes).writes().getFirst().size() == 37, "ordinary global/weak COPY omitted");
+        }
+        for (int info : List.of(0x00, 0x01, 0x30, 0x31)) {
+            byte[] bytes = fixture(machine, copy, 1, 0x1800);
+            buffer(bytes).put(0x51c, (byte) info);
+            reject(() -> inspect(path, bytes), "matching ordinary defined object");
+        }
+        for (int section : List.of(0xff00, 0xfff1, 0xfff2, 0xffff)) {
+            byte[] bytes = fixture(machine, copy, 1, 0x1800);
+            buffer(bytes).putShort(0x51e, (short) section);
+            reject(() -> inspect(path, bytes), "matching ordinary defined object");
+        }
+        byte[] unaligned = fixture(machine, relative, 0, 0x1801);
+        if (machine == 183) reject(() -> inspect(path, unaligned), "violates the selected ABI alignment");
+        else require(inspect(path, unaligned).writes().getFirst().address() == 0x1801, "AMD64 byte-aligned write omitted");
+
+        for (boolean rela : List.of(false, true)) {
+            byte[] counted = fixture(machine, relative, 0, 0x1800);
+            if (!rela) buffer(counted).putLong(0x200, 17).putLong(0x210, 18).putLong(0x218, 16)
+                .putLong(0x220, 19).putLong(0x228, 16);
+            buffer(counted).putLong(0x270, rela ? 0x6ffffff9L : 0x6ffffffaL).putLong(0x278, 1);
+            require(inspect(path, counted).writes().size() == 1, "valid relative prefix omitted");
+            byte[] negative = counted.clone(); buffer(negative).putLong(0x278, -1);
+            reject(() -> inspect(path, negative), "prefix count exceeds its table");
+            // The opposite prefix tag has no corresponding table. A zero
+            // count grants no writes; a positive count cannot claim a prefix.
+            buffer(counted).putLong(0x270, rela ? 0x6ffffffaL : 0x6ffffff9L).putLong(0x278, 0);
+            require(inspect(path, counted).writes().size() == 1, "empty absent-table prefix changed writes");
+            buffer(counted).putLong(0x278, 1);
+            reject(() -> inspect(path, counted), "prefix count exceeds its table");
+        }
+        byte[] repeated = fixture(machine, relative, 0, 0x1800);
+        buffer(repeated).putLong(0x260, 1);
+        require(inspect(path, repeated).writes().size() == 1, "repeated DT_NEEDED rejected");
+        buffer(repeated).putLong(0x260, 30).putLong(0x270, 30);
+        reject(() -> inspect(path, repeated), "duplicate ordinary loader metadata");
+        byte[] text = fixture(machine, relative, 0, 0x1800);
+        buffer(text).putInt(68, 5).putLong(0x270, 30).putLong(0x278, 4);
+        require(inspect(path, text).writes().size() == 1, "DF_TEXTREL permission ignored");
+
+        byte[] sframe = fixture(machine, relative, 0, 0x1800);
+        var b = buffer(sframe);
+        byte[] names = "\0.sframe\0.shstrtab\0".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        b.putLong(40, 0x900).putShort(60, (short) 3).putShort(62, (short) 2);
+        b.putInt(0x940, 1).putInt(0x944, 1).putLong(0x958, 0xc00);
+        b.putInt(0x980, 9).putInt(0x984, 3).putLong(0x998, 0xb00).putLong(0x9a0, names.length);
+        b.put(0xb00, names);
+        require(inspect(path, sframe).writes().size() == 1, "empty SFrame section changed writes");
+        b.putLong(0x960, 1);
+        reject(() -> inspect(path, sframe), "original SFrame coverage is not qualified");
+        System.out.println("relocation-write-boundaries=PASS machine=" + machine);
+    }
     public static void main(String[] args) throws Exception {
         if (args.length > 0) {
             var image = ElfImage.read(Path.of(args[0]));
@@ -223,6 +330,9 @@ public final class ElfRelocationEffectsSmoke {
             variants(path, 62, 8, 36, 5, 37);
             variants(path, 183, 1027, 1031, 1024, 1032);
             System.out.println("elf-relocation-effects-checks=" + checks);
+        }
+        catch (IllegalArgumentException unexpected) {
+            throw new AssertionError("valid relocation write fixture was rejected", unexpected);
         }
         finally { Files.deleteIfExists(path); }
     }
