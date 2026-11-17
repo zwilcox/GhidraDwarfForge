@@ -24,6 +24,7 @@ public final class DynamicSymbolMirrorSmoke {
         Path root = Files.createTempDirectory("forge-dynamic-mirror-");
         for (boolean wide : List.of(false, true)) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+                DynamicNameBoundarySmoke.check(root, wide, order);
                 requirementsCases(root, wide, order);
                 versionIdentityCases(root, wide, order);
                 sectionFramingCases(root, wide, order);

@@ -1602,6 +1602,15 @@ SECTIONLESS_MUTANTS = [
 ]
 
 DYNAMIC_MUTANTS = [
+    ("dynamic-name-allows-extra-byte", DYNAMIC, DYNAMIC_TEST,
+     "++end - start <= ElfImage.MAX_NAME_BYTES", "++end - start <= ElfImage.MAX_NAME_BYTES + 1"),
+    ("dynamic-name-forgets-aggregate", DYNAMIC, DYNAMIC_TEST,
+     "(total += end - start)", "(total = end - start)"),
+    ("dynamic-name-forgets-version-separator", DYNAMIC, DYNAMIC_TEST,
+     "(long) name.length + separator + versionName.length <= ElfImage.MAX_NAME_BYTES",
+     "(long) name.length + versionName.length <= ElfImage.MAX_NAME_BYTES"),
+    ("dynamic-name-omits-scan-cancellation", DYNAMIC, DYNAMIC_TEST,
+     "if ((end & 1023) == 0)", "if (false)"),
     ("dynamic-requalifies-absolute-version-node", DYNAMIC, DYNAMIC_TEST,
      "if (section == 0xfff1 && value == 0 && Arrays.equals(name, versionName))", "if (false)"),
     ("dynamic-duplicates-qualified-name", DYNAMIC, DYNAMIC_TEST,

@@ -7207,3 +7207,31 @@ and 901 classes. Overall 28,866/29,802 lines and 22,400/25,902 branches; critica
 binary/location 16,231/18,750 branches (644 short of 90%), file operations
 3,775/4,250 (50 short). Historical cohorts remain; this is not final hosted
 acceptance.
+
+### Dynamic-name decoding budgets (#209)
+
+Acceptance: dynamic symbol inventory admits names at the exact 65,536-byte
+limit, rejects longer names and version-qualified names beyond that limit, and
+bounds aggregate decoded bytes even when names overlap in a small string table.
+DynamicNameBoundarySmoke is invoked by existing dynamicSymbolMirrorSmoke for
+both ELF classes and both byte orders. Its roughly 64 KiB table yields 256
+accepted distinct suffixes but exceeds the 16 MiB aggregate decoding limit at
+257 suffixes, verified by an independent arithmetic-series calculation. Hidden
+and default version suffixes retain exact spelling and termination at the limit.
+Long-name scan cancellation is checked at entry, midway and near completion;
+original bytes remain unchanged and retry reproduces the original records.
+These are bounded parser fixtures, not new runtime architecture claims.
+
+Guarded task passed in 3 seconds: 26 new assertions per class/order combination,
+plus 2,676 existing assertions. Four compiled faults (extra name byte, dropped
+aggregate accounting, omitted version separator accounting and absent scan
+cancellation) were detected by Java assertions; baseline and source hashes
+verified (2.242 seconds). No production changes. Evidence:
+.forge-work/scratch/dynamic-name-boundaries-first.log and
+dynamic-name-boundary-mutants/result.json.
+
+Verified diagnostic coverage-recovery/dynamic-name-boundaries/ adds one line
+and four branches: 1,414 sessions, unchanged JAR58bd, 255 sources/901 classes.
+Overall 28,867/29,802 lines and 22,404/25,902 branches; critical binary/location
+16,235/18,750 branches (640 short of 90%); file operations 3,775/4,250 (50 short).
+Historical cohorts remain; current-head hosted acceptance is still pending.
