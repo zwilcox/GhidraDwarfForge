@@ -6,6 +6,33 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## ARM floating-aggregate admission and exact classification bounds
+
+The existing `armHfaParameterAllocationSmoke` now runs 226 additional assertions
+on actual little-endian and BE8 programs, alongside 948 existing assertions across
+216 scenarios. Controls cover image/profile disagreement, foreign programs,
+unknown conventions, hidden return pointers and exact parameter limits
+(4,096 accepted; 4,097 refused). Nested structures exercise the real 64-visit
+classification budget: 61 wrappers plus the base structure and two floating
+leaves are accepted; a further wrapper is refused. Positive corrections require
+exact S0/S1 member ordering for the target byte order, with no modification of
+saved types/storage, the program modification counter or original ELF bytes.
+
+The guarded Gradle task passes. Six compiled faults are detected by behavioral
+assertions, with a passing unchanged baseline: both directions of the type-budget
+boundary, the parameter-count boundary, incorrectly including the hidden pointer,
+accepting an unaudited compiler, and reversing big-endian member order. Evidence
+is under `.forge-work/scratch/arm-hfa-admission-first.log` and
+`arm-hfa-admission-mutants/result.json`; no production code was changed.
+
+The verified local diagnostic addition is
+`coverage-recovery/arm-hfa-admission/`: 1,394 sessions, unchanged production JAR,
+901 classes and all 255 production sources. It adds seven branches, yielding
+28,838/29,802 lines and 22,193/25,902 branches. Critical binary/location branches
+are 16,024/18,750 (851 short of 90%); file operations remain 50 branches short.
+This is a mixed historical/current diagnostic, not full current-head hosted
+acceptance or a new debugger-support claim.
+
 ## ARM BE8 aggregate correction admission
 
 The existing `armCompositeParameterAllocationSmoke` task now invokes a focused

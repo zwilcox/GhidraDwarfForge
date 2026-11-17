@@ -30,6 +30,7 @@ public final class ArmHfaParameterAllocationSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        ArmHfaAdmissionSmoke.run();
         for (boolean big : new boolean[] {false, true}) {
             for (int width : new int[] {4, 8}) {
                 for (int count : new int[] {2, 3, 4}) {
