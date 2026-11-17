@@ -75,6 +75,8 @@ BOUNDED_SWITCH = "ghidradwarfforge/calls/GhidraBoundedSwitch.java"
 BOUNDED_SWITCH_TEST = "ghidradwarfforge.calls.BoundedSwitchProofSmoke"
 ARM_MODE_INVENTORY = "ghidradwarfforge/elf/Arm32FunctionAliasSymbols.java"
 ARM_MODE_INVENTORY_TEST = "ghidradwarfforge.elf.Arm32FunctionAliasSymbolsSmoke"
+ARM_MODE_SYMBOLS = "ghidradwarfforge/elf/Arm32ModeSymbols.java"
+ARM_MODE_SYMBOLS_TEST = "ghidradwarfforge.elf.Arm32ModeSymbolsSmoke"
 CURATED_TYPES = "ghidradwarfforge/GhidraTypeGraph.java"
 CURATED_TYPES_TEST = "ghidradwarfforge.FloatingTypeLayoutSmoke"
 TYPE_IDENTITY_TEST = "ghidradwarfforge.DefaultTypeIdentitySmoke"
@@ -791,6 +793,14 @@ CURATED_TYPE_MUTANTS = [
 ]
 
 ARM_MODE_INVENTORY_MUTANTS = [
+    ("arm-mode-rejects-exact-dynamic-limit", ARM_MODE_SYMBOLS, ARM_MODE_SYMBOLS_TEST,
+     "MAX_DYNAMIC_SYMBOLS = 262144", "MAX_DYNAMIC_SYMBOLS = 262143"),
+    ("arm-mode-rejects-exact-comparison-budget", ARM_MODE_SYMBOLS, ARM_MODE_SYMBOLS_TEST,
+     "extents.size() * cues.size() > 16L", "extents.size() * cues.size() >= 16L"),
+    ("arm-mode-accepts-odd-thumb-extent", ARM_MODE_SYMBOLS, ARM_MODE_SYMBOLS_TEST,
+     "thumb && (cue.size() & 1) != 0", "false"),
+    ("arm-mode-accepts-malformed-extended-table", ARM_MODE_SYMBOLS, ARM_MODE_SYMBOLS_TEST,
+     "other.entrySize != 4 || other.size != (long) count * 4", "false"),
     ("arm-inventory-accepts-conflicting-mode", ARM_MODE_INVENTORY, ARM_MODE_INVENTORY_TEST,
      "old == null || old == mode", "true"),
     ("arm-inventory-rejects-section-end-marker", ARM_MODE_INVENTORY, ARM_MODE_INVENTORY_TEST,

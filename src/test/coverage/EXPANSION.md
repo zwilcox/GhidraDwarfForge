@@ -6,6 +6,39 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## ARM mode symbol admission boundaries
+
+`Arm32ModeSymbolsSmoke` now checks malformed dynamic-table framing and links,
+extended-index framing, irrelevant index tables, unnamed non-code definitions,
+out-of-section dynamic symbols, ARM/Thumb alignment, 32-bit address limits and
+wrapping allocations. It accepts exactly 262,144 dynamic rows and a 16,777,216
+allocation/cue comparison budget, then refuses the first excess. Recovered-cue
+checks preserve analyst names, reject excessive cue counts, and require an
+eligible Thumb cue after byte/owner validation. All three reserved symbol-section
+names are covered. Accepted and refused planning preserve original input bytes.
+
+The final guarded task passes 13,613 checks. Four compiled mutations are detected
+by behavioral assertions: tightening either exact resource limit, accepting an
+odd Thumb extent, and accepting malformed extended-index framing. Production
+Java is unchanged. The fixture tree is owned by this task and removed in its
+`finally` block. These metadata fixtures do not claim runnable ARM or valid DWARF
+payloads; independent architecture/runtime acceptance remains a separate gate.
+
+The matching-production diagnostic union adds 10 covered lines and 28 branches
+to the preceding 1,375-session inventory diagnostic. This is a **partial mixed
+historical/current collection**, not complete current-head hosted acceptance.
+The full production denominator and critical classification remain unchanged.
+The first fixture draft mistakenly overlapped an invalid huge extent with its
+positive control; another draft expected an incomplete diagnostic string. Both
+test expectations were corrected without changing production behavior.
+
+Evidence: `.forge-work/scratch/arm-mode-boundaries-admission-final.log`,
+`arm-mode-admission-mutants/result.json`, and
+`coverage-recovery/arm-mode-admission-boundaries/` (raw execution, source hashes,
+command, test log, verified union and coverage deltas). CI run `44105084385`
+still had x86-64, AArch64 and ARM32 running at this checkpoint. The separately
+validated ARM/MIPS collector fix remains queued for the next hosted run.
+
 ## Static ELF symbol inventory limits
 
 `LocalSymbolMergeSmoke` adds malformed table links, partial records, excess local

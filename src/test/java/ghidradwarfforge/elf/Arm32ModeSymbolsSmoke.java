@@ -20,6 +20,19 @@ public final class Arm32ModeSymbolsSmoke {
 
     public static void main(String[] arguments) throws Exception {
         Path root = Files.createTempDirectory("arm-mode-symbols-");
+        try {
+            run(root);
+        }
+        finally {
+            try (var paths = Files.walk(root)) {
+                for (Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) {
+                    Files.delete(path);
+                }
+            }
+        }
+    }
+
+    private static void run(Path root) throws Exception {
         byte[] ordinary = fixture(1);
         Path input = root.resolve("input");
         Files.write(input, ordinary);
@@ -72,9 +85,11 @@ public final class Arm32ModeSymbolsSmoke {
         byte[] existing = ordinary.clone();
         put(existing, sectionOffset(existing, 2) + 4, 2);
         reject(root, existing, List.of(thumb), "existing SHT_SYMTAB");
-        byte[] reserved = ordinary.clone();
-        put(reserved, sectionOffset(reserved, 2), nameOffset(".symtab"));
-        reject(root, reserved, List.of(thumb), "reserved section name");
+        for (String name : List.of(".symtab", ".strtab", ".symtab_shndx")) {
+            byte[] reserved = ordinary.clone();
+            put(reserved, sectionOffset(reserved, 2), nameOffset(name));
+            reject(root, reserved, List.of(thumb), "reserved section name collision " + name);
+        }
         byte[] sectionless = ordinary.clone();
         put(sectionless, 32, 0);
         half(sectionless, 48, 0);
@@ -144,6 +159,10 @@ public final class Arm32ModeSymbolsSmoke {
         put(unnamed, 0x190, 0);
         reject(root, unnamed, List.of(thumb), "exceeds its section");
         unnamedDynamicIntervals(root, ordinary);
+        dynamicFramingBoundaries(root, ordinary);
+        cueGeometryBoundaries(root, ordinary, thumb);
+        inventoryLimits(root, ordinary, thumb);
+        recoveredCueAdmission(root, ordinary, thumb);
 
         // Extended section counts and a high referenced index need SHNDX entries;
         // this is metadata-only scale, well below the actual 64 MiB smoke heap.
@@ -271,7 +290,165 @@ public final class Arm32ModeSymbolsSmoke {
         expect(IllegalArgumentException.class, () -> new ElfFunctionModeCue("bad", 1, 0, 1,
             thumb.codeSha256()));
         expect(IllegalArgumentException.class, () -> new ElfFunctionModeCue("bad", 1, 1, 1, "bad"));
-        System.out.println("ARM32 mode symbols PASS checks=" + checks + " evidence=" + root);
+        System.out.println("ARM32 mode symbols PASS checks=" + checks);
+    }
+
+    private static void dynamicFramingBoundaries(Path root, byte[] ordinary) throws Exception {
+        for (int link : new int[] {0, 1, 6, -1}) {
+            byte[] bytes = dynamic(ordinary, 0, 0, 0, 0);
+            put(bytes, sectionOffset(bytes, 2) + 24, link);
+            reject(root, bytes, List.of(cue(ordinary, 0, 16, true)), "table framing");
+        }
+        for (int size : new int[] {0, 31}) {
+            byte[] bytes = dynamic(ordinary, 0, 0, 0, 0);
+            put(bytes, sectionOffset(bytes, 2) + 20, size);
+            reject(root, bytes, List.of(cue(ordinary, 0, 16, true)), "table framing");
+        }
+        for (int[] shape : new int[][] {{3, 8}, {4, 4}, {4, 12}}) {
+            byte[] bytes = dynamic(ordinary, 0, 0, 0, 0);
+            row(bytes, 4, ".opaque", 18, 0, 0, 0x220, shape[1], 2, 0, 4, shape[0]);
+            reject(root, bytes, List.of(cue(ordinary, 0, 16, true)), "extended-index table");
+        }
+        // An unrelated SHNDX section must not be mistaken for this table's indices.
+        for (int link : new int[] {0, 1, 6, -1}) {
+            byte[] bytes = dynamic(ordinary, 0, 0, 0, 0);
+            row(bytes, 4, ".opaque", 18, 0, 0, 0x220, 8, link, 0, 4, 4);
+            accept(root, bytes, cue(ordinary, 0, 16, true), "unrelated index table");
+        }
+        for (int[] symbol : new int[][] {{TEXT - 2, 2, 1}, {TEXT + 66, 2, 1}}) {
+            byte[] bytes = dynamic(ordinary, symbol[0], symbol[1], 2, symbol[2]);
+            put(bytes, 0x190, 0);
+            reject(root, bytes, List.of(cue(ordinary, 0, 16, true)), "exceeds its section");
+        }
+        for (int index : new int[] {3, 0xfff1}) {
+            byte[] bytes = dynamic(ordinary, 0, 0, 1, index);
+            put(bytes, 0x190, 0);
+            accept(root, bytes, cue(ordinary, 0, 16, true), "unnamed non-code definition");
+        }
+        System.out.println("arm-mode-dynamic-framing=PASS");
+    }
+
+    private static void recoveredCueAdmission(Path root, byte[] bytes, ElfFunctionModeCue thumb)
+            throws Exception {
+        Path file = root.resolve("recovered-cue-admission");
+        Files.write(file, bytes);
+        var image = ElfImage.read(file);
+        var owner = new ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol(
+            thumb.displayName(), thumb.address(), thumb.size());
+        var messages = new ArrayList<String>();
+        var result = Arm32ModeSymbols.planRecovered(image, List.of(thumb), List.of(owner),
+            () -> false, messages::add);
+        require(result.equals(List.of(new ElfLocalFunctionSymbol("__forge_arm_mode_00010100",
+            TEXT + 1, 16, 1))) && messages.isEmpty(), "recovered cue positive ownership control: " + messages);
+        messages.clear();
+        require(Arm32ModeSymbols.planRecovered(image, java.util.Collections.nCopies(65537, thumb),
+            List.of(owner), () -> false, messages::add).isEmpty() && messages.size() == 1 &&
+            messages.getFirst().contains("cue count exceeds"), "recovered count refusal before alias allocation");
+        messages.clear();
+        var collision = new ElfFunctionModeCue("__forge_arm_mode_00010100", TEXT, 16,
+            TEXT + 1, thumb.codeSha256());
+        require(Arm32ModeSymbols.planRecovered(image, List.of(collision), List.of(owner),
+            () -> false, messages::add).isEmpty() && messages.stream().anyMatch(s ->
+                s.contains("synthetic name conflicts with owner")), "analyst name is not reused as a synthetic alias");
+        messages.clear();
+        var arm = cue(bytes, 32, 16, false);
+        var armOwner = new ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol(
+            arm.displayName(), arm.address(), arm.size());
+        var wrongThumb = new ElfFunctionModeCue(thumb.displayName(), TEXT, 16, TEXT + 1, "0".repeat(64));
+        require(Arm32ModeSymbols.planRecovered(image, List.of(arm, wrongThumb), List.of(owner, armOwner),
+            () -> false, messages::add).isEmpty() && messages.stream().anyMatch(s ->
+                s.contains("no eligible Thumb cue remains")) && messages.stream().anyMatch(s ->
+                s.contains("code differs")), "remaining ARM aliases cannot justify a Thumb supplement");
+        require(Arrays.equals(bytes, Files.readAllBytes(file)), "recovered cue admission preserves original input");
+        System.out.println("arm-mode-recovered-admission=PASS");
+    }
+
+    private static void cueGeometryBoundaries(Path root, byte[] ordinary,
+            ElfFunctionModeCue thumb) throws Exception {
+        for (long[] geometry : new long[][] {
+                {0x1_0000_0000L, 2, 0x1_0000_0001L},
+                {TEXT, 0x1_0000_0000L, TEXT + 1},
+                {0xffff_fffeL, 4, 0xffff_ffffL},
+                {TEXT, 3, TEXT + 1},
+                {TEXT + 2, 4, TEXT + 2},
+                {TEXT, 6, TEXT}}) {
+            var invalid = new ElfFunctionModeCue("invalid geometry", geometry[0], geometry[1],
+                geometry[2], thumb.codeSha256());
+            // Keep an unrelated valid Thumb cue so ARM alignment is actually examined.
+            var survivor = cue(ordinary, 32, 16, true);
+            boolean arm = (geometry[2] & 1) == 0;
+            Path file = root.resolve("geometry-" + checks);
+            Files.write(file, ordinary);
+            var messages = new ArrayList<String>();
+            var result = Arm32ModeSymbols.plan(ElfImage.read(file),
+                arm ? List.of(invalid, survivor) : List.of(invalid),
+                () -> false, messages::add);
+            require(arm ? result.size() == 1 && result.getFirst().value() == TEXT + 33 : result.isEmpty(),
+                "invalid geometry is omitted while unrelated valid Thumb code survives");
+            require(messages.getFirst().contains("encoded value, extent or alignment"),
+                "geometry refusal precedes byte binding: " + messages);
+            require(Arrays.equals(ordinary, Files.readAllBytes(file)), "geometry refusal preserves input");
+        }
+        reject(root, ordinary, List.of(new ElfFunctionModeCue("crosses section end", TEXT + 60,
+            8, TEXT + 61, thumb.codeSha256())), "unique executable allocation");
+        byte[] wrapping = ordinary.clone();
+        put(wrapping, sectionOffset(wrapping, 1) + 12, -16);
+        reject(root, wrapping, List.of(new ElfFunctionModeCue("wrapping allocation", 0xffff_fff0L,
+            8, 0xffff_fff1L, thumb.codeSha256())), "backed by original code bytes");
+        System.out.println("arm-mode-cue-geometry=PASS");
+    }
+
+    private static void inventoryLimits(Path root, byte[] ordinary,
+            ElfFunctionModeCue thumb) throws Exception {
+        for (int count : new int[] {262144, 262145}) {
+            int offset = ordinary.length;
+            byte[] bytes = Arrays.copyOf(ordinary, offset + count * 16);
+            row(bytes, 2, ".opaque", 11, 0, 0, offset, count * 16, 3, 1, 4, 16);
+            put(bytes, 68, bytes.length);
+            put(bytes, 72, bytes.length);
+            if (count == 262144) {
+                accept(root, bytes, thumb, "exact dynamic inventory limit");
+            }
+            else {
+                reject(root, bytes, List.of(thumb), "table framing");
+            }
+        }
+        for (int count : new int[] {256, 257}) {
+            byte[] bytes = fixture(260);
+            for (int index = 1; index < count; index++) {
+                row(bytes, index, ".opaque", 1, 6, TEXT, 0x100, 64, 0, 0, 4, 0);
+            }
+            Path file = root.resolve("allocation-budget-" + count);
+            Files.write(file, bytes);
+            var messages = new ArrayList<String>();
+            var result = Arm32ModeSymbols.plan(ElfImage.read(file),
+                java.util.Collections.nCopies(65536, thumb), () -> false, messages::add);
+            require(result.isEmpty(), "ambiguous repeated cues never emit mode symbols");
+            if (count == 256) {
+                require(messages.stream().noneMatch(s -> s.contains("comparison budget")) &&
+                    messages.stream().anyMatch(s -> s.contains("overlapping recovered")),
+                    "exact allocation comparison budget reaches semantic rejection");
+            }
+            else {
+                require(messages.size() == 1 && messages.getFirst().contains("comparison budget"),
+                    "first allocation comparison excess is refused before traversal");
+            }
+            require(Arrays.equals(bytes, Files.readAllBytes(file)), "budget checking preserves input");
+        }
+        System.out.println("arm-mode-inventory-limits=PASS");
+    }
+
+    private static void accept(Path root, byte[] bytes, ElfFunctionModeCue cue, String reason)
+            throws Exception {
+        Path file = root.resolve("accepted-" + checks);
+        Files.write(file, bytes);
+        var messages = new ArrayList<String>();
+        var result = Arm32ModeSymbols.plan(ElfImage.read(file), List.of(cue), () -> false, messages::add);
+        require(result.size() == 1 && result.getFirst().value() == cue.symbolValue() &&
+            result.getFirst().size() == cue.size() && result.getFirst().sectionIndex() == 1,
+            "exact accepted cue: " + reason + " " + messages);
+        require(messages.isEmpty(), "no diagnostic for " + reason);
+        require(Arrays.equals(bytes, Files.readAllBytes(file)), "accepted planning preserves input");
     }
 
     /** An independent interval oracle: adjacency is harmless; any shared byte conflicts. */
@@ -422,7 +599,7 @@ public final class Arm32ModeSymbolsSmoke {
                 .digest(Arrays.copyOfRange(bytes, 0x100 + offset, 0x100 + offset + size))));
     }
 
-    private static final String NAMES = "\0.text\0.opaque\0.dynstr\0.rel.text\0.shstrtab\0.symtab\0";
+    private static final String NAMES = "\0.text\0.opaque\0.dynstr\0.rel.text\0.shstrtab\0.symtab\0.strtab\0.symtab_shndx\0";
 
     private static int nameOffset(String name) {
         return NAMES.indexOf(name + "\0");
