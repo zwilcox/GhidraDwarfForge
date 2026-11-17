@@ -40,6 +40,7 @@ public final class CallFrameEncoderSmoke {
     }
 
     public static void main(String[] args) {
+        CallFrameEncodingBoundarySmoke.main(args);
         var first = new Frame(0x1000, 0x40, List.of(row(0x1000, 8), row(0x1010, 24), row(0x1030, 8)));
         var second = new Frame(0x2000, 0x10, List.of(row(0x2000, 8)));
         for (int width : List.of(4, 8)) {
