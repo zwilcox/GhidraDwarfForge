@@ -42,12 +42,15 @@ public final class GhidraCallSiteEvidenceSmoke {
             for (String mode : List.of("call", "tail", "annotated-tail", "thunk", "annotated-thunk",
                     "indirect-call", "indirect-tail", "annotated-indirect", "indirect-thunk", "indirect-hint", "internal",
                     "conditional-tail", "missing-callee", "interior-callee", "opaque", "call-override",
-                    "return-override", "reference-conflict", "gap", "partial", "patched", "rebase", "discontiguous")) {
+                    "return-override", "fallthrough-override", "fallthrough-removed", "fallthrough-escape",
+                    "reference-conflict", "gap", "partial", "patched", "rebase", "discontiguous")) {
                 check(arm, mode);
             }
         }
         check(false, "get-pc");
         check(false, "conditional-move");
+        check(false, "length-override");
+        check(false, "internal-interior");
         Files.writeString(output.resolve("capture.txt"), report.toString());
         System.out.println("call-site-evidence-smoke=PASS checks=" + checks);
     }
@@ -79,6 +82,46 @@ public final class GhidraCallSiteEvidenceSmoke {
         return out.array();
     }
 
+    private static void admissionBoundaries(ProgramDB program, ElfImage image, long delta) throws Exception {
+        var language = program.getLanguage();
+        Object owner = new Object();
+        var foreign = new ProgramDB("foreign-call-site", language,
+            language.getCompilerSpecByID(program.getCompilerSpec().getCompilerSpecID()), owner);
+        try {
+            int transaction = foreign.startTransaction("foreign function");
+            try {
+                var entry = language.getDefaultSpace().getAddress(0x1000 + delta);
+                var function = foreign.getFunctionManager().createFunction("foreign", entry,
+                    new AddressSet(entry, entry), SourceType.USER_DEFINED);
+                try {
+                    GhidraCallSiteEvidence.capture(program, List.of(function), image, delta, TaskMonitor.DUMMY);
+                    throw new AssertionError("accepted another Program's function");
+                }
+                catch (IllegalArgumentException expected) {
+                    require(expected.getMessage().equals("foreign program function"), "wrong foreign function refusal");
+                }
+            }
+            finally { foreign.endTransaction(transaction, false); }
+        }
+        finally { foreign.release(owner); }
+        var entry = language.getDefaultSpace().getAddress(0x100000);
+        program.getMemory().createInitializedBlock("capture-budget", entry, 1_048_577, (byte) 0,
+            TaskMonitor.DUMMY, false);
+        var function = program.getFunctionManager().createFunction("capture_budget", entry,
+            new AddressSet(entry, entry.add(1_048_575)), SourceType.USER_DEFINED);
+        long modification = program.getModificationNumber();
+        var boundary = GhidraCallSiteEvidence.capture(program, List.of(function), image, delta, TaskMonitor.DUMMY).getFirst();
+        require(boundary.instructions().isEmpty() && boundary.omissions().equals(
+            List.of("function has partial or undecoded instruction coverage")), "exact body budget rejected early");
+        require(program.getModificationNumber() == modification, "body budget capture modified program");
+        function.setBody(new AddressSet(entry, entry.add(1_048_576)));
+        modification = program.getModificationNumber();
+        var excess = GhidraCallSiteEvidence.capture(program, List.of(function), image, delta, TaskMonitor.DUMMY).getFirst();
+        require(excess.instructions().isEmpty() && excess.omissions().equals(
+            List.of("external, empty or unbounded function body")), "oversized body not refused before decoding");
+        require(program.getModificationNumber() == modification, "oversized body refusal modified program");
+    }
+
     private static void check(boolean arm, String mode) throws Exception {
         String ret = arm ? "c0035fd6" : "c3";
         String call = arm ? "00040094" : "e8fb0f0000";
@@ -88,6 +131,7 @@ public final class GhidraCallSiteEvidenceSmoke {
             case "interior-callee" -> branch(arm, arm ? 0x2004 : 0x2001);
             case "indirect-call" -> (arm ? "00003fd6" : "ffd0") + ret;
             case "indirect-tail", "annotated-indirect", "indirect-thunk", "indirect-hint" -> indirect;
+            case "internal-interior" -> branch(false, 0x1001) + ret;
             case "internal" -> branch(arm, arm ? 0x1004 : 0x1005) + ret;
             case "conditional-tail" -> (arm ? "01800054" : "0f85fa0f0000") + ret;
             case "opaque" -> (arm ? "010000d4" : "0f05") + ret;
@@ -136,6 +180,10 @@ public final class GhidraCallSiteEvidenceSmoke {
                     }
                     case "call-override" -> first.setFlowOverride(FlowOverride.CALL_RETURN);
                     case "return-override" -> first.setFlowOverride(FlowOverride.RETURN);
+                    case "fallthrough-override" -> first.setFallThrough(target);
+                    case "fallthrough-removed" -> first.setFallThrough(null);
+                    case "fallthrough-escape" -> function.setBody(new AddressSet(entry, first.getMaxAddress()));
+                    case "length-override" -> first.setLengthOverride(3);
                     case "reference-conflict" -> program.getReferenceManager().addMemoryReference(entry,
                         entry.add(0x2000), RefType.UNCONDITIONAL_CALL, SourceType.USER_DEFINED, 0);
                     case "indirect-hint" -> program.getReferenceManager().addMemoryReference(entry,
@@ -155,13 +203,26 @@ public final class GhidraCallSiteEvidenceSmoke {
                     case "thunk", "annotated-thunk", "indirect-thunk" -> Kind.THUNK_TRANSFER;
                     case "indirect-call" -> Kind.INDIRECT_CALL;
                     case "indirect-tail", "annotated-indirect", "indirect-hint" -> Kind.INDIRECT_TAIL_CANDIDATE;
-                    case "internal", "discontiguous", "get-pc" -> Kind.INTERNAL_BRANCH;
-                    case "opaque", "call-override", "return-override", "reference-conflict", "partial", "patched" -> Kind.UNAVAILABLE;
+                    case "internal", "internal-interior", "discontiguous", "get-pc" -> Kind.INTERNAL_BRANCH;
+                    case "opaque", "call-override", "return-override", "fallthrough-override", "fallthrough-removed",
+                        "length-override", "reference-conflict", "partial", "patched" -> Kind.UNAVAILABLE;
                     default -> Kind.DIRECT_CALL;
                 };
                 var observed = evidence.instructions().getFirst();
                 require(observed.transfer().kind() == expected, mode + " " + observed);
-                require(evidence.captureComplete() == (expected != Kind.UNAVAILABLE && !mode.equals("gap")), mode + " " + evidence.omissions());
+                require(evidence.captureComplete() == (expected != Kind.UNAVAILABLE && !List.of("gap", "fallthrough-escape", "internal-interior").contains(mode)), mode + " " + evidence.omissions());
+                if (mode.equals("fallthrough-escape")) {
+                    require(evidence.omissions().stream().anyMatch(value -> value.endsWith("fallthrough escapes the decoded body")),
+                        "missing fallthrough escape diagnostic");
+                }
+                if (mode.equals("internal-interior")) {
+                    require(evidence.omissions().stream().anyMatch(value -> value.endsWith("internal branch targets an undecoded instruction boundary")),
+                        "interior branch target accepted as a decoded boundary");
+                }
+                if (mode.equals("length-override")) {
+                    require(observed.transfer().reason().equals("partial or overridden instruction length"),
+                        "overridden instruction accepted as original decode");
+                }
                 if (expected == Kind.DIRECT_CALL || expected == Kind.INDIRECT_CALL) {
                     require(observed.transfer().returnPc().equals(entry.add(mode.equals("indirect-call") ? (arm ? 4 : 2) : (arm ? 4 : 5))), "return PC");
                 }
@@ -180,6 +241,7 @@ public final class GhidraCallSiteEvidenceSmoke {
                 require(GhidraCallSiteEvidence.capture(program, List.of(function), image, delta, TaskMonitor.DUMMY).getFirst()
                     .equals(evidence), "retry changed immutable evidence");
                 if (mode.equals("call")) {
+                    admissionBoundaries(program, image, delta);
                     Path wrongTarget = output.resolve((arm ? "arm" : "x86") + "-wrong-target.elf");
                     Files.write(wrongTarget, elf(!arm, bytes, leaf));
                     try {

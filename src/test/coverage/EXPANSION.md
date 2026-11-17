@@ -6,6 +6,33 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Call-site inventory admission and instruction boundaries
+
+The real Sleigh/ProgramDB fixture now checks explicit fallthrough replacement and
+removal on x86-64/AArch64, decoded fallthrough outside the retained function body,
+x86 length overrides, and an x86 branch into the middle of its own instruction.
+Capture must report unavailable instructions or incomplete inventory as appropriate;
+an interior branch destination must not become a decoded instruction boundary.
+Foreign Program functions are rejected. Bodies at 1,048,576 bytes proceed to the
+ordinary undecoded-body diagnostic; the first excess byte triggers the size
+refusal before scanning. Budget checks also assert unchanged program state.
+
+Guarded `callSiteEvidenceSmoke` passes **527 checks** (six seconds). All five
+compiled mutants are detected through Java assertions, with the unmodified
+baseline passing (18.989 seconds): foreign ownership, escaping fallthrough,
+interior branch destination, length override, and the exact body-budget boundary.
+The first fixture attempt incorrectly reused a Program-bound compiler spec;
+using the language's corresponding base compiler spec corrected that test setup.
+Production code remains unchanged.
+
+A production-only measurement adds **2 lines and 5 branches** in
+`GhidraCallSiteEvidence` against the refreshed 1,367-session diagnostic union.
+Evidence: `.forge-work/scratch/call-evidence-boundaries-test-corrected.log`,
+`call-evidence-boundary-mutants/result.json`, and
+`coverage-recovery/call-evidence-boundaries/result.json`. This is a listing and
+original-byte inventory test, not a new emitted call-site or debugger acceptance
+claim. Full current-head combined coverage and hosted acceptance remain pending.
+
 ## Parameter storage refusals across seven profiles
 
 `DynamicParameterStorageSmoke` now rejects missing register maps, unnamed slices
