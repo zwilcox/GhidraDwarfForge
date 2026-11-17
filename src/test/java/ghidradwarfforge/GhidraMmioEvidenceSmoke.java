@@ -204,7 +204,112 @@ public final class GhidraMmioEvidenceSmoke {
             q.qualifiers().equals(List.of(TypeGraph.Qualifier.CONST, TypeGraph.Qualifier.VOLATILE)),
             "saved MMIO view lost combined const volatile");
         require(extended.globals().equals(model.globals()), "MMIO profile changed ordinary global locations");
+        profileBounds(program, profile, extended.types());
         require(program.getModificationNumber() == modification, "observation modified program");
+    }
+
+    private static void profileBounds(ProgramDB program, GhidraMmioProfile profile, TypeGraph graph) throws Exception {
+        String selected = program.getOptions(GhidraMmioProfile.OPTIONS).getString(GhidraMmioProfile.SELECTION, null);
+        var object = program.getListing().getDataAt(program.getAddressFactory().getDefaultAddressSpace().getAddress(BASE + 16));
+        String address = object.getAddress().toString(true);
+        for (String text : List.of(
+                selected.replace(program.getLanguageID().getIdAsString(), "unrelated-language"),
+                selected.replace(address, "not-an-address"),
+                selected.replace(address, "register:0"),
+                selected.replace(address, object.getAddress().add(0x1000).toString(true)),
+                selected.replace(address, object.getAddress().add(12).toString(true)),
+                selected.replace("\"offset\":0", "\"offset\":1"))) {
+            rejectedProfile(() -> GhidraMmioProfile.read(program, text, TaskMonitor.DUMMY));
+        }
+        if (program.getDefaultPointerSize() == 4) {
+            rejectedProfile(() -> GhidraMmioProfile.read(program,
+                selected.replace("0x40000010", "0x100000000"), TaskMonitor.DUMMY));
+        }
+        var witness = (TypeGraph.TypedefType) graph.nodes().stream()
+            .filter(n -> n.name().startsWith("__forge_mmio_")).findFirst().orElseThrow();
+        var nodes = new java.util.LinkedHashMap<String, TypeGraph.TypeNode>();
+        java.util.function.BiFunction<ghidra.program.model.data.DataType, List<TypeGraph.Qualifier>, TypeGraph.TypeRef> reserve =
+            (type, qualifiers) -> {
+                require(type.getPathName().equals(object.getDataType().getPathName()) &&
+                    qualifiers.equals(List.of(TypeGraph.Qualifier.CONST, TypeGraph.Qualifier.VOLATILE)),
+                    "MMIO witness reservation lost exact type or qualifiers");
+                return witness.target();
+            };
+        profile.contribute(reserve, nodes, TaskMonitor.DUMMY);
+        var before = java.util.Map.copyOf(nodes);
+        profile.contribute(reserve, nodes, TaskMonitor.DUMMY);
+        require(nodes.equals(before) && nodes.size() == 1 && nodes.get(witness.key()).equals(witness),
+            "repeated MMIO contribution changed canonical witness");
+        nodes.put(witness.key(), new TypeGraph.TypedefType(witness.key(), "conflicting-witness", 8, witness.target()));
+        rejectedWitness(() -> profile.contribute(reserve, nodes, TaskMonitor.DUMMY));
+        profile.validateAliases(graph, TaskMonitor.DUMMY);
+        rejectedWitness(() -> profile.validateAliases(new TypeGraph(List.of()), TaskMonitor.DUMMY));
+        var duplicate = new java.util.ArrayList<TypeGraph.TypeNode>(graph.nodes());
+        duplicate.add(new TypeGraph.TypedefType("analyst-collision", witness.name(), 8, witness.target()));
+        rejectedWitness(() -> profile.validateAliases(new TypeGraph(duplicate), TaskMonitor.DUMMY));
+
+        var path = Files.createTempFile("forge-mmio-render-", ".elf");
+        try {
+            for (boolean wide : List.of(false, true)) {
+                for (var order : List.of(java.nio.ByteOrder.LITTLE_ENDIAN, java.nio.ByteOrder.BIG_ENDIAN)) {
+                    // Only ELF identity is consumed by the renderer. This is not a runnable target fixture.
+                    var header = java.nio.ByteBuffer.allocate(wide ? 64 : 52).order(order);
+                    header.put(new byte[] {0x7f, 'E', 'L', 'F', (byte) (wide ? 2 : 1),
+                        (byte) (order == java.nio.ByteOrder.LITTLE_ENDIAN ? 1 : 2), 1});
+                    header.putShort(16, (short) 2).putShort(18, (short) (wide ? 62 : 8)).putInt(20, 1);
+                    header.putShort(wide ? 52 : 40, (short) header.capacity());
+                    Files.write(path, header.array());
+                    var elf = ghidradwarfforge.elf.ElfImage.read(path);
+                    String json = profile.render(elf, path, () -> false);
+                    var rendered = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+                    require(rendered.get("address_bits").getAsInt() == (wide ? 64 : 32) &&
+                        rendered.get("byteorder").getAsString().equals(order == java.nio.ByteOrder.LITTLE_ENDIAN ? "little" : "big"),
+                        "MMIO render changed target width or byte order");
+                    String digest = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(header.array()));
+                    require(rendered.get("sidecar_sha256").getAsString().equals(digest), "MMIO render lost artifact binding");
+                    var row = rendered.getAsJsonArray("registers").get(0).getAsJsonObject();
+                    require(row.get("address").getAsString().equals("0x40000010") && row.get("width").getAsInt() == 8 &&
+                        row.get("read_effect").getAsString().equals("unknown") &&
+                        row.getAsJsonArray("views").get(0).getAsJsonObject().get("type").getAsString().equals(witness.name()),
+                        "MMIO render invented access semantics or lost type identity");
+                    require(json.equals(profile.render(elf, path, () -> false)), "MMIO rendering was nondeterministic");
+                    int[] polls = {0};
+                    profile.render(elf, path, () -> { polls[0]++; return false; });
+                    require(polls[0] > 0, "MMIO rendering did not poll cancellation");
+                    for (int stop = 1; stop <= polls[0]; stop++) {
+                        int limit = stop;
+                        int[] count = {0};
+                        try {
+                            profile.render(elf, path, () -> ++count[0] >= limit);
+                            throw new AssertionError("MMIO render ignored cancellation checkpoint " + stop);
+                        }
+                        catch (java.util.concurrent.CancellationException expected) { checks++; }
+                    }
+                    if (!wide && program.getDefaultPointerSize() == 8) {
+                        var outside = GhidraMmioProfile.read(program,
+                            selected.replace("0x40000010", "0x100000000"), TaskMonitor.DUMMY);
+                        rejectedProfile(() -> outside.render(elf, path, () -> false));
+                    }
+                    require(Arrays.equals(header.array(), Files.readAllBytes(path)), "MMIO rendering modified its artifact");
+                }
+            }
+        }
+        finally { Files.deleteIfExists(path); }
+    }
+
+    @FunctionalInterface
+    private interface ProfileAction { void run() throws Exception; }
+
+    private static void rejectedProfile(ProfileAction action) throws Exception {
+        try { action.run(); }
+        catch (java.io.IOException expected) { checks++; return; }
+        throw new AssertionError("invalid MMIO binding or target-width render was accepted");
+    }
+
+    private static void rejectedWitness(ProfileAction action) throws Exception {
+        try { action.run(); }
+        catch (IllegalArgumentException expected) { checks++; return; }
+        throw new AssertionError("missing or conflicting MMIO witness was accepted");
     }
 
     private static String selection(ProgramDB program, String datatype, String address) {

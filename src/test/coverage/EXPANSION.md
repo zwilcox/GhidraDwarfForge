@@ -9103,3 +9103,29 @@ binary/location 18,683/19,213 lines and 16,761/18,750 branches, 114 short of
 Full 255-source denominator and authenticated production JAR unchanged.
 This historical/local union is not hosted acceptance. Fresh full CI, protected
 merge and actual-main publication remain outstanding.
+
+### Saved MMIO profile and render boundaries (2026-11-17)
+
+CONFIRMED: GhidraMmioEvidenceSmoke extends real saved/reopened immutable x86-64,
+ARM32 and big-endian MIPS programs with wrong-language/address, missing block,
+cross-block register, oversized type and runtime-width rejection checks. Type
+witness contribution is idempotent; conflicting/missing/duplicate witnesses
+fail. Rendering verifies target width/order, exact artifact digest, analyst
+read policy and canonical type identity against all four ELF header formats.
+Every observed render cancellation checkpoint fails promptly; inputs and saved
+program modification numbers remain unchanged. These header-only fixtures test
+profile JSON, not architecture execution or new emitted DWARF support.
+
+Guarded ghidraMmioEvidenceSmoke PASS in 4 seconds: 533 evidence checks plus
+159 selection checks. Existing Ghidra warnings about unsupported aggregate
+mutability settings are intentional fixture assertions, not validator output.
+Three compiled faults detected in 8.149 seconds: cross-block admission,
+conflicting witness admission and ignored render target width. Evidence under
+.forge-work/scratch: mmio-profile-boundaries.log, mmio-profile-mutants/result.json.
+
+Verified mmio-profile-boundaries diagnostic: 1,378 sessions, full 255-source
+denominator and unchanged authenticated production JAR; adds 3 lines and 13
+branches. Overall 28,943/29,802 lines and 22,999/25,902 branches. Binary/location
+18,686/19,213 lines and 16,774/18,750 branches, 101 short of 90%. File group
+unchanged. Fresh complete hosted acceptance, protected merge and actual-main
+publication remain outstanding.
