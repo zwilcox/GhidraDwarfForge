@@ -9241,3 +9241,27 @@ other four target lanes. Local e66dd020 covers all six isolated source lists.
 Only bounded compile.stderr/result retained under aarch64-compile-44185360886;
 download automatically removed. Windows c581fbb8 fix also pending hosted proof.
 Complete hosted cohort, protected merge and actual-main publication pending.
+
+### Physical register byte-span admission (2026-11-17)
+
+CONFIRMED: RegisterByteSliceFlowSmoke rejects null/non-register/zero-sized/
+oversized spans and bit-only containers. Real ARM, BE8, x86-64 and AArch64
+registers establish exact byte containment. A view without a named alias checks
+every byte under explicit little/big and language-default physical order;
+unknown mapping names cannot fabricate a DWARF register. Existing actual
+instruction/alias/value-flow cases remain. Guarded parent PASS in 10 seconds,
+1,216,439 checks including its established BigInteger arithmetic suite. Two
+compiled faults detected: allowing bit containers and losing big-endian offsets.
+
+Test development corrections: getRegisters() returns a List; x86 DIL is a valid
+smaller container, so the unnamed-span test now explicitly removes direct alias
+lookup instead of assuming all real spans choose RDI. The production policy was
+unchanged. Earlier failing attempts are not acceptance. Evidence under
+.forge-work/scratch: register-slice-contracts-unnamed.log and
+register-slice-mutants/result.json. No new supported ABI is claimed by raw views.
+
+Verified register-slice-contracts diagnostic adds seven branches, 1,384 sessions,
+28,964/29,802 lines and 23,073/25,902 branches overall. Binary/location:
+18,707/19,213 lines and 16,848/18,750 branches, 27 short of 90%. File group
+unchanged. Same full denominator/JAR. Fresh hosted acceptance, merge and
+actual-main publication remain pending.
