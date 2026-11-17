@@ -6,6 +6,43 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Refreshed diagnostic evidence from CI 44105084385
+
+**CONFIRMED, diagnostic only:** completed artifacts from the run at `6104599a`
+contain the unchanged production JAR `58bd7a71517452ca3f33e372060abd47f29166850cdcf464e3b3cb0f2a2a158b`.
+The producing merge is `8f9d946cedee0ca8ad370c6daf45057514534c3e`; its parent
+identity and exact task inventory were checked through GitHub. Artifact IDs:
+`14341438049` (JavaExec), `14344971281` (Windows attachment), `14341788394`
+(Linux host), and `14341049022` (firmware). Downloads were guarded, archive
+SHA-256 verified, extraction paths/size bounded, and raw collection/oracle
+receipts plus class/probe identities validated.
+
+The first diagnostic union was correctly refused because the old JavaExec test
+class versions differed. Replacing old JavaExec sessions with the current 212
+sessions, while retaining compatible production-only historical integration
+sessions, produces 1,359 diagnostic sessions. Current completed Windows/Linux
+host/firmware collections contribute 57/45/4 sessions. This reconciliation adds
+39 lines and 170 branches relative to the previous diagnostic baseline, largely
+removing stale apparent gaps in class, lexical-scope and vtable models. These
+are previously implemented tests becoming visible, not newly added tests.
+
+Adding eight already verified local smoke sessions produces 1,367 diagnostic
+sessions and a further **25 lines / 59 branches**, using probe union rather than
+summing individual test gains. The local contributions include mapping parser
+refusals, transaction recovery, type collisions, register completeness, target
+agreement, switch guards and lock-publication boundaries. The refreshed critical
+gap inventory now guides further work.
+
+Evidence is under guarded scratch `coverage-recovery/current-44105084385/`:
+`diagnostic-result.json`, `queued-diagnostic/result.json`,
+`queued-diagnostic/gaps.json`, and their raw manifests/XML/receipts. Local
+`diagnose-current.py` and `diagnose-queued.py` record the verification procedure;
+`diagnose-current.log` retains the rejected mixed-test-version attempt, and
+`diagnose-current-retry.log` records the corrected pass. The measurement helper
+now compares against this refreshed diagnostic baseline. **No complete-current
+coverage percentage, target completion, or hosted acceptance is claimed**: the
+architecture and Windows-host jobs were still running at this checkpoint.
+
 ## Saved local mapping encoding boundaries
 
 `LocalMappingsSmoke` captures actual `HighSymbol.encodeMapSym` output for curated
