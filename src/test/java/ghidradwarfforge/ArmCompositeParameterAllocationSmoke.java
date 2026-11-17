@@ -13,8 +13,11 @@ import ghidra.program.database.ProgramDB;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.ByteDataType;
+import ghidra.program.model.data.CategoryPath;
+import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.data.StructureDataType;
+import ghidra.program.model.data.TypedefDataType;
 import ghidra.program.model.data.VoidDataType;
 import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.listing.Function;
@@ -24,6 +27,8 @@ import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.util.DefaultLanguageService;
 import ghidra.util.task.TaskMonitor;
+import ghidra.util.task.TaskMonitorAdapter;
+import ghidra.util.exception.CancelledException;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.targets.TargetParameterAllocation;
 
@@ -41,12 +46,23 @@ public final class ArmCompositeParameterAllocationSmoke {
                         check(big, convention, leading, size);
                     }
                 }
+                for (int leading : new int[] {0, 3, 4}) {
+                    for (int size : new int[] {1, 3, 5, 17}) {
+                        for (String shape : List.of("array", "alias-structure", "alias-array")) {
+                            check(big, convention, leading, size, shape);
+                        }
+                    }
+                }
             }
         }
         System.out.println("arm-composite-parameter-allocation=PASS checks=" + checks);
     }
 
     private static void check(boolean big, String convention, int leading, int size) throws Exception {
+        check(big, convention, leading, size, "structure");
+    }
+
+    private static void check(boolean big, String convention, int leading, int size, String shape) throws Exception {
         var language = DefaultLanguageService.getLanguageService().getLanguage(new LanguageID(
             big ? "ARM:LEBE:32:v8LEInstruction" : "ARM:LE:32:v8"));
         Object owner = new Object();
@@ -65,8 +81,14 @@ public final class ArmCompositeParameterAllocationSmoke {
                 var entry = language.getDefaultSpace().getAddress(0x1000);
                 var function = program.getFunctionManager().createFunction("aggregate", entry,
                     new AddressSet(entry, entry.add(3)), SourceType.USER_DEFINED);
-                var type = new StructureDataType("Bytes", 0, program.getDataTypeManager());
-                type.add(new ArrayDataType(ByteDataType.dataType, size, 1, program.getDataTypeManager()), "bytes", null);
+                var array = new ArrayDataType(ByteDataType.dataType, size, 1, program.getDataTypeManager());
+                var structure = new StructureDataType("Bytes", 0, program.getDataTypeManager());
+                structure.add(array, "bytes", null);
+                DataType type = shape.endsWith("array") ? array : structure;
+                if (shape.startsWith("alias-")) {
+                    type = new TypedefDataType(CategoryPath.ROOT, "BytesAlias", type, program.getDataTypeManager());
+                    type = new TypedefDataType(CategoryPath.ROOT, "BytesAliasAgain", type, program.getDataTypeManager());
+                }
                 var parameters = new ArrayList<ParameterImpl>();
                 for (int index = 0; index < leading; index++) {
                     parameters.add(new ParameterImpl("leading" + index, IntegerDataType.dataType, program));
@@ -80,7 +102,7 @@ public final class ArmCompositeParameterAllocationSmoke {
                 var before = parameter.getVariableStorage();
                 var corrections = policy.corrections(function, TaskMonitor.DUMMY, ignored -> {});
                 var storage = corrections.getOrDefault(leading, before);
-                String context = big + "/" + convention + "/" + leading + "/" + size + " original=" + before + " corrected=" + storage;
+                String context = big + "/" + convention + "/" + leading + "/" + size + "/" + shape + " original=" + before + " corrected=" + storage;
                 require(corrections.keySet().stream().allMatch(ordinal -> ordinal == leading), "unrelated parameter changed " + context);
                 require(parameter.getVariableStorage().equals(before) && !function.hasCustomVariableStorage(), "program storage changed");
                 List<Varnode> actual = List.of(storage.getVarnodes());
@@ -95,6 +117,24 @@ public final class ArmCompositeParameterAllocationSmoke {
                 if (remaining > 0) expected.add(new Varnode(program.getAddressFactory().getStackSpace()
                     .getAddress(Math.max(0, leading - 4) * 4L), remaining));
                 require(actual.equals(expected), "memory-order allocation differs " + context + " actual=" + actual + " expected=" + expected);
+                if (!shape.equals("structure")) {
+                    require(parameter.getFormalDataType().isEquivalent(type), "formal aggregate type changed " + context);
+                    var cancelled = new TaskMonitorAdapter(true);
+                    cancelled.cancel();
+                    try {
+                        policy.corrections(function, cancelled, ignored -> {});
+                        throw new AssertionError("cancelled aggregate allocation accepted " + context);
+                    }
+                    catch (CancelledException expectedCancellation) { checks++; }
+                    require(parameter.getVariableStorage().equals(before), "cancellation changed saved allocation");
+                    function.setVarArgs(true);
+                    require(policy.corrections(function, TaskMonitor.DUMMY, ignored -> {}).isEmpty(),
+                        "variadic aggregate allocation corrected " + context);
+                    function.setVarArgs(false);
+                    require(policy.corrections(function, TaskMonitor.DUMMY, ignored -> {}).equals(corrections),
+                        "aggregate correction changed after variadic refusal " + context);
+                    require(parameter.getVariableStorage().equals(before), "refused allocation changed saved storage");
+                }
                 function.setCustomVariableStorage(true);
                 require(policy.corrections(function, TaskMonitor.DUMMY, ignored -> {}).isEmpty(), "analyst storage rewritten");
             }
