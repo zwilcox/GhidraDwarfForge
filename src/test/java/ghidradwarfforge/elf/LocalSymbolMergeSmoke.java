@@ -30,6 +30,7 @@ public final class LocalSymbolMergeSmoke {
     }
 
     private static void run(Path root) throws Exception {
+        objectContracts();
         for (boolean wide : List.of(false, true)) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                 byte[] original = fixture(wide, order, false, false);
@@ -505,6 +506,31 @@ public final class LocalSymbolMergeSmoke {
 
     private static ByteBuffer bytes(byte[] data) {
         return ByteBuffer.wrap(data).order(data[5] == 1 ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
+    }
+
+    private static void objectContracts() {
+        for (String name : Arrays.asList(null, "", " \t", "bad\0name", "x".repeat(65537))) {
+            objectRejected(() -> new ElfLocalObjectSymbol(name, 0, 1, 1));
+        }
+        objectRejected(() -> new ElfLocalObjectSymbol("object", -1, 1, 1));
+        for (long size : new long[] {0, -1}) {
+            objectRejected(() -> new ElfLocalObjectSymbol("object", 0, size, 1));
+        }
+        for (int section : new int[] {0, -1}) {
+            objectRejected(() -> new ElfLocalObjectSymbol("object", 0, 1, section));
+        }
+        // Section membership and target width are checked by the writer; the
+        // model must preserve large positive values for that decision.
+        var object = new ElfLocalObjectSymbol("x".repeat(65536), 0x100000007L, 0x100000009L, 0xff01);
+        require(object.name().length() == 65536 && object.value() == 0x100000007L &&
+            object.size() == 0x100000009L && object.sectionIndex() == 0xff01 && object.type() == 1,
+            "ordinary object identity was truncated or changed to a function");
+    }
+
+    private static void objectRejected(Runnable action) {
+        try { action.run(); }
+        catch (IllegalArgumentException expected) { checks++; return; }
+        throw new AssertionError("invalid ordinary object symbol was accepted");
     }
 
     private static void require(boolean condition, String description) {

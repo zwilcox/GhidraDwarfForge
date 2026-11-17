@@ -26,6 +26,7 @@ final class VariableLocationContractSmoke {
         pieceCompleteness();
         identityAndOwnership();
         missingEvidence();
+        expressionContracts();
         System.out.println("variable-location-contracts=PASS checks=" + checks);
     }
 
@@ -175,6 +176,35 @@ final class VariableLocationContractSmoke {
         rejects(() -> variable("f", 100, "x", VariableKind.LOCAL, 4, null), "missing lifetimes");
         rejects(() -> variable("f", 100, "x", VariableKind.LOCAL, 4, List.of()), "empty lifetimes");
         rejects(() -> new VariableStorageModel(null), "missing variable inventory");
+    }
+
+    private static void expressionContracts() {
+        for (int opcode : new int[] {-1, 256, Integer.MIN_VALUE, Integer.MAX_VALUE}) {
+            rejects(() -> new GenericOperation(opcode, 0, 0), "opcode cannot fit one byte");
+        }
+        for (int opcode : new int[] {0, 255}) {
+            var operation = new GenericOperation(opcode, Long.MIN_VALUE, Long.MAX_VALUE);
+            require(operation.opcode() == opcode && operation.operand1() == Long.MIN_VALUE &&
+                operation.operand2() == Long.MAX_VALUE, "generic operation narrowed its operands");
+        }
+        rejects(() -> new AddressOperation(-1), "negative emitted address");
+        for (long address : new long[] {0, 0x100000007L, Long.MAX_VALUE}) {
+            require(new AddressOperation(address).address() == address, "address narrowed before producer boundary");
+        }
+        rejects(() -> new Expression(null), "missing expression operations");
+        rejects(() -> new Expression(List.of()), "empty expression would falsely imply an available value");
+        var operations = new ArrayList<DwarfLocationExpression.Operation>(List.of(
+            new AddressOperation(0x100000007L), new GenericOperation(6, 0, 0)));
+        var expression = new Expression(operations);
+        operations.clear();
+        require(expression.operations().equals(List.of(new AddressOperation(0x100000007L),
+            new GenericOperation(6, 0, 0))), "caller mutation changed the planned dereference");
+        immutable(() -> expression.operations().clear());
+        rejects(() -> new Omitted(null, "unknown"), "missing emitted omission reason");
+        for (String diagnostic : Arrays.asList(null, "", " \t")) {
+            rejects(() -> new Omitted(OmissionReason.UNSUPPORTED_STORAGE, diagnostic), "missing emitted diagnostic");
+        }
+        rejects(() -> DwarfLocationExpression.planStable(null), "missing variable plan");
     }
 
     private static void require(boolean value, String message) {

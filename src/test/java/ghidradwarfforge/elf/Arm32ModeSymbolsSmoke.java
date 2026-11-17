@@ -33,6 +33,7 @@ public final class Arm32ModeSymbolsSmoke {
     }
 
     private static void run(Path root) throws Exception {
+        cueContracts();
         byte[] ordinary = fixture(1);
         Path input = root.resolve("input");
         Files.write(input, ordinary);
@@ -665,6 +666,25 @@ public final class Arm32ModeSymbolsSmoke {
 
     private static void half(byte[] bytes, int offset, int value) {
         ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).putShort(offset, (short) value);
+    }
+
+    private static void cueContracts() throws Exception {
+        String digest = "AbCd".repeat(16);
+        for (String name : java.util.Arrays.asList(null, "", " \t", "x".repeat(65537))) {
+            expect(IllegalArgumentException.class, () -> new ElfFunctionModeCue(name, 0, 1, 1, digest));
+        }
+        for (long[] fields : new long[][] {{-1, 1, 1}, {0, -1, 1}, {Long.MAX_VALUE, 1, 1},
+                {Long.MAX_VALUE - 1, 2, 1}, {0, 1, -1}}) {
+            expect(IllegalArgumentException.class,
+                () -> new ElfFunctionModeCue("invalid", fields[0], fields[1], fields[2], digest));
+        }
+        for (String invalid : java.util.Arrays.asList(null, "a".repeat(63), "a".repeat(65), "g".repeat(64))) {
+            expect(IllegalArgumentException.class, () -> new ElfFunctionModeCue("invalid", 0, 1, 1, invalid));
+        }
+        var cue = new ElfFunctionModeCue("x".repeat(65536), Long.MAX_VALUE - 1, 1, Long.MAX_VALUE, digest);
+        require(cue.address() == Long.MAX_VALUE - 1 && cue.size() == 1 && cue.symbolValue() == Long.MAX_VALUE &&
+            cue.displayName().length() == 65536 && cue.codeSha256().equals("abcd".repeat(16)),
+            "exact evidence bounds or digest canonicalization changed");
     }
 
     private static void require(boolean condition, String message) {

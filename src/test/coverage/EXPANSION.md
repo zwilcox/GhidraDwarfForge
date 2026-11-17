@@ -8909,3 +8909,34 @@ plus local sessions guide test selection; they are not fresh hosted acceptance.
 Evidence: `.forge-work/scratch/coverage-recovery/frame-model-budgets/`.
 No production code or denominator changed. Protected merge and actual-main
 publication remain pending.
+
+### Symbol evidence and location expression contracts (2026-11-17)
+
+CONFIRMED: ordinary-object models reject missing/blank/NUL/oversized names,
+negative values, empty sizes and invalid section indices while preserving wide
+positive values and extended section indices for later writer validation.
+ARM mode evidence rejects invalid names/digests, negative fields and overflowing
+extents; exact name/address bounds and digest canonicalization remain valid.
+Location expression tests reject invalid opcodes, addresses and omissions,
+retain full-width operands and independently verify immutable dereference plans.
+
+Guarded variableStorageSmoke, arm32ModeSymbolsSmoke and localSymbolMergeSmoke
+passed together in 5 seconds, including both ELF widths and byte orders.
+Four compiled faults were detected by assertions in 4.213 seconds: zero object
+section, overflowing mode extent, wide opcode and mutable expression operations.
+Evidence: `.forge-work/scratch/symbol-location-models.log` and
+`.forge-work/scratch/symbol-location-model-mutants/result.json`.
+
+Verified diagnostic additions location-expression-models, mode-cue-models and
+object-symbol-models add six lines and 23 branches: 1,370 unique sessions,
+28,933/29,802 lines and 22,928/25,902 branches overall; binary/location critical
+18,676/19,213 lines and 16,703/18,750 branches, 172 short of 90%. File counters
+remain unchanged. Same production JAR, all 255 sources, no production changes.
+These are diagnostic unions, not a completed hosted cohort.
+
+Both MIPS jobs in run 44185360886 also failed at the same missing attachment
+helper as ARM32. Their small artifact archives were SHA-256 verified; only the
+compile diagnostics were retained. Artifact IDs 14379742061 (LE) and 14379562563
+(BE), hashes and stderr are in `.forge-work/scratch/mips-compile-44185360886/`.
+The already committed six-harness dependency fix addresses that compile error;
+fresh architecture execution remains required.
