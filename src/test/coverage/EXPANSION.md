@@ -6,9 +6,28 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Latest completed Windows job verification
+
+CONFIRMED: the `windows-host` job in run `43991284160` passes at PR head
+`6bf2352c` (tested merge `731fae2d`). Artifact `14291317448` contains 55 raw
+sessions from attachment, build-ID installation and host-primitive tests.
+Its 411,214-byte archive has SHA-256
+`64a07d4ea9f683929e98db24f85e2c788e00a920982d2f5c0c0e8572cb14ea40`.
+The independently regenerated report exactly matches the hosted report. Source
+provenance is checked against the authenticated merge tree; seven recorded Java
+source hashes match the Windows checkout's LF-to-CRLF conversion of those blobs.
+
+The job passes its original admission policy. Today's stronger policy additionally
+requires the queued security, backup and privilege controls, so this is not current
+hosted acceptance. Revalidating and unioning its raw data with all prior sessions
+gives 1,912 distinct sessions with **no additional covered lines or branches**.
+The percentages and remaining critical gaps below are unchanged. Evidence is in
+`.forge-work/scratch/coverage-expansion/hosted-windows-43991284160/`.
+
 ## Queued Windows privilege readback checks
 
-PRESENT, UNVERIFIED on Windows: `WindowsPrivilegeReadbackControls` adds thirteen
+PRESENT, UNVERIFIED on Windows: commit `5de11c17` adds thirteen
+`WindowsPrivilegeReadbackControls`
 controlled failures to the existing isolated privilege probe. Each case first
 opens a real Windows x64 token scope with an already-owned privilege. Only the
 subsequent readback replies are changed: sizing status/error and length bounds,
