@@ -6,23 +6,24 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
-## Current partial measurement after memory and file-operation refresh
+## Current partial measurement after integration refresh
 
-**CONFIRMED, local:** the current `58bd7a71` production JAR has 503 verified
-sessions: 211 JavaExec, 284 native-Java and eight headless. Every available view
+**CONFIRMED, local:** the current `58bd7a71` production JAR has 690 verified
+sessions: 211 JavaExec, 440 native-Java and 39 headless. Every available view
 retains all 255 production sources / 901 class files. Windows execution data
 and the remaining integration cohort are still missing; hosted acceptance is
 false. Native C, Python and shell are outside these Java counters.
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 26,122 / 29,802 (87.7%) | 20,161 / 25,902 (77.8%) |
-| Binary and location correctness | 17,799 / 19,213 (92.6%) | 15,057 / 18,750 (80.3%) |
-| File transactions and validation | 5,521 / 6,677 (82.7%) | 3,244 / 4,250 (76.3%) |
+| Overall | 27,378 / 29,802 (91.9%) | 20,866 / 25,902 (80.6%) |
+| Binary and location correctness | 18,157 / 19,213 (94.5%) | 15,298 / 18,750 (81.6%) |
+| File transactions and validation | 5,538 / 6,677 (82.9%) | 3,256 / 4,250 (76.6%) |
 
 The production relocation fix remains covered on all 14 changed executable
-lines and 14 changed branches. Overall line coverage alone does not complete
-the goal; the branch and critical-group targets remain unmet.
+lines and 14 changed branches. Both overall numerical targets are met in this
+partial measurement. The critical-group targets and complete hosted cohort
+remain unmet.
 
 The file-operation refresh verifies 43 Linux host sessions and 220 build-ID
 sessions. It checks real metadata/directory operations, installation/update/
@@ -31,10 +32,19 @@ Sixteen deliberate process-halt controls remain unmeasured and are reported
 separately. Local privileged visibility is **NOT RUN**; these results do not
 replace the actual privileged-host or Windows requirements.
 
+The expanded measurement also includes 28 native producer-failure sessions
+with validated retries, 17 attachment sessions on the limited Linux test host,
+one actual interactive Linux GUI session with nine GDB workflows, four raw
+Cortex-M3 headless sessions, 29 annotation/equate/source-failure sessions, and
+108 inheritance/vtable sessions. The firmware cases validate both input layouts,
+41 refusal controls and MSP/PSP runtime behavior. Inheritance tests reject six
+structurally valid but behaviorally incorrect object layouts. GUI, firmware and
+annotation harnesses restore the cached Ghidra installation after testing.
+
 The immutable partial summary is
-`stable-memory-files-partial/summary.json` in the coverage workspace, SHA-256
-`9cb00bf5b29b31ad48b44232ccabc31a20041c63aa7ad2ad361f648309fc4a6b`.
-It replaces the smaller 236-session partial baseline for current progress
+`stable-memory-expanded-partial/summary.json` in the coverage workspace, SHA-256
+`a4ec705502770bf1d1a2e8d21f0186633afbf72a9ceb00a691b9afa57edd58e6`.
+It replaces the smaller 503-session partial baseline for current progress
 reporting. It does not combine execution data from the older production JAR.
 
 ## Stable and listed memory locations under PIE relocation
