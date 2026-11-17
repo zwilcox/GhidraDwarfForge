@@ -6,6 +6,59 @@ branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
 
+## Current source, GUI, firmware and debugger measurement refresh
+
+CONFIRMED: the unchanged fixed `4bd11717` JAR now has 670 verified raw sessions:
+211 JavaExec, 428 native Java and 31 headless. All 255 production sources/901
+classes remain included. Old-JAR execution data is excluded.
+
+| Scope | Lines | Branches |
+| --- | --- | --- |
+| Partial current-JAR union | 27,476 / 29,792 (92.2%) | 20,882 / 25,888 (80.7%) |
+| Binary/location | 18,256 / 19,203 (95.1%) | 15,316 / 18,736 (81.7%) |
+| File/validation | 5,537 / 6,677 (82.9%) | 3,254 / 4,250 (76.6%) |
+
+Both overall targets and the binary/location line target are now met in the
+verified partial measurement. Critical branch targets and the file/validation
+line target remain unmet. Fresh Windows and remaining integration measurements
+are still missing, so these are not final coverage-gap counts or hosted acceptance.
+
+The four source-relocation sessions pass boundary/cancellation controls,
+readelf, LLVM and strict libdwarf validation, retained-source lookup and 32 GDB
+runtime scenarios across non-PIE/PIE and uncompressed/zlib inputs. They use
+preserved exported fixtures as inputs to the current relocation code.
+
+The real Linux Swing workflow passes source-context selection, split-source
+exports, attachment preparation and nine GDB checks. Its one measured main JVM
+is identified separately from unmeasured calibration, report-CLI and helper
+processes. Strict validation corroborates inherited frame diagnostics against
+the original input. This is the default GUI mode, not a claim for all GUI modes.
+
+Fresh Cortex-M3 raw exports pass single-input and separate-RAM layouts, including
+20 and 21 failure controls, unchanged inputs/saved projects, deterministic
+outputs, structural validation and QEMU/GDB observations of source stepping,
+values and both MSP/PSP exception stacks. The four measured headless sessions
+are imports and direct export controls; wrapper exports are behavioral evidence.
+
+The three GDB companion sessions pass non-PIE, PIE and shared-library mapping,
+preservation, invalid-path and cancellation checks. The independent consumer
+also rejects an injected warning despite a successful validator exit status.
+All temporary cached-extension changes were restored and package inventories
+rechecked. These local validation packages are not published release artifacts.
+
+Evidence is under `.forge-work/scratch/coverage-expansion/`:
+`source-sidecar-current-4bd11`, `gui-desktop-current-4bd11`,
+`firmware-current-4bd11`, `companion-strict-current-4bd11`, and the latest union
+`consumer-refresh-checked-4bd11`. The earlier `source-firmware-refresh-checked-4bd11`
+union measured 667 sessions at 91.8% lines / 80.4% branches. Every collection and
+all prior current-JAR data were revalidated before unioning raw probes.
+
+Issue #209 remains **incomplete**: remaining critical targets, fresh Windows and
+complete hosted evidence, protected merge and actual-main publication are still
+required. No production/test-source changes or threshold relaxations were made
+in this refresh. Scratch usage is 11.737/100 GiB, caches 2.033/10 GiB and evidence
+6.728/10 GiB. No additional worktrees or local heavy processes remain active.
+
 ## Current installation and Linux metadata measurement refresh
 
 CONFIRMED: the fixed `4bd11717` JAR now has 658 independently verified raw
