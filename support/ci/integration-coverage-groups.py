@@ -132,7 +132,8 @@ def admit(inputs, jar, inventory, *, commit, run, attempt, target):
         raise ValueError('missing or extra integration coverage group')
     groups, sessions, collections, paths, size = {}, set(), set(), {}, 0
     for root in roots:
-        if root.is_symlink() or not root.is_dir() or {p.name for p in root.iterdir()} != {'collections', 'group.json'}:
+        if (root.is_symlink() or not root.is_dir()
+                or {p.name for p in root.iterdir()} not in ({'group.json'}, {'collections', 'group.json'})):
             raise ValueError('invalid integration group artifact layout')
         manifest = read(root / 'group.json')
         group = manifest.get('identity', {}).get('group')
@@ -141,7 +142,13 @@ def admit(inputs, jar, inventory, *, commit, run, attempt, target):
         identity = {'commit': commit, 'run': run, 'attempt': attempt,
             'job': 'target-integration', 'target': target, 'group': group}
         verify_manifest(manifest, inventory, jar, identity)
-        payload = collection_files(root / 'collections', jar, identity)
+        collection_root = root / 'collections'
+        if not collection_root.exists() and not collection_root.is_symlink():
+            # File-only artifact transport may omit empty directories. Accept
+            # absence only when the authenticated manifest declares no data.
+            payload = {'files': {}, 'collections': {}, 'sessions': []}
+        else:
+            payload = collection_files(collection_root, jar, identity)
         size += sum((root / 'collections' / name).stat().st_size for name in payload['files'])
         if size > MAX_BYTES:
             raise ValueError('target coverage exceeds size budget')

@@ -81,6 +81,22 @@ class GroupCoverageTests(unittest.TestCase):
         groups.seal(root, self.jar, INVENTORY, identity)
         self.assertEqual(0, self.verify(self.merge())['groups']['abi32']['sessions'])
 
+    def test_empty_group_survives_file_only_artifact_transport(self):
+        root = self.inputs / 'abi32'
+        shutil.rmtree(root / 'collections')
+        identity = groups.read(root / 'group.json')['identity']
+        (root / 'group.json').unlink()
+        groups.seal(root, self.jar, INVENTORY, identity)
+        (root / 'collections').rmdir()
+        result = self.verify(self.merge())
+        self.assertEqual(0, result['groups']['abi32']['sessions'])
+        self.assertEqual(2, sum(group['sessions'] for group in result['groups'].values()))
+
+    def test_nonempty_group_cannot_disappear_during_transport(self):
+        shutil.rmtree(self.inputs / 'abi32/collections')
+        with self.assertRaisesRegex(ValueError, 'payload changed after sealing'):
+            self.admit()
+
     def test_missing_and_extra_group_rejected(self):
         root = self.inputs / 'abi64'
         root.rename(self.root / 'held')

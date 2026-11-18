@@ -58,6 +58,9 @@ def prove(fixture_root, java, agent, classpath, run):
             if measured['sessions'] != 1 or counter != {'covered': 1, 'missed': 1}:
                 raise AssertionError('individual group must cover only its actual branch')
         groups.seal(group_root, jar, inventory, full_identity)
+        if group not in branches:
+            # Exercise the layout after a file-only artifact upload/download.
+            (group_root / 'collections').rmdir()
     merged = root / 'merged'
     groups.merge(inputs, merged, jar, inventory, **identity)
     evidence = groups.verify_merged(merged, jar, inventory,
