@@ -9336,3 +9336,29 @@ expectation correction c581fbb8 also awaits hosted proof. No current hosted job
 is being cancelled by the next push. Protected integration and actual-main
 publication remain outstanding. CodeQL alert 2 still references old main
 c6265e1; its SecureZeroMemory correction is already committed in a1362683.
+
+### Windows provider keys and native identity refusal (2026-11-17)
+
+CONFIRMED: run44205341985 Windows-host failed the new portable identity-only
+replacement assertion. OpenJDK21 WindowsFileAttributes.fileKey() returns null;
+AttachmentPaths documents comparison of available provider keys, with native
+identity checked separately by the transaction host. The portable test now asserts
+that contract from observed keys. The native Windows host fixture adds a
+same-content/size/mtime/metadata replacement and requires stale-observation and
+replacement refusal, preserving current, candidate and retained original files.
+
+Guarded `./gradlew --no-daemon attachmentProtocolSmoke` PASS:287 path checks,
+11335 protocol checks; compileTestJava includes the Windows regression. All six
+`attachment-path-*` compiled mutation controls PASS (baseline plus assertion
+detection),2.286s. Evidence: .forge-work/scratch/windows-path-key-mutants/result.json.
+Native Windows execution of the new regression remains PRESENT, UNVERIFIED.
+No production behavior, denominator or coverage threshold changed.
+
+The earlier one-branch diagnostic margin is superseded by replacement of ALL329
+old/local JavaExec sessions with the212 current hosted sessions (artifact14387210868).
+Its report matches the fresh local212-task report for every source and line.
+With1060 historical/local sessions from other layers retained, the diagnostic is
+28990/29802 lines,23100/25902 branches; binary18733/19213 lines,16875/18750
+branches (exactly90%); file6522/6677 lines,3831/4250 branches. This remains a mixed
+diagnostic, not complete current hosted acceptance. Windows failure prevents
+current-run acceptance; architecture jobs continue to collect useful evidence.

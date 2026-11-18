@@ -49,6 +49,7 @@ public final class WindowsAttachmentHostSmoke {
         try (var privilege = new WindowsFileSecurityProbe.OwnPrivilege(true)) {
             var host = new WindowsAttachmentHost();
             var metadata = new WindowsAttachmentMetadata();
+            sameContentReplacement(root, host, facts);
             Path target = root.resolve("original target");
             Path stageParent = Files.createDirectory(root.resolve("owned stage"));
             Path stage = stageParent.resolve("candidate");
@@ -178,6 +179,32 @@ public final class WindowsAttachmentHostSmoke {
         Files.writeString(root.resolve("result.json"), json.toJson(facts),
             StandardOpenOption.CREATE_NEW);
         System.out.println("windows-attachment-host=PASS checks=" + checks);
+    }
+
+    private static void sameContentReplacement(Path root, WindowsAttachmentHost host,
+            Map<String, Object> facts) throws IOException {
+        Path target = Files.writeString(root.resolve("identity target"), "unchanged bytes",
+            StandardOpenOption.CREATE_NEW);
+        var original = AttachmentFileStore.observe(target, host, () -> false);
+        var replacement = AttachmentFileStore.backup(original, root.resolve("identity replacement"), host, () -> false);
+        var candidate = AttachmentFileStore.backup(original, root.resolve("identity candidate"), host, () -> false);
+        Path retained = Files.move(target, root.resolve("identity retained"));
+        Files.move(replacement.path(), target);
+        var current = AttachmentFileStore.observe(target, host, () -> false);
+        require(current.digest().equals(original.digest()), "identity fixture changed bytes");
+        require(Files.getLastModifiedTime(target).equals(Files.getLastModifiedTime(retained)),
+            "identity fixture changed modification time");
+        require(current.fingerprint().metadataSha256().equals(original.fingerprint().metadataSha256()),
+            "identity fixture changed preservation metadata");
+        require(!current.fingerprint().identity().equals(original.fingerprint().identity()),
+            "native host missed replaced identity");
+        reject(() -> AttachmentFileStore.unchanged(original, host, () -> false), "no longer matches its observation");
+        reject(() -> AttachmentTargetStore.replace(original, candidate, host, () -> false), "no longer matches its observation");
+        AttachmentFileStore.unchanged(current, host, () -> false);
+        AttachmentFileStore.unchanged(candidate, host, () -> false);
+        require(Files.readString(retained).equals("unchanged bytes"), "retained original changed");
+        facts.put("sameContentIdentityRefusal", Map.of("original", original, "replacement", current,
+            "candidate", candidate, "retained", retained));
     }
 
     @FunctionalInterface private interface Action { void run() throws IOException; }

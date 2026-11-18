@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -83,14 +84,23 @@ public final class AttachmentPathBoundarySmoke {
         io(timePlan::recheck);
         equal("original", Files.readString(input));
 
-        // A live old inode prevents inode reuse: bytes, size and mtime are
-        // identical, so only entry identity distinguishes this replacement.
+        // A retained old entry prevents identity reuse. The portable preflight
+        // compares only provider keys when available (Windows Java 21 has none).
+        // WindowsAttachmentHostSmoke separately proves native identity refusal.
         Files.setLastModifiedTime(input, originalTime);
+        Object originalKey = Files.readAttributes(input, BasicFileAttributes.class).fileKey();
         var identityPlan = AttachmentPaths.preflight(List.of(first, second));
         Path retained = Files.move(input, root.resolve("retained"));
         Files.writeString(input, "original");
         Files.setLastModifiedTime(input, originalTime);
-        io(identityPlan::recheck);
+        Object replacementKey = Files.readAttributes(input, BasicFileAttributes.class).fileKey();
+        if (originalKey == null && replacementKey == null) {
+            identityPlan.recheck();
+        }
+        else {
+            equal(false, java.util.Objects.equals(originalKey, replacementKey));
+            io(identityPlan::recheck);
+        }
         equal("original", Files.readString(retained));
         equal("original", Files.readString(input));
         equal(false, Files.exists(absent, LinkOption.NOFOLLOW_LINKS));
