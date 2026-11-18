@@ -38,6 +38,46 @@ def coverageSha256 = { File value ->
     return digest.digest().encodeHex().toString()
 }
 
+// Integration jobs reuse the extension build's tools from this same CI run.
+// File dependencies avoid Maven resolution on every fresh target/Windows runner.
+def coverageToolsBundle = providers.environmentVariable("FORGE_COVERAGE_TOOLS_BUNDLE")
+if (coverageToolsBundle.isPresent()) {
+    def bundle = file(coverageToolsBundle.get())
+    def manifest = new groovy.json.JsonSlurper().parse(new File(bundle, "collection/manifest.json"))
+    def metadata = new groovy.json.JsonSlurper().parse(new File(bundle, "tools.json"))
+    if (manifest.schema != 1 || manifest.status != "COLLECTED" || manifest.layer != "javaexec" ||
+            manifest.commit != coverageCommit.get() || manifest.run != coverageRun.get() ||
+            manifest.jacocoVersion != coverageVersion || metadata.schema != 1 ||
+            metadata.jacocoVersion != coverageVersion || !(metadata.files instanceof Map) ||
+            metadata.files.size() < 1 || metadata.files.size() > 16) {
+        throw new GradleException("Coverage tools must come from the same commit/run and JaCoCo version")
+    }
+    def directory = new File(bundle, "tools")
+    if (!directory.isDirectory() || java.nio.file.Files.isSymbolicLink(directory.toPath()) ||
+            directory.list().toList().toSet() != metadata.files.keySet()) {
+        throw new GradleException("Missing or unrecorded coverage tool files")
+    }
+    def libraries = metadata.files.collect { name, hash ->
+        if (!(name ==~ /[A-Za-z0-9_.-]+\.jar/) || !(hash ==~ /[0-9a-f]{64}/)) {
+            throw new GradleException("Invalid coverage tool name or digest")
+        }
+        def library = new File(directory, name)
+        if (!library.isFile() || java.nio.file.Files.isSymbolicLink(library.toPath()) ||
+                library.length() > 16 * 1024 * 1024 || coverageSha256(library) != hash) {
+            throw new GradleException("Changed coverage tool: ${name}")
+        }
+        return library
+    }
+    def agentName = "org.jacoco.agent-${coverageVersion}.jar".toString()
+    if (!metadata.files.containsKey(agentName)) {
+        throw new GradleException("Missing coverage agent dependency")
+    }
+    configurations.jacocoAgent.dependencies.clear()
+    configurations.jacocoAnt.dependencies.clear()
+    dependencies.add("jacocoAgent", files(new File(directory, agentName)))
+    dependencies.add("jacocoAnt", files(libraries))
+}
+
 // Bind every compiled class, including unloaded classes, to each invocation.
 // Names and digests have an unambiguous, platform-independent encoding.
 def coverageClassFingerprint = { directories ->

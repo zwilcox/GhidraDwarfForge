@@ -9362,3 +9362,22 @@ With1060 historical/local sessions from other layers retained, the diagnostic is
 branches (exactly90%); file6522/6677 lines,3831/4250 branches. This remains a mixed
 diagnostic, not complete current hosted acceptance. Windows failure prevents
 current-run acceptance; architecture jobs continue to collect useful evidence.
+
+### Reuse the producing run's coverage tools offline (2026-11-17)
+
+CONFIRMED: run44205341985 MIPS32BE failed before integration because all three
+JaCoCo0.8.16 POM requests received MavenCentralHTTP429. Producer/call-site smoke
+passed first. Other architecture jobs remain active. The workflow now reuses
+the successful extension build's same-run combined-javaexec-input tool bundle
+in target, firmware and Windows jobs. Gradle verifies commit/run/version, exact
+file inventory and every SHA256 before using local file dependencies. These
+integration preparation tasks run offline; ordinary builds and the extension
+build's original dependency resolution retain their existing behavior.
+
+Guarded offline prepareIntegrationCoverage plus instrumented attachmentProtocolSmoke
+PASS. coverage-tools-reuse.py independently checks copied dependencies, classpath
+and embedded agent bytes; seven real Gradle refusal controls (commit,run,version,
+extra/missing/changed files,missing agent) PASS and preserve prepared tools.
+This regression now runs in extension-build. Evidence: .forge-work/scratch/
+coverage-tools-reuse-controls/result.json and individual logs. actionlint and
+git diff --check PASS. Revised hosted validation remains PRESENT, UNVERIFIED.

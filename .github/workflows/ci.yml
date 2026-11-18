@@ -795,6 +795,12 @@ jobs:
               --require-suite linux-file-metadata --require-suite linux-directory-sync \
               --require-suite linux-metadata-visibility
 
+      - name: Verify offline coverage tool reuse and altered-bundle refusals
+        run: |
+          python3 -B src/test/coverage/coverage-tools-reuse.py \
+              --bundle build/combined-javaexec-input \
+              --output build/test-results/extension-build/coverage-tools-reuse
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -941,8 +947,14 @@ jobs:
       matrix:
         target: [ x86_64, aarch64, arm32, mips32be, mips32le ]
 
+    env:
+      FORGE_COVERAGE_TOOLS_BUNDLE: ${{ github.workspace }}/build/coverage-tools-input
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: combined-javaexec-input
+          path: build/coverage-tools-input
 
       - uses: actions/setup-java@v6
         with:
@@ -1159,17 +1171,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           set -euo pipefail
-          # Fresh target runners may receive Maven Central HTTP 429 responses.
-          # Retry dependency preparation only; behavioral tests run once.
-          for attempt in 1 2 3; do
-              if ./gradlew --no-daemon -PtestCoverage=true prepareIntegrationCoverage; then
-                  break
-              fi
-              if [[ "$attempt" -eq 3 ]]; then
-                  exit 1
-              fi
-              sleep "$((attempt * 15))"
-          done
+          ./gradlew --no-daemon --offline -PtestCoverage=true prepareIntegrationCoverage
           if [[ "$TARGET" == x86_64 ]]; then
               echo "FORGE_INTEGRATION_COVERAGE_AGENT=$PWD/build/test-coverage-tools/jacocoagent.jar" >> "$GITHUB_ENV"
               echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"
@@ -1434,7 +1436,7 @@ jobs:
       - name: Measure a bounded installed headless exporter sample
         if: matrix.target == 'x86_64'
         run: |
-          ./gradlew --no-daemon -PtestCoverage=true prepareHeadlessCoverage
+          ./gradlew --no-daemon --offline -PtestCoverage=true prepareHeadlessCoverage
           python3 -B src/test/coverage/headless-coverage.py \
             --ghidra "$GHIDRA_INSTALL_DIR" \
             --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
@@ -3594,8 +3596,14 @@ jobs:
     needs: [ release-package, native-linux ]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      FORGE_COVERAGE_TOOLS_BUNDLE: ${{ github.workspace }}/build/coverage-tools-input
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: combined-javaexec-input
+          path: build/coverage-tools-input
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -3646,7 +3654,7 @@ jobs:
               sha256sum -c RELEASE-SHA256SUMS)
           export TMPDIR="$RUNNER_TEMP/cortex-m-tmp"
           mkdir -p "$TMPDIR"
-          ./gradlew --no-daemon -PtestCoverage=true prepareIntegrationCoverage
+          ./gradlew --no-daemon --offline -PtestCoverage=true prepareIntegrationCoverage
           export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
           export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections"
           python3 src/test/integration/cortex-m-suite.py \
@@ -3885,8 +3893,14 @@ jobs:
     # the complete Linux reference/GUI job to succeed.
     if: ${{ always() && !cancelled() && needs.release-package.result == 'success' && needs.native-windows.result == 'success' && needs.cortex-m-profile.result == 'success' }}
     runs-on: windows-latest
+    env:
+      FORGE_COVERAGE_TOOLS_BUNDLE: ${{ github.workspace }}/build/coverage-tools-input
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: combined-javaexec-input
+          path: build/coverage-tools-input
 
       - uses: actions/setup-java@v6
         with:
@@ -4207,13 +4221,8 @@ jobs:
       - name: Prepare separate Windows integration coverage
         shell: pwsh
         run: |
-          # Bound retries to dependency preparation, matching Linux runners.
-          foreach ($attempt in 1..3) {
-            .\gradlew.bat --no-daemon -PtestCoverage=true prepareIntegrationCoverage
-            if ($LASTEXITCODE -eq 0) { break }
-            if ($attempt -eq 3) { throw 'Integration coverage preparation failed' }
-            Start-Sleep -Seconds ($attempt * 15)
-          }
+          .\gradlew.bat --no-daemon --offline -PtestCoverage=true prepareIntegrationCoverage
+          if ($LASTEXITCODE -ne 0) { throw 'Integration coverage preparation failed' }
           $env:FORGE_INTEGRATION_COVERAGE_AGENT = (Resolve-Path 'build/test-coverage-tools/jacocoagent.jar').Path
           $env:FORGE_INTEGRATION_COVERAGE_OUTPUT = Join-Path $PWD 'build/integration-coverage/collections'
           python -B src/test/coverage/integration-coverage-execution.py `
