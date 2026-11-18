@@ -9286,3 +9286,21 @@ Verified function-extraction-guards diagnostic adds 23 lines/11 branches;
 28,987/29,802 lines and 23,084/25,902 branches. Binary/location 18,730/19,213
 lines and 16,859/18,750 branches, 16 short of 90%. File group unchanged.
 Hosted acceptance, protected merge and actual-main publication remain pending.
+
+### Recovered-parameter and register-piece model contracts (2026-11-17)
+
+CONFIRMED: recovered parameter evidence rejects missing names/types, empty lists
+without diagnostics and complete lists with omission diagnostics; it snapshots
+caller-owned lists. Register storage rejects missing/negative register identities
+and non-byte-aligned low-piece contracts while preserving zero/8/64-bit contracts.
+Guarded variableStorageSmoke + recoveredParameterSmoke PASS in 5 seconds:
+5,258 location checks, 96 map checks, 620 recovery checks across five real saved/
+immutable Ghidra language profiles. Three compiled faults detected: partial-byte
+contract admission, missing recovered type and mutable recovery list. Evidence
+.forge-work/scratch/recovery-register-contracts.log and recovery-register-mutants/result.json.
+
+Verified sequential diagnostics register-piece-model and recovered-parameter-model
+add two lines/nine branches, 1,387 sessions. Overall 28,989/29,802 lines and
+23,093/25,902 branches. Binary/location 18,732/19,213 lines and 16,868/18,750
+branches, seven short of 90%; file group unchanged. Full denominator/fixed JAR
+unchanged. Fresh complete hosted acceptance, merge and publication pending.

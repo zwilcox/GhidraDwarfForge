@@ -44,6 +44,7 @@ public final class RecoveredParameterSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        recoveryContracts();
         for (Target target : List.of(
                 new Target("x86:LE:64:default", "x86_64", "90c3"),
                 new Target("AARCH64:LE:64:v8A", "aarch64", "1f2003d5c0035fd6"),
@@ -53,6 +54,30 @@ public final class RecoveredParameterSmoke {
             check(target);
         }
         System.out.println("recovered-parameter-smoke=PASS checks=" + checks);
+    }
+
+    private static void recoveryContracts() {
+        for (String invalid : Arrays.asList(null, "", " \t")) {
+            rejectsRecovery(() -> new RecoveredParameter(invalid, IntegerDataType.dataType));
+            rejectsRecovery(() -> new ParameterRecovery(List.of(), invalid));
+        }
+        rejectsRecovery(() -> new RecoveredParameter("value", null));
+        var parameter = new RecoveredParameter("value", IntegerDataType.dataType);
+        rejectsRecovery(() -> new ParameterRecovery(List.of(parameter), "incomplete evidence"));
+        var mutable = new ArrayList<>(List.of(parameter));
+        var complete = new ParameterRecovery(mutable, null);
+        mutable.clear();
+        require(complete.parameters().equals(List.of(parameter)) && complete.omission() == null,
+            "complete recovery retained a mutable list or an omission");
+        var omitted = new ParameterRecovery(List.of(), "no complete prototype");
+        require(omitted.parameters().isEmpty() && omitted.omission().equals("no complete prototype"),
+            "omitted recovery lost its diagnostic or invented parameters");
+    }
+
+    private static void rejectsRecovery(Runnable action) {
+        try { action.run(); }
+        catch (IllegalArgumentException expected) { checks++; return; }
+        throw new AssertionError("invalid or contradictory recovered parameter evidence accepted");
     }
 
     private static void check(Target target) throws Exception {

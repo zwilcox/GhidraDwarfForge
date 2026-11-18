@@ -168,6 +168,17 @@ final class VariableLocationContractSmoke {
         rejects(() -> new LocationRange(100, 110, null, EVIDENCE), "missing storage");
         rejects(() -> new LocationRange(100, 110, REGISTER, null), "missing evidence");
         rejects(() -> new MemoryStorage(-1), "negative memory address");
+        rejects(() -> new RegisterStorage(null, 0, 32), "missing DWARF register identity");
+        rejects(() -> new DwarfRegister("RAX", -1, 0), "negative DWARF register number");
+        rejects(() -> new DwarfRegister("RAX", 0, -8), "negative low-byte-piece contract");
+        for (int bits : new int[] {1, 7, 9, 63}) {
+            rejects(() -> new DwarfRegister("RAX", 0, bits), "byte-piece contract must contain complete bytes");
+        }
+        for (int bits : new int[] {0, 8, 64}) {
+            var register = new DwarfRegister("RAX", 0, bits);
+            require(register.lowBytePieceBits() == bits && register.dwarfNumber() == 0,
+                "valid low-byte-piece contract was rounded or changed");
+        }
         rejects(() -> new RegisterStorage(REGISTER.register(), -1, 32), "negative register offset");
         rejects(() -> new RegisterRelativeStorage(null, -16), "missing frame register");
         rejects(() -> variable("f", -1, "x", VariableKind.LOCAL, 4, location(4, REGISTER).locations()), "negative function address");
