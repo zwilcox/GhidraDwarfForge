@@ -8,6 +8,7 @@ import argparse
 import ast
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 
@@ -113,6 +114,81 @@ def validate_baseline(inventory, workflow):
             raise ValueError('baseline command, condition or action changed: ' + row['id'])
 
 
+def original_step(row, step):
+    """Undo only reviewed scheduling changes before checking baseline hashes."""
+    result = dict(step)
+    if result.pop('name', None) != '[' + row['id'] + '] ' + row['name']:
+        raise ValueError('grouped step name differs from inventory')
+    if row['name'] != result.get('uses'):
+        result['name'] = row['name']
+    if result.get('uses', '').startswith('actions/upload-artifact@'):
+        result['with'] = dict(result['with'])
+        if result['with'].pop('overwrite', None) is not True:
+            raise ValueError('rerun artifacts require explicit replacement')
+    if row['kind'] != 'coverage':
+        predicate = "contains(fromJSON(matrix.steps), '" + row['id'] + "')"
+        actual = result.pop('if', '')
+        if actual != predicate:
+            prefix = predicate + ' && ('
+            if not actual.startswith(prefix) or not actual.endswith(')'):
+                raise ValueError('missing or changed group assignment predicate')
+            result['if'] = actual[len(prefix):-1]
+        if result.get('uses', '').startswith('actions/upload-artifact@'):
+            name = result['with']['name']
+            suffix = '-${{ matrix.group }}'
+            if not name.endswith(suffix):
+                raise ValueError('group artifact names must be unique')
+            result['with']['name'] = name[:-len(suffix)]
+        if row['id'] == 'target-023':
+            result['run'] = result['run'].replace('prepareIntegrationCoverage testClasses',
+                'prepareIntegrationCoverage')
+    else:
+        if 'run' in result:
+            result['run'] = result['run'].replace('$PWD/build/coverage-tools-input/production.jar',
+                '$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar')
+    return result
+
+
+def validate_workflow(inventory, workflow):
+    if inventory['baselineJob'] in workflow['jobs']:
+        return validate_baseline(inventory, workflow)
+    known = validate(inventory)
+    seen = set()
+    for job_name, kind in [('target-integration', 'tests'), ('target-coverage', 'coverage')]:
+        job = workflow['jobs'][job_name]
+        for step in job['steps']:
+            match = re.match(r'^\[(target-[0-9]{3})\] ', step.get('name', ''))
+            if not match:
+                continue
+            identifier = match.group(1)
+            if identifier not in known or identifier in seen:
+                raise ValueError('missing or duplicate baseline step ownership')
+            row = known[identifier]
+            if (row['kind'] == 'coverage') != (kind == 'coverage'):
+                raise ValueError('whole-target report placed in a partial group')
+            seen.add(identifier)
+            restored = original_step(row, step)
+            targets = [target for target in TARGETS if successful_condition(restored.get('if'), target)]
+            if step_digest(restored) != row['stepSha256'] or targets != row['targets']:
+                raise ValueError('baseline command, condition or action changed: ' + identifier)
+    if seen != set(known):
+        raise ValueError('baseline integration steps missing from grouped workflow')
+    jobs = workflow['jobs']
+    if (jobs['target-integration']['strategy']['matrix'] != '${{ fromJSON(needs.integration-plan.outputs.matrix) }}'
+            or jobs['target-coverage']['strategy']['matrix'] != {'target': list(TARGETS)}):
+        raise ValueError('grouped matrix no longer uses the checked inventory')
+    requirements = {
+        'target-integration': {'integration-plan', 'release-package', 'native-linux'},
+        'target-coverage': {'target-integration'},
+        'target-group-validation': {'target-integration'},
+        'combined-java-coverage': {'target-coverage', 'target-group-validation'},
+        'required-validation': {'target-integration', 'target-coverage', 'target-group-validation'},
+    }
+    for name, required in requirements.items():
+        if not required <= set(jobs[name]['needs']):
+            raise ValueError('grouped validation dependency missing: ' + name)
+
+
 def matrix(inventory):
     validate(inventory)
     include = []
@@ -191,17 +267,22 @@ def main():
         default=Path('support/ci/integration-groups.json'))
     parser.add_argument('--baseline-workflow', type=Path)
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--github-output', action='store_true')
     args = parser.parse_args()
     inventory = json.loads(args.inventory.read_text())
     if args.baseline_workflow:
         import yaml
-        validate_baseline(inventory, yaml.safe_load(args.baseline_workflow.read_text()))
-    result = json.dumps(matrix(inventory), indent=4) + '\n'
+        validate_workflow(inventory, yaml.safe_load(args.baseline_workflow.read_text()))
+    generated = matrix(inventory)
+    result = json.dumps(generated, indent=4) + '\n'
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(result)
     else:
         print(result, end='')
+    if args.github_output:
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+            output.write('matrix=' + json.dumps(generated, separators=(',', ':')) + '\n')
 
 
 if __name__ == '__main__':

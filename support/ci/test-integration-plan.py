@@ -104,14 +104,16 @@ class InventoryTests(unittest.TestCase):
     def test_baseline_commands_conditions_and_actions_are_bound(self):
         import yaml
         workflow = yaml.safe_load((HERE.parent.parent / '.github/workflows/ci.yml').read_text())
-        plan.validate_baseline(INVENTORY, workflow)
+        plan.validate_workflow(INVENTORY, workflow)
         for number, field, value in [(71, 'run', 'true'), (123, 'if', "matrix.target == 'x86_64'"),
                 (0, 'uses', 'actions/checkout@v1')]:
             broken = copy.deepcopy(workflow)
-            broken['jobs']['target-preflight']['steps'][number][field] = value
+            row = next(step for step in broken['jobs']['target-integration']['steps']
+                if step.get('name', '').startswith(f'[target-{number + 1:03}]'))
+            row[field] = value
             with self.subTest(number=number, field=field):
-                with self.assertRaisesRegex(ValueError, 'baseline command, condition or action changed'):
-                    plan.validate_baseline(INVENTORY, broken)
+                with self.assertRaisesRegex(ValueError, 'baseline command, condition or action changed|group assignment predicate'):
+                    plan.validate_workflow(INVENTORY, broken)
 
     def test_condition_parser_rejects_unreviewed_or_executable_expressions(self):
         for expression in ["__import__('os').system('false')", 'matrix.unreviewed == 1',

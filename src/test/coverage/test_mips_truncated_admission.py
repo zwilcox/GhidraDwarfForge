@@ -150,11 +150,14 @@ class HostedAdmission(unittest.TestCase):
                             'productionClasses': 1, 'suites': ['location-width-producer'], 'unmeasuredForcedHalts': [],
                             'receipts': {r.root.name: coverage.digest(r.root / 'receipt.json') for r in width_records}}}}
                 coverage.save(report / 'summary.json', summary)
+                grouping_fixture = hosted.combined.module('grouped_receipt_fixture', Path(__file__).with_name('grouped_receipt_fixture.py'))
+                records = [collection, context, *width_records]
+                summary = grouping_fixture.bind(hosted, job, jar, records, target)
                 rows, origin = hosted.load_job(job, jar, 'linux_' + target, 'a' * 40, '7')
                 self.assertEqual(len(rows), 9)
                 self.assertEqual(origin['kind'], 'linux_' + target)
                 other = 'mips32le' if target == 'mips32be' else 'mips32be'
-                with self.assertRaisesRegex(ValueError, 'target cohort'):
+                with self.assertRaisesRegex(ValueError, 'group provenance'):
                     hosted.load_job(job, jar, 'linux_' + other, 'a' * 40, '7')
                 # A lane cannot omit the newly required context suite, even when
                 # every remaining receipt and report hash is rebound consistently.
@@ -176,6 +179,7 @@ class HostedAdmission(unittest.TestCase):
                 summary['layers']['headless']['receipts'][collection.root.name] = coverage.digest(
                     collection.root / 'receipt.json')
                 coverage.save(report / 'summary.json', summary)
+                grouping_fixture.bind(hosted, job, jar, records, target)
                 with self.assertRaisesRegex(ValueError, 'ABI cases missing'):
                     hosted.load_job(job, jar, 'linux_' + target, 'a' * 40, '7')
 

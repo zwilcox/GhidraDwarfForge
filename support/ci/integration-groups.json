@@ -1,6 +1,6 @@
 {
     "schema": 1,
-    "status": "PLANNED_GROUPS_NOT_YET_ENABLED",
+    "status": "PRESENT_UNVERIFIED_GROUPED_WORKFLOW",
     "baselineCommit": "9326d3acfcc07d880accdefea6d118aa0c4bb2dc",
     "baselineRun": 44376883886,
     "baselineJob": "target-preflight",
@@ -1336,7 +1336,7 @@
                 "x86_64"
             ],
             "groups": {
-                "x86_64": "source"
+                "x86_64": "primary"
             },
             "stepSha256": "670f2d219c52e119778c5802af4ec411761a7b000642ce0c0c0e2bfee66af00f"
         },
@@ -2840,7 +2840,7 @@
                 "x86_64"
             ],
             "groups": {
-                "x86_64": "source"
+                "x86_64": "primary"
             },
             "stepSha256": "183746d2682e44e71ab11f597496761c7b2147db8da26f223e1fbf47ad3140a6"
         },
@@ -2857,8 +2857,8 @@
                 "mips32le"
             ],
             "groups": {
-                "x86_64": "source",
-                "aarch64": "source",
+                "x86_64": "primary",
+                "aarch64": "primary",
                 "arm32": "primary",
                 "mips32be": "primary",
                 "mips32le": "primary"
@@ -3226,7 +3226,10 @@
                 "target-176",
                 "target-190",
                 "target-194",
-                "target-204"
+                "target-204",
+                "target-083",
+                "target-183",
+                "target-184"
             ],
             "reason": "Primary fixture, saved project, exports, validator index and report handoffs remain private to one group."
         },
