@@ -30,6 +30,11 @@ public final class FunctionRelationsSmoke {
         var two = new Thunk(2, second, 3, target, "saved direct target");
         var graph = new FunctionRelations(List.of(two, one));
         require(graph.thunks().equals(List.of(one, two)), "stable chain order");
+        reject(() -> new FunctionRelations(null));
+        reject(() -> new FunctionRelations(java.util.Collections.singletonList(null)));
+        reject(() -> new Thunk(1, null, 2, second, "missing origin"));
+        reject(() -> new Thunk(1, first, 2, null, "missing target"));
+        reject(() -> new Thunk(1, first, 2, first, "same function under two IDs"));
         reject(() -> new Thunk(1, first, 1, first, "self"));
         reject(() -> new Thunk(1, external, 3, target, "addressless origin"));
         reject(() -> new Thunk(1, first, 3, FunctionReference.definition("other", 0x1000), "same entry"));

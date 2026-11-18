@@ -9304,3 +9304,35 @@ add two lines/nine branches, 1,387 sessions. Overall 28,989/29,802 lines and
 23,093/25,902 branches. Binary/location 18,732/19,213 lines and 16,868/18,750
 branches, seven short of 90%; file group unchanged. Full denominator/fixed JAR
 unchanged. Fresh complete hosted acceptance, merge and publication pending.
+
+### Relationship and compression contracts; local target checkpoint (2026-11-17)
+
+CONFIRMED: FunctionRelationsSmoke rejects null relation lists/elements, missing
+thunk endpoints and identical functions under different IDs. DebugCompressionSmoke
+checks valid and invalid decoded alignments for NONE/ZLIB, ELF32/64 and both byte
+orders. Independent Inflater decoding, exact header fields and small-payload
+fallbacks preserve input bytes and alignment. Guarded parent tasks PASS in three
+seconds; both compiled compression-alignment faults are detected by assertions.
+Evidence: .forge-work/scratch/relation-compression-contracts.log and
+compression-alignment-mutants/result.json. No production change.
+
+The first relation-null-contracts diagnostic accidentally used register-piece-model
+rather than recovered-parameter-model as its predecessor. It is superseded for
+cumulative reporting. Sequential relation-null-reconciled and
+compression-alignment-contracts have independently verified source/raw-data hashes,
+manifest ancestry and unique sessions. Final diagnostic: 1,389 sessions, unchanged
+255 sources / 901 production classes, production JAR SHA-256
+58bd7a71517452ca3f33e372060abd47f29166850cdcf464e3b3cb0f2a2a158b.
+Overall 28,990/29,802 lines and 23,101/25,902 branches. Binary/location:
+18,733/19,213 lines, 16,876/18,750 branches (one above the 90% minimum).
+File transactions: 6,522/6,677 lines, 3,831/4,250 branches. This is a mixed
+historical/local diagnostic, not a successful current hosted cohort or publication.
+
+Pre-push checks: all 306 coverage admission/report/publication tests PASS in
+9.039 seconds; actionlint and git diff --check PASS. Latest completed hosted run
+44185360886 FAILED: all five target lanes reached the same missing attachment
+boundary helper compilation dependency, fixed locally in e66dd020. Windows path
+expectation correction c581fbb8 also awaits hosted proof. No current hosted job
+is being cancelled by the next push. Protected integration and actual-main
+publication remain outstanding. CodeQL alert 2 still references old main
+c6265e1; its SecureZeroMemory correction is already committed in a1362683.
