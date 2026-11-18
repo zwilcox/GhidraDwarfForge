@@ -33,6 +33,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Check integration inventory and grouped admission controls
+        run: |
+          python3 -m pip install --disable-pip-version-check PyYAML==6.0.2
+          python3 -B support/ci/integration-plan.py --baseline-workflow .github/workflows/ci.yml \
+              --output build/test-results/workflow-lint/proposed-integration-matrix.json
+          python3 -B support/ci/test-integration-plan.py
+          python3 -B support/ci/test-workflow-timing.py
+
       - name: Lint GitHub Actions workflows
         env:
           ACTIONLINT_VERSION: 1.7.12
