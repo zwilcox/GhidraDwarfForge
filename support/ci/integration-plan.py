@@ -131,7 +131,7 @@ def matrix(inventory):
     return {'include': include}
 
 
-def verify_jobs(inventory, jobs, *, commit, run, attempt):
+def verify_jobs(inventory, jobs, *, commit, run, attempt, head_commit=None):
     """Reject absent, repeated, stale, skipped or failed required grouped jobs.
 
     Names must include inventory IDs so API observations cannot confuse repeated
@@ -141,6 +141,9 @@ def verify_jobs(inventory, jobs, *, commit, run, attempt):
     names = {f'target-integration ({target}, {group})': (target, group)
         for target, group in expected}
     known = {row['id']: row for row in inventory['steps']}
+    # Pull requests execute a merge commit while the jobs API identifies the
+    # PR head. Keep both identities explicit instead of treating them as equal.
+    api_head = commit if head_commit is None else head_commit
     observed = {}
     for job in jobs:
         name = job.get('name', '')
@@ -148,7 +151,7 @@ def verify_jobs(inventory, jobs, *, commit, run, attempt):
             continue
         if name not in names or name in observed or job.get('id') in observed.values():
             raise ValueError('unexpected or repeated integration group: ' + name)
-        if (job.get('head_sha') != commit or job.get('run_id') != run
+        if (job.get('head_sha') != api_head or job.get('run_id') != run
                 or job.get('run_attempt') != attempt or job.get('status') != 'completed'
                 or job.get('conclusion') != 'success'):
             raise ValueError('stale, failed or unfinished integration group: ' + name)
@@ -178,7 +181,7 @@ def verify_jobs(inventory, jobs, *, commit, run, attempt):
         observed[name] = job['id']
     if set(observed) != set(names):
         raise ValueError('incomplete integration group set')
-    return {'status': 'PASS', 'commit': commit, 'run': run, 'attempt': attempt,
+    return {'status': 'PASS', 'commit': commit, 'headCommit': api_head, 'run': run, 'attempt': attempt,
         'jobs': observed, 'scope': 'Complete required group/step execution; coverage admission is separate'}
 
 

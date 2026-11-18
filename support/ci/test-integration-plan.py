@@ -157,6 +157,15 @@ class AdmissionTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'stale'):
                     admit(jobs)
 
+    def test_pr_merge_commit_remains_distinct_from_api_head(self):
+        result = plan.verify_jobs(INVENTORY, successful_jobs(), commit='2' * 40,
+            head_commit=COMMIT, run=RUN, attempt=ATTEMPT)
+        self.assertEqual('2' * 40, result['commit'])
+        self.assertEqual(COMMIT, result['headCommit'])
+        with self.assertRaisesRegex(ValueError, 'stale'):
+            plan.verify_jobs(INVENTORY, successful_jobs(), commit='2' * 40,
+                head_commit='3' * 40, run=RUN, attempt=ATTEMPT)
+
     def test_unknown_group(self):
         jobs = successful_jobs()
         jobs[0]['name'] = 'target-integration (x86_64, unknown)'
