@@ -9381,3 +9381,19 @@ extra/missing/changed files,missing agent) PASS and preserve prepared tools.
 This regression now runs in extension-build. Evidence: .forge-work/scratch/
 coverage-tools-reuse-controls/result.json and individual logs. actionlint and
 git diff --check PASS. Revised hosted validation remains PRESENT, UNVERIFIED.
+
+### Source-section header edits and absent file payloads (2026-11-17)
+
+CONFIRMED: the JavaExec source-container fixture now distinguishes allocated
+NOBITS and empty PROGBITS sections from a real one-byte payload at the same
+nominal offset inside a source-header edit. Across ELF32/64 and both byte orders,
+no-file-payload controls must relocate to the independently patched complete
+baseline output; the real overlapping payload must refuse with its diagnostic.
+Every input remains byte-identical. This adds12 cases without production changes.
+
+Guarded sourceRelocationBoundarySmoke PASS,1260 cases,3seconds. Both compiled
+faults treating NOBITS/empty sections as file payloads are detected by explicit
+Java assertions; baseline PASS,1.621seconds. Evidence: .forge-work/scratch/
+source-payload-boundaries.log and source-payload-mutants/result.json. No new
+combined percentage is claimed before measurement; fresh hosted proof remains
+pending. CI44205341985 still has four live target jobs and the two known failures.

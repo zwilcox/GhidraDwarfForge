@@ -121,6 +121,49 @@ public final class SyntheticSourceRelocationBoundarySmoke {
                     equal(expected.get(section.name()), decoded.readAllBytes(), "container relocation changed DWARF bytes");
                 }
             }
+            // A NOBITS section has no file payload; an empty PROGBITS section
+            // occupies no bytes even if its nominal offset is inside a header.
+            // The same offset with an actual byte must forbid the header edit.
+            int spareHeader = 64 + 6 * stride;
+            long overlapOffset = 64 + 2 * stride + (wide ? 24 : 16) + 1L;
+            for (int variant = 0; variant < 3; variant++) {
+                byte[] candidate = elf.array().clone();
+                byte[] expectedContainer = Files.readAllBytes(output);
+                for (byte[] bytes : List.of(candidate, expectedContainer)) {
+                    var changed = ByteBuffer.wrap(bytes).order(f.order());
+                    changed.putInt(spareHeader + 4, variant == 0 ? 8 : 1);
+                    long size = variant == 0 ? 8 : variant == 1 ? 0 : 1;
+                    if (wide) changed.putLong(spareHeader + 24, overlapOffset).putLong(spareHeader + 32, size);
+                    else changed.putInt(spareHeader + 16, (int) overlapOffset).putInt(spareHeader + 20, (int) size);
+                }
+                Path selected = root.resolve("payload-control-" + variant + ".dbg");
+                Path derived = root.resolve("payload-derived-" + variant + ".dbg");
+                Files.write(selected, candidate);
+                if (variant == 2) {
+                    try {
+                        SyntheticSourceSidecar.prepare(selected, NEW, () -> false);
+                        throw new AssertionError("active payload overlapping header edit accepted");
+                    }
+                    catch (IllegalArgumentException rejected) {
+                        require(rejected.getMessage().contains("overlaps an active section payload"),
+                            "unexpected active payload rejection");
+                    }
+                    require(!Files.exists(derived), "refused overlap left an output");
+                }
+                else {
+                    SyntheticSourceSidecar.Plan allowed;
+                    try { allowed = SyntheticSourceSidecar.prepare(selected, NEW, () -> false); }
+                    catch (IllegalArgumentException rejected) {
+                        throw new AssertionError("section without file payload blocked relocation", rejected);
+                    }
+                    try (var stage = FileChannel.open(derived, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+                        allowed.writeStage(stage, () -> false);
+                    }
+                    equal(expectedContainer, Files.readAllBytes(derived), "non-payload section altered relocation");
+                }
+                equal(candidate, Files.readAllBytes(selected), "payload control changed input");
+                cases++;
+            }
             // One trailing byte is inside the declared section, not merely file padding.
             byte[] trailing = elf.array().clone();
             var fields = ByteBuffer.wrap(trailing).order(f.order());

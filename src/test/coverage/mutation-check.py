@@ -2044,6 +2044,10 @@ ANNOTATION_COMPOSITION_MUTANTS = [
 ]
 
 SOURCE_CONTAINER_MUTANTS = [
+    ('source-container-treats-nobits-as-file-payload', "ghidradwarfforge/elf/SyntheticSourceSidecar.java", RELOCATE_TEST,
+     'other.type != 0 && other.type != 8 && other.size != 0', 'other.type != 0 && other.size != 0'),
+    ('source-container-treats-empty-as-file-payload', "ghidradwarfforge/elf/SyntheticSourceSidecar.java", RELOCATE_TEST,
+     'other.type != 0 && other.type != 8 && other.size != 0', 'other.type != 0 && other.type != 8'),
     ('source-container-allows-trailing-compressed-input', "ghidradwarfforge/elf/SyntheticSourceSidecar.java", RELOCATE_TEST,
      'inflater.getRemaining() == 0', 'true'),
     ('source-container-erases-elf32-alignment', "ghidradwarfforge/elf/SyntheticSourceSidecar.java", RELOCATE_TEST,
