@@ -9417,3 +9417,33 @@ No production behavior or measurement policy changed. Native Windows execution
 of this corrected fixture remains PRESENT, UNVERIFIED until the next CI run.
 Guarded `./gradlew --no-daemon compileTestJava` PASS (2seconds); diff whitespace
 check PASS. Linux compilation does not establish native Windows behavior.
+
+### Nested Windows validator-observation refusals (2026-11-18)
+
+CONFIRMED: run44249835784 passed the corrected native attachment fixture
+(281 host checks), extension/offline-tool checks, packaging, firmware and the
+Linux reference. Its212 JavaExec,45 Linux-host and4 firmware sessions were
+authenticated and independently reproduced with the full production denominator.
+The broader Windows-host job134642918467 subsequently failed in
+ValidatorObservationBoundarySmoke with "unexpected observation refusal".
+The preceding portable path and invocation tests passed.
+
+Source inspection found that this test recognized only the outer ValidatorInput
+snapshot-change diagnosis. WindowsFileMetadata.inspectFacts also reopens and
+checks the selected path, and can reject an injected append before the outer
+comparison. The prior assertion discarded the actual exception text, so the
+exact native diagnosis was not present in the failed log. The revised assertion
+accepts only the explicit outer diagnosis or the Windows-only selected-path
+change diagnosis, includes unexpected exception details and poll number, and
+requires positive outer refusal counts on every host plus positive native
+refusal counts on Windows. Input preservation, digest/size consistency,
+cancellation and stable retry assertions remain required. No product code,
+coverage threshold or denominator changed.
+
+Guarded attachmentHelperSmoke PASS (3seconds):84 observation checks with7 outer
+refusals,6664 helper checks,1061 preview cancellation checkpoints. All4 compiled
+validator-observation mutation controls PASS with behavioral detections
+(2.634seconds), including removal of the outer concurrent-change check.
+Evidence: .forge-work/scratch/validator-observation-windows-refusal.log and
+validator-observation-refusal-mutants/result.json. Native Windows validation of
+the revised diagnosis/count assertions remains PRESENT, UNVERIFIED.

@@ -67,6 +67,7 @@ public final class ValidatorObservationBoundarySmoke {
         changed[original.length] = 93;
         String changedDigest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(changed));
         int refused = 0;
+        int nativeRefused = 0;
         for (int at = 1; at <= polls.get(); at++) {
             Files.write(input, original);
             int mutateAt = at;
@@ -89,15 +90,28 @@ public final class ValidatorObservationBoundarySmoke {
                     "observation accepted inconsistent file size and digest");
             }
             catch (IOException expected) {
-                require(expected.getMessage().contains("changed during observation"), "unexpected observation refusal");
-                refused++;
+                // Windows also rechecks the selected path inside each facts
+                // read. A mutation there is refused before the outer snapshot
+                // comparison. Accept only those two explicit change diagnoses.
+                Throwable cause = expected.getCause();
+                String reason = cause == null ? "" : cause.getMessage();
+                boolean outerChange = "validator input changed during observation".equals(reason);
+                boolean nativeChange = com.sun.jna.Platform.isWindows() &&
+                    "Windows selected metadata path changed".equals(reason);
+                require(outerChange || nativeChange,
+                    "unexpected observation refusal at poll " + at + ": " + expected);
+                if (outerChange) refused++;
+                else nativeRefused++;
             }
             require(Arrays.equals(changed, Files.readAllBytes(input)), "observation changed the injected input");
             var retry = ValidatorInput.observe(input, () -> false);
             require(retry.digest().sha256().equals(changedDigest), "stable retry failed after mutation");
         }
         require(refused > 0, "concurrent changes were never refused");
-        System.out.println("validator-observation-boundaries=PASS checks=" + checks + " mutation-refusals=" + refused);
+        require(!com.sun.jna.Platform.isWindows() || nativeRefused > 0,
+            "Windows selected-path changes were never refused");
+        System.out.println("validator-observation-boundaries=PASS checks=" + checks +
+            " mutation-refusals=" + refused + " native-mutation-refusals=" + nativeRefused);
     }
 
     private static void require(boolean condition, String diagnostic) {
