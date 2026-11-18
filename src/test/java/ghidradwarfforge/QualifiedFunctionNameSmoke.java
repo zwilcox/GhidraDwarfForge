@@ -157,6 +157,7 @@ public final class QualifiedFunctionNameSmoke {
             Namespace classClass = symbols.createClass(type, "Inner", SourceType.USER_DEFINED);
             function(program, "class_method", classClass, 0x400800);
             Namespace library = symbols.createExternalLibrary("libfixture", SourceType.USER_DEFINED);
+            extractionGuards(program, ordinary, library);
             require(!SymbolType.FUNCTION.isValidParent(program, library, start, false) &&
                 !SymbolType.FUNCTION.isValidParent(program, ordinary, start, false),
                 "pinned API unexpectedly permits internal function/library ownership");
@@ -207,6 +208,89 @@ public final class QualifiedFunctionNameSmoke {
         finally {
             program.endTransaction(transaction, false);
         }
+    }
+
+    private static void extractionGuards(ProgramDB program, Function ordinary, Namespace library) throws Exception {
+        for (String invalid : Arrays.asList(null, "", " \t")) {
+            reject(() -> new GhidraFunctionSymbols.SkippedFunction(invalid,
+                GhidraFunctionSymbols.SkipReason.BODYLESS), "invalid skipped function");
+        }
+        reject(() -> new GhidraFunctionSymbols.SkippedFunction("function", null), "invalid skipped function");
+        long modification = program.getModificationNumber();
+        var entry = ordinary.getEntryPoint();
+        var register = program.getLanguage().getRegisters().getFirst().getAddress();
+        var memory = new ghidra.program.model.address.AddressRangeImpl(entry, entry.add(15));
+        var foreign = new ghidra.program.model.address.AddressRangeImpl(register, register);
+        var mixed = (ghidra.program.model.address.AddressSetView) java.lang.reflect.Proxy.newProxyInstance(
+            ghidra.program.model.address.AddressSetView.class.getClassLoader(),
+            new Class<?>[] {ghidra.program.model.address.AddressSetView.class}, (proxy, method, arguments) -> {
+                if (method.getName().equals("getAddressRanges")) {
+                    var iterator = List.<ghidra.program.model.address.AddressRange>of(memory, foreign).iterator();
+                    return new ghidra.program.model.address.AddressRangeIterator() {
+                        public boolean hasNext() { return iterator.hasNext(); }
+                        public ghidra.program.model.address.AddressRange next() { return iterator.next(); }
+                        public java.util.Iterator<ghidra.program.model.address.AddressRange> iterator() { return this; }
+                    };
+                }
+                return method.invoke(ordinary.getBody(), arguments);
+            });
+        var cases = List.of(
+            java.util.Map.<String, Object>of("getBody", new AddressSet()),
+            java.util.Map.<String, Object>of("getBody", new AddressSet(register, register)),
+            java.util.Map.<String, Object>of("getEntryPoint", register),
+            java.util.Map.<String, Object>of("getEntryPoint", entry.add(0x100)),
+            java.util.Map.<String, Object>of("getBody", mixed));
+        var reasons = List.of(GhidraFunctionSymbols.SkipReason.BODYLESS, GhidraFunctionSymbols.SkipReason.NON_MEMORY,
+            GhidraFunctionSymbols.SkipReason.ENTRY_OUTSIDE_BODY, GhidraFunctionSymbols.SkipReason.ENTRY_OUTSIDE_BODY,
+            GhidraFunctionSymbols.SkipReason.UNSUPPORTED_RANGE);
+        for (int index = 0; index < cases.size(); index++) {
+            var messages = new ArrayList<String>();
+            var result = GhidraFunctionSymbols.extractDetailed(functionView(program, ordinary, cases.get(index)),
+                TaskMonitor.DUMMY, messages::add, 0);
+            require(result.functions().isEmpty() && result.skippedFunctions().equals(List.of(
+                new GhidraFunctionSymbols.SkippedFunction(ordinary.getName(), reasons.get(index)))) && messages.size() == 1,
+                "unsupported function evidence lost exact omission reason: " + result);
+        }
+        var overflow = GhidraFunctionSymbols.extractDetailed(functionView(program, ordinary, java.util.Map.of()),
+            TaskMonitor.DUMMY, ignored -> { }, Long.MIN_VALUE);
+        require(overflow.functions().isEmpty() && overflow.skippedFunctions().getFirst().reason() ==
+            GhidraFunctionSymbols.SkipReason.UNSUPPORTED_RANGE, "overflowing body address was exported");
+        for (Namespace unsupported : List.of(library, ordinary)) {
+            var messages = new ArrayList<String>();
+            var result = GhidraFunctionSymbols.extractDetailed(functionView(program, ordinary,
+                java.util.Map.of("getParentNamespace", unsupported)), TaskMonitor.DUMMY, messages::add, 0);
+            require(result.functions().size() == 1 && result.functions().getFirst().namespacePath().isEmpty() &&
+                result.functions().getFirst().name().equals(ordinary.getName()) && messages.size() == 1 &&
+                messages.getFirst().contains("scope is unsupported"), "unsupported scope invented namespace ownership");
+        }
+        var root = GhidraFunctionSymbols.extractDetailed(functionView(program, ordinary,
+            java.util.Collections.singletonMap("getParentNamespace", null)), TaskMonitor.DUMMY, ignored -> { }, 0);
+        require(root.functions().size() == 1 && root.functions().getFirst().namespacePath().isEmpty(),
+            "absent namespace changed lexical function identity");
+        require(modification == program.getModificationNumber(), "function views changed the saved program");
+    }
+
+    private static ghidra.program.model.listing.Program functionView(ProgramDB program, Function original,
+            java.util.Map<String, Object> changes) {
+        var function = (Function) java.lang.reflect.Proxy.newProxyInstance(Function.class.getClassLoader(),
+            new Class<?>[] {Function.class}, (proxy, method, arguments) ->
+                changes.containsKey(method.getName()) ? changes.get(method.getName()) : method.invoke(original, arguments));
+        var manager = (ghidra.program.model.listing.FunctionManager) java.lang.reflect.Proxy.newProxyInstance(
+            ghidra.program.model.listing.FunctionManager.class.getClassLoader(),
+            new Class<?>[] {ghidra.program.model.listing.FunctionManager.class}, (proxy, method, arguments) -> {
+                if (method.getName().equals("getFunctions")) {
+                    var iterator = List.of(function).iterator();
+                    return new ghidra.program.model.listing.FunctionIterator() {
+                        public boolean hasNext() { return iterator.hasNext(); }
+                        public Function next() { return iterator.next(); }
+                        public java.util.Iterator<Function> iterator() { return this; }
+                    };
+                }
+                return method.invoke(program.getFunctionManager(), arguments);
+            });
+        return (ghidra.program.model.listing.Program) java.lang.reflect.Proxy.newProxyInstance(
+            ghidra.program.model.listing.Program.class.getClassLoader(), new Class<?>[] {ghidra.program.model.listing.Program.class},
+            (proxy, method, arguments) -> method.getName().equals("getFunctionManager") ? manager : method.invoke(program, arguments));
     }
 
     private static Function function(ProgramDB program, String name, Namespace scope,

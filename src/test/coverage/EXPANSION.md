@@ -9265,3 +9265,24 @@ Verified register-slice-contracts diagnostic adds seven branches, 1,384 sessions
 18,707/19,213 lines and 16,848/18,750 branches, 27 short of 90%. File group
 unchanged. Same full denominator/JAR. Fresh hosted acceptance, merge and
 actual-main publication remain pending.
+
+### Function extraction omission guards (2026-11-17)
+
+CONFIRMED: QualifiedFunctionNameSmoke checks invalid skipped-function identities,
+empty/non-memory/mixed bodies, out-of-body entries and address-normalization
+overflow. Adversarial read-only Function/Program views exercise defensive paths
+that the pinned saved-program API normally prevents. Each refusal retains its
+exact reason and diagnostic; unsupported library/function scope kinds preserve
+lexical names without inventing namespace ownership. Null parent remains an
+ordinary lexical name. Saved modification numbers remain unchanged. Existing
+real scope/name and collision checks run on x86-64, AArch64, ARM32 and both
+MIPS byte orders. Guarded parent PASS in 4 seconds. Two compiled faults detected:
+discarding a foreign body range and inventing unsupported namespace ownership.
+Evidence .forge-work/scratch/function-extraction-guards.log and
+function-extraction-mutants/result.json.
+
+Verified function-extraction-guards diagnostic adds 23 lines/11 branches;
+1,385 sessions, full 255-source denominator and fixed production JAR. Overall
+28,987/29,802 lines and 23,084/25,902 branches. Binary/location 18,730/19,213
+lines and 16,859/18,750 branches, 16 short of 90%. File group unchanged.
+Hosted acceptance, protected merge and actual-main publication remain pending.
