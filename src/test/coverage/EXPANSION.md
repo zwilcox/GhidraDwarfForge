@@ -9397,3 +9397,23 @@ Java assertions; baseline PASS,1.621seconds. Evidence: .forge-work/scratch/
 source-payload-boundaries.log and source-payload-mutants/result.json. No new
 combined percentage is claimed before measurement; fresh hosted proof remains
 pending. CI44205341985 still has four live target jobs and the two known failures.
+
+### Deterministic Windows metadata-refusal fixture (2026-11-18)
+
+CONFIRMED: run44242641686 extension-build passed, including the offline tool
+preparation and seven altered-bundle refusal controls. Its212 JavaExec sessions
+were independently authenticated and reproduced with the full255 sources and901
+classes. This is partial evidence, not complete-cohort acceptance.
+
+The attachment-windows job134616319955 failed at the existing metadata-refusal
+assertion after the new same-content/native-identity checks had returned. The
+fixture created two files consecutively and assumed their preservation metadata
+would differ; different content/length does not establish that precondition.
+The host accepted replacement, which its contract permits when preservation
+metadata matches. The fixture now sets modification times60seconds apart,
+asserts the native preservation records differ before replacement, and checks
+both the original and candidate snapshots remain unchanged after refusal.
+No production behavior or measurement policy changed. Native Windows execution
+of this corrected fixture remains PRESENT, UNVERIFIED until the next CI run.
+Guarded `./gradlew --no-daemon compileTestJava` PASS (2seconds); diff whitespace
+check PASS. Linux compilation does not establish native Windows behavior.

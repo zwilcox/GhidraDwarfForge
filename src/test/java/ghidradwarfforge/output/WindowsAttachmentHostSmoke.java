@@ -11,6 +11,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -55,8 +56,16 @@ public final class WindowsAttachmentHostSmoke {
             Path stage = stageParent.resolve("candidate");
             Files.writeString(target, "original complete executable sentinel", StandardOpenOption.CREATE_NEW);
             Files.writeString(stage, "different complete candidate sentinel with a different length", StandardOpenOption.CREATE_NEW);
+            // Creation in adjacent calls can produce identical Windows timestamps.
+            // Different contents/lengths are not preservation metadata: make the
+            // metadata-refusal precondition explicit before observing either file.
+            Files.setLastModifiedTime(target, FileTime.fromMillis(1_700_000_000_000L));
+            Files.setLastModifiedTime(stage, FileTime.fromMillis(1_700_000_060_000L));
             var original = AttachmentFileStore.observe(target, host, () -> false);
+            var unpreparedStage = AttachmentFileStore.observe(stage, host, () -> false);
             var originalMetadata = metadata.inspect(target, () -> false);
+            require(!metadata.inspect(stage, () -> false).preservation().equals(originalMetadata.preservation()),
+                "metadata-refusal fixture has identical preservation metadata");
             facts.put("original", original);
             facts.put("originalMetadata", originalMetadata);
             var backup = AttachmentFileStore.backup(original, root.resolve("retained backup"), host, () -> false);
@@ -69,6 +78,7 @@ public final class WindowsAttachmentHostSmoke {
 
             reject(() -> host.replaceAtomic(stage, target), "would change metadata");
             AttachmentFileStore.unchanged(original, host, () -> false);
+            AttachmentFileStore.unchanged(unpreparedStage, host, () -> false);
             try (var channel = FileChannel.open(stage, StandardOpenOption.WRITE)) {
                 host.preserveMetadata(target, original.fingerprint(), stage);
                 channel.force(true);
