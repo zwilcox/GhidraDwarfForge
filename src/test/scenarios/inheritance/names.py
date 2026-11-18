@@ -2,6 +2,7 @@
 """Compare mangled symbols and lookup aliases for analyst-renamed classes."""
 import argparse
 import copy
+from contextlib import nullcontext
 import hashlib
 import json
 import os
@@ -9,6 +10,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+from measurement import collection
 
 HERE = Path(__file__).resolve().parent
 
@@ -24,15 +26,17 @@ def main():
     root.mkdir(parents=True, exist_ok=False)
     java = str(Path(os.environ['JAVA_HOME']) / 'bin/java')
     classpath = args.classpath.read_text().strip()
+    coverage = collection('inheritance-names', classpath)
     commands, results = [], []
 
     def run(label, command, extra_env=None):
         argv = list(map(str, command))
-        commands.append({'label': label, 'argv': argv})
-        (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (root / (label + '.log')).open('w') as log:
-            subprocess.run(argv, env={**os.environ, **(extra_env or {})}, stdout=log, stderr=subprocess.STDOUT,
-                timeout=150, check=True)
+        with coverage.session(argv, label) if argv[0] == java else nullcontext(argv) as measured:
+            commands.append({'label': label, 'argv': argv, 'executedCommand': measured})
+            (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
+            with (root / (label + '.log')).open('w') as log:
+                subprocess.run(measured, env={**os.environ, **(extra_env or {})}, stdout=log, stderr=subprocess.STDOUT,
+                    timeout=150, check=True)
         return (root / (label + '.log')).read_text()
 
     for target in args.targets:
@@ -99,9 +103,11 @@ def main():
                 run(label + '-package', [java, '-cp', classpath, 'ghidradwarfforge.elf.VtablePackagingProbe',
                     runtime, debug, table_file, artifact])
                 assert 'No errors.' in run(label + '-llvm', ['llvm-dwarfdump', '--verify', artifact])
-                for tool, command in [('gnu', ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline']),
-                        ('strict', [os.environ['DWARFDUMP']])]:
-                    assert not re.search(r'warning:|error:', run(label + '-' + tool, [*command, artifact]), re.I)
+                assert not re.search(r'warning:|error:', run(label + '-gnu',
+                    ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline', artifact]), re.I)
+                assert 'strict-dwarfdump=PASS' in run(label + '-strict',
+                    ['python3', HERE.parents[1] / 'integration/check-dwarfdump.py', artifact,
+                        case / 'strict.log', '--tool', os.environ['DWARFDUMP'], '--original', runtime])
                 run(label + '-gdb', ['bash', HERE / 'gdb.sh', case, target, 'forge-vtables', HERE / 'name-gdb.py'],
                     {'INHERITANCE_NAMES': str(names_file), 'INHERITANCE_EXPECT_STATIC': '1' if variant == 'readable-control' else '0'})
                 observed = json.loads((case / 'forge-vtables.gdb.json').read_text())
@@ -111,6 +117,7 @@ def main():
                     'inputSha256': original, 'artifactSha256': hashlib.sha256(artifact.read_bytes()).hexdigest()})
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_VTABLE_NAMES', 'cases': results,
         'scope': 'explicit synthetic object names with fixture evidence; not Ghidra vtable admission'}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('vtable-names=PASS', root)
 
 

@@ -53,6 +53,7 @@ public final class CompositeValueFlowSmoke {
         for (boolean bigEndian : new boolean[] { true, false }) {
             for (boolean mixed : new boolean[] { true, false }) armOrder(bigEndian, mixed);
         }
+        CompositeValueFlowBoundarySmoke.run();
         System.out.println("composite-value-flow-smoke=PASS checks=" + checks);
     }
 

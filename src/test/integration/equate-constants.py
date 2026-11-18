@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Isolated production constant emission, strict validators and cross-target GDB lookup."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
 import tempfile
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -25,6 +28,12 @@ def main():
     parser.add_argument('--dwarfdump', required=True)
     args = parser.parse_args()
     root = Path(tempfile.mkdtemp(prefix='equate-constants-', dir=args.output_parent)).resolve()
+    jars = [Path(path) for path in args.classpath.split(os.pathsep)
+        if Path(path).name == 'GhidraDwarfForge.jar']
+    if os.environ.get('FORGE_INTEGRATION_COVERAGE_OUTPUT') and len(jars) != 1:
+        raise ValueError('coverage requires one production JAR in the probe classpath')
+    coverage = Collection('equate-constants', jars[0] if jars else None, 'native-java',
+        test_classes=('ghidradwarfforge.nativeapi.EquateConstantsSmoke',))
     fixture = args.fixture.resolve(strict=True)
     original = fixture / 'stripped'
     observations = args.observations.resolve(strict=True)
@@ -35,11 +44,13 @@ def main():
         command = list(map(str, command))
         commands.append({'label': label, 'argv': command})
         (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        result = subprocess.run(command, capture_output=True, text=True, timeout=120)
-        (root / (label + '.stdout')).write_text(result.stdout)
-        (root / (label + '.stderr')).write_text(result.stderr)
-        (root / (label + '.status.json')).write_text(json.dumps({'returncode': result.returncode}) + '\n')
-        assert result.returncode == 0, (label, root, result.stderr[-1000:])
+        session = coverage.session(command, label) if command[0] == args.java else nullcontext(command)
+        with session as measured:
+            result = subprocess.run(measured, capture_output=True, text=True, timeout=120)
+            (root / (label + '.stdout')).write_text(result.stdout)
+            (root / (label + '.stderr')).write_text(result.stderr)
+            (root / (label + '.status.json')).write_text(json.dumps({'returncode': result.returncode}) + '\n')
+            assert result.returncode == 0, (label, root, result.stderr[-1000:])
         return result.stdout
 
     labels = json.loads((fixture / 'labels.json').read_text())['annotation_probe']
@@ -100,11 +111,14 @@ print('equate-gdb=PASS checks=' + str(len(checked)))
     (root / 'check.gdb').write_text('\n'.join(gdb_commands) + '\n')
     assert 'equate-gdb=PASS' in run('gdb', ['gdb-multiarch', '-nx', '-batch', '-x', root / 'check.gdb'])
     assert not (root / 'gdb.stderr').read_text().strip(), 'unexplained GDB diagnostic'
+    gdb_result = json.loads((root / 'gdb-result.json').read_text())
+    assert len(gdb_result) == len(constants) * 2
     assert protected == {p: digest(Path(p)) for p in protected}
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_ISOLATED_PRODUCTION_CONSTANTS',
         'protected': protected, 'artifactSha256': digest(sidecar), 'constants': len(constants),
-        'gdbChecks': len(constants) * 2, 'deterministic': True,
+        'gdbChecks': len(gdb_result), 'gdbSha256': digest(root / 'gdb-result.json'), 'deterministic': True,
         'scope': 'Production producer; offline target GDB lookup. Default Ghidra wiring and live-frame lookup pending.'}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('equate-constants=PASS ' + str(root))
 
 

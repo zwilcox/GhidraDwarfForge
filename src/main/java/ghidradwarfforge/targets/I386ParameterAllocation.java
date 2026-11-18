@@ -90,9 +90,11 @@ public final class I386ParameterAllocation {
                     task.checkCancelled();
                     var storage = adjusted[index];
                     var prior = expected[index + 1];
-                    if (!storage.isStackStorage() || storage.size() != prior.size() ||
-                            storage.isForcedIndirect() || storage.isAutoStorage() ||
-                            storage.getStackOffset() < 4 || storage.getStackOffset() > prior.getStackOffset()) {
+                    // A call override needs a complete input allocation. Keep
+                    // an unsupported override unchanged rather than inventing
+                    // a carrier or aborting unrelated function exports.
+                    if (storage.isUnassignedStorage() && prior.isUnassignedStorage()) return null;
+                    if (!provenStackInput(storage, prior, types.get(index)) || storage.isForcedIndirect()) {
                         throw new IllegalStateException("Call override escaped audited stack boundary");
                     }
                     inputs.add(storage);
@@ -159,9 +161,7 @@ public final class I386ParameterAllocation {
                     var prior = expected[index + 1];
                     // Preserve genuinely unassigned storage instead of inventing a carrier.
                     if (prior.isUnassignedStorage() && replacement.isUnassignedStorage()) continue;
-                    if (!replacement.isStackStorage() || replacement.size() != prior.size() ||
-                            replacement.isForcedIndirect() != prior.isForcedIndirect() || replacement.isAutoStorage() ||
-                            replacement.getStackOffset() < 4 || replacement.getStackOffset() > prior.getStackOffset()) {
+                    if (!provenStackInput(replacement, prior, types.get(index))) {
                         throw new IllegalStateException("Floating-return correction escaped audited stack boundary");
                     }
                     changes.put(parameters[index].getOrdinal(), replacement);
@@ -172,6 +172,24 @@ public final class I386ParameterAllocation {
                 return new Resolution(changes, Set.of(parameters[0].getOrdinal()), adjusted[0]);
             }
         };
+    }
+
+    /** Validate one input from the audited compiler model before using its carrier. */
+    static boolean provenStackInput(VariableStorage replacement, VariableStorage prior, DataType formalType) {
+        if (!replacement.isStackStorage() || replacement.isAutoStorage() || replacement.getStackOffset() < 4) {
+            return false;
+        }
+        if (prior.isUnassignedStorage()) {
+            // Removing the spurious result pointer frees one stack slot in the
+            // audited compiler model's finite input region. The adjusted model
+            // can prove a direct carrier that the saved model could not fit.
+            // Require the complete formal value; padding or forced indirection
+            // cannot supply that proof. Other unassigned inputs remain omitted.
+            return !replacement.isForcedIndirect() && formalType.getLength() > 0 &&
+                replacement.size() == formalType.getLength();
+        }
+        return replacement.size() == prior.size() && replacement.isForcedIndirect() == prior.isForcedIndirect() &&
+            replacement.getStackOffset() <= prior.getStackOffset();
     }
 
     private static boolean extended(DataType type) {

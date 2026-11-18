@@ -2,12 +2,15 @@
 """Saved automatic THIS semantics, raw references and compiler-correlated values."""
 import argparse
 from collections import Counter
+from contextlib import nullcontext
 import hashlib
 import json
 from pathlib import Path
 import re
 import subprocess
 import tempfile
+
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -33,20 +36,29 @@ def main():
     case = Path(tempfile.mkdtemp(prefix=args.target + '-' + args.role + '-', dir=results))
     print('object-parameter-results=' + str(case), flush=True)
     commands = []
+    collection = Collection('object-parameter',
+        ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar', 'headless')
 
     def run(label, command, timeout=240):
         command = list(map(str, command))
         commands.append({'label': label, 'argv': command})
         (case / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (case / (label + '.log')).open('w') as log:
-            subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=timeout)
+        context = collection.session(command, label, headless=True) if Path(command[0]).name == 'analyzeHeadless' else nullcontext(command)
+        with context as measured, (case / (label + '.log')).open('w') as log:
+            subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=timeout)
 
     prefix = '' if args.target == 'x86_64' else 'aarch64-linux-gnu-'
     flags = ['-fno-pie', '-no-pie'] if args.role == 'exec' else ['-fPIE', '-pie']
     source = repository / 'src/test/fixtures/object-parameter.cpp'
     reference, stripped, output = case / 'reference', case / 'stripped', case / 'forge.dbg'
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
-    protected = {str(p): digest(p) for p in [source, module]}
+    protected = {str(p): digest(p) for p in [source, module, Path(__file__),
+        harness / 'integration_coverage.py', harness / 'object-parameter-gdb.py',
+        harness / 'object-parameter-gdb.sh', harness / 'check-object-parameters.py',
+        harness / 'check-class-scopes.py', harness / 'check-unbound-class.py',
+        harness / 'check-class-first-lookup.py', harness / 'check-dwarfdump.py',
+        harness / 'class-scope-failure.py', harness / 'class-scope-cancellation.py',
+        harness / 'ghidra_scripts/PrepareObjectParameter.java']}
     run('compile', [prefix + 'g++', '-O0', '-g', '-gdwarf-5', '-fno-stack-protector',
         '-fno-omit-frame-pointer', *flags, source, '-o', reference])
     run('strip', [prefix + 'objcopy', '--strip-all', reference, stripped])
@@ -144,6 +156,14 @@ def main():
         run('failure-driver', ['python3', harness / 'class-scope-failure.py', case, ghidra], timeout=900)
     if args.cancellation_control:
         run('cancellation-driver', ['python3', harness / 'class-scope-cancellation.py', case, ghidra], timeout=900)
+    assert protected == {p: digest(Path(p)) for p in protected}
+    if collection.enabled:
+        receipt = json.loads((case / 'acceptance.json').read_text())
+        receipt.update(status='PASS_OBJECT_PARAMETER_MEASUREMENT', oracleStatus=receipt['status'], javaRuntime=21,
+            measurement={'directAnalyzerSessions': 3, 'unmeasuredNestedDrivers': [name for enabled, name in (
+                (args.failure_control, 'failure'), (args.cancellation_control, 'cancellation')) if enabled]})
+        (case / 'coverage-oracle.json').write_text(json.dumps(receipt, indent=4) + '\n')
+        collection.finish(case / 'coverage-oracle.json')
 
 
 if __name__ == '__main__':

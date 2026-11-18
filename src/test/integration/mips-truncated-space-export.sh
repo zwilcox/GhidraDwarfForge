@@ -15,7 +15,7 @@ case "$target" in
     *) echo "unsupported fixture target: $target" >&2; exit 2 ;;
 esac
 module="$ghidra/Ghidra/Extensions/GhidraDwarfForge"
-results="$repository/build/test-results/mips-truncated-space"
+results=${FORGE_MIPS_TRUNCATED_RESULTS:-"$repository/build/test-results/mips-truncated-space"}
 mkdir -p "$results"
 source "$repository/src/test/integration/qemu-socket.sh"
 trap qemu_socket_cleanup EXIT
@@ -73,7 +73,9 @@ for abi in o32 n32; do
     for phase in curate inspect; do
         mode=()
         if [[ "$phase" == inspect ]]; then mode=(-readOnly); fi
-        "$ghidra/support/analyzeHeadless" "$case_dir/project" TruncatedSpace \
+        launcher_key="FORGE_MIPS_TRUNCATED_${abi^^}_${phase^^}_GHIDRA"
+        export_ghidra=${!launcher_key:-$ghidra}
+        "$export_ghidra/support/analyzeHeadless" "$case_dir/project" TruncatedSpace \
             -process abi.stripped -noanalysis "${mode[@]}" \
             -scriptPath "$repository/src/test/integration/ghidra_scripts" \
             -postScript PrepareMipsTruncatedSpace.java "$phase" "$case_dir/labels.txt" "$case_dir/$phase.json" \

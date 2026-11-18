@@ -58,6 +58,7 @@ public final class DirectLeafCallSmoke {
         var caller = instructions(f.program(), f.caller());
         var leaf = instructions(f.program(), f.callee());
         Instruction call = caller.stream().filter(i -> i.getFlowType().isCall()).findFirst().orElseThrow();
+        directCallContracts(f, call);
         var evidence = DirectLeafCalls.inspect(f.program(), caller, TaskMonitor.DUMMY);
         require(evidence != null && evidence.size() == 1, "real direct call rejected");
         var saved = f.program().getRegister(f.target().equals("x86_64") ? "RBX" : "x19");
@@ -159,6 +160,58 @@ public final class DirectLeafCallSmoke {
         catch (CancelledException expected) {
             checks++;
         }
+    }
+
+    private static void directCallContracts(Fixture fixture, Instruction call) {
+        long modification = fixture.program().getModificationNumber();
+        require(DirectLeafCalls.directCall(call), "decoded ordinary call rejected by raw/listing agreement");
+        var target = fixture.callee().getEntryPoint();
+        var targetNode = new Varnode(target, fixture.program().getDefaultPointerSize());
+        var temporary = new Varnode(fixture.program().getAddressFactory().getUniqueSpace().getAddress(0x100), 8);
+        var constant = new Varnode(fixture.program().getAddressFactory().getConstantSpace().getAddress(1), 8);
+        for (var change : List.of(
+                java.util.Collections.<String, Object>singletonMap("getFlows", null),
+                java.util.Collections.<String, Object>singletonMap("getDefaultFlows", null),
+                java.util.Collections.<String, Object>singletonMap("getFallThrough", null),
+                Map.<String, Object>of("getDefaultFlows", new Address[0]),
+                Map.<String, Object>of("getDefaultFlows", new Address[] {target, target.add(1)}),
+                Map.<String, Object>of("getFlows", new Address[] {target, target.add(1)}),
+                Map.<String, Object>of("getDefaultFlows", new Address[] {target.add(1)}),
+                Map.<String, Object>of("getFallThrough", call.getFallThrough().add(1)),
+                Map.<String, Object>of("getFlowType", RefType.FALL_THROUGH),
+                Map.<String, Object>of("getFlowType", RefType.CALL_TERMINATOR),
+                Map.<String, Object>of("getLength", 0, "getParsedLength", 0),
+                Map.<String, Object>of("getMaxAddress", call.getMaxAddress().add(1)),
+                Map.<String, Object>of("getMaxAddress", temporary.getAddress()))) {
+            require(!DirectLeafCalls.directCall(decorate(call, change)), "inconsistent call metadata admitted: " + change.keySet());
+        }
+        for (Varnode[] inputs : new Varnode[][] {{}, {null}, {targetNode, targetNode}, {new Varnode(target.add(1), 8)}}) {
+            var operation = new PcodeOp(call.getAddress(), 0, PcodeOp.CALL, inputs, null);
+            require(!DirectLeafCalls.directCall(decorate(call, Map.of("getPcode", new PcodeOp[] {operation}))),
+                "malformed raw call operands admitted");
+        }
+        var withOutput = new PcodeOp(call.getAddress(), 0, PcodeOp.CALL, new Varnode[] {targetNode}, temporary);
+        require(!DirectLeafCalls.directCall(decorate(call, Map.of("getPcode", new PcodeOp[] {withOutput}))),
+            "raw call with unproved result admitted");
+        var direct = new PcodeOp(call.getAddress(), 0, PcodeOp.CALL, new Varnode[] {targetNode}, null);
+        var copy = new PcodeOp(call.getAddress(), 0, PcodeOp.COPY, new Varnode[] {constant}, temporary);
+        require(DirectLeafCalls.directCall(decorate(call, Map.of("getPcode", new PcodeOp[] {copy, direct}))),
+            "ordinary preparation before final direct transfer rejected");
+        for (PcodeOp[] operations : new PcodeOp[][] {{}, {copy}, {direct, copy}}) {
+            require(!DirectLeafCalls.directCall(decorate(call, Map.of("getPcode", operations))),
+                "missing or nonterminal raw call admitted");
+        }
+        for (int opcode : new int[] {PcodeOp.CALLIND, PcodeOp.CALLOTHER, PcodeOp.UNIMPLEMENTED,
+                PcodeOp.RETURN, PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND}) {
+            var hidden = new PcodeOp(call.getAddress(), 0, opcode, new Varnode[] {targetNode}, null);
+            require(!DirectLeafCalls.directCall(decorate(call, Map.of("getPcode", new PcodeOp[] {hidden, direct}))),
+                "extra raw control transfer admitted: " + opcode);
+        }
+        var foreign = new PcodeOp(call.getAddress(), 0, PcodeOp.CALL, new Varnode[] {temporary}, null);
+        require(!DirectLeafCalls.directCall(decorate(call, Map.of("getPcode", new PcodeOp[] {foreign},
+            "getFlows", new Address[] {temporary.getAddress()}, "getDefaultFlows", new Address[] {temporary.getAddress()}))),
+            "non-memory-space call target admitted");
+        require(modification == fixture.program().getModificationNumber(), "call-shape observations changed program");
     }
 
     private static void expect(Fixture f, Program program, long backupEnd) throws Exception {

@@ -10,6 +10,8 @@ expected = {'inferred_scalar': ('seed', gdb.TYPE_CODE_INT, 4, -123, -41),
     'inferred_pointer': ('cursor', gdb.TYPE_CODE_PTR, 8, 123, 41),
     'inferred_floating': ('scale', gdb.TYPE_CODE_FLT, 8, 1.5, 1.75)}
 rows = {}
+exits = []
+source_steps = []
 
 
 def function_symbol(name):
@@ -68,10 +70,12 @@ if variant != 'previous':
         assert actual == returned_value, (name, actual)
         rows[name]['returnedValue'] = actual
     gdb.execute('next')
+    source_steps.append('next')
     if not exits:
         gdb.execute('step')
+        source_steps.append('step')
     if not exits:
         gdb.execute('continue')
     assert exits == [0]
-(case / (variant + '-gdb.json')).write_text(json.dumps({'variant': variant, 'status': 'PASS', 'functions': rows}, indent=4) + '\n')
+(case / (variant + '-gdb.json')).write_text(json.dumps({'variant': variant, 'status': 'PASS', 'functions': rows, 'exitCodes': exits, 'sourceSteps': source_steps}, indent=4) + '\n')
 print('recovered-parameter-gdb=' + variant + ' PASS')

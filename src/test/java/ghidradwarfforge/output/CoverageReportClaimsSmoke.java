@@ -44,6 +44,7 @@ public final class CoverageReportClaimsSmoke {
     private static int rejected;
 
     public static void main(String[] args) throws Exception {
+        CoverageReportClaimsBoundarySmoke.main(args);
         String huge = CoverageReportJson.write(CoverageReportJsonSmoke.fixture(), PROFILE, () -> false);
         String known = CoverageReportJson.write(knownFixture(), PROFILE, () -> false);
         String storage = CoverageReportJson.write(storageFixture(), PROFILE, () -> false);

@@ -25,6 +25,7 @@ public final class GhidraFirmwareMemoryMapSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        FirmwareCaptureConsistencySmoke.run();
         Path path = Files.createTempFile("forge-firmware-map-", ".bin");
         byte[] original = new byte[256];
         for (int i = 0; i < original.length; i++) original[i] = (byte) i;

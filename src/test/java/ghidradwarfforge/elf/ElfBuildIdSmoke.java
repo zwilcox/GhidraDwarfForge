@@ -41,6 +41,7 @@ public final class ElfBuildIdSmoke {
                     }
                     checkExtended(file, elf64, order);
                     checkSparse(file, elf64, order);
+                    checkFollowingOverlap(file, elf64, order);
                 }
             }
             checkOverlap(file);
@@ -49,6 +50,7 @@ public final class ElfBuildIdSmoke {
             checkCancellation(file);
             checkChangedSource(file);
             checkRelationships(file);
+            checkRecords();
         }
         finally {
             try (var paths = Files.walk(directory)) {
@@ -186,6 +188,100 @@ public final class ElfBuildIdSmoke {
         fixture(path, true, LE, differentStart, List.of(section(0, 24, 4)),
             List.of(segment(0, 32, 8)), false);
         rejectUnchanged(path);
+    }
+
+    private static void checkFollowingOverlap(Path path, boolean elf64, ByteOrder order) throws Exception {
+        // Each zero-filled 12-byte note is valid alone. Their physical intervals overlap
+        // when exposed through two headers, including when the later record was seen first.
+        for (boolean reversed : new boolean[] { false, true }) {
+            long first = reversed ? 4 : 0;
+            long second = reversed ? 0 : 4;
+            for (long offset : new long[] { first, second }) {
+                fixture(path, elf64, order, new byte[32], List.of(section(offset, 12, 4)), List.of(), false);
+                byte[] before = hash(path);
+                require(ElfBuildId.read(path).hex().isEmpty(), "empty-owner note gained a build ID");
+                require(Arrays.equals(before, hash(path)), "single-view observation changed input");
+            }
+            fixture(path, elf64, order, new byte[32], List.of(section(first, 12, 4)),
+                List.of(segment(second, 12, 4)), false);
+            byte[] before = hash(path);
+            var failure = expect(IOException.class, () -> ElfBuildId.read(path));
+            require(failure.getMessage().startsWith("incompatible overlapping note views at "),
+                "overlap was not rejected at the physical interval check: " + failure);
+            require(Arrays.equals(before, hash(path)), "overlap refusal changed input");
+        }
+
+        // The GNU record occupies [0,20) at alignment four, followed by [20,32).
+        // Its eight-aligned view is valid in isolation but extends padding into the next record.
+        byte[] payload = new byte[32];
+        ByteBuffer.wrap(payload).order(order).putInt(4).putInt(1).putInt(3).put(GNU).put((byte) 0x42);
+        fixture(path, elf64, order, payload, List.of(), List.of(segment(0, 24, 8)), false);
+        require(ElfBuildId.read(path).hex().equals(Optional.of("42")), "isolated wider view lost its ID");
+        for (boolean reversed : new boolean[] { false, true }) {
+            var views = reversed ? List.of(section(20, 12, 4), section(0, 20, 4)) :
+                List.of(section(0, 20, 4), section(20, 12, 4));
+            fixture(path, elf64, order, payload, views, List.of(segment(0, 0, 4)), false);
+            var original = ElfBuildId.read(path);
+            require(original.hex().equals(Optional.of("42")) && original.occurrences().size() == 1 &&
+                original.occurrences().getFirst().containers().size() == 1,
+                "touching records or empty segment changed note identity");
+            fixture(path, elf64, order, payload, views, List.of(segment(0, 24, 8)), false);
+            byte[] before = hash(path);
+            var failure = expect(IOException.class, () -> ElfBuildId.read(path));
+            require(failure.getMessage().startsWith("incompatible overlapping note views at "),
+                "wider padding overlap was not rejected: " + failure);
+            require(Arrays.equals(before, hash(path)), "padding overlap refusal changed input");
+        }
+        System.out.println("build-id-following-overlap=PASS elf64=" + elf64 + " order=" + order);
+    }
+
+    private static void checkRecords() throws Exception {
+        var kind = ElfBuildId.ContainerKind.SECTION;
+        var container = new ElfBuildId.Container(kind, 0, 0, 17, 4, 4);
+        List<Checked> invalidContainers = List.of(
+            () -> new ElfBuildId.Container(kind, -1, 0, 17, 4, 4),
+            () -> new ElfBuildId.Container(kind, 0, -1, 17, 4, 4),
+            () -> new ElfBuildId.Container(kind, 0, 0, 0, 4, 4),
+            () -> new ElfBuildId.Container(kind, 0, 0, -1, 4, 4),
+            () -> new ElfBuildId.Container(kind, 0, Long.MAX_VALUE, 1, 4, 4),
+            () -> new ElfBuildId.Container(kind, 0, 0, 17, -1, 4),
+            () -> new ElfBuildId.Container(kind, 0, 0, 17, 4, 3));
+        for (var invalid : invalidContainers) expect(IllegalArgumentException.class, invalid);
+        var containers = new ArrayList<>(List.of(container));
+        var occurrence = new ElfBuildId.Occurrence(0, 16, 1, containers);
+        containers.clear();
+        require(occurrence.containers().equals(List.of(container)), "occurrence borrowed mutable provenance");
+        List<Checked> invalidOccurrences = List.of(
+            () -> new ElfBuildId.Occurrence(-1, 16, 1, List.of(container)),
+            () -> new ElfBuildId.Occurrence(Long.MAX_VALUE - 11, Long.MAX_VALUE, 1, List.of(container)),
+            () -> new ElfBuildId.Occurrence(0, 11, 1, List.of(container)),
+            () -> new ElfBuildId.Occurrence(0, 16, 0, List.of(container)),
+            () -> new ElfBuildId.Occurrence(0, 16, ElfBuildId.MAX_BUILD_ID_BYTES + 1, List.of(container)),
+            () -> new ElfBuildId.Occurrence(0, Long.MAX_VALUE, 1, List.of(container)),
+            () -> new ElfBuildId.Occurrence(0, 16, 1, List.of()));
+        for (var invalid : invalidOccurrences) expect(IllegalArgumentException.class, invalid);
+        var occurrences = new ArrayList<>(List.of(occurrence));
+        var observation = new ElfBuildId.Observation(Optional.of("42"), occurrences);
+        occurrences.clear();
+        require(observation.occurrences().equals(List.of(occurrence)), "observation borrowed mutable occurrences");
+        List<Checked> invalidObservations = List.of(
+            () -> new ElfBuildId.Observation(Optional.empty(), List.of(occurrence)),
+            () -> new ElfBuildId.Observation(Optional.of("42"), List.of()),
+            () -> new ElfBuildId.Observation(Optional.of(""), List.of(occurrence)),
+            () -> new ElfBuildId.Observation(Optional.of("00".repeat(ElfBuildId.MAX_BUILD_ID_BYTES + 1)), List.of(occurrence)),
+            () -> new ElfBuildId.Observation(Optional.of("0"), List.of(occurrence)),
+            () -> new ElfBuildId.Observation(Optional.of("AF"), List.of(occurrence)),
+            () -> new ElfBuildId.Observation(Optional.of("gg"), List.of(occurrence)));
+        for (var invalid : invalidObservations) expect(IllegalArgumentException.class, invalid);
+        var maximum = new ElfBuildId.Container(kind, Integer.MAX_VALUE, Long.MAX_VALUE - 13, 13, 8, 8);
+        var last = new ElfBuildId.Occurrence(Long.MAX_VALUE - 13, Long.MAX_VALUE - 1, 1, List.of(maximum));
+        require(last.descriptorOffset() + last.descriptorSize() == Long.MAX_VALUE, "valid upper offset boundary rejected");
+        var large = new ElfBuildId.Occurrence(0, 16, ElfBuildId.MAX_BUILD_ID_BYTES,
+            List.of(new ElfBuildId.Container(kind, 0, 0, 16L + ElfBuildId.MAX_BUILD_ID_BYTES, 4, 4)));
+        require(new ElfBuildId.Observation(Optional.of("00".repeat(ElfBuildId.MAX_BUILD_ID_BYTES)), List.of(large))
+            .hex().orElseThrow().length() == 2 * ElfBuildId.MAX_BUILD_ID_BYTES, "maximum ID boundary rejected");
+        System.out.println("build-id-record-boundaries=PASS invalid-containers=" + invalidContainers.size() +
+            " invalid-occurrences=" + invalidOccurrences.size() + " invalid-observations=" + invalidObservations.size());
     }
 
     private static void checkExtended(Path path, boolean elf64, ByteOrder order) throws Exception {

@@ -84,6 +84,7 @@ public final class MipsWideCallPolicySmoke {
                         catch (CancellationException expected) { checks++; }
                     }
                     if (carrier == 3) {
+                        MipsWideSignatureBoundarySmoke.run(image);
                         programCases(image, model);
                         hiddenStorageCases(image, model);
                         metadataMutations(fixture, model);

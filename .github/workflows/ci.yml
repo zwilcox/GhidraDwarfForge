@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# Keep the latest PR revision moving through the full matrix. Main publication
+# and explicit manual runs have distinct groups and are never replaced by a PR.
+concurrency:
+    group: forge-ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   GHIDRA_ARCHIVE: ghidra_12.0.3_PUBLIC_20260210.zip
   GHIDRA_ARCHIVE_SHA256: 90d3fffb20b00030dcef8d2a24dd0f422d3a61e432b3ad43f77233ac6d667981
@@ -204,6 +210,9 @@ jobs:
       - name: Validate GNU vector flag forms and invalid metadata rejection
         run: python3 src/test/integration/dwarfdump-gnu-vector.py "$PWD/validation-tool/bin/dwarfdump"
 
+      - name: Validate DWARF 5 atomic type references and reject non-types
+        run: python3 -B src/test/integration/dwarfdump-atomic-type.py "$PWD/validation-tool/bin/dwarfdump"
+
       - name: Validate complete bounded diagnostics and allocation rollback
         run: |
           sources=(build/test-results/validation-tool-build/build.*/libdwarf-2.3.2)
@@ -230,11 +239,13 @@ jobs:
             build/test-results/validation-tool-build/**/locviews-patch.log
             build/test-results/validation-tool-build/**/bounds-patch.log
             build/test-results/validation-tool-build/**/vector-patch.log
+            build/test-results/validation-tool-build/**/atomic-patch.log
             build/test-results/validation-tool-build/**/config.log
             build/test-results/validation-tool-build/**/make.log
             build/test-results/validation-tool-build/**/dependencies.txt
             build/test-results/validation-tool-build/**/version.txt
             build/test-results/dwarfdump-diagnostic-capacity/
+            build/test-results/dwarfdump-atomic-type/
             build/test-results/dwarfdump-configuration/
             build/test-results/dwarfdump-eh-terminators/
             build/test-results/dwarfdump-locviews/
@@ -301,6 +312,7 @@ jobs:
             'src/main/java/ghidradwarfforge/output/ArtifactPairPublisher.java'
             'src/main/java/ghidradwarfforge/output/CompanionArtifactPublisher.java'
             'src/test/java/ghidradwarfforge/output/CompanionArtifactPublisherSmoke.java'
+            'src/test/java/ghidradwarfforge/output/CompanionObservationRecoverySmoke.java'
           )
           & javac --release 21 -d $classes @sources 2>&1 | Tee-Object -FilePath "$results/compile.log"
           if ($LASTEXITCODE -ne 0) { throw 'Companion publication test compilation failed' }
@@ -663,6 +675,17 @@ jobs:
           ./gradlew clean
           mkdir -p build/test-results/extension-build
           {
+            # Resolve coverage downloads before tests. Maven Central may rate-limit
+            # a fresh runner; only this preparation task is retried, never a test.
+            for attempt in 1 2 3; do
+              if ./gradlew --no-daemon prepareIntegrationCoverage; then
+                break
+              fi
+              if [[ "$attempt" -eq 3 ]]; then
+                exit 1
+              fi
+              sleep "$((attempt * 15))"
+            done
             src/test/integration/headless-wrapper.sh
             python3 src/test/integration/attachment-launcher.py
             src/test/integration/architecture-neutrality.sh
@@ -675,6 +698,7 @@ jobs:
             python3 -B -m unittest discover -s src/test/coverage -p 'test_*.py' -v
             python3 -B src/test/integration/mips-fpr-system-diagnostics-test.py
             python3 -B src/test/integration/curated-thunk-entry-test.py
+            python3 -B src/test/integration/build-mips-gdb-test.py
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-rename-contract.c -o build/linux-rename-contract
             build/linux-rename-contract
             cc -std=c11 -Wall -Wextra -Werror src/test/native/linux-build-id-lock-contract.c -o build/linux-build-id-lock-contract
@@ -691,7 +715,7 @@ jobs:
               fileDigestsSmoke elfBuildIdSmoke \
               debugCompressionSmoke matchedElfPrefixSmoke matchedElfAllocationsSmoke executableProgramBytesSmoke \
               debuglinkCandidateContentSmoke ownedDebuglinkCandidateSmoke \
-              syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke annotationTextSmoke annotatedSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
+              syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke buildIdHelperSmoke annotationTextSmoke annotatedSourceSmoke typeGraphSmoke defaultTypeIdentitySmoke \
               ghidraVariableIdentitySmoke ghidraInstructionEvidenceSmoke sourceCoverageSmoke sourceCoverageInventorySmoke coverageComparisonPresentationSmoke coverageVariableComparisonSmoke coverageTypeEvidenceSmoke typeGraphEvidenceSmoke typeCoverageSmoke locationEmissionPlanSmoke locationCoverageSmoke variableCoverageInventorySmoke exportCoverageSmoke coverageComparisonSmoke coveragePresentationSmoke coverageReportJsonSmoke reportValueReaderSmoke coverageReportClaimsSmoke exportReportCoverageSmoke \
               variableStorageSmoke registerPrefixSmoke registerAliasSmoke registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke inheritanceModelSmoke inheritanceBindingEvidenceSmoke declarationBindingEvidenceSmoke cxxProfileSmoke vtableBindingEvidenceSmoke vtableSymbolsSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke \
               stackFirstUseSmoke \
@@ -701,7 +725,7 @@ jobs:
               dwarfAddressRangesSmoke \
               dwarfLocationListsSmoke artifactPairPublisherSmoke \
               packagedNativeLibrariesSmoke existingDebugSidecarSmoke callFrameEncoderSmoke unwindFlowSmoke ghidraUnwindInstructionsSmoke unwindAbiProfileSmoke \
-              unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke callSiteEvidenceSmoke tailStateProofSmoke callEntryContractSmoke callValueSmoke callArgumentFlowSmoke boundedSwitchProofSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
+              unwindCallsSmoke unwindStackSeparationSmoke unwindOptionsSmoke elfRelocatedPointersSmoke ghidraUnwindCallsSmoke callSiteEvidenceSmoke callSitePlanSmoke tailStateProofSmoke callEntryContractSmoke callValueSmoke callArgumentFlowSmoke boundedSwitchProofSmoke unwindFrameRowsSmoke unwindEvidenceJsonSmoke elfCodeBytesSmoke originalFrameRangesSmoke originalFrameSourcesSmoke elfRuntimeRelocationsSmoke elfRelocationEffectsSmoke \
               extendedSectionNumberingSmoke elfImageReaderSmoke \
               elfCopyCancellationSmoke ghidraImageBaseSmoke exportConsistencySmoke projectOutputProtectionSmoke firmwareImageLifecycleSmoke buildExtension
             python3 -B src/test/coverage/mutation-check.py \
@@ -709,10 +733,13 @@ jobs:
                 --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR" \
                 --output build/test-results/extension-build/high-risk-mutations
             python3 -B src/test/integration/check-call-values.py build/test-results/call-values/vectors.json
-            python3 -B src/test/integration/check-call-values.py build/test-results/call-argument-flow/vectors.json --min-count 240
+            python3 -B src/test/integration/check-call-values.py build/test-results/call-argument-flow/vectors.json --min-count 576
             python3 -B src/test/integration/debuglink-basename.py \
                 --jar "$PWD/build/libs/GhidraDwarfForge.jar" \
                 --results "$PWD/build/test-results/extension-build/debuglink-basename"
+            ./gradlew --no-daemon prepareIntegrationCoverage
+            export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
+            export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/host-integration-coverage/collections"
             python3 -B src/test/integration/linux-file-metadata.py \
                 --jar "$PWD/build/libs/GhidraDwarfForge.jar" --ghidra "$GHIDRA_INSTALL_DIR" \
                 --results "$PWD/build/test-results/extension-build/linux-file-metadata"
@@ -739,10 +766,55 @@ jobs:
               --java-home "$JAVA_HOME" --agent build/test-coverage-tools/jacocoagent.jar \
               --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
               --output build/test-results/extension-build/integration-coverage-controls
+          python3 -B src/test/coverage/launcher-coverage-execution.py \
+              --java-home "$JAVA_HOME" --agent build/test-coverage-tools/jacocoagent.jar \
+              --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --output build/test-results/extension-build/launcher-coverage-controls
+          python3 -B src/test/coverage/combined-coverage-execution.py \
+              --java-home "$JAVA_HOME" --agent build/test-coverage-tools/jacocoagent.jar \
+              --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --output build/test-results/extension-build/combined-coverage-controls
+          python3 -B src/test/coverage/javaexec-coverage.py \
+              --jar build/libs/GhidraDwarfForge.jar --main-classes build/classes/java/main \
+              --test-classes build/classes/java/test --tasks build/test-coverage/tasks \
+              --sessions build/test-coverage/sessions --executions build/jacoco \
+              --expected-tasks src/test/coverage/javaexec-tasks.json \
+              --output build/combined-javaexec-input/collection --commit "$SOURCE_COMMIT" --run-id "$SOURCE_RUN"
+          cp build/libs/GhidraDwarfForge.jar build/combined-javaexec-input/production.jar
+          cp -R build/test-coverage-tools/report-libs build/combined-javaexec-input/tools
+          cp build/test-coverage-tools/report-libs.json build/combined-javaexec-input/tools.json
           python3 -B support/test-coverage-report.py \
               --xml build/test-coverage/coverage.xml --tasks build/test-coverage/tasks \
               --output build/test-coverage/public --repository "$SOURCE_REPOSITORY" \
               --commit "$SOURCE_COMMIT" --run-id "$SOURCE_RUN"
+          python3 -B src/test/coverage/integration-report.py \
+              --jar build/libs/GhidraDwarfForge.jar \
+              --collections build/host-integration-coverage/collections --output build/host-integration-coverage/report \
+              --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --sources src/main/java --commit "$SOURCE_COMMIT" \
+              --require-suite linux-file-metadata --require-suite linux-directory-sync \
+              --require-suite linux-metadata-visibility
+
+      - name: Verify offline coverage tool reuse and altered-bundle refusals
+        run: |
+          python3 -B src/test/coverage/coverage-tools-reuse.py \
+              --bundle build/combined-javaexec-input \
+              --output build/test-results/extension-build/coverage-tools-reuse
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: integration-java-coverage-linux-host
+          path: build/host-integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: combined-javaexec-input
+          path: build/combined-javaexec-input/
+          if-no-files-found: error
+          retention-days: 14
 
       - uses: actions/upload-artifact@v7
         with:
@@ -875,8 +947,14 @@ jobs:
       matrix:
         target: [ x86_64, aarch64, arm32, mips32be, mips32le ]
 
+    env:
+      FORGE_COVERAGE_TOOLS_BUNDLE: ${{ github.workspace }}/build/coverage-tools-input
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: combined-javaexec-input
+          path: build/coverage-tools-input
 
       - uses: actions/setup-java@v6
         with:
@@ -1088,6 +1166,17 @@ jobs:
           python3 src/test/native/validate-call-site-jna.py --profile "$TARGET" \
             --sections "$results/sections" --output "$results/validation"
 
+      - name: Prepare separate coverage for existing integration JVMs
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon --offline -PtestCoverage=true prepareIntegrationCoverage
+          if [[ "$TARGET" == x86_64 ]]; then
+              echo "FORGE_INTEGRATION_COVERAGE_AGENT=$PWD/build/test-coverage-tools/jacocoagent.jar" >> "$GITHUB_ENV"
+              echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"
+          fi
+
       - name: Compiler inheritance references and native exporter runtime controls
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
         env:
@@ -1157,6 +1246,80 @@ jobs:
 
       - name: Install extension
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
+
+      - name: Location address width, preserved failures and debugger values
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
+          export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections"
+          roles=(exec)
+          if [[ "$TARGET" == x86_64 ]]; then roles+=(pie); fi
+          for role in "${roles[@]}"; do
+              for mode in listed stable listed-indirect stable-indirect; do
+                  python3 -B src/test/integration/location-width-producer.py \
+                      --target "$TARGET" --role "$role" --mode "$mode" \
+                      --results "$PWD/build/test-results/location-width-producer/$TARGET/$role/$mode" \
+                      --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+                      --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
+                      --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+                      --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME" --dwarfdump "$DWARFDUMP"
+              done
+          done
+          if [[ "$TARGET" == mips32be ]]; then
+              python3 -B src/test/coverage/location-width-mutations.py \
+                  --baseline "$PWD/build/test-results/location-width-producer/$TARGET/exec/stable" \
+                  --output "$PWD/build/test-results/location-width-mutations" \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME"
+          fi
+
+      - name: Isolated producer failure cleanup and validated retries
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 -B src/test/integration/producer-failures.py \
+              --output "$PWD/build/test-results/producer-failures" \
+              --source-archive "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/third_party/libdwarf/source/libdwarf-2.3.2.tar.xz" \
+              --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --test-classes "$PWD/build/classes/java/test" --ghidra "$GHIDRA_INSTALL_DIR" \
+              --java "$JAVA_HOME/bin/java" --dwarfdump "$DWARFDUMP"
+
+      - name: Qualified and scalar types against compiler and GDB references
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 -B src/test/integration/qualified-type-producer.py \
+              --results "$PWD/build/test-results/qualified-type-producer" \
+              --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME" --dwarfdump "$DWARFDUMP"
+          python3 -B src/test/coverage/qualified-type-mutations.py \
+              --baseline "$PWD/build/test-results/qualified-type-producer" \
+              --output "$PWD/build/test-results/qualified-type-mutations" \
+              --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR"
+
+      - name: Callable types, unknown conventions and address-free declarations
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 -B src/test/integration/callable-type-producer.py \
+              --results "$PWD/build/test-results/callable-type-producer" \
+              --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
+              --producer "$PWD/native-integration/libdwarfp.so.2.3.2" \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME" --dwarfdump "$DWARFDUMP"
+          python3 -B src/test/coverage/callable-type-mutations.py \
+              --baseline "$PWD/build/test-results/callable-type-producer" \
+              --output "$PWD/build/test-results/callable-type-mutations" \
+              --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR"
+
+      - name: Producer cleanup and buffer-bound mutation controls
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 -B src/test/coverage/producer-failure-mutations.py \
+              --baseline "$PWD/build/test-results/producer-failures" \
+              --output "$PWD/build/test-results/producer-failure-mutations" \
+              --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR"
 
       - name: Saved inheritance through ordinary export and read-only reopening
         if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
@@ -1236,13 +1399,6 @@ jobs:
                   --probe-report "$probe_report" --dwarfdump "$DWARFDUMP"
           done
 
-      - name: Prepare separate coverage for existing integration JVMs
-        if: matrix.target == 'x86_64'
-        run: |
-          ./gradlew --no-daemon -PtestCoverage=true prepareIntegrationCoverage
-          echo "FORGE_INTEGRATION_COVERAGE_AGENT=$PWD/build/test-coverage-tools/jacocoagent.jar" >> "$GITHUB_ENV"
-          echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"
-
       - name: Check packaged GDB companion with live compiler references
         if: matrix.target == 'x86_64'
         run: |
@@ -1280,7 +1436,7 @@ jobs:
       - name: Measure a bounded installed headless exporter sample
         if: matrix.target == 'x86_64'
         run: |
-          ./gradlew --no-daemon -PtestCoverage=true prepareHeadlessCoverage
+          ./gradlew --no-daemon --offline -PtestCoverage=true prepareHeadlessCoverage
           python3 -B src/test/coverage/headless-coverage.py \
             --ghidra "$GHIDRA_INSTALL_DIR" \
             --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
@@ -1664,8 +1820,13 @@ jobs:
         run: |
           set -euo pipefail
           for role in exec exec.no-sections pie; do
-            FIXTURE_ROLE="$role" DEBUG_ARTIFACT_SUFFIX=forge-container.dbg \
-              src/test/integration/qemu-gdb-oracle.sh "$TARGET"
+            if [[ "$TARGET" == mips32be ]]; then
+              FIXTURE_ROLE="$role" DEBUG_ARTIFACT_SUFFIX=forge-container.dbg \
+                python3 src/test/integration/qemu-gdb-port-collision.py "$TARGET"
+            else
+              FIXTURE_ROLE="$role" DEBUG_ARTIFACT_SUFFIX=forge-container.dbg \
+                src/test/integration/qemu-gdb-oracle.sh "$TARGET"
+            fi
           done
 
       - name: Extended ELF section tables through export and GDB
@@ -1741,7 +1902,13 @@ jobs:
                   fi
                   attachment_results="$RUNNER_TEMP/forge-attachment-production/$TARGET.$role"
                   attachment_status=0
+                  attachment_coverage=()
+                  if [[ "$TARGET" == x86_64 ]]; then
+                      attachment_coverage=("FORGE_INTEGRATION_COVERAGE_AGENT=$FORGE_INTEGRATION_COVERAGE_AGENT"
+                          "FORGE_INTEGRATION_COVERAGE_OUTPUT=$attachment_results/coverage")
+                  fi
                   sudo -n env JAVA_HOME="$JAVA_HOME" JAVA="$JAVA_HOME/bin/java" JAVAC="$JAVA_HOME/bin/javac" \
+                      "${attachment_coverage[@]}" \
                       python3 src/test/integration/attachment-elf-controller.py --production-linux-host \
                       --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
                       --ghidra "$GHIDRA_INSTALL_DIR" --fixture-dir "$PWD/build/fixtures" \
@@ -1756,6 +1923,12 @@ jobs:
                           tee "$PWD/build/test-results/attachment-elf-controller/$TARGET.$role.tar.gz" > /dev/null
                   fi
                   if [[ "$attachment_status" -ne 0 ]]; then exit "$attachment_status"; fi
+                  if [[ "$TARGET" == x86_64 ]]; then
+                      # Transfer only bounded collector receipts/probes. Extraction as
+                      # the runner avoids root-owned collection directories in the report.
+                      sudo -n tar -cf - -C "$attachment_results/coverage" . |
+                          tar --no-same-owner -xf - -C "$FORGE_INTEGRATION_COVERAGE_OUTPUT"
+                  fi
               fi
               if [[ "$role" == "exec.no-sections" ]]; then
                   python3 -B src/test/integration/attachment-sectionless-validator.py \
@@ -2025,7 +2198,11 @@ jobs:
           if [[ "$TARGET" == x86_64 || "$TARGET" == aarch64 ]]; then
               export FORGE_LLDB=lldb-18
           fi
-          src/test/integration/bitfield-values-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+          if [[ "$TARGET" == aarch64 ]]; then
+              export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
+              export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections"
+          fi
+          python3 src/test/integration/bitfield-values.py "$GHIDRA_INSTALL_DIR" "$TARGET"
 
       - name: Validate saved MMIO layouts and qualifier preservation
         if: matrix.target == 'x86_64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
@@ -2077,6 +2254,12 @@ jobs:
               python3 src/test/integration/i386-extended-return-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
           python3 src/test/integration/i386-extended-return-export.py "$GHIDRA_INSTALL_DIR" --target x86_64 --role exec
+
+      - name: i386 x87 return correction at the compiler input-region boundary
+        if: matrix.target == 'x86_64'
+        run: |
+          python3 src/test/integration/i386-input-region-export.py "$GHIDRA_INSTALL_DIR" \
+              --results build/test-results/i386-input-region
 
       - name: i386 libc vector aggregate and explicit convention matrix
         if: matrix.target == 'x86_64'
@@ -2253,6 +2436,10 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
+          if [[ "$TARGET" == aarch64 ]]; then
+              export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
+              export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections"
+          fi
           for role in exec pie pie-rebased; do
               python3 src/test/integration/stack-value-transitions-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
@@ -2377,7 +2564,9 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          python3 src/test/integration/namespace-globals-native.py "$GHIDRA_INSTALL_DIR" "$TARGET"
+          FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar" \
+              FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections" \
+              python3 src/test/integration/namespace-globals-native.py "$GHIDRA_INSTALL_DIR" "$TARGET"
           for role in exec pie pie-rebased; do
               python3 src/test/integration/same-name-types-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
@@ -2711,6 +2900,8 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
+          export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
+          export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections"
           python3 src/test/integration/context-boundaries.py "$TARGET" "$GHIDRA_INSTALL_DIR" \
               "$PWD/native-integration/libdwarf.so.2.3.2" \
               "$PWD/native-integration/libdwarfp.so.2.3.2" \
@@ -2780,7 +2971,10 @@ jobs:
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
         env:
           TARGET: ${{ matrix.target }}
-        run: src/test/integration/mips-truncated-space-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
+        run: |
+          FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar" \
+          FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections" \
+              python3 -B src/test/integration/mips-truncated-space.py "$GHIDRA_INSTALL_DIR" "$TARGET"
 
       - name: MIPS N32 and N64 scalar ABI runtime and loader profiles
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
@@ -3270,9 +3464,88 @@ jobs:
               --sources src/main/java --commit "$SOURCE_COMMIT" \
               --require-suite gdb-companion --require-suite source-relocation \
               --require-suite derived-validation \
-              --require-suite build-id-installation --require-suite instruction-context \
+              --require-suite build-id-installation --require-suite build-id-identity --require-suite instruction-context \
               --require-suite source-context --require-suite annotation-inventory --require-suite equate-evidence \
-              --require-suite annotation-export --require-suite failed-source-export
+              --require-suite equate-constants --require-suite equate-retained-names \
+              --require-suite bitfield-values \
+              --require-suite annotation-export --require-suite failed-source-export \
+              --require-suite class-scopes --require-suite inheritance-producer --require-suite inheritance-names \
+              --require-suite build-id-command --require-suite cfi-encoder \
+              --require-suite cfi-composition-explicit --require-suite cfi-composition-plain \
+              --require-suite cfi-composition-gabi --require-suite cfi-composition-gnu \
+              --require-suite linux-attachment-exec --require-suite linux-attachment-pie \
+              --require-suite linux-attachment-exec-no-build-id \
+              --require-suite gui-script-manager --require-suite gui-script-manager-loader \
+              --require-suite gui-script-manager-compressed --require-suite gui-script-manager-unwind \
+              --require-suite lexical-shadow --require-suite object-parameter --require-suite object-return \
+              --require-suite formatter-export --require-suite calling-convention --require-suite custom-call-storage \
+              --require-suite call-site-packaged \
+              --require-suite lexical-statics --require-suite lexical-statics-controls \
+              --require-suite recovered-statics-positive --require-suite recovered-statics-controls \
+              --require-suite stack-control-flow --require-suite saved-inheritance --require-suite external-declarations \
+              --require-suite recovered-returns --require-suite recovered-parameters --require-suite stack-value-transitions \
+              --require-suite producer-failures --require-suite qualified-type-producer --require-suite namespace-globals --require-suite mmio-failure-controls \
+              --require-suite callable-type-producer --require-suite location-width-producer
+
+      - name: Verify and report AArch64 integration coverage
+        if: matrix.target == 'aarch64'
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 -B src/test/coverage/integration-report.py \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --collections build/integration-coverage/collections --output build/integration-coverage/report \
+              --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite stack-value-transitions \
+              --require-suite bitfield-values --require-suite namespace-globals --require-suite location-width-producer
+
+      - uses: actions/upload-artifact@v7
+        if: always() && matrix.target == 'aarch64'
+        with:
+          name: integration-java-coverage-linux-aarch64
+          path: build/integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Verify and report MIPS STORE integration coverage
+        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 -B src/test/coverage/integration-report.py \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --collections build/integration-coverage/collections --output build/integration-coverage/report \
+              --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite mips-truncated-space \
+              --require-suite location-width-producer --require-suite context-boundaries
+
+      - name: Verify and report ARM32 location integration coverage
+        if: matrix.target == 'arm32'
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 -B src/test/coverage/integration-report.py \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --collections build/integration-coverage/collections --output build/integration-coverage/report \
+              --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
+              --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite location-width-producer \
+              --require-suite context-boundaries
+
+      - uses: actions/upload-artifact@v7
+        if: always() && matrix.target == 'arm32'
+        with:
+          name: integration-java-coverage-linux-arm32
+          path: build/integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        if: always() && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
+        with:
+          name: integration-java-coverage-linux-${{ matrix.target }}
+          path: build/integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
 
       - uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'
@@ -3323,8 +3596,14 @@ jobs:
     needs: [ release-package, native-linux ]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      FORGE_COVERAGE_TOOLS_BUNDLE: ${{ github.workspace }}/build/coverage-tools-input
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: combined-javaexec-input
+          path: build/coverage-tools-input
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -3375,7 +3654,7 @@ jobs:
               sha256sum -c RELEASE-SHA256SUMS)
           export TMPDIR="$RUNNER_TEMP/cortex-m-tmp"
           mkdir -p "$TMPDIR"
-          ./gradlew --no-daemon -PtestCoverage=true prepareIntegrationCoverage
+          ./gradlew --no-daemon --offline -PtestCoverage=true prepareIntegrationCoverage
           export FORGE_INTEGRATION_COVERAGE_AGENT="$PWD/build/test-coverage-tools/jacocoagent.jar"
           export FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections"
           python3 src/test/integration/cortex-m-suite.py \
@@ -3614,8 +3893,14 @@ jobs:
     # the complete Linux reference/GUI job to succeed.
     if: ${{ always() && !cancelled() && needs.release-package.result == 'success' && needs.native-windows.result == 'success' && needs.cortex-m-profile.result == 'success' }}
     runs-on: windows-latest
+    env:
+      FORGE_COVERAGE_TOOLS_BUNDLE: ${{ github.workspace }}/build/coverage-tools-input
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: combined-javaexec-input
+          path: build/coverage-tools-input
 
       - uses: actions/setup-java@v6
         with:
@@ -3743,7 +4028,7 @@ jobs:
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
           & .\gradlew.bat formatterPlanSmoke exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
             dwarfInfoRepairSmoke dwarfInfoRepairBoundarySmoke sourceRelocationBoundarySmoke `
-            syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
+            syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke buildIdHelperSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `
             opaqueRegisterEffectsSmoke registerBodyCoverageSmoke outsideBodyFlowSmoke mixedParameterPrefixSmoke mipsAbiFlagsSmoke arm32CallPolicySmoke cortexM3ProfileSmoke ghidraCortexM3ProfileSmoke firmwareMemoryMapSmoke ghidraFirmwareMemoryMapSmoke ghidraMmioEvidenceSmoke firmwareInputsSmoke mipsFp32PairSmoke qualifiedFunctionNameSmoke externalFunctionInventorySmoke dwarfAddressRangesSmoke `
             callOriginSymbolsSmoke functionAliasSymbolsSmoke dynamicSymbolMirrorSmoke sectionlessDynamicSymbolsSmoke sectionlessUnwindSmoke mipsFunctionAliasSymbolsSmoke arm32FunctionAliasSymbolsSmoke ghidraFunctionAliasesSmoke localSymbolMergeSmoke arm32ModeSymbolsSmoke ghidraArm32FunctionModesSmoke arm32SectionModesSmoke ghidraArm32SectionModesSmoke ghidraArmBe8ProfileSmoke dynamicParameterStorageSmoke indirectParameterStorageSmoke curatedThunkSmoke functionRelationsSmoke functionRelationExtractionSmoke callingConventionPolicySmoke functionPointerCallPolicySmoke customCallStorageSmoke compilerCallPolicySmoke i386AbiSelectionSmoke aarch64AbiSelectionSmoke aarch64ParameterAllocationSmoke i386ParameterAllocationSmoke allocationDecompilerSmoke floatingTypeLayoutSmoke mipsN32ParameterAllocationSmoke delayedReturnPrefixSmoke truncatedStackDepthSmoke mipsFloatingCallPolicySmoke mipsAggregateCallPolicySmoke mipsWideCallPolicySmoke formalFunctionReturnSmoke recoveredReturnSmoke recoveredParameterSmoke dynamicCompositeOrderSmoke truncatedSpaceStoreSmoke `
             registerCopySmoke secondRegisterCopySmoke registerCopyChainSmoke laterRegisterLocalSmoke definedRegisterLocalSmoke localDefinitionFlowSmoke localCallLifetimeSmoke callMemoryEffectsSmoke localMappingsSmoke mutableStackMappingsSmoke compositeValueFlowSmoke lexicalScopeEvidenceSmoke lexicalScopeModelSmoke objectParameterSmoke classScopeSmoke classScopeNamesSmoke globalScopeNamesSmoke classScopeModelSmoke inheritanceModelSmoke inheritanceBindingEvidenceSmoke declarationBindingEvidenceSmoke cxxProfileSmoke vtableBindingEvidenceSmoke vtableSymbolsSmoke classBindingEvidenceSmoke staticBindingEvidenceSmoke staticScopeExtractionSmoke staticRecoverySmoke classScopeExtractionSmoke mergedLocalLifetimeSmoke stackValueFlowSmoke intraInstructionFlowSmoke registerByteSliceFlowSmoke armCompositeParameterAllocationSmoke armHfaParameterAllocationSmoke upperAliasValueFlowSmoke terminalStackValueSmoke stackLocalIdentitySmoke stackLocalLifetimeSmoke stackControlFlowSmoke stackSpillSmoke directLeafCallSmoke inspectedCallsSmoke compositeRegisterPrefixSmoke stackFirstUseSmoke pathTraversalSmoke fileDigestsSmoke `
@@ -3936,7 +4221,7 @@ jobs:
       - name: Prepare separate Windows integration coverage
         shell: pwsh
         run: |
-          .\gradlew.bat --no-daemon -PtestCoverage=true prepareIntegrationCoverage
+          .\gradlew.bat --no-daemon --offline -PtestCoverage=true prepareIntegrationCoverage
           if ($LASTEXITCODE -ne 0) { throw 'Integration coverage preparation failed' }
           $env:FORGE_INTEGRATION_COVERAGE_AGENT = (Resolve-Path 'build/test-coverage-tools/jacocoagent.jar').Path
           $env:FORGE_INTEGRATION_COVERAGE_OUTPUT = Join-Path $PWD 'build/integration-coverage/collections'
@@ -4203,6 +4488,84 @@ jobs:
           retention-days: 14
           include-hidden-files: true
 
+  combined-java-coverage:
+    needs: [ extension-build, target-preflight, cortex-m-profile, windows-host ]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/download-artifact@v8
+        with:
+          name: combined-javaexec-input
+          path: build/combined-inputs/javaexec
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-linux
+          path: build/combined-inputs/linux
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-linux-host
+          path: build/combined-inputs/linux-host
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-linux-aarch64
+          path: build/combined-inputs/linux-aarch64
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-linux-mips32be
+          path: build/combined-inputs/linux-mips32be
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-linux-arm32
+          path: build/combined-inputs/linux-arm32
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-linux-mips32le
+          path: build/combined-inputs/linux-mips32le
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-windows
+          path: build/combined-inputs/windows
+      - uses: actions/download-artifact@v8
+        with:
+          name: integration-java-coverage-firmware
+          path: build/combined-inputs/firmware
+      - name: Verify combined Java measurement and enforce accepted targets
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+          SOURCE_RUN: ${{ github.run_id }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          BASE_COMMIT: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$BASE_COMMIT" ]]; then
+              BASE_COMMIT="$(git rev-parse "$SOURCE_COMMIT^")"
+          fi
+          python3 -B src/test/coverage/hosted-combined-report.py \
+              --bundle build/combined-inputs/javaexec --expected-tasks src/test/coverage/javaexec-tasks.json \
+              --linux build/combined-inputs/linux --linux-host build/combined-inputs/linux-host \
+              --linux-aarch64 build/combined-inputs/linux-aarch64 \
+              --linux-arm32 build/combined-inputs/linux-arm32 \
+              --linux-mips32be build/combined-inputs/linux-mips32be \
+              --linux-mips32le build/combined-inputs/linux-mips32le \
+              --windows build/combined-inputs/windows --firmware build/combined-inputs/firmware \
+              --inventory src/test/coverage/critical-sources.json --sources src/main/java \
+              --java "$JAVA_HOME/bin/java" --output build/combined-java-coverage \
+              --commit "$SOURCE_COMMIT" --base-commit "$BASE_COMMIT" --run-id "$SOURCE_RUN" \
+              --repository "$SOURCE_REPOSITORY"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: combined-java-coverage
+          path: build/combined-java-coverage/
+          if-no-files-found: error
+          retention-days: 14
+
   required-validation:
     if: always()
     needs:
@@ -4218,6 +4581,7 @@ jobs:
       - windows-host
       - attachment-windows
       - windows-attachment-gdb
+      - combined-java-coverage
     runs-on: ubuntu-24.04
     steps:
       - name: Require every supported validation path
@@ -4234,6 +4598,7 @@ jobs:
           WINDOWS_HOST_RESULT: ${{ needs.windows-host.result }}
           ATTACHMENT_WINDOWS_RESULT: ${{ needs.attachment-windows.result }}
           WINDOWS_ATTACHMENT_GDB_RESULT: ${{ needs.windows-attachment-gdb.result }}
+          COMBINED_COVERAGE_RESULT: ${{ needs.combined-java-coverage.result }}
         run: |
           set -euo pipefail
           failed=0
@@ -4241,7 +4606,8 @@ jobs:
               "$NATIVE_WINDOWS_RESULT" "$EXTENSION_BUILD_RESULT" \
               "$RELEASE_PACKAGE_RESULT" "$TARGET_PREFLIGHT_RESULT" \
               "$LINUX_REFERENCE_RESULT" "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT" \
-              "$WINDOWS_ATTACHMENT_GDB_RESULT" "$PERF_BUILD_ID_RESULT" "$CORTEX_M_RESULT"; do
+              "$WINDOWS_ATTACHMENT_GDB_RESULT" "$PERF_BUILD_ID_RESULT" "$CORTEX_M_RESULT" \
+              "$COMBINED_COVERAGE_RESULT"; do
             if [[ "$result" != success ]]; then
               failed=1
             fi
@@ -4266,10 +4632,15 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/download-artifact@v8
         with:
           name: test-code-coverage
           path: build/test-coverage
+      - uses: actions/download-artifact@v8
+        with:
+          name: combined-java-coverage
+          path: build/combined-java-coverage
       - name: Publish last validated main coverage
         env:
           GH_TOKEN: ${{ github.token }}
@@ -4279,4 +4650,5 @@ jobs:
         run: |
           python3 -B support/publish-test-coverage.py \
               --directory build/test-coverage --repository "$SOURCE_REPOSITORY" \
+              --combined-directory build/combined-java-coverage \
               --commit "$SOURCE_COMMIT" --run-id "$SOURCE_RUN"

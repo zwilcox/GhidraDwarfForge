@@ -20,6 +20,7 @@ public final class Dwarf5MultiFileSmoke {
     private Dwarf5MultiFileSmoke() { }
 
     public static void run() {
+        checkEncodingBoundaries();
         var source = SyntheticSourceFile.build("fixture", "test", List.of(
             new FunctionText("first", 0x1000, "int first(void)\n{\n    return 1;\n}\n", null,
                 List.of(new RelativeLine(3, List.of(0x1004L, 0x2004L)))),
@@ -86,6 +87,87 @@ public final class Dwarf5MultiFileSmoke {
         }
         catch (IllegalArgumentException expectedFailure) { }
         System.out.println("dwarf-multifile-smoke=PASS widths=2 byte-orders=2 raw-line-and-source-oracle=PASS");
+    }
+
+    /** Decode complete programs; expected rows come directly from source evidence. */
+    private static void checkEncodingBoundaries() {
+        int[] lines = { 0, 1, 2, 63, 64, 65, 127, 128, 129, 8191, 8192, 8193,
+            16383, 16384, Integer.MAX_VALUE };
+        int cases = 0;
+        for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+            for (int width : new int[] { 4, 8 }) {
+                long base = width == 4 ? 0xfffffc00L : Long.MAX_VALUE - 1023;
+                var functions = List.of(new FunctionSymbol("split", base, List.of(
+                    new FunctionRange(base, 256), new FunctionRange(base + 512, 128))));
+                for (int first : lines) {
+                    for (int second : lines) {
+                        var evidence = List.of(new SyntheticSourceFile.SourceLine(first,
+                                List.of(base, base + 512)),
+                            new SyntheticSourceFile.SourceLine(second, List.of(base + 127)),
+                            new SyntheticSourceFile.SourceLine(1, List.of(base + 255)));
+                        var emitted = Dwarf5LineTable.buildWithPlan("source.c", "/source", width,
+                            order, functions, evidence);
+                        var decoded = decode(emitted.section(), width, order);
+                        require(decoded.rows().equals(List.of(new Row(base, 0, first),
+                            new Row(base + 127, 0, second), new Row(base + 255, 0, 1),
+                            new Row(base + 512, 0, first))),
+                            "signed line transitions or sequence reset changed source evidence");
+                        require(decoded.ends().equals(List.of(base + 256, base + 640)),
+                            "line sequence end or wide address was truncated");
+                        require(java.util.Arrays.equals(emitted.section(),
+                            Dwarf5LineTable.build("source.c", "/source", width, order,
+                                functions, evidence.reversed())), "line transition order changed bytes");
+                        byte[] mutable = emitted.section();
+                        mutable[0] ^= 0x7f;
+                        require(mutable[0] != emitted.section()[0], "line bytes escaped mutable");
+                        cases++;
+                    }
+                }
+            }
+        }
+        for (String name : new String[] { null, "", " \t", "bad\0suffix" }) {
+            reject(() -> Dwarf5LineTable.FileLayout.single(name), "invalid single filename");
+        }
+        reject(() -> new Dwarf5LineTable.FilePosition(-1, 1), "negative file index");
+        reject(() -> new Dwarf5LineTable.FilePosition(0, -1), "negative source line");
+        require(new Dwarf5LineTable.FilePosition(0, 0).line() == 0, "unknown line zero rejected");
+        for (int width : new int[] { Integer.MIN_VALUE, 0, 1, 2, 3, 5, 7, 9, Integer.MAX_VALUE }) {
+            reject(() -> Dwarf5LineTable.build("source.c", width, ByteOrder.LITTLE_ENDIAN,
+                List.of(), List.of()), "unsupported line address width");
+        }
+        var source = SyntheticSourceFile.build("fixture", "test", List.of(
+            new FunctionText("first", 0x1000, "int first(void) { return 1; }\n", null)));
+        var plan = SourcePartitionPlan.build(source, 1, () -> false);
+        var names = new ArrayList<>(plan.parts().stream().map(part -> "part-" + part.file() + ".c").toList());
+        var layout = Dwarf5LineTable.FileLayout.partitioned("index.c", names, plan);
+        List<String> expectedNames = List.copyOf(layout.names());
+        names.set(0, "changed.c");
+        require(layout.names().equals(expectedNames), "caller changed retained file table");
+        try {
+            layout.names().set(0, "changed.c");
+            throw new AssertionError("line file table escaped mutable");
+        }
+        catch (UnsupportedOperationException expected) { }
+        List<String> valid = expectedNames.subList(1, expectedNames.size());
+        reject(() -> Dwarf5LineTable.FileLayout.partitioned(null, valid, plan), "null index name");
+        reject(() -> Dwarf5LineTable.FileLayout.partitioned("index.c", null, plan), "null part names");
+        reject(() -> Dwarf5LineTable.FileLayout.partitioned("index.c", valid, null), "null source plan");
+        reject(() -> Dwarf5LineTable.FileLayout.partitioned("index.c", List.of(), plan), "part count mismatch");
+        for (String invalid : new String[] { "", " ", "part\0suffix", "index.c" }) {
+            var invalidNames = new ArrayList<>(valid);
+            invalidNames.set(0, invalid);
+            reject(() -> Dwarf5LineTable.FileLayout.partitioned("index.c", invalidNames, plan),
+                "invalid or duplicate partition filename");
+        }
+        System.out.println("dwarf-line-boundaries=PASS programs=" + cases);
+    }
+
+    private static void reject(Runnable action, String message) {
+        try {
+            action.run();
+            throw new AssertionError(message + " accepted");
+        }
+        catch (IllegalArgumentException expected) { }
     }
 
     private record Row(long address, int file, int line) { }

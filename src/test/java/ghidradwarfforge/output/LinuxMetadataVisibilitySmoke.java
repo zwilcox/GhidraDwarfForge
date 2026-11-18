@@ -17,6 +17,7 @@ public final class LinuxMetadataVisibilitySmoke {
             throw new IllegalArgumentException("usage: unprivileged|privileged new-test-directory");
         }
         Path root = Files.createDirectory(Path.of(args[1]));
+        canaryPreconditions(root);
         refused(() -> LinuxMetadataVisibility.create(root, () -> true), CancellationException.class, "cancelled");
         empty(root);
         var virtualFailure = new AtomicReference<Throwable>();
@@ -95,6 +96,76 @@ public final class LinuxMetadataVisibilitySmoke {
 
     private static long descriptors() throws IOException {
         try (var paths = Files.list(Path.of("/proc/self/fd"))) { return paths.count(); }
+    }
+
+    /** Reject unsuitable owned files before any protected-namespace write is attempted. */
+    private static void canaryPreconditions(Path root) throws Exception {
+        var metadata = new LinuxFileMetadata();
+        Path file = root.resolve("precondition-canary");
+        Path alias = root.resolve("precondition-alias");
+        Files.createFile(file, java.nio.file.attribute.PosixFilePermissions.asFileAttribute(
+            java.nio.file.attribute.PosixFilePermissions.fromString("rw-------")));
+        try {
+            var empty = metadata.inspect(file, () -> false);
+            for (int length : new int[] {0, 1, 31, 33, 64}) {
+                refused(() -> metadata.markOwnedCanary(file, empty, new byte[length], () -> false),
+                    IOException.class, "nonce must contain 32 bytes");
+                require(metadata.inspect(file, () -> false).equals(empty), "invalid nonce changed canary metadata");
+                require(Files.size(file) == 0, "invalid nonce changed canary bytes");
+            }
+            Files.write(file, new byte[] {42});
+            var nonempty = metadata.inspect(file, () -> false);
+            refused(() -> metadata.markOwnedCanary(file, nonempty, new byte[32], () -> false),
+                IOException.class, "canary must be empty, private and single-link");
+            require(Files.readAllBytes(file)[0] == 42 && metadata.inspect(file, () -> false).equals(nonempty),
+                "nonempty canary was changed");
+            Files.write(file, new byte[0]);
+            Files.createLink(alias, file);
+            var linked = metadata.inspect(file, () -> false);
+            require(linked.facts().links() == 2, "hardlink premise missing");
+            refused(() -> metadata.markOwnedCanary(file, linked, new byte[32], () -> false),
+                IOException.class, "canary must be empty, private and single-link");
+            require(metadata.inspect(alias, () -> false).equals(linked), "linked canary was changed");
+            Files.delete(alias);
+            Files.setPosixFilePermissions(file, java.nio.file.attribute.PosixFilePermissions.fromString("rw-r--r--"));
+            var publicFile = metadata.inspect(file, () -> false);
+            refused(() -> metadata.markOwnedCanary(file, publicFile, new byte[32], () -> false),
+                IOException.class, "canary must be empty, private and single-link");
+            require(metadata.inspect(file, () -> false).equals(publicFile), "public canary was changed");
+
+            // These are explicit metadata-policy values, not claims about inode
+            // features on this filesystem. An unpreserved allocation policy must
+            // not be accepted merely because ordinary stat fields are unchanged.
+            int rejected = 0;
+            for (int field = 0; field < 5; field++) {
+                for (int bit = 0; bit < 32; bit++) {
+                    long[] values = new long[5];
+                    values[field] = 1L << bit;
+                    var policy = new LinuxFileMetadata.InodePolicy(values[0], values[1], values[2], values[3], values[4]);
+                    var snapshot = new LinuxFileMetadata.Snapshot(empty.facts(), empty.visibleAttributes(), policy);
+                    boolean allowed = field == 0 && bit == 19 || field == 1 && bit == 31;
+                    if (allowed) {
+                        LinuxFileMetadata.supported(snapshot);
+                        checks++;
+                    }
+                    else {
+                        refused(() -> LinuxFileMetadata.supported(snapshot), IOException.class,
+                            "unsupported inode flags, project ID or allocation policy");
+                        rejected++;
+                    }
+                }
+            }
+            require(rejected == 158, "inode policy matrix is incomplete");
+            LinuxFileMetadata.supported(new LinuxFileMetadata.Snapshot(empty.facts(), empty.visibleAttributes(),
+                new LinuxFileMetadata.InodePolicy(0x80000L, 0x80000000L, 0, 0, 0)));
+            checks++;
+            System.out.println("metadata-canary-preconditions=PASS invalidFiles=3 invalidNonces=5 policyRefusals=" + rejected);
+        }
+        finally {
+            Files.deleteIfExists(alias);
+            Files.deleteIfExists(file);
+        }
+        empty(root);
     }
     private static void empty(Path root) throws IOException {
         try (var paths = Files.list(root)) { require(paths.findAny().isEmpty(), "owned workspace leaked"); }

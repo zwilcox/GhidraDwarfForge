@@ -9,7 +9,10 @@ import shutil
 import tempfile
 import re
 import struct
+from contextlib import nullcontext
 from urllib.parse import unquote, urlsplit
+
+from integration_coverage import Collection
 
 source = Path(__file__).resolve().parent
 repository = source.parents[2]
@@ -32,12 +35,26 @@ def main():
     root.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix=f'{args.target}.{args.width}.{args.role}.', dir=root))
     print(case, flush=True)
+    collection = Collection('stack-control-flow', module / 'lib/GhidraDwarfForge.jar', 'headless')
+    if collection.enabled and args.previous_ghidra:
+        raise ValueError('comparative packages must not contribute to one coverage collection')
 
     def write(name, value):
-        (case / name).write_text(json.dumps(value, indent=4) + '\n')
+        # Full instruction traces and the installed-file inventory can exceed
+        # the coverage reader's bound when indented. Preserve every observation
+        # while avoiding formatting overhead in this machine-readable receipt.
+        measured = name == 'coverage-oracle.json'
+        text = json.dumps(value, separators=(',', ':')) if measured else json.dumps(value, indent=4)
+        text += '\n'
+        if measured and len(text.encode('utf-8')) > 1024 * 1024:
+            raise ValueError('stack-flow coverage evidence exceeds the 1 MiB reader bound')
+        (case / name).write_text(text, encoding='utf-8')
 
     def run(name, command, **kwargs):
-        result = support.run(command, case / (name + '.log'), **kwargs)
+        context = collection.session(command, name, headless=True) \
+            if Path(command[0]).name == 'analyzeHeadless' else nullcontext(command)
+        with context as measured:
+            result = support.run(measured, case / (name + '.log'), **kwargs)
         if Path(command[0]).name != 'analyzeHeadless':
             support.require_clean(case / (name + '.log'))
         return result
@@ -46,6 +63,10 @@ def main():
     files = [fixture, Path(__file__), source / 'stack-control-flow-gdb.py',
         source / 'stack-control-flow-gdb.sh', source / 'check-stack-control-flow.py',
         source / 'ghidra_scripts/PrepareStackControlFlow.java', source / 'ghidra_scripts/RebaseFixtureProgram.java']
+    files += [source / 'integration_coverage.py', source / 'qemu-socket.sh',
+        source / 'elf-layout-gdb-oracle.sh', source / 'check-stack-first-use.py',
+        source / 'check-dwarfdump.py', source.parent / 'performance/export-benchmark.py']
+    source_hashes = {str(p.relative_to(repository)): support.digest(p) for p in files}
     files += [p for p in module.rglob('*') if p.is_file()]
     protected = {str(p): support.digest(p) for p in files}
     write('protected-before.json', protected)
@@ -146,10 +167,20 @@ def main():
     write('project-after.json', project_after)
     changes = [name for name in project_before.keys() | project_after.keys() if project_before.get(name) != project_after.get(name)]
     assert set(changes) <= {'Effects.rep/idata/~index.bak', 'Effects.rep/idata/~journal.bak'}, changes
-    write('result.json', {'status': 'PASS', 'target': args.target, 'width': args.width, 'role': args.role,
+    result = {'status': 'PASS', 'target': args.target, 'width': args.width, 'role': args.role,
         'jarSha256': support.digest(module / 'lib/GhidraDwarfForge.jar'), 'projectBackupChanges': changes,
         'artifactSha256': [support.digest(case / name) for name in ('local.dbg', 'local.dbg.c')],
-        'previousPackageCompared': bool(args.previous_ghidra)})
+        'previousPackageCompared': bool(args.previous_ghidra)}
+    write('result.json', result)
+    if collection.enabled:
+        write('coverage-oracle.json', {**result, 'status': 'PASS_STACK_CONTROL_FLOW_MEASUREMENT',
+            'harnessSha256': source_hashes, 'protected': after,
+            'validators': ['readelf', 'llvm-dwarfdump', 'libdwarf-consumer'],
+            'labels': labels, 'prepared': json.loads((case / 'prepared.json').read_text()),
+            'locations': json.loads((case / 'locations.json').read_text()),
+            'debugger': {variant: json.loads((case / (variant + '-gdb.json')).read_text())
+                for variant in ('compiler', 'forge')}})
+        collection.finish(case / 'coverage-oracle.json')
     print('stack-control-flow-export=PASS ' + str(case), flush=True)
 
 

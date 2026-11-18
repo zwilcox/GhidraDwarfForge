@@ -74,7 +74,7 @@ def main():
     provenance.mkdir()
     exporter_jar = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
     java_sources = [ROOT / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in
-                    ['AttachmentProtocolSmoke', 'AttachmentReceiptStoreSmoke',
+                    ['AttachmentProtocolSmoke', 'AttachmentPathBoundarySmoke', 'AttachmentReceiptStoreSmoke',
                      'AttachmentElfTransactionProbe', 'AttachmentCuratedRefreshProbe']]
     scripts = ROOT / 'src/test/integration/ghidra_scripts'
     oracle = ROOT / 'src/test/integration/automatic-association-gdb.py'

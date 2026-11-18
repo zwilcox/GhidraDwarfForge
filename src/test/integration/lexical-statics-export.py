@@ -8,6 +8,10 @@ import re
 from pathlib import Path
 import subprocess
 import tempfile
+from contextlib import nullcontext
+
+from integration_coverage import Collection
+import static_coverage
 
 
 def digest(path):
@@ -29,13 +33,24 @@ def main():
     case = Path(tempfile.mkdtemp(prefix=args.target + '-' + args.role + '-', dir=results))
     print('lexical-statics-results=' + str(case), flush=True)
     commands = []
+    module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+    source_hashes = static_coverage.sources()
+    analyzer_collection = Collection('lexical-statics', module, 'headless')
+    native_collection = Collection('lexical-statics', module, 'native-java',
+        test_classes=('ghidradwarfforge.nativeapi.StaticScopeSmoke',))
 
     def run(label, command, timeout=240):
         command = list(map(str, command))
         commands.append({'label': label, 'argv': command})
         (case / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (case / (label + '.log')).open('w') as log:
-            subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=timeout)
+        if command[0] == str(ghidra / 'support/analyzeHeadless'):
+            context = analyzer_collection.session(command, label, headless=True)
+        elif label == 'isolated-producer':
+            context = native_collection.session(command, label)
+        else:
+            context = nullcontext(command)
+        with context as measured, (case / (label + '.log')).open('w') as log:
+            subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=timeout)
 
     target = args.target
     prefix = '' if target == 'x86_64' else 'aarch64-linux-gnu-'
@@ -148,6 +163,16 @@ def main():
     if args.recovered:
         run('recovered-driver', ['python3', harness / 'recovered-statics-export.py', case, ghidra], timeout=1800)
         run('recovered-controls-driver', ['python3', harness / 'recovered-statics-export.py', case, ghidra, '--controls-only'], timeout=1800)
+    assert protected == {p: digest(Path(p)) for p in protected}
+    evidence = {**receipt, 'controls': args.controls, 'recovered': args.recovered,
+        'projectBackupChanges': sorted(changed),
+        'debuggerObservations': {mode: json.loads((case / (mode + '-observations.json')).read_text())
+            for mode in ('isolated', 'forge')}}
+    measurement = {'directAnalyzerSessions': 3, 'directNativeSessions': 1,
+        'measuredNestedSuites': (['lexical-statics-controls'] if args.controls else []) +
+            (['recovered-statics-positive', 'recovered-statics-controls'] if args.recovered else [])}
+    for collection in (analyzer_collection, native_collection):
+        static_coverage.finish(collection, case, evidence, source_hashes, 'PASS_LEXICAL_STATICS_MEASUREMENT', measurement)
 
 if __name__ == '__main__':
     main()

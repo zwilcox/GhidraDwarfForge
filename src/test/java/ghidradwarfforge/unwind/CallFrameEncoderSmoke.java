@@ -39,7 +39,64 @@ public final class CallFrameEncoderSmoke {
         checks++;
     }
 
+    private static void modelBudgets() {
+        var rules = new HashMap<Integer, Rule>();
+        for (int number = 0; number < 512; number++) rules.put(number, new Undefined());
+        Row complete;
+        try { complete = new Row(0, new Cfa(0, 0), rules); }
+        catch (IllegalArgumentException wrong) { throw new AssertionError("exact register-row budget rejected", wrong); }
+        require(complete.rules().equals(rules));
+        rules.put(512, new Undefined());
+        rejected(() -> new Row(0, new Cfa(0, 0), rules));
+        rejected(() -> new Row(0, new Cfa(0, 0), Map.of()));
+        rejected(() -> new CallFramePlan(8, ByteOrder.LITTLE_ENDIAN, 0, rules.keySet(), rules, List.of()));
+        rejected(() -> new CallFramePlan(8, ByteOrder.LITTLE_ENDIAN, 0, Set.of(), Map.of(), List.of()));
+        rejected(() -> new CallFramePlan(8, ByteOrder.LITTLE_ENDIAN, 1, Set.of(0), Map.of(0, new Undefined()), List.of()));
+        rules.remove(512);
+        CallFramePlan maximumRegisters;
+        try {
+            maximumRegisters = new CallFramePlan(8, ByteOrder.LITTLE_ENDIAN, 0,
+                rules.keySet(), rules, List.of(new Frame(0, 1, List.of(complete))));
+        }
+        catch (IllegalArgumentException wrong) { throw new AssertionError("exact register-universe budget rejected", wrong); }
+        rules.clear();
+        require(complete.rules().size() == 512 && maximumRegisters.registers().size() == 512 &&
+            maximumRegisters.initialRules().size() == 512);
+        var rows = new ArrayList<Row>();
+        for (int index = 0; index < 65536; index++) {
+            rows.add(new Row(index, new Cfa(0, index), Map.of(0, new SameValue())));
+        }
+        Frame maximumRows;
+        try { maximumRows = new Frame(0, 65536, rows); }
+        catch (IllegalArgumentException wrong) { throw new AssertionError("exact frame-row budget rejected", wrong); }
+        require(maximumRows.rows().equals(rows));
+        rows.add(new Row(65536, new Cfa(0, 65536), Map.of(0, new SameValue())));
+        rejected(() -> new Frame(0, 65537, rows));
+        rejected(() -> new Frame(0, 1, List.of()));
+        rows.clear();
+        require(maximumRows.rows().size() == 65536 && maximumRows.rows().getLast().address() == 65535);
+        var frames = new ArrayList<Frame>();
+        for (int index = 0; index < 65536; index++) {
+            frames.add(new Frame(2L * index, 1, List.of(new Row(2L * index, new Cfa(0, 0), Map.of(0, new SameValue())))));
+        }
+        CallFramePlan maximumFrames;
+        try {
+            maximumFrames = new CallFramePlan(8, ByteOrder.LITTLE_ENDIAN, 0,
+                Set.of(0), Map.of(0, new Undefined()), frames);
+        }
+        catch (IllegalArgumentException wrong) { throw new AssertionError("exact frame-count budget rejected", wrong); }
+        require(maximumFrames.frames().equals(frames));
+        frames.add(new Frame(131072, 1, List.of(new Row(131072, new Cfa(0, 0), Map.of(0, new SameValue())))));
+        rejected(() -> new CallFramePlan(8, ByteOrder.LITTLE_ENDIAN, 0,
+            Set.of(0), Map.of(0, new Undefined()), frames));
+        frames.clear();
+        require(maximumFrames.frames().size() == 65536 && maximumFrames.frames().getLast().address() == 131070);
+    }
+
     public static void main(String[] args) {
+        modelBudgets();
+        CallFrameEncodingBoundarySmoke.main(args);
+        FrameAppendCoverageSmoke.main(args);
         var first = new Frame(0x1000, 0x40, List.of(row(0x1000, 8), row(0x1010, 24), row(0x1030, 8)));
         var second = new Frame(0x2000, 0x10, List.of(row(0x2000, 8)));
         for (int width : List.of(4, 8)) {

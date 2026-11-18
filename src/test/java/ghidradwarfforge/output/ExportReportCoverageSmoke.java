@@ -43,6 +43,8 @@ public final class ExportReportCoverageSmoke {
             report.add("coverage", JsonParser.parseString(payload));
             String text = report.toString();
             var writer = ExportReportClaimsFixtures.completed(partial, 1);
+            try { writer.toJsonWithCoverage(null, () -> false); throw new AssertionError("completed writer accepted absent coverage"); }
+            catch (IllegalArgumentException expected) { rejected++; }
             String written = writer.toJsonWithCoverage(coverageClaims, () -> false);
             require(JsonParser.parseString(written).equals(report), "versioned writer changed base fields or coverage");
             require(written.equals(writer.toJsonWithCoverage(coverageClaims, () -> false)), "nondeterministic schema two");
@@ -130,6 +132,9 @@ public final class ExportReportCoverageSmoke {
             }
         }
         for (var status : List.of(ExportReport.Status.CANCELLED, ExportReport.Status.FATAL)) {
+            try { ExportReportClaimsFixtures.terminal(status).toJsonWithCoverage(coverageClaims, () -> false);
+                throw new AssertionError("terminal writer retained completed coverage claims"); }
+            catch (IllegalArgumentException expected) { rejected++; }
             var terminal = JsonParser.parseString(ExportReportClaimsFixtures.terminal(status).toJson()).getAsJsonObject();
             terminal.addProperty("schemaVersion", 2);
             terminal.add("coverage", JsonNull.INSTANCE);

@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 
 BRANCH = 'reports/test-coverage'
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def api(endpoint, method='GET', payload=None, missing=False):
@@ -25,7 +26,50 @@ def api(endpoint, method='GET', payload=None, missing=False):
     return json.loads(result.stdout)
 
 
-def publish(directory, repository, commit, run_id, request=api, dry_run=False):
+def prepare_combined(directory, repository, commit, run_id, *, inventory=None, sources=None):
+    """Recompute the entire public view; only a single-run, target-passing report can publish."""
+    spec = importlib.util.spec_from_file_location('combined_public_report',
+        Path(__file__).with_name('combined-coverage-report.py'))
+    renderer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(renderer)
+    inventory = inventory or ROOT / 'src/test/coverage/critical-sources.json'
+    sources = sources or ROOT / 'src/main/java'
+    public = directory / 'public'
+    if public.is_symlink() or {path.name for path in public.iterdir()} != set(renderer.PUBLIC_FILES):
+        raise ValueError('missing or unexpected combined publication files')
+    files = {}
+    with tempfile.TemporaryDirectory(prefix='forge-combined-publication-') as temporary:
+        generated = Path(temporary) / 'public'
+        report = renderer.generate(directory, generated, inventory, sources, repository, commit, run_id)
+        if report['publicationEligible'] is not True:
+            raise ValueError('combined coverage has not met the accepted targets')
+        for name in renderer.PUBLIC_FILES:
+            path = public / name
+            if path.is_symlink() or not path.is_file() or path.stat().st_size > 4 * 1024 * 1024:
+                raise ValueError('invalid or excessive combined publication file')
+            value = path.read_text(encoding='utf-8')
+            if (generated / name).read_text(encoding='utf-8') != value:
+                raise ValueError('combined publication differs from measured XML and history: ' + name)
+            files['combined/' + name] = value
+    return files
+
+
+def require_validated_run(request, base, commit, run_id):
+    run = request(base + '/actions/runs/' + str(run_id))
+    if (run.get('id') != run_id or run.get('path') != '.github/workflows/ci.yml'
+            or run.get('head_sha') != commit or run.get('head_branch') != 'main'
+            or run.get('event') != 'push' or not isinstance(run.get('run_attempt'), int)):
+        raise ValueError('coverage publication requires this main CI run')
+    jobs = request(base + '/actions/runs/' + str(run_id) + '/jobs?filter=latest&per_page=100')
+    rows = jobs.get('jobs', [])
+    gates = [row for row in rows if row.get('name') == 'required-validation']
+    if (not rows or len(rows) != jobs.get('total_count') or len(gates) != 1
+            or gates[0].get('head_sha') != commit or gates[0].get('run_attempt') != run['run_attempt']
+            or gates[0].get('status') != 'completed' or gates[0].get('conclusion') != 'success'):
+        raise ValueError('current protected validation gate has not passed')
+
+
+def publish(directory, repository, commit, run_id, request=api, dry_run=False, combined_directory=None):
     if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository) or not re.fullmatch(r'[0-9a-f]{40}', commit) or run_id <= 0:
         raise ValueError('invalid publication provenance')
     public = directory / 'public'
@@ -50,6 +94,8 @@ def publish(directory, repository, commit, run_id, request=api, dry_run=False):
         renderer.generate(directory / 'coverage.xml', directory / 'tasks', generated, repository, commit, run_id)
         if any((generated / name).read_text() != value for name, value in files.items()):
             raise ValueError('public coverage files do not match the measured XML and test population')
+    if combined_directory is not None:
+        files.update(prepare_combined(combined_directory, repository, commit, run_id))
     if dry_run:
         return {'status': 'PREPARED_ONLY', 'branch': BRANCH, 'commit': commit, 'files': sorted(files)}
     if os.environ.get('GITHUB_REF') != 'refs/heads/main':
@@ -58,6 +104,8 @@ def publish(directory, repository, commit, run_id, request=api, dry_run=False):
     current = request(base + '/git/ref/heads/main')
     if current['object']['sha'] != commit:
         return {'status': 'SKIPPED_SUPERSEDED_MAIN', 'commit': commit}
+    if combined_directory is not None:
+        require_validated_run(request, base, commit, run_id)
     prior = request(base + '/git/ref/heads/' + BRANCH, missing=True)
     tree = {'tree': [{'path': name, 'mode': '100644', 'type': 'blob', 'content': text} for name, text in files.items()]}
     parents = []
@@ -83,8 +131,10 @@ def main():
     parser.add_argument('--commit', required=True)
     parser.add_argument('--run-id', type=int, required=True)
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--combined-directory', type=Path)
     args = parser.parse_args()
-    print(json.dumps(publish(args.directory, args.repository, args.commit, args.run_id, dry_run=args.dry_run), sort_keys=True))
+    print(json.dumps(publish(args.directory, args.repository, args.commit, args.run_id,
+        dry_run=args.dry_run, combined_directory=args.combined_directory), sort_keys=True))
 
 
 if __name__ == '__main__':

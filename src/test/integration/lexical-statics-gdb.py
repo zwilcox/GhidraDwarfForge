@@ -33,7 +33,7 @@ for marker, scope, value in sequence:
         scope, value = 'root', 11
     if mode in ['failed', 'memory-stale', 'memory-failed'] and scope in ['root', 'outer', 'inner', 'sibling']:
         scope, value = 'global', 101
-    if mode in ['inferred-stale', 'inferred-namespace', 'inferred-overlap'] and scope == 'other':
+    if mode in ['inferred-stale', 'inferred-namespace', 'inferred-overlap', 'memory-overlay', 'memory-mapped'] and scope == 'other':
         scope, value = 'global', 101
     pc = labels[marker] + bias
     gdb.Breakpoint('*' + hex(pc), temporary=True)
@@ -52,7 +52,8 @@ for marker, scope, value in sequence:
     # Execute the actual marker instruction before selecting the next lexical boundary.
     gdb.execute('stepi')
 assert len(set(objects.values())) == {'stale': 5, 'conflict': 4, 'coalesced': 3, 'failed': 2,
-    'memory-stale': 2, 'memory-failed': 2, 'inferred-stale': 5, 'inferred-namespace': 5, 'inferred-overlap': 5}.get(mode, 6)
+    'memory-stale': 2, 'memory-failed': 2, 'inferred-stale': 5, 'inferred-namespace': 5, 'inferred-overlap': 5,
+    'memory-overlay': 5, 'memory-mapped': 5}.get(mode, 6)
 if mode == 'compiler':
     (case / 'compiler-objects.json').write_text(json.dumps(objects, indent=4) + '\n')
 gdb.execute('continue')

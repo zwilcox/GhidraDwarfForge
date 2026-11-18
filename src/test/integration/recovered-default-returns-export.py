@@ -8,6 +8,8 @@ import os
 import shutil
 import tempfile
 
+from recovered_signature_coverage import Measurement
+
 source = Path(__file__).resolve().parent
 repository = source.parents[2]
 spec = importlib.util.spec_from_file_location('benchmark_support', source.parent / 'performance/export-benchmark.py')
@@ -22,6 +24,7 @@ def main():
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+    measurement = Measurement('returns', module)
     root = repository / 'build/test-results/recovered-default-returns'
     root.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix='x86_64.', dir=root))
@@ -29,7 +32,8 @@ def main():
     def write(name, value):
         (case / name).write_text(json.dumps(value, indent=4) + '\n')
     def run(name, command, **kwargs):
-        result = support.run(command, case / (name + '.log'), **kwargs)
+        with measurement.session(command, name) as actual:
+            result = support.run(actual, case / (name + '.log'), **kwargs)
         if Path(command[0]).name != 'analyzeHeadless':
             support.require_clean(case / (name + '.log'))
         return result
@@ -37,6 +41,9 @@ def main():
     protected = [fixture, Path(__file__).resolve(), source / 'recovered-default-returns-gdb.py',
         source / 'ghidra_scripts/ObserveRecoveredReturns.java',
         source / 'ghidra_scripts/CheckRecoveredReturnPass.java']
+    protected += [source / name for name in ('integration_coverage.py', 'recovered_signature_coverage.py',
+        'check-dwarfdump.py', 'dynamic-composite-storage-check.py', 'dynamic-parameter-storage-check.py')]
+    protected += [source.parent / 'performance/export-benchmark.py', repository / 'ghidra_scripts/GhidraDwarfForge.java']
     protected += [p for p in module.rglob('*') if p.is_file()]
     before = {str(p): support.digest(p) for p in protected}
     write('protected-before.json', before)
@@ -45,6 +52,9 @@ def main():
         '-fno-omit-frame-pointer', '-fno-pie', '-no-pie', '-Wl,--build-id=none', fixture, '-o', reference])
     run('strip', ['objcopy', '--strip-debug', reference, binary])
     original = support.digest(binary)
+    protected += [reference, binary]
+    before.update({str(p): support.digest(p) for p in (reference, binary)})
+    write('protected-before.json', before)
     run('plain', [binary])
     project = case / 'project'
     project.mkdir()
@@ -124,6 +134,7 @@ def main():
     write('result.json', {'status': 'PASS', 'inputSha256': original, 'artifactSha256': artifact_hashes,
         'javaVersion': metadata['javaVersion'], 'projectBackupChanges': changes, 'protectedUnchanged': True,
         'previousPackageCompared': bool(args.previous_ghidra)})
+    measurement.finish(case, repository, module, before, after, project_before, project_after, metadata, dies, records)
     print('recovered-default-returns=PASS ' + str(case), flush=True)
 
 

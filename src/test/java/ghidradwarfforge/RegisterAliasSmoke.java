@@ -52,6 +52,7 @@ public final class RegisterAliasSmoke {
                 throw new AssertionError("unproven paired floating register was mapped");
             }
         }
+        RegisterProfileAgreementSmoke.check();
         System.out.println("register-alias-smoke=PASS");
     }
 

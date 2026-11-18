@@ -44,6 +44,16 @@ public final class CoverageTypeEvidenceSmoke {
             .get(0).getAsJsonObject().addProperty("count", "3"));
         mutate(root, value -> value.getAsJsonArray("typeNodes").get(2).getAsJsonObject().getAsJsonArray("recoveredReferences")
             .get(0).getAsJsonObject().addProperty("key", "missing"));
+        for (String references : List.of("recoveredReferences", "emittedReferences")) {
+            for (String count : List.of("0", "2147483648", "9223372036854775807")) {
+                mutate(root, value -> value.getAsJsonArray("typeNodes").get(2).getAsJsonObject().getAsJsonArray(references)
+                    .get(0).getAsJsonObject().addProperty("count", count), "invalid type edge count");
+            }
+            mutate(root, value -> {
+                var edges = value.getAsJsonArray("typeNodes").get(2).getAsJsonObject().getAsJsonArray(references);
+                edges.add(edges.get(0).deepCopy());
+            }, "duplicate type edge");
+        }
         mutate(root, value -> value.getAsJsonObject("summary").getAsJsonObject("functionTypes").addProperty("opaqueFreeEmittedRoots", "1"));
         String legacy = CoverageReportJson.write(before.coverage(), before.profile(), () -> false);
         require(parse(legacy).typeEvidence() == null && parse(legacy).coverage().equals(before.coverage()), "definition one migration");
@@ -138,6 +148,18 @@ public final class CoverageTypeEvidenceSmoke {
         try { parse(copy.toString()); }
         catch (IOException expected) { rejected++; return; }
         throw new AssertionError("invalid type report admitted");
+    }
+    private static void mutate(JsonObject original, Consumer<JsonObject> action, String diagnostic) throws Exception {
+        var copy = original.deepCopy();
+        action.accept(copy);
+        try {
+            parse(copy.toString());
+            throw new AssertionError("invalid type report admitted: " + diagnostic);
+        }
+        catch (IOException expected) {
+            require(expected.getMessage().contains(diagnostic), "expected " + diagnostic + ", got " + expected.getMessage());
+            rejected++;
+        }
     }
     private static void require(boolean condition, String message) { if (!condition) throw new AssertionError(message); }
 }

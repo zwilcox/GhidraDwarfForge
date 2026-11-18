@@ -24,7 +24,10 @@ public final class DynamicSymbolMirrorSmoke {
         Path root = Files.createTempDirectory("forge-dynamic-mirror-");
         for (boolean wide : List.of(false, true)) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+                DynamicNameBoundarySmoke.check(root, wide, order);
                 requirementsCases(root, wide, order);
+                versionIdentityCases(root, wide, order);
+                sectionFramingCases(root, wide, order);
                 for (boolean versioned : List.of(false, true)) {
                     for (boolean extended : List.of(false, true)) {
                         byte[] input = fixture(wide, order, versioned, extended);
@@ -118,6 +121,203 @@ public final class DynamicSymbolMirrorSmoke {
             }
         }
         return input;
+    }
+
+    private static void versionIdentityCases(Path root, boolean wide, ByteOrder order) throws Exception {
+        int width = wide ? 24 : 16;
+        byte[] input = fixture(wide, order, true, false);
+        int firstName = (int) field(input, 2, "size") - 6;
+        // GNU absolute version nodes are identities, not functions qualified a second time.
+        byte[] nodes = input.clone();
+        var nodeBytes = bytes(nodes);
+        for (int index = 2; index < 4; index++) {
+            int offset = 0x200 + index * width;
+            nodeBytes.putInt(offset, firstName + (index - 2) * 3);
+            nodeBytes.put(offset + (wide ? 4 : 12), (byte) 0x11);
+            nodeBytes.putShort(offset + (wide ? 6 : 14), (short) 0xfff1);
+            if (wide) {
+                nodeBytes.putLong(offset + 8, 0).putLong(offset + 16, 0);
+            }
+            else {
+                nodeBytes.putInt(offset + 4, 0).putInt(offset + 8, 0);
+            }
+        }
+        var mirror = inventory(root, nodes);
+        require(!mirror.versionedDefinitions(), "absolute version nodes acquired qualified identities");
+        require(mirror.names().length == field(nodes, 2, "size"), "version node names were appended");
+        for (int index = 2; index < 4; index++) {
+            require(ByteBuffer.wrap(mirror.records()).order(order).getInt(index * width) ==
+                firstName + (index - 2) * 3, "absolute version node name changed");
+        }
+
+        // Two dynamic entries may legitimately share a qualified spelling.
+        byte[] shared = input.clone();
+        bytes(shared).putInt(0x200 + width * 3, bytes(shared).getInt(0x200 + width * 2));
+        bytes(shared).putShort(0x276, (short) 0x8002);
+        mirror = inventory(root, shared);
+        var records = ByteBuffer.wrap(mirror.records()).order(order);
+        int qualified = records.getInt(width * 2);
+        require(qualified == records.getInt(width * 3) && qualified == field(shared, 2, "size"),
+            "duplicate qualified spelling was appended twice");
+        require(new String(mirror.names(), qualified, mirror.names().length - qualified - 1,
+            StandardCharsets.US_ASCII).equals("old_global@V1"), "wrong reused version identity");
+
+        // A definition can name a parent through a second Verdaux entry.
+        byte[] inherited = input.clone();
+        var data = bytes(inherited);
+        Arrays.fill(inherited, 0x280, 0x2c0, (byte) 0);
+        data.position(0x280);
+        data.putShort((short) 1).putShort((short) 0).putShort((short) 2).putShort((short) 2)
+            .putInt(0).putInt(20).putInt(36).putInt(firstName).putInt(8).putInt(firstName + 3).putInt(0);
+        data.putShort((short) 1).putShort((short) 0).putShort((short) 3).putShort((short) 1)
+            .putInt(0).putInt(20).putInt(0).putInt(firstName + 3).putInt(0);
+        LocalSymbolMergeSmoke.field(inherited, 7, "size", 64);
+        positive(root, inherited, true);
+        for (int following : new int[] { 0, 4, 29, -1 }) {
+            byte[] bad = inherited.clone();
+            bytes(bad).putInt(0x298, following);
+            reject(root, bad);
+        }
+        byte[] bad = inherited.clone();
+        bytes(bad).putInt(0x29c, 0);
+        reject(root, bad);
+
+        // Null/version metadata and escaped indices must never silently rename symbols.
+        for (int nullVersion : new int[] { 1, 0x8000 }) {
+            bad = input.clone();
+            bytes(bad).putShort(0x270, (short) nullVersion);
+            reject(root, bad);
+        }
+        bad = input.clone();
+        bytes(bad).putInt(0x200 + width * 2, 0);
+        reject(root, bad);
+        bad = input.clone();
+        bytes(bad).putShort(0x200 + width * 2 + (wide ? 6 : 14), (short) 8);
+        reject(root, bad);
+        bad = input.clone();
+        bad[0x180 + (int) field(input, 2, "size") - 1] = 'X';
+        reject(root, bad);
+        byte[] absent = fixture(wide, order, false, false);
+        LocalSymbolMergeSmoke.field(absent, 3, "type", 2);
+        require(inventory(root, absent) == null, "static table was mistaken for a dynamic inventory");
+    }
+
+    private static DynamicSymbolMirror.Snapshot inventory(Path root, byte[] input) throws Exception {
+        Path path = root.resolve("identity");
+        Files.write(path, input);
+        var result = DynamicSymbolMirror.read(ElfImage.read(path), () -> false);
+        require(Arrays.equals(input, Files.readAllBytes(path)), "identity read changed the original");
+        return result;
+    }
+
+    private record SectionChange(int section, String field, long value, String diagnostic) {
+    }
+
+    private static void sectionFramingCases(Path root, boolean wide, ByteOrder order) throws Exception {
+        int width = wide ? 24 : 16;
+        byte[] valid = fixture(wide, order, true, true);
+        // The ELF container is readable, but its linked symbol metadata must be
+        // rejected by the inventory reader before the publisher can replace a file.
+        for (var change : List.of(
+                new SectionChange(3, "size", width - 1, "dynamic symbol framing"),
+                new SectionChange(3, "size", width * 4 - 1, "dynamic symbol framing"),
+                new SectionChange(3, "info", 5, "dynamic symbol framing"),
+                new SectionChange(3, "link", 8, "dynamic symbol framing"),
+                new SectionChange(3, "flags", 0x802, "dynamic symbol framing"),
+                new SectionChange(2, "type", 1, "dynamic string table"),
+                new SectionChange(2, "size", 0, "dynamic string table"),
+                new SectionChange(2, "flags", 0x802, "dynamic string table"),
+                new SectionChange(4, "size", 12, "dynamic extended indices"),
+                new SectionChange(4, "entsize", 8, "dynamic extended indices"),
+                new SectionChange(4, "info", 1, "dynamic extended indices"),
+                new SectionChange(4, "flags", 0x800, "dynamic extended indices"),
+                new SectionChange(6, "size", 6, "dynamic symbol versions"),
+                new SectionChange(6, "entsize", 4, "dynamic symbol versions"),
+                new SectionChange(6, "flags", 0x802, "dynamic symbol versions"),
+                new SectionChange(7, "flags", 0x802, "compressed version definitions"),
+                new SectionChange(7, "info", 0, "version-definition extent"),
+                new SectionChange(7, "info", 262145, "version-definition extent"),
+                new SectionChange(7, "size", 19, "version-definition extent"))) {
+            byte[] bad = valid.clone();
+            LocalSymbolMergeSmoke.field(bad, change.section(), change.field(), change.value());
+            rejectInventory(root, bad, change.diagnostic());
+        }
+        int headerWidth = wide ? 64 : 40;
+        for (int duplicated : List.of(3, 4, 6, 7)) {
+            byte[] bad = valid.clone();
+            int destination = duplicated == 4 ? 7 : 4;
+            System.arraycopy(bad, 0x400 + duplicated * headerWidth,
+                bad, 0x400 + destination * headerWidth, headerWidth);
+            rejectInventory(root, bad, switch (duplicated) {
+                case 3 -> "multiple dynamic symbol tables";
+                case 4 -> "dynamic extended indices";
+                case 6 -> "dynamic symbol versions";
+                default -> "ambiguous or compressed version definitions";
+            });
+        }
+        for (long escaped : new long[] { 0, 8, 0xffffffffL }) {
+            byte[] bad = valid.clone();
+            bytes(bad).putShort(0x200 + width + (wide ? 6 : 14), (short) 0xffff);
+            bytes(bad).putInt(0x2f4, (int) escaped);
+            rejectInventory(root, bad, "dynamic extended section index");
+        }
+        byte[] escaped = valid.clone();
+        bytes(escaped).putShort(0x200 + width + (wide ? 6 : 14), (short) 0xffff);
+        bytes(escaped).putInt(0x2f4, 1);
+        positive(root, escaped, true);
+        byte[] bad = valid.clone();
+        bytes(bad).putInt(0x2f4, 1);
+        rejectInventory(root, bad, "dynamic extended section index");
+        for (int identifier : new int[] { 0, 0x8000 }) {
+            bad = valid.clone();
+            bytes(bad).putShort(0x284, (short) identifier);
+            rejectInventory(root, bad, "unsupported version definition");
+        }
+        for (int boundary : new int[] { 20, 27 }) {
+            bad = valid.clone();
+            bytes(bad).putInt(0x290, boundary);
+            rejectInventory(root, bad, "version-definition chain");
+        }
+        byte[] requirement = requirementFixture(wide, order, false);
+        for (var change : List.of(
+                new SectionChange(7, "flags", 0x802, "compressed version requirements"),
+                new SectionChange(7, "info", 262145, "version-requirement extent"),
+                new SectionChange(7, "size", 15, "version-requirement extent"))) {
+            bad = requirement.clone();
+            LocalSymbolMergeSmoke.field(bad, change.section(), change.field(), change.value());
+            rejectInventory(root, bad, change.diagnostic());
+        }
+        bad = requirement.clone();
+        System.arraycopy(bad, 0x400 + 7 * headerWidth, bad, 0x400 + 4 * headerWidth, headerWidth);
+        rejectInventory(root, bad, "ambiguous or compressed version requirements");
+        for (int field : new int[] { 4, 8 }) {
+            bad = requirement.clone();
+            bytes(bad).putInt(0x280 + field, field == 4 ? 0 : 15);
+            rejectInventory(root, bad, "unsupported version requirement");
+        }
+        for (int identifier : new int[] { 0, 1 }) {
+            bad = requirement.clone();
+            bytes(bad).putShort(0x296, (short) identifier);
+            rejectInventory(root, bad, "required version identifier");
+        }
+        bad = requirement.clone();
+        bytes(bad).putInt(0x298, 0);
+        rejectInventory(root, bad, "required version identifier or name");
+    }
+
+    private static void rejectInventory(Path root, byte[] input, String diagnostic) throws Exception {
+        Path path = root.resolve("metadata");
+        Files.write(path, input);
+        var image = ElfImage.read(path);
+        try {
+            DynamicSymbolMirror.read(image, () -> false);
+            throw new AssertionError("invalid linked metadata accepted: " + diagnostic);
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage().contains(diagnostic), "wrong inventory rejection: " + expected.getMessage());
+        }
+        require(Arrays.equals(input, Files.readAllBytes(path)), "metadata rejection changed input");
+        reject(root, input);
     }
 
     private static void requirementsCases(Path root, boolean wide, ByteOrder order) throws Exception {

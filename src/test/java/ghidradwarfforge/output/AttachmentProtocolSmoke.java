@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public final class AttachmentProtocolSmoke {
     private static final String BEFORE = "a".repeat(64);
@@ -24,6 +28,8 @@ public final class AttachmentProtocolSmoke {
         Path root = Files.createTempDirectory("forge-attachment-protocol-");
         try {
             paths(root);
+            AttachmentPathBoundarySmoke.exercise(Files.createDirectory(root.resolve("boundaries")));
+            receiptFiles(root);
         }
         finally {
             try (var paths = Files.walk(root)) {
@@ -63,6 +69,7 @@ public final class AttachmentProtocolSmoke {
     private static void receipts() throws Exception {
         for (var mode : AttachmentReceipt.Mode.values()) {
             AttachmentReceipt prepared = fixture(mode);
+            receiptBoundaries(prepared);
             equal(prepared, read(prepared.toJson()));
             equal(prepared.toJson(), read(prepared.toJson()).toJson());
             equal(prepared, read(prepared.toJson().replace("\"schemaVersion\":2", "\"schemaVersion\":1")
@@ -143,6 +150,162 @@ public final class AttachmentProtocolSmoke {
             equal(true, closed.get());
         }
         rejectIO(() -> AttachmentReceipt.read(new ByteArrayInputStream(new byte[] {(byte) 0xff}), () -> false));
+    }
+
+    private static void receiptBoundaries(AttachmentReceipt prepared) throws Exception {
+        JsonObject valid = JsonParser.parseString(prepared.toJson()).getAsJsonObject();
+        for (String id : List.of("not-a-uuid", "1-1-1-1-1", prepared.operationId().toUpperCase(java.util.Locale.ROOT))) {
+            malformed(valid, json -> json.addProperty("operationId", id), "invalid attachment receipt");
+        }
+        malformed(valid, json -> json.addProperty("debuglinkCrc32", -1), "invalid character outside a report string");
+        rejectArgument(() -> new AttachmentReceipt(prepared.operationId(), prepared.mode(), prepared.phase(), prepared.receiptPath(),
+            prepared.backend(), prepared.hostContract(), prepared.durability(), -1, prepared.files(), null));
+        for (String field : List.of("backend", "hostContract", "durability")) {
+            for (String identifier : List.of("", "Bad", "space value", "x".repeat(65))) {
+                malformed(valid, json -> json.addProperty(field, identifier), "invalid attachment contract identifier");
+            }
+        }
+        for (String field : List.of("path", "identity")) {
+            for (String invalid : List.of("", "x".repeat(field.equals("path") ? 16385 : 4097),
+                    "delete\u007f", "low\udc00", "high\ud800", "pair\ud800x")) {
+                String diagnostic = invalid.length() > 16384 ? "string exceeds safety limit" :
+                    invalid.indexOf('\ud800') >= 0 ? "unpaired high surrogate" :
+                    invalid.indexOf('\udc00') >= 0 ? "unpaired low surrogate" : "attachment";
+                malformed(valid, json -> artifact(json, "sidecar").addProperty(field, invalid), diagnostic);
+                rejectArgument(() -> new AttachmentReceipt.Artifact(field.equals("path") ? invalid : "path",
+                    BEFORE, 0, field.equals("identity") ? invalid : "id", METADATA));
+            }
+        }
+        for (String field : List.of("sha256", "metadataSha256")) {
+            for (String invalid : List.of("", "A".repeat(64), "a".repeat(63), "g".repeat(64))) {
+                malformed(valid, json -> artifact(json, "sidecar").addProperty(field, invalid), "invalid attachment SHA-256");
+            }
+        }
+        malformed(valid, json -> artifact(json, "targetAfter").addProperty("path", "/different"), "distinct images");
+        malformed(valid, json -> artifact(json, "targetAfter").addProperty("identity", "targetBefore"), "distinct images");
+        malformed(valid, json -> artifact(json, "targetAfter").addProperty("metadataSha256", AFTER), "distinct images");
+        String backup = prepared.mode() == AttachmentReceipt.Mode.INITIAL ? "originalBackup" : "priorTargetBackup";
+        for (String field : List.of("bytes", "metadataSha256", "identity")) {
+            malformed(valid, json -> artifact(json, backup).addProperty(field,
+                field.equals("bytes") ? "0" : field.equals("identity") ? "targetBefore" : AFTER), "independently preserve");
+        }
+        malformed(valid, json -> json.getAsJsonObject("files").remove("source"), "artifact roles");
+        malformed(valid, json -> json.getAsJsonObject("files").add("invented", artifact(json, "source").deepCopy()), "unknown attachment artifact role");
+        malformed(valid, json -> artifact(json, "source").addProperty("unknown", "value"), "unknown attachment artifact field");
+        malformed(valid, json -> artifact(json, "source").remove("bytes"), "invalid attachment artifact shape");
+        malformed(valid, json -> json.remove("diagnostic"), "incomplete or unsupported attachment receipt schema");
+        for (String value : List.of("-1", "1.0", "+1", " 1", "1e2")) {
+            malformed(valid, json -> artifact(json, "source").addProperty("bytes", value), "invalid attachment artifact shape");
+        }
+        for (AttachmentReceipt.Phase phase : List.of(AttachmentReceipt.Phase.ROLLED_BACK, AttachmentReceipt.Phase.RECOVERY_REQUIRED)) {
+            malformed(valid, json -> json.addProperty("phase", phase.name()), "outcome and diagnostic disagree");
+        }
+        JsonObject recovery = JsonParser.parseString(prepared.forRecovery("/owned/recovery.json",
+            artifact("receipt.json", BEFORE, "prior-receipt"), prepared.files().get("targetBefore")).toJson()).getAsJsonObject();
+        malformed(recovery, json -> json.addProperty("phase", "COMMITTED"), "invalid recovery receipt phase");
+        malformed(recovery, json -> json.getAsJsonObject("recovery").getAsJsonObject("observedTarget")
+            .addProperty("path", "/different"), "selected target path");
+        for (String missing : List.of("observedTarget", "priorReceipt")) {
+            malformed(recovery, json -> json.getAsJsonObject("recovery").remove(missing), "incomplete recovery receipt evidence");
+        }
+        for (String field : List.of("bytes", "metadataSha256")) {
+            malformed(recovery, json -> {
+                json.addProperty("phase", "ROLLED_BACK");
+                json.addProperty("diagnostic", "restored");
+                json.getAsJsonObject("recovery").getAsJsonObject("observedTarget")
+                    .addProperty(field, field.equals("bytes") ? "0" : AFTER);
+            }, "complete prior image and metadata");
+        }
+        var before = prepared.files().get("targetBefore");
+        rejectArgument(() -> new AttachmentReceipt.Artifact(before.path(), before.sha256(), -1, before.identity(), before.metadataSha256()));
+        rejectArgument(() -> new AttachmentReceipt.Artifact(null, BEFORE, 0, "id", METADATA));
+        rejectArgument(() -> new AttachmentReceipt.Artifact("path", null, 0, "id", METADATA));
+        rejectArgument(() -> new AttachmentReceipt.Artifact("path", BEFORE, 0, "id", null));
+        rejectArgument(() -> new AttachmentReceipt.Artifact("path", BEFORE, 0, null, METADATA));
+        rejectArgument(() -> new AttachmentReceipt(null, prepared.mode(), prepared.phase(), prepared.receiptPath(),
+            prepared.backend(), prepared.hostContract(), prepared.durability(), 0, prepared.files(), null));
+        rejectArgument(() -> new AttachmentReceipt(prepared.operationId(), prepared.mode(), prepared.phase(), prepared.receiptPath(),
+            null, prepared.hostContract(), prepared.durability(), 0, prepared.files(), null));
+        // Valid supplementary Unicode and exact upper bounds must survive; the
+        // parser must not "fix" malformed strings by refusing all non-ASCII paths.
+        JsonObject unicode = valid.deepCopy();
+        artifact(unicode, "source").addProperty("path", "/source/\ud83d\udd0d.c");
+        artifact(unicode, "source").addProperty("identity", "id-\ud83d\udd0d");
+        equal("/source/\ud83d\udd0d.c", read(unicode.toString()).files().get("source").path());
+        equal(new AttachmentReceipt.Artifact("p".repeat(16384), BEFORE, 0, "i".repeat(4096), METADATA).bytes(), 0L);
+        cancellationAndStreamClosure(prepared.toJson());
+    }
+
+    private static JsonObject artifact(JsonObject receipt, String role) {
+        return receipt.getAsJsonObject("files").getAsJsonObject(role);
+    }
+
+    private static void malformed(JsonObject valid, Consumer<JsonObject> change, String diagnostic) throws Exception {
+        String unchanged = valid.toString();
+        JsonObject invalid = valid.deepCopy();
+        change.accept(invalid);
+        AtomicBoolean closed = new AtomicBoolean();
+        try {
+            // JSON escapes retain deliberately invalid UTF-16 code units;
+            // UTF-8 encoding an unpaired surrogate would replace it with '?'.
+            StringBuilder encoded = new StringBuilder();
+            for (char unit : invalid.toString().toCharArray()) {
+                if (Character.isSurrogate(unit)) encoded.append(String.format("\\u%04x", (int) unit));
+                else encoded.append(unit);
+            }
+            AttachmentReceipt.read(closing(encoded.toString(), closed), () -> false);
+            throw new AssertionError("accepted malformed receipt: " + diagnostic);
+        }
+        catch (IOException expected) {
+            String message = expected.toString();
+            for (Throwable cause = expected.getCause(); cause != null; cause = cause.getCause()) message += " " + cause;
+            if (!message.contains(diagnostic)) throw new AssertionError("wrong rejection: " + message, expected);
+            checks++;
+        }
+        equal(true, closed.get());
+        equal(unchanged, valid.toString());
+    }
+
+    private static ByteArrayInputStream closing(String json, AtomicBoolean closed) {
+        return new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)) {
+            @Override public void close() throws IOException {
+                closed.set(true);
+                super.close();
+            }
+        };
+    }
+
+    private static void cancellationAndStreamClosure(String json) throws Exception {
+        AtomicInteger visits = new AtomicInteger();
+        AtomicBoolean closed = new AtomicBoolean();
+        AttachmentReceipt.read(closing(json, closed), () -> { visits.incrementAndGet(); return false; });
+        equal(true, closed.get());
+        for (int stop = 1; stop <= visits.get(); stop++) {
+            int selected = stop;
+            AtomicInteger current = new AtomicInteger();
+            closed.set(false);
+            try {
+                AttachmentReceipt.read(closing(json, closed), () -> current.incrementAndGet() == selected);
+                throw new AssertionError("missed receipt cancellation " + stop);
+            }
+            catch (CancellationException expected) { checks++; }
+            equal(true, closed.get());
+        }
+    }
+
+    private static void receiptFiles(Path root) throws Exception {
+        var prepared = fixture(AttachmentReceipt.Mode.INITIAL);
+        Path path = Files.writeString(root.resolve("claims.json"), prepared.toJson());
+        byte[] before = Files.readAllBytes(path);
+        equal(prepared, AttachmentReceipt.read(path, () -> false));
+        rejectIO(() -> AttachmentReceipt.read(root, () -> false));
+        rejectIO(() -> AttachmentReceipt.read(root.resolve("absent.json"), () -> false));
+        try {
+            AttachmentReceipt.read(path, () -> true);
+            throw new AssertionError("path cancellation ignored");
+        }
+        catch (CancellationException expected) { checks++; }
+        equal(true, java.util.Arrays.equals(before, Files.readAllBytes(path)));
     }
 
     private static void paths(Path root) throws Exception {

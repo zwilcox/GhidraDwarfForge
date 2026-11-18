@@ -2,6 +2,7 @@
 """Real saved-program THIS, hidden return transport and ordinary-name controls."""
 import argparse
 from collections import Counter
+from contextlib import nullcontext
 import hashlib
 import json
 from pathlib import Path
@@ -10,6 +11,8 @@ import shutil
 import subprocess
 import tempfile
 from urllib.parse import unquote, urlsplit
+
+from integration_coverage import Collection
 
 
 def digest(path):
@@ -30,17 +33,20 @@ def main():
     case = Path(tempfile.mkdtemp(prefix=args.target + '-' + args.role + '-', dir=results))
     print('object-return-results=' + str(case), flush=True)
     commands = []
+    collection = Collection('object-return',
+        ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar', 'headless')
 
     def run(label, argv, timeout=300):
         argv = list(map(str, argv))
         commands.append({'label': label, 'argv': argv})
         (case / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (case / (label + '.log')).open('w') as log:
-            subprocess.run(argv, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=timeout)
+        context = collection.session(argv, label, headless=True) if Path(argv[0]).name == 'analyzeHeadless' else nullcontext(argv)
+        with context as measured, (case / (label + '.log')).open('w') as log:
+            subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=timeout)
 
     fixture = root / 'src/test/fixtures/object-return.cpp'
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
-    protected = {str(p): digest(p) for p in [fixture, Path(__file__), harness / 'check-object-return.py',
+    protected = {str(p): digest(p) for p in [fixture, Path(__file__), harness / 'integration_coverage.py', harness / 'check-object-return.py',
         harness / 'alias_relationships.py', harness / 'object-return-gdb.py', harness / 'object-return-gdb.sh',
         harness / 'ghidra_scripts/PrepareObjectReturn.java', harness / 'ghidra_scripts/RebaseFixtureProgram.java',
         harness / 'qemu-socket.sh', harness / 'check-dwarfdump.py', *[p for p in module.rglob('*') if p.is_file()]]}
@@ -132,6 +138,12 @@ def main():
     (case / 'acceptance.json').write_text(json.dumps({'status': 'OBJECT_RETURN_PASS', 'target': args.target,
         'role': args.role, 'outputPair': pair, 'protected': protected, 'observations': observations,
         'projectBackupChanges': sorted(changed)}, indent=4) + '\n')
+    if collection.enabled:
+        receipt = json.loads((case / 'acceptance.json').read_text())
+        receipt.update(status='PASS_OBJECT_RETURN_MEASUREMENT', oracleStatus=receipt['status'], javaRuntime=21,
+            measurement={'directAnalyzerSessions': 3, 'unmeasuredNestedDrivers': []})
+        (case / 'coverage-oracle.json').write_text(json.dumps(receipt, indent=4) + '\n')
+        collection.finish(case / 'coverage-oracle.json')
     print('object-return-export=PASS', flush=True)
 
 

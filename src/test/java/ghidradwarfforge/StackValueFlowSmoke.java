@@ -33,11 +33,19 @@ public final class StackValueFlowSmoke {
             new HeadlessGhidraApplicationConfiguration());
         for (boolean x86 : new boolean[] { true, false }) {
             for (int bytes : new int[] { 4, 8 }) {
-                for (String shape : List.of("reload", "clobbered-slot", "partial-slot", "unknown-store", "other-slot", "lost-register", "respill")) {
+                for (String shape : List.of("reload", "narrow-reload", "clobbered-slot", "partial-slot", "unknown-store", "other-slot", "lost-register", "respill")) {
                     check(x86, bytes, shape);
+                }
+                if (x86) {
+                    for (String shape : List.of("adjacent-before", "adjacent-after", "overlap-before", "overlap-after")) {
+                        check(true, bytes, shape);
+                    }
                 }
             }
         }
+        checks += StackCarrierOwnershipSmoke.check();
+        checks += StackTransferShapeSmoke.check();
+        checks += StorageRefinementSmoke.check();
         System.out.println("stack-value-flow-smoke=PASS checks=" + checks);
     }
 
@@ -47,6 +55,9 @@ public final class StackValueFlowSmoke {
         String store = x86 ? (bytes == 4 ? "897c2408" : "48897c2408") : (bytes == 4 ? "e00b00b9" : "e00700f9");
         String killOriginal = x86 ? "31ff" : "e0031faa";
         String load = x86 ? (bytes == 4 ? "448b542408" : "4c8b542408") : (bytes == 4 ? "e90b40b9" : "e90740f9");
+        // Read only two bytes of the saved four/eight-byte value. Zero extension
+        // cannot recover the remaining original bytes, but the slot stays valid.
+        if (shape.equals("narrow-reload")) load = x86 ? "66448b542408" : "e9134079";
         String overwrite = x86 ? "c644240a00" : "ff2b0039";
         String unknownStore = x86 ? "c60600" : "3f000039";
         String otherStore = x86 ? "c644241800" : "ff630039";
@@ -71,6 +82,24 @@ public final class StackValueFlowSmoke {
             code.append(unknownStore).append(nop);
         }
         if (shape.equals("other-slot")) code.append(otherStore).append(nop);
+        boolean boundaryWrite = shape.startsWith("adjacent-") || shape.startsWith("overlap-");
+        boolean boundaryValueLost = false;
+        if (boundaryWrite) {
+            int offset = shape.endsWith("before") ? 7 :
+                (shape.startsWith("adjacent-") ? 8 + bytes : 7 + bytes);
+            int width = shape.startsWith("adjacent-") ? 1 : 2;
+            // Independent byte-memory oracle: all tracked bytes start nonzero;
+            // applying this actual MOV must preserve or destroy the saved value.
+            byte[] memory = new byte[32];
+            java.util.Arrays.fill(memory, 8, 8 + bytes, (byte) 0x5a);
+            byte[] expectedValue = java.util.Arrays.copyOfRange(memory, 8, 8 + bytes);
+            java.util.Arrays.fill(memory, offset, offset + width, (byte) 0);
+            boundaryValueLost = !java.util.Arrays.equals(expectedValue,
+                java.util.Arrays.copyOfRange(memory, 8, 8 + bytes));
+            destructive = code.length() / 2;
+            code.append(width == 1 ? "c64424" : "66c74424")
+                .append(String.format("%02x", offset)).append(width == 1 ? "00" : "0000").append(nop);
+        }
         int reload = code.length() / 2;
         code.append(load);
         int ready = code.length() / 2;
@@ -119,7 +148,8 @@ public final class StackValueFlowSmoke {
                 var map = TargetRegisterMap.forTarget(x86 ? "x86_64" : "aarch64");
                 var intervals = StackValueFlow.prove(program, function, parameter, map, TaskMonitor.DUMMY);
                 String context = (x86 ? "x86" : "arm") + "/" + bytes + "/" + shape + " " + intervals;
-                boolean lostBeforeReload = shape.equals("clobbered-slot") || shape.equals("partial-slot") || shape.equals("unknown-store");
+                boolean lostBeforeReload = shape.equals("clobbered-slot") || shape.equals("partial-slot") ||
+                    shape.equals("unknown-store") || boundaryValueLost;
                 if (lostBeforeReload) {
                     require(at(intervals, 0) instanceof RegisterStorage, "retain valid incoming prefix: " + context);
                     require(!at(intervals, reload).available() && !at(intervals, ready).available() &&
@@ -133,13 +163,23 @@ public final class StackValueFlowSmoke {
                     require(at(intervals, handoff) instanceof RegisterRelativeStorage relative && relative.byteOffset() == 8,
                         "completed spill handoff: " + context);
                     require(at(intervals, reload) instanceof RegisterRelativeStorage, "load pre-state");
-                    require(at(intervals, ready) instanceof RegisterStorage register && register.register().dwarfNumber() == (x86 ? 10 : 9),
-                        "completed load: " + context);
-                    require(at(intervals, reused) instanceof RegisterStorage, "slot reuse must preserve register: " + context);
+                    if (shape.equals("narrow-reload")) {
+                        require(at(intervals, ready) instanceof RegisterRelativeStorage relative && relative.byteOffset() == 8,
+                            "partial read lost its intact memory source or fabricated a full register value: " + context);
+                        require(at(intervals, reused) instanceof RegisterRelativeStorage,
+                            "partial read retired memory before the overwrite: " + context);
+                        require(!at(intervals, returned).available(),
+                            "partial reload resurrected full value after memory overwrite: " + context);
+                    }
+                    else {
+                        require(at(intervals, ready) instanceof RegisterStorage register && register.register().dwarfNumber() == (x86 ? 10 : 9),
+                            "completed load: " + context);
+                        require(at(intervals, reused) instanceof RegisterStorage, "slot reuse must preserve register: " + context);
+                    }
                     if (shape.equals("lost-register")) {
                         require(!at(intervals, killed).available() && !at(intervals, returned).available(), "lost value cannot reappear: " + context);
                     }
-                    else {
+                    else if (!shape.equals("narrow-reload")) {
                         if (shape.equals("respill")) {
                             require(at(intervals, killed) instanceof RegisterRelativeStorage relative && relative.byteOffset() == 16, "second spill: " + context);
                             require(at(intervals, restored) instanceof RegisterStorage register && register.register().dwarfNumber() == (x86 ? 11 : 10), "second reload: " + context);
@@ -149,10 +189,21 @@ public final class StackValueFlowSmoke {
                 }
                 var rejected = GhidraVariableStorage.stableParameter(program, function, parameter, map, TaskMonitor.DUMMY);
                 var publicRanges = GhidraVariableStorage.parameterPrefix(program, function, parameter, map, rejected, TaskMonitor.DUMMY);
-                if (!lostBeforeReload && !shape.equals("lost-register")) {
+                if (boundaryWrite) {
+                    require(at(intervals, destructive) instanceof RegisterRelativeStorage,
+                        "boundary write retired value before execution: " + context);
+                    require(at(publicRanges, ready).available() == !boundaryValueLost &&
+                        at(publicRanges, returned).available() == !boundaryValueLost,
+                        "public storage proof disagrees with byte-memory oracle: " + context);
+                }
+                if (!lostBeforeReload && !shape.equals("lost-register") && !shape.equals("narrow-reload")) {
                     require(at(publicRanges, returned) instanceof RegisterStorage, "public proof missed surviving register: " + publicRanges);
                 }
                 if (shape.equals("lost-register")) require(!at(publicRanges, returned).available(), "public proof resurrected lost value");
+                if (shape.equals("narrow-reload")) {
+                    require(at(publicRanges, ready) instanceof RegisterRelativeStorage && !at(publicRanges, returned).available(),
+                        "public proof treated a two-byte load as a complete value: " + context);
+                }
                 var loadInstruction = program.getListing().getInstructionAt(entry.add(reload));
                 loadInstruction.setFlowOverride(ghidra.program.model.listing.FlowOverride.RETURN);
                 require(StackValueFlow.prove(program, function, parameter, map, TaskMonitor.DUMMY).isEmpty(), "flow override admitted");

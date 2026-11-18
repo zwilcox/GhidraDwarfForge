@@ -13,6 +13,13 @@ and its private data-directory path. It never installs over the system debugger.
 See `../../docs/ARM-BE8-PROFILE.md` for the GDB 15.1 failure and the paired 17.1
 reference. These debugger builds are validation tools, not shipped libraries.
 
+Source downloads use GNU's server first, GDB's Sourceware release server after
+a transport failure, then GNU for the final attempt. Every attempt must match
+the same pinned SHA-256; a checksum or size failure stops immediately. Private
+partial downloads are discarded and existing destination files are preserved.
+The build receipt records the successful download URL, or `null` when the caller
+supplied a local archive.
+
 ## Private ARM emulator reference
 
 `build-arm-qemu.py` is a separate, optional compiler-reference tool builder. It
@@ -468,8 +475,33 @@ Every artifact is hashed before and after validation. CI runs the complete
 64-case corrected-reader matrix and retains its evidence.
 
 The evidence profile pins this patch as `gnuVectorPatchSha256` and identifies
-`libdwarf-2.3.2-eight-corrections-and-llvm-verify`. Older receipts retain their
-historical profile; new receipts require the complete eight-patch bundle.
+`libdwarf-2.3.2-eight-corrections-and-llvm-verify` historically. New receipts
+require the nine-patch profile described below.
+
+## Atomic type references
+
+The ninth validation-only patch, `0009-recognize-atomic-type-reference.patch`,
+SHA-256 `438fe96a2f575d2cb669a7d3cd6c1e7672188dbc5d9b623a5e214c0b9dfe2800`,
+adds `DW_TAG_atomic_type` to the permitted `DW_AT_type` target tags in
+`src/bin/dwarfdump/print_die.c`. DWARF 5 section 5.3, table 5.3 defines this
+type modifier. The pinned checker omits it and rejects an unmodified GCC C11
+`_Atomic(int)` fixture as well as the equivalent Forge artifact. This is a
+checker correction; shipped producer/consumer libraries are unchanged.
+
+`src/test/integration/dwarfdump-atomic-type.py` compiles that fixture independently
+of Ghidra and the producer. LLVM and the corrected strict checker accept it.
+A one-byte abbreviation mutation replaces the atomic tag with `DW_TAG_variable`;
+strict validation must still reject the resulting non-type reference target.
+The optional `--unpatched` checker must reproduce the original atomic diagnostic.
+Inherited compiler frame diagnostics use the existing original-byte corroboration;
+no diagnostic suppression or new frame exception is added.
+
+**CONFIRMED locally:** clean checker build, compiler positive, corrupted negative,
+old-checker reproduction, workflow lint and validation-evidence controls pass.
+Hosted acceptance remains pending. Evidence is retained under
+`.forge-work/scratch/coverage-expansion/atomic-checker-regression/` and
+`atomic-validation-evidence-controls/`. New receipts pin `atomicTypePatchSha256`
+and use `libdwarf-2.3.2-nine-corrections-and-llvm-verify`.
 
 ## Native Windows strict consumer
 

@@ -39,6 +39,7 @@ public final class DebuglinkBasenameSmoke {
             return;
         }
         if (args.length != 0) throw new IllegalArgumentException("no args | raw-paths directory | non-utf8");
+        checks += boundaries();
         for (String name : new String[]{"app.dbg", ".hidden.dbg", "name ;$['literal'].dbg", "COM10.dbg", "two words.dbg"}) {
             byte[] actual = DebuglinkBasename.portableAscii(Path.of("parent").resolve(name));
             if (!Arrays.equals(name.getBytes(StandardCharsets.US_ASCII), actual)) throw new AssertionError("Portable bytes changed");
@@ -61,6 +62,74 @@ public final class DebuglinkBasenameSmoke {
             checks += 3;
         }
         System.out.println("debuglink-basename=PASS checks=" + checks);
+    }
+
+    private static int boundaries() throws Exception {
+        int checks = 0;
+        Path root = Path.of(".").toAbsolutePath().getRoot();
+        reject(() -> DebuglinkBasename.portableAscii(root));
+        checks++;
+        // These are encoder-format limits, not filesystem filename limits.
+        // No file with a large name is created or claimed to be discoverable.
+        String ascii = "a".repeat(65536);
+        byte[] accepted;
+        try { accepted = DebuglinkBasename.portableAsciiName(ascii); }
+        catch (IOException refused) { throw new AssertionError("exact encoded-byte limit refused", refused); }
+        if (!Arrays.equals(ascii.getBytes(StandardCharsets.US_ASCII), accepted)) {
+            throw new AssertionError("ASCII basename bytes changed at format bound");
+        }
+        reject(() -> DebuglinkBasename.portableAsciiName(ascii + "a"));
+        checks += 2;
+        for (int control = 0; control < 32; control++) {
+            String name = "before" + (char) control + "after.dbg";
+            reject(() -> DebuglinkBasename.portableAsciiName(name));
+            checks++;
+        }
+        String os = System.getProperty("os.name");
+        String encoding = System.getProperty("sun.jnu.encoding");
+        try {
+            // Test refusal of invalid advertised host metadata. Setting these
+            // properties does not change the real host or its native encoding.
+            System.setProperty("os.name", "Unsupported-test-host");
+            reject(() -> DebuglinkBasename.linuxUtf8(Path.of("test.dbg")));
+            checks++;
+        }
+        finally { restoreProperty("os.name", os); }
+        if ("Linux".equals(os)) {
+            try {
+                System.clearProperty("sun.jnu.encoding");
+                reject(() -> DebuglinkBasename.linuxUtf8(Path.of("test.dbg")));
+                System.setProperty("sun.jnu.encoding", "invalid charset ?");
+                reject(() -> DebuglinkBasename.linuxUtf8(Path.of("test.dbg")));
+                System.setProperty("sun.jnu.encoding", "US-ASCII");
+                reject(() -> DebuglinkBasename.linuxUtf8(Path.of("test.dbg")));
+                checks += 3;
+            }
+            finally { restoreProperty("sun.jnu.encoding", encoding); }
+            if (encoding != null && Charset.forName(encoding).equals(StandardCharsets.UTF_8)) {
+                for (String exact : new String[] {"λ".repeat(32768), "😀".repeat(16384)}) {
+                    byte[] expected = exact.getBytes(StandardCharsets.UTF_8);
+                    if (expected.length != 65536) throw new AssertionError("invalid UTF-8 boundary fixture");
+                    try { accepted = DebuglinkBasename.linuxUtf8(Path.of(exact)); }
+                    catch (IOException refused) { throw new AssertionError("exact UTF-8 bound refused", refused); }
+                    if (!Arrays.equals(expected, accepted)) throw new AssertionError("UTF-8 basename bytes changed");
+                    reject(() -> DebuglinkBasename.linuxUtf8(Path.of(exact + "a")));
+                    checks += 2;
+                }
+                reject(() -> DebuglinkBasename.linuxUtf8(root));
+                checks++;
+            }
+        }
+        if (!java.util.Objects.equals(os, System.getProperty("os.name")) ||
+                !java.util.Objects.equals(encoding, System.getProperty("sun.jnu.encoding"))) {
+            throw new AssertionError("basename metadata controls leaked process properties");
+        }
+        return checks;
+    }
+
+    private static void restoreProperty(String key, String value) {
+        if (value == null) System.clearProperty(key);
+        else System.setProperty(key, value);
     }
 
     private static void reject(Action action) throws Exception {

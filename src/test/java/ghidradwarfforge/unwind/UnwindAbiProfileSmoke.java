@@ -110,6 +110,7 @@ public final class UnwindAbiProfileSmoke {
                     return;
                 }
                 var selected = UnwindAbiProfile.select(program, function, image, 0, TaskMonitor.DUMMY);
+                if (shape.equals("ordinary")) UnwindProfileMetadataSmoke.check(program, function, image, selected, arm);
                 var instruction = program.getListing().getInstructionAt(entry);
                 evidence.append(tag).append(" convention=").append(function.getCallingConventionName())
                     .append(" effective=").append(selected.description().convention())

@@ -456,6 +456,11 @@ public final class GhidraTypeGraph {
                 var memoryBlock = program.getMemory().getBlock(memoryAddress);
                 if (memoryBlock == null || !memoryBlock.isLoaded() ||
                         GhidraStaticBindings.read(program, savedSymbol.getID(), monitor, diagnostic).status() != GhidraStaticBindings.Status.ABSENT) continue;
+                if (memoryBlock.isOverlay() || memoryBlock.isMapped() ||
+                        !memoryAddress.getAddressSpace().equals(program.getAddressFactory().getDefaultAddressSpace())) {
+                    diagnostic.accept("Omitted memory local " + variable.getName() + ": unsupported memory mapping");
+                    continue;
+                }
                 DataType type = variable.getDataType();
                 boolean inferred = Undefined.isUndefined(type);
                 if (inferred) type = GhidraStaticRecovery.accept(program, function, savedSymbol, memoryAddress,

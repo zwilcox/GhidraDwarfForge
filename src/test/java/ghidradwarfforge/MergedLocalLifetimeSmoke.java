@@ -30,6 +30,7 @@ public final class MergedLocalLifetimeSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        MergedLocalOwnershipSmoke.run();
         for (boolean x86 : new boolean[] { true, false }) {
             for (int bytes : new int[] { 4, 8 }) {
                 for (String shape : List.of("straight", "old-killed", "branch", "loop")) check(x86, bytes, shape);

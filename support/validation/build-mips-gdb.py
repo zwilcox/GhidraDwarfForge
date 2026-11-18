@@ -2,6 +2,7 @@
 """Build pinned, unmodified target debuggers used by register-piece acceptance."""
 import argparse
 import hashlib
+import http.client
 import json
 import os
 import platform
@@ -9,11 +10,48 @@ from pathlib import Path
 import signal
 import subprocess
 import tarfile
+import tempfile
+import time
+import urllib.error
 import urllib.request
 
 VERSION = '17.1'
 ARCHIVE_SHA256 = '14996f5f74c9f68f5a543fdc45bca7800207f91f92aeea6c2e791822c7c6d876'
 URL = 'https://ftp.gnu.org/gnu/gdb/gdb-' + VERSION + '.tar.xz'
+FALLBACK_URL = 'https://sourceware.org/pub/gdb/releases/gdb-' + VERSION + '.tar.xz'
+MAX_ARCHIVE_BYTES = 128 * 1024 * 1024
+
+
+def download_archive(archive):
+    """Retry transport failures across upstream hosts; publish only the pinned archive."""
+    if archive.exists() or archive.is_symlink():
+        raise FileExistsError(archive)
+    for attempt, url in enumerate((URL, FALLBACK_URL, URL), start=1):
+        with tempfile.TemporaryDirectory(prefix='gdb-download-', dir=archive.parent) as temporary:
+            staged = Path(temporary) / 'source.tar.xz'
+            digest = hashlib.sha256()
+            size = 0
+            try:
+                with urllib.request.urlopen(url, timeout=60) as response, staged.open('xb') as output:
+                    while block := response.read(1024 * 1024):
+                        size += len(block)
+                        if size > MAX_ARCHIVE_BYTES:
+                            raise ValueError('GDB source archive exceeds download size bound')
+                        output.write(block)
+                        digest.update(block)
+            except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.IncompleteRead) as failure:
+                print(f'GDB source download attempt {attempt}/3 failed ({url}): {failure}', flush=True)
+                if attempt == 3:
+                    raise
+            else:
+                if digest.hexdigest() != ARCHIVE_SHA256:
+                    raise ValueError('GDB source archive SHA-256 does not match the pinned release')
+                # Both names are on the same filesystem. link() publishes without
+                # replacing a path created by another caller; cleanup removes only
+                # our private staging name, including on failure or interruption.
+                os.link(staged, archive)
+                return url
+        time.sleep(attempt * 2)
 
 
 def main():
@@ -30,10 +68,7 @@ def main():
     root = args.directory.resolve()
     root.mkdir(parents=True, exist_ok=False)
     archive = args.archive.resolve(strict=True) if args.archive else root / ('gdb-' + VERSION + '.tar.xz')
-    if not args.archive:
-        with urllib.request.urlopen(URL, timeout=60) as response, archive.open('xb') as output:
-            while block := response.read(1024 * 1024):
-                output.write(block)
+    download_url = None if args.archive else download_archive(archive)
     with archive.open('rb') as stream:
         digest = hashlib.file_digest(stream, 'sha256').hexdigest()
     if digest != ARCHIVE_SHA256:
@@ -89,7 +124,7 @@ def main():
     assert 'FORGE_GDB_PYTHON_PASS' in (root / 'gdb-python.log').read_text()
     with executable.open('rb') as stream:
         executable_sha256 = hashlib.file_digest(stream, 'sha256').hexdigest()
-    (root / 'receipt.json').write_text(json.dumps(dict(version=VERSION, sourceUrl=URL,
+    (root / 'receipt.json').write_text(json.dumps(dict(version=VERSION, sourceUrl=URL, downloadUrl=download_url,
         sourceSha256=digest, executable=str(executable), executableSha256=executable_sha256,
         dataDirectory=str(data), targetProfile=args.target_profile,
         modifiedSource=False, systemInstallationChanged=False), indent=4) + '\n')

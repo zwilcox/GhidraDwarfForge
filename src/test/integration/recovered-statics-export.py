@@ -9,6 +9,10 @@ import re
 import shutil
 import subprocess
 import tempfile
+from contextlib import nullcontext
+
+from integration_coverage import Collection
+import static_coverage
 
 
 def digest(path):
@@ -35,7 +39,7 @@ def main():
     results.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix=accepted['target'] + '-' + accepted['role'] + '-', dir=results))
     print('recovered-statics-results=' + str(case), flush=True)
-    for name in ['reference', 'stripped', 'labels.json', 'compiler-objects.json', 'compiler-gdb.log']:
+    for name in ['reference', 'stripped', 'labels.json', 'compiler-objects.json', 'compiler-gdb.log', 'compiler-observations.json']:
         shutil.copy2(baseline / name, case / name)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
     protected = {str(p): digest(p) for p in [module, baseline / 'stripped', baseline / 'reference',
@@ -43,17 +47,23 @@ def main():
     project = baseline / 'project'
     before = snapshot(project)
     commands = []
+    source_hashes = static_coverage.sources()
+    suite = 'recovered-statics-controls' if args.controls_only else 'recovered-statics-positive'
+    collection = Collection(suite, module, 'headless')
 
     def run(label, command):
         command = list(map(str, command))
         commands.append({'label': label, 'argv': command})
         (case / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (case / (label + '.log')).open('w') as log:
-            subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=240)
+        context = collection.session(command, label, headless=True) \
+            if command[0] == str(ghidra / 'support/analyzeHeadless') else nullcontext(command)
+        with context as measured, (case / (label + '.log')).open('w') as log:
+            subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=240)
         return (case / (label + '.log')).read_text()
 
     rows = []
-    modes = ['inferred-stale', 'inferred-namespace', 'inferred-overlap', 'inferred-curated', 'memory-stale', 'memory-failed'] \
+    modes = ['inferred-stale', 'inferred-namespace', 'inferred-overlap', 'inferred-curated',
+        'memory-stale', 'memory-failed', 'memory-overlay', 'memory-mapped'] \
         if args.controls_only else ['inferred', 'memory']
     for mode in modes:
         output = case / (mode + '.dbg')
@@ -78,6 +88,8 @@ def main():
                 assert 'Omitted explicit static binding' in log
             if mode == 'memory-stale':
                 assert 'rejected lexical scope' in log
+            if mode in ['memory-overlay', 'memory-mapped']:
+                assert 'Omitted memory local saved_other: unsupported memory mapping' in log
             current = [digest(output), digest(Path(str(output) + '.c'))]
             assert pair is None or current == pair
             pair = current
@@ -129,6 +141,8 @@ def main():
         'protected': protected, 'baseline': str(baseline), 'cases': rows, 'projectBackupChanges': sorted(changed),
         'cancelledExports': int(args.controls_only), 'remaining': 'complete matrix review and hosted acceptance'}
     (case / 'acceptance.json').write_text(json.dumps(result, indent=4) + '\n')
+    static_coverage.finish(collection, case, result, source_hashes, 'PASS_RECOVERED_STATICS_MEASUREMENT',
+        {'directAnalyzerSessions': len(modes) * 2 + (2 if args.controls_only else 0), 'modes': modes})
     print('recovered-statics-export=PASS', flush=True)
 
 

@@ -101,7 +101,179 @@ public final class OriginalFrameSourcesSmoke {
         }
         Files.write(path, out.array()); return ElfImage.read(path);
     }
+    private static OriginalFrameSources.Source identity(OriginalFrameSources.Source source,
+            long offset, long stored, long decoded, String storedHash, String decodedHash) {
+        return new OriginalFrameSources.Source(source.name(), offset, stored, decoded, source.address(),
+            source.programHeaders(), storedHash, decodedHash, source.records());
+    }
+
+    private static void rejectRead(ElfImage image, OriginalFrameSources.Inventory inventory, String message)
+            throws Exception {
+        byte[] before = Files.readAllBytes(image.sourcePath());
+        try {
+            OriginalFrameSources.debugFrameBytes(image, inventory, () -> false);
+            throw new AssertionError("accepted inconsistent original frame inventory: " + message);
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage().contains(message), "wrong frame refusal: " + expected.getMessage());
+        }
+        require(Arrays.equals(before, Files.readAllBytes(image.sourcePath())), "frame refusal changed input");
+    }
+
+    /** Re-read exactly the inventoried bytes; filesystem metadata alone is insufficient. */
+    private static void rereadControls(ElfImage image, OriginalFrameSources.Inventory inventory,
+            byte[] expected, byte[] original) throws Exception {
+        var source = inventory.sources().getFirst();
+        require(Arrays.equals(expected, OriginalFrameSources.debugFrameBytes(image, inventory, () -> false)),
+            "inventoried frame re-read changed decoded bytes");
+        require(OriginalFrameSources.debugFrameBytes(image, new OriginalFrameSources.Inventory(List.of()),
+            () -> false).length == 0, "absent inventoried frame acquired bytes");
+        rejectRead(image, new OriginalFrameSources.Inventory(List.of(source, source)),
+            "multiple original debug-frame sources");
+        for (var changed : List.of(
+                identity(source, source.offset() + 1, source.storedBytes(), source.decodedBytes(),
+                    source.storedSha256(), source.decodedSha256()),
+                identity(source, source.offset(), source.storedBytes() - 1, source.decodedBytes(),
+                    source.storedSha256(), source.decodedSha256()))) {
+            rejectRead(image, new OriginalFrameSources.Inventory(List.of(changed)),
+                "original debug-frame section no longer matches inventory");
+        }
+        String wrongHash = (source.storedSha256().startsWith("0") ? "1" : "0") + source.storedSha256().substring(1);
+        rejectRead(image, new OriginalFrameSources.Inventory(List.of(identity(source, source.offset(),
+            source.storedBytes(), source.decodedBytes(), wrongHash, source.decodedSha256()))),
+            "original stored frame bytes changed");
+        wrongHash = (source.decodedSha256().startsWith("0") ? "1" : "0") + source.decodedSha256().substring(1);
+        rejectRead(image, new OriginalFrameSources.Inventory(List.of(identity(source, source.offset(),
+            source.storedBytes(), source.decodedBytes(), source.storedSha256(), wrongHash))),
+            "original decoded frame bytes changed");
+        for (long length : new long[] { source.decodedBytes() - 1, source.decodedBytes() + 1 }) {
+            rejectRead(image, new OriginalFrameSources.Inventory(List.of(identity(source, source.offset(),
+                source.storedBytes(), length, source.storedSha256(), source.decodedSha256()))),
+                "original decoded frame bytes changed");
+        }
+        int[] visits = { 0 };
+        OriginalFrameSources.debugFrameBytes(image, inventory, () -> { visits[0]++; return false; });
+        for (int stop = 1; stop <= visits[0]; stop++) {
+            int selected = stop;
+            int[] current = { 0 };
+            try {
+                OriginalFrameSources.debugFrameBytes(image, inventory, () -> ++current[0] == selected);
+                throw new AssertionError("frame re-read ignored cancellation at " + stop);
+            }
+            catch (CancellationException expectedCancellation) { checks++; }
+            require(Arrays.equals(original, Files.readAllBytes(image.sourcePath())),
+                "cancelled frame re-read changed input");
+        }
+        var attributes = Files.readAttributes(image.sourcePath(), java.nio.file.attribute.BasicFileAttributes.class);
+        // A second real section header aliases exactly the original frame bytes.
+        // Selecting the first matching header would hide the ambiguous inventory.
+        byte[] ambiguous = original.clone();
+        var fields = ByteBuffer.wrap(ambiguous).order(image.byteOrder());
+        int table = Math.toIntExact(image.is64Bit() ? fields.getLong(40) : Integer.toUnsignedLong(fields.getInt(32)));
+        int stride = Short.toUnsignedInt(fields.getShort(image.is64Bit() ? 58 : 46));
+        require(Short.toUnsignedInt(fields.getShort(image.is64Bit() ? 60 : 48)) == 3,
+            "ambiguity fixture requires null, strings and one frame section");
+        System.arraycopy(ambiguous, table + 2 * stride, ambiguous, table + 3 * stride, stride);
+        fields.putShort(image.is64Bit() ? 60 : 48, (short) 4);
+        try {
+            Files.write(image.sourcePath(), ambiguous);
+            rejectRead(ElfImage.read(image.sourcePath()), inventory, "ambiguous original debug-frame section");
+        }
+        finally {
+            Files.write(image.sourcePath(), original);
+            Files.setLastModifiedTime(image.sourcePath(), attributes.lastModifiedTime());
+        }
+        byte[] changed = original.clone();
+        changed[Math.toIntExact(source.offset() + source.storedBytes() - 1)] ^= 1;
+        try {
+            Files.write(image.sourcePath(), changed);
+            Files.setLastModifiedTime(image.sourcePath(), attributes.lastModifiedTime());
+            var after = Files.readAttributes(image.sourcePath(), java.nio.file.attribute.BasicFileAttributes.class);
+            require(after.size() == attributes.size() && after.lastModifiedTime().equals(attributes.lastModifiedTime())
+                && java.util.Objects.equals(after.fileKey(), attributes.fileKey()),
+                "content-change fixture must retain metadata identity to exercise hashing");
+            rejectRead(image, inventory, "original stored frame bytes changed");
+        }
+        finally {
+            Files.write(image.sourcePath(), original);
+            Files.setLastModifiedTime(image.sourcePath(), attributes.lastModifiedTime());
+        }
+        require(Arrays.equals(expected, OriginalFrameSources.debugFrameBytes(image, inventory, () -> false)),
+            "restored source or cancelled re-read poisoned subsequent bytes");
+        require(Arrays.equals(original, Files.readAllBytes(image.sourcePath())), "re-read controls changed original");
+    }
+
+    private static void compressionMetadata(Path path, boolean wide, ByteOrder order) throws Exception {
+        byte[] frame = plain(wide ? 8 : 4, order);
+        for (boolean gnu : List.of(false, true)) {
+            String name = gnu ? ".zdebug_frame" : ".debug_frame";
+            byte[] packed = compressed(frame, wide, order, gnu, false);
+            // Every magic byte matters; GNU lengths are always big endian,
+            // independently of the containing ELF's byte order and class.
+            for (int fault = 0; fault < (gnu ? 5 : wide ? 2 : 0); fault++) {
+                byte[] bad = packed.clone();
+                var fields = ByteBuffer.wrap(bad).order(gnu ? ByteOrder.BIG_ENDIAN : order);
+                String diagnostic;
+                if (gnu && fault < 4) {
+                    bad[fault] ^= 1;
+                    diagnostic = "invalid GNU compressed frame header";
+                }
+                else if (gnu || fault == 0) {
+                    fields.putLong(gnu ? 4 : 8, Long.MIN_VALUE);
+                    diagnostic = "original frame decoded-byte budget exceeded";
+                }
+                else {
+                    fields.putLong(16, Long.MIN_VALUE);
+                    diagnostic = "invalid original frame uncompressed alignment";
+                }
+                var image = fixture(path, wide, order, List.of(new Section(name, 1, gnu ? 0 : 0x800, bad)));
+                byte[] before = Files.readAllBytes(path);
+                try {
+                    OriginalFrameSources.inspect(image, () -> false);
+                    throw new AssertionError("accepted invalid compression metadata: " + diagnostic);
+                }
+                catch (IllegalArgumentException expected) {
+                    require(expected.getMessage().contains(diagnostic), "wrong metadata refusal: " + expected);
+                }
+                require(Arrays.equals(before, Files.readAllBytes(path)), "metadata refusal changed original ELF");
+            }
+        }
+        // Zero requests no alignment. ELF32 ch_addralign is unsigned, so its
+        // highest power of two must not become a negative Java integer.
+        for (long alignment : new long[] {0, 1, 2, 0x80000000L, wide ? 1L << 62 : 1L << 30}) {
+            byte[] packed = compressed(frame, wide, order, false, false);
+            var fields = ByteBuffer.wrap(packed).order(order);
+            if (wide) fields.putLong(16, alignment);
+            else fields.putInt(8, (int) alignment);
+            var image = fixture(path, wide, order, List.of(new Section(".debug_frame", 1, 0x800, packed)));
+            byte[] before = Files.readAllBytes(path);
+            try {
+                var inventory = OriginalFrameSources.inspect(image, () -> false);
+                var records = inventory.sources().getFirst().records().frames();
+                require(records.size() == 1 && records.getFirst().address() == 0x1000 &&
+                    records.getFirst().size() == 32, "alignment changed frame inventory");
+                require(Arrays.equals(frame, OriginalFrameSources.debugFrameBytes(image, inventory, () -> false)),
+                    "alignment changed decoded frame bytes");
+            }
+            catch (IllegalArgumentException rejected) {
+                throw new AssertionError("valid compression alignment rejected: " + alignment, rejected);
+            }
+            require(Arrays.equals(before, Files.readAllBytes(path)), "alignment inspection changed original ELF");
+        }
+        var eh = fixture(path, wide, order, List.of(new Section(".eh_frame", 1, 0x800,
+            compressed(frame, wide, order, false, false))));
+        try {
+            OriginalFrameSources.inspect(eh, () -> false);
+            throw new AssertionError("accepted compressed EH frame");
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage().contains("compressed allocated/EH frame source is unsupported"),
+                "compressed EH frame reached record parsing: " + expected);
+        }
+    }
+
     private static void check(Path path, boolean wide, ByteOrder order) throws Exception {
+        compressionMetadata(path, wide, order);
         byte[] plain = plain(wide ? 8 : 4, order);
         for (String mode : List.of("plain", "gabi", "gnu")) {
             boolean gnu = mode.equals("gnu"), packed = !mode.equals("plain");
@@ -118,6 +290,7 @@ public final class OriginalFrameSourcesSmoke {
             require(source.records().frames().getFirst().address() == 0x1000 &&
                 source.records().frames().getFirst().size() == 32 && !source.programHeaders(), "wrong source range");
             require(Arrays.equals(original, Files.readAllBytes(path)), "source reader changed input");
+            rereadControls(image, result, plain, original);
             try { result.sources().clear(); throw new AssertionError("mutable sources"); }
             catch (UnsupportedOperationException expected) { checks++; }
             int[] polls = {0};
@@ -219,6 +392,9 @@ public final class OriginalFrameSourcesSmoke {
         var discovered = OriginalFrameSources.inspect(ElfImage.read(path), () -> false).sources().getFirst();
         require(discovered.programHeaders() && discovered.offset() == 0x300 &&
             discovered.records().frames().getFirst().address() == 0x4100, "wrong sectionless frame source");
+        require(OriginalFrameSources.debugFrameBytes(ElfImage.read(path),
+            new OriginalFrameSources.Inventory(List.of(discovered)), () -> false).length == 0,
+            "EH-only inventory acquired a debug-frame section");
         byte[] named = Arrays.copyOf(sectionless, 0x1000);
         var fields = ByteBuffer.wrap(named).order(order);
         byte[] names = "\0.eh_frame\0.shstrtab\0".getBytes(StandardCharsets.US_ASCII);
@@ -293,6 +469,7 @@ public final class OriginalFrameSourcesSmoke {
         try {
             for (boolean wide : List.of(false, true)) for (var order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                 check(root.resolve("fixture"), wide, order);
+                InheritedFrameBytesSmoke.check(root, wide, order);
             }
         }
         finally {

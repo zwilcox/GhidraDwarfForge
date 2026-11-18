@@ -96,9 +96,11 @@ tasks.register("prepareCallSiteSerializationHarness") {
 
 tasks.register("prepareInheritanceHarness") {
     group = "verification"
-    dependsOn testClasses
+    dependsOn testClasses, jar
     doLast {
-        layout.buildDirectory.file("inheritance-classpath.txt").get().asFile.text = sourceSets.test.runtimeClasspath.asPath
+        def packaged = files(tasks.named("jar").get().archiveFile)
+        def harness = sourceSets.test.runtimeClasspath - sourceSets.main.output
+        layout.buildDirectory.file("inheritance-classpath.txt").get().asFile.text = (packaged + harness).asPath
     }
 }
 
@@ -516,6 +518,15 @@ tasks.register("buildIdRecordsSmoke", JavaExec) {
     mainClass = "ghidradwarfforge.output.BuildIdRecordsSmoke"
 }
 
+tasks.register("buildIdHelperSmoke", JavaExec) {
+    group = "verification"
+    description = "Checks pinned build-ID requests, preview isolation, cancellation and response failures"
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = "ghidradwarfforge.output.BuildIdHelperSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
+}
+
 tasks.register("buildIdFileLockSmoke", JavaExec) {
     group = "verification"
     description = "Exercises real host build-ID lease exclusion across metadata reads and competing processes"
@@ -796,6 +807,7 @@ tasks.register("dwarfTargetSmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.nativeapi.DwarfTargetSmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
 tasks.register("ghidraTargetAgreementSmoke", JavaExec) {
@@ -1731,7 +1743,7 @@ tasks.register("compilerCallPolicySmoke", JavaExec) {
 
 tasks.register("dynamicParameterStorageSmoke", JavaExec) {
     group = "verification"
-    description = "Checks computed parameter storage in saved Ghidra programs across five targets"
+    description = "Checks computed parameter storage in saved Ghidra programs across pinned target profiles"
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.DynamicParameterStorageSmoke"
@@ -1739,6 +1751,7 @@ tasks.register("dynamicParameterStorageSmoke", JavaExec) {
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/dynamic-parameters/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/dynamic-parameters/cache").absolutePath
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
 tasks.register("dynamicCompositeOrderSmoke", JavaExec) {
@@ -1872,6 +1885,7 @@ tasks.register("arm32CallPolicySmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.Arm32CallPolicySmoke"
+    if (System.env.TMPDIR) systemProperty "java.io.tmpdir", System.env.TMPDIR
 }
 
 tasks.register("mipsAbiFlagsSmoke", JavaExec) {
@@ -2073,6 +2087,7 @@ tasks.register("mipsAggregateCallPolicySmoke", JavaExec) {
     dependsOn testClasses
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.MipsAggregateCallPolicySmoke"
+    systemProperty "java.io.tmpdir", System.getenv("TMPDIR") ?: System.getProperty("java.io.tmpdir")
 }
 
 tasks.register("lexicalScopeEvidenceSmoke", JavaExec) {
@@ -2322,6 +2337,7 @@ tasks.register("mipsWideCallPolicySmoke", JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = "ghidradwarfforge.elf.MipsWideCallPolicySmoke"
     args ghidraInstallDir
+    systemProperty "java.io.tmpdir", System.getenv("TMPDIR") ?: System.getProperty("java.io.tmpdir")
     systemProperty "java.awt.headless", "true"
     systemProperty "application.settingsdir", file("build/tmp/mips-wide-calls/settings").absolutePath
     systemProperty "application.cachedir", file("build/tmp/mips-wide-calls/cache").absolutePath

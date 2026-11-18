@@ -32,6 +32,8 @@ public final class I386ParameterAllocationSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        I386AllocationBoundarySmoke.run();
+        AllocationOmissionAuthoritySmoke.run();
         var path = Files.createTempFile("forge-i386-allocation-", ".elf");
         try {
             var language = DefaultLanguageService.getLanguageService().getLanguage(new LanguageID("x86:LE:32:default"));

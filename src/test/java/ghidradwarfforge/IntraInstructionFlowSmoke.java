@@ -32,6 +32,7 @@ public final class IntraInstructionFlowSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        IntraInstructionBoundarySmoke.run();
         for (String language : List.of("ARM:LE:32:v8", "ARM:LEBE:32:v8LEInstruction")) {
             for (String shape : List.of("conditional-copy", "backup", "conditional-store", "unrelated",
                     "self-copy", "overwrite", "release", "unknown-store")) check(language, shape);

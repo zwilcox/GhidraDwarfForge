@@ -2,6 +2,7 @@
 """Compare Forge-produced inheritance DIEs against this fixture's compiler evidence."""
 import argparse
 import copy
+from contextlib import nullcontext
 import hashlib
 import importlib.util
 import json
@@ -10,6 +11,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+from measurement import collection
 
 HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('object_checker', HERE.parents[1] / 'integration/check-object-parameters.py')
@@ -42,13 +44,15 @@ def main():
     commands, observations, controls = [], [], []
     java = str(Path(os.environ['JAVA_HOME']) / 'bin/java')
     classpath = args.classpath.read_text().strip()
+    coverage = collection('inheritance-producer', classpath)
 
     def run(label, command):
         argv = list(map(str, command))
-        commands.append({'label': label, 'argv': argv})
-        (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        with (root / (label + '.log')).open('w') as log:
-            subprocess.run(argv, stdout=log, stderr=subprocess.STDOUT, timeout=150, check=True)
+        with coverage.session(argv, label) if argv[0] == java else nullcontext(argv) as measured:
+            commands.append({'label': label, 'argv': argv, 'executedCommand': measured})
+            (root / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
+            with (root / (label + '.log')).open('w') as log:
+                subprocess.run(measured, stdout=log, stderr=subprocess.STDOUT, timeout=150, check=True)
         return (root / (label + '.log')).read_text()
 
     for target in args.targets:
@@ -149,8 +153,9 @@ def main():
                 runtime, produced, table_path, artifact])
             verified = run(label + '-llvm', ['llvm-dwarfdump', '--verify', artifact])
             assert 'No errors.' in verified
-            checked = run(label + '-strict', [os.environ['DWARFDUMP'], artifact])
-            assert not re.search(r'warning:|error:', checked, re.I)
+            checked = run(label + '-strict', ['python3', HERE.parents[1] / 'integration/check-dwarfdump.py',
+                artifact, case / 'strict.log', '--tool', os.environ['DWARFDUMP'], '--original', runtime])
+            assert 'strict-dwarfdump=PASS' in checked
             decoded = run(label + '-gnu', ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline', artifact])
             assert not re.search(r'warning:|error:', decoded, re.I)
             emitted = checker.read_dies(decoded)
@@ -225,6 +230,7 @@ def main():
 
     (root / 'result.json').write_text(json.dumps({'status': 'PASS_NATIVE_INHERITANCE', 'cases': observations, 'controls': controls,
         'scope': 'production native emitter and ELF writer with compiler-supplied model; Ghidra extraction not tested'}, indent=4) + '\n')
+    coverage.finish(root / 'result.json')
     print('inheritance-native=PASS', root)
 
 

@@ -16,6 +16,7 @@ from pathlib import Path
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 from zipfile import ZipFile
 from integration_coverage import Collection
@@ -99,8 +100,15 @@ def validate_reference(original, sidecar, directory):
         directory / "llvm-verify.txt")
     if "No errors." not in output or "error:" in output.lower() or "warning:" in output.lower():
         raise AssertionError("compiler reference failed LLVM verification")
-    run([os.environ.get("DWARFDUMP", "dwarfdump"), str(sidecar)], directory,
-        directory / "dwarfdump.txt")
+    # A zero exit status alone does not establish successful libdwarf checks.
+    # Corroborate inherited frame diagnostics against the original ELF bytes.
+    run([sys.executable, str(Path(__file__).with_name("check-dwarfdump.py")),
+        str(sidecar), str(directory / "dwarfdump.txt"),
+        "--tool", os.environ.get("DWARFDUMP", "dwarfdump"),
+        "--original", str(original)], directory, directory / "strict-check.txt")
+    strict = json.loads((directory / "dwarfdump.txt.check.json").read_text())
+    if strict["status"] != "PASS" or strict["exit_status"] != 0:
+        raise AssertionError("matched companion failed strict DWARF validation")
 
 
 def generated_companion(directory, original, reference, source, classpath, coverage):

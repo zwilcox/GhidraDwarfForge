@@ -16,7 +16,7 @@ import ghidradwarfforge.calls.CallValue.*;
 /** Numeric expectations use unbounded arithmetic, independent of DWARF serialization. */
 public final class CallValueSmoke {
     private record Case(String name, CallValue value, BiFunction<BigInteger, BigInteger, BigInteger> expected) { }
-    private record Vector(String name, int addressBytes, String order, String register5, String register6,
+    record Vector(String name, int addressBytes, String order, String register5, String register6,
             String expression, String expected) { }
     private static int rejected;
     private static void reject(Runnable action) {
@@ -84,6 +84,8 @@ public final class CallValueSmoke {
                 }
             }
         }
+        try { rejected += CallValueBoundarySmoke.append(vectors, samples); }
+        catch (IllegalArgumentException failure) { throw new AssertionError("valid call-value boundary fixture rejected", failure); }
         reject(() -> new Literal(0, 0));
         reject(() -> new Incoming(-1, 8));
         reject(() -> CallValue.slice(new Incoming(0, 4), 1, 4));

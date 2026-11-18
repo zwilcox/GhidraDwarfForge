@@ -23,6 +23,8 @@ import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.listing.FlowOverride;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.pcode.PcodeOp;
+import ghidra.program.model.pcode.Varnode;
 import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.SourceType;
@@ -99,6 +101,7 @@ public final class DelayedReturnPrefixSmoke {
                         wrongOwner.set(1, decorate(instructions.get(1), Map.of("getFlowType", RefType.UNCONDITIONAL_JUMP)));
                         require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, wrongOwner, base, TaskMonitor.DUMMY) < 0,
                             "delayed jump treated as return");
+                        delayContracts(instructions, base, boundary);
                         program.getReferenceManager().addMemoryReference(entry.add(0x100), entry.add(4),
                             RefType.UNCONDITIONAL_JUMP, SourceType.USER_DEFINED, 0);
                         require(GhidraVariableStorage.parameterPrefix(program, function, parameter, registers, stable,
@@ -112,6 +115,48 @@ public final class DelayedReturnPrefixSmoke {
             }
         }
         System.out.println("delayed-return-prefix-smoke=PASS checks=" + checks);
+    }
+
+    private static void delayContracts(List<Instruction> instructions,
+            ghidra.program.model.lang.Register base, long boundary) throws Exception {
+        Instruction owner = instructions.get(1), slot = instructions.get(2);
+        for (var mutation : List.<Map<String, Object>>of(
+                Map.of("getLength", 0, "getParsedLength", 0), Map.of("getParsedLength", owner.getLength() + 1),
+                Map.of("isLengthOverridden", true), Map.of("isFallThroughOverridden", true),
+                Map.of("getFallThrough", slot.getAddress()),
+                Map.of("getFlowType", RefType.CALL_TERMINATOR))) {
+            var changed = new ArrayList<>(instructions);
+            changed.set(1, decorate(owner, mutation));
+            require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) < 0,
+                "invalid delayed-return owner accepted: " + mutation);
+        }
+        for (var mutation : List.<Map<String, Object>>of(
+                Map.of("getAddress", slot.getAddress().add(1), "getLength", 3, "getParsedLength", 3),
+                Map.of("getLength", 0),
+                Map.of("getLength", 3, "getParsedLength", 3),
+                Map.of("getFallThrough", slot.getAddress()),
+                java.util.Collections.singletonMap("getFallThrough", null))) {
+            var changed = new ArrayList<>(instructions);
+            changed.set(2, decorate(slot, mutation));
+            require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) < 0,
+                "invalid delay-slot extent/fallthrough accepted: " + mutation);
+        }
+        for (int opcode : new int[] {PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND,
+                PcodeOp.CALL, PcodeOp.CALLIND, PcodeOp.RETURN, PcodeOp.CALLOTHER, PcodeOp.UNIMPLEMENTED}) {
+            var changed = new ArrayList<>(instructions);
+            changed.set(2, decorate(slot, Map.of("getPcode", new PcodeOp[] {
+                new PcodeOp(slot.getAddress(), 0, opcode, new Varnode[0], null)})));
+            require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) < 0,
+                "control or opaque effect in delay slot accepted: " + opcode);
+        }
+        var extra = new ArrayList<>(instructions);
+        extra.add(slot);
+        require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, extra, base, TaskMonitor.DUMMY) < 0,
+            "delayed return with an extra instruction is not a final closed return");
+        require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x1010, instructions, base, TaskMonitor.DUMMY) < 0,
+            "undecoded bytes after the slot must not acquire a lifetime");
+        require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, instructions, base, TaskMonitor.DUMMY) == boundary,
+            "invalid delay metadata poisoned the valid decoded proof");
     }
 
     private static Instruction decorate(Instruction real, Map<String, Object> replacements) {

@@ -39,13 +39,22 @@ public final class ClassScopeSmoke {
             new ProgramTypeModel.FunctionSignature(nested, entry + half, integer, List.of(argument),
                 List.of(), false, false, "default", "USER_DEFINED"));
         var declarations = List.of(new ProgramTypeModel.FunctionDeclaration("external:103", external,
-            integer, List.of(receiver), false, false, "default", "USER_DEFINED"));
+            integer, List.of(receiver), false, false, "default", "USER_DEFINED"),
+            new ProgramTypeModel.FunctionDeclaration("external:104", "outer::Counter::metadata",
+                integer, List.of(new Parameter("", integer, false),
+                    new Parameter("result_storage", pointer, true, true)),
+                true, true, "unknown", "USER_DEFINED"),
+            new ProgramTypeModel.FunctionDeclaration("external:105", "outer::Counter::disabled",
+                integer, List.of(argument), false, false, "unknown", "USER_DEFINED",
+                false, "fixture has no proven debugger call ABI"));
         var classes = new ClassScopeModel(List.of(new Scope(1, 0, "outer", Kind.NAMESPACE),
             new Scope(2, 1, "Counter", Kind.CLASS), new Scope(3, 2, "Nested", Kind.CLASS)),
             List.of(new Binding(2, object, BindingSource.EXPLICIT_SAVED, "analyst binding with different type name")),
             List.of(new Method(101, 2, "method", FunctionReference.definition(method, entry)),
                 new Method(102, 3, "static_method", FunctionReference.definition(nested, entry + half)),
-                new Method(103, 2, "external", FunctionReference.declaration(external, "external:103"))));
+                new Method(103, 2, "external", FunctionReference.declaration(external, "external:103")),
+                new Method(104, 2, "metadata", FunctionReference.declaration("outer::Counter::metadata", "external:104")),
+                new Method(105, 2, "disabled", FunctionReference.declaration("outer::Counter::disabled", "external:105"))));
         var model = new ProgramTypeModel(graph, signatures, List.of(),
             new VariableStorageModel(List.of()), List.of(), declarations, List.of(), classes);
         var functions = List.of(new FunctionSymbol(method, entry, half),

@@ -19,6 +19,7 @@ public final class DebugCompressionSmoke {
     private DebugCompressionSmoke() { }
 
     public static void main(String[] args) throws Exception {
+        alignmentContracts();
         require(DebugSectionCompression.parse("none") == DebugSectionCompression.NONE, "none parsing");
         require(DebugSectionCompression.parse("zlib") == DebugSectionCompression.ZLIB, "zlib parsing");
         try {
@@ -119,6 +120,46 @@ public final class DebugCompressionSmoke {
                 }
             }
         }
+    }
+
+    private static void alignmentContracts() throws Exception {
+        byte[] compressible = new byte[4096];
+        Arrays.fill(compressible, (byte) 37);
+        for (var encoding : DebugSectionCompression.values()) {
+            for (boolean wide : List.of(false, true)) {
+                for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+                    for (int alignment : new int[] {-1, 0, 3, 7, 16, Integer.MAX_VALUE}) {
+                        try {
+                            encoding.encode(compressible, wide, order, alignment, () -> false);
+                            throw new AssertionError("unsupported plain alignment accepted: " + alignment);
+                        }
+                        catch (IllegalArgumentException expected) { }
+                    }
+                    for (int alignment : new int[] {1, 2, 4, 8}) {
+                        var stored = encoding.encode(compressible, wide, order, alignment, () -> false);
+                        if (encoding == DebugSectionCompression.NONE) {
+                            require(stored.alignment() == alignment && !stored.compressed() &&
+                                Arrays.equals(stored.bytes(), compressible), "plain alignment or payload changed");
+                        }
+                        else {
+                            require(stored.compressed() && stored.alignment() == (wide ? 8 : 4), "compressed section alignment changed");
+                            var header = ByteBuffer.wrap(stored.bytes()).order(order);
+                            require((wide ? header.getLong(16) : Integer.toUnsignedLong(header.getInt(8))) == alignment,
+                                "compressed header lost decoded alignment");
+                            try (var decoded = new InflaterInputStream(new ByteArrayInputStream(stored.bytes(),
+                                    wide ? 24 : 12, stored.bytes().length - (wide ? 24 : 12)))) {
+                                require(Arrays.equals(decoded.readAllBytes(), compressible), "alignment changed compressed payload");
+                            }
+                        }
+                        byte[] tiny = new byte[wide ? 24 : 12];
+                        var fallback = encoding.encode(tiny, wide, order, alignment, () -> false);
+                        require(!fallback.compressed() && fallback.alignment() == alignment && Arrays.equals(fallback.bytes(), tiny),
+                            "header-sized fallback lost decoded alignment");
+                    }
+                }
+            }
+        }
+        require(compressible[0] == 37 && compressible[4095] == 37, "alignment checks changed input");
     }
 
     private static void require(boolean value, String message) {

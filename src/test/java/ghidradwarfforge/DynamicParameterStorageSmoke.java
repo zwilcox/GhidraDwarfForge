@@ -191,6 +191,7 @@ public final class DynamicParameterStorageSmoke {
     }
 
     private static void unnamedSlices(ProgramDB program, Function function, Target target) throws Exception {
+        long modification = program.getModificationNumber();
         var register = program.getRegister(target.incoming().getFirst()).getBaseRegister();
         var type = new ghidra.program.model.data.ArrayDataType(
             new ghidra.program.model.data.UnsignedCharDataType(program.getDataTypeManager()),
@@ -205,7 +206,40 @@ public final class DynamicParameterStorageSmoke {
             require(mapped instanceof RegisterStorage result && result.bitSize() == 24 &&
                 result.valueBitOffset() == expectedOffset,
                 "unnamed register slice mismatch: " + target.language() + " offset=" + offset + " " + mapped);
+            var missing = new TargetRegisterMap(target.map(), "fixture has no incoming register mapping",
+                java.util.Map.of(program.getCompilerSpec().getStackPointer().getName(), 0));
+            omitted(GhidraVariableStorage.stableParameter(program, function, parameter, missing,
+                TaskMonitor.DUMMY), storage.isRegisterStorage() ? OmissionReason.UNMAPPED_REGISTER : OmissionReason.UNSUPPORTED_STORAGE);
+            // The allocator overload accepts storage independently of the saved formal.
+            // A three-byte observation cannot stand in for its four-byte value.
+            if (!storage.isRegisterStorage()) {
+                omitted(GhidraVariableStorage.stableParameter(program, function, function.getParameter(0), storage,
+                    TargetRegisterMap.forTarget(target.map()), TaskMonitor.DUMMY), OmissionReason.UNSUPPORTED_STORAGE);
+            }
         }
+        var crossing = new ghidra.program.model.pcode.Varnode(
+            register.getAddress().add(register.getMinimumByteSize() - 2), 3);
+        var crossStorage = new VariableStorage(program, crossing);
+        var crossParameter = new ParameterImpl("cross_boundary", type, crossStorage, program, SourceType.USER_DEFINED);
+        omitted(GhidraVariableStorage.stableParameter(program, function, crossParameter,
+            TargetRegisterMap.forTarget(target.map()), TaskMonitor.DUMMY), OmissionReason.UNSUPPORTED_STORAGE);
+        var memoryStorage = new VariableStorage(program,
+            new ghidra.program.model.pcode.Varnode(function.getEntryPoint().add(0x200), 3));
+        var memoryParameter = new ParameterImpl("memory", type, memoryStorage, program, SourceType.USER_DEFINED);
+        omitted(GhidraVariableStorage.stableParameter(program, function, memoryParameter,
+            TargetRegisterMap.forTarget(target.map()), TaskMonitor.DUMMY), OmissionReason.UNSUPPORTED_STORAGE);
+        omitted(GhidraVariableStorage.stableParameter(program, function, function.getParameter(0),
+            VariableStorage.VOID_STORAGE, TargetRegisterMap.forTarget(target.map()), TaskMonitor.DUMMY),
+            OmissionReason.UNSUPPORTED_STORAGE);
+        var stack = new VariableStorage(program, 16, 8);
+        omitted(GhidraVariableStorage.stableParameter(program, function, function.getParameter(0), stack,
+            TargetRegisterMap.forTarget(target.map()), TaskMonitor.DUMMY), OmissionReason.UNSUPPORTED_STORAGE);
+        var wider = new ParameterImpl("wide", new ghidra.program.model.data.LongLongDataType(program.getDataTypeManager()),
+            program, SourceType.USER_DEFINED);
+        omitted(GhidraVariableStorage.stableParameter(program, function, wider,
+            function.getParameter(0).getVariableStorage(), TargetRegisterMap.forTarget(target.map()), TaskMonitor.DUMMY),
+            OmissionReason.UNSUPPORTED_STORAGE);
+        require(program.getModificationNumber() == modification, "slice refusal controls modified saved program state");
     }
 
     private static void rejectionControls(ProgramDB program, Function function, Target target) throws Exception {

@@ -76,6 +76,7 @@ public final class LaterRegisterLocalSmoke {
                     intervals.get(1).storage().available() && intervals.get(2).start() == boundary &&
                     intervals.get(2).end() == 0x1000 + bytes.length && !intervals.get(2).storage().available(),
                     "wrong local interval " + target + "/" + width + ": " + intervals);
+                LaterLocalOwnershipSmoke.check(program, function, local, mapping, rejected, intervals);
                 for (int offset : new int[] { -1, 0, 1, 5, x86 ? 10 : 12, bytes.length }) {
                     local.setFirstUseOffset(offset);
                     require(GhidraVariableStorage.localPrefix(program, function, local, mapping, rejected,
@@ -147,6 +148,8 @@ public final class LaterRegisterLocalSmoke {
                 program.getListing().clearCodeUnits(tail, tail, false);
                 require(GhidraVariableStorage.localPrefix(program, function, local, mapping, rejected,
                     TaskMonitor.DUMMY).isEmpty(), "undecoded tail accepted");
+                decode(program, entry, body, bytes);
+                LaterLocalOwnershipSmoke.invalidSavedOwner(program, function, local, mapping, rejected, intervals);
             }
             finally { program.endTransaction(transaction, true); }
         }

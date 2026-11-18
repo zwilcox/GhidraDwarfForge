@@ -50,7 +50,9 @@ public final class GhidraArm32FunctionModesSmoke {
         try (Fixture fixture = fixture()) {
             controls(fixture);
             aliasControls(fixture);
+            savedEvidenceControls(fixture);
         }
+        checks += Arm32AliasEvidenceBoundarySmoke.run();
         System.out.println("ghidra-arm32-function-modes-smoke=PASS checks=" + checks);
     }
 
@@ -144,6 +146,97 @@ public final class GhidraArm32FunctionModesSmoke {
 
     private static List<ElfFunctionAlias> aliases(Program program) throws Exception {
         return GhidraFunctionAliases.extract(program, symbols(program), 0, TaskMonitor.DUMMY, ignored -> { });
+    }
+
+    private static void savedEvidenceControls(Fixture f) throws Exception {
+        var selected = symbols(f.program());
+        var baseline = extract(f.program(), selected, new ArrayList<>(), TaskMonitor.DUMMY);
+        for (String change : List.of("rename", "remove", "thunk", "resize")) {
+            int transaction = f.program().startTransaction("stale mode selection " + change);
+            try {
+                String reason;
+                switch (change) {
+                    case "rename" -> {
+                        f.thumb().setName("analyst_renamed", SourceType.USER_DEFINED);
+                        reason = "selected function name changed";
+                    }
+                    case "remove" -> {
+                        require(f.program().getFunctionManager().removeFunction(f.address(0x1000)),
+                            "saved function removed");
+                        reason = "selected memory definition is unavailable";
+                    }
+                    case "thunk" -> {
+                        f.thumb().setThunkedFunction(f.program().getFunctionManager().getFunctionAt(f.address(0x1020)));
+                        require(f.thumb().isThunk(), "saved function became a thunk");
+                        reason = "selected memory definition is unavailable";
+                    }
+                    case "resize" -> {
+                        f.thumb().setBody(new AddressSet(f.address(0x1000), f.address(0x1001)));
+                        reason = "selected function body changed";
+                    }
+                    default -> throw new AssertionError(change);
+                }
+                long modification = f.program().getModificationNumber();
+                var messages = new ArrayList<String>();
+                require(extract(f.program(), selected, messages, TaskMonitor.DUMMY).equals(baseline.subList(1, 3)),
+                    "stale selection must preserve both unrelated mode cues: " + change);
+                require(messages.size() == 1 && messages.getFirst().contains(reason),
+                    "precise stale selection diagnostic: " + messages);
+                require(f.program().getModificationNumber() == modification, "mode proof modified analyst edits");
+                if (change.equals("rename")) {
+                    messages.clear();
+                    require(extract(f.program(), selected.subList(0, 2), messages, TaskMonitor.DUMMY).isEmpty() &&
+                        messages.size() == 1 && messages.getFirst().contains(reason),
+                        "an ARM survivor cannot substitute for the rejected last Thumb cue");
+                }
+            }
+            finally {
+                f.program().endTransaction(transaction, false);
+            }
+            require(extract(f.program(), selected, new ArrayList<>(), TaskMonitor.DUMMY).equals(baseline),
+                "saved evidence recovers after analyst edit rollback");
+        }
+
+        for (long outside : new long[] {0x1_0000_0000L, Long.MAX_VALUE - 4}) {
+            var bad = new FunctionSymbol("outside", outside, 4);
+            var messages = new ArrayList<String>();
+            long modification = f.program().getModificationNumber();
+            require(extract(f.program(), List.of(bad, selected.getFirst()), messages, TaskMonitor.DUMMY)
+                .equals(List.of(baseline.getFirst())), "out-of-range analysis entry must not wrap to code");
+            require(messages.size() == 1 && messages.getFirst().contains("analysis entry is outside ARM32"),
+                "out-of-range analysis entry diagnostic");
+            require(f.program().getModificationNumber() == modification, "address refusal changed program");
+        }
+        for (long link : new long[] {0x1_0000_0000L, 0xffff_fffeL, 0x1001}) {
+            long delta = 0x1000 - link;
+            var symbol = new FunctionSymbol("thumb", link, 4);
+            var alias = new ElfFunctionAlias("alternate", "thumb", link, 4, hash("01207047"));
+            var messages = new ArrayList<String>();
+            long modification = f.program().getModificationNumber();
+            require(GhidraArm32FunctionModes.extract(f.program(), List.of(symbol), TARGET, delta,
+                TaskMonitor.DUMMY, messages::add).isEmpty(), "invalid ELF32 code coordinate is omitted");
+            String reason = link == 0x1001 ? "decoded instruction alignment" : "extent is outside ELF32";
+            require(messages.size() == 1 && messages.getFirst().contains(reason),
+                "ELF coordinate diagnostic: " + messages);
+            messages.clear();
+            require(GhidraArm32FunctionModes.extractAliases(f.program(), List.of(alias), TARGET, delta,
+                TaskMonitor.DUMMY, messages::add).isEmpty(), "invalid alias ELF32 coordinate is omitted");
+            reason = link == 0x1001 ? "invalid instruction alignment" : "entry range is outside ARM32";
+            require(messages.size() == 1 && messages.getFirst().contains(reason),
+                "alias ELF coordinate diagnostic: " + messages);
+            require(f.program().getModificationNumber() == modification, "coordinate refusal changed program");
+        }
+        var alias = new ElfFunctionAlias("alternate", "thumb", 0x1000, 4, hash("01207047"));
+        var messages = new ArrayList<String>();
+        require(GhidraArm32FunctionModes.extractAliases(f.program(), java.util.Collections.nCopies(65536, alias),
+            TARGET, 0, TaskMonitor.DUMMY, messages::add).equals(List.of(baseline.getFirst())) && messages.isEmpty(),
+            "exact alias limit deduplicates the same saved code evidence");
+        require(GhidraArm32FunctionModes.extractAliases(f.program(), java.util.Collections.nCopies(65537, alias),
+            TARGET, 0, TaskMonitor.DUMMY, messages::add).isEmpty() && messages.size() == 1 &&
+            messages.getFirst().contains("excessive alias count"), "first alias count excess is refused");
+        require(extract(f.program(), selected, new ArrayList<>(), TaskMonitor.DUMMY).equals(baseline),
+            "all refusal controls leave original mode proof intact");
+        System.out.println("arm32-saved-mode-evidence=PASS");
     }
 
     private static void aliasOmitted(Program program, List<ElfFunctionAlias> aliases, String reason) throws Exception {

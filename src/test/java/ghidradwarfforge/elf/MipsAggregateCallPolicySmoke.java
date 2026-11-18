@@ -45,6 +45,7 @@ public final class MipsAggregateCallPolicySmoke {
                 for (int carrier : List.of(0, 1, 2, 3)) {
                     Path path = root.resolve("input.elf");
                     var fixture = fixture(path, order, abi, carrier);
+                    if (abi == 1 && carrier == 3) metadataBoundaries(fixture, model);
                     byte[] original = Files.readAllBytes(path);
                     var image = ElfImage.read(path);
                     var diagnostics = new ArrayList<String>();
@@ -121,6 +122,72 @@ public final class MipsAggregateCallPolicySmoke {
         f.patch(18, 2, 8);
         f.patch(36, 4, 0x70001007);
         return f;
+    }
+
+    private static void metadataBoundaries(ElfBuildIdFixtures.Fixture fixture, ProgramTypeModel model) throws Exception {
+        byte[] original = Files.readAllBytes(fixture.path());
+        // Flip one independent ABI assertion at a time, leaving a valid ELF and typed record.
+        for (long[] field : List.of(new long[] {16, 2, 1}, new long[] {16, 2, 4},
+                new long[] {36, 4, 0x70000007L}, new long[] {36, 4, 0x80001007L},
+                new long[] {fixture.dataOffset(), 2, 1}, new long[] {fixture.dataOffset() + 2, 1, 64},
+                new long[] {fixture.dataOffset() + 3, 1, 6}, new long[] {fixture.dataOffset() + 4, 1, 2},
+                new long[] {fixture.dataOffset() + 5, 1, 2}, new long[] {fixture.dataOffset() + 6, 1, 1},
+                new long[] {fixture.dataOffset() + 8, 4, 1}, new long[] {fixture.dataOffset() + 12, 4, 1},
+                new long[] {fixture.dataOffset() + 16, 4, 2}, new long[] {fixture.dataOffset() + 20, 4, 1})) {
+            try {
+                fixture.patch(field[0], (int) field[1], field[2]);
+                verifyMetadataDecision(fixture.path(), model, false, "field " + Arrays.toString(field));
+            }
+            finally { Files.write(fixture.path(), original); }
+        }
+        // PIC/CPIC/NOREORDER do not change this validated transfer contract.
+        for (int lowFlags = 0; lowFlags < 8; lowFlags++) {
+            for (int type : List.of(2, 3)) {
+                for (int oddRegisters : List.of(0, 1)) {
+                    try {
+                        fixture.patch(16, 2, type);
+                        fixture.patch(36, 4, 0x70001000L | lowFlags);
+                        fixture.patch(fixture.dataOffset() + 16, 4, oddRegisters);
+                        verifyMetadataDecision(fixture.path(), model, true, "accepted O32 metadata");
+                    }
+                    finally { Files.write(fixture.path(), original); }
+                }
+            }
+        }
+        byte[] record = Arrays.copyOfRange(original, (int) fixture.dataOffset(), (int) fixture.dataOffset() + 24);
+        var wide = ElfBuildIdFixtures.create(fixture.path().resolveSibling("o32-record-in-elf64.elf"), true,
+            fixture.order(), record, List.of(new ElfBuildIdFixtures.View(0, 24, 8, 0x7000002a, 2)),
+            List.of(), false, false, false, 0);
+        try {
+            wide.patch(18, 2, 8);
+            wide.patch(48, 4, 0x70001007L);
+            verifyMetadataDecision(wide.path(), model, false, "O32 metadata in ELF64");
+        }
+        finally { Files.delete(wide.path()); }
+        require(Arrays.equals(original, Files.readAllBytes(fixture.path())), "metadata tests restore fixture");
+    }
+
+    private static void verifyMetadataDecision(Path path, ProgramTypeModel model, boolean profile, String label) throws Exception {
+        byte[] bytes = Files.readAllBytes(path);
+        String before = model.toString();
+        var image = ElfImage.read(path);
+        var output = MipsAggregateCallPolicy.apply(image, model, () -> false, ignored -> { });
+        for (int index = 0; index < CASES.size(); index++) {
+            var selected = CASES.get(index);
+            boolean disabled = !selected.existing().isEmpty() ||
+                (!selected.result().equals("i") && (!profile || !selected.admissible()));
+            var function = output.functions().get(index);
+            require(function.debuggerCallsDisabled() == disabled, label + ": function classification");
+            require(output.functionDeclarations().get(index).debuggerCallRestriction().equals(function.debuggerCallRestriction()),
+                label + ": external classification agrees");
+            require(((SubroutineType) output.types().byKey().get("subroutine" + index)).debuggerCallRestriction().equals(function.debuggerCallRestriction()),
+                label + ": callback classification agrees");
+            require(function.parameters().equals(model.functions().get(index).parameters()) &&
+                function.debuggerCallRestriction().startsWith(selected.existing()), label + ": signature and prior restriction retained");
+        }
+        require(before.equals(model.toString()), label + ": input model unchanged");
+        require(output.equals(MipsAggregateCallPolicy.apply(image, output, () -> false, ignored -> { })), label + ": idempotent restriction");
+        require(Arrays.equals(bytes, Files.readAllBytes(path)), label + ": input ELF unchanged");
     }
 
     private static ProgramTypeModel model() {

@@ -15,6 +15,7 @@ public final class ValidatorSupervisorSmoke {
         if (args.length != 3) throw new IllegalArgumentException("supply helper python new-results-directory");
         Path root = Path.of(args[2]).toAbsolutePath();
         Files.createDirectory(root);
+        ValidatorStatusBoundarySmoke.run(root);
         Path script = root.resolve("validator with spaces é.py");
         Files.writeString(script, """
             import json, os, signal, subprocess, sys, time
@@ -23,6 +24,8 @@ public final class ValidatorSupervisorSmoke {
             marker = Path(sys.argv[2])
             if mode == 'ok':
                 print(json.dumps(sys.argv[3:]))
+            elif mode == 'quiet':
+                pass
             elif mode == 'cwd':
                 print(json.dumps(os.getcwd()))
             elif mode == 'error':
@@ -47,6 +50,7 @@ public final class ValidatorSupervisorSmoke {
             """);
         var runner = new ValidatorSupervisor(Path.of(args[0]));
         Path python = Path.of(args[1]);
+        ValidatorLaunchBoundarySmoke.run(runner, python, script, root);
         var success = runner.run(python, List.of(script.toString(), "ok", root.resolve("unused").toString(), "", "é", "a b", "quote\"slash\\"),
             root, Duration.ofSeconds(5), 65536, () -> false);
         require(success.status().cleanupComplete(), "successful cleanup not established");
@@ -154,6 +158,7 @@ public final class ValidatorSupervisorSmoke {
             try { ValidatorSupervisor.readStatus(report); throw new AssertionError("invalid status accepted"); }
             catch (IOException expected) { checks++; }
         }
+        ValidatorEvidenceBoundarySmoke.run(python, root);
         System.out.println("validator-supervisor-java=PASS checks=" + checks + " java=" + Runtime.version().feature());
     }
 

@@ -57,6 +57,7 @@ public final class SourceBundleSmoke {
         require(first.bytes(first.manifest().parts().getFirst().fileName())[0] == '/', "part defensive copy");
         byte[] manifest = first.manifestBytes(); manifest[0] = 0;
         require(first.manifestBytes()[0] == '{', "manifest defensive copy");
+        inventoryBoundaries(first);
 
         String valid = new String(first.manifestBytes(), StandardCharsets.UTF_8);
         for (String invalid : List.of(
@@ -99,7 +100,91 @@ public final class SourceBundleSmoke {
             throw new AssertionError("index ignored cancellation");
         }
         catch (CancellationException expected) { checks++; }
-        System.out.println("source-bundle-smoke: PASS checks=" + checks + " preparationCancellationPoints=" + calls.get());
+        System.out.println("source-bundle-smoke=PASS checks=" + checks + " preparationCancellationPoints=" + calls.get());
+    }
+
+    private static void inventoryBoundaries(SourceBundle.Plan plan) throws Exception {
+        for (String bad : new String[] { null, "", "a".repeat(63), "A".repeat(64), "g".repeat(64), "a".repeat(65) }) {
+            invalid(() -> new SourceBundle.Part(1, bad, 1, 1, 1));
+            invalid(() -> SourceBundle.manifestNameFor(bad));
+        }
+        for (int[] bounds : new int[][] {
+                { 0, 1, 1, 1 }, { 65537, 1, 1, 1 }, { 1, 0, 1, 1 }, { 1, 1, 0, 1 }, { 1, 1, 2, 1 } }) {
+            invalid(() -> new SourceBundle.Part(bounds[0], INPUT, bounds[1], bounds[2], bounds[3]));
+        }
+        require(new SourceBundle.Part(65536, INPUT, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE)
+            .fileName().equals("forge-src-065536-" + INPUT + ".c"), "part ordinal and signed line/size boundary are retained");
+        for (String bad : new String[] { null, "", " \t", "bad\0name" }) {
+            invalid(() -> new SourceBundle.Function(bad, 0, 1, 3, 3, "decompiled"));
+        }
+        for (String bad : new String[] { null, "", "original", "DECOMPILED" }) {
+            invalid(() -> new SourceBundle.Function("name", 0, 1, 3, 3, bad));
+        }
+        invalid(() -> new SourceBundle.Function("name", -1, 1, 3, 3, "failed"));
+        invalid(() -> new SourceBundle.Function("name", 0, 0, 3, 3, "failed"));
+        invalid(() -> new SourceBundle.Function("name", 0, 1, 2, 3, "failed"));
+        invalid(() -> new SourceBundle.Function("name", 0, 1, 4, 3, "failed"));
+        var part = new SourceBundle.Part(1, INPUT, 1, 1, 8);
+        var parts = List.of(part);
+        for (String bad : new String[] { null, "", " ", ".", "..", "a/b", "a\\b", "a\0b" }) {
+            invalid(() -> new SourceBundle.Manifest(bad, INPUT, INPUT, 1, parts, List.of()));
+        }
+        invalid(() -> new SourceBundle.Manifest("a.c", INPUT, INPUT, 0, parts, List.of()));
+        invalid(() -> new SourceBundle.Manifest("a.c", INPUT, INPUT, 1, null, List.of()));
+        invalid(() -> new SourceBundle.Manifest("a.c", INPUT, INPUT, 1, List.of(), List.of()));
+        invalid(() -> new SourceBundle.Manifest("a.c", INPUT, INPUT, 1,
+            java.util.Collections.nCopies(65537, part), List.of()));
+        invalid(() -> new SourceBundle.Manifest("a.c", INPUT, INPUT, 1, parts, null));
+        var function = new SourceBundle.Function("same", 0, 1, 3, 3, "decompiled");
+        var boundedFunctions = new java.util.ArrayList<SourceBundle.Function>();
+        for (int i = 0; i <= 250000; i++) {
+            boundedFunctions.add(new SourceBundle.Function("function", i, 1, i + 3, i + 3, "decompiled"));
+        }
+        var largePart = List.of(new SourceBundle.Part(1, INPUT, 1, 1, 250001));
+        require(new SourceBundle.Manifest("a.c", INPUT, INPUT, 1, largePart,
+            boundedFunctions.subList(0, 250000)).functions().size() == 250000, "exact function inventory limit admitted");
+        invalid(() -> new SourceBundle.Manifest("a.c", INPUT, INPUT, 1, largePart, boundedFunctions));
+        invalid(() -> new SourceBundle.Manifest("a.c", INPUT, INPUT, 1, parts,
+            List.of(new SourceBundle.Function("missing", 0, 2, 3, 3, "failed"))));
+        invalid(() -> new SourceBundle.Manifest("a.c", INPUT, INPUT, 1, parts,
+            List.of(new SourceBundle.Function("outside", 0, 1, 3, 11, "failed"))));
+        invalid(() -> new SourceBundle.Manifest("a.c", INPUT, INPUT, 1, parts,
+            List.of(function, new SourceBundle.Function("other", 1, 1, 3, 4, "failed"))));
+        invalid(() -> new SourceBundle.Manifest("a.c", INPUT, INPUT, 1, parts,
+            List.of(function, new SourceBundle.Function("same", 0, 1, 4, 4, "failed"))));
+        for (List<SourceBundle.Part> bad : List.of(List.of(part, part),
+                List.of(part, new SourceBundle.Part(2, INPUT, 1, 8, 9)),
+                List.of(part, new SourceBundle.Part(2, INPUT, 1, 10, 10)))) {
+            invalid(() -> new SourceBundle.Manifest("a.c", INPUT, INPUT, 1, bad, List.of()));
+        }
+        // Equal names at distinct addresses and distinct names at one address are legitimate identities.
+        var functions = new java.util.ArrayList<>(List.of(function,
+            new SourceBundle.Function("same", Long.MAX_VALUE, 1, 4, 4, "failed"),
+            new SourceBundle.Function("alias λ", 0, 1, 5, 5, "omitted")));
+        var mutableParts = new java.util.ArrayList<>(parts);
+        var valid = new SourceBundle.Manifest("source λ.c", INPUT, INPUT, Integer.MAX_VALUE, mutableParts, functions);
+        functions.clear();
+        mutableParts.clear();
+        require(valid.functions().size() == 3 && valid.parts().size() == 1, "manifest owns immutable list snapshots");
+        require(valid.equals(SourceBundle.read(SourceBundle.render(valid, () -> false), () -> false)),
+            "Unicode, aliases, zero and maximum signed address round-trip exactly");
+        for (String unknown : List.of("other.c", "../" + plan.fileNames().getFirst(), "")) {
+            invalid(() -> plan.bytes(unknown));
+            invalid(() -> plan.expectedBytes(unknown));
+            invalid(() -> plan.expectedSha256(unknown));
+        }
+        for (String name : plan.fileNames()) {
+            require(plan.expectedBytes(name) == plan.bytes(name).length &&
+                plan.expectedSha256(name).equals(SourceBundle.sha256(plan.bytes(name))), "all advertised dependency identities bind bytes");
+        }
+    }
+
+    private static void invalid(Runnable operation) {
+        try {
+            operation.run();
+            throw new AssertionError("accepted invalid source inventory");
+        }
+        catch (IllegalArgumentException expected) { checks++; }
     }
 
     static SyntheticSourceFile fixture() {

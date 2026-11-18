@@ -23,6 +23,7 @@ public final class Dwarf5LocationListsSmoke {
     }
 
     public static void main(String[] args) {
+        LocationListBoundarySmoke.main(args);
         Evidence analysis = new Evidence(Confidence.ANALYSIS, "fixture stack depth");
         TargetRegisterMap registers = TargetRegisterMap.forTarget("x86_64");
         VariableLocation local = new VariableLocation("function", 0x1000, "local",

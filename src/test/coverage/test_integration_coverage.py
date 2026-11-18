@@ -1,9 +1,13 @@
 """Receipt/admission controls only; real JaCoCo execution is checked separately."""
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
+from contextlib import ExitStack
 from zipfile import ZipFile
 
 
@@ -52,6 +56,189 @@ class IntegrationCoverageTest(unittest.TestCase):
             self.assertIs(actual, command)
         collection.finish(self.root / 'absent.json')
         self.assertFalse((self.root / 'output with spaces').exists())
+        with collection.launcher_java('unchanged-java', 'disabled') as selected:
+            self.assertEqual(selected, 'unchanged-java')
+        with collection.launcher_headless('unchanged-ghidra', 'disabled') as selected:
+            self.assertEqual(selected, 'unchanged-ghidra')
+
+    def headless_collection(self):
+        ghidra = self.root / 'ghidra'
+        installed = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+        installed.parent.mkdir(parents=True, exist_ok=True)
+        installed.write_bytes(self.jar.read_bytes())
+        support = ghidra / 'support'
+        support.mkdir(exist_ok=True)
+        (support / 'analyzeHeadless').touch()
+        launcher = support / 'launch.sh'
+        # This executable validates process plumbing only, never Java coverage.
+        launcher.write_text('#!' + sys.executable + '\n'
+            'import json,os,re,sys\n'
+            'from pathlib import Path\n'
+            'Path(re.search(r"destfile=([^,]+)", sys.argv[5])[1]).write_bytes(b"receipt fixture only")\n'
+            'print(json.dumps({"pid":os.getpid(),"argv":sys.argv[1:]}))\n'
+            'raise SystemExit(int(os.environ.get("FIXTURE_EXIT", "0")))\n')
+        launcher.chmod(0o700)
+        env = dict(self.env, FORGE_INTEGRATION_COVERAGE_OUTPUT=str(self.root / 'headless'))
+        return ghidra, coverage.Collection('wrapper-test', installed, 'headless', environment=env)
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux headless wrapper adapter')
+    def test_headless_wrapper_preserves_arguments_pid_and_exit(self):
+        ghidra, collection = self.headless_collection()
+        arguments = ['project with spaces', 'Formatters', '-readOnly', '-postScript',
+            'GhidraDwarfForgeReadOnly.java', 'λ "quoted"', '', '$(never-execute)', 'line\nbreak']
+        with collection.launcher_headless(ghidra, 'expected-failure') as selected:
+            adapter = Path(selected) / 'support/analyzeHeadless'
+            process = subprocess.Popen([adapter, *arguments], stdout=subprocess.PIPE, text=True,
+                env=dict(os.environ, FIXTURE_EXIT='10'))
+            output, _ = process.communicate(timeout=10)
+            self.assertEqual(process.returncode, 10)
+            observed = json.loads(output)
+            self.assertEqual(observed['pid'], process.pid)
+            self.assertEqual(observed['argv'][6:], arguments)
+            self.assertEqual(observed['argv'][:4], ['fg', 'jdk', 'Ghidra-Headless', '2G'])
+        self.assertFalse(adapter.exists())
+        collection.finish(self.oracle)
+        record = coverage.validate_collection(collection.root, collection.jar)
+        self.assertEqual(len(record['sessions']), 1)
+        self.assertEqual(len(record['launcherInvocations']), 1)
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux headless wrapper adapter')
+    def test_headless_wrapper_rejects_missing_duplicate_data_and_failed_oracle(self):
+        for failure in ('missing', 'duplicate', 'no-data', 'oracle'):
+            with self.subTest(failure=failure):
+                ghidra, collection = self.headless_collection()
+                with self.assertRaises((ValueError, AssertionError)):
+                    with collection.launcher_headless(ghidra, failure) as selected:
+                        adapter = Path(selected) / 'support/analyzeHeadless'
+                        if failure != 'missing':
+                            subprocess.run([adapter], check=True, stdout=subprocess.PIPE, timeout=10)
+                        if failure == 'duplicate':
+                            result = subprocess.run([adapter], capture_output=True, timeout=10)
+                            self.assertNotEqual(result.returncode, 0)
+                        elif failure == 'no-data':
+                            self.execution(collection).unlink()
+                        elif failure == 'oracle':
+                            raise AssertionError('wrapper behavior failed')
+                self.assertFalse(adapter.exists())
+                with self.assertRaisesRegex(ValueError, 'incomplete'):
+                    collection.finish(self.oracle)
+
+    def launcher_record(self, wrapper, collection, session):
+        request = Path(wrapper).parent / 'requests' / (session + '.json')
+        request.write_text(json.dumps({'session': session}))
+        (collection.root / (session + '.exec')).write_bytes(b'receipt fixture, not real execution')
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher adapter')
+    def test_launcher_keeps_preview_and_action_separate(self):
+        java = self.root / 'java'
+        java.write_text('receipt fixture, never executed')
+        java.chmod(0o700)
+        collection = self.collection()
+        with collection.launcher_java(java, 'install') as wrapper:
+            for digit in ('1', '2'):
+                self.launcher_record(wrapper, collection, 'forge-integration-' + digit * 32)
+        self.assertFalse(Path(wrapper).exists())
+        collection.finish(self.oracle)
+        record = coverage.validate_collection(collection.root, self.jar)
+        self.assertEqual(len(record['sessions']), 2)
+        self.assertEqual(len(record['launcherInvocations'][0]['sessions']), 2)
+        with self.assertRaisesRegex(ValueError, 'already finished'):
+            with collection.launcher_java(java, 'late'):
+                self.fail('finished collector yielded')
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher adapter')
+    def test_nested_case_adapters_keep_each_child_separate_from_parent(self):
+        # Receipt fixtures only: no claim of actual JVM or privileged recovery.
+        collection = self.collection()
+        java = self.root / 'java'
+        java.write_text('not executed: receipt fixture')
+        java.chmod(0o700)
+        labels = ['native-recovery-helper-' + mode + '-' + boundary for mode in ('initial', 'refresh')
+            for boundary in ('PREPARED', 'TARGET_REPLACED', 'BEFORE_COMMIT', 'COMMITTED')]
+        with ExitStack() as stack:
+            wrappers = [stack.enter_context(collection.launcher_java(java, label)) for label in labels]
+            with collection.session([str(java), '-cp', 'fixture', 'Parent'], 'native-recovery'):
+                self.execution(collection).write_bytes(b'parent receipt fixture, not execution')
+                for index, wrapper in enumerate(wrappers):
+                    self.launcher_record(wrapper, collection, 'forge-integration-' + format(index + 1, '032x'))
+        collection.finish(self.oracle)
+        record = coverage.validate_collection(collection.root, self.jar)
+        self.assertEqual(len(record['sessions']), 9)
+        self.assertEqual(len(record['launcherInvocations']), 8)
+        self.assertEqual(len({row['session'] for row in record['sessions']}), 9)
+        for label in labels:
+            process, = [row for row in record['sessions'] if row['label'] == label]
+            launcher, = [row for row in record['launcherInvocations'] if row['label'] == label]
+            self.assertEqual(launcher['sessions'], [process['session']])
+            self.assertEqual(launcher['status'], 'ORACLE_PASSED')
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher measurement only')
+    def test_nested_case_adapter_missing_child_cannot_finish(self):
+        collection = self.collection()
+        java = self.root / 'java'
+        java.write_text('not executed: receipt fixture')
+        java.chmod(0o700)
+        with self.assertRaisesRegex(ValueError, 'missing or excessive launcher JVM records'):
+            with ExitStack() as stack:
+                first = stack.enter_context(collection.launcher_java(java, 'first'))
+                stack.enter_context(collection.launcher_java(java, 'missing'))
+                self.launcher_record(first, collection, 'forge-integration-' + '1' * 32)
+        with self.assertRaisesRegex(ValueError, 'incomplete'):
+            collection.finish(self.oracle)
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher measurement only')
+    def test_failed_launcher_oracle_cannot_be_finished(self):
+        java = self.root / 'java'
+        java.touch()
+        java.chmod(0o700)
+        collection = self.collection()
+        with self.assertRaisesRegex(AssertionError, 'behavior failed'):
+            with collection.launcher_java(java, 'install') as wrapper:
+                self.launcher_record(wrapper, collection, 'forge-integration-' + '1' * 32)
+                raise AssertionError('behavior failed')
+        with self.assertRaisesRegex(ValueError, 'incomplete sessions'):
+            collection.finish(self.oracle)
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher adapter')
+    def test_missing_jvm_leaves_an_incomplete_invocation(self):
+        java = self.root / 'java'
+        java.touch()
+        java.chmod(0o700)
+        collection = self.collection()
+        with collection.session(['java', 'Main'], 'earlier-passing-process'):
+            self.execution(collection).write_bytes(b'receipt fixture')
+        # Existing valid data cannot compensate for a launcher that never reaches Java.
+        with self.assertRaisesRegex(ValueError, 'missing or excessive launcher'):
+            with collection.launcher_java(java, 'never-started'):
+                pass
+        with self.assertRaisesRegex(ValueError, 'incomplete launcher'):
+            collection.finish(self.oracle)
+
+    @unittest.skipUnless(os.name == 'posix', 'Linux launcher adapter')
+    def test_launcher_session_integrity(self):
+        java = self.root / 'java'
+        java.touch()
+        java.chmod(0o700)
+        for mutation in ('missing-exec', 'foreign-id', 'renamed-record', 'extra-fields', 'linked-exec'):
+            with self.subTest(mutation=mutation):
+                collection = self.collection()
+                session = 'forge-integration-' + '1' * 32
+                with self.assertRaises(ValueError):
+                    with collection.launcher_java(java, mutation) as wrapper:
+                        self.launcher_record(wrapper, collection, session)
+                        request = Path(wrapper).parent / 'requests' / (session + '.json')
+                        execution = collection.root / (session + '.exec')
+                        if mutation == 'missing-exec':
+                            execution.unlink()
+                        elif mutation == 'foreign-id':
+                            request.write_text('{"session":"foreign"}')
+                        elif mutation == 'renamed-record':
+                            request.rename(request.with_name('wrong.json'))
+                        elif mutation == 'extra-fields':
+                            request.write_text(json.dumps({'session': session, 'status': 'PASSED'}))
+                        else:
+                            execution.unlink()
+                            execution.symlink_to(self.agent)
 
     def test_partial_configuration_rejected(self):
         for key in self.env:
@@ -172,6 +359,7 @@ class IntegrationCoverageTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'invalid forced-halt'):
             collection.record_forced_halt('wrong-exit', 1)
         collection.record_forced_halt('interrupted-publish', 73)
+        collection.record_forced_halt('attachment-recovery-child', 89)
         with self.assertRaisesRegex(ValueError, 'incomplete sessions'):
             collection.finish(self.oracle)
         with collection.session(['java', 'Main'], 'recovery'):
@@ -180,6 +368,7 @@ class IntegrationCoverageTest(unittest.TestCase):
         record = coverage.validate_collection(collection.root, self.jar)
         self.assertEqual(len(record['sessions']), 1)
         self.assertEqual(record['unmeasuredForcedHalts'][0]['exitCode'], 73)
+        self.assertEqual(record['unmeasuredForcedHalts'][1]['exitCode'], 89)
         with self.assertRaisesRegex(ValueError, 'invalid forced-halt'):
             collection.record_forced_halt('late', 73)
 

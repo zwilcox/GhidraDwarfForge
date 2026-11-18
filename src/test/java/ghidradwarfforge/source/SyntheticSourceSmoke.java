@@ -18,6 +18,7 @@ public final class SyntheticSourceSmoke {
     }
 
     public static void main(String[] args) {
+        SyntheticSourceDispositionSmoke.run();
         List<FunctionText> functions = List.of(
             new FunctionText("later", 0x2000, "int later(void)\r\n{\r\n  return 2;\r\n}\r\n", null),
             new FunctionText("failed*/name", 0x1800, null, "controlled\nfailure */ test"),

@@ -24,6 +24,7 @@ $paths = @(
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsAttachmentTransactionSmoke.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsFileSecurityProbe.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsAttachmentPrivilegeProbe.java'),
+    (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsPrivilegeReadbackControls.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/BuildIdFileLockSmoke.java'),
     $PSCommandPath
 )
@@ -70,12 +71,16 @@ if (-not ([IO.File]::ReadAllText((Join-Path $root 'java-version.stderr')) -match
 Run 'compile' (Join-Path $env:JAVA_HOME 'bin/javac.exe') @('--release','21','-cp',$dependencies,'-d',$classes,
     (Join-Path $provenance 'WindowsFileSecurityProbe.java'), (Join-Path $provenance 'WindowsAttachmentHostSmoke.java'),
     (Join-Path $provenance 'WindowsAttachmentTransactionSmoke.java'), (Join-Path $provenance 'WindowsAttachmentPrivilegeProbe.java'),
+    (Join-Path $provenance 'WindowsPrivilegeReadbackControls.java'),
     (Join-Path $provenance 'BuildIdFileLockSmoke.java'))
 Run 'helper-privilege' (Join-Path $env:JAVA_HOME 'bin/java.exe') @('-Xint','-XX:+UseSerialGC','--enable-native-access=ALL-UNNAMED',
     '-cp',($classes + ';' + $dependencies),'ghidradwarfforge.output.WindowsAttachmentPrivilegeProbe')
 if ([IO.File]::ReadAllText((Join-Path $root 'helper-privilege.stderr')).Length -ne 0) { throw 'Unexpected helper privilege diagnostics' }
 if (-not [IO.File]::ReadAllText((Join-Path $root 'helper-privilege.stdout')).Contains('windows-attachment-privilege=PASS')) {
     throw 'Missing helper privilege acceptance result'
+}
+if (-not [IO.File]::ReadAllText((Join-Path $root 'helper-privilege.stdout')).Contains('windows-privilege-close-replies=PASS cases=12')) {
+    throw 'Missing helper privilege restoration/close controls'
 }
 Run 'host-stores' (Join-Path $env:JAVA_HOME 'bin/java.exe') @('-Xint','-XX:+UseSerialGC','--enable-native-access=ALL-UNNAMED',
     '-cp',($classes + ';' + $dependencies),'ghidradwarfforge.output.WindowsAttachmentHostSmoke',(Join-Path $root 'owned'))

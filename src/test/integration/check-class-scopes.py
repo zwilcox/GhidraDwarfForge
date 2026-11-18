@@ -68,6 +68,34 @@ def check(nodes, isolated=False, failed=False, variant='normal'):
         assert external['attributes']['DW_AT_declaration'] == '1'
         assert not {'DW_AT_low_pc', 'DW_AT_high_pc', 'DW_AT_ranges'} & external['attributes'].keys()
         pairs.append((external, one(nodes, 'DW_TAG_subprogram', 'external', definition['offset']), True))
+        for name in ['metadata', 'disabled']:
+            root = one(nodes, 'DW_TAG_subprogram', 'outer::Counter::' + name, unit['offset'])
+            method = one(nodes, 'DW_TAG_subprogram', name, definition['offset'])
+            pairs.append((root, method, False))
+            for owner in [root, method]:
+                attributes = owner['attributes']
+                assert attributes['DW_AT_declaration'] == '1'
+                assert attributes['DW_AT_prototyped'] == '1'
+                assert not {'DW_AT_low_pc', 'DW_AT_high_pc', 'DW_AT_ranges'} & attributes.keys()
+                children = [n for n in nodes.values() if n['parent'] == owner['offset']]
+                parameters = [n for n in children if n['tag'] == 'DW_TAG_formal_parameter']
+                assert len(parameters) == 1
+                assert reference(parameters[0], 'DW_AT_type', nodes)['name'] == 'int'
+                if name == 'metadata':
+                    assert 'DW_AT_calling_convention' not in attributes
+                    assert attributes['DW_AT_noreturn'] == '1'
+                    assert 'DW_AT_name' not in parameters[0]['attributes']
+                    assert sum(n['tag'] == 'DW_TAG_unspecified_parameters' for n in children) == 1
+                    result = one(nodes, 'DW_TAG_variable', 'result_storage', owner['offset'])
+                    assert result['attributes']['DW_AT_artificial'] == '1'
+                    assert reference(result, 'DW_AT_type', nodes)['tag'] == 'DW_TAG_pointer_type'
+                    assert not {'DW_AT_location', 'DW_AT_const_value'} & result['attributes'].keys()
+                    assert len(children) == 3
+                else:
+                    assert re.match(r'3(?:\s|$)', attributes['DW_AT_calling_convention'])
+                    assert 'DW_AT_noreturn' not in attributes
+                    assert parameters[0]['name'] == 'amount'
+                    assert len(children) == 1
         nested_declaration = one(nodes, 'DW_TAG_structure_type', 'Nested', declaration['offset'])
         nested_name = '__ghidra_class_scope_3' if variant == 'unbound-collision' else 'outer::Counter::Nested'
         nested_definition = one(nodes, 'DW_TAG_structure_type', nested_name, unit['offset'])
@@ -116,11 +144,23 @@ def main():
         (alias['offset'], 'DW_AT_type', unit['offset'])]
     for root, method, has_object in pairs:
         mutations.append((root['offset'], 'DW_AT_specification', definition['offset']))
+        if args.isolated and method['name'] == 'metadata':
+            for owner in [root, method]:
+                mutations.append((owner['offset'], 'DW_AT_noreturn', None))
+                mutations.append((owner['offset'], 'DW_AT_calling_convention', 1))
+        if args.isolated and method['name'] == 'disabled':
+            for owner in [root, method]:
+                mutations.append((owner['offset'], 'DW_AT_calling_convention', None))
         if has_object:
             mutations.append((method['offset'], 'DW_AT_object_pointer', reference(root, 'DW_AT_object_pointer', nodes)['offset']))
     for offset, attr, target in mutations:
         broken = copy.deepcopy(nodes)
-        broken[offset]['attributes'][attr] = '<0x%x>' % target
+        if target is None:
+            broken[offset]['attributes'].pop(attr)
+        elif attr == 'DW_AT_calling_convention':
+            broken[offset]['attributes'][attr] = str(target)
+        else:
+            broken[offset]['attributes'][attr] = '<0x%x>' % target
         try:
             check(broken, args.isolated, args.failed, args.variant)
         except (AssertionError, KeyError, ValueError):

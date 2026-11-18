@@ -35,6 +35,8 @@ public final class GhidraUnwindInstructionsSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])),
             new HeadlessGhidraApplicationConfiguration());
+        CallSiteInstructionEffectsSmoke.run();
+        UnwindCaptureAdmissionSmoke.run();
         for (boolean conflict : List.of(false, true)) {
             check("x86:LE:64:default", "diamond-" + conflict,
                 "85ff74044154eb02" + (conflict ? "4155" : "4154") + "415cc3", 12, !conflict);

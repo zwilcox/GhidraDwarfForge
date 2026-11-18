@@ -35,6 +35,7 @@ public final class Arm32SectionModesSmoke {
     }
 
     public static void main(String[] args) throws Exception {
+        evidenceBoundaries();
         Path root = Files.createTempDirectory("arm-section-modes-");
         Path input = root.resolve("input");
         byte[] bytes = fixture();
@@ -44,6 +45,23 @@ public final class Arm32SectionModesSmoke {
         var messages = new ArrayList<String>();
         var symbols = Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> false, messages::add);
         require(symbols.size() == 4 && messages.isEmpty(), "complete mode/data sequence planned: " + messages);
+        profileAndAllocations(root.resolve("profiles"), bytes, evidence, symbols);
+        inheritedConflicts(root.resolve("inherited"), bytes, evidence, symbols);
+        int[] visits = {0};
+        require(Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> { visits[0]++; return false; },
+            messages::add).equals(symbols), "counted mapping changed output");
+        for (int stop = 1; stop <= visits[0]; stop++) {
+            int selected = stop;
+            int[] current = {0};
+            try {
+                Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> ++current[0] == selected, messages::add);
+                throw new AssertionError("mapping ignored cancellation at " + stop);
+            }
+            catch (CancellationException expected) { checks++; }
+            require(Arrays.equals(bytes, Files.readAllBytes(input)), "cancelled mapping changed original ELF");
+        }
+        require(Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> false, messages::add).equals(symbols),
+            "cancelled mapping poisoned retry");
         var output = root.resolve("output.dbg");
         new MatchedElfSidecarWriter().write(image, output, Map.of(".debug_info", new byte[] { 1, 2, 3 }), symbols, () -> false);
         var parsed = ElfImage.read(output);
@@ -110,6 +128,166 @@ public final class Arm32SectionModesSmoke {
         }
         catch (IllegalArgumentException actual) { require(actual == failure, "diagnostic failure identity"); }
         System.out.println("arm32-section-modes-smoke=PASS checks=" + checks);
+    }
+
+    private static void evidenceBoundaries() throws Exception {
+        String hash = evidence().sha256();
+        var one = List.of(new Arm32SectionModes.Boundary(0, 2));
+        for (long[] extent : new long[][] {{0, 1}, {0xffffffffL, 1}, {1, 0xffffffffL}}) {
+            try {
+                var accepted = new Arm32SectionModes.Evidence(1, extent[0], extent[1], hash, one);
+                require(accepted.address() == extent[0] && accepted.size() == extent[1], "32-bit extent changed");
+            }
+            catch (IllegalArgumentException failure) { throw new AssertionError("valid 32-bit extent rejected", failure); }
+        }
+        for (long[] invalid : new long[][] {{0, START, 44}, {-1, START, 44}, {1, -1, 44},
+                {1, START, 0}, {1, START, -1}, {1, 0x1_0000_0000L, 1}, {1, 0xffffffffL, 2},
+                {1, START, Long.MAX_VALUE}}) {
+            invalidEvidence((int) invalid[0], invalid[1], invalid[2], hash, one, "invalid complete ARM section evidence");
+        }
+        for (String bad : Arrays.asList(null, "", "0".repeat(63), "0".repeat(65), "g".repeat(64), hash.toUpperCase(java.util.Locale.ROOT))) {
+            invalidEvidence(1, START, 44, bad, one, "invalid complete ARM section evidence");
+        }
+        invalidEvidence(1, START, 44, hash, List.of(), "invalid complete ARM section evidence");
+        invalidEvidence(1, START, 44, hash, List.of(new Arm32SectionModes.Boundary(1, 2)),
+            "invalid complete ARM section evidence");
+        for (long[] second : new long[][] {{0, 1}, {-1, 1}, {44, 1}, {45, 1}, {4, -1}, {4, 3}, {4, 2}}) {
+            invalidEvidence(1, START, 44, hash, List.of(one.getFirst(), new Arm32SectionModes.Boundary(second[0], (int) second[1])),
+                "invalid ARM section boundary sequence");
+        }
+        var boundaries = new ArrayList<Arm32SectionModes.Boundary>();
+        for (int index = 0; index < 65536; index++) boundaries.add(new Arm32SectionModes.Boundary(2L * index, 1 + (index & 1)));
+        Arm32SectionModes.Evidence maximum;
+        try { maximum = new Arm32SectionModes.Evidence(1, START, 131074, hash, boundaries); }
+        catch (IllegalArgumentException failure) { throw new AssertionError("exact boundary-count limit rejected", failure); }
+        boundaries.add(new Arm32SectionModes.Boundary(131072, 1));
+        invalidEvidence(1, START, 131074, hash, boundaries, "invalid complete ARM section evidence");
+        boundaries.clear();
+        require(maximum.boundaries().size() == 65536 && maximum.boundaries().getLast().offset() == 131070,
+            "caller mutation changed retained boundary evidence");
+        try { maximum.boundaries().clear(); throw new AssertionError("mutable boundary inventory"); }
+        catch (UnsupportedOperationException expected) { checks++; }
+    }
+
+    private static void invalidEvidence(int section, long address, long size, String hash,
+            List<Arm32SectionModes.Boundary> boundaries, String diagnostic) {
+        try {
+            new Arm32SectionModes.Evidence(section, address, size, hash, boundaries);
+            throw new AssertionError("invalid mapping evidence accepted");
+        }
+        catch (IllegalArgumentException expected) {
+            require(expected.getMessage().equals(diagnostic), "wrong evidence rejection: " + expected);
+        }
+    }
+
+    private static void profileAndAllocations(Path input, byte[] original, Arm32SectionModes.Evidence evidence,
+            List<ElfLocalMappingSymbol> expected) throws Exception {
+        for (int[] profile : new int[][] {{18, 3}, {18, 183}, {16, 1}, {16, 4},
+                {36, 0}, {36, 0x04000400}, {36, 0x06000400}, {36, 0x05800400}, {16, 3}}) {
+            byte[] bytes = original.clone();
+            var fields = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
+            if (profile[0] == 36) fields.putInt(36, profile[1]);
+            else fields.putShort(profile[0], (short) profile[1]);
+            Files.write(input, bytes);
+            var image = ElfImage.read(input);
+            var messages = new ArrayList<String>();
+            require(Arm32SectionModes.plan(image, List.of(), List.of(), () -> false, messages::add).isEmpty()
+                && messages.isEmpty(), "empty evidence acquired mappings or diagnostics");
+            if (profile[0] == 16 && profile[1] == 3) {
+                require(Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> false, messages::add).equals(expected)
+                    && messages.isEmpty(), "ET_DYN mapping changed address or mode");
+            }
+            else reject(image, List.of(evidence), List.of(), "requires little-endian ELF32 EABI5");
+            require(Arrays.equals(bytes, Files.readAllBytes(input)), "profile inspection changed ELF");
+        }
+        for (int[] allocation : new int[][] {{8, 0}, {8, 2}, {8, 4}, {8, 0x806}, {20, 0}, {4, 8}}) {
+            byte[] bytes = original.clone();
+            ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).putInt(0x300 + 40 + allocation[0], allocation[1]);
+            Files.write(input, bytes);
+            var image = ElfImage.read(input);
+            var selected = Arm32SectionModes.allocations(image, () -> false);
+            boolean noBacking = allocation[0] == 4;
+            require(noBacking ? selected.size() == 1 && selected.getFirst().fileSize() == 0 : selected.isEmpty(),
+                "incorrect executable allocation admission");
+            reject(image, List.of(evidence), List.of(), noBacking ? "extent or file backing" : "missing unique executable allocation");
+            require(Arrays.equals(bytes, Files.readAllBytes(input)), "allocation inspection changed ELF");
+        }
+    }
+
+    private static void inheritedConflicts(Path input, byte[] original, Arm32SectionModes.Evidence evidence,
+            List<ElfLocalMappingSymbol> expected) throws Exception {
+        for (long address : new long[] {START - 32, START - 16, START + 44, START + 43}) {
+            byte[] bytes = original.clone();
+            ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+                .putInt(0x300 + 2 * 40 + 8, 2).putInt(0x300 + 2 * 40 + 12, (int) address);
+            Files.write(input, bytes);
+            var image = ElfImage.read(input);
+            if (address == START - 32 || address == START + 44) exactPlan(image, evidence, expected);
+            else reject(image, List.of(evidence), List.of(), "overlapping allocated sections");
+            require(Arrays.equals(bytes, Files.readAllBytes(input)), "allocation comparison changed input");
+        }
+        for (int section : new int[] {1, 0xfff1}) {
+            for (int offset : new int[] {0, 17, 24, 16, 25, 41}) {
+                byte[] bytes = inheritedSymbol(original, "x", START + offset, 4, 2, section);
+                Files.write(input, bytes);
+                var image = ElfImage.read(input);
+                if (offset == 0 || offset == 17 || offset == 24) exactPlan(image, evidence, expected);
+                else reject(image, List.of(evidence), List.of(), "inherited function tag contradicts listing");
+                require(Arrays.equals(bytes, Files.readAllBytes(input)), "function-tag inspection changed input");
+            }
+        }
+        // An inherited marker at the exclusive end supplies no earlier mode.
+        // A data marker at +40, in contrast, owns exactly the final interval.
+        for (String tag : List.of("$a", "$t", "$d")) {
+            byte[] bytes = inheritedSymbol(original, tag, START + 44, 0, 0, 1);
+            Files.write(input, bytes);
+            exactPlan(ElfImage.read(input), evidence, expected);
+            require(Arrays.equals(bytes, Files.readAllBytes(input)), "end-marker inspection changed input");
+        }
+        byte[] bytes = inheritedSymbol(original, "$d", START + 40, 0, 0, 1);
+        Files.write(input, bytes);
+        exactPlan(ElfImage.read(input), evidence, expected.subList(0, 3));
+        require(Arrays.equals(bytes, Files.readAllBytes(input)), "retained data marker changed input");
+        bytes = inheritedSymbol(original, "$t", START + 20, 0, 0, 1);
+        Files.write(input, bytes);
+        reject(ElfImage.read(input), List.of(evidence), List.of(), "inherited mapping interval contradicts listing");
+        require(Arrays.equals(bytes, Files.readAllBytes(input)), "interval conflict changed input");
+
+        Files.write(input, original);
+        var image = ElfImage.read(input);
+        reject(image, List.of(new Arm32SectionModes.Evidence(2, START, 44, evidence.sha256(), evidence.boundaries())),
+            List.of(), "missing unique executable allocation");
+        reject(image, List.of(new Arm32SectionModes.Evidence(1, START + 4, 44, evidence.sha256(), evidence.boundaries())),
+            List.of(), "allocation extent or file backing disagrees");
+        reject(image, List.of(evidence), List.of(new ElfLocalFunctionSymbol(expected.getFirst().name(), START, 4, 1)),
+            "mapping name conflicts with existing symbol");
+        var misaligned = List.of(new Arm32SectionModes.Boundary(0, 0), new Arm32SectionModes.Boundary(16, 1),
+            new Arm32SectionModes.Boundary(18, 0), new Arm32SectionModes.Boundary(42, 2));
+        reject(image, List.of(new Arm32SectionModes.Evidence(1, START, 44, evidence.sha256(), misaligned)),
+            List.of(), "unaligned code mapping extent");
+        require(Arrays.equals(original, Files.readAllBytes(input)), "conflicting evidence changed original");
+    }
+
+    private static byte[] inheritedSymbol(byte[] original, String name, long value, int size, int info, int section) {
+        byte[] bytes = original.clone();
+        var fields = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
+        // Convert the existing 32-byte opaque allocation to two ELF32 symbol
+        // rows: the null symbol and one local symbol, linked to the string table.
+        fields.putInt(0x300 + 2 * 40 + 4, 2).putInt(0x300 + 2 * 40 + 24, 3)
+            .putInt(0x300 + 2 * 40 + 28, 2).putInt(0x300 + 2 * 40 + 36, 16);
+        fields.putInt(0x190, 1).putInt(0x194, (int) value).putInt(0x198, size)
+            .put(0x19c, (byte) info).putShort(0x19e, (short) section);
+        byte[] encoded = (name + "\0").getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        require(encoded.length <= 7, "fixture string-table capacity");
+        System.arraycopy(encoded, 0, bytes, 0x1c1, encoded.length);
+        return bytes;
+    }
+
+    private static void exactPlan(ElfImage image, Arm32SectionModes.Evidence evidence,
+            List<ElfLocalMappingSymbol> expected) throws Exception {
+        var messages = new ArrayList<String>();
+        var actual = Arm32SectionModes.plan(image, List.of(evidence), List.of(), () -> false, messages::add);
+        require(actual.equals(expected) && messages.isEmpty(), "valid inherited evidence changed mappings: " + messages);
     }
 
     private static void reject(ElfImage image, List<Arm32SectionModes.Evidence> evidence,

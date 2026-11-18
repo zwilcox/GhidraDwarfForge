@@ -23,6 +23,10 @@ if args.unbound:
     queries[0] = ('ptype struct Counter', ['int value;'])
     queries[1] = ("ptype 'recovered::Counter'", ['Counter'])
 if args.isolated:
+    # Addressless external declarations are visible through their class, not
+    # necessarily independently indexed by GDB as executable function symbols.
+    for _, fragments in queries[:2]:
+        fragments.extend(['static int metadata(int, ...);', 'static int disabled(int);'])
     queries.append(("ptype 'outer::Counter::Nested::static_method'", ['type = int (int)']))
     queries.append(("ptype 'outer::Counter::Nested'", ['static int static_method(int);']))
     if args.variant == 'unbound-collision':

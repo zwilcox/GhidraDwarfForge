@@ -104,6 +104,7 @@ public final class RegisterByteSliceFlowSmoke {
                 var object = new StructureDataType("ObjectBytes", 0, program.getDataTypeManager());
                 object.add(new ArrayDataType(ByteDataType.dataType, width, 1, program.getDataTypeManager()), "bytes", null);
                 var register = program.getRegister(incoming);
+                if (width == 1 && shape.equals("adjacent")) sliceContracts(program, register);
                 var node = new Varnode(register.getAddress().add(big ? 4 - width : 0), width);
                 var storage = new VariableStorage(program, node);
                 function.replaceParameters(Function.FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED,
@@ -139,6 +140,7 @@ public final class RegisterByteSliceFlowSmoke {
                 if (target.equals("arm") && width == 3 && shape.equals("adjacent")) {
                     joinedTransfers(program, program.getListing().getInstructionAt(entry.add(backup)), map);
                     carryFreeJoins(program, program.getListing().getInstructionAt(entry.add(backup)), map);
+                    checks += StackValueMaskSmoke.check(program, program.getListing().getInstructionAt(entry.add(backup)), map);
                 }
                 var cancelled = new TaskMonitorAdapter(true); cancelled.cancel();
                 try {
@@ -150,6 +152,49 @@ public final class RegisterByteSliceFlowSmoke {
             finally { program.endTransaction(transaction, true); }
         }
         finally { program.release(owner); }
+    }
+
+    private static void sliceContracts(ProgramDB program, ghidra.program.model.lang.Register register) {
+        var base = register.getBaseRegister();
+        var full = new Varnode(base.getAddress(), base.getMinimumByteSize());
+        var map = new TargetRegisterMap("raw-slice-contract", "explicit test mapping", java.util.Map.of(base.getName(), 27));
+        for (Varnode invalid : java.util.Arrays.asList(null, new Varnode(base.getAddress(), 0),
+                new Varnode(program.getAddressFactory().getDefaultAddressSpace().getAddress(0x1000), 1))) {
+            require(!RegisterByteSlice.contains(base, invalid), "invalid register span acquired containment");
+            require(RegisterByteSlice.mapped(program, invalid, map) == null, "invalid register span acquired a DWARF location");
+            if (invalid == null || !invalid.isRegister()) {
+                require(RegisterByteSlice.container(program, invalid) == null, "non-register span acquired a container");
+            }
+        }
+        require(!RegisterByteSlice.contains(null, full), "missing register acquired containment");
+        var bit = program.getLanguage().getRegisters().stream()
+            .filter(r -> r.getBitLength() % 8 != 0).findFirst().orElseThrow();
+        require(!RegisterByteSlice.contains(bit, new Varnode(bit.getAddress(), 1)), "bit flag claimed a whole byte");
+        require(!RegisterByteSlice.contains(base, new Varnode(base.getAddress(), full.getSize() + 1)),
+            "oversized physical span fit in the register");
+        require(RegisterByteSlice.contains(base, full), "exact register boundary rejected");
+        // Model a physical span with no named alias. Normal x86 byte aliases
+        // legitimately select a smaller container, which has its own bit origin.
+        var unnamed = (ghidra.program.model.listing.Program) java.lang.reflect.Proxy.newProxyInstance(
+            ghidra.program.model.listing.Program.class.getClassLoader(),
+            new Class<?>[] {ghidra.program.model.listing.Program.class}, (proxy, method, arguments) ->
+                method.getName().equals("getRegister") ? null : method.invoke(program, arguments));
+        for (var order : java.util.Arrays.asList(null, ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+            var selected = new TargetRegisterMap("raw-slice-contract", "explicit physical-order test",
+                java.util.Map.of(base.getName(), 27, "not_a_language_register", 28), java.util.Map.of(), java.util.Map.of(), order);
+            for (int offset = 0; offset < full.getSize(); offset++) {
+                var node = new Varnode(base.getAddress().add(offset), 1);
+                var view = RegisterByteSlice.mapped(unnamed, node, selected);
+                boolean big = order == null ? base.isBigEndian() : order == ByteOrder.BIG_ENDIAN;
+                int expected = (big ? full.getSize() - offset - 1 : offset) * 8;
+                require(view != null && view.container().equals(base) && view.storage().register().dwarfNumber() == 27 &&
+                    view.storage().valueBitOffset() == expected && view.storage().bitSize() == 8,
+                    "physical byte position changed its logical register bits: " + base.getName() + "/" + order +
+                        "/" + offset + " expected=" + expected + " actual=" + view);
+            }
+        }
+        var unmapped = new TargetRegisterMap("raw-slice-contract", "no matching register", java.util.Map.of("not_a_language_register", 28));
+        require(RegisterByteSlice.mapped(program, full, unmapped) == null, "physical containment fabricated a DWARF register number");
     }
 
     private static void joinedTransfers(ProgramDB program, ghidra.program.model.listing.Instruction template,

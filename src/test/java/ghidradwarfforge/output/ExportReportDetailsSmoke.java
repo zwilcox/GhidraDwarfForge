@@ -50,6 +50,7 @@ public final class ExportReportDetailsSmoke {
             binding(root.resolve("binding"));
             bindingFailures(root.resolve("binding-failures"));
             constructorControls();
+            inventoryCombinations();
             System.out.println("export-report-details-smoke=PASS checks=" + checks);
         }
         finally {
@@ -411,6 +412,68 @@ public final class ExportReportDetailsSmoke {
         expect(NullPointerException.class, () -> new Inventories(null, List.of(), List.of(), List.of(), List.of()));
         expect(IllegalArgumentException.class, () -> new RetentionLimits(-1, 0));
         expect(IllegalArgumentException.class, () -> new RetentionLimits(0, -1));
+    }
+
+    private static void inventoryCombinations() throws Exception {
+        JsonObject complete = fixture(true);
+        Inventories examples = parse(complete.toString()).inventories();
+        for (int mask = 0; mask < 32; mask++) {
+            JsonObject document = complete.deepCopy();
+            for (int i = 0; i < ARRAYS.length; i++) {
+                if ((mask & (1 << i)) == 0) document.add(ARRAYS[i], new JsonArray());
+            }
+            updateCounts(document);
+            document.addProperty("status", mask == 0 ? "SUCCESS" : "PARTIAL");
+            Detailed valid = parse(document.toString());
+            inventory(document, valid.inventories());
+            require(valid.claims().equals(light(document.toString())), "retention changed claims");
+            require(valid.claims().validationStatus() == ExportReport.ValidationStatus.NOT_RUN,
+                "inventory presence upgraded validation");
+            var claims = valid.claims();
+            var opposite = new ExportReportClaims(claims.schemaVersion(), mask == 0 ?
+                ExportReport.Status.PARTIAL : ExportReport.Status.SUCCESS, claims.target(),
+                claims.artifacts(), claims.counts(), claims.validationStatus(), claims.libdwarfVersion());
+            expect(IllegalArgumentException.class, () -> new Detailed(opposite, valid.inventories()));
+            JsonObject wrongStatus = document.deepCopy();
+            wrongStatus.addProperty("status", opposite.status().name());
+            expect(IOException.class, () -> parse(wrongStatus.toString()));
+
+            // Change each count independently, with every combination of other
+            // inventories present. Earlier mismatches cannot mask a later one.
+            for (int changed = 0; changed < ARRAYS.length; changed++) {
+                JsonObject wrongCount = document.deepCopy();
+                wrongCount.getAsJsonObject("counts").addProperty(COUNTS[changed],
+                    document.getAsJsonArray(ARRAYS[changed]).size() + 1);
+                expect(IOException.class, () -> parse(wrongCount.toString()));
+                var source = valid.inventories();
+                var failed = new ArrayList<>(source.failedFunctions());
+                var skipped = new ArrayList<>(source.skippedFunctions());
+                var omitted = new ArrayList<>(source.omittedLocations());
+                var unsupported = new ArrayList<>(source.unsupportedConstructs());
+                var diagnostics = new ArrayList<>(source.diagnostics());
+                switch (changed) {
+                    case 0 -> failed.add(examples.failedFunctions().getFirst());
+                    case 1 -> skipped.add(examples.skippedFunctions().getFirst());
+                    case 2 -> omitted.add(examples.omittedLocations().getFirst());
+                    case 3 -> unsupported.add(examples.unsupportedConstructs().getFirst());
+                    case 4 -> diagnostics.add("independent diagnostic");
+                    default -> throw new AssertionError();
+                }
+                Inventories inconsistent = new Inventories(failed, skipped, omitted, unsupported, diagnostics);
+                expect(IllegalArgumentException.class, () -> new Detailed(claims, inconsistent));
+                failed.clear();
+                skipped.clear();
+                omitted.clear();
+                unsupported.clear();
+                diagnostics.clear();
+                List<List<?>> stored = List.of(inconsistent.failedFunctions(), inconsistent.skippedFunctions(),
+                    inconsistent.omittedLocations(), inconsistent.unsupportedConstructs(), inconsistent.diagnostics());
+                for (int i = 0; i < ARRAYS.length; i++) {
+                    require(stored.get(i).size() == document.getAsJsonArray(ARRAYS[i]).size() + (i == changed ? 1 : 0),
+                        "inventory retained caller-owned mutable list");
+                }
+            }
+        }
     }
 
     private static void immutable(Inventories value) throws Exception {

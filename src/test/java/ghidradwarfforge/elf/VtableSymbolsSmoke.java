@@ -37,6 +37,7 @@ public final class VtableSymbolsSmoke {
         String hash = hash(Arrays.copyOfRange(bytes, 0x140, 0x158));
         var table = table(abi, 10, 1, "_ZTV1C", "OriginalC", 0x1040, 0x140, hash);
         var model = model(List.of(table), false, false);
+        admissionBounds(root, bytes, model, abi, hash);
         var plan = plan(root, bytes, model, Set.of(), () -> false, new ArrayList<>());
         require(plan.symbols().equals(List.of(new ElfLocalObjectSymbol("_ZTV1C", 0x1040, 24, 1))), "admitted symbol differs");
         require(plan.types().classScopes().vtables().equals(List.of(table)), "admitted witness lost");
@@ -108,6 +109,40 @@ public final class VtableSymbolsSmoke {
         }
     }
 
+    private static void admissionBounds(Path root, byte[] bytes, ProgramTypeModel model, CxxAbiProfile abi, String hash) throws Exception {
+        var empty = plan(root, bytes, null, Set.of(), () -> false, new ArrayList<>());
+        require(empty.types() == null && empty.symbols().isEmpty(), "absent type model acquired table symbols");
+        for (int type : new int[] {1, 3, 4}) {
+            byte[] variant = bytes.clone();
+            ByteBuffer.wrap(variant).order(ByteOrder.LITTLE_ENDIAN).putShort(16, (short) type);
+            if (type == 3) {
+                require(plan(root, variant, model, Set.of(), () -> false, new ArrayList<>()).symbols().size() == 1,
+                    "linked shared-object table was refused");
+            }
+            else reject(root, variant, model, Set.of(), "ET_EXEC or ET_DYN");
+        }
+        byte[] absent = bytes.clone();
+        LocalSymbolMergeSmoke.field(absent, 1, "flags", 0);
+        reject(root, absent, model, Set.of(), "no original allocated storage");
+        byte[] emptySection = bytes.clone();
+        LocalSymbolMergeSmoke.field(emptySection, 1, "size", 0);
+        reject(root, emptySection, model, Set.of(), "no original allocated storage");
+        for (long address : new long[] {0xff8, 0x1070}) {
+            reject(root, bytes, model(List.of(table(abi, 10, 1, "_ZTV1C", "OriginalC", address, 0x140, hash)), false, false),
+                Set.of(), "file-backed");
+        }
+        var tables = new ArrayList<VtableEvidence>();
+        for (int index = 0; index < 4096; index++) {
+            tables.add(table(abi, 100 + index, 1, "_ZTV_fixture_" + index, "OriginalC", 0x1040, 0x140, hash));
+        }
+        reject(root, bytes, model(tables, false, false), Set.of(), "canonical lookup comparison budget");
+        // A moderate number of tables and empty section records exceed the
+        // allocation cross-product budget without allocating large payloads.
+        byte[] manySections = Arrays.copyOf(bytes, 0x400 + 8193 * 64);
+        ByteBuffer.wrap(manySections).order(ByteOrder.LITTLE_ENDIAN).putShort(60, (short) 8193);
+        reject(root, manySections, model(tables.subList(0, 2048), false, false), Set.of(), "allocation comparison budget");
+    }
+
     private static ProgramTypeModel withGlobal(ProgramTypeModel model, ProgramTypeModel.GlobalVariable global) {
         return new ProgramTypeModel(model.types(), model.functions(), List.of(global), model.variableStorage(),
             model.functionStatics(), model.functionDeclarations(), model.lexicalScopes(), model.classScopes());
@@ -135,8 +170,9 @@ public final class VtableSymbolsSmoke {
     private static void reject(Path root, byte[] bytes, ProgramTypeModel model, Set<String> reserved, String reason) throws Exception {
         var messages = new ArrayList<String>();
         var result = plan(root, bytes, model, reserved, () -> false, messages);
-        require(result.symbols().isEmpty() && result.types().classScopes().vtables().isEmpty(), "invalid table admitted: " + messages);
-        require(messages.stream().anyMatch(message -> message.contains(reason)), "missing diagnostic " + reason + ": " + messages);
+        String summary = messages.size() + " diagnostics: " + messages.stream().limit(3).toList();
+        require(result.symbols().isEmpty() && result.types().classScopes().vtables().isEmpty(), "invalid table admitted: " + summary);
+        require(messages.stream().anyMatch(message -> message.contains(reason)), "missing diagnostic " + reason + ": " + summary);
         require(ClassScopeNames.build(result.types().types(), result.types().classScopes()).aliases().stream()
             .noneMatch(alias -> alias.name().equals("OriginalC")), "rejected vtable left its lookup alias");
     }

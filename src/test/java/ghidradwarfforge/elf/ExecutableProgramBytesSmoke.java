@@ -30,6 +30,7 @@ public final class ExecutableProgramBytesSmoke {
     }
 
     public static void main(String[] args) throws Exception {
+        observationContracts();
         Path root = Files.createTempDirectory("forge-program-bytes-").toRealPath();
         try {
             for (boolean wide : List.of(false, true)) {
@@ -71,6 +72,41 @@ public final class ExecutableProgramBytesSmoke {
                 }
             }
         }
+    }
+
+    private static void observationContracts() throws Exception {
+        for (Region region : Region.values()) {
+            var position = region == Region.PROGRAM_COUNT ? java.util.OptionalLong.empty() : java.util.OptionalLong.of(0x100000007L);
+            var issue = new ExecutableProgramBytes.Issue(region, position, "original", "candidate");
+            require(issue.region() == region && issue.offset().equals(position) && issue.expected().equals("original") &&
+                issue.observed().equals("candidate"), "program-byte observation lost phase or wide physical position");
+            var mismatched = new Result(Status.DIFFERENT_PROGRAM_BYTES, java.util.Optional.of(issue), "difference");
+            require(mismatched.issue().orElseThrow().equals(issue), "difference lost its evidence");
+            if (region == Region.PROGRAM_COUNT) {
+                expect(IllegalArgumentException.class, () -> new ExecutableProgramBytes.Issue(region,
+                    java.util.OptionalLong.of(0), "original", "candidate"));
+            }
+            else {
+                for (var invalid : List.of(java.util.OptionalLong.empty(), java.util.OptionalLong.of(-1))) {
+                    expect(IllegalArgumentException.class, () -> new ExecutableProgramBytes.Issue(region, invalid, "original", "candidate"));
+                }
+            }
+            for (Status status : List.of(Status.MATCHING_PROGRAM_BYTES, Status.NO_FILE_BACKED_LOAD_EVIDENCE)) {
+                require(new Result(status, java.util.Optional.empty(), "no byte difference").status() == status,
+                    "non-difference status changed");
+                expect(IllegalArgumentException.class, () -> new Result(status, java.util.Optional.of(issue), "contradictory difference"));
+            }
+            for (String missing : Arrays.asList(null, "", " \t")) {
+                expect(IllegalArgumentException.class, () -> new ExecutableProgramBytes.Issue(region, position, missing, "candidate"));
+                expect(IllegalArgumentException.class, () -> new ExecutableProgramBytes.Issue(region, position, "original", missing));
+                expect(IllegalArgumentException.class, () -> new Result(Status.DIFFERENT_PROGRAM_BYTES, java.util.Optional.of(issue), missing));
+            }
+        }
+        expect(IllegalArgumentException.class, () -> new Result(Status.DIFFERENT_PROGRAM_BYTES, java.util.Optional.empty(), "no difference evidence"));
+        expect(NullPointerException.class, () -> new ExecutableProgramBytes.Issue(null, java.util.OptionalLong.empty(), "a", "b"));
+        expect(NullPointerException.class, () -> new ExecutableProgramBytes.Issue(Region.PROGRAM_COUNT, null, "a", "b"));
+        expect(NullPointerException.class, () -> new Result(null, java.util.Optional.empty(), "status absent"));
+        expect(NullPointerException.class, () -> new Result(Status.MATCHING_PROGRAM_BYTES, null, "issue container absent"));
     }
 
     private static void basic(Pair pair, Shape shape) throws Exception {

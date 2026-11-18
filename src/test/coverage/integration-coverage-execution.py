@@ -69,6 +69,7 @@ public final class UnloadedFixture {
     collection.finish(oracle)
     python = os.sys.executable
     base_command = [python, '-B', HERE / 'integration-report.py', '--jar', jar,
+        '--fixture-report',
         '--collections', root / 'collections', '--java', java, '--jacoco-classpath', args.jacoco_classpath.resolve(),
         '--sources', source.parent, '--commit', 'fixture-only', '--require-suite', 'real-jvm-control']
     run([*base_command, '--output', root / 'report'], root / 'report.log')

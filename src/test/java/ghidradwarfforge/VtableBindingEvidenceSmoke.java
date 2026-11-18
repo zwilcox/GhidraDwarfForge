@@ -205,6 +205,9 @@ public final class VtableBindingEvidenceSmoke {
             }
             finally { program.endTransaction(transaction, true); }
             rejects(() -> GhidraVtableBindings.save(program, request, MONITOR));
+            requestBoundaries(program, request, expected);
+            relocationBoundaries(program, request, expected);
+            checks += VtableInventorySmoke.check(program, request, expected);
             program.getDBHandle().saveAs(saved.toFile(), true, MONITOR);
             byte[] hash = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(saved));
             var timestamp = Files.getLastModifiedTime(saved);
@@ -224,6 +227,146 @@ public final class VtableBindingEvidenceSmoke {
             System.out.println("vtable-binding-target=PASS " + languageId);
         }
         finally { program.release(token); Files.deleteIfExists(saved); Files.deleteIfExists(directory); }
+    }
+
+    private static void requestBoundaries(ProgramDB program, Request request, Snapshot expected) throws Exception {
+        int transaction = program.startTransaction("rejected vtable requests");
+        String key = "symbol-" + request.symbolId();
+        String encoded = program.getOptions(GROUP).getString(key, null);
+        try {
+            for (long symbol : new long[] {0, -1}) {
+                rejects(() -> new Request(symbol, request.classId(), request.mangledName(), request.lookupName(),
+                    request.byteSize(), request.points(), request.evidence()));
+            }
+            for (long owner : new long[] {0, -1}) {
+                rejects(() -> new Request(request.symbolId(), owner, request.mangledName(), request.lookupName(),
+                    request.byteSize(), request.points(), request.evidence()));
+            }
+            for (int size : new int[] {0, -1, 1024 * 1024 + 1}) {
+                rejects(() -> withPoints(request, size, request.points()));
+            }
+            rejects(() -> withPoints(request, 48, null));
+            rejects(() -> withPoints(request, 48, List.of()));
+            rejects(() -> withPoints(request, 48, Arrays.asList((AddressPoint) null)));
+            rejects(() -> withPoints(request, 48, Collections.nCopies(4097, request.points().getFirst())));
+            for (String text : Arrays.asList(null, "", " ", "bad\0text", "x".repeat(8193))) {
+                rejects(() -> new AddressPoint(16, 0, text));
+            }
+            rejects(() -> new AddressPoint(-1, 0, "negative table"));
+            rejects(() -> new AddressPoint(16, -1, "negative subobject"));
+            for (String name : List.of("_ZTV", "_ZTV5 Child", "_ZTC5Child")) {
+                rejects(() -> new Request(request.symbolId(), request.classId(), name, request.lookupName(),
+                    request.byteSize(), request.points(), request.evidence()));
+            }
+            // Each geometry is syntactically valid metadata but cannot describe
+            // this saved complete object. Rejection must preserve its valid record.
+            for (var points : List.of(
+                    List.of(new AddressPoint(8, 0, "before header")),
+                    List.of(new AddressPoint(48, 0, "past extent")),
+                    List.of(new AddressPoint(17, 0, "misaligned table")),
+                    List.of(new AddressPoint(16, 0, "primary"), new AddressPoint(32, 16, "overlap")),
+                    List.of(new AddressPoint(16, 1, "misaligned object")),
+                    List.of(new AddressPoint(16, 32, "outside object")),
+                    List.of(new AddressPoint(16, 0, "primary"), new AddressPoint(40, 0, "duplicate object")),
+                    List.of(new AddressPoint(16, 16, "no primary")))) {
+                rejects(() -> GhidraVtableBindings.save(program, withPoints(request, 48, points), MONITOR));
+                require(encoded.equals(program.getOptions(GROUP).getString(key, null)), "invalid geometry replaced saved evidence");
+            }
+            rejects(() -> GhidraVtableBindings.save(program, withPoints(request, 47, request.points()), MONITOR));
+            rejects(() -> GhidraVtableBindings.save(program, null, MONITOR));
+            require(valid(program, request.symbolId()).equals(expected), "request rejection changed byte witness");
+            byte[] raw = Base64.getDecoder().decode(encoded.substring("GDFVT1:".length()));
+            var input = new DataInputStream(new ByteArrayInputStream(raw));
+            input.readInt(); input.readLong(); input.readLong(); input.readUTF(); input.readUTF();
+            input.readInt(); input.readUTF();
+            int countOffset = raw.length - input.available();
+            var invalidRecords = new ArrayList<byte[]>();
+            byte[] version = raw.clone(); ByteBuffer.wrap(version).putInt(2); invalidRecords.add(version);
+            for (int count : new int[] {-1, 0, 4097}) {
+                byte[] changed = raw.clone(); ByteBuffer.wrap(changed).putInt(countOffset, count); invalidRecords.add(changed);
+            }
+            invalidRecords.add(Arrays.copyOf(raw, raw.length + 1));
+            // This decoded size shares the maximum permitted Base64 length with
+            // the byte limit, so the decoded bound must be checked independently.
+            invalidRecords.add(Arrays.copyOf(raw, 1024 * 1024 + 1));
+            for (byte[] changed : invalidRecords) {
+                String bad = "GDFVT1:" + Base64.getEncoder().encodeToString(changed);
+                program.getOptions(GROUP).setString(key, bad);
+                rejected(program, request.symbolId());
+                require(bad.equals(program.getOptions(GROUP).getString(key, null)), "malformed record repaired itself");
+            }
+            program.getOptions(GROUP).setString(key, encoded);
+            require(valid(program, request.symbolId()).equals(expected), "exact record restoration changed witness");
+        }
+        finally { program.endTransaction(transaction, false); }
+        require(valid(program, request.symbolId()).equals(expected), "request controls changed persistent state");
+    }
+
+    private static Request withPoints(Request request, int size, List<AddressPoint> points) {
+        return new Request(request.symbolId(), request.classId(), request.mangledName(), request.lookupName(),
+            size, points, request.evidence());
+    }
+
+    private static void relocationBoundaries(ProgramDB program, Request request, Snapshot original) throws Exception {
+        var address = program.getSymbolTable().getSymbol(request.symbolId()).getAddress();
+        var table = program.getRelocationTable();
+        var contexts = new HashSet<String>();
+        String key = "symbol-" + request.symbolId();
+        String encoded = program.getOptions(GROUP).getString(key, null);
+        // Independent one-field changes must alter only the context witness,
+        // not the original or loaded table byte witnesses.
+        for (int variant = 0; variant < 10; variant++) {
+            int transaction = program.startTransaction("vtable relocation fingerprint " + variant);
+            try {
+                long[] values = variant == 4 ? null : variant == 5 ? new long[0] :
+                    variant == 6 ? new long[] {12, 14} : new long[] {12, 13};
+                byte[] bytes = variant == 7 ? null : variant == 8 ? new byte[] {4, 6} : new byte[] {4, 5};
+                var status = variant == 3 ? ghidra.program.model.reloc.Relocation.Status.APPLIED_OTHER :
+                    ghidra.program.model.reloc.Relocation.Status.APPLIED;
+                table.add(address.add(variant == 1 ? 17 : 16), status, variant == 2 ? 258 : 257,
+                    values, bytes, variant == 9 ? "other-symbol" : "symbol");
+                require(table.getSize() == 1, "fixture did not create one real relocation record");
+                rejected(program, request.symbolId());
+                require(encoded.equals(program.getOptions(GROUP).getString(key, null)), "stale relocation evidence refreshed itself");
+                GhidraVtableBindings.save(program, request, MONITOR);
+                var updated = valid(program, request.symbolId());
+                require(updated.originalSha256().equals(original.originalSha256()) &&
+                    updated.loadedSha256().equals(original.loadedSha256()), "metadata changed table bytes");
+                require(!updated.contextSha256().equals(original.contextSha256()) && contexts.add(updated.contextSha256()),
+                    "relocation field was omitted from fingerprint: " + variant);
+            }
+            finally { program.endTransaction(transaction, false); }
+            require(table.getSize() == 0 && valid(program, request.symbolId()).equals(original), "relocation rollback changed original state");
+        }
+        for (String kind : List.of("outside", "values-limit", "too-many-values", "bytes-limit", "too-many-bytes", "aggregate")) {
+            int transaction = program.startTransaction("vtable relocation limit " + kind);
+            try {
+                int count = kind.equals("aggregate") ? 129 : 1;
+                for (int i = 0; i < count; i++) {
+                    table.add(address.add(kind.equals("outside") ? 48 : i % 48),
+                        ghidra.program.model.reloc.Relocation.Status.APPLIED, 257,
+                        new long[kind.equals("too-many-values") ? 4097 : kind.equals("values-limit") ||
+                            kind.equals("aggregate") ? 4096 : 0],
+                        new byte[kind.equals("too-many-bytes") ? 1024 * 1024 + 1 :
+                            kind.equals("bytes-limit") ? 1024 * 1024 : 0], null);
+                }
+                if (kind.equals("outside")) {
+                    require(valid(program, request.symbolId()).equals(original), "outside relocation invalidated table witness");
+                }
+                else if (kind.equals("values-limit") || kind.equals("bytes-limit")) {
+                    GhidraVtableBindings.save(program, request, MONITOR);
+                    require(valid(program, request.symbolId()).originalSha256().equals(original.originalSha256()),
+                        "supported boundary changed original bytes");
+                }
+                else {
+                    rejects(() -> GhidraVtableBindings.save(program, request, MONITOR));
+                    rejected(program, request.symbolId());
+                    require(encoded.equals(program.getOptions(GROUP).getString(key, null)), "oversized relocation replaced evidence");
+                }
+            }
+            finally { program.endTransaction(transaction, false); }
+            require(table.getSize() == 0 && valid(program, request.symbolId()).equals(original), "limit control changed original state");
+        }
     }
 
     private static Snapshot valid(Program program, long id) throws Exception {

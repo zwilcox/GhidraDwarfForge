@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Real build-ID transaction/validator tests with an explicitly test-only Linux metadata host."""
 import argparse
+import copy
 from contextlib import nullcontext
 import fcntl
 import hashlib
@@ -9,6 +10,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import zlib
 from integration_coverage import Collection
 
 
@@ -91,6 +93,11 @@ def main():
 
     def snapshot(debug):
         return {str(p.relative_to(debug)): (digest(p), p.stat().st_ino)
+            for p in debug.rglob('*') if p.is_file()}
+
+    def metadata_snapshot(debug):
+        return {str(p.relative_to(debug)): (p.stat().st_mode, p.stat().st_uid,
+            p.stat().st_gid, p.stat().st_mtime_ns, p.stat().st_nlink)
             for p in debug.rglob('*') if p.is_file()}
 
     def gdb(name, debug, source=None):
@@ -187,6 +194,25 @@ qemu_socket_wait
     assert run('reinstall', configs[0], debug, 'install')['outcome'] == 'INSTALLED'
 
     if args.controls:
+        debug = fresh('empty-recovery')
+        assert run('empty-recovery', configs[0], debug, 'recover')['outcome'] == 'UNCHANGED'
+        assert not registration(debug).exists() and not state_file(debug).exists()
+        before = snapshot(debug)
+        run('empty-update-refused', configs[1], debug, 'update', expected=1,
+            contains='no managed installation exists to update')
+        assert before == snapshot(debug)
+        run('empty-remove-refused', configs[0], debug, 'remove', expected=1,
+            contains='no managed installation exists to remove')
+        assert before == snapshot(debug)
+        debug = fresh('invalid-build-ids')
+        for index, invalid in enumerate(['', 'ABCDEF', 'gg', 'abc', 'ab' * 125, '../outside']):
+            config = copy.deepcopy(values[0])
+            config['buildId'] = invalid
+            config_path = root / ('invalid-build-id-' + str(index) + '.json')
+            config_path.write_text(json.dumps(config, indent=4) + '\n')
+            run('invalid-build-id-' + str(index), config_path, debug, 'recover', expected=1,
+                contains='build ID must be canonical lowercase hex')
+            assert not list(debug.iterdir()), 'invalid ID created installation paths'
         for mode in ['install', 'update', 'remove']:
             boundaries = ['PREPARED', 'BEFORE_PUBLICATION', 'PUBLISHED', 'COMMITTED']
             if mode != 'remove':
@@ -322,14 +348,154 @@ qemu_socket_wait
             'unknown': (json.dumps(dict(original_state, unexpected='value')).encode(), 'unknown or missing'),
             'escape': (json.dumps(dict(original_state, operationId='../outside')).encode(), 'installation UUID'),
         }
+        # Mutate a record emitted by a real, validated installation. A refusal
+        # must preserve the registration, retained generations and record itself;
+        # restoring that record must still permit ordinary recovery below.
+        for field, replacement, message in [
+                ('schema', 'foreign-state-v1', 'installation record contract differs'),
+                ('buildId', '00', 'installation record contract differs'),
+                ('hostContract', 'foreign-host', 'installation record contract differs'),
+                ('durability', 'foreign-durability', 'installation record contract differs'),
+                ('originalSha256', 'a' * 63, 'invalid installation content hash'),
+                ('originalSha256', 'A' * 64, 'invalid installation content hash'),
+                ('operationId', '00000000-0000-0000-0000-00000000000A', 'noncanonical installation UUID'),
+                ('phase', 'PUBLISHING', 'unknown installation phase'),
+                ('mode', 'REPLACE', 'invalid installation transition'),
+                ('mode', 'UPDATE', 'invalid installation transition'),
+                ('mode', 'REMOVE', 'invalid installation transition'),
+                ('before', original_state['after'], 'invalid installation transition'),
+                ('after', None, 'invalid installation transition'),
+                ('directories', {}, 'recorded installation directories changed')]:
+            changed = copy.deepcopy(original_state)
+            changed[field] = replacement
+            label = field + '-' + str(len(malformed))
+            malformed[label] = (json.dumps(changed).encode(), message)
+        for field in ['before', 'after']:
+            changed = copy.deepcopy(original_state)
+            del changed[field]
+            malformed['missing-' + field] = (json.dumps(changed).encode(), 'unknown or missing')
+        for mode, after in [('UPDATE', None), ('REMOVE', original_state['after'])]:
+            changed = copy.deepcopy(original_state)
+            changed.update(mode=mode, before=original_state['after'], after=after)
+            malformed[mode.lower() + '-invalid-after'] = (json.dumps(changed).encode(),
+                'invalid installation transition')
+        changed = copy.deepcopy(original_state)
+        changed['after']['generation'] = '00000000-0000-0000-0000-000000000000'
+        assert changed['after']['generation'] != changed['operationId']
+        malformed['wrong-generation'] = (json.dumps(changed).encode(), 'prepared generation differs from operation')
         for kind, (data, message) in malformed.items():
             record.write_bytes(data)
             before = snapshot(debug)
+            metadata = metadata_snapshot(debug)
             run('record-' + kind + '-refused', configs[0], debug, 'recover', expected=1, contains=message)
             assert before == snapshot(debug)
+            assert metadata == metadata_snapshot(debug)
         record.write_bytes(saved)
         os.utime(record, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
         assert run('record-controls-restored', configs[0], debug, 'recover')['outcome'] == 'UNCHANGED'
+
+        debug = fresh('generation-controls')
+        installed = run('generation-controls-baseline', configs[0], debug, 'install')
+        generation = Path(installed['source']).parent.parent
+        manifest_path, record = generation / 'generation.json', state_file(debug)
+        saved_manifest, saved_record = manifest_path.read_bytes(), record.read_bytes()
+        manifest_stamp, record_stamp = manifest_path.stat(), record.stat()
+        manifest, state = json.loads(saved_manifest), json.loads(saved_record)
+        malformed = {}
+        for field, replacement, message in [
+                ('schema', 'foreign-generation-v1', 'generation identity differs'),
+                ('buildId', '00', 'generation identity differs'),
+                ('originalSha256', '0' * 64, 'generation original differs from installation state'),
+                ('contentKey', '0' * 64, 'generation key differs from retained inputs'),
+                ('sourceName', 'nested/source.c', 'retained source must be a leaf'),
+                ('sourceName', '../outside.c', 'normalized relative path'),
+                ('directories', {}, 'generation directories changed')]:
+            changed = copy.deepcopy(manifest)
+            assert changed[field] != replacement
+            changed[field] = replacement
+            malformed[field + '-' + str(len(malformed))] = (changed, message)
+        for name in ['export.json', 'export.dbg', 'export.source', 'installed.debug',
+                'validation.json', 'source/' + manifest['sourceName']]:
+            changed = copy.deepcopy(manifest)
+            del changed['files'][name]
+            malformed['missing-' + name.replace('/', '-')] = (changed, 'generation inventory is incomplete')
+        changed = copy.deepcopy(manifest)
+        changed['files']['unlisted.debug'] = changed['files']['installed.debug']
+        malformed['extra-file'] = (changed, 'generation file inventory changed')
+        changed = copy.deepcopy(manifest)
+        # The supported 65,536-part policy has separate exported/retained
+        # inventories plus overhead. This bounded JSON crosses its file-count
+        # limit without creating a large filesystem tree or hitting byte limits.
+        changed['files'].update(('excess-' + str(index), None) for index in range(132000))
+        malformed['oversized-inventory'] = (changed, 'generation inventory is incomplete')
+
+        def bind_manifest(changed):
+            # Rebind only the changed record's content digest, count and CRC.
+            # Preserve the real inode and supported metadata, including mtime,
+            # so recovery must inspect semantics beyond the outer file hash.
+            data = (json.dumps(changed, indent=4) + '\n').encode()
+            manifest_path.write_bytes(data)
+            os.utime(manifest_path, ns=(manifest_stamp.st_atime_ns, manifest_stamp.st_mtime_ns))
+            rebound = copy.deepcopy(state)
+            rebound['after']['manifest'].update(sha256=hashlib.sha256(data).hexdigest(),
+                bytes=str(len(data)), crc32=str(zlib.crc32(data)))
+            record.write_text(json.dumps(rebound, indent=4) + '\n')
+            return rebound
+
+        def reject_generation(name, message):
+            before, metadata = snapshot(debug), metadata_snapshot(debug)
+            run('generation-' + name + '-refused', configs[0], debug, 'recover', expected=1, contains=message)
+            assert before == snapshot(debug) and metadata == metadata_snapshot(debug)
+
+        try:
+            for kind, (changed, message) in malformed.items():
+                bind_manifest(changed)
+                reject_generation(kind, message)
+            rebound = bind_manifest(manifest)
+            rebound['after']['registration']['sha256'] = '0' * 64
+            record.write_text(json.dumps(rebound, indent=4) + '\n')
+            reject_generation('registration-digest', 'registration does not describe retained sidecar')
+            source = Path(installed['source'])
+            saved_source, source_stamp = source.read_bytes(), source.stat()
+            try:
+                data = saved_source + b'\n/* inconsistent retained source */\n'
+                source.write_bytes(data)
+                os.utime(source, ns=(source_stamp.st_atime_ns, source_stamp.st_mtime_ns))
+                changed = copy.deepcopy(manifest)
+                changed['files']['source/' + manifest['sourceName']].update(
+                    sha256=hashlib.sha256(data).hexdigest(), bytes=str(len(data)), crc32=str(zlib.crc32(data)))
+                bind_manifest(changed)
+                reject_generation('source-content', 'retained source hash differs')
+            finally:
+                source.write_bytes(saved_source)
+                os.utime(source, ns=(source_stamp.st_atime_ns, source_stamp.st_mtime_ns))
+        finally:
+            manifest_path.write_bytes(saved_manifest)
+            record.write_bytes(saved_record)
+            os.utime(manifest_path, ns=(manifest_stamp.st_atime_ns, manifest_stamp.st_mtime_ns))
+            os.utime(record, ns=(record_stamp.st_atime_ns, record_stamp.st_mtime_ns))
+        assert run('generation-controls-restored', configs[0], debug, 'recover')['outcome'] == 'UNCHANGED'
+
+        # Neither a link nor a FIFO is a retained regular artifact. A FIFO must
+        # be rejected without opening it and waiting for a writer.
+        for kind in ['symlink', 'fifo']:
+            extra = generation / ('unsupported-' + kind)
+            if kind == 'symlink':
+                extra.symlink_to(Path(installed['source']))
+            else:
+                os.mkfifo(extra)
+            identity = extra.lstat()
+            try:
+                reject_generation(kind, 'generation contains a ' + (
+                    'symbolic link' if kind == 'symlink' else 'non-regular file'))
+                after = extra.lstat()
+                assert (identity.st_dev, identity.st_ino, identity.st_mode, identity.st_nlink) == (
+                    after.st_dev, after.st_ino, after.st_mode, after.st_nlink)
+                if kind == 'symlink':
+                    assert extra.readlink() == Path(installed['source'])
+            finally:
+                extra.unlink()
+        assert run('generation-tree-restored', configs[0], debug, 'recover')['outcome'] == 'UNCHANGED'
 
         debug = fresh('recovery-conflict')
         run('recovery-conflict-baseline', configs[0], debug, 'install')

@@ -66,6 +66,8 @@ public final class OutsideBodyFlowSmoke {
                     "40001fd6", -1, -1, false))) {
             check(profile);
         }
+        FlowEntryContractSmoke.check();
+        ClosedFlowBoundarySmoke.check();
         System.out.println("outside-body-flow-smoke=PASS checks=" + checks);
     }
 
@@ -163,7 +165,10 @@ public final class OutsideBodyFlowSmoke {
             }
             finally { program.endTransaction(transaction, true); }
         }
-        finally { program.release(owner); }
+        finally {
+            try { program.flushEvents(); }
+            finally { program.release(owner); }
+        }
     }
 
     private static void require(boolean condition, String message) {

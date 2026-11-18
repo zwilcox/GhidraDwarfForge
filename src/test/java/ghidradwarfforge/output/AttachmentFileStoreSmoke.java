@@ -44,6 +44,14 @@ public final class AttachmentFileStoreSmoke {
             failures(root, expected);
             cancellation(root);
             concurrentChanges(root);
+            copyExtentChanges(root);
+            stagedReadbackChanges(root, expected);
+            metadataStageReplacement(root, expected);
+            metadataContentChange(root, expected);
+            publishedIdentityReplacement(root, expected);
+            publishedDirectoryReplacement(root, expected);
+            unavailableIdentity(root, expected);
+            observationChange(root);
             crashRecovery(root, expected);
             equal(expected, AttachmentFileStore.observe(source, HOST, () -> false));
             equal(backup, AttachmentFileStore.observe(destination, HOST, () -> false));
@@ -168,6 +176,257 @@ public final class AttachmentFileStoreSmoke {
         equal("unrelated replacement", Files.readString(conflict[0]));
         equal(false, Files.exists(backup));
         equal(current, AttachmentFileStore.observe(source, HOST, () -> false));
+    }
+
+    private static void noStages(Path directory) throws IOException {
+        try (var paths = Files.list(directory)) {
+            equal(false, paths.anyMatch(path -> path.getFileName().toString().startsWith(".forge-backup-")));
+        }
+    }
+
+    private static void message(Throwable failure, String expected) {
+        if (!failure.getMessage().contains(expected)) {
+            throw new AssertionError("expected " + expected + " but got " + failure, failure);
+        }
+        checks++;
+    }
+
+    /** Actual source extent changes after observation, before the first copied byte. */
+    private static void copyExtentChanges(Path root) throws Exception {
+        for (boolean grows : new boolean[] { false, true }) {
+            Path directory = Files.createDirectory(root.resolve("extent-change-" + grows));
+            Path source = Files.write(directory.resolve("source"), new byte[129]);
+            var before = AttachmentFileStore.observe(source, HOST, () -> false);
+            byte[] concurrent = new byte[grows ? 130 : 128];
+            java.util.Arrays.fill(concurrent, (byte) 53);
+            Path destination = directory.resolve("backup");
+            var failure = reject(() -> AttachmentFileStore.backup(before, destination, HOST, () -> false,
+                (point, stage, output) -> {
+                    if (point == AttachmentFileStore.Boundary.CREATED) Files.write(source, concurrent);
+                }));
+            message(failure, grows ? "source exceeds expected size" : "source shrank while copying");
+            equal(false, failure instanceof AttachmentFileStore.PublicationFailure);
+            equal(false, Files.exists(destination));
+            equal(true, java.util.Arrays.equals(concurrent, Files.readAllBytes(source)));
+            noStages(directory);
+        }
+    }
+
+    /** A failed copied-stage observation must not authorize metadata writes. */
+    private static void stagedReadbackChanges(Path root, AttachmentFileStore.Snapshot source) throws Exception {
+        for (String change : new String[] { "contents", "file", "directory" }) {
+            boolean replaces = !change.equals("contents");
+            Path directory = Files.createDirectory(root.resolve("copied-stage-change-" + change));
+            Path destination = directory.resolve("backup");
+            Path[] changedStage = { null };
+            Path[] retainedStage = { null };
+            AtomicInteger metadataCalls = new AtomicInteger();
+            var host = new AttachmentReceiptStoreSmoke.Host() {
+                @Override public void preserveMetadata(Path input, AttachmentReceiptStore.Fingerprint expected,
+                        Path stage) throws IOException {
+                    metadataCalls.incrementAndGet();
+                    super.preserveMetadata(input, expected, stage);
+                }
+            };
+            var failure = reject(() -> AttachmentFileStore.backup(source, destination, host, () -> false,
+                (point, stage, output) -> {
+                    if (point != AttachmentFileStore.Boundary.COPIED) return;
+                    changedStage[0] = stage;
+                    if (change.equals("directory")) {
+                        Path retained = directory.resolve("retained-owned-directory");
+                        Files.move(stage.getParent(), retained);
+                        Files.createDirectory(stage.getParent());
+                        retainedStage[0] = retained.resolve(stage.getFileName());
+                    }
+                    else if (replaces) {
+                        retainedStage[0] = stage.resolveSibling("retained-owned");
+                        Files.move(stage, retainedStage[0]);
+                    }
+                    Files.writeString(stage, "foreign stage contents");
+                }));
+            equal(0, metadataCalls.get());
+            message(failure, "backup copied bytes or identity differ");
+            equal(false, failure instanceof AttachmentFileStore.PublicationFailure);
+            equal(false, Files.exists(destination));
+            if (replaces) {
+                equal("foreign stage contents", Files.readString(changedStage[0]));
+                equal(source.digest(), FileDigests.read(retainedStage[0], () -> false));
+                equal(1, failure.getSuppressed().length);
+                message(failure.getSuppressed()[0], change.equals("directory") ?
+                    "backup staging directory changed; retained" : "backup stage identity changed; retained");
+            }
+            else noStages(directory);
+            equal(source, AttachmentFileStore.observe(source.path(), HOST, () -> false));
+        }
+    }
+
+    private static void metadataStageReplacement(Path root, AttachmentFileStore.Snapshot source) throws Exception {
+        Path directory = Files.createDirectory(root.resolve("metadata-stage-replacement"));
+        Path destination = directory.resolve("backup");
+        Path[] replacement = { null };
+        var host = new AttachmentReceiptStoreSmoke.Host() {
+            @Override public void preserveMetadata(Path input, AttachmentReceiptStore.Fingerprint expected,
+                    Path stage) throws IOException {
+                super.preserveMetadata(input, expected, stage);
+                Path retained = stage.resolveSibling("retained-owned");
+                Files.move(stage, retained);
+                Files.copy(retained, stage, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
+                replacement[0] = stage;
+            }
+        };
+        var failure = reject(() -> AttachmentFileStore.backup(source, destination, host, () -> false));
+        equal(false, Files.exists(destination));
+        equal(false, failure instanceof AttachmentFileStore.PublicationFailure);
+        message(failure, "backup stage identity changed while preserving metadata");
+        var foreign = AttachmentFileStore.observe(replacement[0], HOST, () -> false);
+        var retained = AttachmentFileStore.observe(replacement[0].resolveSibling("retained-owned"), HOST, () -> false);
+        equal(source.digest(), foreign.digest());
+        equal(source.fingerprint().metadataSha256(), foreign.fingerprint().metadataSha256());
+        equal(false, foreign.fingerprint().identity().equals(retained.fingerprint().identity()));
+        equal(1, failure.getSuppressed().length);
+        message(failure.getSuppressed()[0], "backup stage identity changed; retained");
+        equal(source, AttachmentFileStore.observe(source.path(), HOST, () -> false));
+    }
+
+    /** Matching inode, size and metadata do not prove that metadata application preserved bytes. */
+    private static void metadataContentChange(Path root, AttachmentFileStore.Snapshot source) throws Exception {
+        Path directory = Files.createDirectory(root.resolve("metadata-content-change"));
+        Path destination = directory.resolve("backup");
+        AtomicBoolean changed = new AtomicBoolean();
+        var host = new AttachmentReceiptStoreSmoke.Host() {
+            @Override public void preserveMetadata(Path input, AttachmentReceiptStore.Fingerprint expected,
+                    Path stage) throws IOException {
+                // Acquire the writer while this owned stage is writable. A live
+                // descriptor remains writable after copying read-only permissions.
+                try (var output = java.nio.channels.FileChannel.open(stage, StandardOpenOption.WRITE)) {
+                    super.preserveMetadata(input, expected, stage);
+                    var before = inspect(stage);
+                    FileTime time = Files.getLastModifiedTime(stage);
+                    long size = Files.size(stage);
+                    equal(1, output.write(java.nio.ByteBuffer.wrap(new byte[] { 37 }), 0));
+                    output.force(true);
+                    Files.setLastModifiedTime(stage, time);
+                    equal(size, Files.size(stage));
+                    equal(before, inspect(stage));
+                    changed.set(true);
+                }
+            }
+        };
+        var failure = reject(() -> AttachmentFileStore.backup(source, destination, host, () -> false));
+        equal(true, changed.get());
+        message(failure, "backup is not an independent byte/metadata copy");
+        equal(false, failure instanceof AttachmentFileStore.PublicationFailure);
+        equal(false, Files.exists(destination));
+        equal(source, AttachmentFileStore.observe(source.path(), HOST, () -> false));
+        noStages(directory);
+    }
+
+    private static void publishedIdentityReplacement(Path root, AttachmentFileStore.Snapshot source) throws Exception {
+        Path directory = Files.createDirectory(root.resolve("published-identity-replacement"));
+        Path destination = directory.resolve("backup");
+        Path retained = directory.resolve("retained-published");
+        var host = new AttachmentReceiptStoreSmoke.Host() {
+            @Override public void publishNew(Path stage, Path output) throws IOException {
+                super.publishNew(stage, output);
+                Files.move(output, retained);
+                Files.copy(retained, output, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
+            }
+        };
+        var failure = reject(() -> AttachmentFileStore.backup(source, destination, host, () -> false));
+        equal(true, failure instanceof AttachmentFileStore.PublicationFailure);
+        equal(destination, ((AttachmentFileStore.PublicationFailure) failure).backupPath());
+        message(failure.getCause(), "published backup identity differs from its owned stage");
+        var replaced = AttachmentFileStore.observe(destination, HOST, () -> false);
+        var owned = AttachmentFileStore.observe(retained, HOST, () -> false);
+        equal(source.digest(), replaced.digest());
+        equal(source.fingerprint().metadataSha256(), replaced.fingerprint().metadataSha256());
+        equal(false, owned.fingerprint().identity().equals(replaced.fingerprint().identity()));
+        equal(source, AttachmentFileStore.observe(source.path(), HOST, () -> false));
+        noStages(directory);
+    }
+
+    /** Successful publication still needs reconciliation if cleanup loses directory ownership. */
+    private static void publishedDirectoryReplacement(Path root, AttachmentFileStore.Snapshot source) throws Exception {
+        for (boolean occupied : new boolean[] { false, true }) {
+            Path directory = Files.createDirectory(root.resolve("published-directory-replacement-" + occupied));
+            Path destination = directory.resolve("backup");
+            Path[] replaced = { null };
+            Path retained = directory.resolve("retained-empty-directory");
+            var failure = reject(() -> AttachmentFileStore.backup(source, destination, HOST, () -> false,
+                (point, stage, output) -> {
+                    if (point != AttachmentFileStore.Boundary.AFTER_PUBLICATION) return;
+                    replaced[0] = stage.getParent();
+                    Files.move(stage.getParent(), retained);
+                    Files.createDirectory(stage.getParent());
+                    if (occupied) Files.writeString(stage.getParent().resolve("foreign"), "concurrent directory contents");
+                }));
+            equal(true, failure instanceof AttachmentFileStore.PublicationFailure);
+            equal(destination, ((AttachmentFileStore.PublicationFailure) failure).backupPath());
+            message(failure.getCause(), "backup staging directory changed; retained");
+            equal(true, Files.isDirectory(replaced[0]));
+            if (occupied) equal("concurrent directory contents", Files.readString(replaced[0].resolve("foreign")));
+            else {
+                try (var files = Files.list(replaced[0])) { equal(0L, files.count()); }
+            }
+            equal(true, Files.isDirectory(retained));
+            equal(source.digest(), AttachmentFileStore.observe(destination, HOST, () -> false).digest());
+            equal(source, AttachmentFileStore.observe(source.path(), HOST, () -> false));
+        }
+    }
+
+    /** An adapter failure before identity capture cannot authorize deleting an unverified path. */
+    private static void unavailableIdentity(Path root, AttachmentFileStore.Snapshot source) throws Exception {
+        for (boolean directoryFailure : new boolean[] { false, true }) {
+            Path directory = Files.createDirectory(root.resolve("unavailable-identity-" + directoryFailure));
+            Path destination = directory.resolve("backup");
+            Path[] selected = { null };
+            var marker = new IOException("owned adapter identity observation unavailable");
+            var host = new AttachmentReceiptStoreSmoke.Host() {
+                @Override public String directoryIdentity(Path path) throws IOException {
+                    if (directoryFailure && path.getFileName().toString().startsWith(".forge-backup-")) {
+                        selected[0] = path;
+                        throw marker;
+                    }
+                    return super.directoryIdentity(path);
+                }
+                @Override public AttachmentReceiptStore.Fingerprint inspect(Path path) throws IOException {
+                    if (!directoryFailure && path.getFileName().toString().equals("image") &&
+                            path.getParent().getFileName().toString().startsWith(".forge-backup-")) {
+                        selected[0] = path;
+                        throw marker;
+                    }
+                    return super.inspect(path);
+                }
+            };
+            var failure = reject(() -> AttachmentFileStore.backup(source, destination, host, () -> false));
+            equal(true, failure == marker);
+            equal(false, Files.exists(destination));
+            equal(true, Files.exists(selected[0]));
+            if (directoryFailure) {
+                try (var files = Files.list(selected[0])) { equal(0L, files.count()); }
+            }
+            else equal(0L, Files.size(selected[0]));
+            equal(1, failure.getSuppressed().length);
+            message(failure.getSuppressed()[0], directoryFailure ?
+                "backup staging directory changed; retained" : "backup stage identity changed; retained");
+            equal(source, AttachmentFileStore.observe(source.path(), HOST, () -> false));
+        }
+    }
+
+    private static void observationChange(Path root) throws Exception {
+        Path source = Files.writeString(root.resolve("observation-change"), "unchanged bytes");
+        FileTime concurrent = FileTime.fromMillis(Files.getLastModifiedTime(source).toMillis() + 2000);
+        var host = new AttachmentReceiptStoreSmoke.Host() {
+            private int observations;
+            @Override public AttachmentReceiptStore.Fingerprint inspect(Path path) throws IOException {
+                if (path.equals(source) && ++observations == 2) Files.setLastModifiedTime(path, concurrent);
+                return super.inspect(path);
+            }
+        };
+        var failure = reject(() -> AttachmentFileStore.observe(source, host, () -> false));
+        message(failure, "attachment recovery file changed while reading");
+        equal("unchanged bytes", Files.readString(source));
+        equal(concurrent, Files.getLastModifiedTime(source));
     }
 
     private static void crashChild(String[] args) throws Exception {

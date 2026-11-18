@@ -18,6 +18,7 @@ public final class SectionlessUnwindSmoke {
     private static int checks;
 
     public static void main(String[] args) throws Exception {
+        SectionlessUnwindBoundarySmoke.run();
         Path root = Files.createTempDirectory("forge-sectionless-unwind-");
         for (boolean wide : List.of(false, true)) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {

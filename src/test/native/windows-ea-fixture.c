@@ -74,7 +74,8 @@ int wmain(int argc, wchar_t **argv) {
         memcpy(data.bytes + 8 + sizeof(name), value, sizeof(value));
         result = NtSetEaFile(handle, &status, data.bytes, 8 + sizeof(name) + sizeof(value));
         if (result != 0) { fprintf(stderr, "NtSetEaFile=%08lx\n", (unsigned long)result); CloseHandle(handle); return 4; }
-        memset(&data, 0, sizeof(data));
+        /* The query must start without bytes left by the preceding write. */
+        SecureZeroMemory(&data, sizeof(data));
     }
     result = NtQueryEaFile(handle, &status, data.bytes, sizeof(data.bytes), FALSE, NULL, 0, NULL, TRUE);
     if (!CloseHandle(handle)) return 5;

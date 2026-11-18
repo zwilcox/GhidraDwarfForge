@@ -31,6 +31,7 @@ public final class ReportValueReaderSmoke {
         }
         require(scoped("[0,[[1],[2]],3]", 3, 5, 8) == 6, "recursive coverage children share counters");
         reject(() -> scoped("[0,[[1],[2]],3]", 3, 4, 8), "recursive child cannot reset scope budget");
+        ReportJsonLexicalSmoke.check();
         System.out.println("report-value-reader=PASS shared-budget/array/cancellation/owned-close");
     }
 

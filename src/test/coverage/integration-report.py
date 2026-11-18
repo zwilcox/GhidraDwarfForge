@@ -3,7 +3,9 @@
 import argparse
 import importlib.util
 import json
+import os
 from pathlib import Path
+import re
 import subprocess
 import xml.etree.ElementTree as ET
 
@@ -40,6 +42,14 @@ def report(args):
     summary = {'schema': 1, 'status': 'INCOMPLETE', 'commit': args.commit,
         'scope': 'Integration Java by layer; separate from JavaExec coverage and native C',
         'productionJarSha256': coverage.digest(jar), 'layers': {}}
+    run, job = os.environ.get('GITHUB_RUN_ID'), os.environ.get('GITHUB_JOB')
+    if args.fixture_report:
+        summary['fixtureOnly'] = True
+    elif run is not None or job is not None:
+        if (os.environ.get('GITHUB_ACTIONS') != 'true' or not re.fullmatch(r'[1-9][0-9]*', run or '')
+                or not re.fullmatch(r'[A-Za-z0-9_-]+', job or '') or not re.fullmatch(r'[0-9a-f]{40}', args.commit)):
+            raise ValueError('incomplete CI integration provenance')
+        summary['cohort'] = {'commit': args.commit, 'run': run, 'job': job}
     coverage.save(output / 'summary.json', summary)
     for layer, collections in sorted(groups.items()):
         manifest = output / (layer + '-sessions.txt')
@@ -80,7 +90,7 @@ def report(args):
     for layer, value in summary['layers'].items():
         lines.extend(['## ' + layer, '',
             f'{value["sessions"]} measured JVM sessions; {value["productionClasses"]} production classes. '
-            f'{len(value["unmeasuredForcedHalts"])} explicitly unmeasured direct halt controls. '
+            f'{len(value["unmeasuredForcedHalts"])} explicitly unmeasured halt controls. '
             'See each oracle receipt for additional unmeasured nested processes.', '',
             'Suites: ' + ', '.join('`' + name + '`' for name in value['suites']) + '.', '',
             '| Source | Covered / total lines | Covered / total branches |',
@@ -104,6 +114,8 @@ def main():
         parser.add_argument('--' + name, required=True, type=Path)
     parser.add_argument('--commit', required=True)
     parser.add_argument('--require-suite', action='append', required=True)
+    parser.add_argument('--fixture-report', action='store_true',
+        help='Synthetic reporter controls only; never accepted as hosted measurements')
     report(parser.parse_args())
 
 

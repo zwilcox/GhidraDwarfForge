@@ -31,6 +31,8 @@ public final class VariableStorageSmoke {
     }
 
     public static void main(String[] args) {
+        VariableLocationContractSmoke.check();
+        RegisterMapContractSmoke.check();
         TargetRegisterMap i386 = TargetRegisterMap.forTarget("x86");
         var i386Expected = new java.util.LinkedHashMap<>(java.util.Map.of("EAX", 0, "ECX", 1, "EDX", 2, "EBX", 3,
             "ESP", 4, "EBP", 5, "ESI", 6, "EDI", 7, "EIP", 8, "eflags", 9));

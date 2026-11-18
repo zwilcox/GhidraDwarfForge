@@ -39,7 +39,7 @@ public final class ExportReportSmoke {
     private ExportReportSmoke() {
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         TypeRef signedInt = new TypeRef("builtin:int32");
         List<TypeNode> nodes = new ArrayList<>(List.of(
             new OpaqueType("opaque", "odd\"type", 0, "unsupported\nshape"),
@@ -155,7 +155,89 @@ public final class ExportReportSmoke {
             skipped, diagnostics).toJson();
         requireContains(pathReport, "\"inputPath\":\"" +
             unresolved.toAbsolutePath().toString().replace("\\", "\\\\") + "\"");
+        textRoundTrips(cleanModel, cleanSource);
+        terminalMessages();
+        ExportReportContractSmoke.check();
         System.out.println("export-report-smoke=PASS");
+    }
+
+    private static com.google.gson.JsonObject decoded(String text) {
+        // These writers emit compact JSON. Any literal C0 character is invalid
+        // here, even if a permissive third-party parser would accept it.
+        if (text.chars().anyMatch(character -> character < 0x20)) {
+            throw new AssertionError("literal control character in compact report JSON");
+        }
+        byte[] bytes = text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return com.google.gson.JsonParser.parseString(new String(bytes,
+            java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+    }
+
+    private static void textRoundTrips(ProgramTypeModel model, SyntheticSourceFile source) throws Exception {
+        var values = new ArrayList<>(List.of("quote \" and backslash \\ and literal \\u001f",
+            "\"},\"status\":\"SUCCESS\",\"injected\":\"value", "Unicode λ 😀 \u2028 \u2029"));
+        for (int control = 0; control < 32; control++) values.add("before" + (char) control + "after");
+        for (String value : values) {
+            // POSIX permits controls other than NUL in a path component. Other
+            // hosts still exercise every control in diagnostics and failures.
+            String component = java.io.File.separatorChar == '/' && value.indexOf('\0') < 0
+                ? value : "portable Unicode λ 😀";
+            Path input = Path.of("unopened", component + ".elf");
+            Path sidecar = Path.of("unopened", component + ".dbg");
+            Path synthetic = Path.of("unopened", component + ".dbg.c");
+            var report = ExportReport.completed(new DwarfTarget("x86_64", "x86_64", 8, true, "x86"),
+                "2.3.2", input, A_HASH, sidecar, B_HASH, synthetic, C_HASH,
+                source.functions().size(), List.of(".debug_info"), source, model, List.of(), List.of(value));
+            String text = report.toJson();
+            var json = decoded(text);
+            if (!text.equals(report.toJson()) || !json.get("status").getAsString().equals("PARTIAL") ||
+                    json.has("injected") || json.getAsJsonArray("diagnostics").size() != 1 ||
+                    !json.getAsJsonArray("diagnostics").get(0).getAsString().equals(value)) {
+                throw new AssertionError("report changed or reinterpreted diagnostic text");
+            }
+            var artifacts = json.getAsJsonObject("artifacts");
+            if (!artifacts.get("inputPath").getAsString().equals(input.toAbsolutePath().toString()) ||
+                    !artifacts.get("outputPath").getAsString().equals(sidecar.toAbsolutePath().toString()) ||
+                    !artifacts.get("sourcePath").getAsString().equals(synthetic.toAbsolutePath().toString())) {
+                throw new AssertionError("report changed selected artifact path spelling");
+            }
+            var detailed = ExportReportClaims.readDetailed(Path.of("unopened-report"), () -> false,
+                ignored -> new java.io.ByteArrayInputStream(text.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+                ReportJsonReader.DEFAULT_LIMITS, ExportReportClaims.DEFAULT_RETENTION);
+            if (!detailed.inventories().diagnostics().equals(List.of(value)) ||
+                    !detailed.claims().artifacts().inputPath().equals(input.toAbsolutePath().toString())) {
+                throw new AssertionError("strict reader lost emitted text");
+            }
+            for (var status : List.of(ExportReport.Status.FATAL, ExportReport.Status.CANCELLED)) {
+                var failure = decoded(ExportReport.terminal(status, new IllegalStateException(value)).toJson());
+                if (!failure.get("status").getAsString().equals(status.name()) ||
+                        !failure.getAsJsonObject("failure").get("message").getAsString().equals(value)) {
+                    throw new AssertionError("terminal report changed diagnostic text or status");
+                }
+            }
+        }
+        System.out.println("export-report-text-roundtrips=PASS cases=" + values.size());
+    }
+
+    private static void terminalMessages() {
+        for (var status : List.of(ExportReport.Status.FATAL, ExportReport.Status.CANCELLED)) {
+            for (Throwable failure : List.of(new IllegalStateException((String) null),
+                    new IllegalStateException(" \t\r\n"), new InterruptedException())) {
+                var json = decoded(ExportReport.terminal(status, failure).toJson());
+                var detail = json.getAsJsonObject("failure");
+                if (!detail.get("message").getAsString().equals(failure.getClass().getName()) ||
+                        !detail.get("type").getAsString().equals(failure.getClass().getName()) ||
+                        !json.get("status").getAsString().equals(status.name())) {
+                    throw new AssertionError("empty terminal message lost exception identity");
+                }
+            }
+        }
+        for (var status : List.of(ExportReport.Status.SUCCESS, ExportReport.Status.PARTIAL)) {
+            try {
+                ExportReport.terminal(status, new IllegalStateException("not a completed export"));
+                throw new AssertionError("terminal failure claimed a completed export");
+            }
+            catch (IllegalArgumentException expected) { }
+        }
     }
 
     private static ExportReport report(ProgramTypeModel typeModel,

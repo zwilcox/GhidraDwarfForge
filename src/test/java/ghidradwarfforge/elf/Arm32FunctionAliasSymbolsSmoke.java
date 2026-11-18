@@ -26,6 +26,8 @@ public final class Arm32FunctionAliasSymbolsSmoke {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("forge-arm-alias-");
+        inventoryBoundaries(root);
+        plannerBudgetsAndProfiles(root);
         dynamicBoundaries(root);
         recoveredModeLayouts(root);
         for (int mode : new int[] { 0, 1 }) {
@@ -194,6 +196,126 @@ public final class Arm32FunctionAliasSymbolsSmoke {
         return data;
     }
 
+    private record InventoryFault(String reason, java.util.function.Consumer<byte[]> change) { }
+
+    /** Malformed mode metadata must not be used to tag an otherwise valid code address. */
+    private static void inventoryBoundaries(Path root) throws Exception {
+        for (int mode : new int[] { 0, 1 }) {
+            byte[] original = fixture(mode, 2);
+            var expectedMappings = java.util.Map.of(1, new java.util.TreeMap<>(java.util.Map.of(0x1000L, mode, 0x1060L, 2)));
+            var expectedFunctions = java.util.Map.of(1, new java.util.TreeMap<>(java.util.Map.of(ENTRY, mode)));
+            var baseline = inventory(root, original, null);
+            require(baseline.mappings().equals(expectedMappings) && baseline.functionEntries().equals(expectedFunctions),
+                "original mode inventory differs from independent addresses/tags");
+            for (var fault : List.of(
+                    new InventoryFault("symbol table framing", b -> LocalSymbolMergeSmoke.field(b, 3, "entsize", 8)),
+                    new InventoryFault("symbol table framing", b -> LocalSymbolMergeSmoke.field(b, 3, "size", 0)),
+                    new InventoryFault("symbol table framing", b -> LocalSymbolMergeSmoke.field(b, 3, "size", 63)),
+                    new InventoryFault("symbol table framing", b -> LocalSymbolMergeSmoke.field(b, 3, "flags", 0x800)),
+                    new InventoryFault("symbol table framing", b -> LocalSymbolMergeSmoke.field(b, 3, "link", 0)),
+                    new InventoryFault("symbol table framing", b -> LocalSymbolMergeSmoke.field(b, 3, "link", 6)),
+                    new InventoryFault("string inventory", b -> LocalSymbolMergeSmoke.field(b, 2, "type", 1)),
+                    new InventoryFault("string inventory", b -> LocalSymbolMergeSmoke.field(b, 2, "size", 0)),
+                    new InventoryFault("string inventory", b -> LocalSymbolMergeSmoke.field(b, 2, "flags", 0x800)),
+                    new InventoryFault("name offset", b -> buffer(b).putInt(0x210, -1)),
+                    new InventoryFault("missing extended", b -> buffer(b).putShort(0x21e, (short) 0xffff)),
+                    new InventoryFault("malformed mapping", b -> buffer(b).putInt(0x228, 1)),
+                    new InventoryFault("malformed mapping", b -> buffer(b).putShort(0x22e, (short) 7)),
+                    new InventoryFault("malformed mapping", b -> buffer(b).putInt(0x224, 0x0fff)),
+                    new InventoryFault("malformed mapping", b -> buffer(b).putInt(0x224, 0x1081)),
+                    new InventoryFault("unverified code symbol", b -> b[0x21c] = 10),
+                    new InventoryFault("unverified code symbol", b -> b[0x21d] = 4),
+                    new InventoryFault("unaligned original", b -> buffer(b).putInt(0x214, (int) ENTRY + 2)),
+                    new InventoryFault("outside its executable", b -> buffer(b).putInt(0x214, 0x0ffc | mode)),
+                    new InventoryFault("outside its executable", b -> buffer(b).putInt(0x214, 0x1080 | mode)),
+                    new InventoryFault("conflicting original", b -> {
+                        buffer(b).putInt(0x230, mode == 0 ? 13 : 10).putInt(0x234, 0x1000);
+                    }),
+                    new InventoryFault("conflicting original", b -> {
+                        buffer(b).putInt(0x230, 1).putInt(0x234, (int) ENTRY | (mode ^ 1))
+                            .putInt(0x238, 16).put(0x23c, (byte) 2);
+                    }))) {
+                byte[] changed = original.clone();
+                fault.change().accept(changed);
+                inventory(root, changed, fault.reason());
+            }
+            byte[] extended = original.clone();
+            LocalSymbolMergeSmoke.field(extended, 4, "type", 18);
+            LocalSymbolMergeSmoke.field(extended, 4, "link", 3);
+            LocalSymbolMergeSmoke.field(extended, 4, "entsize", 4);
+            buffer(extended).putShort(0x21e, (short) 0xffff).putInt(0x2f4, 1);
+            require(inventory(root, extended, null).equals(baseline), "valid extended section index lost mode evidence");
+            for (var fault : List.of(
+                    new InventoryFault("extended symbol indices", b -> LocalSymbolMergeSmoke.field(b, 4, "size", 12)),
+                    new InventoryFault("extended symbol indices", b -> LocalSymbolMergeSmoke.field(b, 4, "entsize", 8)),
+                    new InventoryFault("extended symbol indices", b -> LocalSymbolMergeSmoke.field(b, 4, "info", 1)),
+                    new InventoryFault("extended symbol indices", b -> LocalSymbolMergeSmoke.field(b, 4, "flags", 0x800)),
+                    new InventoryFault("invalid extended symbol index", b -> buffer(b).putInt(0x2f4, 0)),
+                    new InventoryFault("invalid extended symbol index", b -> buffer(b).putInt(0x2f4, -1)))) {
+                byte[] changed = extended.clone();
+                fault.change().accept(changed);
+                inventory(root, changed, fault.reason());
+            }
+            for (int other : new int[] { 0, 1, 2, 3 }) {
+                byte[] changed = original.clone();
+                changed[0x21d] = (byte) other;
+                require(inventory(root, changed, null).equals(baseline), "ELF visibility changed instruction mode");
+            }
+            byte[] absolute = original.clone();
+            buffer(absolute).putShort(0x21e, (short) 0xfff1);
+            require(inventory(root, absolute, null).functionEntries().equals(
+                java.util.Map.of(-1, new java.util.TreeMap<>(java.util.Map.of(ENTRY, mode)))),
+                "absolute function entry lost its tagged mode");
+            byte[] duplicate = original.clone();
+            buffer(duplicate).putInt(0x230, mode == 0 ? 10 : 13).putInt(0x234, 0x1000);
+            require(inventory(root, duplicate, null).mappings().equals(
+                java.util.Map.of(1, new java.util.TreeMap<>(java.util.Map.of(0x1000L, mode)))),
+                "consistent duplicate mapping was not coalesced");
+            for (int section : new int[] { 0, 7, 0xfff2 }) {
+                byte[] changed = original.clone();
+                buffer(changed).putShort(0x21e, (short) section);
+                require(inventory(root, changed, null).functionEntries().isEmpty(),
+                    "unresolved section fabricated a function mode");
+            }
+            for (int type : new int[] { 0, 1, 3, 4, 9 }) {
+                byte[] changed = original.clone();
+                changed[0x21c] = (byte) type;
+                require(inventory(root, changed, null).functionEntries().isEmpty(), "non-code symbol fabricated a function mode");
+            }
+            byte[] nonCode = original.clone();
+            LocalSymbolMergeSmoke.field(nonCode, 1, "flags", 2);
+            var skipped = inventory(root, nonCode, null);
+            require(skipped.mappings().isEmpty() && skipped.functionEntries().isEmpty(),
+                "non-executable section supplied instruction mode evidence");
+            byte[] endMarker = original.clone();
+            buffer(endMarker).putInt(0x234, 0x1080);
+            require(inventory(root, endMarker, null).mappings().get(1).get(0x1080L) == 2,
+                "end-of-section mapping marker was rejected");
+        }
+    }
+
+    private static Arm32FunctionAliasSymbols.Inventory inventory(Path root, byte[] bytes, String rejection) throws Exception {
+        Path path = root.resolve("inventory.elf");
+        Files.write(path, bytes);
+        var timestamp = Files.getLastModifiedTime(path);
+        var image = ElfImage.read(path);
+        try {
+            var actual = Arm32FunctionAliasSymbols.inventory(image, () -> false);
+            require(rejection == null, "accepted malformed ARM inventory: " + rejection);
+            require(actual.equals(Arm32FunctionAliasSymbols.inventory(image, () -> false)), "nondeterministic ARM inventory");
+            return actual;
+        }
+        catch (IllegalArgumentException expected) {
+            require(rejection != null && expected.getMessage().contains(rejection),
+                "wrong ARM inventory rejection: " + expected.getMessage() + " expected " + rejection);
+            return null;
+        }
+        finally {
+            require(Arrays.equals(bytes, Files.readAllBytes(path)) && timestamp.equals(Files.getLastModifiedTime(path)),
+                "ARM inventory modified original ELF");
+        }
+    }
+
     private static void rejectContradictoryEncoding(Path root, byte[] bytes, ElfFunctionModeCue cue) throws Exception {
         Path path = root.resolve("contradictory-encoding.elf");
         Files.write(path, bytes);
@@ -279,6 +401,9 @@ public final class Arm32FunctionAliasSymbolsSmoke {
                             require(records.getInt(2 * 16 + 4) == 0x4071 && records.getInt(2 * 16 + 8) == 16 &&
                                 Short.toUnsignedInt(records.getShort(2 * 16 + 14)) == 1,
                                 "tagged boundary definition lost its value, size or section");
+                            if (order == ByteOrder.LITTLE_ENDIAN) {
+                                sectionlessModeInventory(image, data);
+                            }
                             Path output = root.resolve("dynamic-boundary.dbg");
                             new MatchedElfSidecarWriter().write(image, output,
                                 java.util.Map.of(".debug_info", new byte[] {1}),
@@ -294,6 +419,83 @@ public final class Arm32FunctionAliasSymbolsSmoke {
                 }
             }
         }
+    }
+
+    private static void sectionlessModeInventory(ElfImage image, byte[] original) throws Exception {
+        var expected = java.util.Map.of(1, new java.util.TreeMap<>(java.util.Map.of(0x4030L, 0, 0x4070L, 1)));
+        var calls = new AtomicInteger();
+        var inventory = Arm32FunctionAliasSymbols.inventory(image, () -> { calls.incrementAndGet(); return false; });
+        require(inventory.mappings().isEmpty() && inventory.functionEntries().equals(expected),
+            "sectionless original ARM/Thumb entries lost their allocation or low-bit semantics");
+        int completed = calls.get();
+        for (int stop : new int[] { 1, completed / 2, completed }) {
+            calls.set(0);
+            try {
+                Arm32FunctionAliasSymbols.inventory(image, () -> calls.incrementAndGet() >= stop);
+                throw new AssertionError("sectionless mode inventory ignored cancellation");
+            }
+            catch (CancellationException expectedCancellation) {
+                require(calls.get() == stop, "sectionless mode inventory continued after cancellation");
+            }
+        }
+        var alias = new ElfFunctionAlias("alternate", "primary", 0x4070, 16, HASH);
+        for (int mode : new int[] { 0, 1 }) {
+            var cue = new ElfFunctionModeCue("primary", 0x4070, 16, 0x4070 | mode, HASH);
+            var messages = new ArrayList<String>();
+            var result = Arm32FunctionAliasSymbols.plan(image, List.of(alias), functions(alias), List.of(),
+                List.of(cue), () -> false, messages::add);
+            if (mode == 1) {
+                require(result.equals(List.of(new ElfLocalFunctionSymbol("alternate", 0x4071, 16, 1)))
+                    && messages.isEmpty(), "sectionless boundary alias was not tagged as Thumb");
+            }
+            else {
+                require(result.isEmpty() && messages.toString().contains("original function tag contradicts"),
+                    "sectionless original Thumb entry accepted contradictory ARM evidence");
+            }
+        }
+        require(Arrays.equals(original, Files.readAllBytes(image.sourcePath())), "sectionless mode inventory changed input");
+    }
+
+    private static void plannerBudgetsAndProfiles(Path root) throws Exception {
+        var cue = new ElfFunctionModeCue("primary", ENTRY, 16, ENTRY, HASH);
+        for (int profile = 0; profile < 3; profile++) {
+            boolean wide = profile == 1;
+            ByteOrder order = profile == 2 ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
+            byte[] data = LocalSymbolMergeSmoke.fixture(wide, order, false, false);
+            ByteBuffer.wrap(data).order(order).putShort(18, (short) (profile == 0 ? 3 : 40))
+                .putInt(wide ? 48 : 36, 0x05000400);
+            Path path = root.resolve("unsupported-profile.elf");
+            Files.write(path, data);
+            var messages = new ArrayList<String>();
+            require(Arm32FunctionAliasSymbols.plan(ElfImage.read(path), List.of(ALIAS), functions(ALIAS), List.of(),
+                List.of(cue), () -> false, messages::add).isEmpty() && messages.toString().contains("requires little-endian ELF32 EABI5"),
+                "ARM mode policy admitted wrong machine, class or byte order");
+            require(Arrays.equals(data, Files.readAllBytes(path)), "profile rejection changed input");
+        }
+        Path path = root.resolve("mode-budget.elf");
+        byte[] original = fixture(0, 2);
+        Files.write(path, original);
+        var image = ElfImage.read(path);
+        for (int count : new int[] { 65536, 65537 }) {
+            var messages = new ArrayList<String>();
+            require(Arm32FunctionAliasSymbols.plan(image, List.of(), List.of(), List.of(),
+                java.util.Collections.nCopies(count, cue), () -> false, messages::add).isEmpty(), "empty alias set gained output");
+            require(messages.isEmpty() == (count == 65536), "mode-cue budget boundary changed");
+            if (count == 65537) require(messages.size() == 1 && messages.get(0).contains("ARM mode evidence budget exceeded"),
+                "mode-cue budget reported the wrong rejection");
+        }
+        var reserved = java.util.Collections.nCopies(4096, new ElfLocalFunctionSymbol("reserved", ENTRY, 16, 1));
+        for (int count : new int[] { 4096, 4097 }) {
+            var messages = new ArrayList<String>();
+            var aliases = java.util.Collections.nCopies(count, ALIAS);
+            require(Arm32FunctionAliasSymbols.plan(image, aliases, functions(ALIAS), reserved,
+                List.of(cue), () -> false, messages::add).isEmpty(), "duplicate aliases gained output");
+            require(messages.stream().anyMatch(message -> message.contains("ARM mode evidence budget exceeded")) == (count == 4097),
+                "alias/reserved-symbol product budget boundary changed");
+            if (count == 4096) require(messages.size() == count && messages.stream().allMatch(message -> message.contains("name conflicts")),
+                "admitted budget must still reject ambiguous aliases individually");
+        }
+        require(Arrays.equals(original, Files.readAllBytes(path)), "budget controls changed input");
     }
 
     private static List<FunctionSymbol> functions(ElfFunctionAlias alias) {

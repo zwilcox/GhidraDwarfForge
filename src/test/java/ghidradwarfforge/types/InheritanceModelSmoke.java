@@ -51,6 +51,9 @@ public final class InheritanceModelSmoke {
     }
 
     public static void main(String[] args) {
+        CxxAbiBoundarySmoke.main(args);
+        InheritanceAdmissionBoundarySmoke.main(args);
+        ghidradwarfforge.dwarf.DwarfInheritanceExpressionSmoke.main(args);
         var bases = List.of(base(2, 1, 0, new VirtualBase(0, -24)), base(3, 1, 0, new VirtualBase(0, -24)),
             base(4, 2, 0, new FixedBase(0, 16)), base(4, 3, 1, new FixedBase(16, 16)));
         var virtuals = List.of(method(101, 0), method(102, 1));

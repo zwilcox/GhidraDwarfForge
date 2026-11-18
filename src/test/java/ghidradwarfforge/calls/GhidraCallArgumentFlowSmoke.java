@@ -53,17 +53,43 @@ public final class GhidraCallArgumentFlowSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])), new HeadlessGhidraApplicationConfiguration());
         Path output = Path.of(args[1]); Files.createDirectories(output);
+        ArgumentValueStorageSmoke.run();
         for (boolean arm : List.of(false, true)) {
             for (String shape : List.of("incoming", "add-wrap", "constant", "load", "call-kill", "constant-after-call",
-                    "join-conflict", "join-agree", "save-reload", "rebase", "micro-select", "unknown-select")) check(arm, shape, output);
+                    "join-conflict", "join-agree", "save-reload", "rebase", "micro-select", "unknown-select",
+                    "subtract", "multiply", "and-mask", "or-mask", "xor-mask", "left-shift", "right-shift", "invert", "signed-byte", "unsigned-byte", "equal-zero", "unequal-zero")) check(arm, shape, output);
         }
         check(false, "narrow-write", output);
         Files.writeString(output.resolve("vectors.json"), new GsonBuilder().create().toJson(vectors) + "\n");
-        System.out.println("call-argument-flow-smoke=PASS checks=" + checks + " cases=25 vectors=" + vectors.size());
+        System.out.println("call-argument-flow-smoke=PASS checks=" + checks + " cases=49 vectors=" + vectors.size());
     }
 
     private static void check(boolean arm, String shape, Path output) throws Exception {
         String prefix = switch (shape) {
+            // sub edi, 1 / sub w0, w0, #1
+            case "subtract" -> arm ? "00040051" : "83ef01";
+            // imul edi, edi, 3 / mov w1, #3; mul w0, w0, w1
+            case "multiply" -> arm ? "61008052007c011b" : "6bff03";
+            // and edi, 0x55555555 / and w0, w0, #0x55555555
+            case "and-mask" -> arm ? "00f00012" : "81e755555555";
+            // or edi, 0x55555555 / orr w0, w0, #0x55555555
+            case "or-mask" -> arm ? "00f00032" : "81cf55555555";
+            // xor edi, 0x55555555 / eor w0, w0, #0x55555555
+            case "xor-mask" -> arm ? "00f00052" : "81f755555555";
+            // shl edi, 3 / lsl w0, w0, #3
+            case "left-shift" -> arm ? "00701d53" : "c1e703";
+            // shr edi, 3 / lsr w0, w0, #3
+            case "right-shift" -> arm ? "007c0353" : "c1ef03";
+            // not edi / mvn w0, w0
+            case "invert" -> arm ? "e003202a" : "f7d7";
+            // movsx edi, dil / sxtb w0, w0
+            case "signed-byte" -> arm ? "001c0013" : "400fbeff";
+            // movzx edi, dil / uxtb w0, w0
+            case "unsigned-byte" -> arm ? "001c0053" : "400fb6ff";
+            // test edi, edi; sete dil; movzx edi, dil / cmp w0, #0; cset w0, eq
+            case "equal-zero" -> arm ? "1f000071e0179f1a" : "85ff400f94c7400fb6ff";
+            // test edi, edi; setne dil; movzx edi, dil / cmp w0, #0; cset w0, ne
+            case "unequal-zero" -> arm ? "1f000071e0079f1a" : "85ff400f95c7400fb6ff";
             case "add-wrap", "rebase" -> arm ? "00040011" : "83c701";
             case "constant" -> arm ? "40058052" : "bf2a000000";
             case "load" -> arm ? "200040b9" : "8b38";
@@ -110,6 +136,17 @@ public final class GhidraCallArgumentFlowSmoke {
                 callee.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_FORMAL_PARAMS, true,
                     SourceType.USER_DEFINED, new ParameterImpl("value", IntegerDataType.dataType, program));
                 var boundary = GhidraTailStateProof.verify(program, List.of(function), image, delta, TaskMonitor.DUMMY);
+                String unaudited = !arm && shape.equals("equal-zero") ? "setz" :
+                    arm && shape.equals("multiply") ? "mul" : arm && shape.equals("invert") ? "mvn" : null;
+                if (unaudited != null) {
+                    require(boundary.omissions().get(entry).equals("instruction is outside the audited ordinary profile: " + unaudited),
+                        "unaudited arithmetic did not retain its profile refusal: " + boundary.omissions());
+                    var unavailable = GhidraCallArgumentFlow.analyze(program, boundary, image, delta, TaskMonitor.DUMMY);
+                    require(unavailable.transfers().isEmpty() && unavailable.omissions().containsKey(entry),
+                        "unaudited arithmetic acquired an argument value");
+                    require(Arrays.equals(original, Files.readAllBytes(path)), "refused arithmetic changed original executable");
+                    return;
+                }
                 require(boundary.omissions().isEmpty(), "boundary failed: " + shape + " " + boundary.omissions());
                 var result = GhidraCallArgumentFlow.analyze(program, boundary, image, delta, TaskMonitor.DUMMY);
                 require(result.omissions().isEmpty(), "analysis failed: " + shape + " " + result.omissions());
@@ -144,6 +181,18 @@ public final class GhidraCallArgumentFlowSmoke {
                         long depth = (input & 1) == 0 ? 0 : 3;
                         long expected = switch (shape) {
                             case "add-wrap", "rebase" -> input + 1;
+                            case "subtract" -> input - 1;
+                            case "multiply" -> input * 3;
+                            case "and-mask" -> input & 0x55555555L;
+                            case "or-mask" -> input | 0x55555555L;
+                            case "xor-mask" -> input ^ 0x55555555L;
+                            case "left-shift" -> input << 3;
+                            case "right-shift" -> (input & 0xffffffffL) >>> 3;
+                            case "invert" -> ~input;
+                            case "signed-byte" -> (byte) input;
+                            case "unsigned-byte" -> input & 0xffL;
+                            case "equal-zero" -> (input & 0xffffffffL) == 0 ? 1 : 0;
+                            case "unequal-zero" -> (input & 0xffffffffL) != 0 ? 1 : 0;
                             case "constant", "constant-after-call", "join-agree" -> 42;
                             case "narrow-write" -> (input & ~0xffL) | 0xff;
                             case "micro-select" -> input + depth;
@@ -207,6 +256,7 @@ public final class GhidraCallArgumentFlowSmoke {
         require(ranges.size() == 2 && !ranges.getLast().storage().available() &&
             ranges.getLast().end() == variable.locations().getLast().end(), "invented a post-entry lifetime");
         require(refined.functions().equals(types.functions()) && refined.types().equals(types.types()), "entry location changed signatures/types");
+        EntryLocationBoundarySmoke.check(program, types, entries, captures, registers, image, delta, ranges.getFirst().storage());
         require(refined.equals(GhidraCallParameters.withEntryLocations(program, refined, entries, captures, registers, image, delta,
             TaskMonitor.DUMMY)), "entry refinement overwrote an available location or was not idempotent");
         for (var absent : List.of(List.<GhidraCallParameters.Entry>of(), List.of(entries.getFirst(), entries.getFirst()))) {
@@ -296,6 +346,7 @@ public final class GhidraCallArgumentFlowSmoke {
                 List.of(new GhidraCallParameters.Piece(low.getAddress().add(1), 4)), true, false);
             require(GhidraCallParameters.bind(program, callee, signature, types.types(), List.of(high), state,
                 registers, image, delta, TaskMonitor.DUMMY).arguments().isEmpty(), "accepted high register slice as a whole register");
+            bindingBoundaries(program, callee, signature, types.types(), old, state, registers, image, delta, arm);
             int[] polls = {0};
             GhidraCallParameters.bind(program, callee, signature, types.types(), entries, state, registers, image, delta,
                 new TaskMonitorAdapter(true) { @Override public void checkCancelled() { polls[0]++; } });
@@ -350,5 +401,104 @@ public final class GhidraCallArgumentFlowSmoke {
             bound.arguments().getFirst().ordinal() == 0 && bound.arguments().getFirst().name().equals("value") &&
             bound.arguments().getFirst().dwarfRegister() == (arm ? 0 : 4), "omitted automatic carrier shifted formal binding");
         callee.setReturnType(originalReturn, SourceType.USER_DEFINED);
+    }
+
+    private static void bindingBoundaries(ghidra.program.model.listing.Program program, Function callee,
+            ghidradwarfforge.types.ProgramTypeModel.FunctionSignature signature,
+            ghidradwarfforge.types.TypeGraph graph, GhidraCallParameters.Entry saved,
+            GhidraCallArgumentFlow.State state, TargetRegisterMap registers, ElfImage image, long delta,
+            boolean arm) throws Exception {
+        int before = checks;
+        var baseline = GhidraCallParameters.bind(program, callee, signature, graph, List.of(saved), state,
+            registers, image, delta, TaskMonitor.DUMMY);
+        require(baseline.arguments().size() == 1 && baseline.omissions().isEmpty(), "missing boundary baseline");
+        for (boolean missingSignature : List.of(false, true)) {
+            var unavailable = GhidraCallParameters.bind(program, callee, missingSignature ? null : signature,
+                graph, List.of(saved), missingSignature ? state : null, registers, image, delta, TaskMonitor.DUMMY);
+            require(unavailable.arguments().isEmpty() && unavailable.omissions().size() == 1,
+                "missing proof acquired an argument");
+        }
+        var movedSignature = new ghidradwarfforge.types.ProgramTypeModel.FunctionSignature(signature.name(),
+            signature.address() + 1, signature.returnType(), signature.parameters(), signature.locals(),
+            signature.variadic(), signature.noReturn(), signature.callingConvention(), signature.signatureSource());
+        rejectBinding(() -> GhidraCallParameters.bind(program, callee, movedSignature, graph, List.of(saved),
+            state, registers, image, delta, TaskMonitor.DUMMY), "callee signature address differs from entry storage");
+        var staleId = new GhidraCallParameters.Entry(saved.functionId() + 1, saved.function(), saved.ordinal(),
+            saved.formal(), saved.pieces(), saved.assigned(), saved.indirect());
+        var staleAddress = new GhidraCallParameters.Entry(saved.functionId(), saved.function().add(1), saved.ordinal(),
+            saved.formal(), saved.pieces(), saved.assigned(), saved.indirect());
+        for (var invalid : List.of(List.of(staleId), List.of(staleAddress), List.of(saved, saved))) {
+            rejectBinding(() -> GhidraCallParameters.bind(program, callee, signature, graph, invalid, state,
+                registers, image, delta, TaskMonitor.DUMMY), "stale or duplicate callee entry-storage identity");
+        }
+        var piece = saved.pieces().getFirst();
+        var wrongWidth = new GhidraCallParameters.Piece(piece.address(), piece.bytes() - 1);
+        var memory = new GhidraCallParameters.Piece(callee.getEntryPoint(), piece.bytes());
+        for (var pieces : List.of(List.<GhidraCallParameters.Piece>of(), List.of(piece, piece),
+                List.of(memory), List.of(wrongWidth))) {
+            var invalid = new GhidraCallParameters.Entry(saved.functionId(), saved.function(), saved.ordinal(),
+                saved.formal(), pieces, true, false);
+            var unavailable = GhidraCallParameters.bind(program, callee, signature, graph, List.of(invalid), state,
+                registers, image, delta, TaskMonitor.DUMMY);
+            require(unavailable.arguments().isEmpty() && unavailable.omissions().size() == 1,
+                "non-scalar register evidence acquired an argument: " + pieces);
+        }
+        var unassigned = new GhidraCallParameters.Entry(saved.functionId(), saved.function(), saved.ordinal(),
+            saved.formal(), List.of(), false, false);
+        require(GhidraCallParameters.bind(program, callee, signature, graph, List.of(unassigned), state,
+            registers, image, delta, TaskMonitor.DUMMY).arguments().isEmpty(), "unassigned entry acquired an argument");
+
+        // Qualifiers retain the integer's value semantics; a hidden return carrier is not an argument.
+        var qualified = new ghidradwarfforge.types.TypeGraph.QualifiedType("entry-qualified", "const entry integer", 4,
+            List.of(ghidradwarfforge.types.TypeGraph.Qualifier.CONST), saved.formal().type());
+        var nodes = new ArrayList<>(graph.nodes());
+        nodes.add(qualified);
+        var qualifiedGraph = new ghidradwarfforge.types.TypeGraph(nodes);
+        for (boolean hidden : List.of(false, true)) {
+            var formal = new ghidradwarfforge.types.TypeGraph.Parameter(saved.formal().name(),
+                new ghidradwarfforge.types.TypeGraph.TypeRef(qualified.key()), hidden, hidden);
+            var changedSignature = new ghidradwarfforge.types.ProgramTypeModel.FunctionSignature(signature.name(),
+                signature.address(), signature.returnType(), List.of(formal), signature.locals(), signature.variadic(),
+                signature.noReturn(), signature.callingConvention(), signature.signatureSource());
+            var entry = new GhidraCallParameters.Entry(saved.functionId(), saved.function(), 0, formal,
+                saved.pieces(), true, false);
+            var bound = GhidraCallParameters.bind(program, callee, changedSignature, qualifiedGraph, List.of(entry), state,
+                registers, image, delta, TaskMonitor.DUMMY);
+            require(bound.arguments().size() == (hidden ? 0 : 1), "hidden/qualified formal admission changed");
+            if (!hidden) require(bound.arguments().getFirst().value().equals(baseline.arguments().getFirst().value()),
+                "qualification changed recovered value");
+        }
+
+        // Exercise the actual extraction correction hook: two distinct formals mapped to one carrier
+        // must both be omitted, rather than giving either formal ownership of an ambiguous register.
+        callee.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_FORMAL_PARAMS, true, SourceType.USER_DEFINED,
+            new ParameterImpl("first", IntegerDataType.dataType, program),
+            new ParameterImpl("second", IntegerDataType.dataType, program));
+        try {
+            var carrier = new ghidra.program.model.listing.VariableStorage(program, program.getRegister(arm ? "w0" : "EDI"));
+            var overlapping = new ArrayList<GhidraCallParameters.Entry>();
+            var model = GhidraTypeGraph.extract(program, List.of(new FunctionSymbol("callee", 0x2000, arm ? 4 : 1)),
+                registers, delta, TaskMonitor.DUMMY, ignored -> { }, java.util.Map.of(), java.util.Map.of(),
+                java.util.Map.of(), (function, monitor, diagnostic) -> java.util.Map.of(0, carrier, 1, carrier), overlapping::add);
+            require(overlapping.size() == 2, "overlap fixture did not capture both formals");
+            var bound = GhidraCallParameters.bind(program, callee, model.functions().getFirst(), model.types(), overlapping,
+                state, registers, image, delta, TaskMonitor.DUMMY);
+            require(bound.arguments().isEmpty() && bound.omissions().size() == 2 &&
+                bound.omissions().stream().allMatch(text -> text.endsWith("destination register overlaps another formal")),
+                "ambiguous register was assigned to a formal: " + bound);
+        }
+        finally {
+            callee.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_FORMAL_PARAMS, true, SourceType.USER_DEFINED,
+                new ParameterImpl("value", IntegerDataType.dataType, program));
+        }
+        require(baseline.equals(GhidraCallParameters.bind(program, callee, signature, graph, List.of(saved), state,
+            registers, image, delta, TaskMonitor.DUMMY)), "refusal changed binding on retry");
+        System.out.println("call-parameter-boundaries=PASS target=" + (arm ? "aarch64" : "x86_64") + " checks=" + (checks - before));
+    }
+
+    @FunctionalInterface private interface BindingAction { void run() throws Exception; }
+    private static void rejectBinding(BindingAction action, String reason) throws Exception {
+        try { action.run(); throw new AssertionError("invalid entry binding accepted: " + reason); }
+        catch (IllegalArgumentException expected) { require(reason.equals(expected.getMessage()), "unexpected binding refusal: " + expected); }
     }
 }

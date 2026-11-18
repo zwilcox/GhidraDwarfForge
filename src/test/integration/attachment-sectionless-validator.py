@@ -2,6 +2,7 @@
 """Exercise live attachment validation without a header-bearing original oracle."""
 
 import argparse
+from contextlib import nullcontext
 import hashlib
 import importlib.util
 import json
@@ -11,6 +12,7 @@ import shutil
 import struct
 import subprocess
 import sys
+from integration_coverage import Collection
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[3]
@@ -67,15 +69,18 @@ def main():
     runtime = [args.jar.resolve(strict=True), ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar',
                ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar']
     sources = [ROOT / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in
-        ('AttachmentProtocolSmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe', 'AttachmentValidatorProbe')]
+        ('AttachmentProtocolSmoke', 'AttachmentPathBoundarySmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe', 'AttachmentValidatorProbe')]
+    coverage = Collection('sectionless-validation', args.jar, 'native-java', test_classes=tuple(
+        'ghidradwarfforge.output.' + path.stem for path in sources))
     bundle = args.strict_validator.resolve(strict=True).parents[1]
     tools = [args.supervised_validator_helper.resolve(strict=True), Path(shutil.which('readelf')).resolve(),
              Path(shutil.which('llvm-dwarfdump')).resolve(), bundle / 'libexec/dwarfdump',
              bundle / 'share/dwarfdump/dwarfdump.conf']
     oracle = ROOT / 'src/test/integration/check-dwarfdump.py'
+    collector = ROOT / 'src/test/integration/integration_coverage.py'
     protected = {str(path): digest(path) for path in [*inputs, args.report_log, report_path, *runtime, *sources,
-                                                   *tools, Path(__file__), oracle]}
-    for path in [*runtime, *sources, Path(__file__), oracle]:
+                                                   *tools, Path(__file__), oracle, collector]}
+    for path in [*runtime, *sources, Path(__file__), oracle, collector]:
         shutil.copyfile(path, provenance / path.name)
         require(digest(provenance / path.name) == protected[str(path)], 'retained provenance differs')
     (provenance / 'origin.json').write_text(json.dumps(protected, indent=4) + '\n')
@@ -83,12 +88,14 @@ def main():
 
     def run(label, command, success=True):
         command = list(map(str, command))
-        result = subprocess.run(command, capture_output=True, timeout=180)
-        (work / (label + '.stdout')).write_bytes(result.stdout)
-        (work / (label + '.stderr')).write_bytes(result.stderr)
-        commands.append({'label': label, 'command': command, 'exitCode': result.returncode})
-        (work / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
-        require((result.returncode == 0) == success, label + ': ' + result.stderr.decode(errors='replace'))
+        context = coverage.session(command, label) if label in ('live-validator', 'exclusive-evidence') else nullcontext(command)
+        with context as measured:
+            result = subprocess.run(measured, capture_output=True, timeout=180)
+            (work / (label + '.stdout')).write_bytes(result.stdout)
+            (work / (label + '.stderr')).write_bytes(result.stderr)
+            commands.append({'label': label, 'command': command, 'exitCode': result.returncode})
+            (work / 'commands.json').write_text(json.dumps(commands, indent=4) + '\n')
+            require((result.returncode == 0) == success, label + ': ' + result.stderr.decode(errors='replace'))
         return result
 
     classes = work / 'classes'
@@ -170,8 +177,14 @@ def main():
     require(b'new attachment destination already exists' in refusal.stderr, 'unexpected exclusive-publication rejection')
     require(digest(evidence) == published_hash, 'second validation overwrote evidence')
     require(all(digest(path) == value for path, value in protected.items()), 'protected input changed')
-    (work / 'result.json').write_text(json.dumps({'status': 'PASS', 'scope': 'live policy; limited Linux test host',
-        'validationSha256': published_hash, 'frameDiagnostics': len(diagnostics)}, indent=4) + '\n')
+    (work / 'result.json').write_text(json.dumps({'status': 'PASS_SECTIONLESS_VALIDATION',
+        'scope': 'live policy; limited Linux test host', 'machine': field(original, 18, 'H'),
+        'validationSha256': published_hash, 'frameDiagnostics': len(diagnostics),
+        'checks': sorted(record['checks']), 'originalUnchanged': True, 'exclusiveEvidenceRefused': True,
+        'fromProgramHeaders': record.get('inheritedFrame', {}).get('fromProgramHeaders'),
+        'originalFrameViewSha256': record.get('originalFrameView', {}).get('sha256'),
+        'protectedSha256': protected}, indent=4) + '\n')
+    coverage.finish(work / 'result.json')
     print('attachment-sectionless-validator=PASS')
 
 

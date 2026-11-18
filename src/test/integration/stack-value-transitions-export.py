@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Incoming values through complete stack stores, loads, reuse and final loss."""
 import argparse
+from contextlib import nullcontext
 import importlib.util
 import json
 import os
@@ -8,6 +9,9 @@ from pathlib import Path
 import shutil
 import tempfile
 from urllib.parse import unquote, urlsplit
+
+from integration_coverage import Collection
+from stack_transition_evidence import finish_measurement
 
 source = Path(__file__).resolve().parent
 repository = source.parents[2]
@@ -25,6 +29,7 @@ def main():
     args = parser.parse_args()
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+    measured = Collection('stack-value-transitions', module / 'lib/GhidraDwarfForge.jar', 'headless')
     root = repository / 'build/test-results' / 'stack-value-transitions'
     root.mkdir(parents=True, exist_ok=True)
     case = Path(tempfile.mkdtemp(prefix=args.target + '.' + args.role + '.', dir=root))
@@ -34,7 +39,9 @@ def main():
         (case / name).write_text(json.dumps(value, indent=4) + '\n')
 
     def run(name, command, **kwargs):
-        result = support.run(command, case / (name + '.log'), **kwargs)
+        context = measured.session(command, name, headless=True) if Path(command[0]).name == 'analyzeHeadless' and name != 'previous' else nullcontext(command)
+        with context as actual:
+            result = support.run(actual, case / (name + '.log'), **kwargs)
         if Path(command[0]).name != 'analyzeHeadless':
             support.require_clean(case / (name + '.log'))
         return result
@@ -43,6 +50,9 @@ def main():
     protected = [fixture, Path(__file__).resolve(), source / 'stack-value-transitions-gdb.py',
         source / 'stack-value-transitions-gdb.sh', source / 'check-stack-value-transitions-locations.py',
         source / 'ghidra_scripts/PrepareStackValueTransitions.java', source / 'ghidra_scripts/RebaseFixtureProgram.java']
+    protected += [source / name for name in ('integration_coverage.py', 'stack_transition_evidence.py',
+        'qemu-socket.sh', 'elf-layout-gdb-oracle.sh', 'check-dwarfdump.py')]
+    protected += [source.parent / 'performance/export-benchmark.py', repository / 'ghidra_scripts/GhidraDwarfForge.java']
     protected += [p for p in module.rglob('*') if p.is_file()]
     before = {str(p): support.digest(p) for p in protected}
     write('protected-before.json', before)
@@ -200,6 +210,7 @@ def main():
     write('result.json', {'status': 'PASS', 'target': args.target, 'role': args.role, 'rebaseDelta': delta,
         'inputSha256': before[str(binary)], 'artifactSha256': hashes, 'javaVersion': model['java'],
         'projectBackupChanges': changes, 'protectedUnchanged': True, 'previousPackageCompared': bool(args.previous_ghidra)})
+    finish_measurement(measured, case, repository, module, before, after, project_before, project_after, labels)
     print('stack-value-transitions-export=PASS ' + str(case), flush=True)
 
 

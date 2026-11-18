@@ -35,6 +35,7 @@ PINS = {
     "locviewsPatchSha256": "54fce0dd7b7f19775cfb2bf95f610a4c3f4b96dd98d28ce99580d30c4e6aa879",
     "elfBoundsPatchSha256": "f4a81a948702b20e105e2a646eb08e747264e9b028949da287580458fb29360d",
     "gnuVectorPatchSha256": "9b5879be2736ec13d0ed19661a5cf4e27f27220b2f3c02148b5a26fc0f65104a",
+    "atomicTypePatchSha256": "438fe96a2f575d2cb669a7d3cd6c1e7672188dbc5d9b623a5e214c0b9dfe2800",
     "configurationSha256": "842bba9230de82059dfcef1485114cf3c33eae8be2973c649d176f4ad18972ef",
 }
 PIN_FILES = {
@@ -47,9 +48,10 @@ PIN_FILES = {
     "source/support/validation/0006-locviews-are-not-die-references.patch": "locviewsPatchSha256",
     "source/support/validation/0007-preserve-low-elf-address-bounds.patch": "elfBoundsPatchSha256",
     "source/support/validation/0008-recognize-gnu-vector-flag.patch": "gnuVectorPatchSha256",
+    "source/support/validation/0009-recognize-atomic-type-reference.patch": "atomicTypePatchSha256",
     "share/dwarfdump/dwarfdump.conf": "configurationSha256",
 }
-PROFILE = "libdwarf-2.3.2-eight-corrections-and-llvm-verify"
+PROFILE = "libdwarf-2.3.2-nine-corrections-and-llvm-verify"
 
 
 class EvidenceError(ValueError):

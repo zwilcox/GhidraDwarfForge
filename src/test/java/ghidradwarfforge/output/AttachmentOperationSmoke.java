@@ -10,6 +10,11 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.List;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,11 +50,15 @@ public final class AttachmentOperationSmoke {
             initialAndRefresh(root, seed, false);
             initialAndRefresh(root, seed, true);
             savedSelectionFailure(root, seed);
+            recoverySelectionPublicationFailures(root, seed);
             validationFailures(root, seed);
             preflight(root, seed);
             basenameRefusal(root, seed);
             metadataFailure(root, seed);
             handoffFailure(root, seed);
+            refreshRefusals(root, seed);
+            reusedBasenames(root, seed);
+            discoveryAndParentChanges(root, seed);
             System.out.println("attachment-operation-smoke=PASS checks=" + checks +
                 " initial-refresh-ordering=true production-host=false validator=test-seam");
         }
@@ -159,6 +168,100 @@ public final class AttachmentOperationSmoke {
         AttachmentFileStore.unchanged(previous, HOST, () -> false);
         equal(false, Files.exists(request.receipt()));
         equal(original.digest(), AttachmentFileStore.observe(request.originalBackup(), HOST, () -> false).digest());
+    }
+
+    private static void recoverySelectionPublicationFailures(Path root, Path seed) throws Exception {
+        int beforeChecks = checks;
+        for (String fault : List.of("identity", "cancel", "changed-stage", "replaced-directory", "replaced-stage")) {
+            var request = fixture(root, seed, "recovery-publication-" + fault);
+            var original = AttachmentFileStore.observe(request.target(), HOST, () -> false);
+            Path saved = request.target().resolveSibling("saved-recovery.json");
+            Path[] directory = {null}, retained = {null};
+            var observations = new AtomicInteger();
+            var cancelled = new java.util.concurrent.atomic.AtomicBoolean();
+            var altered = new java.util.concurrent.atomic.AtomicBoolean();
+            var selected = new java.util.concurrent.atomic.AtomicReference<AttachmentRecoveryInvocation>();
+            // Real owned filesystem mutations at host observation boundaries.
+            // The host/validator remain the existing explicit test seams.
+            Host host = new Host() {
+                @Override public String directoryIdentity(Path path) throws IOException {
+                    if (path.getFileName().toString().startsWith(".forge-recovery-selection-")) {
+                        directory[0] = path;
+                        int observation = observations.incrementAndGet();
+                        if (fault.equals("identity") && observation == 1) {
+                            throw new IOException("injected recovery directory observation failure");
+                        }
+                        if (fault.equals("cancel") && observation == 1) cancelled.set(true);
+                        if (fault.equals("replaced-directory") && observation == 2) {
+                            retained[0] = path.resolveSibling(path.getFileName() + "-retained");
+                            Files.move(path, retained[0]);
+                            Files.createDirectory(path);
+                            Files.writeString(path.resolve("selection.json"), "concurrent private directory bytes");
+                        }
+                        if (fault.equals("replaced-stage") && observation == 2) {
+                            retained[0] = path.resolve("retained-selection.json");
+                            Files.move(path.resolve("selection.json"), retained[0]);
+                            Files.writeString(path.resolve("selection.json"), "concurrent private file bytes");
+                        }
+                    }
+                    return super.directoryIdentity(path);
+                }
+
+                @Override public AttachmentReceiptStore.Fingerprint inspect(Path path) throws IOException {
+                    if (fault.equals("changed-stage") && directory[0] != null &&
+                            path.equals(directory[0].resolve("selection.json")) && altered.compareAndSet(false, true)) {
+                        Files.writeString(path, "changed before the first content observation");
+                    }
+                    return super.inspect(path);
+                }
+            };
+            var failure = reject(() -> AttachmentOperation.execute(request, HOST, VALIDATOR, () -> false,
+                boundary -> { throw new AssertionError("failed recovery publication reached transaction: " + fault); },
+                prepared -> {
+                    selected.set(AttachmentRecoveryFile.selection(prepared));
+                    AttachmentRecoveryFile.publish(saved, prepared, host, cancelled::get);
+                }));
+            equal(true, failure instanceof AttachmentOperation.PreparationFailure);
+            equal(fault.equals("cancel"), ((AttachmentOperation.PreparationFailure) failure).cancelled());
+            if (fault.equals("replaced-stage")) {
+                if (!Files.isRegularFile(directory[0].resolve("selection.json"))) {
+                    throw new AssertionError("cleanup deleted a replaced recovery selection");
+                }
+                equal("concurrent private file bytes", Files.readString(directory[0].resolve("selection.json")));
+                equal(selected.get().toJson(), Files.readString(retained[0]));
+                equal(selected.get().toJson(), Files.readString(saved));
+            }
+            Throwable cause = failure.getCause();
+            String expected = switch (fault) {
+                case "identity" -> "injected recovery directory observation failure";
+                case "cancel" -> "recovery selection cancelled";
+                case "changed-stage" -> "staged recovery selection changed";
+                case "replaced-stage" -> "attachment recovery file no longer matches its observation";
+                default -> "unverified recovery selection stage retained";
+            };
+            equal(true, cause.getMessage().contains(expected));
+            if (fault.equals("identity") || fault.equals("cancel")) {
+                equal(1, cause.getSuppressed().length);
+                equal(true, cause.getSuppressed()[0].getMessage().contains("unverified recovery selection stage retained"));
+                equal(true, Files.isDirectory(directory[0]));
+                if (fault.equals("cancel")) equal(0L, Files.size(directory[0].resolve("selection.json")));
+            }
+            else equal(0, cause.getSuppressed().length);
+            if (fault.equals("changed-stage")) {
+                equal(true, altered.get());
+                equal(false, Files.exists(directory[0]));
+            }
+            if (fault.equals("replaced-directory")) {
+                equal("concurrent private directory bytes", Files.readString(directory[0].resolve("selection.json")));
+                equal(selected.get().toJson(), Files.readString(retained[0].resolve("selection.json")));
+                equal(selected.get().toJson(), Files.readString(saved));
+            }
+            else if (!fault.equals("replaced-stage")) equal(false, Files.exists(saved));
+            AttachmentFileStore.unchanged(original, HOST, () -> false);
+            equal(false, Files.exists(request.receipt()));
+            equal(original.digest(), AttachmentFileStore.observe(request.originalBackup(), HOST, () -> false).digest());
+        }
+        System.out.println("recovery-selection-publication-failures=PASS cases=5 checks=" + (checks - beforeChecks));
     }
 
     private static void validationFailures(Path root, Path seed) throws Exception {
@@ -278,6 +381,225 @@ public final class AttachmentOperationSmoke {
         equal(before.digest(), AttachmentFileStore.observe(request.originalBackup(), HOST, () -> false).digest());
         AttachmentFileStore.unchanged(before, HOST, () -> false);
         equal(false, Files.exists(request.receipt()));
+    }
+
+    private static void refreshRefusals(Path root, Path seed) throws Exception {
+        for (String fault : List.of("phase", "target-path", "target-sha", "target-bytes", "target-metadata",
+                "originalBackup", "sidecar", "source", "crc", "program-bytes", "debuglink", "allocation",
+                "bundle-input", "valid-bundle")) {
+            var first = fixture(root, seed, "refresh-refusal-" + fault);
+            equal(AttachmentReceipt.Phase.COMMITTED, AttachmentOperation.execute(first, HOST, VALIDATOR, () -> false).transaction().outcome());
+            JsonObject receipt = JsonParser.parseString(Files.readString(first.receipt())).getAsJsonObject();
+            var files = receipt.getAsJsonObject("files");
+            String expected;
+            switch (fault) {
+                case "phase" -> {
+                    receipt.addProperty("phase", "PREPARED");
+                    expected = "requires a committed receipt";
+                }
+                case "target-path" -> {
+                    files.getAsJsonObject("targetBefore").addProperty("path", root.resolve("different-target").toString());
+                    files.getAsJsonObject("targetAfter").addProperty("path", root.resolve("different-target").toString());
+                    expected = "current target differs";
+                }
+                case "target-sha", "target-bytes" -> {
+                    files.getAsJsonObject("targetAfter").addProperty(fault.equals("target-sha") ? "sha256" : "bytes",
+                        fault.equals("target-sha") ? "9".repeat(64) : "1");
+                    expected = "current target differs";
+                }
+                case "target-metadata" -> {
+                    for (String role : List.of("targetBefore", "targetAfter", "originalBackup")) {
+                        files.getAsJsonObject(role).addProperty("metadataSha256", "9".repeat(64));
+                    }
+                    expected = "current target differs";
+                }
+                case "originalBackup", "sidecar", "source" -> {
+                    files.getAsJsonObject(fault).addProperty("identity", "different-retained-file");
+                    expected = "retained artifact differs";
+                }
+                case "crc" -> {
+                    receipt.addProperty("debuglinkCrc32", receipt.get("debuglinkCrc32").getAsLong() ^ 1);
+                    expected = "previous ELF/debuglink association differs";
+                }
+                case "program-bytes", "debuglink", "allocation" -> {
+                    alterAttachedElf(first.target(), fault);
+                    files.add("targetAfter", artifactJson(AttachmentFileStore.observe(first.target(), HOST, () -> false).artifact()));
+                    expected = "previous ELF/debuglink association differs";
+                }
+                case "bundle-input", "valid-bundle" -> {
+                    String input = fault.equals("bundle-input") ? "9".repeat(64) : ExportArtifactHashBindingFixtures.hash(first.originalBackup());
+                    Files.delete(first.source());
+                    var bundle = SourceBundle.prepare(input, first.source().getFileName().toString(), SourceBundleSmoke.fixture(), 3, () -> false);
+                    SourceBundleStore.install(first.source(), bundle, List.of(), () -> false);
+                    Files.write(first.source(), bundle.indexBytes(() -> false), StandardOpenOption.CREATE_NEW);
+                    files.add("source", artifactJson(AttachmentFileStore.observe(first.source(), HOST, () -> false).artifact()));
+                    expected = "previous source bundle differs from the original backup";
+                }
+                default -> throw new AssertionError(fault);
+            }
+            // These are deliberately supplied previous-record claims, not a
+            // claim that a real validator approved the altered first generation.
+            Files.writeString(first.receipt(), receipt.toString());
+            AttachmentReceipt.read(first.receipt(), () -> false);
+            var refresh = new AttachmentOperation.Refresh(first.receipt(), first.sidecar(), first.source(),
+                first.target().resolveSibling("prior-target.backup"));
+            var second = exported(first.target().getParent(), first.target(), first.originalBackup(), "second", refresh);
+            var before = snapshots(first.target().getParent());
+            if (fault.equals("valid-bundle")) {
+                equal(AttachmentReceipt.Phase.COMMITTED, AttachmentOperation.execute(second, HOST, VALIDATOR, () -> false).transaction().outcome());
+                for (var item : before) {
+                    if (!item.path().equals(first.target())) AttachmentFileStore.unchanged(item, HOST, () -> false);
+                }
+            }
+            else {
+                var failure = reject(() -> AttachmentOperation.execute(second, HOST,
+                    (binding, evidence, host, cancelled) -> { throw new AssertionError("unsafe refresh reached validator: " + fault); }, () -> false));
+                equal(true, failure.getMessage().contains(expected));
+                for (var item : before) AttachmentFileStore.unchanged(item, HOST, () -> false);
+                equal(before.stream().map(AttachmentFileStore.Snapshot::path).toList(), snapshots(first.target().getParent()).stream()
+                    .map(AttachmentFileStore.Snapshot::path).toList());
+                equal(false, Files.exists(second.receipt()));
+                equal(false, Files.exists(refresh.priorTargetBackup()));
+                equal(false, Files.exists(second.validationEvidence()));
+            }
+        }
+    }
+
+    private static JsonObject artifactJson(AttachmentReceipt.Artifact artifact) {
+        JsonObject json = new JsonObject();
+        json.addProperty("path", artifact.path());
+        json.addProperty("sha256", artifact.sha256());
+        json.addProperty("bytes", Long.toString(artifact.bytes()));
+        json.addProperty("identity", artifact.identity());
+        json.addProperty("metadataSha256", artifact.metadataSha256());
+        return json;
+    }
+
+    private static List<AttachmentFileStore.Snapshot> snapshots(Path directory) throws IOException {
+        try (var children = Files.walk(directory)) {
+            var result = new java.util.ArrayList<AttachmentFileStore.Snapshot>();
+            for (Path child : children.filter(Files::isRegularFile).sorted().toList()) {
+                result.add(AttachmentFileStore.observe(child, HOST, () -> false));
+            }
+            return List.copyOf(result);
+        }
+    }
+
+    private static void alterAttachedElf(Path path, String fault) throws Exception {
+        byte[] bytes = Files.readAllBytes(path);
+        // This fixture is explicitly compiled as x86-64 ELF64 little-endian.
+        // The mutation uses independently decoded section headers, not a writer.
+        equal((byte) 2, bytes[4]);
+        equal((byte) 1, bytes[5]);
+        ByteBuffer header = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
+        int table = Math.toIntExact(header.getLong(40)), stride = Short.toUnsignedInt(header.getShort(58));
+        int names = Math.toIntExact(header.getLong(table + stride * Short.toUnsignedInt(header.getShort(62)) + 24));
+        String wanted = fault.equals("debuglink") ? ".gnu_debuglink" : ".text";
+        int selected = -1;
+        for (int index = 1; index < Short.toUnsignedInt(header.getShort(60)); index++) {
+            int entry = table + index * stride, start = names + header.getInt(entry), end = start;
+            while (bytes[end] != 0) end++;
+            if (new String(bytes, start, end - start, StandardCharsets.UTF_8).equals(wanted)) selected = entry;
+        }
+        if (selected < 0) throw new AssertionError("fixture lacks " + wanted);
+        if (fault.equals("allocation")) header.putLong(selected + 16, header.getLong(selected + 16) + 1);
+        else bytes[Math.toIntExact(header.getLong(selected + 24))] ^= 1;
+        var timestamp = Files.getLastModifiedTime(path);
+        Files.write(path, bytes);
+        Files.setLastModifiedTime(path, timestamp);
+    }
+
+    private static void discoveryAndParentChanges(Path root, Path seed) throws Exception {
+        var first = fixture(root, seed, "existing-association");
+        AttachmentOperation.execute(first, HOST, VALIDATOR, () -> false);
+        var initialAgain = exported(first.target().getParent(), first.target(), first.target(), "again", null);
+        initialAgain = new AttachmentOperation.Request(initialAgain.target(), initialAgain.sidecar(), initialAgain.source(), initialAgain.exportReport(),
+            first.target().resolveSibling("new.backup"), initialAgain.validationEvidence(), initialAgain.receipt(),
+            initialAgain.recoveryReceipt(), initialAgain.restoreImage(), null);
+        var selected = initialAgain;
+        var before = snapshots(first.target().getParent());
+        var failure = reject(() -> AttachmentOperation.execute(selected, HOST,
+            (binding, evidence, host, cancelled) -> { throw new AssertionError("implicit refresh reached validation"); }, () -> false));
+        equal(true, failure.getMessage().contains("initial attachment cannot replace an existing association"));
+        for (var item : before) AttachmentFileStore.unchanged(item, HOST, () -> false);
+
+        var request = fixture(root, seed, "parent-identity");
+        var original = AttachmentFileStore.observe(request.target(), HOST, () -> false);
+        try {
+            AttachmentOperation.execute(request, HOST,
+                (binding, evidence, host, cancelled) -> { throw new AssertionError("cancelled operation reached validation"); }, () -> true);
+            throw new AssertionError("initial cancellation ignored");
+        }
+        catch (CancellationException expected) { checks++; }
+        AttachmentFileStore.unchanged(original, HOST, () -> false);
+        equal(false, Files.exists(request.validationEvidence()));
+        Path parent = request.target().getParent(), retained = parent.resolveSibling("retained-parent");
+        failure = reject(() -> AttachmentOperation.execute(request, HOST, (binding, evidence, host, cancelled) -> {
+            VALIDATOR.validate(binding, evidence, host, cancelled);
+            Files.move(parent, retained);
+            Files.createDirectory(parent);
+            try (var children = Files.list(retained)) {
+                for (Path child : children.toList()) Files.move(child, parent.resolve(child.getFileName()));
+            }
+            Files.writeString(retained.resolve("sentinel"), "retained original directory");
+        }, () -> false));
+        equal(true, failure instanceof AttachmentOperation.PreparationFailure);
+        equal(true, failure.getCause().getMessage().contains("output parent identity changed"));
+        AttachmentFileStore.unchanged(original, HOST, () -> false);
+        equal("retained original directory", Files.readString(retained.resolve("sentinel")));
+        equal(false, Files.exists(request.receipt()));
+        equal(false, Files.exists(request.originalBackup()));
+
+        var location = fixture(root, seed, "sidecar-location");
+        Path elsewhere = Files.createDirectory(location.target().getParent().resolve("elsewhere"));
+        Path sidecar = Files.move(location.sidecar(), elsewhere.resolve(location.sidecar().getFileName()));
+        var moved = new AttachmentOperation.Request(location.target(), sidecar, location.source(), location.exportReport(),
+            location.originalBackup(), location.validationEvidence(), location.receipt(), location.recoveryReceipt(), location.restoreImage(), null);
+        failure = reject(() -> AttachmentOperation.preflightPaths(moved));
+        equal(true, failure.getMessage().contains("beside the target or in its .debug directory"));
+        Path debug = Files.createDirectory(location.target().getParent().resolve(".debug"));
+        sidecar = Files.move(sidecar, debug.resolve(sidecar.getFileName()));
+        var allowed = new AttachmentOperation.Request(location.target(), sidecar, location.source(), location.exportReport(),
+            location.originalBackup(), location.validationEvidence(), location.receipt(), location.recoveryReceipt(), location.restoreImage(), null);
+        var plan = AttachmentOperation.preflightPaths(allowed);
+        equal(location.sidecar(), plan.paths().get("discoveryShadow"));
+        plan.recheck();
+    }
+
+    private static void reusedBasenames(Path root, Path seed) throws Exception {
+        for (boolean sidecar : List.of(false, true)) {
+            var first = fixture(root, seed, "reused-basename-" + sidecar);
+            Path directory = first.target().getParent();
+            if (sidecar) {
+                Path debug = Files.createDirectory(directory.resolve(".debug"));
+                first = selectPair(first, Files.move(first.sidecar(), debug.resolve(first.sidecar().getFileName())), first.source());
+            }
+            equal(AttachmentReceipt.Phase.COMMITTED, AttachmentOperation.execute(first, HOST, VALIDATOR, () -> false).transaction().outcome());
+            var refresh = new AttachmentOperation.Refresh(first.receipt(), first.sidecar(), first.source(), directory.resolve("prior-target.backup"));
+            var second = exported(directory, first.target(), first.originalBackup(), "second", refresh);
+            if (sidecar) {
+                second = selectPair(second, Files.move(second.sidecar(), directory.resolve(first.sidecar().getFileName())), second.source());
+            }
+            else {
+                Path sources = Files.createDirectory(directory.resolve("new-sources"));
+                second = selectPair(second, second.sidecar(), Files.move(second.source(), sources.resolve(first.source().getFileName())));
+            }
+            var before = snapshots(directory);
+            var selected = second;
+            var failure = reject(() -> AttachmentOperation.execute(selected, HOST,
+                (binding, evidence, host, cancelled) -> { throw new AssertionError("reused basename reached validator"); }, () -> false));
+            equal(true, failure.getMessage().contains("fresh source and sidecar basename"));
+            for (var item : before) AttachmentFileStore.unchanged(item, HOST, () -> false);
+            equal(before.stream().map(AttachmentFileStore.Snapshot::path).toList(), snapshots(directory).stream()
+                .map(AttachmentFileStore.Snapshot::path).toList());
+        }
+    }
+
+    private static AttachmentOperation.Request selectPair(AttachmentOperation.Request request, Path sidecar, Path source) throws Exception {
+        ExportArtifactHashBindingFixtures.write(new ExportArtifactHashBindingFixtures.Pair(request.target().getParent(),
+            request.exportReport(), request.refresh() == null ? request.target() : request.originalBackup(), sidecar, source), true);
+        return new AttachmentOperation.Request(request.target(), sidecar, source, request.exportReport(), request.originalBackup(),
+            request.validationEvidence(), request.receipt(), request.recoveryReceipt(), request.restoreImage(), request.refresh());
     }
 
     @FunctionalInterface private interface Checked { void run() throws Exception; }
