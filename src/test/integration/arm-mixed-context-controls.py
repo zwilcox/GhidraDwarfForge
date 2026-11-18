@@ -179,8 +179,18 @@ def main():
         assert err == (baseline / 'compiler-gdb.stderr').read_text() + expected_error, err
         if kind == 'context':
             shutil.copy2(case / 'split-dwarf-ranges.json', case / 'omitted-dwarf-ranges.json')
-            for suffix in ('', '.c'):
-                shutil.copy2(case / ('curated.dbg.restored' + suffix), case / ('curated.dbg' + suffix))
+            # Exercise saved copies crossing a timestamp boundary. Restoring with
+            # copy2 would retain a source newer than its matching debug file and
+            # cause a GDB warning despite their correct contents.
+            saved_source = case / 'curated.dbg.restored.c'
+            saved_debug = case / 'curated.dbg.restored'
+            os.utime(saved_source, ns=(saved_source.stat().st_atime_ns,
+                saved_debug.stat().st_mtime_ns + 2_000_000_000))
+            # Publish the source first, then the matching debug bytes, without
+            # inheriting the timestamps of the saved copies.
+            for suffix in ('.c', ''):
+                shutil.copyfile(case / ('curated.dbg.restored' + suffix), case / ('curated.dbg' + suffix))
+            assert (case / 'curated.dbg').stat().st_mtime_ns >= (case / 'curated.dbg.c').stat().st_mtime_ns
             for tool, command in (
                     ('gnu', ['readelf', '-hSWn', '--debug-dump=info,abbrev,aranges,decodedline', case / 'curated.dbg']),
                     ('llvm', ['llvm-dwarfdump', '--verify', case / 'curated.dbg']),
