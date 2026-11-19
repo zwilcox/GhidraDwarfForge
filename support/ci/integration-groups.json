@@ -1401,7 +1401,7 @@
                 "x86_64"
             ],
             "groups": {
-                "x86_64": "types"
+                "x86_64": "primary"
             },
             "stepSha256": "629f0d777a1273564946a5f32654f6bc1ae5fab0c8011406b83757df7e0a7ddc"
         },
@@ -2473,8 +2473,8 @@
                 "mips32le"
             ],
             "groups": {
-                "x86_64": "source",
-                "aarch64": "source",
+                "x86_64": "primary",
+                "aarch64": "primary",
                 "arm32": "primary",
                 "mips32be": "primary",
                 "mips32le": "primary"
@@ -2539,7 +2539,7 @@
                 "aarch64"
             ],
             "groups": {
-                "aarch64": "types"
+                "aarch64": "primary"
             },
             "stepSha256": "e80feb392182800ff2b0ad6d6e07860439dca3f7d1ac093632bd8fb2f7473926"
         },
@@ -2718,7 +2718,7 @@
                 "arm32"
             ],
             "groups": {
-                "arm32": "calls"
+                "arm32": "primary"
             },
             "stepSha256": "601c28fceadf56b6d03e503fb766e2c6e7c45b8681c7cb8328a7e36b048ff2a9"
         },
@@ -2797,8 +2797,8 @@
                 "mips32le"
             ],
             "groups": {
-                "x86_64": "types",
-                "aarch64": "types",
+                "x86_64": "primary",
+                "aarch64": "primary",
                 "arm32": "primary",
                 "mips32be": "primary",
                 "mips32le": "primary"
@@ -3211,6 +3211,7 @@
                 "target-065",
                 "target-066",
                 "target-067",
+                "target-069",
                 "target-072",
                 "target-073",
                 "target-075",
@@ -3220,16 +3221,23 @@
                 "target-079",
                 "target-080",
                 "target-081",
+                "target-083",
                 "target-084",
                 "target-085",
                 "target-086",
+                "target-088",
+                "target-158",
+                "target-162",
+                "target-175",
                 "target-176",
+                "target-180",
+                "target-183",
+                "target-184",
+                "target-187",
+                "target-189",
                 "target-190",
                 "target-194",
-                "target-204",
-                "target-083",
-                "target-183",
-                "target-184"
+                "target-204"
             ],
             "reason": "Primary fixture, saved project, exports, validator index and report handoffs remain private to one group."
         },

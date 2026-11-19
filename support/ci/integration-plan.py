@@ -112,6 +112,23 @@ def validate_baseline(inventory, workflow):
             if successful_condition(step.get('if'), target)]
         if targets != row['targets'] or step_digest(step) != row['stepSha256']:
             raise ValueError('baseline command, condition or action changed: ' + row['id'])
+        validate_fixture_owner(known, row, step)
+
+
+def validate_fixture_owner(known, row, step):
+    """Keep direct shared-fixture paths with the source fixture producer.
+
+    Inspect the whole step, including absolute $PWD prefixes and target-variable
+    paths. This supplements explicit dependencies; it is not shell dataflow or
+    a proof of dependencies hidden inside called scripts.
+    """
+    if 'build/fixtures' not in json.dumps(step):
+        return
+    producer = known['target-039']
+    for target in row['targets']:
+        if row['groups'].get(target) != producer['groups'].get(target):
+            raise ValueError('shared fixture consumer split from producer: '
+                + row['id'] + ' ' + target)
 
 
 def original_step(row, step):
@@ -173,6 +190,7 @@ def validate_workflow(inventory, workflow):
             targets = [target for target in TARGETS if successful_condition(restored.get('if'), target)]
             if step_digest(restored) != row['stepSha256'] or targets != row['targets']:
                 raise ValueError('baseline command, condition or action changed: ' + identifier)
+            validate_fixture_owner(known, row, restored)
     if seen != set(known):
         raise ValueError('baseline integration steps missing from grouped workflow')
     jobs = workflow['jobs']

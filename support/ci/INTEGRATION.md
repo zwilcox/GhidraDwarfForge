@@ -37,6 +37,14 @@ command, including their cancellation and deterministic rerun checks. Saved
 program determinism, existing compiler DWARF replacement and compression also
 consume primary fixtures and stay in that group.
 
+Direct `build/fixtures` consumers also stay with the primary fixture producer,
+including paths prefixed by `$PWD` or containing `$TARGET`. This includes the
+line-sequence controls, instruction-context pipeline, indirect-pointer producer,
+ARM scalar bit-piece producer and function-entry producer. The workflow checker
+rejects splitting these paths even if an explicit dependency entry is missing.
+Called scripts still require dependency review; this path check does not attempt
+to infer shell dataflow or transitive dependencies.
+
 Every group uses its own checkout, Ghidra installation, mutable
 projects and outputs. Harness classes and the production JAR are built explicitly
 in group setup: the old sequential steps implicitly supplied both for later

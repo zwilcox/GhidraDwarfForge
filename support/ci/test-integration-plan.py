@@ -139,6 +139,21 @@ class InventoryTests(unittest.TestCase):
         for group in plan.matrix(INVENTORY)['include']:
             self.assertIn('target-023', json.loads(group['steps']))
 
+    def test_shared_fixture_consumers_cannot_escape_an_incomplete_dependency_list(self):
+        import yaml
+        workflow = yaml.safe_load((HERE.parent.parent / '.github/workflows/ci.yml').read_text())
+        for identifier, target, group in [('target-088', 'x86_64', 'types'),
+                ('target-158', 'aarch64', 'source'), ('target-162', 'aarch64', 'types'),
+                ('target-175', 'arm32', 'calls'), ('target-180', 'x86_64', 'types')]:
+            broken = copy.deepcopy(INVENTORY)
+            for dependency in broken['dependencies']:
+                dependency['steps'] = [step for step in dependency['steps'] if step != identifier]
+            row = next(row for row in broken['steps'] if row['id'] == identifier)
+            row['groups'][target] = group
+            with self.subTest(identifier=identifier, target=target):
+                with self.assertRaisesRegex(ValueError, 'shared fixture consumer split from producer'):
+                    plan.validate_workflow(broken, workflow)
+
 
 class AdmissionTests(unittest.TestCase):
     def test_complete_success(self):
