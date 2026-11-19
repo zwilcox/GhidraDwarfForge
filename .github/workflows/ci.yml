@@ -1214,7 +1214,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           set -euo pipefail
-          ./gradlew --no-daemon --offline -PtestCoverage=true prepareIntegrationCoverage testClasses
+          ./gradlew --no-daemon --offline -PtestCoverage=true prepareIntegrationCoverage testClasses jar
           if [[ "$TARGET" == x86_64 ]]; then
               echo "FORGE_INTEGRATION_COVERAGE_AGENT=$PWD/build/test-coverage-tools/jacocoagent.jar" >> "$GITHUB_ENV"
               echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"

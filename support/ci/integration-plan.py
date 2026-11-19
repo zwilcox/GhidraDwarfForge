@@ -140,8 +140,10 @@ def original_step(row, step):
                 raise ValueError('group artifact names must be unique')
             result['with']['name'] = name[:-len(suffix)]
         if row['id'] == 'target-023':
-            result['run'] = result['run'].replace('prepareIntegrationCoverage testClasses',
-                'prepareIntegrationCoverage')
+            prerequisites = 'prepareIntegrationCoverage testClasses jar'
+            if result['run'].count(prerequisites) != 1:
+                raise ValueError('group setup must prepare coverage tools, harness classes and production JAR')
+            result['run'] = result['run'].replace(prerequisites, 'prepareIntegrationCoverage')
     else:
         if 'run' in result:
             result['run'] = result['run'].replace('$PWD/build/coverage-tools-input/production.jar',

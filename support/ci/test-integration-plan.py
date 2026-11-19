@@ -125,6 +125,20 @@ class InventoryTests(unittest.TestCase):
             "always() && (matrix.target == 'arm32' || matrix.target == 'x86_64')", 'arm32'))
         self.assertFalse(plan.successful_condition("matrix.target != 'arm32'", 'arm32'))
 
+    def test_each_group_has_standalone_harness_prerequisites(self):
+        import yaml
+        workflow = yaml.safe_load((HERE.parent.parent / '.github/workflows/ci.yml').read_text())
+        for missing in (' testClasses', ' jar'):
+            broken = copy.deepcopy(workflow)
+            setup = next(step for step in broken['jobs']['target-integration']['steps']
+                if step.get('name', '').startswith('[target-023]'))
+            setup['run'] = setup['run'].replace(missing, '')
+            with self.subTest(missing=missing):
+                with self.assertRaisesRegex(ValueError, 'harness classes and production JAR'):
+                    plan.validate_workflow(INVENTORY, broken)
+        for group in plan.matrix(INVENTORY)['include']:
+            self.assertIn('target-023', json.loads(group['steps']))
+
 
 class AdmissionTests(unittest.TestCase):
     def test_complete_success(self):

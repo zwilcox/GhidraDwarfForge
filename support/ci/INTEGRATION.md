@@ -38,8 +38,10 @@ program determinism, existing compiler DWARF replacement and compression also
 consume primary fixtures and stay in that group.
 
 Every group uses its own checkout, Ghidra installation, mutable
-projects and outputs. Harness classes compile explicitly in group setup: the
-old producer smoke steps implicitly compiled them for later commands. Run those
+projects and outputs. Harness classes and the production JAR are built explicitly
+in group setup: the old sequential steps implicitly supplied both for later
+commands. The CFI encoder/composition harness requires the JAR even when its
+standalone Gradle smoke test needs only classes. Run those
 original native smoke cases once per architecture, preserving their iteration
 counts and BE8, firmware, i386 and wide MIPS profiles. Tool reuse must retain
 hashes, dependency closure and runtime checks; sharing source/build trees or
