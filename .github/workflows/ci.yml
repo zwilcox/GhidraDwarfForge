@@ -1964,6 +1964,9 @@ jobs:
                   if [[ "$TARGET" == x86_64 ]]; then
                       attachment_coverage=("FORGE_INTEGRATION_COVERAGE_AGENT=$FORGE_INTEGRATION_COVERAGE_AGENT"
                           "FORGE_INTEGRATION_COVERAGE_OUTPUT=$attachment_results/coverage")
+                      attachment_coverage+=("FORGE_CI_TARGET=$FORGE_CI_TARGET" "FORGE_CI_GROUP=$FORGE_CI_GROUP"
+                          "GITHUB_ACTIONS=$GITHUB_ACTIONS" "GITHUB_JOB=$GITHUB_JOB" "GITHUB_SHA=$GITHUB_SHA"
+                          "GITHUB_RUN_ID=$GITHUB_RUN_ID" "GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT")
                   fi
                   sudo -n env JAVA_HOME="$JAVA_HOME" JAVA="$JAVA_HOME/bin/java" JAVAC="$JAVA_HOME/bin/javac" \
                       "${attachment_coverage[@]}" \

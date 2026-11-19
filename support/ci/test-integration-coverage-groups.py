@@ -6,6 +6,9 @@ import json
 import os
 from pathlib import Path
 import shutil
+import shlex
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -72,6 +75,64 @@ class GroupCoverageTests(unittest.TestCase):
         self.assertEqual(2, result['attempt'])
         for collection in self.collections.values():
             self.assertEqual('mips32be', collection.record['ciGroup']['target'])
+
+    def test_workflow_attachment_collection_survives_environment_reset(self):
+        """Execute the actual workflow argv across env -i, without root or a JVM.
+
+        Synthetic probe bytes test receipt plumbing only. Hosted attachment
+        oracles still prove real privileged operations and JaCoCo execution.
+        """
+        import yaml
+        workflow = yaml.safe_load((HERE.parents[1] / '.github/workflows/ci.yml').read_text())
+        step = next(step for step in workflow['jobs']['target-integration']['steps']
+            if step.get('name', '').startswith('[target-072]'))
+        fragment = 'attachment_coverage=()' + step['run'].split('attachment_coverage=()', 1)[1].split(
+            'python3 src/test/integration/attachment-elf-controller.py', 1)[0]
+        harness = self.root / 'collector.py'
+        harness.write_text('''import json, os, sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from integration_coverage import Collection
+collection = Collection(sys.argv[2], sys.argv[3], 'native-java')
+with collection.session(['java', 'Fixture'], 'boundary'):
+    (collection.root / collection.record['sessions'][0]['file']).write_bytes(b'not real probes')
+collection.finish(Path(sys.argv[4]))
+assert 'UNRELATED_ENVIRONMENT_CANARY' not in os.environ
+print(json.dumps(collection.record.get('ciGroup')))
+''')
+        identity = {**self.identity, 'target': 'x86_64', 'group': 'primary', 'job': 'target-integration'}
+        environment = dict(os.environ, TARGET='x86_64', JAVA_HOME='/unused-java',
+            FORGE_CI_TARGET='x86_64', FORGE_CI_GROUP='primary', GITHUB_ACTIONS='true',
+            GITHUB_JOB='target-integration', GITHUB_SHA=COMMIT, GITHUB_RUN_ID='987',
+            GITHUB_RUN_ATTEMPT='2', FORGE_INTEGRATION_COVERAGE_AGENT=str(self.agent),
+            UNRELATED_ENVIRONMENT_CANARY='must-not-cross')
+        for role in ['exec', 'pie', 'exec-no-build-id', 'missing-provenance', 'wrong-attempt']:
+            with self.subTest(role=role):
+                root = self.root / role
+                selected = fragment
+                if role == 'missing-provenance':
+                    # Reproduce the old workflow: only coverage paths crossed sudo.
+                    selected = selected[:selected.index('            attachment_coverage+=(')] + selected[
+                        selected.index('        fi', selected.index('            attachment_coverage+=(')):]
+                elif role == 'wrong-attempt':
+                    selected = selected.replace('GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT', 'GITHUB_RUN_ATTEMPT=1')
+                script = ('set -euo pipefail\n'
+                    'sudo() { shift; ' + shlex.quote(shutil.which('env')) + ' -i "$@"; }\n'
+                    'attachment_results=' + shlex.quote(str(root)) + '\n' + selected
+                    + shlex.join([sys.executable, str(harness),
+                        str(HERE.parents[1] / 'src/test/integration'),
+                        'linux-attachment-' + role, str(self.jar), str(self.oracle)]) + '\n')
+                result = subprocess.run(['bash', '-c', script], env=environment,
+                    text=True, capture_output=True, timeout=15)
+                self.assertEqual(0, result.returncode, result.stderr)
+                # Match the workflow's transfer into its group collection root.
+                (root / 'coverage').rename(root / 'collections')
+                if role in ('missing-provenance', 'wrong-attempt'):
+                    with self.assertRaisesRegex(ValueError, 'stale or different integration group.*linux-attachment-'):
+                        groups.seal(root, self.jar, INVENTORY, identity)
+                else:
+                    self.assertEqual(identity, json.loads(result.stdout))
+                    self.assertEqual(1, len(groups.seal(root, self.jar, INVENTORY, identity)['sessions']))
 
     def test_empty_group_is_required_and_explicit(self):
         root = self.inputs / 'abi32'

@@ -83,7 +83,9 @@ def collection_files(root, jar, identity):
                 raise ValueError('grouped coverage exceeds size budget')
         record = coverage.validate_collection(directory, jar)
         if record.get('ciGroup') != identity:
-            raise ValueError('collection belongs to a stale or different integration group')
+            raise ValueError('collection belongs to a stale or different integration group: '
+                + directory.name + ' actual=' + json.dumps(record.get('ciGroup'), sort_keys=True)
+                + ' expected=' + json.dumps(identity, sort_keys=True))
         expected = {'receipt.json', 'oracle.json', *(row['file'] for row in record['sessions'])}
         if {path.name for path in paths} != expected:
             raise ValueError('unexpected grouped coverage file')

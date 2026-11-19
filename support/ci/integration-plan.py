@@ -161,6 +161,16 @@ def original_step(row, step):
             if result['run'].count(prerequisites) != 1:
                 raise ValueError('group setup must prepare coverage tools, harness classes and production JAR')
             result['run'] = result['run'].replace(prerequisites, 'prepareIntegrationCoverage')
+        if row['id'] == 'target-072':
+            # Only provenance forwarding changes at this privilege boundary;
+            # the original attachment commands and behavioral checks remain bound.
+            forwarding = '''            attachment_coverage+=("FORGE_CI_TARGET=$FORGE_CI_TARGET" "FORGE_CI_GROUP=$FORGE_CI_GROUP"
+                "GITHUB_ACTIONS=$GITHUB_ACTIONS" "GITHUB_JOB=$GITHUB_JOB" "GITHUB_SHA=$GITHUB_SHA"
+                "GITHUB_RUN_ID=$GITHUB_RUN_ID" "GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT")
+'''
+            if result['run'].count(forwarding) != 1:
+                raise ValueError('attachment coverage must forward complete group provenance')
+            result['run'] = result['run'].replace(forwarding, '')
     else:
         if 'run' in result:
             result['run'] = result['run'].replace('$PWD/build/coverage-tools-input/production.jar',

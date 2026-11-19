@@ -112,7 +112,8 @@ class InventoryTests(unittest.TestCase):
                 if step.get('name', '').startswith(f'[target-{number + 1:03}]'))
             row[field] = value
             with self.subTest(number=number, field=field):
-                with self.assertRaisesRegex(ValueError, 'baseline command, condition or action changed|group assignment predicate'):
+                with self.assertRaisesRegex(ValueError,
+                        'baseline command, condition or action changed|group assignment predicate|forward complete group provenance'):
                     plan.validate_workflow(INVENTORY, broken)
 
     def test_condition_parser_rejects_unreviewed_or_executable_expressions(self):
@@ -138,6 +139,19 @@ class InventoryTests(unittest.TestCase):
                     plan.validate_workflow(INVENTORY, broken)
         for group in plan.matrix(INVENTORY)['include']:
             self.assertIn('target-023', json.loads(group['steps']))
+
+    def test_attachment_boundary_requires_every_provenance_field(self):
+        import yaml
+        workflow = yaml.safe_load((HERE.parent.parent / '.github/workflows/ci.yml').read_text())
+        for name in ('FORGE_CI_TARGET', 'FORGE_CI_GROUP', 'GITHUB_ACTIONS', 'GITHUB_JOB',
+                'GITHUB_SHA', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT'):
+            broken = copy.deepcopy(workflow)
+            step = next(step for step in broken['jobs']['target-integration']['steps']
+                if step.get('name', '').startswith('[target-072]'))
+            step['run'] = step['run'].replace('"' + name + '=$' + name + '"', '')
+            with self.subTest(missing=name):
+                with self.assertRaisesRegex(ValueError, 'forward complete group provenance'):
+                    plan.validate_workflow(INVENTORY, broken)
 
     def test_shared_fixture_consumers_cannot_escape_an_incomplete_dependency_list(self):
         import yaml
