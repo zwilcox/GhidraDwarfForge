@@ -1,9 +1,11 @@
 # Architecture integration groups
 
-**PRESENT, UNVERIFIED on hosted CI:** `integration-groups.json` assigns the
-architecture suite to independent jobs. The workflow, group admission and
-coverage aggregation are implemented and validated locally. A generated matrix
-or passing admission fixture is not evidence of an optimized hosted run.
+`integration-groups.json` assigns the architecture suite to independent jobs.
+Acceptance requires successful hosted execution, complete group admission and
+reproduced coverage. A generated matrix or passing local admission fixture alone
+does not establish an optimized hosted run. The first successful grouped PR
+measurement is recorded below; subsequent revisions and main publication still
+require their own validation.
 
 The baseline is main `9326d3acfcc07d880accdefea6d118aa0c4bb2dc`, successful
 run [44376883886](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/44376883886).
@@ -12,7 +14,7 @@ and explicit architecture applicability. Counts below count assigned workflow
 steps, including their associated evidence retention actions, **not individual
 behavioral test cases**. Nested cases remain in their original scripts.
 
-| Target | Assigned steps | Proposed groups |
+| Target | Assigned steps | Groups |
 | --- | ---: | --- |
 | x86-64 | 149 | primary, unwind, types, registers, stack, source, i386-mmio, performance |
 | AArch64 | 98 | primary, unwind, types, registers, stack, source |
@@ -106,3 +108,56 @@ variability, not its underlying network cause. Compare complete successful
 grouped runs, including duplicated setup and queue time, before claiming a
 speedup. The extension build and mutation checks remain prerequisites and may
 limit the improvement after architecture splitting.
+
+## First successful grouped PR measurement
+
+**CONFIRMED for this recorded run:** PR run
+[44461447108](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/44461447108),
+attempt 1, passed all 24 architecture groups, host/GUI checks, group admission,
+coverage reports and `required-validation`. It executed merge `ff87fafb` for head
+`6cc8df52`. This is historical evidence for that revision, not a substitute for
+the checks required on a later revision or on main. Exact identities, artifact
+hashes and timing input hashes are in `grouped-timing-first-pr.json`.
+
+The closest baseline is successful main run `44376883886`, with identical
+production bytecode. Independent reconstruction reproduced all five coverage
+views from 1,270 sessions across nine origins. Every source's line and counter
+data matches the baseline in each view; all 255 production sources and 901
+classes remain in the denominator. Overall coverage remains 97.3% lines / 89.2% branches,
+and both critical groups retain their 95% line / 90% branch thresholds. JaCoCo
+XML branch counts do not identify individual branch alternatives; unchanged
+counts supplement the complete test/profile admission rather than replacing it.
+
+| Complete workflow metric | Serial baseline | Grouped PR |
+| --- | ---: | ---: |
+| First job start to final job completion | 244.3 min | 141.5 min |
+| Summed job wall time | 768.5 min | 952.3 min |
+
+This run reduces the complete workflow's elapsed time by 102.9 minutes (42.1%),
+while increasing summed runner occupancy by 183.8 minutes (23.9%). Runner
+occupancy is not GitHub billed time. The grouped attempt took 142.9 minutes from
+attempt start, including 85 seconds before the first job started. The largest
+observed job queue was 23.0 minutes. Neither queue time nor parallel job time
+should be added again to the elapsed workflow measurement.
+
+| Target | Serial elapsed | Grouped tests span | Grouped through report | Serial / grouped setup, summed |
+| --- | ---: | ---: | ---: | ---: |
+| x86-64 | 184.7 min | 42.0 min | 81.0 min | 20.9 / 30.9 min |
+| AArch64 | 143.7 min | 47.9 min | 80.9 min | 20.6 / 67.9 min |
+| ARM32 | 133.5 min | 65.6 min | 80.8 min | 28.6 / 45.2 min |
+| MIPS32BE | 96.3 min | 77.5 min | 77.8 min | 38.5 / 81.2 min |
+| MIPS32LE | 74.4 min | 46.6 min | 81.0 min | 7.8 / 33.6 min |
+
+Each target report waits for the complete group matrix. That wait is included
+in the through-report column: MIPS32LE's own tests finish sooner, but its report
+finishes 6.6 minutes later than the serial target baseline. Repeated setup also
+increases runner occupancy. These are measured costs of this first split;
+the result does not claim every target report is faster or that setup is optimal.
+Setup includes named toolchain, debugger, Java, Ghidra and artifact preparation;
+downloads nested within test commands remain counted as test time.
+
+Against the other two successful serial baselines, workflow elapsed time is
+45.5% and 50.4% lower. Those revisions differ, and hosted-runner variability
+limits inference from one grouped run. Actual-main confirmation and publication
+are tracked in [PR #213](https://github.com/zwilcox/GhidraDwarfForge/pull/213)
+and [issue #211](https://github.com/zwilcox/GhidraDwarfForge/issues/211).
