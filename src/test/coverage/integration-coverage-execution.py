@@ -105,9 +105,15 @@ public final class UnloadedFixture {
         execution.write_bytes(originals[row['file']])
         row['sha256'] = coverage.digest(execution)
     collection._save()
+    group_spec = importlib.util.spec_from_file_location('grouped_execution_control',
+        HERE / 'grouped-coverage-execution.py')
+    group_control = importlib.util.module_from_spec(group_spec)
+    group_spec.loader.exec_module(group_control)
+    group_control.prove(root, java, args.agent.resolve(), args.jacoco_classpath.resolve(), run)
     coverage.save(root / 'result.json', {'status': 'PASS_REAL_INTEGRATION_COVERAGE_CONTROLS',
         'sessions': 2, 'productionClasses': 2, 'negativeControls': list(expected),
-        'unloadedClassRetained': True, 'branchesMergedByProbeUnion': True})
+        'unloadedClassRetained': True, 'branchesMergedByProbeUnion': True,
+        'groupedProbeUnion': 'PASS'})
     print('integration-coverage-execution=PASS controls=4')
 
 

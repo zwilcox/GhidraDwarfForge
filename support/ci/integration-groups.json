@@ -1,0 +1,3278 @@
+{
+    "schema": 1,
+    "status": "PRESENT_UNVERIFIED_GROUPED_WORKFLOW",
+    "baselineCommit": "9326d3acfcc07d880accdefea6d118aa0c4bb2dc",
+    "baselineRun": 44376883886,
+    "baselineJob": "target-preflight",
+    "targets": [
+        "x86_64",
+        "aarch64",
+        "arm32",
+        "mips32be",
+        "mips32le"
+    ],
+    "steps": [
+        {
+            "id": "target-001",
+            "baselineStep": 1,
+            "name": "actions/checkout@v7",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "7c91c0696d61363891a044563514c3457ae4b6bf87dfd169c3bebda7c002b644"
+        },
+        {
+            "id": "target-002",
+            "baselineStep": 2,
+            "name": "actions/download-artifact@v8",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "bb2bc1b097028860002554fbac6ca55c551f67689f96ae52242869d7dddd1d70"
+        },
+        {
+            "id": "target-003",
+            "baselineStep": 3,
+            "name": "actions/setup-java@v6",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "100d41bc116fb7b7f2e626c47ea90b65048e6cd539de67d74eabd04605fabb74"
+        },
+        {
+            "id": "target-004",
+            "baselineStep": 4,
+            "name": "Install target toolchain and debugger",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "8c206d4b4428bff5e32a5f41a88875b2a6c1941c0c2b9ebc955b827d52303516"
+        },
+        {
+            "id": "target-005",
+            "baselineStep": 5,
+            "name": "Validate compiler MMIO layouts against register bytes",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "i386-mmio",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "16d120da8c90b6bbb7eb709cf870c8d2d49fa7693ac97d30bbd1f56b0a624230"
+        },
+        {
+            "id": "target-006",
+            "baselineStep": 6,
+            "name": "Observe compiler MMIO reads against instrumented peripheral",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "i386-mmio"
+            },
+            "stepSha256": "89843c63bb3923b013a9c90a51b5380a478ec48ab15556e0a2cb7e60508efa16"
+        },
+        {
+            "id": "target-007",
+            "baselineStep": 7,
+            "name": "Build pinned MIPS register-piece debugger",
+            "kind": "setup",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "687c3d69137eb37c59ddc984e61e731132e49735855fdac2c2736ac20798bf7b"
+        },
+        {
+            "id": "target-008",
+            "baselineStep": 8,
+            "name": "Build pinned ARM big-endian register-piece debugger",
+            "kind": "setup",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {},
+            "stepSha256": "fa8af991dfcec8ca7b23a3b56d6ab9dd6d3bca4b2732f61d2aee68a5c8da8d3a"
+        },
+        {
+            "id": "target-009",
+            "baselineStep": 9,
+            "name": "Build pinned ARM register alias reference emulators",
+            "kind": "setup",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {},
+            "stepSha256": "b17d72dd951ef8920d04e365a37795312aaf29351aafbd98046c8f38153bad42"
+        },
+        {
+            "id": "target-010",
+            "baselineStep": 10,
+            "name": "Preserve ARM emulator build receipts",
+            "kind": "setup",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {},
+            "stepSha256": "1cd52c716d8cc4576e3685181038a5e7aa816d59fcb1e20ba001b4ab7bb10626"
+        },
+        {
+            "id": "target-011",
+            "baselineStep": 11,
+            "name": "Cache Ghidra 12.0.3 archive",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "d3a71fe6438f6ab4af2b9e2b5867e9bde74aef39ab1823794872b365b0fc185f"
+        },
+        {
+            "id": "target-012",
+            "baselineStep": 12,
+            "name": "Install pinned Ghidra",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "2d2c5bced10a68447f375dbd549cadcc989e16f5f5225d55497314cec39e1666"
+        },
+        {
+            "id": "target-013",
+            "baselineStep": 13,
+            "name": "actions/download-artifact@v8",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "e032e6848914df96116c1131b07f006587748163264e7722011a20776d4135aa"
+        },
+        {
+            "id": "target-014",
+            "baselineStep": 14,
+            "name": "actions/download-artifact@v8",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "5f36c7e9ff4d8b99f8ab499a40d880db83e1957bafdbc6be9e5e8745507ad21f"
+        },
+        {
+            "id": "target-015",
+            "baselineStep": 15,
+            "name": "actions/download-artifact@v8",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "cc269e5dfdc4a679925f79bcc0e299d7ecaac57e93198c71e64e74ad003082f4"
+        },
+        {
+            "id": "target-016",
+            "baselineStep": 16,
+            "name": "Verify pinned standalone DWARF validator",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "c2a38a72ab8a0f5cd21fb52d2bc538557c051bfcdbf4f8c25c079c075cbd3d83"
+        },
+        {
+            "id": "target-017",
+            "baselineStep": 17,
+            "name": "Reject incomplete and exit-zero failing validator reports",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "ed58b1ef4e347982a4625636676722601d1e93059473f74c8efc1b89870a20ac"
+        },
+        {
+            "id": "target-018",
+            "baselineStep": 18,
+            "name": "Capture validator evidence and reject changed or incomplete handoffs",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "06bf74a7ef4e4f0a9e605dce77f96437038f476eae09800d420960c964d4edc5"
+        },
+        {
+            "id": "target-019",
+            "baselineStep": 19,
+            "name": "Validate extended program counts and reject malformed ELF tables",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "953f6bbbcdd46eec5b645dbcd68410a093b0bd53cbdbf5b7d4f4983e866ff796"
+        },
+        {
+            "id": "target-020",
+            "baselineStep": 20,
+            "name": "Record exact toolchain versions",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "e3b99816fdcd5c5ab48b9119beac651a6218426f8bc9be511706da87aec41e9e"
+        },
+        {
+            "id": "target-021",
+            "baselineStep": 21,
+            "name": "Isolated producer ABI smoke test",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "68c2d17a5d5c87662f108b30c39e456503909afa320e17bde7b99eb75c3190a4"
+        },
+        {
+            "id": "target-022",
+            "baselineStep": 22,
+            "name": "Isolated call-site JNA and serialized-form checks",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "87484101f9cc1114778c8da374bfe06b8e164e7f66c73b5573092e80f169d108"
+        },
+        {
+            "id": "target-023",
+            "baselineStep": 23,
+            "name": "Prepare separate coverage for existing integration JVMs",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "793366263593f97dfef7e9c117556e04980ec54bf239a7231e7b8834ed28ac53"
+        },
+        {
+            "id": "target-024",
+            "baselineStep": 24,
+            "name": "Compiler inheritance references and native exporter runtime controls",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types"
+            },
+            "stepSha256": "1c133e793a86debd5a49aca9ceadada70217037ef0ac5a6ff248a5dc1697b74b"
+        },
+        {
+            "id": "target-025",
+            "baselineStep": 25,
+            "name": "Compiler call-site references and production serialization controls",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types"
+            },
+            "stepSha256": "775ce828b23c340977a0a75d2d4f5b92b1e6664696c8225d35ee1197a4e7d51c"
+        },
+        {
+            "id": "target-026",
+            "baselineStep": 26,
+            "name": "Install extension",
+            "kind": "setup",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "6d5dfa2580d1ab1e7582d2e581a3b774cb836f97f1fb952e6349d181457b7a7f"
+        },
+        {
+            "id": "target-027",
+            "baselineStep": 27,
+            "name": "Location address width, preserved failures and debugger values",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "eaa62d2c7940d455f59f8a2cdd8ff3656ac455503116405dd4b343c154114626"
+        },
+        {
+            "id": "target-028",
+            "baselineStep": 28,
+            "name": "Isolated producer failure cleanup and validated retries",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "07db72ba423cdaad29cec81ac903295d0798e0768b6748960aaaa59d95922114"
+        },
+        {
+            "id": "target-029",
+            "baselineStep": 29,
+            "name": "Qualified and scalar types against compiler and GDB references",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "bbb4eed64bff91f384a6d759e54e47ba4acbf9a96b0b1f7857e0d1bde4a8545f"
+        },
+        {
+            "id": "target-030",
+            "baselineStep": 30,
+            "name": "Callable types, unknown conventions and address-free declarations",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "64131086557a733cb28c1687da5df1593e64d74d0c4326cd35974dee40a28272"
+        },
+        {
+            "id": "target-031",
+            "baselineStep": 31,
+            "name": "Producer cleanup and buffer-bound mutation controls",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "29d5f7293adb0d667e5bd0823bbf30a81a750ac169f7824cdd91bbb395dc8e03"
+        },
+        {
+            "id": "target-032",
+            "baselineStep": 32,
+            "name": "Saved inheritance through ordinary export and read-only reopening",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types"
+            },
+            "stepSha256": "0b4797c48e24cd574fab61268657ab8c6ec3fe9bb42c273517e73179e77e6c8c"
+        },
+        {
+            "id": "target-033",
+            "baselineStep": 33,
+            "name": "MIPS O32 FPXX and FP64A system-emulator references",
+            "kind": "test",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "mips32be": "abi32",
+                "mips32le": "abi32"
+            },
+            "stepSha256": "fffb213b1ccffc824898b8bc037da5b4c93de3a9b6b9a038079f89e1cb12be75"
+        },
+        {
+            "id": "target-034",
+            "baselineStep": 34,
+            "name": "Curated thunk names retain signatures without borrowed destination source",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types"
+            },
+            "stepSha256": "5b850a582acae6be7736a305f84ab5f687edb04d556349205cf45735c594702a"
+        },
+        {
+            "id": "target-035",
+            "baselineStep": 35,
+            "name": "Packaged call-site and tail-call runtime checks",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types"
+            },
+            "stepSha256": "0e28b9a0c58a65cf41bd76dc28fc2ba300b65d945accf238f59cdf251eb35aaf"
+        },
+        {
+            "id": "target-036",
+            "baselineStep": 36,
+            "name": "Check packaged GDB companion with live compiler references",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "535d9c513a3640332d7b51e5765a55714778b9a4dcd7146c76dcf70a21d7cfc7"
+        },
+        {
+            "id": "target-037",
+            "baselineStep": 37,
+            "name": "Isolated class producer specifications and conflicting lookup aliases",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "67b7745c0eed807840e49082d2b94940e1b33259f3d0eb006d81a047490aa1d1"
+        },
+        {
+            "id": "target-038",
+            "baselineStep": 38,
+            "name": "Isolated packaged-native producer smoke test",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "12ae758e7aedadfad83fd9df7140b6e571ea82654303e869602f3dff91e8fcc7"
+        },
+        {
+            "id": "target-039",
+            "baselineStep": 39,
+            "name": "Build source fixture",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "7f976ec63d7e7fbfd1662c7601bd91e0386dbd32328151607b47dbbc525cdf76"
+        },
+        {
+            "id": "target-040",
+            "baselineStep": 40,
+            "name": "Measure a bounded installed headless exporter sample",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "3e13a78139f05fb40004f74025dfbe18d773cf204ea4f8325fccc24e7e2d4bd3"
+        },
+        {
+            "id": "target-041",
+            "baselineStep": 41,
+            "name": "actions/upload-artifact@v7",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "820b9c745b4278fc3f5cd9490921f0eed5cadb799fb22b9627123682bf9506d2"
+        },
+        {
+            "id": "target-042",
+            "baselineStep": 42,
+            "name": "Validate independent compiler unwind references",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "f98996b0bc04ce7cafac1b3ff37ad0f0b23a303b9450f064aff62fb111479ded"
+        },
+        {
+            "id": "target-043",
+            "baselineStep": 43,
+            "name": "Validate explicit CFI encoder plans and debugger behavior",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "e56564ac2f1f34e10b2507baa1579aa93f6d98892e577d6eeee457c917618ad0"
+        },
+        {
+            "id": "target-044",
+            "baselineStep": 44,
+            "name": "Reject input and program changes before export publication",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary"
+            },
+            "stepSha256": "9550d276357bf3bb26fb730b0c4e80aacc26d771585ddf39c4393049e0b19bef"
+        },
+        {
+            "id": "target-045",
+            "baselineStep": 45,
+            "name": "Validate optional formatters in GDB CLI/MI and LLDB",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "1ff3656756dfd904f830c0e92a62784c757357dfd2d1b65f0f0c1298239d8c18"
+        },
+        {
+            "id": "target-046",
+            "baselineStep": 46,
+            "name": "Archive formatter evidence before the remaining regressions",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "31a79b04fab138aeea89a3967abcaabf1832723afa80f65a94deb19c5dc85706"
+        },
+        {
+            "id": "target-047",
+            "baselineStep": 47,
+            "name": "actions/upload-artifact@v7",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "fab1f46fff93a8ed706e92ff866b9b1a5e2dddc9a8091449b8a8abd4b6e90bac"
+        },
+        {
+            "id": "target-048",
+            "baselineStep": 48,
+            "name": "Validate recovered CFI in executables, PIE and loaded shared libraries",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "fd47875b64d20b168d7aa785223d007145189dafacebe75368b8d86eeb79f563"
+        },
+        {
+            "id": "target-049",
+            "baselineStep": 49,
+            "name": "Compare conditioned native frames with unchanged compiler references",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "c29d59ae2975f106ac257fca30135d9c12e45aac9a90f7ebbaf48d899c133429"
+        },
+        {
+            "id": "target-050",
+            "baselineStep": 50,
+            "name": "Compare LLDB caller frames with independent compiler references",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "23b7f9df6eefc5e782ec9363c24c87c386802712d4d87d7f55f07bacc6b32d86"
+        },
+        {
+            "id": "target-051",
+            "baselineStep": 51,
+            "name": "Validate compiler frame pointers and recovered caller values",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "6a4b93a8ce9d177a1ebabf03778ae8188209fcdcbbd107f033fb5a0a64532b98"
+        },
+        {
+            "id": "target-052",
+            "baselineStep": 52,
+            "name": "Validate discontiguous unwind ranges and partial-instruction refusals",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "367757968f433beda63c9e3910b5dba65aef86b183d2aea22255ca84f70a82f0"
+        },
+        {
+            "id": "target-053",
+            "baselineStep": 53,
+            "name": "Multi-file source stepping across discontiguous bodies and compressed DWARF",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "source",
+                "aarch64": "source"
+            },
+            "stepSha256": "13f8818013003a9d78314455d9426ed6f48661140da3f281c8ed2fd3d757f0a6"
+        },
+        {
+            "id": "target-054",
+            "baselineStep": 54,
+            "name": "Validate real native exports with recovered frames and source",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "02a39c10d37f430be2eda0c72fd7a9c965296a47beecddb1a2241d5247d7c73f"
+        },
+        {
+            "id": "target-055",
+            "baselineStep": 55,
+            "name": "Preserve original records alongside recovered native frame exports",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "83a3968f4a82c30464cb4c167faeb8fedfc4aad275be5868541b8bebde29816e"
+        },
+        {
+            "id": "target-056",
+            "baselineStep": 56,
+            "name": "Preserve runtime unwind records alongside recovered native frames",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "31755847bccbecd87a8734aa3aecb1ae639ec234d2de95af4418f05123a8f55f"
+        },
+        {
+            "id": "target-057",
+            "baselineStep": 57,
+            "name": "Export rebased saved projects with original and recovered unwind records",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "f4ff17235725749b6b0c2ad5f58c140c3b598c67efda0f651ea63a9826496250"
+        },
+        {
+            "id": "target-058",
+            "baselineStep": 58,
+            "name": "Preserve processor-typed runtime unwind records",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "unwind"
+            },
+            "stepSha256": "429c2ede5d618acfb2c6faa8d250a39a5da23da1f30917d362798f9259fa1553"
+        },
+        {
+            "id": "target-059",
+            "baselineStep": 59,
+            "name": "Preserve inherited unavailable-register limits",
+            "kind": "test",
+            "targets": [
+                "aarch64"
+            ],
+            "groups": {
+                "aarch64": "unwind"
+            },
+            "stepSha256": "2971315c3ad451b805908c0a1469c696957079610db28787a76bf0b7334af350"
+        },
+        {
+            "id": "target-060",
+            "baselineStep": 60,
+            "name": "Compare original frame ranges with independent compiler and validator inventories",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "5c7051e83b9e0cd9e0cf6a1350f44cabdda52a1ef81c90364fbb4aa208f1e8be"
+        },
+        {
+            "id": "target-061",
+            "baselineStep": 61,
+            "name": "Compare runtime relocation tables with independent GNU inventories",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "2beb5494f9507758d94c45124c61d9f1c49e3c1a9688beb8c817f75d36c19b9a"
+        },
+        {
+            "id": "target-062",
+            "baselineStep": 62,
+            "name": "Verify COPY and TLS descriptor loader effects",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "69fd37f83065f32cbf6c5414a283688253cc87c9061e3429b6c35ef3b86e117f"
+        },
+        {
+            "id": "target-063",
+            "baselineStep": 63,
+            "name": "Verify fixture identity and stripping",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "f6788a9af15eca80f86c229029c395aabd3e5a9a9989bc5872ca497413c00679"
+        },
+        {
+            "id": "target-064",
+            "baselineStep": 64,
+            "name": "Preserve original compiler CFI through actual export and GDB",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "f3576e9b283c958af4a2e814cd9d3f50deec32d6a421ef9c31b8f615ac3e7ce4"
+        },
+        {
+            "id": "target-065",
+            "baselineStep": 65,
+            "name": "Headless Ghidra preflight",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "d060a29f08b39bf939bd3ca1f88f14a09de97b5463905116923037dd9a7bdcfb"
+        },
+        {
+            "id": "target-066",
+            "baselineStep": 66,
+            "name": "Build and validate matched sidecar containers",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "16701bef59d629a7f462fa44af65fdd72ff7611c32b36745351820c7aeea6ebe"
+        },
+        {
+            "id": "target-067",
+            "baselineStep": 67,
+            "name": "Native/QEMU GDB sidecar oracle",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "9f6bf6b06418862dec6908cbb9def9ffc0c053d433f2f19352dc440573828abd"
+        },
+        {
+            "id": "target-068",
+            "baselineStep": 68,
+            "name": "Extended ELF section tables through export and GDB",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "9b50fb7a3001030f201f608f26abacf287015f30ce36bc689ff5ec13a20e0f4b"
+        },
+        {
+            "id": "target-069",
+            "baselineStep": 69,
+            "name": "Unnamed sections and extended program tables through export and GDB",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "bfcc499f712ba3738afb59bbaebf5bf1bc5d7cbc5da3cb4b195d4f1e5fe65aae"
+        },
+        {
+            "id": "target-070",
+            "baselineStep": 70,
+            "name": "Large ELF bounded-memory container and real exporter",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "7d17894012e7da4f3578e15b70239d1252f181de02257612d12aea6f46fdb999"
+        },
+        {
+            "id": "target-071",
+            "baselineStep": 71,
+            "name": "Reject definite ELF and Ghidra processor disagreement",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "09e61c45f6587f9f55b28c26f598f2e1f430d4e3f35a0490422fa738a36c127e"
+        },
+        {
+            "id": "target-072",
+            "baselineStep": 72,
+            "name": "Headless Forge symbol export and GDB integration",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "140aaeb758909fcae03cd5d6e0413fde01b5696b6662be19feded1afb9b5f33a"
+        },
+        {
+            "id": "target-073",
+            "baselineStep": 73,
+            "name": "LLDB compiler and Forge source, types, stack and register pieces",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary"
+            },
+            "stepSha256": "c46290eac0cd78f5bed795e37f6e555174ff049845236f7d55e975ff976d5d9a"
+        },
+        {
+            "id": "target-074",
+            "baselineStep": 74,
+            "name": "Retain production attachment evidence before broader target tests",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "f10efccb8d41ca7121679692e62d88a22d097a213aaa015b432939b15c4d03c1"
+        },
+        {
+            "id": "target-075",
+            "baselineStep": 75,
+            "name": "GDB companions from rebased PIE and shared-library analysis",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "9264815ffc419f0bdf7e8320e93f28c8157ae06a643a555cc3ac2f2851571135"
+        },
+        {
+            "id": "target-076",
+            "baselineStep": 76,
+            "name": "Streamed file digests and target-endian GNU debuglink CRC",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "4fa045f9e9f3d432da7e06cda153f13c563e175d7faec03572850e849a2c1231"
+        },
+        {
+            "id": "target-077",
+            "baselineStep": 77,
+            "name": "Typed ELF build-ID observations and independent GNU note oracle",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "20a3a1a939ec19507c3bb871bf08df4cb25a4badecee5cd90c065eae8efa82e0"
+        },
+        {
+            "id": "target-078",
+            "baselineStep": 78,
+            "name": "Read-only export report claims and independent JSON oracle",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "1567207fa7f275d1adf7bd65e6bddddf0bc38d4eada56fa8a9c74bd41ca6568e"
+        },
+        {
+            "id": "target-079",
+            "baselineStep": 79,
+            "name": "Retained ELF prefix observations and independent byte oracle",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "dcfdf17283084a8712019fc9c8fd6fe42b4d447405424c4de83555e2cbd5a5f3"
+        },
+        {
+            "id": "target-080",
+            "baselineStep": 80,
+            "name": "Active ELF allocation metadata and independent indexed oracle",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "c317bf395fb4a722a0e637ca9dcc7358cd35b35b85d15b5eeb639d14bc28e87d"
+        },
+        {
+            "id": "target-081",
+            "baselineStep": 81,
+            "name": "Selected artifact SHA claims and independent streamed hash oracle",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "7badeedb604ffdd212f92ed5728fde094e79c09ad3266dd6381a5e33ec8c0e85"
+        },
+        {
+            "id": "target-082",
+            "baselineStep": 82,
+            "name": "QEMU private socket startup and failure cleanup",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "88a2e05d2cf85a7d7f58d4eea8429d7ff5929437e2428c76e3b7cb93ef652729"
+        },
+        {
+            "id": "target-083",
+            "baselineStep": 83,
+            "name": "Saved-program type identity across fresh headless processes",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "670f2d219c52e119778c5802af4ec411761a7b000642ce0c0c0e2bfee66af00f"
+        },
+        {
+            "id": "target-084",
+            "baselineStep": 84,
+            "name": "Saved-project wrapper preserves databases and project backups",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "d30ef9149c34e5a73a5194ce770e7836bdb4f3d3469bb98d5572781bbd6d36b5"
+        },
+        {
+            "id": "target-085",
+            "baselineStep": 85,
+            "name": "Saved analyst edits through backup-based attachment refresh",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "d0dc008e3e9f3bc52d8f249b5ed93ee77b75907904ac5a3905181b8b97e69b12"
+        },
+        {
+            "id": "target-086",
+            "baselineStep": 86,
+            "name": "Retain saved-curation attachment refresh evidence",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "8500b48b8892adcfd8d00c0a524e0fe7ff3c037a56eeee281472a8c218faaf63"
+        },
+        {
+            "id": "target-087",
+            "baselineStep": 87,
+            "name": "Validate function-pointer convention extension and malformed metadata",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "3a689f8ea6426839e5aee10e969361eba7b55238597a38866986927239fb75a8"
+        },
+        {
+            "id": "target-088",
+            "baselineStep": 88,
+            "name": "Validate line sequences and reject malformed range artifacts",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "629f0d777a1273564946a5f32654f6bc1ae5fab0c8011406b83757df7e0a7ddc"
+        },
+        {
+            "id": "target-089",
+            "baselineStep": 89,
+            "name": "Bit-field values through the real exporter, GDB and applicable LLDB",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "b9c26b865c44a7bc10fc06ee284cd72f2b206ec66e1555f0871efabfa349820a"
+        },
+        {
+            "id": "target-090",
+            "baselineStep": 90,
+            "name": "Validate saved MMIO layouts and qualifier preservation",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "i386-mmio",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "f9c7015df63d7dc5211bd215c26f69d258dc698ca121fedd20bff2c06f235065"
+        },
+        {
+            "id": "target-091",
+            "baselineStep": 91,
+            "name": "Freestanding i386 stack values through stripped exec and PIE exports",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "i386-mmio"
+            },
+            "stepSha256": "0563731331c1451d71530cdbf5b01c910533033fa6cdebe8284bd61a576cc5f2"
+        },
+        {
+            "id": "target-092",
+            "baselineStep": 92,
+            "name": "i386 libc scalar floating arguments and x87 returns",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "i386-mmio"
+            },
+            "stepSha256": "93218dcce93cbb5bff58647f9e93b54f7a742cafcd6b8cc8bbaae595ce8928cb"
+        },
+        {
+            "id": "target-093",
+            "baselineStep": 93,
+            "name": "i386 x87 return correction at the compiler input-region boundary",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "i386-mmio"
+            },
+            "stepSha256": "d61565b0bc2051c3b22bf38cca7d198edf4a97b35f56b81b2af296abb9fa3221"
+        },
+        {
+            "id": "target-094",
+            "baselineStep": 94,
+            "name": "i386 libc vector aggregate and explicit convention matrix",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "i386-mmio"
+            },
+            "stepSha256": "6ffc9cb21b5d56c22b0926d42ddabdf295092554677bfac7ce25096f59f93470"
+        },
+        {
+            "id": "target-095",
+            "baselineStep": 95,
+            "name": "i386 ELF metadata and compiler ABI selection",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "i386-mmio"
+            },
+            "stepSha256": "071b7e0ea02cc558ca5abd40251ac8d84d9c5d4a34cfd8e00dd07ebf6d66e121"
+        },
+        {
+            "id": "target-096",
+            "baselineStep": 96,
+            "name": "i386 shared-library stack values and curated/original lookup",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "i386-mmio"
+            },
+            "stepSha256": "8eb642b7d2eef98e251f58c00cdd316da606504ba1f3aed837f134b88f342850"
+        },
+        {
+            "id": "target-097",
+            "baselineStep": 97,
+            "name": "i386 analyst aliases preserve names across stripped and sectionless ELF",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "i386-mmio"
+            },
+            "stepSha256": "3fffd4a86ff93874faab641962f6d132c47895b8c5a89d30b79e38019edd148b"
+        },
+        {
+            "id": "target-098",
+            "baselineStep": 98,
+            "name": "Function-owned statics and duplicate-name lookup",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "43a048a6b95b9e619fed30e54e2cb56e8030a9785d2b65d7ec6e264312f0137e"
+        },
+        {
+            "id": "target-099",
+            "baselineStep": 99,
+            "name": "Qualified analyst function names and owned statics",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "fe2004ced65e572088aa3a54ff92e21e3b7b65c818eb2ba76942398185afa6f5"
+        },
+        {
+            "id": "target-100",
+            "baselineStep": 100,
+            "name": "Overloaded signatures preserve types, aliases and source identity",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "1a11be903c7a326bff2511ef69c6dd852535130981f108ef6d388eef18556a90"
+        },
+        {
+            "id": "target-101",
+            "baselineStep": 101,
+            "name": "Class-owned display names and saved-program identity",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "1f107593af174196cd80a5d079583a2a2cda9a1d026973d9b38011a645f9b9d6"
+        },
+        {
+            "id": "target-102",
+            "baselineStep": 102,
+            "name": "Incoming register lifetime before overwrite",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "dac92b359c7474744c9406b11de485b49b120a2701f34663b8f0d605d3844cbb"
+        },
+        {
+            "id": "target-103",
+            "baselineStep": 103,
+            "name": "Opaque supervisor-call register effects remain unavailable",
+            "kind": "test",
+            "targets": [
+                "aarch64"
+            ],
+            "groups": {
+                "aarch64": "registers"
+            },
+            "stepSha256": "5123f3270dda692b9d4a878dc0ad6dc9c4fba7af1ca919e58b490cd4429c583d"
+        },
+        {
+            "id": "target-104",
+            "baselineStep": 104,
+            "name": "Undecoded listing gaps cannot claim stable register values",
+            "kind": "test",
+            "targets": [
+                "aarch64"
+            ],
+            "groups": {
+                "aarch64": "registers"
+            },
+            "stepSha256": "19bf2e1d8a12006df1fe7a7dceb73b7aa9f416c4dc89c30df83d5feeebde38e3"
+        },
+        {
+            "id": "target-105",
+            "baselineStep": 105,
+            "name": "Proven parameter register copies and unavailable tails",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "4525d5409e5384ec630eeee711f7befe79e98bd46dc69dffec42c83adfb46aa5"
+        },
+        {
+            "id": "target-106",
+            "baselineStep": 106,
+            "name": "Two completed parameter register copies and unavailable tails",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "d3c21f37ec5c335f39ee0ac42b4259059a246221d0574f68ef3609684286851e"
+        },
+        {
+            "id": "target-107",
+            "baselineStep": 107,
+            "name": "Complete register composites before their first clobber",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "53fe70776e9bb3d1ded00b55f9c544d24f4f1608835a59a15a47b3eecee64c08"
+        },
+        {
+            "id": "target-108",
+            "baselineStep": 108,
+            "name": "Curated later register locals and exact unavailable boundaries",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "a822b6db817a846f871c73ddb08ca6b6ab7cd66bca6a5d92aae1c648a4569e75"
+        },
+        {
+            "id": "target-109",
+            "baselineStep": 109,
+            "name": "Local register definitions complete before their locations become available",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "398c33e48f32a2ad7458b6a56b6c788e3fdbfdc65fd90aa369b340f6f04c515b"
+        },
+        {
+            "id": "target-110",
+            "baselineStep": 110,
+            "name": "Curated local definitions require agreement across branches and loops",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "186e6f69534e2d357589b47698352a92a154950fef6cc72927fbc0602d89cd31"
+        },
+        {
+            "id": "target-111",
+            "baselineStep": 111,
+            "name": "Saved local identities retain current values through register moves and updates",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "d0e03595adca2aee02feea9ada0da3c1e323566a67f09a7a9244153f478d54d5"
+        },
+        {
+            "id": "target-112",
+            "baselineStep": 112,
+            "name": "Stack spills and reloads preserve values through slot reuse and final loss",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "stack",
+                "aarch64": "stack"
+            },
+            "stepSha256": "8b8ca9679371f8cf65ac36f314f871e91de667224ad0135cd965d3fdc0dcca61"
+        },
+        {
+            "id": "target-113",
+            "baselineStep": 113,
+            "name": "Saved 32/64-bit stack-local definitions and slot reuse retain distinct values",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "stack",
+                "aarch64": "stack"
+            },
+            "stepSha256": "bff2d8882c2be9e1cc9a35857d1de3d149575c2154471cf4e349405707ba0d56"
+        },
+        {
+            "id": "target-114",
+            "baselineStep": 114,
+            "name": "Stack-local writes and unknown aliases retire stale register copies",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "stack",
+                "aarch64": "stack"
+            },
+            "stepSha256": "75523de7b12d31174216fb57938e6009ecb88648ef825ea5c864496b480964a9"
+        },
+        {
+            "id": "target-115",
+            "baselineStep": 115,
+            "name": "Saved mutable stack identities survive proven assignments and reloads",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "stack",
+                "aarch64": "stack"
+            },
+            "stepSha256": "add08374cd0e3bcd7be46539d580a8432a0906c81a8b15caf74ef462f8c3a6fc"
+        },
+        {
+            "id": "target-116",
+            "baselineStep": 116,
+            "name": "Independent aggregate pieces through spills, reloads and control flow",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "stack",
+                "aarch64": "stack"
+            },
+            "stepSha256": "371ffb13c30381843dcfa7c8e7c455372aa3890324e129f44812d199d69d79a2"
+        },
+        {
+            "id": "target-117",
+            "baselineStep": 117,
+            "name": "Explicit lexical blocks and shadowed initialized locals",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "source",
+                "aarch64": "source"
+            },
+            "stepSha256": "001de2ad3f84980706669a9002fc705b824d52499a849f651ccd6567218a6ea6"
+        },
+        {
+            "id": "target-118",
+            "baselineStep": 118,
+            "name": "Multi-file source stepping and semantic preservation across ELF targets",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "source",
+                "aarch64": "source",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "cb4f7fec9445dac31d66b16744596e0c5f7218d9228b0faf4be55c8c224e3c82"
+        },
+        {
+            "id": "target-119",
+            "baselineStep": 119,
+            "name": "Multi-file source preserves lexical identities, locations and call visibility",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "source",
+                "aarch64": "source"
+            },
+            "stepSha256": "76df650fb4d3a3f932bdd23f2fb8a2dd80f9c05704531220a3cb7fcff5a998d9"
+        },
+        {
+            "id": "target-120",
+            "baselineStep": 120,
+            "name": "Multi-file shared objects retain relocated source lookup and stepping",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "source",
+                "aarch64": "source",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "18c36357d78cb5f3c4cb5faa92d84233837622df48801941407c61fe0c871226"
+        },
+        {
+            "id": "target-121",
+            "baselineStep": 121,
+            "name": "Multi-file publication cancellation, rollback and retry",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "mips32be"
+            ],
+            "groups": {
+                "x86_64": "source",
+                "aarch64": "source",
+                "mips32be": "primary"
+            },
+            "stepSha256": "23d00ed4c39c79e50343334cc551f33df912ac7ead94ceabf2482894616eaff7"
+        },
+        {
+            "id": "target-122",
+            "baselineStep": 122,
+            "name": "Measure multi-file export and debugger navigation at large function counts",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "performance"
+            },
+            "stepSha256": "37c40d59e21625f408dd87b83dec43305993e911a246c7bd290d0341692a2b18"
+        },
+        {
+            "id": "target-123",
+            "baselineStep": 123,
+            "name": "Class ownership and object parameters preserve saved identities and lookup",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types"
+            },
+            "stepSha256": "705cb5d36da02b13f05b5450b4023c6ea7a2e34a4adc957ddf785da5027a2303"
+        },
+        {
+            "id": "target-124",
+            "baselineStep": 124,
+            "name": "Same-name types and namespace globals preserve distinct identities",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types"
+            },
+            "stepSha256": "2c3fc3b017e91a4dfb804895b9921f2329710337e87750860b6f6617a22bc2d1"
+        },
+        {
+            "id": "target-125",
+            "baselineStep": 125,
+            "name": "Static objects preserve lexical shadowing and failure isolation",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "source",
+                "aarch64": "source"
+            },
+            "stepSha256": "6e9cb3f676408740606b946fb401acf3a99a90c58293cce11db1422868a22c66"
+        },
+        {
+            "id": "target-126",
+            "baselineStep": 126,
+            "name": "Stack and register lifetimes across closed branches and loops",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "stack",
+                "aarch64": "stack"
+            },
+            "stepSha256": "c494d909b170ea07f0b197a4b1de19e11b64ee59b504e7d8a7aec93443def9cb"
+        },
+        {
+            "id": "target-127",
+            "baselineStep": 127,
+            "name": "Retained ELF aliases and typed curated function identity",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "dfdbfd4c9d2396077f3e0f1b0a6ae243f3baf467e18a8648ee3d104837c9eaed"
+        },
+        {
+            "id": "target-128",
+            "baselineStep": 128,
+            "name": "Lossless local symbol insertion with retained and stripped tables",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "bf8cf978dbbf012d8dad3475fd452c8bd099e9afeb4c806e30a1d54a7a2fbc43"
+        },
+        {
+            "id": "target-129",
+            "baselineStep": 129,
+            "name": "Isolated function relationships preserve lookup and reject false aliases",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types"
+            },
+            "stepSha256": "877fa8a08329ceb2e2cbc1c3d3bd900190ba5708634bc6443189b432325700a1"
+        },
+        {
+            "id": "target-130",
+            "baselineStep": 130,
+            "name": "ARM and Thumb automatic aliases retain mode and original symbols",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "modes"
+            },
+            "stepSha256": "3caaa4677670ab9932cf613a6fd10a05acc4d3726a273f86a94c9dceeeca8309"
+        },
+        {
+            "id": "target-131",
+            "baselineStep": 131,
+            "name": "Thumb dynamic symbols ending at a load boundary retain aliases",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "modes"
+            },
+            "stepSha256": "c0bfecf813df4223c139270ba69f7c90c979f1acc83cfc56c677047c29d2fa7b"
+        },
+        {
+            "id": "target-132",
+            "baselineStep": 132,
+            "name": "Sectionless analyst aliases preserve complete dynamic inventories",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "c91df753c27e484ecb39895b05f352899d55c4d9e1ca1e2d520bf23962755011"
+        },
+        {
+            "id": "target-133",
+            "baselineStep": 133,
+            "name": "Dynamic symbol versions preserve original and curated lookup",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "e96bdeadb22dde2a3534103d2128d653893302e9466dba4b4fee3884a592a997"
+        },
+        {
+            "id": "target-134",
+            "baselineStep": 134,
+            "name": "MIPS FP32 curated aliases retain original symbols and debugger identity",
+            "kind": "test",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "mips32be": "abi32",
+                "mips32le": "abi32"
+            },
+            "stepSha256": "f0b860b70157c9d02e43d871155294336a3968d0ff6ed6524b2988b076676ec8"
+        },
+        {
+            "id": "target-135",
+            "baselineStep": 135,
+            "name": "MIPS floating calls reject FPXX and preserve verified FP32 transfer",
+            "kind": "test",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "mips32be": "abi32",
+                "mips32le": "abi32"
+            },
+            "stepSha256": "eaf3f7dcde2f93b828db549c79230f261af6951c88e56fe6242407b6cdd005cb"
+        },
+        {
+            "id": "target-136",
+            "baselineStep": 136,
+            "name": "Custom parameter and return storage reject unsupported injected calls",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "57bfb92ed0b684862006a6bd3d4a489b717a9ad90775c0bae829608661d7ba31"
+        },
+        {
+            "id": "target-137",
+            "baselineStep": 137,
+            "name": "Compiler default must match the ELF debugger ABI profile",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "25dd18f7ff1df63c1ef4aa5f73867a88b576efd5262e235c81fe2147a670b447"
+        },
+        {
+            "id": "target-138",
+            "baselineStep": 138,
+            "name": "Explicit alternate conventions reject unsupported debugger-injected calls",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "16414d8e688fb9aa29f9c8d86f3afb170402fcdb62e3c44868b73d31a9ea03d3"
+        },
+        {
+            "id": "target-139",
+            "baselineStep": 139,
+            "name": "Variadic and no-return function-type metadata",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "32bd635066e0bbf4f3d60a53edc868ea0793c99cebdf5657dde5edf5c9f62d7b"
+        },
+        {
+            "id": "target-140",
+            "baselineStep": 140,
+            "name": "Function-pointer calling conventions through saved programs",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "64e424ca640bc24db652cb98ac1bbe0ebed7b2bec8a04bdcc3d85fc9a73bd4b0"
+        },
+        {
+            "id": "target-141",
+            "baselineStep": 141,
+            "name": "Excluded control-flow blocks cannot prove stable register locations",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "7c415e3a51f7fa8b163eb21012ea865508219935a0ffd03292ff4bafedfc1a88"
+        },
+        {
+            "id": "target-142",
+            "baselineStep": 142,
+            "name": "Completed parameter stack spills and unavailable memory-write tails",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "de3f80e02a58ba7d5cd3e18a74995d1fea6241f346f858b9b4e68c8710aa38b9"
+        },
+        {
+            "id": "target-143",
+            "baselineStep": 143,
+            "name": "Saved register parameters across decoded direct leaf calls",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "47249f8eb84b5267ce611d55cf4132779626f94c8de99134785ba055de4c412f"
+        },
+        {
+            "id": "target-144",
+            "baselineStep": 144,
+            "name": "Curated external declarations without invented image addresses",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "b12df24fb27bb21a7982f75b935f6996acacaf9fcc51ba2cf602d6439cdb5777"
+        },
+        {
+            "id": "target-145",
+            "baselineStep": 145,
+            "name": "Recovered scalar returns preserve curated signatures",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "087b85be109be90cf4e18c2e048c154010132d5477bd7994c12eb98bc0089f44"
+        },
+        {
+            "id": "target-146",
+            "baselineStep": 146,
+            "name": "Recovered parameter types without invented locations",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "54f347f4d68fa4d8015a87c0f63a5de2f2c32e0c7fc200905b5d1f9f22e4c358"
+        },
+        {
+            "id": "target-147",
+            "baselineStep": 147,
+            "name": "Aggregate return prototypes and guarded debugger calls",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "b3f5b3f7260b79d203fd58626a6a5e175385d89fbed8284e5f2745c3de0153a3"
+        },
+        {
+            "id": "target-148",
+            "baselineStep": 148,
+            "name": "Formal aggregate return type and hidden ABI parameter",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "e387f414255151dbcec7100f22009ab6aeaaf37fbd07e1a8338cbce29de61859"
+        },
+        {
+            "id": "target-149",
+            "baselineStep": 149,
+            "name": "Unsupported stack first-use and retained zero-offset locals",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "registers",
+                "aarch64": "registers"
+            },
+            "stepSha256": "e72ce50a730e72ce53c0b3185845b716029af172818ee44161d97c1ae0d06131"
+        },
+        {
+            "id": "target-150",
+            "baselineStep": 150,
+            "name": "Nonzero load-segment file offset and explicit rebase",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "d921b7861f6c493abd448f0e972bbfb2dac0789e4c7ba92dd874141fbfe8dc43"
+        },
+        {
+            "id": "target-151",
+            "baselineStep": 151,
+            "name": "BE8 scalar data and instruction encoding",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "modes"
+            },
+            "stepSha256": "b2ec76ba8de5381a201bfbe55f5fec8c523e8dc56c89bcc82e68ea2a5de180df"
+        },
+        {
+            "id": "target-152",
+            "baselineStep": 152,
+            "name": "Mixed ARM and Thumb function section mappings",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "modes"
+            },
+            "stepSha256": "61467d31d4b37d43d5b7c865b49bd05f729b287891031682723a5b1d427d9921"
+        },
+        {
+            "id": "target-153",
+            "baselineStep": 153,
+            "name": "Recovered ARM and Thumb instruction modes",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "modes"
+            },
+            "stepSha256": "1b95e00de7b259e186b33e824b4a4f85ad53a7a7192ffc102d1f0819cdb2de4d"
+        },
+        {
+            "id": "target-154",
+            "baselineStep": 154,
+            "name": "Saved dynamic parameter storage and debugger values",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "0268c35740f9b5807a5d4417d7d748ba30637d217be0ac974eac4876e55531cc"
+        },
+        {
+            "id": "target-155",
+            "baselineStep": 155,
+            "name": "Computed and custom aggregate and scalar parameter piece order",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "types",
+                "aarch64": "types",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "2c4ad73c4ed500dda5d3e28e5e93af9c2e65fa6a801cc7bdb49d48e1fc516686"
+        },
+        {
+            "id": "target-156",
+            "baselineStep": 156,
+            "name": "Actual emission evidence matches raw DWARF and debugger behavior",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "source"
+            },
+            "stepSha256": "4666dacc627c3b478f8176084b2d5b8f218da0fd375a21d9b54abb49c664fad9"
+        },
+        {
+            "id": "target-157",
+            "baselineStep": 157,
+            "name": "Annotation composition preserves executable lines and debugger lookup",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "source"
+            },
+            "stepSha256": "9c83341b1bdaea6015602b7d2943f14c98ef3a282f703e1fdb255b15ce8dea9e"
+        },
+        {
+            "id": "target-158",
+            "baselineStep": 158,
+            "name": "Bounded instruction context and native diagnostic source composition",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "65badfccb95f395ab50605c9b7a6f71ec10888a0307493436b07bc15966bc3fe"
+        },
+        {
+            "id": "target-159",
+            "baselineStep": 159,
+            "name": "Saved annotations retain all categories, spaces and raw equate references",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "source",
+                "aarch64": "source",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "193ba8ce27bd3263618b13ba74cf217b94bff676b923c79dda666ddf4bceb75d"
+        },
+        {
+            "id": "target-160",
+            "baselineStep": 160,
+            "name": "Instruction context preserves ARM modes and delay-slot body boundaries",
+            "kind": "test",
+            "targets": [
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "474748e8e24502687d5576504901cf939c303977542c775f31fe64f435c6a9dc"
+        },
+        {
+            "id": "target-161",
+            "baselineStep": 161,
+            "name": "Intrinsic instruction context and same-spelled ordinary calls",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "source"
+            },
+            "stepSha256": "9c3c3e6aaced605b676d80786e7efddd0b6e71e144463f3200e5619b5a25025b"
+        },
+        {
+            "id": "target-162",
+            "baselineStep": 162,
+            "name": "Isolated indirect pointer producer and operand-free dereference",
+            "kind": "test",
+            "targets": [
+                "aarch64"
+            ],
+            "groups": {
+                "aarch64": "primary"
+            },
+            "stepSha256": "e80feb392182800ff2b0ad6d6e07860439dca3f7d1ac093632bd8fb2f7473926"
+        },
+        {
+            "id": "target-163",
+            "baselineStep": 163,
+            "name": "AAPCS64 exhaustion, indirect pointer lifetimes and aggregate returns",
+            "kind": "test",
+            "targets": [
+                "aarch64"
+            ],
+            "groups": {
+                "aarch64": "types"
+            },
+            "stepSha256": "72e426c4a7c3bdc9206171d584ebeec62bbcad6d5bd0030e15d6494e7ad0b8b2"
+        },
+        {
+            "id": "target-164",
+            "baselineStep": 164,
+            "name": "AArch64 full-width SIMD lane storage and clobber boundaries",
+            "kind": "test",
+            "targets": [
+                "aarch64"
+            ],
+            "groups": {
+                "aarch64": "types"
+            },
+            "stepSha256": "f16adfff0b24279cc14908b2264284c573ac60ea057547b28db05f23566664b2"
+        },
+        {
+            "id": "target-165",
+            "baselineStep": 165,
+            "name": "AArch64 ELF language and compiler debugger-call profiles",
+            "kind": "test",
+            "targets": [
+                "aarch64"
+            ],
+            "groups": {
+                "aarch64": "types"
+            },
+            "stepSha256": "59454b1f9898d8afbde77a9d532e0f1ea92d648487161133007e6620ca50887b"
+        },
+        {
+            "id": "target-166",
+            "baselineStep": 166,
+            "name": "MIPS ordinary and truncated memory-space stores",
+            "kind": "test",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "5339665bdcf33c992fbc504a13f202972b88420c672d13a90c96b47424fd3d53"
+        },
+        {
+            "id": "target-167",
+            "baselineStep": 167,
+            "name": "MIPS N32 and N64 scalar ABI runtime and loader profiles",
+            "kind": "test",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "mips32be": "abi64",
+                "mips32le": "abi64"
+            },
+            "stepSha256": "f8bf5e5b78aec8d2c857e34df4984db1243d51b843f6419c3aaae22c2d9b6bd8"
+        },
+        {
+            "id": "target-168",
+            "baselineStep": 168,
+            "name": "MIPS O32 mixed and wide arguments in both byte orders",
+            "kind": "test",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "mips32be": "abi32",
+                "mips32le": "abi32"
+            },
+            "stepSha256": "49d0a43ec124282df2b18cf396d58ae665c9af05e70052dcd910d19768397b7d"
+        },
+        {
+            "id": "target-169",
+            "baselineStep": 169,
+            "name": "MIPS N32 and N64 wider arguments, returns and debugger calls",
+            "kind": "test",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "mips32be": "abi64",
+                "mips32le": "abi64"
+            },
+            "stepSha256": "64ecaeb5bb610e5839ab13a10fd4c62787b215a0f98c916afb66a1fc08332726"
+        },
+        {
+            "id": "target-170",
+            "baselineStep": 170,
+            "name": "MIPS N32 and N64 aggregate layout and alignment",
+            "kind": "test",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "mips32be": "abi64",
+                "mips32le": "abi64"
+            },
+            "stepSha256": "e84a2afaf920e4a1347504033cb9913b20032230a487fdc0672832b73e7d664b"
+        },
+        {
+            "id": "target-171",
+            "baselineStep": 171,
+            "name": "ARM per-function dynamic base and VFP parameters",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "calls"
+            },
+            "stepSha256": "364dc9d223ce409fb6b1447a610b99e5ef47226640a211537220f5a913f65300"
+        },
+        {
+            "id": "target-172",
+            "baselineStep": 172,
+            "name": "ARM D and Q alias causal controls",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "calls"
+            },
+            "stepSha256": "b8ed5df853e577917df7e2be4625f2ee411f1405996f1318607d0b074be052cc"
+        },
+        {
+            "id": "target-173",
+            "baselineStep": 173,
+            "name": "ARM scalar PCS calls and exhausted arguments",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "calls"
+            },
+            "stepSha256": "4ad3b57844c2fc51e7df710c2415c24a780ae7d735817d651b8f19f5def27cae"
+        },
+        {
+            "id": "target-174",
+            "baselineStep": 174,
+            "name": "ARM aggregate calls and floating storage with compiler references",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "aggregate"
+            },
+            "stepSha256": "48dabb2ab1df7d865231729ccdcb7da3b45738d4831c6b9d0869437e1ed0f0db"
+        },
+        {
+            "id": "target-175",
+            "baselineStep": 175,
+            "name": "Isolated scalar register bit-piece producer",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "primary"
+            },
+            "stepSha256": "601c28fceadf56b6d03e503fb766e2c6e7c45b8681c7cb8328a7e36b048ff2a9"
+        },
+        {
+            "id": "target-176",
+            "baselineStep": 176,
+            "name": "Scalar floating registers and conservative paired omissions",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "362f76b5dc363fb50f3e7bece6dbd12fe18ee5147e171d59db67a36d039359dc"
+        },
+        {
+            "id": "target-177",
+            "baselineStep": 177,
+            "name": "ARM register pair prefix at an ordinary terminal return",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "calls"
+            },
+            "stepSha256": "0463299cf96056645763346e9622dd031965a238a38a20155edc4c00b1c7ed36"
+        },
+        {
+            "id": "target-178",
+            "baselineStep": 178,
+            "name": "ARM incoming register and stack pieces",
+            "kind": "test",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {
+                "arm32": "calls"
+            },
+            "stepSha256": "88456e162dd464fe287863d16089f826a1922e7f9b461b0925d7dde17ae9d006"
+        },
+        {
+            "id": "target-179",
+            "baselineStep": 179,
+            "name": "Explicit MIPS FP32 reference, register pieces, and whole aliases",
+            "kind": "test",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "mips32be": "abi32",
+                "mips32le": "abi32"
+            },
+            "stepSha256": "d0c3eca802f013942ae814fefd020997f02ad59ce876892be1bd665f0e95e935"
+        },
+        {
+            "id": "target-180",
+            "baselineStep": 180,
+            "name": "Function entry producer and validators",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "0840af76822f3e64e3303bbb6827ee6c90cbd866ac4bd267ee0b1f6d1afffe31"
+        },
+        {
+            "id": "target-181",
+            "baselineStep": 181,
+            "name": "True function entry below-entry body ranges and rebases",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "639a4c23cac0c7049c061115322241e5592362bbc260cb2a24850f0bb180902e"
+        },
+        {
+            "id": "target-182",
+            "baselineStep": 182,
+            "name": "Analyst aliases retain discontiguous and below-entry function bodies",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "types"
+            },
+            "stepSha256": "b83499365b5da3861b570c4c55c0535b74ada245e16a0b781dc06456605f7238"
+        },
+        {
+            "id": "target-183",
+            "baselineStep": 183,
+            "name": "Existing compiler DWARF replacement",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "183746d2682e44e71ab11f597496761c7b2147db8da26f223e1fbf47ad3140a6"
+        },
+        {
+            "id": "target-184",
+            "baselineStep": 184,
+            "name": "Opt-in compressed DWARF equivalence, determinism and GDB",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "ae1e81b99b8fe35de749ff480ad359500a1f31c2a2ee4debbe6020b1e983482c"
+        },
+        {
+            "id": "target-185",
+            "baselineStep": 185,
+            "name": "Real-world distro binary export and debugging",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "9c9e8e5df4d85af2268210988f544fa26432c2babf86bd34d8c383fa63015aee"
+        },
+        {
+            "id": "target-186",
+            "baselineStep": 186,
+            "name": "Published source and sidecar timestamp regression",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "source"
+            },
+            "stepSha256": "c7f283206e5d707d0ab7ceaa9d8c99f312d905de80dc524548f3a16e7f118347"
+        },
+        {
+            "id": "target-187",
+            "baselineStep": 187,
+            "name": "GUI output chooser selection and cancellation",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "e6052d26514d020069c6824e8314bade91af2b0c7209e6f61998ea37b2c6ba4d"
+        },
+        {
+            "id": "target-188",
+            "baselineStep": 188,
+            "name": "Installed unwind chooser cancellation, export and debugger behavior",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64"
+            ],
+            "groups": {
+                "x86_64": "unwind",
+                "aarch64": "unwind"
+            },
+            "stepSha256": "50c41b3a760ec9e12f4c09346575edf2d905cb32f891afdceec6200c3a7d8802"
+        },
+        {
+            "id": "target-189",
+            "baselineStep": 189,
+            "name": "Installed Script Manager discovery, export, console, and cancellation",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "06dc8f42529320793457660ccfcb4ce0a638943cc75fd0dd8a0e7edae880e955"
+        },
+        {
+            "id": "target-190",
+            "baselineStep": 190,
+            "name": "Clean installed-release export without external natives",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "fa72ed204613e351d24d566adeebc45301d797057b3300bf8bb9f81568b36e37"
+        },
+        {
+            "id": "target-191",
+            "baselineStep": 191,
+            "name": "Rebased Ghidra project normalization",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "e58ece6b65a01d92eeab3763d009d020fdf0bdbf8f726774dfdae309f3d3638c"
+        },
+        {
+            "id": "target-192",
+            "baselineStep": 192,
+            "name": "Default and stale executable path policy",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "6afb6a21018518004893b9cc74ca1ae4382ff759bd3bd4923b798e66ddb02f26"
+        },
+        {
+            "id": "target-193",
+            "baselineStep": 193,
+            "name": "Actual filesystem traversal through saved-program export and source lookup",
+            "kind": "test",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {
+                "x86_64": "primary"
+            },
+            "stepSha256": "d30fa3ad08003df098a835e54a87da6db92cf990a7fec4e522deced3bf5e5965"
+        },
+        {
+            "id": "target-194",
+            "baselineStep": 194,
+            "name": "Automatic build-ID and debuglink sidecar association",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "fde5df30c3eaa9c1b8d17ba16598181900e3df270ab4941f12160438a4938979"
+        },
+        {
+            "id": "target-195",
+            "baselineStep": 195,
+            "name": "Verify complete retained validator reports",
+            "kind": "finalize",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "4679e1c7f3ae4004f06eb7ca3060bf84c333d88646185460968e34da6d6ae6c7"
+        },
+        {
+            "id": "target-196",
+            "baselineStep": 196,
+            "name": "Verify and report Linux integration coverage by layer",
+            "kind": "coverage",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {},
+            "stepSha256": "6e6f71fa4a15127cc950f32c8641a6f868760dcd8af97cdcf71ffaa7ce7dec88"
+        },
+        {
+            "id": "target-197",
+            "baselineStep": 197,
+            "name": "Verify and report AArch64 integration coverage",
+            "kind": "coverage",
+            "targets": [
+                "aarch64"
+            ],
+            "groups": {},
+            "stepSha256": "6d2a99c671591f8d8c9482b7036cd6bfae411d69982c1f66fc86c9a9aea3baff"
+        },
+        {
+            "id": "target-198",
+            "baselineStep": 198,
+            "name": "actions/upload-artifact@v7",
+            "kind": "coverage",
+            "targets": [
+                "aarch64"
+            ],
+            "groups": {},
+            "stepSha256": "d7f5b11e9f60e6c52add4e81f12859644fa9efb03387f6c1a92d7dd1ed7effa9"
+        },
+        {
+            "id": "target-199",
+            "baselineStep": 199,
+            "name": "Verify and report MIPS STORE integration coverage",
+            "kind": "coverage",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "7270247d976ab8a097701e6e70e3ff7d593f79f298b4cfc65778d772e983bd9a"
+        },
+        {
+            "id": "target-200",
+            "baselineStep": 200,
+            "name": "Verify and report ARM32 location integration coverage",
+            "kind": "coverage",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {},
+            "stepSha256": "6f9de560be8ed7d0bb8a9baefc32e6411255d905cfc6978939e2e2d9e905eca5"
+        },
+        {
+            "id": "target-201",
+            "baselineStep": 201,
+            "name": "actions/upload-artifact@v7",
+            "kind": "coverage",
+            "targets": [
+                "arm32"
+            ],
+            "groups": {},
+            "stepSha256": "ee51166b97ab566bc8f47da43f7699b923e66b06eae08b01102b579783155376"
+        },
+        {
+            "id": "target-202",
+            "baselineStep": 202,
+            "name": "actions/upload-artifact@v7",
+            "kind": "coverage",
+            "targets": [
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "782ab31bdb18a7c37fabdc06292ff25110bf3eea22dcf59ef24f13dbe7207b1f"
+        },
+        {
+            "id": "target-203",
+            "baselineStep": 203,
+            "name": "actions/upload-artifact@v7",
+            "kind": "coverage",
+            "targets": [
+                "x86_64"
+            ],
+            "groups": {},
+            "stepSha256": "b22292e654d3d091d807c81a12dc54e230c1606bd78df81f3ea2731fc9d328a0"
+        },
+        {
+            "id": "target-204",
+            "baselineStep": 204,
+            "name": "Retain bounded primary fixture diagnostics",
+            "kind": "test",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {
+                "x86_64": "primary",
+                "aarch64": "primary",
+                "arm32": "primary",
+                "mips32be": "primary",
+                "mips32le": "primary"
+            },
+            "stepSha256": "431e091e7ad42d4329750698ffec8d3216a2d4db8d7f743253c0a6b9fe9efd7f"
+        },
+        {
+            "id": "target-205",
+            "baselineStep": 205,
+            "name": "Retain target debugger build evidence",
+            "kind": "finalize",
+            "targets": [
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "d645ee3d3ec5a0f511408c6f7a8c6b04212f9c9841e789405d622b89a3e85e89"
+        },
+        {
+            "id": "target-206",
+            "baselineStep": 206,
+            "name": "Archive target diagnostics with exact fixture filenames",
+            "kind": "finalize",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "8671f766c51df630009223bbd0dbc6a244021510ccadedc25f4f499799f144d4"
+        },
+        {
+            "id": "target-207",
+            "baselineStep": 207,
+            "name": "actions/upload-artifact@v7",
+            "kind": "finalize",
+            "targets": [
+                "x86_64",
+                "aarch64",
+                "arm32",
+                "mips32be",
+                "mips32le"
+            ],
+            "groups": {},
+            "stepSha256": "cc80bdd25d2f5f940ab781ab568ae1d60a9d6166e3eef18a2fab9ea9d1886280"
+        }
+    ],
+    "dependencies": [
+        {
+            "steps": [
+                "target-005",
+                "target-090"
+            ],
+            "reason": "Compiler MMIO layouts feed saved-layout checks."
+        },
+        {
+            "steps": [
+                "target-024",
+                "target-032"
+            ],
+            "reason": "Saved inheritance consumes compiler and native producer references."
+        },
+        {
+            "steps": [
+                "target-025",
+                "target-035"
+            ],
+            "reason": "Packaged call-site checks reuse compiler cases and saved plans."
+        },
+        {
+            "steps": [
+                "target-028",
+                "target-031"
+            ],
+            "reason": "Failure mutants consume the producer failure baseline and fault shim."
+        },
+        {
+            "steps": [
+                "target-039",
+                "target-063",
+                "target-065",
+                "target-066",
+                "target-067",
+                "target-069",
+                "target-072",
+                "target-073",
+                "target-075",
+                "target-076",
+                "target-077",
+                "target-078",
+                "target-079",
+                "target-080",
+                "target-081",
+                "target-083",
+                "target-084",
+                "target-085",
+                "target-086",
+                "target-088",
+                "target-158",
+                "target-162",
+                "target-175",
+                "target-176",
+                "target-180",
+                "target-183",
+                "target-184",
+                "target-187",
+                "target-189",
+                "target-190",
+                "target-194",
+                "target-204"
+            ],
+            "reason": "Primary fixture, saved project, exports, validator index and report handoffs remain private to one group."
+        },
+        {
+            "steps": [
+                "target-045",
+                "target-046",
+                "target-047"
+            ],
+            "reason": "Formatter retention actions follow their owning test outcome."
+        },
+        {
+            "steps": [
+                "target-048",
+                "target-054",
+                "target-055",
+                "target-056",
+                "target-057",
+                "target-059"
+            ],
+            "reason": "Rebased/unavailable unwind checks reuse original and recovered frame outputs."
+        },
+        {
+            "steps": [
+                "target-049",
+                "target-050",
+                "target-188"
+            ],
+            "reason": "LLDB and installed unwind chooser consume conditioned compiler references."
+        }
+    ],
+    "isolation": {
+        "projects": "Private checkout, Ghidra installation, fixture and output tree per job; no project transfer between groups.",
+        "children": "Nested lexical, static, object, register-copy and build-ID scenarios remain inside their original parent command.",
+        "performance": "Keep warmups and alternating AB/BA pairs sequential in one dedicated x86 job.",
+        "setup": "Every group needs harness classes explicitly compiled; original producer smoke tests run once per target. Pinned debugger/emulator setup must be supplied without removing any profile."
+    }
+}
