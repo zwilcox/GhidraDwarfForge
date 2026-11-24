@@ -17,7 +17,8 @@ public final class CompanionArtifactPublisherSmoke {
                     exercise(root, existing, failAfter);
                 }
             }
-            PublicationInterruptionSmoke.exercise(root);
+            // The journal resolves physical parent directories, including Windows short-name aliases.
+            PublicationInterruptionSmoke.exercise(root.resolve("."));
             freshPair(root);
             multipleFiles(root, 4);
             multipleFiles(root, 5);

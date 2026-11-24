@@ -46,7 +46,10 @@ public final class PublicationInterruptionSmoke {
                     Path target = Path.of(record.getProperty(prefix + ".target"));
                     Path backup = Path.of(record.getProperty(prefix + ".backup"));
                     Path stage = Path.of(record.getProperty(prefix + ".stage"));
-                    require(target.equals(fixtures.resolve(NAMES.get(i))), "wrong recovery target");
+                    Path expectedTarget = fixtures.resolve(NAMES.get(i));
+                    require(target.getFileName().equals(expectedTarget.getFileName()) &&
+                        Files.isSameFile(target.getParent(), fixtures) && Files.isSameFile(target, expectedTarget),
+                        "wrong recovery target: " + target + ", expected " + expectedTarget);
                     Path oldFile = i == 0 ? backup : target;
                     Path newFile = i == 0 ? target : stage;
                     require(Files.readString(oldFile).equals("old " + NAMES.get(i)) &&
