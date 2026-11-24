@@ -33,6 +33,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Check integration inventory and grouped admission controls
+        run: |
+          python3 -m pip install --disable-pip-version-check PyYAML==6.0.2
+          python3 -B support/ci/integration-plan.py --baseline-workflow .github/workflows/ci.yml \
+              --output build/test-results/workflow-lint/proposed-integration-matrix.json
+          python3 -B support/ci/test-integration-plan.py
+          python3 -B support/ci/test-install-target-packages.py
+          python3 -B support/ci/test-workflow-timing.py
+          python3 -B support/ci/test-integration-coverage-groups.py
+          python3 -B support/ci/test-hosted-groups.py
+
       - name: Lint GitHub Actions workflows
         env:
           ACTIONLINT_VERSION: 1.7.12
@@ -939,29 +950,49 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  target-preflight:
-    needs: [ release-package, native-linux ]
+  integration-plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Generate complete architecture group matrix
+        id: plan
+        run: |
+          python3 -B support/ci/integration-plan.py --github-output \
+              --output build/integration-matrix.json
+
+  target-integration:
+    name: target-integration (${{ matrix.target }}, ${{ matrix.group }})
+    needs: [ integration-plan, release-package, native-linux ]
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
-      matrix:
-        target: [ x86_64, aarch64, arm32, mips32be, mips32le ]
-
+      matrix: ${{ fromJSON(needs.integration-plan.outputs.matrix) }}
     env:
       FORGE_COVERAGE_TOOLS_BUNDLE: ${{ github.workspace }}/build/coverage-tools-input
+      FORGE_CI_TARGET: ${{ matrix.target }}
+      FORGE_CI_GROUP: ${{ matrix.group }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - name: "[target-001] actions/checkout@v7"
+        if: contains(fromJSON(matrix.steps), 'target-001')
+        uses: actions/checkout@v7
+      - name: "[target-002] actions/download-artifact@v8"
+        if: contains(fromJSON(matrix.steps), 'target-002')
+        uses: actions/download-artifact@v8
         with:
           name: combined-javaexec-input
           path: build/coverage-tools-input
 
-      - uses: actions/setup-java@v6
+      - name: "[target-003] actions/setup-java@v6"
+        if: contains(fromJSON(matrix.steps), 'target-003')
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Install target toolchain and debugger
+      - name: "[target-004] Install target toolchain and debugger"
+        if: contains(fromJSON(matrix.steps), 'target-004')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -997,33 +1028,32 @@ jobs:
               packages+=(build-essential python3-dev libgmp-dev libmpfr-dev
                 libexpat1-dev libncurses-dev texinfo)
           fi
-          sudo apt-get update -y
-          sudo apt-get install --no-install-recommends -y "${packages[@]}"
+          bash support/ci/install-target-packages.sh "${packages[@]}"
 
-      - name: Validate compiler MMIO layouts against register bytes
-        if: matrix.target == 'x86_64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-005] Validate compiler MMIO layouts against register bytes"
+        if: contains(fromJSON(matrix.steps), 'target-005') && (matrix.target == 'x86_64' || matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
           python3 src/test/scenarios/mmio-access/layout.py --targets "$TARGET" \
               --results "$PWD/build/test-results/mmio-layout"
 
-      - name: Observe compiler MMIO reads against instrumented peripheral
-        if: matrix.target == 'x86_64'
+      - name: "[target-006] Observe compiler MMIO reads against instrumented peripheral"
+        if: contains(fromJSON(matrix.steps), 'target-006') && (matrix.target == 'x86_64')
         run: |
           python3 src/test/scenarios/mmio-access/experiment.py \
               --results "$PWD/build/test-results/mmio-access-reference"
 
-      - name: Build pinned MIPS register-piece debugger
-        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-007] Build pinned MIPS register-piece debugger"
+        if: contains(fromJSON(matrix.steps), 'target-007') && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
         run: python3 support/validation/build-mips-gdb.py "$RUNNER_TEMP/mips-gdb"
 
-      - name: Build pinned ARM big-endian register-piece debugger
-        if: matrix.target == 'arm32'
+      - name: "[target-008] Build pinned ARM big-endian register-piece debugger"
+        if: contains(fromJSON(matrix.steps), 'target-008') && (matrix.target == 'arm32')
         run: python3 support/validation/build-mips-gdb.py "$RUNNER_TEMP/arm-gdb" --target-profile arm32
 
-      - name: Build pinned ARM register alias reference emulators
-        if: matrix.target == 'arm32'
+      - name: "[target-009] Build pinned ARM register alias reference emulators"
+        if: contains(fromJSON(matrix.steps), 'target-009') && (matrix.target == 'arm32')
         run: |
           python3 support/validation/build-arm-qemu.py "$RUNNER_TEMP/arm-qemu-d-only" \
               --correct-d-register-writes
@@ -1031,8 +1061,8 @@ jobs:
               --archive "$RUNNER_TEMP/arm-qemu-d-only/qemu-8.2.2.tar.xz" \
               --correct-d-register-writes --correct-q-register-aliases
 
-      - name: Preserve ARM emulator build receipts
-        if: always() && matrix.target == 'arm32'
+      - name: "[target-010] Preserve ARM emulator build receipts"
+        if: contains(fromJSON(matrix.steps), 'target-010') && (always() && matrix.target == 'arm32')
         run: |
           for profile in d-only aliases; do
               destination="build/test-results/arm-qemu-build/$profile"
@@ -1043,13 +1073,15 @@ jobs:
               fi
           done
 
-      - name: Cache Ghidra 12.0.3 archive
+      - name: "[target-011] Cache Ghidra 12.0.3 archive"
+        if: contains(fromJSON(matrix.steps), 'target-011')
         uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/ghidra-download/${{ env.GHIDRA_ARCHIVE }}
           key: ghidra-${{ env.GHIDRA_ARCHIVE_SHA256 }}
 
-      - name: Install pinned Ghidra
+      - name: "[target-012] Install pinned Ghidra"
+        if: contains(fromJSON(matrix.steps), 'target-012')
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/ghidra-download" "$RUNNER_TEMP/ghidra"
@@ -1061,22 +1093,29 @@ jobs:
           unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
           echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
 
-      - uses: actions/download-artifact@v8
+      - name: "[target-013] actions/download-artifact@v8"
+        if: contains(fromJSON(matrix.steps), 'target-013')
+        uses: actions/download-artifact@v8
         with:
           name: ghidra-dwarf-forge-extension
           path: dist
 
-      - uses: actions/download-artifact@v8
+      - name: "[target-014] actions/download-artifact@v8"
+        if: contains(fromJSON(matrix.steps), 'target-014')
+        uses: actions/download-artifact@v8
         with:
           name: libdwarf-linux-integration
           path: native-integration
 
-      - uses: actions/download-artifact@v8
+      - name: "[target-015] actions/download-artifact@v8"
+        if: contains(fromJSON(matrix.steps), 'target-015')
+        uses: actions/download-artifact@v8
         with:
           name: dwarfdump-linux-validation
           path: validation-tool
 
-      - name: Verify pinned standalone DWARF validator
+      - name: "[target-016] Verify pinned standalone DWARF validator"
+        if: contains(fromJSON(matrix.steps), 'target-016')
         run: |
           set -euo pipefail
           (cd validation-tool && sha256sum -c SHA256SUMS)
@@ -1085,30 +1124,32 @@ jobs:
           echo "$PWD/validation-tool/bin" >> "$GITHUB_PATH"
           echo "DWARFDUMP=$PWD/validation-tool/bin/dwarfdump" >> "$GITHUB_ENV"
 
-      - name: Reject incomplete and exit-zero failing validator reports
-        if: matrix.target == 'x86_64'
+      - name: "[target-017] Reject incomplete and exit-zero failing validator reports"
+        if: contains(fromJSON(matrix.steps), 'target-017') && (matrix.target == 'x86_64')
         run: python3 src/test/integration/check-dwarfdump-test.py
 
-      - name: Capture validator evidence and reject changed or incomplete handoffs
-        if: matrix.target == 'x86_64'
+      - name: "[target-018] Capture validator evidence and reject changed or incomplete handoffs"
+        if: contains(fromJSON(matrix.steps), 'target-018') && (matrix.target == 'x86_64')
         run: |
           python3 -B src/test/integration/validation-evidence-test.py \
             --bundle "$PWD/validation-tool" --llvm "$(command -v llvm-dwarfdump)" \
             --llvm-notices /usr/share/doc/llvm-18/copyright \
             --output "$PWD/build/test-results/validation-evidence-controls"
 
-      - name: Validate extended program counts and reject malformed ELF tables
-        if: matrix.target == 'x86_64'
+      - name: "[target-019] Validate extended program counts and reject malformed ELF tables"
+        if: contains(fromJSON(matrix.steps), 'target-019') && (matrix.target == 'x86_64')
         run: python3 src/test/integration/dwarfdump-extended-programs.py "$DWARFDUMP"
 
-      - name: Record exact toolchain versions
+      - name: "[target-020] Record exact toolchain versions"
+        if: contains(fromJSON(matrix.steps), 'target-020')
         env:
           TARGET: ${{ matrix.target }}
         run: |
           src/test/integration/record-tool-versions.sh "$TARGET" \
             "build/test-results/tool-versions/$TARGET.txt"
 
-      - name: Isolated producer ABI smoke test
+      - name: "[target-021] Isolated producer ABI smoke test"
+        if: contains(fromJSON(matrix.steps), 'target-021')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1152,7 +1193,8 @@ jobs:
                     -PtargetProfile=arm32be8 -PnativeIterations=32
           fi
 
-      - name: Isolated call-site JNA and serialized-form checks
+      - name: "[target-022] Isolated call-site JNA and serialized-form checks"
+        if: contains(fromJSON(matrix.steps), 'target-022')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1166,19 +1208,20 @@ jobs:
           python3 src/test/native/validate-call-site-jna.py --profile "$TARGET" \
             --sections "$results/sections" --output "$results/validation"
 
-      - name: Prepare separate coverage for existing integration JVMs
+      - name: "[target-023] Prepare separate coverage for existing integration JVMs"
+        if: contains(fromJSON(matrix.steps), 'target-023')
         env:
           TARGET: ${{ matrix.target }}
         run: |
           set -euo pipefail
-          ./gradlew --no-daemon --offline -PtestCoverage=true prepareIntegrationCoverage
+          ./gradlew --no-daemon --offline -PtestCoverage=true prepareIntegrationCoverage testClasses jar
           if [[ "$TARGET" == x86_64 ]]; then
               echo "FORGE_INTEGRATION_COVERAGE_AGENT=$PWD/build/test-coverage-tools/jacocoagent.jar" >> "$GITHUB_ENV"
               echo "FORGE_INTEGRATION_COVERAGE_OUTPUT=$PWD/build/integration-coverage/collections" >> "$GITHUB_ENV"
           fi
 
-      - name: Compiler inheritance references and native exporter runtime controls
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-024] Compiler inheritance references and native exporter runtime controls"
+        if: contains(fromJSON(matrix.steps), 'target-024') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1198,8 +1241,8 @@ jobs:
                   --targets "$TARGET" --models "$results/producer" \
                   --classpath build/inheritance-classpath.txt --results "$results/vtable-names"
 
-      - name: Compiler call-site references and production serialization controls
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-025] Compiler call-site references and production serialization controls"
+        if: contains(fromJSON(matrix.steps), 'target-025') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1244,10 +1287,12 @@ jobs:
               fi
           done
 
-      - name: Install extension
+      - name: "[target-026] Install extension"
+        if: contains(fromJSON(matrix.steps), 'target-026')
         run: unzip -q dist/*.zip -d "$GHIDRA_INSTALL_DIR/Ghidra/Extensions"
 
-      - name: Location address width, preserved failures and debugger values
+      - name: "[target-027] Location address width, preserved failures and debugger values"
+        if: contains(fromJSON(matrix.steps), 'target-027')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1273,8 +1318,8 @@ jobs:
                   --ghidra "$GHIDRA_INSTALL_DIR" --java-home "$JAVA_HOME"
           fi
 
-      - name: Isolated producer failure cleanup and validated retries
-        if: matrix.target == 'x86_64'
+      - name: "[target-028] Isolated producer failure cleanup and validated retries"
+        if: contains(fromJSON(matrix.steps), 'target-028') && (matrix.target == 'x86_64')
         run: |
           python3 -B src/test/integration/producer-failures.py \
               --output "$PWD/build/test-results/producer-failures" \
@@ -1285,8 +1330,8 @@ jobs:
               --test-classes "$PWD/build/classes/java/test" --ghidra "$GHIDRA_INSTALL_DIR" \
               --java "$JAVA_HOME/bin/java" --dwarfdump "$DWARFDUMP"
 
-      - name: Qualified and scalar types against compiler and GDB references
-        if: matrix.target == 'x86_64'
+      - name: "[target-029] Qualified and scalar types against compiler and GDB references"
+        if: contains(fromJSON(matrix.steps), 'target-029') && (matrix.target == 'x86_64')
         run: |
           python3 -B src/test/integration/qualified-type-producer.py \
               --results "$PWD/build/test-results/qualified-type-producer" \
@@ -1299,8 +1344,8 @@ jobs:
               --output "$PWD/build/test-results/qualified-type-mutations" \
               --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR"
 
-      - name: Callable types, unknown conventions and address-free declarations
-        if: matrix.target == 'x86_64'
+      - name: "[target-030] Callable types, unknown conventions and address-free declarations"
+        if: contains(fromJSON(matrix.steps), 'target-030') && (matrix.target == 'x86_64')
         run: |
           python3 -B src/test/integration/callable-type-producer.py \
               --results "$PWD/build/test-results/callable-type-producer" \
@@ -1313,16 +1358,16 @@ jobs:
               --output "$PWD/build/test-results/callable-type-mutations" \
               --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR"
 
-      - name: Producer cleanup and buffer-bound mutation controls
-        if: matrix.target == 'x86_64'
+      - name: "[target-031] Producer cleanup and buffer-bound mutation controls"
+        if: contains(fromJSON(matrix.steps), 'target-031') && (matrix.target == 'x86_64')
         run: |
           python3 -B src/test/coverage/producer-failure-mutations.py \
               --baseline "$PWD/build/test-results/producer-failures" \
               --output "$PWD/build/test-results/producer-failure-mutations" \
               --java-home "$JAVA_HOME" --ghidra "$GHIDRA_INSTALL_DIR"
 
-      - name: Saved inheritance through ordinary export and read-only reopening
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-032] Saved inheritance through ordinary export and read-only reopening"
+        if: contains(fromJSON(matrix.steps), 'target-032') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1359,8 +1404,8 @@ jobs:
                       --results "$results/variant-$variant"
           done
 
-      - name: MIPS O32 FPXX and FP64A system-emulator references
-        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-033] MIPS O32 FPXX and FP64A system-emulator references"
+        if: contains(fromJSON(matrix.steps), 'target-033') && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1370,8 +1415,8 @@ jobs:
                   --endian "${TARGET#mips32}" --profile "$profile"
           done
 
-      - name: Curated thunk names retain signatures without borrowed destination source
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-034] Curated thunk names retain signatures without borrowed destination source"
+        if: contains(fromJSON(matrix.steps), 'target-034') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1379,8 +1424,8 @@ jobs:
               python3 src/test/integration/curated-thunk-export.py "$GHIDRA_INSTALL_DIR" --target "$TARGET" --role "$role"
           done
 
-      - name: Packaged call-site and tail-call runtime checks
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-035] Packaged call-site and tail-call runtime checks"
+        if: contains(fromJSON(matrix.steps), 'target-035') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1399,18 +1444,18 @@ jobs:
                   --probe-report "$probe_report" --dwarfdump "$DWARFDUMP"
           done
 
-      - name: Check packaged GDB companion with live compiler references
-        if: matrix.target == 'x86_64'
+      - name: "[target-036] Check packaged GDB companion with live compiler references"
+        if: contains(fromJSON(matrix.steps), 'target-036') && (matrix.target == 'x86_64')
         run: |
           python3 -B src/test/integration/gdb-loader-mappings.py \
             --companion-jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar"
 
-      - name: Isolated class producer specifications and conflicting lookup aliases
-        if: matrix.target == 'x86_64'
+      - name: "[target-037] Isolated class producer specifications and conflicting lookup aliases"
+        if: contains(fromJSON(matrix.steps), 'target-037') && (matrix.target == 'x86_64')
         run: python3 src/test/integration/class-scope-native.py "$GHIDRA_INSTALL_DIR"
 
-      - name: Isolated packaged-native producer smoke test
-        if: matrix.target == 'x86_64'
+      - name: "[target-038] Isolated packaged-native producer smoke test"
+        if: contains(fromJSON(matrix.steps), 'target-038') && (matrix.target == 'x86_64')
         run: |
           set -euo pipefail
           module="$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge"
@@ -1426,15 +1471,16 @@ jobs:
             -PtargetProfile=i386 \
             -PnativeIterations=16 2>&1 | tee build/test-results/native-producer/i386/packaged-native-producer.log
 
-      - name: Build source fixture
+      - name: "[target-039] Build source fixture"
+        if: contains(fromJSON(matrix.steps), 'target-039')
         env:
           TARGET: ${{ matrix.target }}
         run: |
           make -C src/test/fixtures "$TARGET"
           src/test/integration/fixture-reproducibility.sh "$TARGET"
 
-      - name: Measure a bounded installed headless exporter sample
-        if: matrix.target == 'x86_64'
+      - name: "[target-040] Measure a bounded installed headless exporter sample"
+        if: contains(fromJSON(matrix.steps), 'target-040') && (matrix.target == 'x86_64')
         run: |
           ./gradlew --no-daemon --offline -PtestCoverage=true prepareHeadlessCoverage
           python3 -B src/test/coverage/headless-coverage.py \
@@ -1445,24 +1491,26 @@ jobs:
             --output "$PWD/build/headless-coverage" --dwarfdump "$DWARFDUMP"
           ./gradlew --no-daemon -PtestCoverage=true headlessCoverageReport
 
-      - uses: actions/upload-artifact@v7
-        if: always() && matrix.target == 'x86_64'
+      - name: "[target-041] actions/upload-artifact@v7"
+        if: contains(fromJSON(matrix.steps), 'target-041') && (always() && matrix.target == 'x86_64')
+        uses: actions/upload-artifact@v7
         with:
-          name: headless-java-coverage-sample
+          overwrite: true
+          name: headless-java-coverage-sample-${{ matrix.group }}
           path: build/headless-coverage/
           if-no-files-found: error
           retention-days: 14
 
-      - name: Validate independent compiler unwind references
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-042] Validate independent compiler unwind references"
+        if: contains(fromJSON(matrix.steps), 'target-042') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
           python3 src/test/integration/synthetic-cfi-reference.py "$TARGET" \
             "build/test-results/synthetic-cfi-reference/$TARGET" --dwarfdump "$DWARFDUMP"
 
-      - name: Validate explicit CFI encoder plans and debugger behavior
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-043] Validate explicit CFI encoder plans and debugger behavior"
+        if: contains(fromJSON(matrix.steps), 'target-043') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1477,15 +1525,16 @@ jobs:
               --original-encoding "$encoding" --dwarfdump "$DWARFDUMP"
           done
 
-      - name: Reject input and program changes before export publication
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-044] Reject input and program changes before export publication"
+        if: contains(fromJSON(matrix.steps), 'target-044') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
           python3 src/test/integration/export-consistency.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
             "build/test-results/export-consistency/$TARGET" --dwarfdump "$DWARFDUMP"
 
-      - name: Validate optional formatters in GDB CLI/MI and LLDB
+      - name: "[target-045] Validate optional formatters in GDB CLI/MI and LLDB"
+        if: contains(fromJSON(matrix.steps), 'target-045')
         id: formatter-tests
         env:
           TARGET: ${{ matrix.target }}
@@ -1515,8 +1564,8 @@ jobs:
               done
           fi
 
-      - name: Archive formatter evidence before the remaining regressions
-        if: always() && steps.formatter-tests.outcome != 'skipped'
+      - name: "[target-046] Archive formatter evidence before the remaining regressions"
+        if: contains(fromJSON(matrix.steps), 'target-046') && (always() && steps.formatter-tests.outcome != 'skipped')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1526,16 +1575,18 @@ jobs:
                   -C build/test-results/formatters .
           fi
 
-      - uses: actions/upload-artifact@v7
-        if: always() && steps.formatter-tests.outcome != 'skipped'
+      - name: "[target-047] actions/upload-artifact@v7"
+        if: contains(fromJSON(matrix.steps), 'target-047') && (always() && steps.formatter-tests.outcome != 'skipped')
+        uses: actions/upload-artifact@v7
         with:
-          name: formatter-evidence-${{ matrix.target }}
+          overwrite: true
+          name: formatter-evidence-${{ matrix.target }}-${{ matrix.group }}
           path: build/artifact-archives/formatters-${{ matrix.target }}.tar.gz
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Validate recovered CFI in executables, PIE and loaded shared libraries
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-048] Validate recovered CFI in executables, PIE and loaded shared libraries"
+        if: contains(fromJSON(matrix.steps), 'target-048') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1548,8 +1599,8 @@ jobs:
           python3 src/test/integration/compiler-memory-effects.py \
             "build/test-results/compiler-memory-effects/$TARGET" --target "$TARGET" --conditional-proof
 
-      - name: Compare conditioned native frames with unchanged compiler references
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-049] Compare conditioned native frames with unchanged compiler references"
+        if: contains(fromJSON(matrix.steps), 'target-049') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1584,8 +1635,8 @@ jobs:
             --libdwarf "$PWD/native-integration/libdwarf.so.2.3.2" \
             --libdwarfp "$PWD/native-integration/libdwarfp.so.2.3.2"
 
-      - name: Compare LLDB caller frames with independent compiler references
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-050] Compare LLDB caller frames with independent compiler references"
+        if: contains(fromJSON(matrix.steps), 'target-050') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1594,8 +1645,8 @@ jobs:
             "build/test-results/production-unwind-export/$TARGET/exec" \
             "build/test-results/lldb-cfi/$TARGET" --target "$TARGET" --lldb lldb-18
 
-      - name: Validate compiler frame pointers and recovered caller values
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-051] Validate compiler frame pointers and recovered caller values"
+        if: contains(fromJSON(matrix.steps), 'target-051') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1615,8 +1666,8 @@ jobs:
             "build/test-results/production-frame-pointer/$TARGET" \
             "build/test-results/frame-pointer-values/$TARGET"
 
-      - name: Validate discontiguous unwind ranges and partial-instruction refusals
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-052] Validate discontiguous unwind ranges and partial-instruction refusals"
+        if: contains(fromJSON(matrix.steps), 'target-052') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1628,8 +1679,8 @@ jobs:
             "build/test-results/discontiguous-unwind-controls/$TARGET" \
             --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
 
-      - name: Multi-file source stepping across discontiguous bodies and compressed DWARF
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-053] Multi-file source stepping across discontiguous bodies and compressed DWARF"
+        if: contains(fromJSON(matrix.steps), 'target-053') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1640,8 +1691,8 @@ jobs:
                   --gap-position "$position"
           done
 
-      - name: Validate real native exports with recovered frames and source
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-054] Validate real native exports with recovered frames and source"
+        if: contains(fromJSON(matrix.steps), 'target-054') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1654,8 +1705,8 @@ jobs:
             "build/test-results/unwind-frame-recovery/$TARGET" "build/test-results/native-frame-failed-source/$TARGET" \
             --target "$TARGET" --roles exec --failed-source-name cf_checkpoint --dwarfdump "$DWARFDUMP"
 
-      - name: Preserve original records alongside recovered native frame exports
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-055] Preserve original records alongside recovered native frame exports"
+        if: contains(fromJSON(matrix.steps), 'target-055') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1667,8 +1718,8 @@ jobs:
             done
           done
 
-      - name: Preserve runtime unwind records alongside recovered native frames
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-056] Preserve runtime unwind records alongside recovered native frames"
+        if: contains(fromJSON(matrix.steps), 'target-056') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1678,8 +1729,8 @@ jobs:
               --target "$TARGET" --original-runtime --dwarfdump "$DWARFDUMP"
           done
 
-      - name: Export rebased saved projects with original and recovered unwind records
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-057] Export rebased saved projects with original and recovered unwind records"
+        if: contains(fromJSON(matrix.steps), 'target-057') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1700,8 +1751,8 @@ jobs:
             "build/test-results/production-unwind-saved/$TARGET/runtime" \
             --target "$TARGET" --roles shared --ghidra "$GHIDRA_INSTALL_DIR" --dwarfdump "$DWARFDUMP"
 
-      - name: Preserve processor-typed runtime unwind records
-        if: matrix.target == 'x86_64'
+      - name: "[target-058] Preserve processor-typed runtime unwind records"
+        if: contains(fromJSON(matrix.steps), 'target-058') && (matrix.target == 'x86_64')
         run: |
           for family in unwind-frame-recovery unwind-shrinkwrap; do
             python3 src/test/integration/unwind-export.py "$GHIDRA_INSTALL_DIR" \
@@ -1709,15 +1760,15 @@ jobs:
               --target x86_64 --original-runtime --runtime-section-type processor --dwarfdump "$DWARFDUMP"
           done
 
-      - name: Preserve inherited unavailable-register limits
-        if: matrix.target == 'aarch64'
+      - name: "[target-059] Preserve inherited unavailable-register limits"
+        if: contains(fromJSON(matrix.steps), 'target-059') && (matrix.target == 'aarch64')
         run: |
           python3 src/test/integration/unwind-incomplete-original.py "$GHIDRA_INSTALL_DIR" \
             build/test-results/unwind-frame-recovery/aarch64 \
             build/test-results/native-inherited-unavailable/aarch64 --dwarfdump "$DWARFDUMP"
 
-      - name: Compare original frame ranges with independent compiler and validator inventories
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-060] Compare original frame ranges with independent compiler and validator inventories"
+        if: contains(fromJSON(matrix.steps), 'target-060') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1725,8 +1776,8 @@ jobs:
           python3 src/test/integration/original-frame-ranges.py build/classes/java \
             "build/test-results/original-frame-ranges/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
 
-      - name: Compare runtime relocation tables with independent GNU inventories
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-061] Compare runtime relocation tables with independent GNU inventories"
+        if: contains(fromJSON(matrix.steps), 'target-061') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1734,8 +1785,8 @@ jobs:
           python3 src/test/integration/runtime-relocations.py build/classes/java \
             "build/test-results/runtime-relocations/$TARGET" --target "$TARGET" --dwarfdump "$DWARFDUMP"
 
-      - name: Verify COPY and TLS descriptor loader effects
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-062] Verify COPY and TLS descriptor loader effects"
+        if: contains(fromJSON(matrix.steps), 'target-062') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1744,7 +1795,8 @@ jobs:
             --classes "build/classes/java/main:build/classes/java/test" \
             --output "build/test-results/relocation-effects/$TARGET" --target "$TARGET"
 
-      - name: Verify fixture identity and stripping
+      - name: "[target-063] Verify fixture identity and stripping"
+        if: contains(fromJSON(matrix.steps), 'target-063')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1762,15 +1814,16 @@ jobs:
           fi
           readelf -Ws "$partial" | grep -Eq '[[:space:]]recovered_add$'
 
-      - name: Preserve original compiler CFI through actual export and GDB
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-064] Preserve original compiler CFI through actual export and GDB"
+        if: contains(fromJSON(matrix.steps), 'target-064') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
           python3 src/test/integration/original-cfi-preservation.py "$TARGET" "$GHIDRA_INSTALL_DIR" \
             "build/test-results/original-cfi-preservation/$TARGET" --dwarfdump "$DWARFDUMP"
 
-      - name: Headless Ghidra preflight
+      - name: "[target-065] Headless Ghidra preflight"
+        if: contains(fromJSON(matrix.steps), 'target-065')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1785,7 +1838,8 @@ jobs:
           after=$(sha256sum "$fixture" | cut -d' ' -f1)
           test "$before" = "$after"
 
-      - name: Build and validate matched sidecar containers
+      - name: "[target-066] Build and validate matched sidecar containers"
+        if: contains(fromJSON(matrix.steps), 'target-066')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1814,7 +1868,8 @@ jobs:
             exit 1
           fi
 
-      - name: Native/QEMU GDB sidecar oracle
+      - name: "[target-067] Native/QEMU GDB sidecar oracle"
+        if: contains(fromJSON(matrix.steps), 'target-067')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1829,7 +1884,8 @@ jobs:
             fi
           done
 
-      - name: Extended ELF section tables through export and GDB
+      - name: "[target-068] Extended ELF section tables through export and GDB"
+        if: contains(fromJSON(matrix.steps), 'target-068')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1840,7 +1896,8 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
 
-      - name: Unnamed sections and extended program tables through export and GDB
+      - name: "[target-069] Unnamed sections and extended program tables through export and GDB"
+        if: contains(fromJSON(matrix.steps), 'target-069')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1851,8 +1908,8 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
 
-      - name: Large ELF bounded-memory container and real exporter
-        if: matrix.target == 'x86_64'
+      - name: "[target-070] Large ELF bounded-memory container and real exporter"
+        if: contains(fromJSON(matrix.steps), 'target-070') && (matrix.target == 'x86_64')
         run: |
           set -euo pipefail
           src/test/integration/large-elf-sidecar.sh
@@ -1863,13 +1920,14 @@ jobs:
           src/test/integration/copy-cancellation-export.sh "$GHIDRA_INSTALL_DIR"
           GHIDRA_GDB_LOADER=1 src/test/integration/copy-cancellation-export.sh "$GHIDRA_INSTALL_DIR"
 
-      - name: Reject definite ELF and Ghidra processor disagreement
-        if: matrix.target == 'x86_64' || matrix.target == 'mips32le'
+      - name: "[target-071] Reject definite ELF and Ghidra processor disagreement"
+        if: contains(fromJSON(matrix.steps), 'target-071') && (matrix.target == 'x86_64' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: python3 src/test/integration/target-language-agreement.py "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: Headless Forge symbol export and GDB integration
+      - name: "[target-072] Headless Forge symbol export and GDB integration"
+        if: contains(fromJSON(matrix.steps), 'target-072')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -1906,6 +1964,9 @@ jobs:
                   if [[ "$TARGET" == x86_64 ]]; then
                       attachment_coverage=("FORGE_INTEGRATION_COVERAGE_AGENT=$FORGE_INTEGRATION_COVERAGE_AGENT"
                           "FORGE_INTEGRATION_COVERAGE_OUTPUT=$attachment_results/coverage")
+                      attachment_coverage+=("FORGE_CI_TARGET=$FORGE_CI_TARGET" "FORGE_CI_GROUP=$FORGE_CI_GROUP"
+                          "GITHUB_ACTIONS=$GITHUB_ACTIONS" "GITHUB_JOB=$GITHUB_JOB" "GITHUB_SHA=$GITHUB_SHA"
+                          "GITHUB_RUN_ID=$GITHUB_RUN_ID" "GITHUB_RUN_ATTEMPT=$GITHUB_RUN_ATTEMPT")
                   fi
                   sudo -n env JAVA_HOME="$JAVA_HOME" JAVA="$JAVA_HOME/bin/java" JAVAC="$JAVA_HOME/bin/javac" \
                       "${attachment_coverage[@]}" \
@@ -2013,24 +2074,26 @@ jobs:
             --output "$evidence_root/index.json"
           echo "FORGE_VALIDATION_EVIDENCE_INDEX=$evidence_root/index.json" >> "$GITHUB_ENV"
 
-      - name: LLDB compiler and Forge source, types, stack and register pieces
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-073] LLDB compiler and Forge source, types, stack and register pieces"
+        if: contains(fromJSON(matrix.steps), 'target-073') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
           python3 src/test/integration/semantic-lldb.py build/fixtures \
             "build/test-results/lldb-semantic-$TARGET" --target "$TARGET" --lldb lldb-18
 
-      - name: Retain production attachment evidence before broader target tests
-        if: always()
+      - name: "[target-074] Retain production attachment evidence before broader target tests"
+        if: contains(fromJSON(matrix.steps), 'target-074') && (always())
         uses: actions/upload-artifact@v7
         with:
-          name: production-linux-attachment-${{ matrix.target }}
+          overwrite: true
+          name: production-linux-attachment-${{ matrix.target }}-${{ matrix.group }}
           path: build/test-results/attachment-elf-controller/*.tar.gz
           if-no-files-found: warn
           retention-days: 14
 
-      - name: GDB companions from rebased PIE and shared-library analysis
+      - name: "[target-075] GDB companions from rebased PIE and shared-library analysis"
+        if: contains(fromJSON(matrix.steps), 'target-075')
         env:
           TARGET: ${{ matrix.target }}
           GHIDRA_GDB_LOADER: '1'
@@ -2063,7 +2126,8 @@ jobs:
           done
 
       # Consume primary export reports before later x86 regressions reuse their log paths.
-      - name: Streamed file digests and target-endian GNU debuglink CRC
+      - name: "[target-076] Streamed file digests and target-endian GNU debuglink CRC"
+        if: contains(fromJSON(matrix.steps), 'target-076')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2076,14 +2140,16 @@ jobs:
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
             "$TARGET" "${extra[@]}"
 
-      - name: Typed ELF build-ID observations and independent GNU note oracle
+      - name: "[target-077] Typed ELF build-ID observations and independent GNU note oracle"
+        if: contains(fromJSON(matrix.steps), 'target-077')
         env:
           TARGET: ${{ matrix.target }}
         run: |
           python3 src/test/integration/elf-build-id.py \
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" "$TARGET"
 
-      - name: Read-only export report claims and independent JSON oracle
+      - name: "[target-078] Read-only export report claims and independent JSON oracle"
+        if: contains(fromJSON(matrix.steps), 'target-078')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2092,7 +2158,8 @@ jobs:
             --handoff-manifest "$PWD/build/test-results/report-handoff/$TARGET.json" \
             --validation-evidence "$FORGE_VALIDATION_EVIDENCE_INDEX"
 
-      - name: Retained ELF prefix observations and independent byte oracle
+      - name: "[target-079] Retained ELF prefix observations and independent byte oracle"
+        if: contains(fromJSON(matrix.steps), 'target-079')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2105,7 +2172,8 @@ jobs:
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
             "$TARGET" "${extra[@]}"
 
-      - name: Active ELF allocation metadata and independent indexed oracle
+      - name: "[target-080] Active ELF allocation metadata and independent indexed oracle"
+        if: contains(fromJSON(matrix.steps), 'target-080')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2118,7 +2186,8 @@ jobs:
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
             "$TARGET" "${extra[@]}"
 
-      - name: Selected artifact SHA claims and independent streamed hash oracle
+      - name: "[target-081] Selected artifact SHA claims and independent streamed hash oracle"
+        if: contains(fromJSON(matrix.steps), 'target-081')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2131,23 +2200,23 @@ jobs:
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
             "$TARGET" "${extra[@]}"
 
-      - name: QEMU private socket startup and failure cleanup
-        if: matrix.target == 'x86_64'
+      - name: "[target-082] QEMU private socket startup and failure cleanup"
+        if: contains(fromJSON(matrix.steps), 'target-082') && (matrix.target == 'x86_64')
         run: src/test/integration/qemu-socket-startup.sh
 
-      - name: Saved-program type identity across fresh headless processes
-        if: matrix.target == 'x86_64'
+      - name: "[target-083] Saved-program type identity across fresh headless processes"
+        if: contains(fromJSON(matrix.steps), 'target-083') && (matrix.target == 'x86_64')
         run: src/test/integration/saved-program-determinism.sh "$GHIDRA_INSTALL_DIR"
 
-      - name: Saved-project wrapper preserves databases and project backups
-        if: matrix.target == 'x86_64'
+      - name: "[target-084] Saved-project wrapper preserves databases and project backups"
+        if: contains(fromJSON(matrix.steps), 'target-084') && (matrix.target == 'x86_64')
         run: |
           python3 src/test/integration/saved-project-preservation.py \
               --ghidra "$GHIDRA_INSTALL_DIR" --input build/fixtures/x86_64/semantic.exec.stripped \
               --results build/test-results/saved-project-preservation
 
-      - name: Saved analyst edits through backup-based attachment refresh
-        if: matrix.target == 'x86_64'
+      - name: "[target-085] Saved analyst edits through backup-based attachment refresh"
+        if: contains(fromJSON(matrix.steps), 'target-085') && (matrix.target == 'x86_64')
         run: |
             set -euo pipefail
             for selection in exec:0 pie:0 exec:8 pie:8; do
@@ -2171,27 +2240,29 @@ jobs:
                 if [[ "$attachment_status" -ne 0 ]]; then exit "$attachment_status"; fi
             done
 
-      - name: Retain saved-curation attachment refresh evidence
-        if: always() && matrix.target == 'x86_64'
+      - name: "[target-086] Retain saved-curation attachment refresh evidence"
+        if: contains(fromJSON(matrix.steps), 'target-086') && (always() && matrix.target == 'x86_64')
         uses: actions/upload-artifact@v7
         with:
-          name: production-linux-attachment-refresh
+          overwrite: true
+          name: production-linux-attachment-refresh-${{ matrix.group }}
           path: build/test-results/attachment-curated-refresh/*.tar.gz
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Validate function-pointer convention extension and malformed metadata
-        if: matrix.target == 'x86_64'
+      - name: "[target-087] Validate function-pointer convention extension and malformed metadata"
+        if: contains(fromJSON(matrix.steps), 'target-087') && (matrix.target == 'x86_64')
         run: python3 src/test/integration/dwarfdump-subroutine-conventions.py "$DWARFDUMP"
 
-      - name: Validate line sequences and reject malformed range artifacts
-        if: matrix.target == 'x86_64'
+      - name: "[target-088] Validate line sequences and reject malformed range artifacts"
+        if: contains(fromJSON(matrix.steps), 'target-088') && (matrix.target == 'x86_64')
         run: |
           python3 src/test/integration/dwarfdump-line-sequences.py "$DWARFDUMP" \
             --forge-fixture "$PWD/build/fixtures/x86_64/semantic.exec.ghidra-forge.dbg" \
             --forge-original "$PWD/build/fixtures/x86_64/semantic.exec.stripped"
 
-      - name: Bit-field values through the real exporter, GDB and applicable LLDB
+      - name: "[target-089] Bit-field values through the real exporter, GDB and applicable LLDB"
+        if: contains(fromJSON(matrix.steps), 'target-089')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2204,8 +2275,8 @@ jobs:
           fi
           python3 src/test/integration/bitfield-values.py "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: Validate saved MMIO layouts and qualifier preservation
-        if: matrix.target == 'x86_64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-090] Validate saved MMIO layouts and qualifier preservation"
+        if: contains(fromJSON(matrix.steps), 'target-090') && (matrix.target == 'x86_64' || matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2239,15 +2310,15 @@ jobs:
               --helper "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/support/mmio/forge_mmio.py" \
               --results build/test-results/mmio-lifecycle
 
-      - name: Freestanding i386 stack values through stripped exec and PIE exports
-        if: matrix.target == 'x86_64'
+      - name: "[target-091] Freestanding i386 stack values through stripped exec and PIE exports"
+        if: contains(fromJSON(matrix.steps), 'target-091') && (matrix.target == 'x86_64')
         run: |
           for role in exec sectionless pie pie-rebased; do
               python3 src/test/integration/i386-profile-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
 
-      - name: i386 libc scalar floating arguments and x87 returns
-        if: matrix.target == 'x86_64'
+      - name: "[target-092] i386 libc scalar floating arguments and x87 returns"
+        if: contains(fromJSON(matrix.steps), 'target-092') && (matrix.target == 'x86_64')
         run: |
           set -euo pipefail
           for role in exec sectionless pie pie-rebased; do
@@ -2255,14 +2326,14 @@ jobs:
           done
           python3 src/test/integration/i386-extended-return-export.py "$GHIDRA_INSTALL_DIR" --target x86_64 --role exec
 
-      - name: i386 x87 return correction at the compiler input-region boundary
-        if: matrix.target == 'x86_64'
+      - name: "[target-093] i386 x87 return correction at the compiler input-region boundary"
+        if: contains(fromJSON(matrix.steps), 'target-093') && (matrix.target == 'x86_64')
         run: |
           python3 src/test/integration/i386-input-region-export.py "$GHIDRA_INSTALL_DIR" \
               --results build/test-results/i386-input-region
 
-      - name: i386 libc vector aggregate and explicit convention matrix
-        if: matrix.target == 'x86_64'
+      - name: "[target-094] i386 libc vector aggregate and explicit convention matrix"
+        if: contains(fromJSON(matrix.steps), 'target-094') && (matrix.target == 'x86_64')
         run: |
           set -euo pipefail
           python3 src/test/integration/i386-abi-matrix-diagnostics-test.py
@@ -2270,8 +2341,8 @@ jobs:
               python3 src/test/integration/i386-abi-matrix-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
 
-      - name: i386 ELF metadata and compiler ABI selection
-        if: matrix.target == 'x86_64'
+      - name: "[target-095] i386 ELF metadata and compiler ABI selection"
+        if: contains(fromJSON(matrix.steps), 'target-095') && (matrix.target == 'x86_64')
         run: |
           set -euo pipefail
           for role in exec pie pie-rebased; do
@@ -2285,16 +2356,16 @@ jobs:
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --abi-version 1
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --target i386 --flags 1
 
-      - name: i386 shared-library stack values and curated/original lookup
-        if: matrix.target == 'x86_64'
+      - name: "[target-096] i386 shared-library stack values and curated/original lookup"
+        if: contains(fromJSON(matrix.steps), 'target-096') && (matrix.target == 'x86_64')
         run: |
           set -euo pipefail
           for role in exec exec-rebased pie pie-rebased; do
               python3 src/test/integration/i386-shared-profile-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
 
-      - name: i386 analyst aliases preserve names across stripped and sectionless ELF
-        if: matrix.target == 'x86_64'
+      - name: "[target-097] i386 analyst aliases preserve names across stripped and sectionless ELF"
+        if: contains(fromJSON(matrix.steps), 'target-097') && (matrix.target == 'x86_64')
         run: |
           set -euo pipefail
           base="$PWD/build/test-results/i386-alias-bases"
@@ -2310,18 +2381,21 @@ jobs:
           python3 src/test/integration/sectionless-function-aliases.py \
               "$GHIDRA_INSTALL_DIR" i386 --base-root "$base"
 
-      - name: Function-owned statics and duplicate-name lookup
+      - name: "[target-098] Function-owned statics and duplicate-name lookup"
+        if: contains(fromJSON(matrix.steps), 'target-098')
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: Qualified analyst function names and owned statics
+      - name: "[target-099] Qualified analyst function names and owned statics"
+        if: contains(fromJSON(matrix.steps), 'target-099')
         env:
           TARGET: ${{ matrix.target }}
           FORGE_SCOPE_QUALIFIED: '1'
         run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: Overloaded signatures preserve types, aliases and source identity
+      - name: "[target-100] Overloaded signatures preserve types, aliases and source identity"
+        if: contains(fromJSON(matrix.steps), 'target-100')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2337,15 +2411,16 @@ jobs:
               done
           done
 
-      - name: Class-owned display names and saved-program identity
+      - name: "[target-101] Class-owned display names and saved-program identity"
+        if: contains(fromJSON(matrix.steps), 'target-101')
         env:
           TARGET: ${{ matrix.target }}
           FORGE_SCOPE_QUALIFIED: '1'
           FORGE_SCOPE_CLASS_NAMES: '1'
         run: src/test/integration/function-static-scopes-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: Incoming register lifetime before overwrite
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-102] Incoming register lifetime before overwrite"
+        if: contains(fromJSON(matrix.steps), 'target-102') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2354,24 +2429,24 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
 
-      - name: Opaque supervisor-call register effects remain unavailable
-        if: matrix.target == 'aarch64'
+      - name: "[target-103] Opaque supervisor-call register effects remain unavailable"
+        if: contains(fromJSON(matrix.steps), 'target-103') && (matrix.target == 'aarch64')
         run: src/test/integration/opaque-register-effects-export.sh "$GHIDRA_INSTALL_DIR"
 
-      - name: Undecoded listing gaps cannot claim stable register values
-        if: matrix.target == 'aarch64'
+      - name: "[target-104] Undecoded listing gaps cannot claim stable register values"
+        if: contains(fromJSON(matrix.steps), 'target-104') && (matrix.target == 'aarch64')
         env:
           FORGE_OPAQUE_LISTING: gap
         run: src/test/integration/opaque-register-effects-export.sh "$GHIDRA_INSTALL_DIR"
 
-      - name: Proven parameter register copies and unavailable tails
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-105] Proven parameter register copies and unavailable tails"
+        if: contains(fromJSON(matrix.steps), 'target-105') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/register-copy-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: Two completed parameter register copies and unavailable tails
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-106] Two completed parameter register copies and unavailable tails"
+        if: contains(fromJSON(matrix.steps), 'target-106') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2386,14 +2461,14 @@ jobs:
               done
           done
 
-      - name: Complete register composites before their first clobber
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-107] Complete register composites before their first clobber"
+        if: contains(fromJSON(matrix.steps), 'target-107') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/composite-register-prefix-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: Curated later register locals and exact unavailable boundaries
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-108] Curated later register locals and exact unavailable boundaries"
+        if: contains(fromJSON(matrix.steps), 'target-108') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2401,8 +2476,8 @@ jobs:
               python3 src/test/integration/later-register-local-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
 
-      - name: Local register definitions complete before their locations become available
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-109] Local register definitions complete before their locations become available"
+        if: contains(fromJSON(matrix.steps), 'target-109') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2410,8 +2485,8 @@ jobs:
               python3 src/test/integration/later-register-local-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --first-use definition
           done
 
-      - name: Curated local definitions require agreement across branches and loops
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-110] Curated local definitions require agreement across branches and loops"
+        if: contains(fromJSON(matrix.steps), 'target-110') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2422,8 +2497,8 @@ jobs:
               python3 src/test/integration/local-call-lifetimes-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --storage outgoing
           done
 
-      - name: Saved local identities retain current values through register moves and updates
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-111] Saved local identities retain current values through register moves and updates"
+        if: contains(fromJSON(matrix.steps), 'target-111') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2431,8 +2506,8 @@ jobs:
               python3 src/test/integration/merged-local-mappings-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
 
-      - name: Stack spills and reloads preserve values through slot reuse and final loss
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-112] Stack spills and reloads preserve values through slot reuse and final loss"
+        if: contains(fromJSON(matrix.steps), 'target-112') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2444,14 +2519,14 @@ jobs:
               python3 src/test/integration/stack-value-transitions-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
 
-      - name: Saved 32/64-bit stack-local definitions and slot reuse retain distinct values
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-113] Saved 32/64-bit stack-local definitions and slot reuse retain distinct values"
+        if: contains(fromJSON(matrix.steps), 'target-113') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/stack-local-definitions-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: Stack-local writes and unknown aliases retire stale register copies
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-114] Stack-local writes and unknown aliases retire stale register copies"
+        if: contains(fromJSON(matrix.steps), 'target-114') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2461,8 +2536,8 @@ jobs:
               done
           done
 
-      - name: Saved mutable stack identities survive proven assignments and reloads
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-115] Saved mutable stack identities survive proven assignments and reloads"
+        if: contains(fromJSON(matrix.steps), 'target-115') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2473,8 +2548,8 @@ jobs:
               done
           done
 
-      - name: Independent aggregate pieces through spills, reloads and control flow
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-116] Independent aggregate pieces through spills, reloads and control flow"
+        if: contains(fromJSON(matrix.steps), 'target-116') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2486,8 +2561,8 @@ jobs:
               fi
           done
 
-      - name: Explicit lexical blocks and shadowed initialized locals
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-117] Explicit lexical blocks and shadowed initialized locals"
+        if: contains(fromJSON(matrix.steps), 'target-117') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2501,7 +2576,8 @@ jobs:
               python3 src/test/integration/lexical-shadow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --discontiguous --controls --calls
           done
 
-      - name: Multi-file source stepping and semantic preservation across ELF targets
+      - name: "[target-118] Multi-file source stepping and semantic preservation across ELF targets"
+        if: contains(fromJSON(matrix.steps), 'target-118')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2509,8 +2585,8 @@ jobs:
               python3 src/test/integration/multifile-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
 
-      - name: Multi-file source preserves lexical identities, locations and call visibility
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-119] Multi-file source preserves lexical identities, locations and call visibility"
+        if: contains(fromJSON(matrix.steps), 'target-119') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2521,7 +2597,8 @@ jobs:
                   --role "$role" --source-lines 8
           done
 
-      - name: Multi-file shared objects retain relocated source lookup and stepping
+      - name: "[target-120] Multi-file shared objects retain relocated source lookup and stepping"
+        if: contains(fromJSON(matrix.steps), 'target-120')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2530,23 +2607,23 @@ jobs:
                   --role "$role" --dwarfdump "$DWARFDUMP"
           done
 
-      - name: Multi-file publication cancellation, rollback and retry
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64' || matrix.target == 'mips32be'
+      - name: "[target-121] Multi-file publication cancellation, rollback and retry"
+        if: contains(fromJSON(matrix.steps), 'target-121') && (matrix.target == 'x86_64' || matrix.target == 'aarch64' || matrix.target == 'mips32be')
         env:
           TARGET: ${{ matrix.target }}
         run: |
           python3 src/test/integration/multifile-publication.py "$GHIDRA_INSTALL_DIR" "$TARGET" \
               --work "$PWD/build/test-results/multifile-publication/$TARGET" --dwarfdump "$DWARFDUMP"
 
-      - name: Measure multi-file export and debugger navigation at large function counts
-        if: matrix.target == 'x86_64'
+      - name: "[target-122] Measure multi-file export and debugger navigation at large function counts"
+        if: contains(fromJSON(matrix.steps), 'target-122') && (matrix.target == 'x86_64')
         run: |
           python3 src/test/performance/multifile-benchmark.py "$GHIDRA_INSTALL_DIR" \
               --work "$PWD/build/test-results/multifile-benchmark" \
               --counts 1000 10000 --pairs 3 --source-lines 1000
 
-      - name: Class ownership and object parameters preserve saved identities and lookup
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-123] Class ownership and object parameters preserve saved identities and lookup"
+        if: contains(fromJSON(matrix.steps), 'target-123') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2559,8 +2636,8 @@ jobs:
               done
           done
 
-      - name: Same-name types and namespace globals preserve distinct identities
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-124] Same-name types and namespace globals preserve distinct identities"
+        if: contains(fromJSON(matrix.steps), 'target-124') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2571,8 +2648,8 @@ jobs:
               python3 src/test/integration/same-name-types-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
 
-      - name: Static objects preserve lexical shadowing and failure isolation
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-125] Static objects preserve lexical shadowing and failure isolation"
+        if: contains(fromJSON(matrix.steps), 'target-125') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2580,8 +2657,8 @@ jobs:
               python3 src/test/integration/lexical-statics-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role" --controls --recovered
           done
 
-      - name: Stack and register lifetimes across closed branches and loops
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-126] Stack and register lifetimes across closed branches and loops"
+        if: contains(fromJSON(matrix.steps), 'target-126') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2591,8 +2668,8 @@ jobs:
               done
           done
 
-      - name: Retained ELF aliases and typed curated function identity
-        if: matrix.target != 'arm32'
+      - name: "[target-127] Retained ELF aliases and typed curated function identity"
+        if: contains(fromJSON(matrix.steps), 'target-127') && (matrix.target != 'arm32')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2602,15 +2679,15 @@ jobs:
               done
           done
 
-      - name: Lossless local symbol insertion with retained and stripped tables
-        if: matrix.target != 'arm32'
+      - name: "[target-128] Lossless local symbol insertion with retained and stripped tables"
+        if: contains(fromJSON(matrix.steps), 'target-128') && (matrix.target != 'arm32')
         env:
           TARGET: ${{ matrix.target }}
         run: |
           python3 src/test/integration/local-symbol-merge-integration.py "$GHIDRA_INSTALL_DIR" "$TARGET" --symbols both
 
-      - name: Isolated function relationships preserve lookup and reject false aliases
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-129] Isolated function relationships preserve lookup and reject false aliases"
+        if: contains(fromJSON(matrix.steps), 'target-129') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2620,8 +2697,8 @@ jobs:
               "build/test-results/function-relationships/$TARGET" \
               --target "$TARGET" --jar "$module/lib/GhidraDwarfForge.jar"
 
-      - name: ARM and Thumb automatic aliases retain mode and original symbols
-        if: matrix.target == 'arm32'
+      - name: "[target-130] ARM and Thumb automatic aliases retain mode and original symbols"
+        if: contains(fromJSON(matrix.steps), 'target-130') && (matrix.target == 'arm32')
         run: |
           set -euo pipefail
           for mode in arm thumb mixed; do
@@ -2647,16 +2724,16 @@ jobs:
               fi
           done
 
-      - name: Thumb dynamic symbols ending at a load boundary retain aliases
-        if: matrix.target == 'arm32'
+      - name: "[target-131] Thumb dynamic symbols ending at a load boundary retain aliases"
+        if: contains(fromJSON(matrix.steps), 'target-131') && (matrix.target == 'arm32')
         run: |
           python3 src/test/integration/arm-symbol-boundary.py "$GHIDRA_INSTALL_DIR"
           for conflict in function-tag mapping; do
               python3 src/test/integration/arm-symbol-boundary.py "$GHIDRA_INSTALL_DIR" --conflict "$conflict"
           done
 
-      - name: Sectionless analyst aliases preserve complete dynamic inventories
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-132] Sectionless analyst aliases preserve complete dynamic inventories"
+        if: contains(fromJSON(matrix.steps), 'target-132') && (matrix.target == 'x86_64' || matrix.target == 'aarch64' || matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2682,15 +2759,15 @@ jobs:
                   --base-root "$PWD/build/test-results/retained-function-aliases"
           fi
 
-      - name: Dynamic symbol versions preserve original and curated lookup
-        if: matrix.target == 'x86_64'
+      - name: "[target-133] Dynamic symbol versions preserve original and curated lookup"
+        if: contains(fromJSON(matrix.steps), 'target-133') && (matrix.target == 'x86_64')
         run: |
           set -euo pipefail
           python3 src/test/integration/versioned-dynamic-symbols.py "$GHIDRA_INSTALL_DIR"
           python3 src/test/integration/versioned-dynamic-symbols.py "$GHIDRA_INSTALL_DIR" --sectionless
 
-      - name: MIPS FP32 curated aliases retain original symbols and debugger identity
-        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-134] MIPS FP32 curated aliases retain original symbols and debugger identity"
+        if: contains(fromJSON(matrix.steps), 'target-134') && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2700,8 +2777,8 @@ jobs:
           done
           python3 src/test/integration/local-symbol-merge-integration.py "$GHIDRA_INSTALL_DIR" "$TARGET" --symbols retained --base-root "$base"
 
-      - name: MIPS floating calls reject FPXX and preserve verified FP32 transfer
-        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-135] MIPS floating calls reject FPXX and preserve verified FP32 transfer"
+        if: contains(fromJSON(matrix.steps), 'target-135') && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2713,36 +2790,36 @@ jobs:
               done
           done
 
-      - name: Custom parameter and return storage reject unsupported injected calls
-        if: matrix.target == 'x86_64'
+      - name: "[target-136] Custom parameter and return storage reject unsupported injected calls"
+        if: contains(fromJSON(matrix.steps), 'target-136') && (matrix.target == 'x86_64')
         run: |
           for role in exec pie pie-rebased; do
               python3 src/test/integration/custom-call-storage-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
 
-      - name: Compiler default must match the ELF debugger ABI profile
-        if: matrix.target == 'x86_64'
+      - name: "[target-137] Compiler default must match the ELF debugger ABI profile"
+        if: contains(fromJSON(matrix.steps), 'target-137') && (matrix.target == 'x86_64')
         run: |
           for role in exec pie pie-rebased; do
               python3 src/test/integration/custom-call-storage-export.py "$GHIDRA_INSTALL_DIR" --compiler windows --role "$role"
           done
 
-      - name: Explicit alternate conventions reject unsupported debugger-injected calls
-        if: matrix.target == 'x86_64'
+      - name: "[target-138] Explicit alternate conventions reject unsupported debugger-injected calls"
+        if: contains(fromJSON(matrix.steps), 'target-138') && (matrix.target == 'x86_64')
         run: |
           for role in exec pie pie-rebased; do
               python3 src/test/integration/calling-convention-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
 
-      - name: Variadic and no-return function-type metadata
-        if: matrix.target == 'x86_64'
+      - name: "[target-139] Variadic and no-return function-type metadata"
+        if: contains(fromJSON(matrix.steps), 'target-139') && (matrix.target == 'x86_64')
         run: |
           for role in exec pie pie-rebased; do
               python3 src/test/integration/function-type-flags-export.py "$GHIDRA_INSTALL_DIR" --role "$role"
           done
 
-      - name: Function-pointer calling conventions through saved programs
-        if: matrix.target == 'x86_64'
+      - name: "[target-140] Function-pointer calling conventions through saved programs"
+        if: contains(fromJSON(matrix.steps), 'target-140') && (matrix.target == 'x86_64')
         run: |
           for role in exec pie pie-rebased; do
               for compiler in gcc windows; do
@@ -2750,8 +2827,8 @@ jobs:
               done
           done
 
-      - name: Excluded control-flow blocks cannot prove stable register locations
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-141] Excluded control-flow blocks cannot prove stable register locations"
+        if: contains(fromJSON(matrix.steps), 'target-141') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2759,8 +2836,8 @@ jobs:
               python3 src/test/integration/outside-body-flow-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
 
-      - name: Completed parameter stack spills and unavailable memory-write tails
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-142] Completed parameter stack spills and unavailable memory-write tails"
+        if: contains(fromJSON(matrix.steps), 'target-142') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2768,8 +2845,8 @@ jobs:
               python3 src/test/integration/stack-spill-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
 
-      - name: Saved register parameters across decoded direct leaf calls
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-143] Saved register parameters across decoded direct leaf calls"
+        if: contains(fromJSON(matrix.steps), 'target-143') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2777,19 +2854,20 @@ jobs:
               python3 src/test/integration/direct-leaf-call-export.py "$GHIDRA_INSTALL_DIR" "$TARGET" --role "$role"
           done
 
-      - name: Curated external declarations without invented image addresses
-        if: matrix.target == 'x86_64'
+      - name: "[target-144] Curated external declarations without invented image addresses"
+        if: contains(fromJSON(matrix.steps), 'target-144') && (matrix.target == 'x86_64')
         run: src/test/integration/external-function-declarations-export.sh "$GHIDRA_INSTALL_DIR"
 
-      - name: Recovered scalar returns preserve curated signatures
-        if: matrix.target == 'x86_64'
+      - name: "[target-145] Recovered scalar returns preserve curated signatures"
+        if: contains(fromJSON(matrix.steps), 'target-145') && (matrix.target == 'x86_64')
         run: python3 src/test/integration/recovered-default-returns-export.py "$GHIDRA_INSTALL_DIR"
 
-      - name: Recovered parameter types without invented locations
-        if: matrix.target == 'x86_64'
+      - name: "[target-146] Recovered parameter types without invented locations"
+        if: contains(fromJSON(matrix.steps), 'target-146') && (matrix.target == 'x86_64')
         run: python3 src/test/integration/recovered-parameter-types-export.py "$GHIDRA_INSTALL_DIR"
 
-      - name: Aggregate return prototypes and guarded debugger calls
+      - name: "[target-147] Aggregate return prototypes and guarded debugger calls"
+        if: contains(fromJSON(matrix.steps), 'target-147')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2801,32 +2879,32 @@ jobs:
               fi
           done
 
-      - name: Formal aggregate return type and hidden ABI parameter
-        if: matrix.target == 'x86_64'
+      - name: "[target-148] Formal aggregate return type and hidden ABI parameter"
+        if: contains(fromJSON(matrix.steps), 'target-148') && (matrix.target == 'x86_64')
         run: src/test/integration/formal-function-return-export.sh "$GHIDRA_INSTALL_DIR"
 
-      - name: Unsupported stack first-use and retained zero-offset locals
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-149] Unsupported stack first-use and retained zero-offset locals"
+        if: contains(fromJSON(matrix.steps), 'target-149') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/stack-first-use-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: Nonzero load-segment file offset and explicit rebase
-        if: matrix.target == 'x86_64'
+      - name: "[target-150] Nonzero load-segment file offset and explicit rebase"
+        if: contains(fromJSON(matrix.steps), 'target-150') && (matrix.target == 'x86_64')
         run: |
           src/test/integration/nonzero-load-offset-export.sh \
             "$GHIDRA_INSTALL_DIR" \
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
-      - name: BE8 scalar data and instruction encoding
-        if: matrix.target == 'arm32'
+      - name: "[target-151] BE8 scalar data and instruction encoding"
+        if: contains(fromJSON(matrix.steps), 'target-151') && (matrix.target == 'arm32')
         run: |
           python3 src/test/integration/arm-be8-reference.py "$GHIDRA_INSTALL_DIR"
           python3 src/test/integration/arm-be8-reference.py "$GHIDRA_INSTALL_DIR" --little-endian
 
-      - name: Mixed ARM and Thumb function section mappings
-        if: matrix.target == 'arm32'
+      - name: "[target-152] Mixed ARM and Thumb function section mappings"
+        if: contains(fromJSON(matrix.steps), 'target-152') && (matrix.target == 'arm32')
         run: |
           for shape in contiguous split; do
               shape_args=()
@@ -2845,8 +2923,8 @@ jobs:
                   --production --role "$role" --split --retain-symbols --with-controls --with-live
           done
 
-      - name: Recovered ARM and Thumb instruction modes
-        if: matrix.target == 'arm32'
+      - name: "[target-153] Recovered ARM and Thumb instruction modes"
+        if: contains(fromJSON(matrix.steps), 'target-153') && (matrix.target == 'arm32')
         run: |
           for role in exec pie pie-rebased pie-dynamic shared shared-rebased; do
               FORGE_THUMB_ROLE="$role" src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
@@ -2854,31 +2932,34 @@ jobs:
           FORGE_THUMB_ROLE=pie FORGE_THUMB_HASH_STYLE=gnu FORGE_THUMB_EXPECT_MODE_OMISSION=1 \
               src/test/integration/arm-thumb-mode-export.sh "$GHIDRA_INSTALL_DIR"
 
-      - name: Saved dynamic parameter storage and debugger values
+      - name: "[target-154] Saved dynamic parameter storage and debugger values"
+        if: contains(fromJSON(matrix.steps), 'target-154')
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/dynamic-parameter-storage-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: Computed and custom aggregate and scalar parameter piece order
+      - name: "[target-155] Computed and custom aggregate and scalar parameter piece order"
+        if: contains(fromJSON(matrix.steps), 'target-155')
         env:
           TARGET: ${{ matrix.target }}
         run: src/test/integration/dynamic-composite-storage-export.sh "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: Actual emission evidence matches raw DWARF and debugger behavior
-        if: matrix.target == 'x86_64'
+      - name: "[target-156] Actual emission evidence matches raw DWARF and debugger behavior"
+        if: contains(fromJSON(matrix.steps), 'target-156') && (matrix.target == 'x86_64')
         run: |
           python3 src/test/integration/emission-evidence.py "$GHIDRA_INSTALL_DIR" \
               "$PWD/native-integration/libdwarf.so.2.3.2" \
               "$PWD/native-integration/libdwarfp.so.2.3.2"
 
-      - name: Annotation composition preserves executable lines and debugger lookup
-        if: matrix.target == 'x86_64'
+      - name: "[target-157] Annotation composition preserves executable lines and debugger lookup"
+        if: contains(fromJSON(matrix.steps), 'target-157') && (matrix.target == 'x86_64')
         run: |
           python3 src/test/integration/emission-evidence.py "$GHIDRA_INSTALL_DIR" \
               "$PWD/native-integration/libdwarf.so.2.3.2" \
               "$PWD/native-integration/libdwarfp.so.2.3.2" --annotations
 
-      - name: Bounded instruction context and native diagnostic source composition
+      - name: "[target-158] Bounded instruction context and native diagnostic source composition"
+        if: contains(fromJSON(matrix.steps), 'target-158')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2886,8 +2967,8 @@ jobs:
               "$PWD/build/fixtures/$TARGET/semantic.exec.stripped" \
               "$PWD/build/test-results/instruction-context/$TARGET"
 
-      - name: Saved annotations retain all categories, spaces and raw equate references
-        if: matrix.target != 'arm32'
+      - name: "[target-159] Saved annotations retain all categories, spaces and raw equate references"
+        if: contains(fromJSON(matrix.steps), 'target-159') && (matrix.target != 'arm32')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2895,8 +2976,8 @@ jobs:
               --consumer "$PWD/native-integration/libdwarf.so.2.3.2" \
               --producer "$PWD/native-integration/libdwarfp.so.2.3.2"
 
-      - name: Instruction context preserves ARM modes and delay-slot body boundaries
-        if: matrix.target == 'arm32' || matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-160] Instruction context preserves ARM modes and delay-slot body boundaries"
+        if: contains(fromJSON(matrix.steps), 'target-160') && (matrix.target == 'arm32' || matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2907,16 +2988,16 @@ jobs:
               "$PWD/native-integration/libdwarfp.so.2.3.2" \
               "$PWD/build/test-results/context-boundaries/$TARGET"
 
-      - name: Intrinsic instruction context and same-spelled ordinary calls
-        if: matrix.target == 'x86_64'
+      - name: "[target-161] Intrinsic instruction context and same-spelled ordinary calls"
+        if: contains(fromJSON(matrix.steps), 'target-161') && (matrix.target == 'x86_64')
         run: |
           python3 src/test/integration/intrinsic-context.py "$GHIDRA_INSTALL_DIR" \
               "$PWD/native-integration/libdwarf.so.2.3.2" \
               "$PWD/native-integration/libdwarfp.so.2.3.2" \
               "$PWD/build/test-results/intrinsic-context"
 
-      - name: Isolated indirect pointer producer and operand-free dereference
-        if: matrix.target == 'aarch64'
+      - name: "[target-162] Isolated indirect pointer producer and operand-free dereference"
+        if: contains(fromJSON(matrix.steps), 'target-162') && (matrix.target == 'aarch64')
         run: |
           results="$PWD/build/test-results/indirect-storage-native"
           mkdir -p "$results"
@@ -2935,23 +3016,23 @@ jobs:
             "$results/indirect.dbg" "$results/dwarfdump.txt" \
             --original "$PWD/build/fixtures/aarch64/semantic.exec.stripped"
 
-      - name: AAPCS64 exhaustion, indirect pointer lifetimes and aggregate returns
-        if: matrix.target == 'aarch64'
+      - name: "[target-163] AAPCS64 exhaustion, indirect pointer lifetimes and aggregate returns"
+        if: contains(fromJSON(matrix.steps), 'target-163') && (matrix.target == 'aarch64')
         run: |
           python3 src/test/integration/aarch64-abi-oracle-test.py
           for role in exec pie pie-rebased shared shared-rebased; do
               python3 src/test/integration/aarch64-abi.py "$GHIDRA_INSTALL_DIR" --role "$role" --with-controls
           done
 
-      - name: AArch64 full-width SIMD lane storage and clobber boundaries
-        if: matrix.target == 'aarch64'
+      - name: "[target-164] AArch64 full-width SIMD lane storage and clobber boundaries"
+        if: contains(fromJSON(matrix.steps), 'target-164') && (matrix.target == 'aarch64')
         run: |
           for role in exec pie pie-rebased; do
               python3 src/test/integration/aarch64-vector.py "$GHIDRA_INSTALL_DIR" --role "$role" --with-controls --lldb lldb-18
           done
 
-      - name: AArch64 ELF language and compiler debugger-call profiles
-        if: matrix.target == 'aarch64'
+      - name: "[target-165] AArch64 ELF language and compiler debugger-call profiles"
+        if: contains(fromJSON(matrix.steps), 'target-165') && (matrix.target == 'aarch64')
         run: |
           python3 src/test/integration/abi-profile-diagnostics-test.py
           for role in exec pie pie-rebased; do
@@ -2967,8 +3048,8 @@ jobs:
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --abi-version 1
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --osabi 9
 
-      - name: MIPS ordinary and truncated memory-space stores
-        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-166] MIPS ordinary and truncated memory-space stores"
+        if: contains(fromJSON(matrix.steps), 'target-166') && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2976,8 +3057,8 @@ jobs:
           FORGE_INTEGRATION_COVERAGE_OUTPUT="$PWD/build/integration-coverage/collections" \
               python3 -B src/test/integration/mips-truncated-space.py "$GHIDRA_INSTALL_DIR" "$TARGET"
 
-      - name: MIPS N32 and N64 scalar ABI runtime and loader profiles
-        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-167] MIPS N32 and N64 scalar ABI runtime and loader profiles"
+        if: contains(fromJSON(matrix.steps), 'target-167') && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -2990,8 +3071,8 @@ jobs:
               done
           done
 
-      - name: MIPS O32 mixed and wide arguments in both byte orders
-        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-168] MIPS O32 mixed and wide arguments in both byte orders"
+        if: contains(fromJSON(matrix.steps), 'target-168') && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -3002,8 +3083,8 @@ jobs:
                   --abi o32 --endian "${TARGET#mips32}" --role "$role" --with-controls
           done
 
-      - name: MIPS N32 and N64 wider arguments, returns and debugger calls
-        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-169] MIPS N32 and N64 wider arguments, returns and debugger calls"
+        if: contains(fromJSON(matrix.steps), 'target-169') && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -3023,8 +3104,8 @@ jobs:
               done
           done
 
-      - name: MIPS N32 and N64 aggregate layout and alignment
-        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-170] MIPS N32 and N64 aggregate layout and alignment"
+        if: contains(fromJSON(matrix.steps), 'target-170') && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -3039,16 +3120,16 @@ jobs:
               done
           done
 
-      - name: ARM per-function dynamic base and VFP parameters
-        if: matrix.target == 'arm32'
+      - name: "[target-171] ARM per-function dynamic base and VFP parameters"
+        if: contains(fromJSON(matrix.steps), 'target-171') && (matrix.target == 'arm32')
         run: |
           src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
           FORGE_PCS_BE8=1 FORGE_PCS_GDB="$RUNNER_TEMP/arm-gdb/build/gdb/gdb" \
               FORGE_PCS_GDB_DATA="$RUNNER_TEMP/arm-gdb/build/gdb/data-directory" \
               src/test/integration/arm-dynamic-pcs-export.sh "$GHIDRA_INSTALL_DIR"
 
-      - name: ARM D and Q alias causal controls
-        if: matrix.target == 'arm32'
+      - name: "[target-172] ARM D and Q alias causal controls"
+        if: contains(fromJSON(matrix.steps), 'target-172') && (matrix.target == 'arm32')
         run: |
           python3 src/test/integration/arm-q-alias-reference.py \
               --gdb "$RUNNER_TEMP/arm-gdb/build/gdb/gdb" \
@@ -3056,8 +3137,8 @@ jobs:
               --d-only-qemu "$RUNNER_TEMP/arm-qemu-d-only/build" \
               --alias-qemu "$RUNNER_TEMP/arm-qemu-aliases/build"
 
-      - name: ARM scalar PCS calls and exhausted arguments
-        if: matrix.target == 'arm32'
+      - name: "[target-173] ARM scalar PCS calls and exhausted arguments"
+        if: contains(fromJSON(matrix.steps), 'target-173') && (matrix.target == 'arm32')
         run: |
           for order in little big; do
               gdb=$(command -v gdb-multiarch)
@@ -3090,8 +3171,8 @@ jobs:
               done
           done
 
-      - name: ARM aggregate calls and floating storage with compiler references
-        if: matrix.target == 'arm32'
+      - name: "[target-174] ARM aggregate calls and floating storage with compiler references"
+        if: contains(fromJSON(matrix.steps), 'target-174') && (matrix.target == 'arm32')
         run: |
           python3 src/test/integration/arm-stack-aggregates-reference-test.py
           python3 src/test/integration/arm-stack-aggregates-contract-test.py
@@ -3143,8 +3224,8 @@ jobs:
               done
           done
 
-      - name: Isolated scalar register bit-piece producer
-        if: matrix.target == 'arm32'
+      - name: "[target-175] Isolated scalar register bit-piece producer"
+        if: contains(fromJSON(matrix.steps), 'target-175') && (matrix.target == 'arm32')
         run: |
           results="$PWD/build/test-results/floating-register-slice-native"
           mkdir -p "$results"
@@ -3163,7 +3244,8 @@ jobs:
             "$results/slice.dbg" "$results/dwarfdump.txt" \
             --original "$PWD/build/fixtures/arm32/semantic.exec.stripped"
 
-      - name: Scalar floating registers and conservative paired omissions
+      - name: "[target-176] Scalar floating registers and conservative paired omissions"
+        if: contains(fromJSON(matrix.steps), 'target-176')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -3246,20 +3328,20 @@ jobs:
               done
           fi
 
-      - name: ARM register pair prefix at an ordinary terminal return
-        if: matrix.target == 'arm32'
+      - name: "[target-177] ARM register pair prefix at an ordinary terminal return"
+        if: contains(fromJSON(matrix.steps), 'target-177') && (matrix.target == 'arm32')
         run: src/test/integration/terminal-composite-export.sh "$GHIDRA_INSTALL_DIR"
 
-      - name: ARM incoming register and stack pieces
-        if: matrix.target == 'arm32'
+      - name: "[target-178] ARM incoming register and stack pieces"
+        if: contains(fromJSON(matrix.steps), 'target-178') && (matrix.target == 'arm32')
         run: |
           src/test/integration/mixed-incoming-prefix-export.sh "$GHIDRA_INSTALL_DIR"
           cases=(build/test-results/mixed-incoming-prefix/run.*/acceptance.json)
           test "${#cases[@]}" -eq 1
           python3 src/test/integration/mixed-incoming-prefix-controls.py "$(dirname "${cases[0]}")"
 
-      - name: Explicit MIPS FP32 reference, register pieces, and whole aliases
-        if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
+      - name: "[target-179] Explicit MIPS FP32 reference, register pieces, and whole aliases"
+        if: contains(fromJSON(matrix.steps), 'target-179') && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
         env:
           TARGET: ${{ matrix.target }}
           FORGE_FP_ABI_PROFILE: mips-fp32
@@ -3275,7 +3357,8 @@ jobs:
               "$PWD/native-integration/libdwarf.so.2.3.2" \
               "$PWD/native-integration/libdwarfp.so.2.3.2" "$TARGET"
 
-      - name: Function entry producer and validators
+      - name: "[target-180] Function entry producer and validators"
+        if: contains(fromJSON(matrix.steps), 'target-180')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -3296,16 +3379,16 @@ jobs:
             "$results/entry.dbg" "$results/dwarfdump.txt" \
             --original "$PWD/build/fixtures/$TARGET/semantic.exec.stripped"
 
-      - name: True function entry below-entry body ranges and rebases
-        if: matrix.target == 'x86_64'
+      - name: "[target-181] True function entry below-entry body ranges and rebases"
+        if: contains(fromJSON(matrix.steps), 'target-181') && (matrix.target == 'x86_64')
         run: |
           src/test/integration/function-entry-export.sh \
             "$GHIDRA_INSTALL_DIR" \
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
-      - name: Analyst aliases retain discontiguous and below-entry function bodies
-        if: matrix.target == 'x86_64'
+      - name: "[target-182] Analyst aliases retain discontiguous and below-entry function bodies"
+        if: contains(fromJSON(matrix.steps), 'target-182') && (matrix.target == 'x86_64')
         env:
           FORGE_ENTRY_ALIASES: 1
         run: |
@@ -3314,15 +3397,16 @@ jobs:
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
-      - name: Existing compiler DWARF replacement
-        if: matrix.target == 'x86_64'
+      - name: "[target-183] Existing compiler DWARF replacement"
+        if: contains(fromJSON(matrix.steps), 'target-183') && (matrix.target == 'x86_64')
         run: |
           src/test/integration/existing-debug-export.sh \
             "$GHIDRA_INSTALL_DIR" \
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
-      - name: Opt-in compressed DWARF equivalence, determinism and GDB
+      - name: "[target-184] Opt-in compressed DWARF equivalence, determinism and GDB"
+        if: contains(fromJSON(matrix.steps), 'target-184')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -3331,16 +3415,16 @@ jobs:
               bash src/test/integration/compression-cancellation.sh "$GHIDRA_INSTALL_DIR"
           fi
 
-      - name: Real-world distro binary export and debugging
-        if: matrix.target == 'x86_64'
+      - name: "[target-185] Real-world distro binary export and debugging"
+        if: contains(fromJSON(matrix.steps), 'target-185') && (matrix.target == 'x86_64')
         run: src/test/integration/real-world-export.sh "$GHIDRA_INSTALL_DIR"
 
-      - name: Published source and sidecar timestamp regression
-        if: matrix.target == 'x86_64'
+      - name: "[target-186] Published source and sidecar timestamp regression"
+        if: contains(fromJSON(matrix.steps), 'target-186') && (matrix.target == 'x86_64')
         run: src/test/integration/artifact-pair-timestamps.sh
 
-      - name: GUI output chooser selection and cancellation
-        if: matrix.target == 'x86_64'
+      - name: "[target-187] GUI output chooser selection and cancellation"
+        if: contains(fromJSON(matrix.steps), 'target-187') && (matrix.target == 'x86_64')
         run: |
           src/test/integration/gui-output-fallback.sh \
             "$GHIDRA_INSTALL_DIR" \
@@ -3348,8 +3432,8 @@ jobs:
             "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
             "$PWD/build/fixtures/x86_64/semantic.exec.reference"
 
-      - name: Installed unwind chooser cancellation, export and debugger behavior
-        if: matrix.target == 'x86_64' || matrix.target == 'aarch64'
+      - name: "[target-188] Installed unwind chooser cancellation, export and debugger behavior"
+        if: contains(fromJSON(matrix.steps), 'target-188') && (matrix.target == 'x86_64' || matrix.target == 'aarch64')
         env:
           TARGET: ${{ matrix.target }}
           GHIDRA_GUI_UNWIND: '1'
@@ -3367,8 +3451,8 @@ jobs:
             "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge" \
             "$compiler/without-cfi" "$compiler/reference"
 
-      - name: Installed Script Manager discovery, export, console, and cancellation
-        if: matrix.target == 'x86_64'
+      - name: "[target-189] Installed Script Manager discovery, export, console, and cancellation"
+        if: contains(fromJSON(matrix.steps), 'target-189') && (matrix.target == 'x86_64')
         run: |
           src/test/integration/gui-script-manager.sh \
             "$GHIDRA_INSTALL_DIR" \
@@ -3386,8 +3470,8 @@ jobs:
             "$PWD/build/fixtures/x86_64/semantic.exec.stripped" \
             "$PWD/build/fixtures/x86_64/semantic.exec.reference"
 
-      - name: Clean installed-release export without external natives
-        if: matrix.target == 'x86_64'
+      - name: "[target-190] Clean installed-release export without external natives"
+        if: contains(fromJSON(matrix.steps), 'target-190') && (matrix.target == 'x86_64')
         run: |
           set -euo pipefail
           fixture="$PWD/build/fixtures/x86_64/semantic.exec.stripped"
@@ -3417,27 +3501,28 @@ jobs:
             -ex 'set debuginfod enabled off' \
             -ex "file $fixture" -ex "symbol-file $output" -ex 'info functions'
 
-      - name: Rebased Ghidra project normalization
-        if: matrix.target == 'x86_64'
+      - name: "[target-191] Rebased Ghidra project normalization"
+        if: contains(fromJSON(matrix.steps), 'target-191') && (matrix.target == 'x86_64')
         run: |
           src/test/integration/rebased-program-export.sh \
             "$GHIDRA_INSTALL_DIR" \
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
-      - name: Default and stale executable path policy
-        if: matrix.target == 'x86_64'
+      - name: "[target-192] Default and stale executable path policy"
+        if: contains(fromJSON(matrix.steps), 'target-192') && (matrix.target == 'x86_64')
         run: |
           src/test/integration/output-path-policy.sh \
             "$GHIDRA_INSTALL_DIR" \
             "$PWD/native-integration/libdwarf.so.2.3.2" \
             "$PWD/native-integration/libdwarfp.so.2.3.2"
 
-      - name: Actual filesystem traversal through saved-program export and source lookup
-        if: matrix.target == 'x86_64'
+      - name: "[target-193] Actual filesystem traversal through saved-program export and source lookup"
+        if: contains(fromJSON(matrix.steps), 'target-193') && (matrix.target == 'x86_64')
         run: python3 src/test/integration/path-traversal-export.py "$GHIDRA_INSTALL_DIR"
 
-      - name: Automatic build-ID and debuglink sidecar association
+      - name: "[target-194] Automatic build-ID and debuglink sidecar association"
+        if: contains(fromJSON(matrix.steps), 'target-194')
         env:
           TARGET: ${{ matrix.target }}
         run: |
@@ -3445,20 +3530,130 @@ jobs:
             FORGE_REPORT_MANIFEST="$PWD/build/test-results/report-handoff/$TARGET.json" \
             src/test/integration/build-id-discovery.sh "$TARGET"
 
-      - name: Verify complete retained validator reports
+      - name: "[target-195] Verify complete retained validator reports"
+        if: contains(fromJSON(matrix.steps), 'target-195')
         run: |
           python3 src/test/integration/retained-validator-reports-test.py build/test-results
           python3 src/test/integration/retained-validator-reports.py build/test-results \
             --exclude-validator-self-tests \
             --output build/test-results/retained-validator-reports.json
 
-      - name: Verify and report Linux integration coverage by layer
+      - name: "[target-204] Retain bounded primary fixture diagnostics"
+        if: contains(fromJSON(matrix.steps), 'target-204') && (always())
+        env:
+          TARGET: ${{ matrix.target }}
+        run: python3 src/test/integration/capture-primary-fixtures.py "$TARGET"
+
+      - name: "[target-205] Retain target debugger build evidence"
+        if: contains(fromJSON(matrix.steps), 'target-205') && (always() && (matrix.target == 'mips32be' || matrix.target == 'mips32le' || matrix.target == 'arm32'))
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          profile=mips
+          if [[ "$TARGET" == arm32 ]]; then profile=arm; fi
+          mkdir -p "build/test-results/$profile-gdb"
+          shopt -s nullglob
+          files=("$RUNNER_TEMP/$profile-gdb/"*.log "$RUNNER_TEMP/$profile-gdb/"*.json)
+          if [[ ${#files[@]} -gt 0 ]]; then
+              cp "${files[@]}" "build/test-results/$profile-gdb/"
+          fi
+
+      - name: "[target-206] Archive target diagnostics with exact fixture filenames"
+        if: contains(fromJSON(matrix.steps), 'target-206') && (always())
+        run: |
+          python3 src/test/integration/archive-target-diagnostics-test.py
+          python3 support/archive-target-diagnostics.py \
+            build/test-results build/target-preflight.tar.gz
+
+      - name: "[target-207] actions/upload-artifact@v7"
+        if: contains(fromJSON(matrix.steps), 'target-207') && (always())
+        uses: actions/upload-artifact@v7
+        with:
+          overwrite: true
+          name: target-preflight-${{ matrix.target }}-${{ matrix.group }}
+          path: build/target-preflight.tar.gz
+          compression-level: 0
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Seal this group's integration coverage
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 -B support/ci/integration-coverage-groups.py seal \
+              --root build/integration-coverage --target "$TARGET" \
+              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: target-coverage-${{ matrix.target }}-${{ github.run_attempt }}-${{ matrix.group }}
+          path: build/integration-coverage/
+          if-no-files-found: error
+          retention-days: 14
+
+  target-group-validation:
+    if: always()
+    needs: [ target-integration ]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Require every assigned group and test to pass
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_HEAD_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 -B support/ci/verify-hosted-groups.py \
+              --output build/target-group-admission.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: target-group-admission-${{ github.run_attempt }}
+          path: build/target-group-admission.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  target-coverage:
+    needs: [ target-integration ]
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ x86_64, aarch64, arm32, mips32be, mips32le ]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/download-artifact@v8
+        with:
+          name: combined-javaexec-input
+          path: build/coverage-tools-input
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: target-coverage-${{ matrix.target }}-${{ github.run_attempt }}-*
+          path: build/group-inputs
+      - name: Admit every coverage group and prepare report tools
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          python3 -B support/ci/integration-coverage-groups.py merge \
+              --root build/group-inputs --output build/integration-coverage \
+              --jar build/coverage-tools-input/production.jar --target "$TARGET"
+          python3 -B support/ci/prepare-coverage-report.py \
+              --bundle build/coverage-tools-input \
+              --classpath build/test-coverage-tools/jacoco-classpath.txt
+
+      - name: "[target-196] Verify and report Linux integration coverage by layer"
         if: matrix.target == 'x86_64'
         env:
           SOURCE_COMMIT: ${{ github.sha }}
         run: |
           python3 -B src/test/coverage/integration-report.py \
-              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --jar "$PWD/build/coverage-tools-input/production.jar" \
               --collections build/integration-coverage/collections --output build/integration-coverage/report \
               --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
               --sources src/main/java --commit "$SOURCE_COMMIT" \
@@ -3487,108 +3682,80 @@ jobs:
               --require-suite producer-failures --require-suite qualified-type-producer --require-suite namespace-globals --require-suite mmio-failure-controls \
               --require-suite callable-type-producer --require-suite location-width-producer
 
-      - name: Verify and report AArch64 integration coverage
+      - name: "[target-197] Verify and report AArch64 integration coverage"
         if: matrix.target == 'aarch64'
         env:
           SOURCE_COMMIT: ${{ github.sha }}
         run: |
           python3 -B src/test/coverage/integration-report.py \
-              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --jar "$PWD/build/coverage-tools-input/production.jar" \
               --collections build/integration-coverage/collections --output build/integration-coverage/report \
               --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
               --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite stack-value-transitions \
               --require-suite bitfield-values --require-suite namespace-globals --require-suite location-width-producer
 
-      - uses: actions/upload-artifact@v7
+      - name: "[target-198] actions/upload-artifact@v7"
+        uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'aarch64'
         with:
+          overwrite: true
           name: integration-java-coverage-linux-aarch64
           path: build/integration-coverage/
           if-no-files-found: error
           retention-days: 14
 
-      - name: Verify and report MIPS STORE integration coverage
+      - name: "[target-199] Verify and report MIPS STORE integration coverage"
         if: matrix.target == 'mips32be' || matrix.target == 'mips32le'
         env:
           SOURCE_COMMIT: ${{ github.sha }}
         run: |
           python3 -B src/test/coverage/integration-report.py \
-              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --jar "$PWD/build/coverage-tools-input/production.jar" \
               --collections build/integration-coverage/collections --output build/integration-coverage/report \
               --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
               --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite mips-truncated-space \
               --require-suite location-width-producer --require-suite context-boundaries
 
-      - name: Verify and report ARM32 location integration coverage
+      - name: "[target-200] Verify and report ARM32 location integration coverage"
         if: matrix.target == 'arm32'
         env:
           SOURCE_COMMIT: ${{ github.sha }}
         run: |
           python3 -B src/test/coverage/integration-report.py \
-              --jar "$GHIDRA_INSTALL_DIR/Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar" \
+              --jar "$PWD/build/coverage-tools-input/production.jar" \
               --collections build/integration-coverage/collections --output build/integration-coverage/report \
               --java "$JAVA_HOME/bin/java" --jacoco-classpath build/test-coverage-tools/jacoco-classpath.txt \
               --sources src/main/java --commit "$SOURCE_COMMIT" --require-suite location-width-producer \
               --require-suite context-boundaries
 
-      - uses: actions/upload-artifact@v7
+      - name: "[target-201] actions/upload-artifact@v7"
+        uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'arm32'
         with:
+          overwrite: true
           name: integration-java-coverage-linux-arm32
           path: build/integration-coverage/
           if-no-files-found: error
           retention-days: 14
 
-      - uses: actions/upload-artifact@v7
+      - name: "[target-202] actions/upload-artifact@v7"
+        uses: actions/upload-artifact@v7
         if: always() && (matrix.target == 'mips32be' || matrix.target == 'mips32le')
         with:
+          overwrite: true
           name: integration-java-coverage-linux-${{ matrix.target }}
           path: build/integration-coverage/
           if-no-files-found: error
           retention-days: 14
 
-      - uses: actions/upload-artifact@v7
+      - name: "[target-203] actions/upload-artifact@v7"
+        uses: actions/upload-artifact@v7
         if: always() && matrix.target == 'x86_64'
         with:
+          overwrite: true
           name: integration-java-coverage-linux
           path: build/integration-coverage/
           if-no-files-found: error
-          retention-days: 14
-
-      - name: Retain bounded primary fixture diagnostics
-        if: always()
-        env:
-          TARGET: ${{ matrix.target }}
-        run: python3 src/test/integration/capture-primary-fixtures.py "$TARGET"
-
-      - name: Retain target debugger build evidence
-        if: always() && (matrix.target == 'mips32be' || matrix.target == 'mips32le' || matrix.target == 'arm32')
-        env:
-          TARGET: ${{ matrix.target }}
-        run: |
-          profile=mips
-          if [[ "$TARGET" == arm32 ]]; then profile=arm; fi
-          mkdir -p "build/test-results/$profile-gdb"
-          shopt -s nullglob
-          files=("$RUNNER_TEMP/$profile-gdb/"*.log "$RUNNER_TEMP/$profile-gdb/"*.json)
-          if [[ ${#files[@]} -gt 0 ]]; then
-              cp "${files[@]}" "build/test-results/$profile-gdb/"
-          fi
-
-      - name: Archive target diagnostics with exact fixture filenames
-        if: always()
-        run: |
-          python3 src/test/integration/archive-target-diagnostics-test.py
-          python3 support/archive-target-diagnostics.py \
-            build/test-results build/target-preflight.tar.gz
-
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: target-preflight-${{ matrix.target }}
-          path: build/target-preflight.tar.gz
-          compression-level: 0
-          if-no-files-found: warn
           retention-days: 14
 
   # Bare-metal system emulation is separate from the Linux ARM user-mode matrix.
@@ -4489,7 +4656,7 @@ jobs:
           include-hidden-files: true
 
   combined-java-coverage:
-    needs: [ extension-build, target-preflight, cortex-m-profile, windows-host ]
+    needs: [ extension-build, target-coverage, target-group-validation, cortex-m-profile, windows-host ]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -4574,7 +4741,9 @@ jobs:
       - native-windows
       - extension-build
       - release-package
-      - target-preflight
+      - target-integration
+      - target-coverage
+      - target-group-validation
       - linux-x86-export-reference
       - cortex-m-profile
       - perf-build-id
@@ -4591,7 +4760,9 @@ jobs:
           NATIVE_WINDOWS_RESULT: ${{ needs.native-windows.result }}
           EXTENSION_BUILD_RESULT: ${{ needs.extension-build.result }}
           RELEASE_PACKAGE_RESULT: ${{ needs.release-package.result }}
-          TARGET_PREFLIGHT_RESULT: ${{ needs.target-preflight.result }}
+          TARGET_INTEGRATION_RESULT: ${{ needs.target-integration.result }}
+          TARGET_COVERAGE_RESULT: ${{ needs.target-coverage.result }}
+          TARGET_GROUP_VALIDATION_RESULT: ${{ needs.target-group-validation.result }}
           CORTEX_M_RESULT: ${{ needs.cortex-m-profile.result }}
           LINUX_REFERENCE_RESULT: ${{ needs.linux-x86-export-reference.result }}
           PERF_BUILD_ID_RESULT: ${{ needs.perf-build-id.result }}
@@ -4604,7 +4775,7 @@ jobs:
           failed=0
           for result in "$WORKFLOW_LINT_RESULT" "$NATIVE_LINUX_RESULT" \
               "$NATIVE_WINDOWS_RESULT" "$EXTENSION_BUILD_RESULT" \
-              "$RELEASE_PACKAGE_RESULT" "$TARGET_PREFLIGHT_RESULT" \
+              "$RELEASE_PACKAGE_RESULT" "$TARGET_INTEGRATION_RESULT" "$TARGET_COVERAGE_RESULT" "$TARGET_GROUP_VALIDATION_RESULT" \
               "$LINUX_REFERENCE_RESULT" "$WINDOWS_HOST_RESULT" "$ATTACHMENT_WINDOWS_RESULT" \
               "$WINDOWS_ATTACHMENT_GDB_RESULT" "$PERF_BUILD_ID_RESULT" "$CORTEX_M_RESULT" \
               "$COMBINED_COVERAGE_RESULT"; do
