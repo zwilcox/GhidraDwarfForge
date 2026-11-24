@@ -21,6 +21,7 @@ import java.util.function.BooleanSupplier;
  * Bounded, file-backed ELF32/ELF64 metadata for the matched sidecar writer.
  * No source channel remains open after an operation. File sizes/offsets use signed
  * 64-bit values; the original image is never buffered in its entirety.
+ * ELF64 target virtual addresses are currently limited to 0..0x7fffffffffffffff.
  * Safety limits are 262144 entries per header table, 64 MiB per table or
  * convenience byte-array read, 16 MiB for the section-name table and aggregate
  * decoded names, and 65536 bytes per individual name (excluding its NUL).
@@ -85,6 +86,9 @@ public final class ElfImage {
             }
             requireRange(0, encodedHeaderSize, "ELF header");
 
+            if (elf64) {
+                requireSupportedAddress(buffer.getLong(24), 0, "e_entry", -1);
+            }
             long sectionOffset = elf64 ? unsignedLong(buffer, 40) : unsignedInt(buffer, 32);
             int entrySize = unsignedShort(elf64 ? 58 : 46);
             int encodedCount = unsignedShort(elf64 ? 60 : 48);
@@ -281,9 +285,11 @@ public final class ElfImage {
         section.type = unsignedInt(table, offset + 4);
         if (elf64) {
             section.flags = unsignedLong(table, offset + 8);
-            section.address = unsignedLong(table, offset + 16);
+            section.address = table.getLong(offset + 16);
             section.offset = unsignedLong(table, offset + 24);
             section.size = unsignedLong(table, offset + 32);
+            requireSupportedAddress(section.address, (section.flags & 2) != 0 ? section.size : 0,
+                "sh_addr", index);
             section.link = unsignedInt(table, offset + 40);
             section.info = unsignedInt(table, offset + 44);
             section.alignment = unsignedLong(table, offset + 48);
@@ -339,9 +345,11 @@ public final class ElfImage {
             if (elf64) {
                 segment.flags = unsignedInt(table, offset + 4);
                 segment.offset = unsignedLong(table, offset + 8);
-                segment.virtualAddress = unsignedLong(table, offset + 16);
+                segment.virtualAddress = table.getLong(offset + 16);
                 segment.fileSize = unsignedLong(table, offset + 32);
                 segment.memorySize = unsignedLong(table, offset + 40);
+                requireSupportedAddress(segment.virtualAddress,
+                    segment.type == PT_LOAD ? segment.memorySize : 0, "p_vaddr", index);
                 segment.alignment = unsignedLong(table, offset + 48);
             }
             else {
@@ -453,6 +461,17 @@ public final class ElfImage {
 
     private static long unsignedInt(ByteBuffer data, int offset) {
         return Integer.toUnsignedLong(data.getInt(offset));
+    }
+
+    private static void requireSupportedAddress(long start, long size, String field, int index) {
+        if (start >= 0 && (size == 0 || size - 1 <= Long.MAX_VALUE - start)) {
+            return;
+        }
+        long firstUnsupported = start < 0 ? start : Long.MIN_VALUE;
+        String location = index < 0 ? field : field + "[" + index + "]";
+        throw new IllegalArgumentException("ELF64 virtual address 0x" +
+            Long.toHexString(firstUnsupported) + " is valid. GhidraDwarfForge does not yet " +
+            "support upper-half addresses. ELF header field: " + location);
     }
 
     private static long unsignedLong(ByteBuffer data, int offset) {
