@@ -155,4 +155,6 @@ run_case repeat 0
 cmp "$result_dir/baseline/nonzero.dbg" "$result_dir/repeat/nonzero.dbg"
 cmp "$result_dir/baseline/nonzero.dbg.c" "$result_dir/repeat/nonzero.dbg.c"
 test "$input_hash" = "$(sha256sum "$input" | cut -d' ' -f1)"
+# The same x86-64 address lane also checks the documented ELF64 upper limit.
+"$repository_dir/src/test/integration/upper-half-elf.sh" "$ghidra_dir" "$consumer" "$producer"
 echo "nonzero-load-offset-export=PASS"
