@@ -16,7 +16,8 @@ import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter;
 import ghidradwarfforge.nativeapi.DwarfTarget;
 import ghidradwarfforge.nativeapi.PackagedNativeLibraries;
-import ghidradwarfforge.output.ArtifactPairPublisher;
+import ghidradwarfforge.output.CompanionArtifactPublisher;
+import ghidradwarfforge.output.SourceBundleStore;
 import ghidradwarfforge.output.AttachmentPreparation;
 import ghidradwarfforge.output.ExportReport;
 import ghidradwarfforge.output.CoverageReportClaims;
@@ -270,7 +271,7 @@ public class GhidraDwarfForge extends GhidraScript {
         if (formatterSelectionPath != null) protectedInputs.add(formatterSelectionPath);
         if (firmwareInputs != null) protectedInputs.add(firmwareInputs);
         ghidradwarfforge.GhidraProjectOutputProtection.requireSafeOutputs(currentProgram, generation, monitor);
-        ghidradwarfforge.output.CompanionArtifactPublisher.validate(input, generation, protectedInputs.toArray(Path[]::new));
+        CompanionArtifactPublisher.validate(input, generation, protectedInputs.toArray(Path[]::new));
         String inputHash = consistency.inputSha256();
         String importedHash = currentProgram.getExecutableSHA256();
         if (importedHash != null && !importedHash.isBlank() &&
@@ -288,7 +289,7 @@ public class GhidraDwarfForge extends GhidraScript {
             ElfImage originalElf = firmware == null ? ElfImage.readForExport(input) : firmware.image().witness();
             if (firmware != null) {
                 protectedInputs.addAll(firmware.protectedInputs());
-                ghidradwarfforge.output.CompanionArtifactPublisher.validate(input, generation, protectedInputs.toArray(Path[]::new));
+                CompanionArtifactPublisher.validate(input, generation, protectedInputs.toArray(Path[]::new));
             }
             DwarfTarget target = GhidraTargetAgreement.requireAgreement(currentProgram, originalElf);
             if (targetProfile != null) {
@@ -410,97 +411,78 @@ public class GhidraDwarfForge extends GhidraScript {
             var source = annotated.source();
             var sourceBundle = sourceLineTarget == 0 ? null : ghidradwarfforge.output.SourceBundle.prepare(
                 inputHash, sourceOutput.getFileName().toString(), source, sourceLineTarget, monitor::isCancelled);
-            var sourceDependencies = new ghidradwarfforge.output.SourceBundleStore.Installed[1];
             var sourceProtectedPaths = new ArrayList<Path>(generation);
             sourceProtectedPaths.add(input);
             sourceProtectedPaths.addAll(protectedInputs);
             var formatterPlan = formatterSelection == null ? null :
                 ghidradwarfforge.formatters.FormatterPlan.prepare(typeModel, formatterSelection, monitor::isCancelled);
-            var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
-            var stagedSidecarHolder = new Path[1];
-            var companionHash = new String[1];
-            var reportHolder = new PreparedReport[1];
-            consistency.requireUnchanged(monitor::isCancelled);
-            ArtifactPairPublisher.PrePublishCheck prePublishCheck = () -> {
-                consistency.requireUnchanged(monitor::isCancelled);
-                if (firmware != null) firmware.requireUnchanged(monitor);
-                // The first consistency check runs before the writer installs source parts.
-                if (sourceDependencies[0] != null) sourceDependencies[0].verify(monitor::isCancelled);
-                if (formatterSelectionPath != null && !formatterSelectionHash.equals(
-                        FileDigests.read(formatterSelectionPath, monitor::isCancelled))) {
-                    throw new IOException("formatter selection changed during export");
+            var request = new MinimalDwarfSidecarExporter.ExportRequest(consumer, producer, functions,
+                source, typeModel, sourceOutput.getFileName().toString(), monitor::isCancelled,
+                modeCues, aliases, aliasModeCues, sectionModes, annotated.constants(), diagnostic,
+                firmware == null && recovered != null ? recovered.plan().orElse(null) : null);
+            class Generation implements CompanionArtifactPublisher.GenerationWriter {
+                private SourceBundleStore.Installed sourceDependencies;
+                private PreparedGeneration prepared;
+
+                void verify() throws Exception {
+                    consistency.requireUnchanged(monitor::isCancelled);
+                    if (firmware != null) firmware.requireUnchanged(monitor);
+                    // The first consistency check runs before the writer installs source parts.
+                    if (sourceDependencies != null) sourceDependencies.verify(monitor::isCancelled);
+                    if (formatterSelectionPath != null && !formatterSelectionHash.equals(
+                            FileDigests.read(formatterSelectionPath, monitor::isCancelled))) {
+                        throw new IOException("formatter selection changed during export");
+                    }
                 }
-            };
-            ArtifactPairPublisher.StagedWriter sidecarWriter = stagedOutput -> {
-                if (sourceBundle != null) {
-                    sourceDependencies[0] = ghidradwarfforge.output.SourceBundleStore.install(
-                        sourceOutput, sourceBundle, sourceProtectedPaths, monitor::isCancelled);
-                }
-                var exporter = new MinimalDwarfSidecarExporter(compression,
-                    formatterPlan == null ? Map.of() : formatterPlan.aliases(),
-                    sourceBundle == null ? null : sourceBundle.fileLayout(), callSites.plan());
-                if (firmware != null) {
-                    resultHolder[0] = exporter.exportFirmware(firmware.image(), stagedOutput,
-                        consumer, producer, functions, source, typeModel,
-                        sourceOutput.getFileName().toString(), monitor::isCancelled,
-                        modeCues, aliases, aliasModeCues, sectionModes, annotated.constants(), diagnostic, null);
-                }
-                else if (recovered != null && recovered.plan().isPresent()) {
-                    resultHolder[0] = exporter.exportWithFrames(input, stagedOutput,
-                        consumer, producer, functions, source, typeModel,
-                        sourceOutput.getFileName().toString(), monitor::isCancelled,
-                        modeCues, aliases, aliasModeCues, sectionModes, annotated.constants(), diagnostic,
-                        recovered.plan().orElseThrow());
-                }
-                else {
-                    resultHolder[0] = exporter.export(input, stagedOutput,
-                        consumer, producer, functions, source, typeModel,
-                        sourceOutput.getFileName().toString(), monitor::isCancelled,
-                        modeCues, aliases, aliasModeCues, sectionModes, annotated.constants(), diagnostic);
-                }
-                stagedSidecarHolder[0] = stagedOutput;
-                if (sourceBundle != null) sourceDependencies[0].synchronizeSidecarTime(stagedOutput, monitor::isCancelled);
-            };
-            ArtifactPairPublisher.StagedWriter sourceWriter = stagedSource -> {
-                if (sourceBundle == null) source.writeAtomically(stagedSource);
-                else Files.write(stagedSource, sourceBundle.indexBytes(monitor::isCancelled));
-                // Validate the complete report while both files are still staged. Report
-                // paths describe the final generation; digests describe its staged bytes.
-                var result = resultHolder[0];
-                var coverage = ExportPhase.measure("coverage-assembly", () ->
-                    ExportCoverage.build(typeModel, source, decoded, result.emission(),
-                        monitor::isCancelled));
-                var profile = new CoverageReportJson.Profile(
-                    currentProgram.getLanguageID().getIdAsString(),
-                    currentProgram.getCompilerSpec().getCompilerSpecID().getIdAsString());
-                String outputHash = FileDigests.read(stagedSidecarHolder[0], monitor::isCancelled).sha256();
-                String sourceHash = FileDigests.read(stagedSource, monitor::isCancelled).sha256();
-                ExportReport report = ExportReport.completed(result.target(), result.libdwarfVersion(),
-                    input, inputHash, output, outputHash, sourceOutput, sourceHash,
-                    result.functionCount(), result.sectionNames(), source, typeModel,
-                    extraction.skippedFunctions(), diagnostics);
-                var typeEvidence = ExportPhase.measure("coverage-type-evidence", () ->
-                    ghidradwarfforge.output.CoverageTypeEvidence.capture(typeModel, result.emission(), coverage,
-                        monitor::isCancelled));
-                var claims = new CoverageReportClaims(profile, coverage, typeEvidence);
-                String json = ExportPhase.measure("coverage-report-preflight", () ->
-                    report.toJsonWithCoverage(claims,
-                        monitor::isCancelled));
-                reportHolder[0] = new PreparedReport(json, outputHash, sourceHash, claims, report, output, attachmentPreparation);
-            };
-            if (!attachmentPreparation) {
-                var cleanup = ghidradwarfforge.output.CompanionArtifactPublisher.stageAndPublish(input, generation, stages -> {
-                    sidecarWriter.write(stages.get(0));
-                    sourceWriter.write(stages.get(1));
+
+                @Override public void write(List<Path> stages) throws Exception {
+                    Path stagedOutput = stages.get(0);
+                    Path stagedSource = stages.get(1);
+                    if (sourceBundle != null) {
+                        sourceDependencies = SourceBundleStore.install(
+                            sourceOutput, sourceBundle, sourceProtectedPaths, monitor::isCancelled);
+                    }
+                    var exporter = new MinimalDwarfSidecarExporter(compression,
+                        formatterPlan == null ? Map.of() : formatterPlan.aliases(),
+                        sourceBundle == null ? null : sourceBundle.fileLayout(), callSites.plan());
+                    var result = firmware == null ? exporter.export(input, stagedOutput, request)
+                        : exporter.exportFirmware(firmware.image(), stagedOutput, request);
+                    if (sourceBundle != null) sourceDependencies.synchronizeSidecarTime(stagedOutput, monitor::isCancelled);
+                    if (sourceBundle == null) source.writeAtomically(stagedSource);
+                    else Files.write(stagedSource, sourceBundle.indexBytes(monitor::isCancelled));
+                    // Validate the complete report while both files are still staged. Report
+                    // paths describe the final generation; digests describe its staged bytes.
+                    var coverage = ExportPhase.measure("coverage-assembly", () ->
+                        ExportCoverage.build(typeModel, source, decoded, result.emission(),
+                            monitor::isCancelled));
+                    var profile = new CoverageReportJson.Profile(
+                        currentProgram.getLanguageID().getIdAsString(),
+                        currentProgram.getCompilerSpec().getCompilerSpecID().getIdAsString());
+                    String outputHash = FileDigests.read(stagedOutput, monitor::isCancelled).sha256();
+                    String sourceHash = FileDigests.read(stagedSource, monitor::isCancelled).sha256();
+                    ExportReport report = ExportReport.completed(result.target(), result.libdwarfVersion(),
+                        input, inputHash, output, outputHash, sourceOutput, sourceHash,
+                        result.functionCount(), result.sectionNames(), source, typeModel,
+                        extraction.skippedFunctions(), diagnostics);
+                    var typeEvidence = ExportPhase.measure("coverage-type-evidence", () ->
+                        ghidradwarfforge.output.CoverageTypeEvidence.capture(typeModel, result.emission(), coverage,
+                            monitor::isCancelled));
+                    var claims = new CoverageReportClaims(profile, coverage, typeEvidence);
+                    String json = ExportPhase.measure("coverage-report-preflight", () ->
+                        report.toJsonWithCoverage(claims,
+                            monitor::isCancelled));
+                    var preparedReport = new PreparedReport(json, outputHash, sourceHash, claims, report,
+                        output, attachmentPreparation);
+                    String companionHash = null;
                     int index = 2;
                     if (firmware != null) {
                         Files.writeString(stages.get(index++), firmware.manifest(output,
-                            reportHolder[0].outputHash(), sourceOutput, reportHolder[0].sourceHash(), monitor),
+                            outputHash, sourceOutput, sourceHash, monitor),
                             java.nio.charset.StandardCharsets.UTF_8);
                     }
                     if (synthesizeUnwind) {
                         String evidence = ghidradwarfforge.output.UnwindEvidenceJson.describe(originalElf, recovered,
-                            rebaseDelta, inputHash, reportHolder[0].outputHash(), reportHolder[0].sourceHash(), monitor::isCancelled);
+                            rebaseDelta, inputHash, outputHash, sourceHash, monitor::isCancelled);
                         Files.writeString(stages.get(index++), evidence + "\n", java.nio.charset.StandardCharsets.UTF_8);
                     }
                     if (gdbLoader) {
@@ -508,7 +490,7 @@ public class GhidraDwarfForge extends GhidraScript {
                             stages.get(0), stages.get(1), output, sourceOutput, monitor::isCancelled);
                         Path stage = stages.get(index++);
                         Files.writeString(stage, companion, java.nio.charset.StandardCharsets.UTF_8);
-                        companionHash[0] = FileDigests.read(stage, monitor::isCancelled).sha256();
+                        companionHash = FileDigests.read(stage, monitor::isCancelled).sha256();
                     }
                     if (formatterPlan != null) {
                         Files.writeString(stages.get(index++), formatterPlan.render(input, stages.get(0), output,
@@ -518,18 +500,20 @@ public class GhidraDwarfForge extends GhidraScript {
                         Files.writeString(stages.get(index), mmioProfile.render(originalElf, stages.get(0),
                             monitor::isCancelled), java.nio.charset.StandardCharsets.UTF_8);
                     }
-                }, prePublishCheck, monitor::checkCancelled);
-                committed = reportHolder[0];
-                cleanup.ifPresent(problem -> publicationWarnings.add(problem.getMessage()));
+                    prepared = new PreparedGeneration(preparedReport, result, companionHash);
+                }
             }
-            else {
-                var cleanup = ArtifactPairPublisher.stageAndPublishNew(output, sourceOutput,
-                    sidecarWriter, sourceWriter, prePublishCheck, monitor::checkCancelled);
-                committed = reportHolder[0];
-                cleanup.ifPresent(problem -> publicationWarnings.add(problem.getMessage()));
-            }
-            MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
-            PreparedReport prepared = reportHolder[0];
+            var writer = new Generation();
+            consistency.requireUnchanged(monitor::isCancelled);
+            var cleanup = attachmentPreparation
+                ? CompanionArtifactPublisher.stageAndPublishNewPair(input, output, sourceOutput, writer,
+                    writer::verify, monitor::checkCancelled)
+                : CompanionArtifactPublisher.stageAndPublish(input, generation, writer,
+                    writer::verify, monitor::checkCancelled);
+            committed = writer.prepared.report();
+            cleanup.ifPresent(problem -> publicationWarnings.add(problem.getMessage()));
+            var result = writer.prepared.result();
+            var prepared = committed;
             println("GhidraDwarfForge symbol export PASS");
             if (sourceBundle != null) {
                 println("  synthetic source parts: " + sourceBundle.manifest().parts().size());
@@ -548,7 +532,7 @@ public class GhidraDwarfForge extends GhidraScript {
             println("  source SHA-256: " + prepared.sourceHash());
             if (gdbLoader) {
                 println("  GDB companion: " + companionOutput);
-                println("  GDB companion SHA-256: " + companionHash[0]);
+                println("  GDB companion SHA-256: " + writer.prepared.companionHash());
                 println("  Load explicitly in GDB with: source " + companionOutput);
             }
             if (synthesizeUnwind) println("  unwind evidence: " + unwindOutput + " (recovered rules, independent validation NOT_RUN)");
@@ -573,6 +557,9 @@ public class GhidraDwarfForge extends GhidraScript {
 
     private record PreparedSource(ghidradwarfforge.source.SyntheticSourceFile source,
             ghidradwarfforge.annotations.SyntheticConstants constants) { }
+
+    private record PreparedGeneration(PreparedReport report, MinimalDwarfSidecarExporter.ExportResult result,
+            String companionHash) { }
 
     private record PreparedReport(String json, String outputHash, String sourceHash,
             CoverageReportClaims coverage, ExportReport report, Path output, boolean attachment) {

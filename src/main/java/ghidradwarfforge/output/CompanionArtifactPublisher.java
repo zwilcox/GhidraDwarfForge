@@ -102,6 +102,13 @@ public final class CompanionArtifactPublisher {
         return stageAndPublish(input, outputs, writer, check, pollCancellation, index -> { });
     }
 
+    /** Publish an attachment preparation only when both selected names are still available. */
+    public static Optional<IOException> stageAndPublishNewPair(Path input, Path sidecar, Path source,
+            GenerationWriter writer, ArtifactPairPublisher.PrePublishCheck check,
+            ArtifactPairPublisher.PrePublishCheck pollCancellation) throws Exception {
+        return publishResolved(resolve(input, List.of(sidecar, source)), true, writer, check, pollCancellation, index -> { });
+    }
+
     static Optional<IOException> stageAndPublish(Path input, List<Path> outputs, GenerationWriter writer,
             ArtifactPairPublisher.PrePublishCheck check, InstallHook hook) throws Exception {
         // The original overload accepts one combined monitor/consistency callback.

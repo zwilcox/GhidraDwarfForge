@@ -45,17 +45,6 @@ public final class ArtifactPairPublisher {
         logWarning(stageAndPublish(artifact, source, artifactWriter, sourceWriter, prePublishCheck, true));
     }
 
-    /** Preserve a successful attachment preparation when private staging cleanup needs attention. */
-    public static Optional<IOException> stageAndPublishNew(Path artifact, Path source,
-            StagedWriter artifactWriter, StagedWriter sourceWriter, PrePublishCheck check,
-            PrePublishCheck pollCancellation) throws Exception {
-        List<Path> targets = validatePair(artifact, source, artifactWriter, sourceWriter, check);
-        return CompanionArtifactPublisher.publishResolved(targets, true, stages -> {
-            artifactWriter.write(stages.get(0));
-            sourceWriter.write(stages.get(1));
-        }, check, pollCancellation, index -> { });
-    }
-
     private static Optional<IOException> stageAndPublish(Path artifact, Path source, StagedWriter artifactWriter,
             StagedWriter sourceWriter, PrePublishCheck prePublishCheck, boolean exclusive) throws Exception {
         List<Path> targets = validatePair(artifact, source, artifactWriter, sourceWriter, prePublishCheck);

@@ -18,6 +18,7 @@ public final class CompanionArtifactPublisherSmoke {
                 }
             }
             PublicationInterruptionSmoke.exercise(root);
+            freshPair(root);
             multipleFiles(root, 4);
             multipleFiles(root, 5);
             rejectAliases(root);
@@ -36,6 +37,31 @@ public final class CompanionArtifactPublisherSmoke {
                 for (Path path : files.sorted(Comparator.reverseOrder()).toList()) {
                     Files.delete(path);
                 }
+            }
+        }
+    }
+
+    private static void freshPair(Path root) throws Exception {
+        Path directory = Files.createDirectory(root.resolve("fresh-pair"));
+        Path input = Files.writeString(directory.resolve("original"), "binary");
+        Path sidecar = directory.resolve("original.dbg");
+        Path source = directory.resolve("original.dbg.c");
+        var warning = CompanionArtifactPublisher.stageAndPublishNewPair(input, sidecar, source, stages -> {
+            Files.writeString(stages.get(0), "first sidecar");
+            Files.writeString(stages.get(1), "first source");
+        }, () -> { }, () -> { });
+        if (warning.isPresent()) throw warning.get();
+        Files.delete(source);
+        try {
+            CompanionArtifactPublisher.stageAndPublishNewPair(input, sidecar, source,
+                stages -> { throw new AssertionError("existing attachment destination reached the writer"); },
+                () -> { }, () -> { });
+            throw new AssertionError("exclusive attachment pair replaced an existing file");
+        }
+        catch (java.nio.file.FileAlreadyExistsException expected) {
+            if (!Files.readString(sidecar).equals("first sidecar") || Files.exists(source) ||
+                    !Files.readString(input).equals("binary")) {
+                throw new AssertionError("fresh attachment rejection changed a public file");
             }
         }
     }
