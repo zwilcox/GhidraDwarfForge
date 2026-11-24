@@ -17,7 +17,6 @@ import ghidradwarfforge.locations.TargetRegisterMap;
 import ghidradwarfforge.locations.VariableStorageModel.CompositeStorage;
 import ghidradwarfforge.locations.VariableStorageModel.OmissionReason;
 import ghidradwarfforge.locations.VariableStorageModel.Piece;
-import ghidradwarfforge.locations.VariableStorageModel.RegisterStorage;
 import ghidradwarfforge.locations.VariableStorageModel.Storage;
 import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
 

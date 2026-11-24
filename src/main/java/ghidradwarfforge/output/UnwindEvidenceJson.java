@@ -10,7 +10,6 @@ import com.google.gson.stream.JsonWriter;
 import ghidra.program.model.address.Address;
 import ghidradwarfforge.AddressNormalizer;
 import ghidradwarfforge.elf.ElfImage;
-import ghidradwarfforge.unwind.CallFramePlan;
 import ghidradwarfforge.unwind.CallFramePlan.*;
 import ghidradwarfforge.unwind.GhidraUnwindFrames.Observation;
 import ghidradwarfforge.unwind.GhidraUnwindRecovery.Recovered;

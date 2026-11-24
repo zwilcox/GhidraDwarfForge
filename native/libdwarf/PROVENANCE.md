@@ -2,18 +2,7 @@
 
 Production native builds are pinned to the official libdwarf 2.3.2 release.
 
-**PRESENT; hosted integration unverified:**
-`patches/0002-admit-dwarf5-call-site-attributes.patch` is the issue #117 candidate
-for producer attribute admission. Its SHA-256 is
-`0594de0f49bba5dcec9a37206bbca612bcc430740e87670264e1d3cef26a3714`.
-Applied after patch 0001 to the verified release archive, it passes the Linux
-x86-64 ABI probe and 15 isolated admission/form cases, including independent
-readelf/LLVM checks. See `docs/CALL-SITE-PLAN.md` and its evidence record.
-The CI/release contract now pins and applies both patches to primary and
-comparison native builds on both hosts. Linux runs independent form checks;
-Windows runs all 15 API admission cases. These new hosted jobs have not yet run.
-Local release-package controls reject missing/mismatched patch provenance and
-source on both platform inputs; they do not establish Windows runtime behavior.
+CI applies `patches/0002-admit-dwarf5-call-site-attributes.patch` after patch 0001 in both primary and comparison native builds. Its SHA-256 is `0594de0f49bba5dcec9a37206bbca612bcc430740e87670264e1d3cef26a3714`. The Linux job checks the emitted attribute forms with independent readers. The Windows job exercises the 15 producer API admission cases. Both jobs passed on the reviewed main revision. [Issue #117](https://github.com/zwilcox/GhidraDwarfForge/issues/117) · [Main validation at 7f0b2272](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/45438911536)
 
 | Field | Value |
 |---|---|
