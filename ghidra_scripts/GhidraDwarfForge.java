@@ -233,7 +233,7 @@ public class GhidraDwarfForge extends GhidraScript {
         try (var firmware = rawTarget == null ? null :
                 ghidradwarfforge.firmware.GhidraFirmwareSession.open(currentProgram, rawTarget,
                     input, firmwareInputs, monitor)) {
-            ElfImage originalElf = firmware == null ? ElfImage.read(input) : firmware.image().witness();
+            ElfImage originalElf = firmware == null ? ElfImage.readForExport(input) : firmware.image().witness();
             if (firmware != null) {
                 firmware.requireSafeOutputs(generation, monitor);
                 var protectedFirmwareInputs = new ArrayList<>(firmware.protectedInputs());
