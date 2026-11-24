@@ -39,6 +39,7 @@ jobs:
           python3 -B support/ci/integration-plan.py --baseline-workflow .github/workflows/ci.yml \
               --output build/test-results/workflow-lint/proposed-integration-matrix.json
           python3 -B support/ci/test-integration-plan.py
+          python3 -B support/ci/test-install-target-packages.py
           python3 -B support/ci/test-workflow-timing.py
           python3 -B support/ci/test-integration-coverage-groups.py
           python3 -B support/ci/test-hosted-groups.py
@@ -1027,8 +1028,7 @@ jobs:
               packages+=(build-essential python3-dev libgmp-dev libmpfr-dev
                 libexpat1-dev libncurses-dev texinfo)
           fi
-          sudo apt-get update -y
-          sudo apt-get install --no-install-recommends -y "${packages[@]}"
+          bash support/ci/install-target-packages.sh "${packages[@]}"
 
       - name: "[target-005] Validate compiler MMIO layouts against register bytes"
         if: contains(fromJSON(matrix.steps), 'target-005') && (matrix.target == 'x86_64' || matrix.target == 'mips32be' || matrix.target == 'mips32le')

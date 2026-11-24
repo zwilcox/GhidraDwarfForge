@@ -156,6 +156,14 @@ def original_step(row, step):
             if not name.endswith(suffix):
                 raise ValueError('group artifact names must be unique')
             result['with']['name'] = name[:-len(suffix)]
+        if row['id'] == 'target-004':
+            # The helper prefetches packages with retries. Check the package
+            # selection and the remainder of the step against the serial job.
+            invoke = 'bash support/ci/install-target-packages.sh "${packages[@]}"'
+            if result['run'].count(invoke) != 1:
+                raise ValueError('target package list must reach the installer')
+            result['run'] = result['run'].replace(invoke, 'sudo apt-get update -y\n'
+                'sudo apt-get install --no-install-recommends -y "${packages[@]}"')
         if row['id'] == 'target-023':
             prerequisites = 'prepareIntegrationCoverage testClasses jar'
             if result['run'].count(prerequisites) != 1:
