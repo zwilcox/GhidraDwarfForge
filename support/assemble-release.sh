@@ -118,11 +118,6 @@ copy_platform() {
         echo "consumer=${consumers[0]}"
         echo "producer=${producers[0]}"
     } > "$destination/NATIVE-PAIR.properties"
-    (
-        cd "$destination"
-        find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' |
-            LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
-    )
 }
 
 copy_platform linux_x86_64 "$linux_input" 'libdwarf.so.2.3.2' 'libdwarfp.so.2.3.2'
@@ -256,6 +251,16 @@ for patch_index in "${!patch_names[@]}"; do
             exit 1
         fi
     done
+done
+
+for platform in linux_x86_64 win_x86_64; do
+    destination="$module/os/$platform"
+    python3 "$repository_dir/support/verify-native-runtime.py" "$platform" "$destination"
+    (
+        cd "$destination"
+        find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' |
+            LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS
+    )
 done
 
 {

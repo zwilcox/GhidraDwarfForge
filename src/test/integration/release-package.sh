@@ -86,6 +86,13 @@ printf 'source patch SHA-256:\r\n\\%s *D:\\\\fixture\\\\patch.patch\r\n' "$patch
     > "$work/windows/BUILD-METADATA.txt"
 printf 'call-site source patch SHA-256:\r\n\\%s *D:\\fixture\\call-site.patch\r\n' "$call_site_patch_hash" \
     >> "$work/windows/BUILD-METADATA.txt"
+for platform in linux windows; do
+    (
+        cd "$work/$platform"
+        if [[ $platform == linux ]]; then sha256sum -- *.so*; else sha256sum -- *.dll; fi > NATIVE-RUNTIME-SHA256SUMS
+        { echo 'SHA-256:'; cat NATIVE-RUNTIME-SHA256SUMS; echo 'Dependencies:'; } >> BUILD-METADATA.txt
+    )
+done
 printf 'upstream copying\n' \
     > "$work/linux/compliance/libdwarf/licenses/UPSTREAM-COPYING"
 printf 'lgpl text\n' > "$work/linux/compliance/libdwarf/licenses/LGPL-2.1.txt"
@@ -187,6 +194,17 @@ sed -i 's/^[0-9a-f]\{64\}/000000000000000000000000000000000000000000000000000000
 reject_patch_metadata supervisor-wrong-source "$work/linux-wrong-supervisor-source" "$work/windows" \
     'validator supervisor source provenance mismatch'
 
+for platform in linux windows; do
+    candidate="$work/$platform-stale-runtime"
+    cp -R "$work/$platform" "$candidate"
+    if [[ $platform == linux ]]; then
+        printf changed >> "$candidate/libdwarfp.so.2.3.2"
+        reject_patch_metadata stale-linux-runtime "$candidate" "$work/windows" 'native runtime provenance mismatch'
+    else
+        printf changed >> "$candidate/libdwarf-2.dll"
+        reject_patch_metadata stale-windows-runtime "$work/linux" "$candidate" 'native runtime provenance mismatch'
+    fi
+done
 cp -R "$work/windows" "$work/windows-crlf-patch"
 printf 'source patch SHA-256:\n%s  /fixture/patch.patch\n' \
     733405d03e2fd34f7bba971e6bbfe534d72ee9b3c1856879a7652f4eff17bc2a \
@@ -386,6 +404,7 @@ PY_ZIP_TIMESTAMPS
 # imported basename, package notices and hashes for either reviewed runtime.
 cp -R "$work/windows" "$work/windows-zlib14"
 mv "$work/windows-zlib14/zlib1.dll" "$work/windows-zlib14/libz-1.dll"
+sed -i 's/  zlib1.dll$/  libz-1.dll/' "$work/windows-zlib14/BUILD-METADATA.txt" "$work/windows-zlib14/NATIVE-RUNTIME-SHA256SUMS"
 sed -i 's/zlib 1.3.1-1/zlib 1.4-2/' \
     "$work/windows-zlib14/compliance/windows-runtime/PACKAGE-VERSIONS.txt"
 (
