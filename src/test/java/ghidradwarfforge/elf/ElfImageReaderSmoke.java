@@ -171,7 +171,9 @@ public final class ElfImageReaderSmoke {
             "ELF header field: ";
         String unsupported = "ELF64 virtual address 0xffffffff81000000" + limitation;
         fixture.address(24, kernel);
-        expectWriterFailure(input, unsupported + "e_entry");
+        expectFailure(() -> ElfImage.readForExport(input), unsupported + "e_entry");
+        require(ByteBuffer.wrap(ElfImage.read(input).headerBytes()).order(order).getLong(24) == kernel,
+            "metadata inspection lost the raw ELF64 entry-point bits");
         fixture.address(24, 0);
         fixture.address(fixture.sectionOffset(1) + 16, kernel);
         expectWriterFailure(input, unsupported + "sh_addr[1]");
@@ -184,11 +186,12 @@ public final class ElfImageReaderSmoke {
         require(ElfImage.read(input).preferredImageBase() == Long.MAX_VALUE - 3,
             "last four bytes below the upper half were rejected");
         fixture.address(fixture.programs + 16, Long.MAX_VALUE - 2);
-        expectWriterFailure(input, "0x8000000000000000" + limitation + "p_vaddr[0]");
+        expectFailure(() -> ElfImage.readForExport(input), "0x8000000000000000" + limitation + "p_vaddr[0]");
+        require(ElfImage.read(input).segments().size() == 2, "metadata inspection lost a crossing LOAD");
         fixture.address(fixture.programs + 16, 0);
         fixture.address(fixture.sectionOffset(1) + 8, 2); // SHF_ALLOC
         fixture.address(fixture.sectionOffset(1) + 16, Long.MAX_VALUE);
-        expectWriterFailure(input, "0x8000000000000000" + limitation + "sh_addr[1]");
+        expectFailure(() -> ElfImage.readForExport(input), "0x8000000000000000" + limitation + "sh_addr[1]");
     }
 
     private static void checkProgramCounts(Path input, boolean elf64, ByteOrder order)

@@ -46,11 +46,13 @@ public final class ElfImage {
     private final byte[] header;
     private final ByteBuffer buffer;
     private final boolean elf64;
+    private final boolean exportAddresses;
     private final List<Section> sections;
     private final List<Segment> segments;
     private final int sectionNameIndex;
 
-    private ElfImage(Path path) throws IOException {
+    private ElfImage(Path path, boolean exportAddresses) throws IOException {
+        this.exportAddresses = exportAddresses;
         // Resolve actual filesystem traversal before removing any dot segments:
         // symlink/../input may name a different file from lexical normalization.
         source = path.toRealPath();
@@ -86,7 +88,7 @@ public final class ElfImage {
             }
             requireRange(0, encodedHeaderSize, "ELF header");
 
-            if (elf64) {
+            if (elf64 && exportAddresses) {
                 requireSupportedAddress(buffer.getLong(24), 0, "e_entry", -1);
             }
             long sectionOffset = elf64 ? unsignedLong(buffer, 40) : unsignedInt(buffer, 32);
@@ -149,7 +151,12 @@ public final class ElfImage {
     }
 
     public static ElfImage read(Path path) throws IOException {
-        return new ElfImage(path);
+        return new ElfImage(path, false);
+    }
+
+    /** Export uses the entry point as a target address. Metadata comparison preserves its raw bits. */
+    public static ElfImage readForExport(Path path) throws IOException {
+        return new ElfImage(path, true);
     }
 
     public boolean is64Bit() {
@@ -288,7 +295,7 @@ public final class ElfImage {
             section.address = table.getLong(offset + 16);
             section.offset = unsignedLong(table, offset + 24);
             section.size = unsignedLong(table, offset + 32);
-            requireSupportedAddress(section.address, (section.flags & 2) != 0 ? section.size : 0,
+            requireSupportedAddress(section.address, exportAddresses && (section.flags & 2) != 0 ? section.size : 0,
                 "sh_addr", index);
             section.link = unsignedInt(table, offset + 40);
             section.info = unsignedInt(table, offset + 44);
@@ -349,7 +356,7 @@ public final class ElfImage {
                 segment.fileSize = unsignedLong(table, offset + 32);
                 segment.memorySize = unsignedLong(table, offset + 40);
                 requireSupportedAddress(segment.virtualAddress,
-                    segment.type == PT_LOAD ? segment.memorySize : 0, "p_vaddr", index);
+                    exportAddresses && segment.type == PT_LOAD ? segment.memorySize : 0, "p_vaddr", index);
                 segment.alignment = unsignedLong(table, offset + 48);
             }
             else {
