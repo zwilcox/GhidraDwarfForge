@@ -20,6 +20,9 @@ public class ExportConsistencyControls extends GhidraScript {
         Path input = Path.of(args[0]), root = Path.of(args[1]);
         Files.createDirectory(root);
         byte[] originalBytes = Files.readAllBytes(input);
+        Path other = Files.createDirectory(root.resolve("other-parent"));
+        Files.copy(input, other.resolve(input.getFileName()));
+        Path selectedParent = Files.createSymbolicLink(root.resolve("selected-parent"), input.getParent());
         var function = currentProgram.getFunctionManager().getFunctions(true).next();
         String originalComment = function.getComment();
         int controls = 0;
@@ -31,7 +34,9 @@ public class ExportConsistencyControls extends GhidraScript {
             if (companion) options.add("--gdb-loader");
             runScript("GhidraDwarfForge.java", options.toArray(String[]::new));
             var baseline = snapshot(directory);
-            for (boolean programChange : List.of(false, true)) {
+            for (String change : List.of("input", "program", "selected-parent")) {
+                var selected = new ArrayList<>(options);
+                if (change.equals("selected-parent")) selected.set(0, "--input=" + selectedParent.resolve(input.getFileName()));
                 TaskMonitor saved = monitor;
                 boolean[] injected = {false};
                 boolean caught = false;
@@ -42,8 +47,14 @@ public class ExportConsistencyControls extends GhidraScript {
                                 frame.getClassName().equals("ghidradwarfforge.output.CoverageReportJson")))) {
                             injected[0] = true;
                             try {
-                                if (programChange) function.setComment("injected export consistency change");
-                                else Files.write(input, Arrays.copyOf(originalBytes, originalBytes.length + 1));
+                                switch (change) {
+                                    case "program" -> function.setComment("injected export consistency change");
+                                    case "input" -> Files.write(input, Arrays.copyOf(originalBytes, originalBytes.length + 1));
+                                    default -> {
+                                        Files.delete(selectedParent);
+                                        Files.createSymbolicLink(selectedParent, other);
+                                    }
+                                }
                                 try (var files = Files.list(directory)) {
                                     if (files.filter(path -> path.toString().endsWith(".staged")).count() < 2) {
                                         throw new AssertionError("consistency control did not reach staged report generation");
@@ -55,24 +66,34 @@ public class ExportConsistencyControls extends GhidraScript {
                         return false;
                     }
                 };
-                try { runScript("GhidraDwarfForge.java", options.toArray(String[]::new)); }
+                try { runScript("GhidraDwarfForge.java", selected.toArray(String[]::new)); }
                 catch (IOException expected) {
-                    String reason = programChange ? "Ghidra program changed during export" : "Original ELF changed during export";
-                    boolean earlierCompanionCheck = companion && !programChange && expected.getMessage().equals(
+                    String reason = switch (change) {
+                        case "program" -> "Ghidra program changed during export";
+                        case "input" -> "Original ELF changed during export";
+                        default -> "Original ELF selection changed during export";
+                    };
+                    boolean earlierCompanionCheck = companion && change.equals("input") && expected.getMessage().equals(
                         "GDB companion requires a matched Forge sidecar for the selected input");
                     if (!expected.getMessage().contains(reason) && !earlierCompanionCheck) throw expected;
                     caught = true;
                 }
                 finally {
                     monitor = saved;
-                    if (programChange) function.setComment(originalComment);
-                    else Files.write(input, originalBytes);
+                    switch (change) {
+                        case "program" -> function.setComment(originalComment);
+                        case "input" -> Files.write(input, originalBytes);
+                        default -> {
+                            Files.delete(selectedParent);
+                            Files.createSymbolicLink(selectedParent, input.getParent());
+                        }
+                    }
                 }
                 if (!injected[0] || !caught || !baseline.equals(snapshot(directory))) {
-                    throw new AssertionError("changed evidence was published: companion=" + companion + " program=" + programChange);
+                    throw new AssertionError("changed evidence was published: companion=" + companion + " change=" + change);
                 }
                 controls++;
-                println("export-consistency-control=PASS companion=" + companion + " program=" + programChange);
+                println("export-consistency-control=PASS companion=" + companion + " change=" + change);
                 runScript("GhidraDwarfForge.java", options.toArray(String[]::new));
                 if (!baseline.equals(snapshot(directory))) throw new AssertionError("restored input/program retry changed artifacts");
             }

@@ -240,7 +240,7 @@ public class GhidraDwarfForge extends GhidraScript {
             guiFallback = true;
         }
         var consistency = ghidradwarfforge.GhidraExportConsistency.capture(
-            currentProgram, paths.input(), monitor::isCancelled);
+            currentProgram, requestedInput, monitor::isCancelled);
         Path input = consistency.inputPath();
         Path output = paths.artifact();
         Path sourceOutput = paths.source();

@@ -14,6 +14,25 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Two equally incomplete native builds must not produce a successful comparison report.
+compare="$repository_dir/support/compare-native-builds.sh"
+mkdir "$work/incomplete-native"
+reject_inventory() {
+    local platform=$1 missing=$2
+    if "$compare" "$platform" "$work/incomplete-native" "$work/incomplete-native" "$work/inventory-report" \
+            > "$work/inventory.log" 2>&1; then
+        echo "native comparison accepted an incomplete $platform inventory" >&2
+        exit 1
+    fi
+    grep -Fxq "$platform native ABI inventory is missing $missing" "$work/inventory.log"
+    test ! -e "$work/inventory-report"
+}
+reject_inventory linux libdwarf
+reject_inventory windows libdwarf
+# A readable host ELF lets readelf and nm inspect the one member that is present.
+cp -- "$(type -P true)" "$work/incomplete-native/libdwarf.so"
+reject_inventory linux libdwarfp
+
 mkdir -p "$work/base/GhidraDwarfForge/support" \
     "$work/base/GhidraDwarfForge/ghidra_scripts" \
     "$work/base/GhidraDwarfForge/third_party" \

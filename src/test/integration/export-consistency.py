@@ -103,9 +103,10 @@ def main():
     log = run('export', [ghidra / 'support/analyzeHeadless', project, 'Consistency', '-import', original,
         '-scriptPath', SCRIPTS / 'ghidra_scripts', '-postScript', 'ExportConsistencyControls.java',
         original, work / 'outputs', consumer, producer])
-    assert 'export-consistency-controls=PASS controls=4' in log
-    assert log.count('export-consistency-control=PASS companion=') == 4
+    assert 'export-consistency-controls=PASS controls=6' in log
+    assert log.count('export-consistency-control=PASS companion=') == 6
     assert 'Original ELF changed during export' in log and 'Ghidra program changed during export' in log
+    assert 'Original ELF selection changed during export' in log
     for selected in ('false', 'true'):
         start = 'cleanup-warning-start companion=' + selected
         end = 'cleanup-warning-end companion=' + selected
@@ -145,7 +146,7 @@ def main():
     assert digest(original) == digest(fixture)
     assert protected == {name: digest(Path(name)) for name in protected}
     (work / 'result.json').write_text(json.dumps({'status': 'PASS_EXPORT_CONSISTENCY', 'target': args.target,
-        'controls': 4, 'successfulExports': 8, 'protected': protected, 'artifacts': artifacts,
+        'controls': 6, 'successfulExports': 10, 'protected': protected, 'artifacts': artifacts,
         'compilerReferenceWarnings': reference_warnings}, indent=4) + '\n')
     print(args.target + ' export consistency PASS', flush=True)
 

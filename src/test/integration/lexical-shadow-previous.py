@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Compare explicit shadow lookup with a package predating lexical emission."""
+import argparse
 import hashlib
 import json
 from pathlib import Path
 import subprocess
-import sys
 
-case, previous = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('case', type=Path, help='completed lexical-shadow fixture directory with acceptance.json')
+parser.add_argument('previous', type=Path, help='Ghidra installation with a package predating lexical-scope emission')
+args = parser.parse_args()
+case, previous = args.case.resolve(), args.previous.resolve()
 harness = Path(__file__).resolve().parent
 baseline = json.loads((case / 'acceptance.json').read_text())
 output = case / 'previous.dbg'

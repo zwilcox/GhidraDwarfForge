@@ -161,3 +161,13 @@ Against the other two successful serial baselines, workflow elapsed time is
 limits inference from one grouped run. Actual-main confirmation and publication
 are tracked in [PR #213](https://github.com/zwilcox/GhidraDwarfForge/pull/213)
 and [issue #211](https://github.com/zwilcox/GhidraDwarfForge/issues/211).
+
+## Manual comparisons
+
+The following commands use artifacts from a previous run. Supply the indicated case or isolated Ghidra installation.
+
+| Comparison | Entry point | Input and result |
+| --- | --- | --- |
+| Variable shadowing across extension versions | `python3 src/test/integration/lexical-shadow-previous.py CASE PREVIOUS_GHIDRA` | Reopen the completed lexical-shadow project with a pre-lexical package and compare GDB's inner-scope lookup with the current observations. |
+| Debugger performance with alternative section layouts | `python3 src/test/performance/consumer-candidates.py CASE --workload sqlite` | Use a completed SQLite workload or choose `--workload uboot` for a U-Boot case. Measure compression and index variants on private copies. |
+| Re-export a curated project after attaching a debug link | `bash src/test/scenarios/debuglink/reexport.sh GHIDRA STRIPPED_ELF` | Attach to a private copy of a source-built x86-64 executable, retry export using the saved original and compare both generated files. |
