@@ -162,6 +162,7 @@ class IdentityTests(unittest.TestCase):
             return memoryview(self.code)[address - 0x201000:address - 0x201000 + size]
         loader.verify_memory(self.manifest, 0x200000, read)
         self.assertEqual(reads, [(0x201000, 65536), (0x211000, 256)])
+        self.assertEqual(loader.verification_work(self.manifest), (sum(n for _, n in reads), len(reads)))
 
     def test_runtime_mismatch_short_unreadable_and_overflow(self):
         def unreadable(address, size):

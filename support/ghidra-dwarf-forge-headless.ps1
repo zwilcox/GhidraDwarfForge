@@ -427,12 +427,31 @@ try {
             "ghidra-dwarf-forge-headless: expected one export report, found $($reportLines.Count)")
         exit 12
     }
-    if ($reportLines[0] -notmatch
-            'GhidraDwarfForge report: \{"schemaVersion":[0-9]+,"status":"([A-Z]+)"') {
-        [Console]::Error.WriteLine('ghidra-dwarf-forge-headless: malformed export report')
-        exit 12
+    $marker = 'GhidraDwarfForge report: '
+    $line = $reportLines[0]
+    $payload = $line.Substring($line.IndexOf($marker, [StringComparison]::Ordinal) + $marker.Length).Trim()
+    $suffix = ' (GhidraScript)'
+    if ($payload.EndsWith($suffix, [StringComparison]::Ordinal)) {
+        $payload = $payload.Substring(0, $payload.Length - $suffix.Length)
     }
-    $status = $Matches[1]
+    $report = ConvertFrom-Json -InputObject $payload -ErrorAction Stop
+    if ($report -isnot [PSCustomObject] -or
+            ($report.schemaVersion -isnot [int] -and $report.schemaVersion -isnot [long]) -or
+            $report.schemaVersion -notin @(1, 2)) { throw 'unsupported export report schema' }
+    $status = $report.status
+    if ($status -cin @('SUCCESS', 'PARTIAL')) {
+        if (($report.counts.functionsExported -isnot [int] -and $report.counts.functionsExported -isnot [long]) -or
+                $report.counts.functionsExported -lt 0 -or $report.artifacts.outputPath -isnot [string] -or
+                $report.artifacts.outputPath.Length -eq 0 -or ($report.schemaVersion -eq 2 -and $report.coverage -isnot [PSCustomObject]) -or
+                $null -eq $report.PSObject.Properties['failure'] -or $null -ne $report.failure) {
+            throw 'incomplete successful export report'
+        }
+    }
+    elseif ($status -cin @('FATAL', 'CANCELLED')) {
+        if ($report.failure.message -isnot [string] -or $report.failure.type -isnot [string] -or $null -eq $report.PSObject.Properties['artifacts'] -or
+                $null -ne $report.artifacts) { throw 'incomplete failure report' }
+    }
+    else { throw 'unknown report status' }
     switch ($status) {
         { $_ -in @('SUCCESS', 'PARTIAL') } {
             if ($headlessStatus -ne 0) {

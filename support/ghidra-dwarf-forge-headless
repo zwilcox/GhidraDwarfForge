@@ -40,6 +40,16 @@ Common options:
 
 ELF64 target virtual addresses above 0x7fffffffffffffff are currently unsupported.
 
+Ordinary export replaces each public file atomically. A reader opening multiple
+names during publication can see different generations. Wait for the terminal
+report before opening the set. An interrupted process can leave an active claim
+in .ghidra-dwarf-forge-publishing-*/owner.properties beside each output. It names
+the process and generation.properties recovery inventory. Verify that process
+has stopped before recovery. Preserve the listed stages and backups. Compare
+the current files to the recorded old/new SHA-256 values or symlink targets,
+then restore one complete generation. Treat any other content as an external
+change. Retire the recorded claim only after checking every output.
+
 Existing-project mode opens one saved program through a read-only project
 handle. A basename selects a root file; /folder/program selects a nested file.
 Analysis is disabled. The saved project and program are never deleted or saved.
@@ -53,7 +63,7 @@ Exit codes:
   0   Export completed (SUCCESS or PARTIAL; inspect the JSON report)
   10  Export reported FATAL
   11  Export reported CANCELLED
-  12  Ghidra failed or did not emit exactly one valid report
+  12  Ghidra failed or its report could not be read (requires Python 3)
   64  Invalid command-line usage
 EOF
 }
@@ -297,6 +307,8 @@ if [[ -n "$consumer" ]]; then
     [[ -f "$producer" ]] || die_usage "libdwarfp does not exist: $producer"
 fi
 
+command -v python3 >/dev/null || { echo "Python 3 is required to read the export report" >&2; exit 12; }
+
 temporary_root=
 temporary_log=0
 temporary_base=${TMPDIR:-/tmp}
@@ -373,20 +385,52 @@ fi
 
 set +e
 "$headless" "${headless_arguments[@]}" 2>&1 | tee -- "$log_path"
-headless_status=${PIPESTATUS[0]}
+pipeline_status=("${PIPESTATUS[@]}")
 set -e
+headless_status=${pipeline_status[0]}
+if ((pipeline_status[1] != 0)); then
+    echo "ghidra-dwarf-forge-headless: could not write the transcript" >&2
+    exit 12
+fi
 
-mapfile -t report_lines < <(grep -F -- 'GhidraDwarfForge report: ' "$log_path" || true)
-if [[ ${#report_lines[@]} -ne 1 ]]; then
-    echo "ghidra-dwarf-forge-headless: expected one export report, found ${#report_lines[@]}" >&2
-    exit 12
-fi
-status=$(sed -n 's/^.*GhidraDwarfForge report: {"schemaVersion":[0-9][0-9]*,"status":"\([A-Z]*\)".*$/\1/p' \
-    <<<"${report_lines[0]}")
-if [[ -z "$status" ]]; then
-    echo "ghidra-dwarf-forge-headless: malformed export report" >&2
-    exit 12
-fi
+status=$(python3 - "$log_path" <<'PYTHON'
+import json
+import sys
+
+marker = b"GhidraDwarfForge report: "
+status = None
+try:
+    with open(sys.argv[1], "rb") as transcript:
+        for line in transcript:
+            if marker not in line:
+                continue
+            if status is not None:
+                raise ValueError("multiple export reports")
+            payload = line.split(marker, 1)[1].strip()
+            suffix = b" (GhidraScript)"
+            if payload.endswith(suffix):
+                payload = payload[:-len(suffix)]
+            report = json.loads(payload)
+            if not isinstance(report, dict) or type(report.get("schemaVersion")) is not int or report["schemaVersion"] not in (1, 2):
+                raise ValueError("unsupported export report schema")
+            status = report["status"]
+            if status in ("SUCCESS", "PARTIAL"):
+                if (not isinstance(report["artifacts"]["outputPath"], str) or not report["artifacts"]["outputPath"]
+                        or type(report["counts"]["functionsExported"]) is not int or report["counts"]["functionsExported"] < 0
+                        or report["failure"] is not None or (report["schemaVersion"] == 2 and not isinstance(report["coverage"], dict))):
+                    raise ValueError("incomplete successful export report")
+            elif status in ("FATAL", "CANCELLED"):
+                if not isinstance(report["failure"]["message"], str) or not isinstance(report["failure"]["type"], str) or report["artifacts"] is not None:
+                    raise ValueError("incomplete failure report")
+            else:
+                raise ValueError("unknown report status")
+    if status is None:
+        raise ValueError("missing export report")
+except (KeyError, TypeError, ValueError, OSError, RecursionError) as error:
+    sys.exit("ghidra-dwarf-forge-headless: " + str(error))
+print(status)
+PYTHON
+) || exit 12
 
 case "$status" in
     SUCCESS|PARTIAL)
