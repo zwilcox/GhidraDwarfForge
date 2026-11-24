@@ -1,7 +1,7 @@
 {
     "schema": 1,
     "productionJarSha256": "58bd7a71517452ca3f33e372060abd47f29166850cdcf464e3b3cb0f2a2a158b",
-    "xmlSha256": "c1c620218c69f511182203b15014d89401a5e1200e3e477eb1e3f32503a13db9",
+    "xmlSha256": "742e04cce062f078843d8781e96de50c412f13d9ac0f8207ccd23b3d7f83d609",
     "meaning": "Unexecuted lines or decision outcomes in this measurement. This alone does not establish missing tests or missing assertions. JaCoCo excludes exception-handler edges.",
     "groups": {
         "binaryAndLocationCorrectness": {
