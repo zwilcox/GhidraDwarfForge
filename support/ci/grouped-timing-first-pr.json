@@ -1,0 +1,393 @@
+{
+    "schema": 1,
+    "scope": "First successful grouped PR run, not a claim about later heads or actual-main publication.",
+    "run": 44461447108,
+    "attempt": 1,
+    "head": "6cc8df5210cf075a7aadf4ef2a2baebfa6e21e55",
+    "executedCommit": "ff87fafb1070728f12f101f479b9a964c13b4ed4",
+    "url": "https://github.com/zwilcox/GhidraDwarfForge/actions/runs/44461447108",
+    "baselineRun": 44376883886,
+    "baselineCommit": "9326d3acfcc07d880accdefea6d118aa0c4bb2dc",
+    "workflowWallSeconds": 8487.0,
+    "jobWallSeconds": 57138.0,
+    "attemptStartToCompletionSeconds": 8572.0,
+    "initialWaitSeconds": 85.0,
+    "largestJobQueueSeconds": 1380.0,
+    "largestArchitectureDispatchAfterPrerequisitesSeconds": 1381.0,
+    "architectureCompletion": {
+        "x86_64": {
+            "elapsedThroughReportSeconds": 4862.0,
+            "testGroupSpanSeconds": 2522.0,
+            "reportWaitAfterOwnGroupsSeconds": 2305.0,
+            "reportJobSeconds": 35.0,
+            "jobWallIncludingReportSeconds": 12667.0
+        },
+        "aarch64": {
+            "elapsedThroughReportSeconds": 4855.0,
+            "testGroupSpanSeconds": 2875.0,
+            "reportWaitAfterOwnGroupsSeconds": 1953.0,
+            "reportJobSeconds": 27.0,
+            "jobWallIncludingReportSeconds": 12281.0
+        },
+        "arm32": {
+            "elapsedThroughReportSeconds": 4847.0,
+            "testGroupSpanSeconds": 3937.0,
+            "reportWaitAfterOwnGroupsSeconds": 890.0,
+            "reportJobSeconds": 20.0,
+            "jobWallIncludingReportSeconds": 10309.0
+        },
+        "mips32be": {
+            "elapsedThroughReportSeconds": 4671.0,
+            "testGroupSpanSeconds": 4648.0,
+            "reportWaitAfterOwnGroupsSeconds": 3.0,
+            "reportJobSeconds": 20.0,
+            "jobWallIncludingReportSeconds": 8353.0
+        },
+        "mips32le": {
+            "elapsedThroughReportSeconds": 4857.0,
+            "testGroupSpanSeconds": 2799.0,
+            "reportWaitAfterOwnGroupsSeconds": 2028.0,
+            "reportJobSeconds": 30.0,
+            "jobWallIncludingReportSeconds": 6325.0
+        }
+    },
+    "architectureTestAndSetupTimes": {
+        "aarch64": {
+            "elapsedSeconds": 2875.0,
+            "jobWallSeconds": 12254.0,
+            "setupSeconds": 4074.0
+        },
+        "arm32": {
+            "elapsedSeconds": 3937.0,
+            "jobWallSeconds": 10289.0,
+            "setupSeconds": 2713.0
+        },
+        "mips32be": {
+            "elapsedSeconds": 4648.0,
+            "jobWallSeconds": 8333.0,
+            "setupSeconds": 4875.0
+        },
+        "mips32le": {
+            "elapsedSeconds": 2799.0,
+            "jobWallSeconds": 6295.0,
+            "setupSeconds": 2016.0
+        },
+        "x86_64": {
+            "elapsedSeconds": 2522.0,
+            "jobWallSeconds": 12632.0,
+            "setupSeconds": 1853.0
+        }
+    },
+    "comparisons": [
+        {
+            "baselineRun": 44258407287,
+            "baselineAttempt": 1,
+            "workflowSecondsSaved": 8631.0,
+            "workflowPercentReduction": 50.42060988433228,
+            "extraJobWallSeconds": 9852.0,
+            "targets": {
+                "aarch64": {
+                    "elapsedSecondsSaved": 5338.0,
+                    "elapsedThroughReportSecondsSaved": 3358.0,
+                    "extraJobWallIncludingReportSeconds": 4068.0,
+                    "extraJobWallSeconds": 4041.0,
+                    "extraSetupSeconds": 3144.0
+                },
+                "arm32": {
+                    "elapsedSecondsSaved": 3648.0,
+                    "elapsedThroughReportSecondsSaved": 2738.0,
+                    "extraJobWallIncludingReportSeconds": 2724.0,
+                    "extraJobWallSeconds": 2704.0,
+                    "extraSetupSeconds": 1407.0
+                },
+                "mips32be": {
+                    "elapsedSecondsSaved": 944.0,
+                    "elapsedThroughReportSecondsSaved": 921.0,
+                    "extraJobWallIncludingReportSeconds": 2761.0,
+                    "extraJobWallSeconds": 2741.0,
+                    "extraSetupSeconds": 4312.0
+                },
+                "mips32le": {
+                    "elapsedSecondsSaved": 2739.0,
+                    "elapsedThroughReportSecondsSaved": 681.0,
+                    "extraJobWallIncludingReportSeconds": 787.0,
+                    "extraJobWallSeconds": 757.0,
+                    "extraSetupSeconds": 1436.0
+                },
+                "x86_64": {
+                    "elapsedSecondsSaved": 9200.0,
+                    "elapsedThroughReportSecondsSaved": 6860.0,
+                    "extraJobWallIncludingReportSeconds": 945.0,
+                    "extraJobWallSeconds": 910.0,
+                    "extraSetupSeconds": 1807.0
+                }
+            }
+        },
+        {
+            "baselineRun": 44323595785,
+            "baselineAttempt": 2,
+            "workflowSecondsSaved": 7096.0,
+            "workflowPercentReduction": 45.53680292626581,
+            "extraJobWallSeconds": 13502.0,
+            "targets": {
+                "aarch64": {
+                    "elapsedSecondsSaved": 6115.0,
+                    "elapsedThroughReportSecondsSaved": 4135.0,
+                    "extraJobWallIncludingReportSeconds": 3291.0,
+                    "extraJobWallSeconds": 3264.0,
+                    "extraSetupSeconds": 2426.0
+                },
+                "arm32": {
+                    "elapsedSecondsSaved": 3672.0,
+                    "elapsedThroughReportSecondsSaved": 2762.0,
+                    "extraJobWallIncludingReportSeconds": 2700.0,
+                    "extraJobWallSeconds": 2680.0,
+                    "extraSetupSeconds": 1427.0
+                },
+                "mips32be": {
+                    "elapsedSecondsSaved": -655.0,
+                    "elapsedThroughReportSecondsSaved": -678.0,
+                    "extraJobWallIncludingReportSeconds": 4360.0,
+                    "extraJobWallSeconds": 4340.0,
+                    "extraSetupSeconds": 4488.0
+                },
+                "mips32le": {
+                    "elapsedSecondsSaved": 893.0,
+                    "elapsedThroughReportSecondsSaved": -1165.0,
+                    "extraJobWallIncludingReportSeconds": 2633.0,
+                    "extraJobWallSeconds": 2603.0,
+                    "extraSetupSeconds": 1643.0
+                },
+                "x86_64": {
+                    "elapsedSecondsSaved": 9553.0,
+                    "elapsedThroughReportSecondsSaved": 7213.0,
+                    "extraJobWallIncludingReportSeconds": 592.0,
+                    "extraJobWallSeconds": 557.0,
+                    "extraSetupSeconds": 1757.0
+                }
+            }
+        },
+        {
+            "baselineRun": 44376883886,
+            "baselineAttempt": 1,
+            "workflowSecondsSaved": 6171.0,
+            "workflowPercentReduction": 42.09987720016374,
+            "extraJobWallSeconds": 11028.0,
+            "targets": {
+                "aarch64": {
+                    "elapsedSecondsSaved": 5748.0,
+                    "elapsedThroughReportSecondsSaved": 3768.0,
+                    "extraJobWallIncludingReportSeconds": 3658.0,
+                    "extraJobWallSeconds": 3631.0,
+                    "extraSetupSeconds": 2840.0
+                },
+                "arm32": {
+                    "elapsedSecondsSaved": 4075.0,
+                    "elapsedThroughReportSecondsSaved": 3165.0,
+                    "extraJobWallIncludingReportSeconds": 2297.0,
+                    "extraJobWallSeconds": 2277.0,
+                    "extraSetupSeconds": 998.0
+                },
+                "mips32be": {
+                    "elapsedSecondsSaved": 1129.0,
+                    "elapsedThroughReportSecondsSaved": 1106.0,
+                    "extraJobWallIncludingReportSeconds": 2576.0,
+                    "extraJobWallSeconds": 2556.0,
+                    "extraSetupSeconds": 2562.0
+                },
+                "mips32le": {
+                    "elapsedSecondsSaved": 1664.0,
+                    "elapsedThroughReportSecondsSaved": -394.0,
+                    "extraJobWallIncludingReportSeconds": 1862.0,
+                    "extraJobWallSeconds": 1832.0,
+                    "extraSetupSeconds": 1547.0
+                },
+                "x86_64": {
+                    "elapsedSecondsSaved": 8560.0,
+                    "elapsedThroughReportSecondsSaved": 6220.0,
+                    "extraJobWallIncludingReportSeconds": 1585.0,
+                    "extraJobWallSeconds": 1550.0,
+                    "extraSetupSeconds": 597.0
+                }
+            }
+        }
+    ],
+    "canonicalTimingInputSha256": {
+        "run": "e8f09d562ef41f64abff205249cbe039cf1c67000bd6691cee4ba82abba6e690",
+        "jobs": "418b2c611d2435282b208ed46f88dc224ffcfa2061265e423209a3692b908365",
+        "inventory": "76395b43e144a75c5aff064d97140160f7a07ee34685e1138f298fe28caeaa3c",
+        "baseline": "15c04022ee4f7930732f44b42e15b70e9a31aee9933318e969fa991e35eb9134"
+    },
+    "coverage": {
+        "sessions": 1270,
+        "origins": 9,
+        "productionSources": 255,
+        "productionClasses": 901,
+        "productionJarSha256": "58bd7a71517452ca3f33e372060abd47f29166850cdcf464e3b3cb0f2a2a158b",
+        "combinedArtifactId": 14507935069,
+        "combinedArtifactSha256": "sha256:4d8622d29757e72c7e5368422bdd03bed9e29a152740d852d48896235f74257e",
+        "combinedSummarySha256": "ded4e51955345300af806b84c057cf910dc6eac433b745fac4c8b1577adeb9cb",
+        "overall": {
+            "LINE": {
+                "covered": 28990,
+                "missed": 812,
+                "percent": "97.3",
+                "target": 85,
+                "targetMet": true
+            },
+            "BRANCH": {
+                "covered": 23101,
+                "missed": 2801,
+                "percent": "89.2",
+                "target": 80,
+                "targetMet": true
+            }
+        },
+        "groups": {
+            "binaryAndLocationCorrectness": {
+                "sources": 152,
+                "metrics": {
+                    "LINE": {
+                        "covered": 18733,
+                        "missed": 480,
+                        "percent": "97.5",
+                        "target": 95,
+                        "targetMet": true
+                    },
+                    "BRANCH": {
+                        "covered": 16876,
+                        "missed": 1874,
+                        "percent": "90.0",
+                        "target": 90,
+                        "targetMet": true
+                    }
+                }
+            },
+            "fileTransactionsAndValidation": {
+                "sources": 61,
+                "metrics": {
+                    "LINE": {
+                        "covered": 6522,
+                        "missed": 155,
+                        "percent": "97.7",
+                        "target": 95,
+                        "targetMet": true
+                    },
+                    "BRANCH": {
+                        "covered": 3831,
+                        "missed": 419,
+                        "percent": "90.1",
+                        "target": 90,
+                        "targetMet": true
+                    }
+                }
+            },
+            "remainingProduction": {
+                "sources": 42,
+                "metrics": {
+                    "LINE": {
+                        "covered": 3735,
+                        "missed": 177,
+                        "percent": "95.5",
+                        "target": null,
+                        "targetMet": null
+                    },
+                    "BRANCH": {
+                        "covered": 2394,
+                        "missed": 508,
+                        "percent": "82.5",
+                        "target": null,
+                        "targetMet": null
+                    }
+                }
+            }
+        },
+        "comparison": {
+            "combined": {
+                "coveredDelta": {
+                    "INSTRUCTION": 0,
+                    "BRANCH": 0,
+                    "LINE": 0,
+                    "COMPLEXITY": 0,
+                    "METHOD": 0,
+                    "CLASS": 0
+                },
+                "changedSources": 0,
+                "xmlSha256": {
+                    "before": "6c708e243033d385713bc7fcb43e968f02b0954275452dedce70a344ac047e93",
+                    "after": "059fd535312ceef6187db56656a189a72afee74d498e2234f8ea281a29b1cd81"
+                }
+            },
+            "javaexec": {
+                "coveredDelta": {
+                    "INSTRUCTION": 0,
+                    "BRANCH": 0,
+                    "LINE": 0,
+                    "COMPLEXITY": 0,
+                    "METHOD": 0,
+                    "CLASS": 0
+                },
+                "changedSources": 0,
+                "xmlSha256": {
+                    "before": "0e2278105e527c0440ae518d78200ad336c4a4585ee7bf250d94863f97e6c594",
+                    "after": "f1c1bbb2fe114bbd11624b9ab4323fe3845290b0135623ff4d3f7c30eb05f280"
+                }
+            },
+            "native-java": {
+                "coveredDelta": {
+                    "INSTRUCTION": 0,
+                    "BRANCH": 0,
+                    "LINE": 0,
+                    "COMPLEXITY": 0,
+                    "METHOD": 0,
+                    "CLASS": 0
+                },
+                "changedSources": 0,
+                "xmlSha256": {
+                    "before": "b3c99cd599ec3840584b039b089ba09323d40ac9f6aa178f6494fef06b351fb3",
+                    "after": "0d8b84d01f36bbc7da386c2e635db61ef7d649b070fc13c37a895a9af2a65aec"
+                }
+            },
+            "headless": {
+                "coveredDelta": {
+                    "INSTRUCTION": 0,
+                    "BRANCH": 0,
+                    "LINE": 0,
+                    "COMPLEXITY": 0,
+                    "METHOD": 0,
+                    "CLASS": 0
+                },
+                "changedSources": 0,
+                "xmlSha256": {
+                    "before": "569034d5a280c5fee260205c160279d4ec33470e272f9e4c6fc9868d8ad1bc19",
+                    "after": "54685baff13dff2c93e27c4f79bd52aefc9bb356894649b2784d18a6eacfcca6"
+                }
+            },
+            "windows": {
+                "coveredDelta": {
+                    "INSTRUCTION": 0,
+                    "BRANCH": 0,
+                    "LINE": 0,
+                    "COMPLEXITY": 0,
+                    "METHOD": 0,
+                    "CLASS": 0
+                },
+                "changedSources": 0,
+                "xmlSha256": {
+                    "before": "e3788c44560f7bd5d1ead1f5f8d66ff15b566838a96b8a2c373a6dece19dc977",
+                    "after": "2169a166cbb53600a6e50105e663a1cba51d1000c3bacf142b6dc88017a1235e"
+                }
+            }
+        }
+    },
+    "limitations": [
+        "Single grouped PR run; actual-main confirmation remains required.",
+        "Older baselines contain earlier production/test revisions; closest baseline is unchanged production at 9326d3ac.",
+        "Total job-wall minutes are unweighted runner occupancy, not GitHub billed minutes.",
+        "Architecture completion includes the target report and its wait for the full group matrix; shared API admission and combined reporting are included only in workflow totals.",
+        "Coverage equivalence must pass the independent cohort verification, not inferred from timing.",
+        "Descriptive comparison; differences require review, not automatic acceptance.",
+        "JaCoCo XML branch counts do not identify which branch alternatives executed.",
+        "Complete behavioral/group admission remains independently required."
+    ]
+}

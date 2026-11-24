@@ -36,6 +36,27 @@ def save(path, value):
     path.write_text(json.dumps(value, indent=4) + '\n', encoding='utf-8')
 
 
+def ci_group_identity(environment):
+    """Bind grouped collections at creation, independently of later packaging."""
+    target = environment.get('FORGE_CI_TARGET')
+    group = environment.get('FORGE_CI_GROUP')
+    if target is None and group is None:
+        return None
+    commit = environment.get('GITHUB_SHA', '')
+    run = environment.get('GITHUB_RUN_ID', '')
+    attempt = environment.get('GITHUB_RUN_ATTEMPT', '')
+    if (environment.get('GITHUB_ACTIONS') != 'true'
+            or environment.get('GITHUB_JOB') != 'target-integration'
+            or target not in ('x86_64', 'aarch64', 'arm32', 'mips32be', 'mips32le')
+            or not isinstance(group, str) or not re.fullmatch(r'[a-z][a-z0-9-]{0,63}', group)
+            or not re.fullmatch(r'[0-9a-f]{40}', commit)
+            or not re.fullmatch(r'[1-9][0-9]*', run)
+            or not re.fullmatch(r'[1-9][0-9]*', attempt)):
+        raise ValueError('incomplete grouped integration provenance')
+    return {'commit': commit, 'run': run, 'attempt': int(attempt),
+        'job': 'target-integration', 'target': target, 'group': group}
+
+
 class Collection:
     def __init__(self, suite, jar, layer, *, test_classes=(), environment=None):
         environment = os.environ if environment is None else environment
@@ -73,6 +94,11 @@ class Collection:
             'layer': layer, 'host': os.name, 'productionJarSha256': digest(self.jar),
             'agentSha256': digest(self.agent), 'productionClasses': len(classes),
             'excludes': list(excludes), 'sessions': [], 'unmeasuredForcedHalts': []}
+        # Harnesses may override agent/output settings with a small dictionary.
+        # CI identity always comes from the process that owns this collection.
+        identity = ci_group_identity(os.environ)
+        if identity is not None:
+            self.record['ciGroup'] = identity
         self._save()
 
     def _save(self):

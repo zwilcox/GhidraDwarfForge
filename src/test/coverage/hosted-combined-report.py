@@ -37,8 +37,10 @@ windows_directory_failures = combined.module('windows_directory_failure_admissio
 windows_security_failures = combined.module('windows_security_failure_admission', HERE / 'windows-security-failure-admission.py')
 windows_backup_failures = combined.module('windows_backup_failure_admission', HERE / 'windows-backup-failure-admission.py')
 windows_privilege_readback = combined.module('windows_privilege_readback_admission', HERE / 'windows-privilege-readback-admission.py')
+grouped_coverage = combined.module('grouped_coverage_admission', HERE.parents[2] / 'support/ci/integration-coverage-groups.py')
+GROUP_INVENTORY = HERE.parents[2] / 'support/ci/integration-groups.json'
 REQUIRED = {
-    'linux': ('target-preflight', {'headless', 'native-java'}, {
+    'linux': ('target-coverage', {'headless', 'native-java'}, {
         'gdb-companion', 'source-relocation', 'derived-validation', 'build-id-installation', 'build-id-identity',
         'build-id-source-bundle', 'callable-type-producer', 'location-width-producer',
         'instruction-context', 'source-context', 'annotation-inventory', 'equate-evidence',
@@ -54,11 +56,11 @@ REQUIRED = {
         'lexical-statics', 'lexical-statics-controls', 'recovered-statics-positive', 'recovered-statics-controls',
         'stack-control-flow', 'saved-inheritance', 'external-declarations', 'recovered-returns', 'recovered-parameters',
         'stack-value-transitions', 'producer-failures', 'qualified-type-producer', 'namespace-globals', 'mmio-failure-controls'}),
-    'linux_aarch64': ('target-preflight', {'headless', 'native-java'}, {
+    'linux_aarch64': ('target-coverage', {'headless', 'native-java'}, {
         'stack-value-transitions', 'bitfield-values', 'namespace-globals', 'location-width-producer'}),
-    'linux_arm32': ('target-preflight', {'headless', 'native-java'}, {'location-width-producer', 'context-boundaries'}),
-    'linux_mips32be': ('target-preflight', {'headless', 'native-java'}, {'mips-truncated-space', 'location-width-producer', 'context-boundaries'}),
-    'linux_mips32le': ('target-preflight', {'headless', 'native-java'}, {'mips-truncated-space', 'location-width-producer', 'context-boundaries'}),
+    'linux_arm32': ('target-coverage', {'headless', 'native-java'}, {'location-width-producer', 'context-boundaries'}),
+    'linux_mips32be': ('target-coverage', {'headless', 'native-java'}, {'mips-truncated-space', 'location-width-producer', 'context-boundaries'}),
+    'linux_mips32le': ('target-coverage', {'headless', 'native-java'}, {'mips-truncated-space', 'location-width-producer', 'context-boundaries'}),
     'linux_host': ('extension-build', {'native-java'}, {
         'linux-file-metadata', 'linux-directory-sync', 'linux-metadata-visibility'}),
     'firmware': ('cortex-m-profile', {'headless'}, {'raw-firmware'}),
@@ -466,9 +468,17 @@ def call_abi_cohort(cases):
         raise ValueError('call ABI coverage requires all nine existing ELF and compiler profiles')
 
 
-def load_job(root, jar, kind, commit, run):
+def load_job(root, jar, kind, commit, run, *, run_attempt=None):
     job, expected_layers, expected_suites = REQUIRED[kind]
-    files.exact_files(root, {'collections', 'report'})
+    grouped = job == 'target-coverage'
+    files.exact_files(root, {'collections', 'report', 'groups.json'} if grouped else {'collections', 'report'})
+    group_origin = None
+    if grouped:
+        target = 'x86_64' if kind == 'linux' else kind.removeprefix('linux_')
+        group_origin = grouped_coverage.verify_merged(root, jar, files.read(GROUP_INVENTORY),
+            commit=commit, run=run, target=target)
+        if run_attempt is not None and group_origin['attempt'] != run_attempt:
+            raise ValueError('integration groups belong to a stale run attempt')
     summary = files.read(root / 'report/summary.json')
     if (summary.get('schema') != 1 or summary.get('status') != 'PASS' or summary.get('fixtureOnly')
             or summary.get('commit') != commit or summary.get('productionJarSha256') != files.digest(jar)
@@ -613,6 +623,7 @@ def load_job(root, jar, kind, commit, run):
     if kind in ('linux', 'linux_aarch64', 'linux_arm32', 'linux_mips32be', 'linux_mips32le'):
         location_width.cohort(location_width_cases, 'x86_64' if kind == 'linux' else kind.removeprefix('linux_'))
     return rows, {'kind': kind, 'commit': commit, 'run': run, 'job': job,
+        **({'integrationGroups': group_origin} if grouped else {}),
         'summarySha256': files.digest(root / 'report/summary.json'),
         'receipts': {name: files.digest(root / 'collections' / name / 'receipt.json') for name in sorted(known)},
         'sessions': len(rows), 'suites': sorted(suites), 'unmeasuredForcedHalts': unmeasured}
@@ -637,7 +648,8 @@ def report(args):
     origins = [{'kind': 'javaexec', 'commit': args.commit, 'run': args.run_id, 'job': 'extension-build',
         'manifestSha256': files.digest(args.javaexec / 'manifest.json'), 'sessions': len(rows)}]
     for kind in REQUIRED:
-        executions, origin = load_job(getattr(args, kind), jar, kind, args.commit, args.run_id)
+        executions, origin = load_job(getattr(args, kind), jar, kind, args.commit, args.run_id,
+            run_attempt=args.run_attempt)
         rows.extend(executions)
         origins.append(origin)
     classpath = tools_classpath(args.bundle)
@@ -673,6 +685,7 @@ def main():
     parser.add_argument('--commit', required=True)
     parser.add_argument('--base-commit', required=True)
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--run-attempt', type=int, default=int(os.environ.get('GITHUB_RUN_ATTEMPT', '1')))
     parser.add_argument('--repository', required=True)
     raise SystemExit(report(parser.parse_args()))
 

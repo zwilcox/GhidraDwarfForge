@@ -251,6 +251,8 @@ class HostedMatrixAdmission(unittest.TestCase):
                     'receipts': {c.root.name: coverage.digest(c.root / 'receipt.json')
                         for c in records if c.record['layer'] == 'native-java'}}}}
         coverage.save(report / 'summary.json', summary)
+        grouping_fixture = self.hosted.combined.module('grouped_receipt_fixture', Path(__file__).with_name('grouped_receipt_fixture.py'))
+        summary = grouping_fixture.bind(self.hosted, root, self.jar, records, 'aarch64')
         return root, records, summary
 
     def test_aarch64_receipt_layer_and_full_inventory(self):
@@ -272,6 +274,8 @@ class HostedMatrixAdmission(unittest.TestCase):
         summary['layers']['headless']['receipts'].pop(removed.root.name)
         summary['layers']['headless']['sessions'] = 10
         self.hosted.files.save(root / 'report/summary.json', summary)
+        grouping_fixture = self.hosted.combined.module('grouped_receipt_fixture', Path(__file__).with_name('grouped_receipt_fixture.py'))
+        grouping_fixture.bind(self.hosted, root, self.jar, records, 'aarch64')
         with self.assertRaisesRegex(ValueError, 'target profile'):
             self.hosted.load_job(root, self.jar, 'linux_aarch64', 'a' * 40, '7')
 

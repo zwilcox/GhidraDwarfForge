@@ -1,10 +1,33 @@
 # Combined Java coverage and behavioral gaps
 
-Issue #209 remains **incomplete**. The accepted targets are 85% lines / 80%
+Issue #209 is **complete** on main `9326d3acfcc07d880accdefea6d118aa0c4bb2dc`.
+The accepted targets are 85% lines / 80%
 branches overall, 95% / 90% for **each** critical group, and 90% lines / 85%
 branches minimum for substantially changed Java logic (90% branches preferred).
 A passing coverage percentage does not replace independent debugger, validator,
 input-preservation, determinism, cancellation and recovery assertions.
+
+The successful actual-main [run 44376883886](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/44376883886)
+passed all architecture and host lanes, real GUI checks, mutation controls and
+the protected gate. All 1,270 sessions and five report views were independently
+reproduced against matching bytecode, retaining 255 source files and 901 classes.
+Overall coverage is 28,990/29,802 lines (97.3%) and 23,101/25,902 branches (89.2%).
+Binary/location correctness reaches 18,733/19,213 lines (97.5%) and
+16,876/18,750 branches (90.0%); file transactions/validation reaches
+6,522/6,677 lines (97.7%) and 3,831/4,250 branches (90.1%). The full #209
+production diff covers 30/30 changed lines and 50/54 branches (92.6%).
+
+The [published reports and badges](https://github.com/zwilcox/GhidraDwarfForge/tree/54d101ccc1d4c9a06ee5b4262c28213d930cc6ae/combined)
+were regenerated and matched byte-for-byte. The legacy JavaExec badge retains
+its original scope. Native C, Python and shell are outside these Java metrics;
+JaCoCo excludes exception edges. Individual classes do not all meet aggregate
+group thresholds, and the binary/location branch threshold has only one branch
+of margin. Uncovered decisions remain published. The mutation run passed 155
+baselines and detected 854 compiled faults through behavioral assertions.
+
+The implementation checkpoints below are **historical**, including their
+then-pending hosted acceptance. #211's CI grouping and timing improvements are
+a separate, unfinished milestone.
 
 ## Raw intra-instruction flow admission
 
