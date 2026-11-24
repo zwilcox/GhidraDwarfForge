@@ -14,6 +14,28 @@ cleanup() {
 }
 trap cleanup EXIT
 
+if (( $# > 1 )); then
+    echo "usage: $0 [base-extension.zip]" >&2
+    exit 64
+fi
+if (( $# == 1 )); then
+    unzip -q "$1" -d "$work/development"
+    installed="$work/development/GhidraDwarfForge/support"
+    {
+        for command in attach build-id headless report; do
+            launcher="ghidra-dwarf-forge-$command"
+            echo "$launcher"
+            echo "$launcher.ps1"
+            test "$(stat -c %a "$installed/$launcher")" = 755
+        done
+        echo mmio/forge_mmio.py
+    } | LC_ALL=C sort > "$work/support-expected"
+    find "$installed" -type f -printf '%P\n' | LC_ALL=C sort > "$work/support-actual"
+    diff -u "$work/support-expected" "$work/support-actual"
+    "$installed/ghidra-dwarf-forge-report" --help > "$work/development-report-help"
+    grep -Fq 'Usage: ghidra-dwarf-forge-report' "$work/development-report-help"
+fi
+
 # Two equally incomplete native builds must not produce a successful comparison report.
 compare="$repository_dir/support/compare-native-builds.sh"
 mkdir "$work/incomplete-native"
@@ -383,7 +405,8 @@ grep -Fxq 'consumer=libdwarf.so.2.3.2' \
 grep -Fxq 'producer=libdwarfp-2.dll' \
     "$module/os/win_x86_64/NATIVE-PAIR.properties"
 test -s "$module/THIRD_PARTY_NOTICES.md"
-test -x "$module/support/ghidra-dwarf-forge-report"
+"$module/support/ghidra-dwarf-forge-report" --help > "$work/release-report-help"
+grep -Fq 'Usage: ghidra-dwarf-forge-report' "$work/release-report-help"
 for report_launcher in ghidra-dwarf-forge-report ghidra-dwarf-forge-report.ps1; do
     cmp "$repository_dir/support/$report_launcher" "$module/support/$report_launcher"
 done

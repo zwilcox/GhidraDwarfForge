@@ -162,6 +162,15 @@ limits inference from one grouped run. Actual-main confirmation and publication
 are tracked in [PR #213](https://github.com/zwilcox/GhidraDwarfForge/pull/213)
 and [issue #211](https://github.com/zwilcox/GhidraDwarfForge/issues/211).
 
+## ELF32 upper address boundary
+
+An ELF32 range can include address `0xffffffff`. Forge encodes its length so the
+exclusive end fits the DWARF range representation. LLVM and libdwarf accepted
+the resulting i386, MIPS32BE and MIPS32LE files. GDB 15.1 resolved the function
+on i386. On both MIPS byte orders it dropped the function's DWARF symbol when
+the function ended at the final byte. A GCC 12.4 reference showed the same
+behavior. Moving the reference function down 16 bytes restored GDB lookup.
+
 ## Manual comparisons
 
 The following commands use artifacts from a previous run. Supply the indicated case or isolated Ghidra installation.

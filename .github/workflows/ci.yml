@@ -322,7 +322,9 @@ jobs:
             'src/main/java/ghidradwarfforge/output/FileDigests.java'
             'src/main/java/ghidradwarfforge/output/ArtifactPairPublisher.java'
             'src/main/java/ghidradwarfforge/output/CompanionArtifactPublisher.java'
+            'src/main/java/ghidradwarfforge/output/PublicationJournal.java'
             'src/test/java/ghidradwarfforge/output/CompanionArtifactPublisherSmoke.java'
+            'src/test/java/ghidradwarfforge/output/PublicationInterruptionSmoke.java'
             'src/test/java/ghidradwarfforge/output/CompanionObservationRecoverySmoke.java'
           )
           & javac --release 21 -d $classes @sources 2>&1 | Tee-Object -FilePath "$results/compile.log"
@@ -760,9 +762,7 @@ jobs:
             python3 -B src/test/integration/linux-directory-sync.py \
                 --jar build/libs/GhidraDwarfForge.jar --ghidra "$GHIDRA_INSTALL_DIR" \
                 --results "$PWD/build/test-results/extension-build/linux-directory-sync"
-            src/test/integration/release-package.sh
-            zipinfo -l dist/*.zip | grep -Eq \
-              '^-rwxr-xr-x.*GhidraDwarfForge/support/ghidra-dwarf-forge-headless$'
+            src/test/integration/release-package.sh dist/*.zip
           } 2>&1 | tee build/test-results/extension-build/build.log
 
       - name: Measure Java test code coverage
