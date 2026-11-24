@@ -26,7 +26,7 @@ def main():
     # The shell reports its PID and waits; exec preserves the exact PID that the
     # former harness used to derive its TCP port. No GDB run is retried.
     child = None
-    listener = None
+    reservation = None
     try:
         for _ in range(5):
             child = subprocess.Popen(
@@ -39,14 +39,14 @@ def main():
             if pid != child.pid:
                 raise AssertionError("shell exec PID identity changed")
             port = 30000 + pid % 15000 + offsets[target]
-            listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            reservation = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             try:
-                listener.bind(("0.0.0.0", port))
-                listener.listen(1)
+                # Binding alone reserves the historical port for the duration of the test.
+                reservation.bind(("127.0.0.1", port))
                 break
             except OSError as error:
-                listener.close()
-                listener = None
+                reservation.close()
+                reservation = None
                 child.terminate()
                 child.communicate(timeout=2)
                 if error.errno != errno.EADDRINUSE:
@@ -74,8 +74,8 @@ def main():
             except subprocess.TimeoutExpired:
                 os.killpg(child.pid, signal.SIGKILL)
                 child.communicate(timeout=3)
-        if listener is not None:
-            listener.close()
+        if reservation is not None:
+            reservation.close()
 
 
 if __name__ == "__main__":
