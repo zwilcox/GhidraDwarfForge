@@ -33,24 +33,25 @@ public final class LocationEmissionPlanSmoke {
         for (int width : new int[] {4, 8}) {
             for (var order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
                 var result = Dwarf5LocationLists.build(variables, width, order);
-                require(result.offsets().size() == 3 && result.plans().size() == 3,
-                    "only three full-value lists survive");
+                require(result.offsets().size() == 4 && result.plans().size() == 4,
+                    "four bounded locations survive");
                 assertList(result, variables.get(0), width, order,
                     new long[][] {{0x1000, 0x1010, 0}, {0x1010, 0x1020, 1}});
                 assertList(result, variables.get(1), width, order,
                     new long[][] {{0x1000, 0x1008, 0}, {0x1018, 0x1020, 1}});
                 assertList(result, variables.get(2), width, order,
                     new long[][] {{0x1000, 0x1008, 0}, {0x1018, 0x1020, 0}});
-                for (int i = 3; i < variables.size(); i++) {
+                assertList(result, variables.get(6), width, order, new long[][] {{0x1000, 0x1020, 0}});
+                for (int i : new int[] {3, 4, 5, 7, 8}) {
                     require(!result.plans().containsKey(variables.get(i)),
-                        "no phantom list for rejected or stable variable " + i);
+                        "no phantom list for rejected variable " + i);
                 }
                 for (int i : new int[] {3, 4, 5, 7, 8}) {
                     require(DwarfLocationExpression.planStable(variables.get(i)) instanceof
                         DwarfLocationExpression.Omitted, "rejected list has no valid stable fallback " + i);
                 }
                 require(DwarfLocationExpression.planStable(variables.get(6)) instanceof
-                    DwarfLocationExpression.Expression, "single full location uses an expression, not a list");
+                    DwarfLocationExpression.Expression, "single location contains a representable expression");
                 require(variables.get(3).hasDefensibleLocation() && variables.get(4).hasDefensibleLocation(),
                     "extraction-level availability is weaker than an emitted full-value location");
                 byte[] changed = result.section();
@@ -59,7 +60,7 @@ public final class LocationEmissionPlanSmoke {
                 immutable(() -> result.plans().clear());
                 immutable(() -> result.plans().get(variables.getFirst()).clear());
                 immutable(() -> result.offsets().clear());
-                var empty = Dwarf5LocationLists.build(variables.subList(3, variables.size()), width, order);
+                var empty = Dwarf5LocationLists.build(List.of(variables.get(3), variables.get(4), variables.get(5), variables.get(7), variables.get(8)), width, order);
                 require(empty.empty() && empty.offsets().isEmpty() && empty.plans().isEmpty(),
                     "empty section has no fabricated evidence");
             }

@@ -188,6 +188,14 @@ public final class QualifiedFunctionNameSmoke {
             require(at(first.functions(), 0x3ff700).namespacePath().equals(List.of("left", "nested", "Inner")) &&
                 at(first.functions(), 0x3ff800).namespacePath().equals(List.of("AnalystClass", "Inner")),
                 "nested classes or classes inside namespaces lost their path");
+            var bank = program.getMemory().createInitializedBlock("bank", start, 32, (byte) 0,
+                TaskMonitor.DUMMY, true);
+            program.getFunctionManager().createFunction("bank_only", global, bank.getStart(),
+                new AddressSet(bank.getStart(), bank.getEnd()), SourceType.USER_DEFINED);
+            var overlay = GhidraFunctionSymbols.extractDetailed(program, TaskMonitor.DUMMY, ignored -> { }, 0x1000);
+            require(overlay.functions().equals(first.functions()) && overlay.skippedFunctions().equals(List.of(
+                new GhidraFunctionSymbols.SkippedFunction("bank_only", GhidraFunctionSymbols.SkipReason.UNMAPPED_MEMORY))),
+                "overlay gave a second function the default-space address");
             function(program, "AnalystClass::nested::class_method", global, 0x400900);
             reject(() -> GhidraFunctionSymbols.extract(program, TaskMonitor.DUMMY,
                 ignored -> { }, 0), "ambiguous qualified function display name");

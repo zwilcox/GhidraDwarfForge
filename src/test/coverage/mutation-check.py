@@ -1796,8 +1796,8 @@ RECOVERY_CONTRACT_MUTANTS = [
 
 FUNCTION_EXTRACTION_MUTANTS = [
     ('function-extraction-drops-foreign-range', "ghidradwarfforge/GhidraFunctionSymbols.java", FUNCTION_EXTRACTION_TEST,
-     'if (!range.getMinAddress().isMemoryAddress()) {\n                    valid = false;',
-     'if (!range.getMinAddress().isMemoryAddress()) {\n                    valid = true;'),
+     'if (!range.getMinAddress().isMemoryAddress()) {\n                    rejection = SkipReason.UNSUPPORTED_RANGE;',
+     'if (!range.getMinAddress().isMemoryAddress()) {\n                    rejection = null;'),
     ('function-extraction-invents-namespace-kind', "ghidradwarfforge/GhidraFunctionSymbols.java", FUNCTION_EXTRACTION_TEST,
      'scope.getType() != Namespace.Type.NAMESPACE && scope.getType() != Namespace.Type.CLASS', 'false'),
 ]

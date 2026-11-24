@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Protect saved project files and file aliases from optional output generations. */
+/** Protect saved project files and file aliases from export destinations. */
 public final class GhidraProjectOutputProtection {
     private GhidraProjectOutputProtection() { }
 

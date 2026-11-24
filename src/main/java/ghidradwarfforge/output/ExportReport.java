@@ -239,6 +239,25 @@ public final class ExportReport {
             new Failure(throwable.getClass().getName(), message));
     }
 
+    /** Preserve completed artifact claims when cleanup or presentation reports a warning. */
+    public ExportReport withPublicationWarning(String warning) {
+        requireText(warning, "publication warning");
+        if (counts == null) {
+            throw new IllegalStateException("publication warning requires completed artifact claims");
+        }
+        List<String> messages = new ArrayList<>(diagnostics);
+        if (messages.contains(warning)) return this;
+        messages.add(warning);
+        messages.sort(Comparator.naturalOrder());
+        Counts updated = new Counts(counts.functionsExported(), counts.functionsDecompiled(),
+            counts.functionsFailed(), counts.functionsSkipped(), counts.functionSignatures(), counts.parameters(),
+            counts.localVariables(), counts.globalVariables(), counts.functionStaticVariables(), counts.canonicalTypes(),
+            counts.defensibleVariableLocations(), counts.omittedLocationRanges(), counts.mappedSourceLines(),
+            counts.unsupportedConstructs(), messages.size());
+        return new ExportReport(Status.PARTIAL, target, artifacts, updated, sections, failedFunctions,
+            skippedFunctions, omittedLocations, unsupportedConstructs, messages, validationStatus, libdwarfVersion, failure);
+    }
+
     public Status status() {
         return status;
     }

@@ -18,6 +18,56 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def report_records(log):
+    marker = 'GhidraDwarfForge.java> GhidraDwarfForge report: '
+    return [json.loads(line.split(marker, 1)[1].strip().removesuffix(' (GhidraScript)'))
+            for line in log.splitlines() if marker in line]
+
+
+def verify_export_failures(ghidra, project, original, consumer, producer, work):
+    work.mkdir()
+    copy = work / 'selected-input'
+    shutil.copyfile(original, copy)
+    project_marker = project / 'Consistency.rep' / 'forge-owned-sentinel'
+    project_marker.write_text('saved project sentinel')
+    fake = work / 'invalid.so'
+    fake.write_text('not a native library')
+    native_alias = work / 'native-output.dbg.c'
+    os.link(fake, native_alias)
+    output = work / 'existing.dbg'
+    source = Path(str(output) + '.c')
+    output.write_text('previous sidecar')
+    source.write_text('previous source')
+    cases = [
+        ('original-import', copy, original, consumer, producer, 'protected input'),
+        ('project-directory', original, project_marker, consumer, producer, 'inside the saved project'),
+        ('native-sidecar', original, fake, fake, producer, 'protected input'),
+        ('native-source', original, work / 'native-output.dbg', fake, producer, 'protected input'),
+        ('invalid-library', original, output, fake, producer, 'Could not load or call libdwarf'),
+        ('missing-producer-symbol', original, output, consumer, consumer, 'Could not load or call libdwarf'),
+    ]
+    try:
+        for name, selected, artifact, lib, libp, message in cases:
+            protected = {original, copy, project_marker, fake, native_alias, output, source, consumer, producer,
+                         artifact, Path(str(artifact) + '.c')}
+            before = {p: digest(p) if p.exists() else None for p in protected}
+            log = work / (name + '.log')
+            command = [ROOT / 'support/ghidra-dwarf-forge-headless', '--ghidra-dir=' + str(ghidra),
+                       '--project-dir=' + str(project), '--project-name=Consistency', '--program=/' + original.name,
+                       '--input=' + str(selected), '--output=' + str(artifact), '--libdwarf=' + str(lib),
+                       '--libdwarfp=' + str(libp), '--log=' + str(log)]
+            with (work / (name + '.stdout')).open('w') as stdout:
+                run = subprocess.run(command, stdout=stdout, stderr=subprocess.STDOUT, timeout=180)
+            reports = report_records(log.read_text())
+            assert run.returncode == 10 and len(reports) == 1 and reports[0]['status'] == 'FATAL', name
+            assert message in reports[0]['failure']['message'], (name, reports[0]['failure'])
+            assert before == {p: digest(p) if p.exists() else None for p in protected}, name
+            assert not list(work.glob('*.staged')) and not list(work.glob('.forge-generation-*')), name
+            print('headless-export-failure=PASS ' + name, flush=True)
+    finally:
+        project_marker.unlink()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('ghidra', type=Path)
@@ -56,6 +106,20 @@ def main():
     assert 'export-consistency-controls=PASS controls=4' in log
     assert log.count('export-consistency-control=PASS companion=') == 4
     assert 'Original ELF changed during export' in log and 'Ghidra program changed during export' in log
+    for selected in ('false', 'true'):
+        start = 'cleanup-warning-start companion=' + selected
+        end = 'cleanup-warning-end companion=' + selected
+        transcript = log.split(start, 1)[1].split(end, 1)[0]
+        records = report_records(transcript)
+        assert len(records) == 1 and records[0]['status'] == 'PARTIAL', records
+        report = records[0]
+        assert any('Export committed. Staging cleanup failed at ' in item for item in report['diagnostics'])
+        assert report['counts']['diagnostics'] == len(report['diagnostics'])
+        for prefix in ('input', 'output', 'source'):
+            assert digest(Path(report['artifacts'][prefix + 'Path'])) == report['artifacts'][prefix + 'Sha256']
+        if selected == 'true':
+            companion = Path(report['artifacts']['outputPath'] + '.gdb.py')
+            assert 'GDB companion SHA-256: ' + digest(companion) in transcript
     run('compiler-gdb', ['bash', SCRIPTS / 'export-consistency-gdb.sh', args.target, original,
         original, work / 'compiler-runtime'])
     reference_warnings = [line for line in (work / 'compiler-runtime.log').read_text().splitlines()
@@ -63,6 +127,8 @@ def main():
     assert all(args.target == 'aarch64' and re.fullmatch(
         r'warning: BFD: warning: system-supplied DSO at 0x[0-9a-f]+ has a corrupt string table index', line)
         for line in reference_warnings), reference_warnings
+    if args.target == 'x86_64':
+        verify_export_failures(ghidra, project, original, consumer, producer, work / 'failed-exports')
     artifacts = []
     for mode in ('pair', 'companion'):
         artifact = work / 'outputs' / mode / 'forge.dbg'
@@ -79,7 +145,7 @@ def main():
     assert digest(original) == digest(fixture)
     assert protected == {name: digest(Path(name)) for name in protected}
     (work / 'result.json').write_text(json.dumps({'status': 'PASS_EXPORT_CONSISTENCY', 'target': args.target,
-        'controls': 4, 'successfulExports': 6, 'protected': protected, 'artifacts': artifacts,
+        'controls': 4, 'successfulExports': 8, 'protected': protected, 'artifacts': artifacts,
         'compilerReferenceWarnings': reference_warnings}, indent=4) + '\n')
     print(args.target + ' export consistency PASS', flush=True)
 

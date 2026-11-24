@@ -76,9 +76,42 @@ public class ExportConsistencyControls extends GhidraScript {
                 runScript("GhidraDwarfForge.java", options.toArray(String[]::new));
                 if (!baseline.equals(snapshot(directory))) throw new AssertionError("restored input/program retry changed artifacts");
             }
+            cleanupWarning(directory, options, baseline, companion);
         }
         if (!Arrays.equals(originalBytes, Files.readAllBytes(input))) throw new AssertionError("fixture input was not restored");
         println("export-consistency-controls=PASS controls=" + controls);
+    }
+
+    private void cleanupWarning(Path directory, List<String> options, Map<String, String> expected,
+            boolean companion) throws Exception {
+        for (String name : expected.keySet()) Files.writeString(directory.resolve(name), "previous generation");
+        TaskMonitor saved = monitor;
+        Path[] witness = {null};
+        monitor = new WrappingTaskMonitor(saved) {
+            @Override public synchronized boolean isCancelled() {
+                if (super.isCancelled()) return true;
+                if (witness[0] == null && StackWalker.getInstance().walk(frames -> frames.anyMatch(frame ->
+                        frame.getClassName().equals("ghidradwarfforge.output.CoverageReportJson")))) {
+                    try (var entries = Files.list(directory)) {
+                        Path staging = entries.filter(Files::isDirectory).filter(path ->
+                            path.getFileName().toString().startsWith(".forge-generation-")).findFirst().orElseThrow();
+                        witness[0] = Files.writeString(staging.resolve("keep"), "cleanup witness");
+                    }
+                    catch (IOException failure) { throw new java.io.UncheckedIOException(failure); }
+                }
+                return false;
+            }
+        };
+        println("cleanup-warning-start companion=" + companion);
+        try { runScript("GhidraDwarfForge.java", options.toArray(String[]::new)); }
+        finally { monitor = saved; }
+        if (witness[0] == null || !Files.readString(witness[0]).equals("cleanup witness")) {
+            throw new AssertionError("cleanup removed an unrelated file or the fault was not injected");
+        }
+        Files.delete(witness[0]);
+        Files.delete(witness[0].getParent());
+        if (!expected.equals(snapshot(directory))) throw new AssertionError("warning reported an incomplete commit");
+        println("cleanup-warning-end companion=" + companion);
     }
 
     private static Map<String, String> snapshot(Path directory) throws Exception {

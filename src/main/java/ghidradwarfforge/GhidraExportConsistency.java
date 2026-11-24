@@ -12,12 +12,14 @@ import ghidradwarfforge.output.FileDigests;
 public final class GhidraExportConsistency {
     private final Program program;
     private final long modification;
+    private final Path selected;
     private final Path input;
     private final FileDigests.Result digest;
 
-    private GhidraExportConsistency(Program program, long modification, Path input, FileDigests.Result digest) {
+    private GhidraExportConsistency(Program program, long modification, Path selected, Path input, FileDigests.Result digest) {
         this.program = program;
         this.modification = modification;
+        this.selected = selected;
         this.input = input;
         this.digest = digest;
     }
@@ -27,11 +29,13 @@ public final class GhidraExportConsistency {
         if (program.isClosed()) throw new IOException("Ghidra program is closed");
         long modification = program.getModificationNumber();
         Path original = input.toRealPath();
-        var result = new GhidraExportConsistency(program, modification, original, FileDigests.read(original, cancelled));
+        var result = new GhidraExportConsistency(program, modification, input, original, FileDigests.read(original, cancelled));
         result.requireProgramUnchanged();
         checkCancelled(cancelled);
         return result;
     }
+
+    public Path inputPath() { return input; }
 
     public String inputSha256() { return digest.sha256(); }
 
@@ -39,6 +43,9 @@ public final class GhidraExportConsistency {
     public void requireUnchanged(BooleanSupplier cancelled) throws IOException {
         checkCancelled(cancelled);
         requireProgramUnchanged();
+        if (!selected.toRealPath().equals(input)) {
+            throw new IOException("Original ELF selection changed during export: " + selected);
+        }
         if (!digest.equals(FileDigests.read(input, cancelled))) {
             throw new IOException("Original ELF changed during export: " + input);
         }

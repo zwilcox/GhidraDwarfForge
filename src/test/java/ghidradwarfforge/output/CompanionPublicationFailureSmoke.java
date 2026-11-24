@@ -23,6 +23,7 @@ public final class CompanionPublicationFailureSmoke {
             invalidStages(root);
             cleanupFailure(root, false);
             cleanupFailure(root, true);
+            changedClaim(root);
             observationChange(root);
             symbolicOutputs(root);
             for (boolean existing : List.of(false, true)) cancellation(root, existing);
@@ -41,7 +42,7 @@ public final class CompanionPublicationFailureSmoke {
         List<Path> outputs = outputs(dir);
         Path elsewhere = Files.createDirectory(dir.resolve("elsewhere"));
         Path directoryOutput = Files.createDirectory(dir.resolve("directory-output"));
-        var selections = List.of(outputs.subList(0, 2),
+        var selections = List.of(outputs.subList(0, 1),
             List.of(outputs.get(0), outputs.get(1), outputs.get(2), dir.resolve("four"), dir.resolve("five"), dir.resolve("six")),
             List.of(outputs.get(0), outputs.get(1), elsewhere.resolve("companion")),
             List.of(outputs.get(0), outputs.get(1), directoryOutput));
@@ -56,6 +57,16 @@ public final class CompanionPublicationFailureSmoke {
         }
         Path unrelated = Files.writeString(dir.resolve("unrelated"), "protected");
         CompanionArtifactPublisher.validate(input, outputs, unrelated);
+        var plain = outputs.subList(0, 2);
+        CompanionArtifactPublisher.validate(input, plain, unrelated);
+        for (Path target : plain) {
+            Files.createLink(target, unrelated);
+            try {
+                refuse(() -> CompanionArtifactPublisher.validate(input, plain, unrelated));
+                require(Files.readString(target).equals("protected"), "protected pair member changed");
+            }
+            finally { Files.delete(target); }
+        }
         require(Files.readString(unrelated).equals("protected"), "validation changed unrelated input");
         require(Files.readString(input).equals("original"), "preflight changed original");
         require(outputs.stream().noneMatch(Files::exists), "preflight left outputs");
@@ -90,7 +101,7 @@ public final class CompanionPublicationFailureSmoke {
         IOException primary = new IOException("injected writer failure");
         Path[] obstruction = { null };
         try {
-            CompanionArtifactPublisher.stageAndPublish(input, outputs, stages -> {
+            var warning = CompanionArtifactPublisher.stageAndPublish(input, outputs, stages -> {
                 write(stages);
                 if (!installed) {
                     Files.delete(stages.get(1));
@@ -107,24 +118,47 @@ public final class CompanionPublicationFailureSmoke {
                     }
                 }
             });
-            throw new AssertionError("cleanup failure was hidden");
+            require(installed, "failed writer reported a committed generation");
+            var cleanup = warning.orElseThrow(() -> new AssertionError("cleanup failure was hidden"));
+            require(cleanup.getMessage().contains(obstruction[0].getParent().toString()),
+                "committed cleanup warning lost the recovery path");
+            require(cleanup.getCause() instanceof java.nio.file.DirectoryNotEmptyException, "missing cleanup cause");
         }
         catch (IOException observed) {
-            if (installed) {
-                require(observed.getMessage().startsWith("generation installed but staging cleanup failed"),
-                    "installed generation incorrectly reported as rolled back");
-                require(observed.getCause() instanceof java.nio.file.DirectoryNotEmptyException,
-                    "missing cleanup cause");
-            }
-            else {
-                require(observed == primary, "cleanup replaced primary error");
-                require(Arrays.stream(observed.getSuppressed()).anyMatch(java.nio.file.DirectoryNotEmptyException.class::isInstance),
-                    "missing suppressed cleanup failure");
-            }
+            require(!installed && observed == primary, "cleanup replaced primary error or reported committed files as failed");
+            require(Arrays.stream(observed.getSuppressed()).anyMatch(java.nio.file.DirectoryNotEmptyException.class::isInstance),
+                "missing suppressed cleanup failure");
         }
         if (installed) current(outputs); else previous(outputs, true);
         require(Files.readString(input).equals("original"), "cleanup changed original");
         require(Files.readString(obstruction[0]).equals("recovery witness"), "cleanup removed unrelated witness");
+        cases++;
+    }
+
+    private static void changedClaim(Path root) throws Exception {
+        Path dir = Files.createDirectory(root.resolve("changed-claim"));
+        Path input = Files.writeString(dir.resolve("input"), "original");
+        List<Path> outputs = outputs(dir);
+        seed(outputs);
+        Path owner = PublicationJournal.claimPath(outputs.get(0)).resolve("owner.properties");
+        Path[] inventory = new Path[1];
+        var warning = CompanionArtifactPublisher.stageAndPublish(input, outputs, CompanionPublicationFailureSmoke::write,
+            () -> { }, index -> {
+                if (index == 0) {
+                    var record = new java.util.Properties();
+                    try (var stream = Files.newInputStream(owner)) { record.load(stream); }
+                    inventory[0] = Path.of(record.getProperty("inventory"));
+                    Files.writeString(owner, "inventory=another-writer");
+                }
+            });
+        require(warning.isPresent() && warning.get().getMessage().contains(inventory[0].getParent().toString()),
+            "missing committed generation recovery location");
+        require(Files.readString(owner).equals("inventory=another-writer"), "divergent claim removed");
+        require(Files.isRegularFile(inventory[0]) && Files.exists(inventory[0].resolveSibling("committed")),
+            "claim release failure discarded the generation inventory or commit marker");
+        require(Files.readString(inventory[0].resolveSibling("backup-0")).equals("old-0"), "prior generation lost");
+        current(outputs);
+        require(Files.readString(input).equals("original"), "claim cleanup changed original");
         cases++;
     }
 
@@ -137,7 +171,7 @@ public final class CompanionPublicationFailureSmoke {
         // First callback observes the path; the second runs after metadata was read,
         // immediately before FileDigests opens the same file. No timing race/thread.
         refuse(() -> CompanionArtifactPublisher.stageAndPublish(input, outputs,
-            stages -> { throw new AssertionError("writer ran after inconsistent observation"); }, () -> {
+            stages -> { throw new AssertionError("writer ran after inconsistent observation"); }, () -> { }, () -> {
                 if (checks.incrementAndGet() == 2) Files.writeString(outputs.get(0), "concurrent larger user value");
             }));
         require(Files.readString(outputs.get(0)).equals("concurrent larger user value"), "concurrent value overwritten");

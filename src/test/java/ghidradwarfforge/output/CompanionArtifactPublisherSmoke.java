@@ -17,6 +17,7 @@ public final class CompanionArtifactPublisherSmoke {
                     exercise(root, existing, failAfter);
                 }
             }
+            PublicationInterruptionSmoke.exercise(root);
             multipleFiles(root, 4);
             multipleFiles(root, 5);
             rejectAliases(root);
@@ -89,8 +90,8 @@ public final class CompanionArtifactPublisherSmoke {
         }
         boolean[] installed = {false};
         try {
-            CompanionArtifactPublisher.stageAndPublish(input, sidecar, source, companion,
-                (a, b, c) -> {
+            CompanionArtifactPublisher.stageAndPublish(input, outputs, stages -> {
+                    Path a = stages.get(0), b = stages.get(1), c = stages.get(2);
                     if (!Files.isSameFile(a.getParent(), directory) || !Files.isSameFile(b.getParent(), directory) ||
                             !Files.isSameFile(c.getParent(), directory)) {
                         throw new AssertionError("source directory would refer to private staging: selected=" + directory +
@@ -109,7 +110,7 @@ public final class CompanionArtifactPublisherSmoke {
                     if (installed[0] && failAfter == 2) {
                         throw new CancellationException("cancelled after complete installation");
                     }
-                }, index -> {
+                }, () -> { }, index -> {
                     installed[0] = index == 2;
                     if (index == failAfter && index != 2) {
                         throw new IOException("injected install failure " + index);

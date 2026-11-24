@@ -16,6 +16,7 @@ import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 public final class Dwarf5RangeLists {
     private static final int DW_RLE_END_OF_LIST = 0x00;
     private static final int DW_RLE_START_END = 0x06;
+    private static final int DW_RLE_START_LENGTH = 0x07;
 
     public record Result(byte[] section, long compilationUnitOffset,
             Map<FunctionSymbol, Long> functionOffsets, Map<LexicalScopeModel.Key, Long> lexicalOffsets) {
@@ -156,9 +157,11 @@ public final class Dwarf5RangeLists {
     private static void writeList(ByteArrayOutputStream output,
             List<FunctionRange> ranges, int addressBytes, ByteOrder order) {
         for (FunctionRange range : ranges) {
-            output.write(DW_RLE_START_END);
+            boolean endsAfterLastAddress = addressBytes == 4 && range.endExclusive() == (1L << 32);
+            output.write(endsAfterLastAddress ? DW_RLE_START_LENGTH : DW_RLE_START_END);
             writeUnsigned(output, range.address(), addressBytes, order);
-            writeUnsigned(output, range.endExclusive(), addressBytes, order);
+            if (endsAfterLastAddress) Dwarf5LineTable.writeUleb(output, range.size());
+            else writeUnsigned(output, range.endExclusive(), addressBytes, order);
         }
         output.write(DW_RLE_END_OF_LIST);
     }

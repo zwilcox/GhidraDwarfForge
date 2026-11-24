@@ -186,6 +186,12 @@ public final class TypeGraphBoundarySmoke {
         require(graph.nodes().stream().map(TypeNode::key).toList().equals(List.of("int", "record")),
             "graph storage/order aliases caller list");
         immutable(() -> graph.nodes().clear());
+        for (var node : graph.nodes()) {
+            if (graph.lookup(node.key()) != node) throw new AssertionError("incorrect canonical type lookup");
+        }
+        if (graph.lookup("") != null || graph.lookup("absent") != null || graph.lookup("\uffff") != null) {
+            throw new AssertionError("missing reference mapped to an unrelated type");
+        }
         immutable(() -> graph.byKey().remove("int"));
         immutable(() -> aggregate.members().clear());
         immutable(() -> aggregate.references().clear());

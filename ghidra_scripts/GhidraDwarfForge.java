@@ -40,25 +40,71 @@ import java.util.function.Consumer;
 
 public class GhidraDwarfForge extends GhidraScript {
 
+    private PreparedReport committed;
+    private final List<String> publicationWarnings = new ArrayList<>();
+
     @Override
     protected void run() throws Exception {
+        committed = null;
+        publicationWarnings.clear();
         try {
             ExportPhase.measure("export", () -> {
                 runExport();
                 return null;
             });
         }
-        catch (CancelledException | CancellationException cancelled) {
-            printerr("GhidraDwarfForge report: " +
-                ExportReport.terminal(ExportReport.Status.CANCELLED, cancelled)
-                    .toJsonWithCoverage(null, () -> false));
-            throw cancelled;
-        }
         catch (Exception failure) {
-            printerr("GhidraDwarfForge report: " +
-                ExportReport.terminal(ExportReport.Status.FATAL, failure)
-                    .toJsonWithCoverage(null, () -> false));
-            throw failure;
+            if (committed == null) {
+                boolean cancelled = failure instanceof CancelledException || failure instanceof CancellationException;
+                printerr("GhidraDwarfForge report: " +
+                    ExportReport.terminal(cancelled ? ExportReport.Status.CANCELLED : ExportReport.Status.FATAL,
+                        failure).toJsonWithCoverage(null, () -> false));
+                throw failure;
+            }
+            publicationWarnings.add("Export committed. Post-publication processing failed: " + failure);
+        }
+        if (committed != null) finishReport();
+    }
+
+    private void finishReport() {
+        var result = committed;
+        if (!publicationWarnings.isEmpty()) {
+            ExportReport report = result.report();
+            for (String warning : publicationWarnings) {
+                printerr("GhidraDwarfForge: " + warning);
+                report = report.withPublicationWarning(warning);
+            }
+            try {
+                result = new PreparedReport(report.toJsonWithCoverage(result.coverage(), () -> false),
+                    result.outputHash(), result.sourceHash(), result.coverage(), report, result.output(), result.attachment());
+            }
+            catch (IOException | RuntimeException unavailable) {
+                // Keep the validated completed record if warnings would exceed the schema's bounds.
+                printerr("Using the staged export report after a publication warning: " + unavailable);
+            }
+        }
+        final PreparedReport prepared = result;
+        if (prepared.attachment()) state.addEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY, prepared.json());
+        if (isRunningHeadless()) {
+            println("GhidraDwarfForge report: " + prepared.json());
+        }
+        else {
+            println("GhidraDwarfForge report: schema 2; " +
+                ghidradwarfforge.output.CoveragePresentation.summary(prepared.coverage(), prepared.status()));
+            if (!prepared.attachment()) {
+                // Publication is already complete. A presentation failure must not
+                // change the export outcome or masquerade as an artifact failure.
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    try {
+                        ghidradwarfforge.output.CoverageReportGui.show(state.getTool().getToolFrame(),
+                            prepared.coverage(), prepared.status(), prepared.json(),
+                            prepared.output().resolveSibling(prepared.output().getFileName() + ".report.json"));
+                    }
+                    catch (RuntimeException failure) {
+                        printerr("Coverage window could not open; artifacts were exported: " + failure);
+                    }
+                });
+            }
         }
     }
 
@@ -193,7 +239,9 @@ public class GhidraDwarfForge extends GhidraScript {
             paths = OutputPathPolicy.resolve(requestedInput, selectedOutput);
             guiFallback = true;
         }
-        Path input = paths.input();
+        var consistency = ghidradwarfforge.GhidraExportConsistency.capture(
+            currentProgram, paths.input(), monitor::isCancelled);
+        Path input = consistency.inputPath();
         Path output = paths.artifact();
         Path sourceOutput = paths.source();
         boolean gdbLoader = options.containsKey("gdb-loader");
@@ -208,17 +256,21 @@ public class GhidraDwarfForge extends GhidraScript {
         if (gdbLoader) generation.add(companionOutput);
         if (formatterSelection != null) generation.add(formatterOutput);
         if (mmioProfile != null) generation.add(mmioOutput);
-        if (mmioProfile != null) {
-            ghidradwarfforge.GhidraProjectOutputProtection.requireSafeOutputs(currentProgram, generation, monitor);
+        var protectedInputs = new ArrayList<>(List.of(consumer, producer, paths.input()));
+        String importedPath = currentProgram.getExecutablePath();
+        if (importedPath != null && !importedPath.isBlank()) {
+            try {
+                Path imported = hostPath(importedPath);
+                if (Files.isRegularFile(imported)) protectedInputs.add(imported);
+            }
+            catch (java.nio.file.InvalidPathException staleForeignPath) {
+                // The saved import name can belong to another operating system.
+            }
         }
-        if (generation.size() > 2) {
-            var protectedInputs = new ArrayList<>(List.of(consumer, producer));
-            if (formatterSelectionPath != null) protectedInputs.add(formatterSelectionPath);
-            ghidradwarfforge.output.CompanionArtifactPublisher.validate(
-                input, generation, protectedInputs.toArray(Path[]::new));
-        }
-        var consistency = ghidradwarfforge.GhidraExportConsistency.capture(
-            currentProgram, input, monitor::isCancelled);
+        if (formatterSelectionPath != null) protectedInputs.add(formatterSelectionPath);
+        if (firmwareInputs != null) protectedInputs.add(firmwareInputs);
+        ghidradwarfforge.GhidraProjectOutputProtection.requireSafeOutputs(currentProgram, generation, monitor);
+        ghidradwarfforge.output.CompanionArtifactPublisher.validate(input, generation, protectedInputs.toArray(Path[]::new));
         String inputHash = consistency.inputSha256();
         String importedHash = currentProgram.getExecutableSHA256();
         if (importedHash != null && !importedHash.isBlank() &&
@@ -235,11 +287,8 @@ public class GhidraDwarfForge extends GhidraScript {
                     input, firmwareInputs, monitor)) {
             ElfImage originalElf = firmware == null ? ElfImage.readForExport(input) : firmware.image().witness();
             if (firmware != null) {
-                firmware.requireSafeOutputs(generation, monitor);
-                var protectedFirmwareInputs = new ArrayList<>(firmware.protectedInputs());
-                protectedFirmwareInputs.addAll(List.of(consumer, producer));
-                ghidradwarfforge.output.CompanionArtifactPublisher.validate(input, generation,
-                    protectedFirmwareInputs.toArray(Path[]::new));
+                protectedInputs.addAll(firmware.protectedInputs());
+                ghidradwarfforge.output.CompanionArtifactPublisher.validate(input, generation, protectedInputs.toArray(Path[]::new));
             }
             DwarfTarget target = GhidraTargetAgreement.requireAgreement(currentProgram, originalElf);
             if (targetProfile != null) {
@@ -363,19 +412,19 @@ public class GhidraDwarfForge extends GhidraScript {
                 inputHash, sourceOutput.getFileName().toString(), source, sourceLineTarget, monitor::isCancelled);
             var sourceDependencies = new ghidradwarfforge.output.SourceBundleStore.Installed[1];
             var sourceProtectedPaths = new ArrayList<Path>(generation);
-            sourceProtectedPaths.addAll(List.of(input, consumer, producer));
-            if (formatterSelectionPath != null) sourceProtectedPaths.add(formatterSelectionPath);
+            sourceProtectedPaths.add(input);
+            sourceProtectedPaths.addAll(protectedInputs);
             var formatterPlan = formatterSelection == null ? null :
                 ghidradwarfforge.formatters.FormatterPlan.prepare(typeModel, formatterSelection, monitor::isCancelled);
             var resultHolder = new MinimalDwarfSidecarExporter.ExportResult[1];
             var stagedSidecarHolder = new Path[1];
+            var companionHash = new String[1];
             var reportHolder = new PreparedReport[1];
             consistency.requireUnchanged(monitor::isCancelled);
             ArtifactPairPublisher.PrePublishCheck prePublishCheck = () -> {
                 consistency.requireUnchanged(monitor::isCancelled);
                 if (firmware != null) firmware.requireUnchanged(monitor);
-                // The companion publisher also invokes this check while observing old
-                // outputs, before any new source dependencies have been installed.
+                // The first consistency check runs before the writer installs source parts.
                 if (sourceDependencies[0] != null) sourceDependencies[0].verify(monitor::isCancelled);
                 if (formatterSelectionPath != null && !formatterSelectionHash.equals(
                         FileDigests.read(formatterSelectionPath, monitor::isCancelled))) {
@@ -437,10 +486,10 @@ public class GhidraDwarfForge extends GhidraScript {
                 String json = ExportPhase.measure("coverage-report-preflight", () ->
                     report.toJsonWithCoverage(claims,
                         monitor::isCancelled));
-                reportHolder[0] = new PreparedReport(json, outputHash, sourceHash, claims, report.status().name());
+                reportHolder[0] = new PreparedReport(json, outputHash, sourceHash, claims, report, output, attachmentPreparation);
             };
-            if (generation.size() > 2) {
-                ghidradwarfforge.output.CompanionArtifactPublisher.stageAndPublish(input, generation, stages -> {
+            if (!attachmentPreparation) {
+                var cleanup = ghidradwarfforge.output.CompanionArtifactPublisher.stageAndPublish(input, generation, stages -> {
                     sidecarWriter.write(stages.get(0));
                     sourceWriter.write(stages.get(1));
                     int index = 2;
@@ -457,7 +506,9 @@ public class GhidraDwarfForge extends GhidraScript {
                     if (gdbLoader) {
                         String companion = ghidradwarfforge.elf.GdbCompanion.render(input,
                             stages.get(0), stages.get(1), output, sourceOutput, monitor::isCancelled);
-                        Files.writeString(stages.get(index++), companion, java.nio.charset.StandardCharsets.UTF_8);
+                        Path stage = stages.get(index++);
+                        Files.writeString(stage, companion, java.nio.charset.StandardCharsets.UTF_8);
+                        companionHash[0] = FileDigests.read(stage, monitor::isCancelled).sha256();
                     }
                     if (formatterPlan != null) {
                         Files.writeString(stages.get(index++), formatterPlan.render(input, stages.get(0), output,
@@ -467,15 +518,15 @@ public class GhidraDwarfForge extends GhidraScript {
                         Files.writeString(stages.get(index), mmioProfile.render(originalElf, stages.get(0),
                             monitor::isCancelled), java.nio.charset.StandardCharsets.UTF_8);
                     }
-                }, prePublishCheck);
-            }
-            else if (attachmentPreparation) {
-                ArtifactPairPublisher.stageAndPublishNew(output, sourceOutput,
-                    sidecarWriter, sourceWriter, prePublishCheck);
+                }, prePublishCheck, monitor::checkCancelled);
+                committed = reportHolder[0];
+                cleanup.ifPresent(problem -> publicationWarnings.add(problem.getMessage()));
             }
             else {
-                ArtifactPairPublisher.stageAndPublish(output, sourceOutput,
-                    sidecarWriter, sourceWriter, prePublishCheck);
+                var cleanup = ArtifactPairPublisher.stageAndPublishNew(output, sourceOutput,
+                    sidecarWriter, sourceWriter, prePublishCheck, monitor::checkCancelled);
+                committed = reportHolder[0];
+                cleanup.ifPresent(problem -> publicationWarnings.add(problem.getMessage()));
             }
             MinimalDwarfSidecarExporter.ExportResult result = resultHolder[0];
             PreparedReport prepared = reportHolder[0];
@@ -497,7 +548,7 @@ public class GhidraDwarfForge extends GhidraScript {
             println("  source SHA-256: " + prepared.sourceHash());
             if (gdbLoader) {
                 println("  GDB companion: " + companionOutput);
-                println("  GDB companion SHA-256: " + sha256(companionOutput));
+                println("  GDB companion SHA-256: " + companionHash[0]);
                 println("  Load explicitly in GDB with: source " + companionOutput);
             }
             if (synthesizeUnwind) println("  unwind evidence: " + unwindOutput + " (recovered rules, independent validation NOT_RUN)");
@@ -516,28 +567,7 @@ public class GhidraDwarfForge extends GhidraScript {
             println("  function-owned static variables: " +
                 ghidradwarfforge.source.FunctionStaticPolicy.select(typeModel, source)
                     .exported().size());
-            if (attachmentPreparation) state.addEnvironmentVar(AttachmentPreparation.EXPORT_REPORT_KEY, prepared.json());
-            if (isRunningHeadless()) {
-                println("GhidraDwarfForge report: " + prepared.json());
-            }
-            else {
-                println("GhidraDwarfForge report: schema 2; " +
-                    ghidradwarfforge.output.CoveragePresentation.summary(prepared.coverage(), prepared.status()));
-                if (!attachmentPreparation) {
-                    // Publication is already complete. A presentation failure must not
-                    // change the export outcome or masquerade as an artifact failure.
-                    javax.swing.SwingUtilities.invokeLater(() -> {
-                        try {
-                            ghidradwarfforge.output.CoverageReportGui.show(state.getTool().getToolFrame(),
-                                prepared.coverage(), prepared.status(), prepared.json(),
-                                output.resolveSibling(output.getFileName() + ".report.json"));
-                        }
-                        catch (RuntimeException failure) {
-                            printerr("Coverage window could not open; artifacts were exported: " + failure);
-                        }
-                    });
-                }
-            }
+
         }
     }
 
@@ -545,7 +575,9 @@ public class GhidraDwarfForge extends GhidraScript {
             ghidradwarfforge.annotations.SyntheticConstants constants) { }
 
     private record PreparedReport(String json, String outputHash, String sourceHash,
-            CoverageReportClaims coverage, String status) { }
+            CoverageReportClaims coverage, ExportReport report, Path output, boolean attachment) {
+        String status() { return report.status().name(); }
+    }
 
     private static Map<String, String> parseOptions(String[] arguments) {
         Map<String, String> result = new LinkedHashMap<>();
@@ -608,9 +640,4 @@ public class GhidraDwarfForge extends GhidraScript {
         return Path.of(normalized);
     }
 
-    private static String sha256(Path path) throws IOException {
-        // Preserve caller behavior, including hashing after pair publication:
-        // this existing path does not introduce a new cancellation point.
-        return FileDigests.read(path).sha256();
-    }
 }

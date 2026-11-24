@@ -22,6 +22,7 @@ public final class FunctionEntrySmoke {
 
     public static void main(String[] arguments) throws Exception {
         modelBoundaries();
+        declarationIndex();
         List<FunctionSymbol> functions = functions(0x1000);
         for (int width : new int[] { 4, 8 }) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
@@ -63,6 +64,38 @@ public final class FunctionEntrySmoke {
                 "usage: FunctionEntrySmoke [<libdwarf> <libdwarfp> <input> <output>]");
         }
         System.out.println("function-entry-smoke=PASS");
+    }
+
+    private static void declarationIndex() {
+        for (int count : List.of(16, 128, 512)) {
+            var functions = new ArrayList<ghidradwarfforge.source.SyntheticSourceFile.FunctionLines>();
+            var rows = new ArrayList<SourceLine>();
+            for (int i = 0; i < count; i++) {
+                long entry = 0x4000 + i * 8L;
+                int start = i * 5 + 1;
+                functions.add(new ghidradwarfforge.source.SyntheticSourceFile.FunctionLines("fn" + i, entry,
+                    start, start + 4, true, null));
+                // Rows can mention a neighboring entry and arrive out of line-number order.
+                rows.add(new SourceLine(start + 3, List.of(entry + 8, entry + 1)));
+                if (i % 3 != 0) {
+                    rows.add(new SourceLine(start + 2, List.of(entry)));
+                    rows.add(new SourceLine(start + 1, List.of(entry)));
+                }
+            }
+            var source = new ghidradwarfforge.source.SyntheticSourceFile(new byte[0], functions, rows);
+            var polls = new java.util.concurrent.atomic.AtomicInteger();
+            var declarations = MinimalDwarfSidecarExporter.declarationLines(source, () -> {
+                polls.incrementAndGet();
+                return false;
+            });
+            for (var function : functions) {
+                int reference = rows.stream().filter(row -> row.line() >= function.startLine() &&
+                    row.line() <= function.endLine() && row.addresses().contains(function.address()))
+                    .mapToInt(SourceLine::line).min().orElse(function.startLine());
+                require(declarations.get(function) == reference, "indexed declaration lost earliest owned entry row or fallback");
+            }
+            require(polls.get() == rows.size() + 2 * count, "declaration planning exceeded one row pass");
+        }
     }
 
     private static void modelBoundaries() {

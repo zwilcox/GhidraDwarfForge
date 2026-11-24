@@ -19,6 +19,7 @@ public final class SourceBundleStoreSmoke {
         Path root = Files.createTempDirectory("forge-source-store-");
         var plan = SourceBundle.prepare("a".repeat(64), "target.dbg.c", SourceBundleSmoke.fixture(), 3, () -> false);
         try {
+            for (boolean existing : List.of(false, true)) checkDigestCost(root, existing);
             Path success = Files.createDirectory(root.resolve("success"));
             Path index = success.resolve("target.dbg.c");
             var installed = SourceBundleStore.install(index, plan, List.of(), () -> false);
@@ -73,6 +74,55 @@ public final class SourceBundleStoreSmoke {
         finally {
             try (var paths = Files.walk(root)) {
                 for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
+            }
+        }
+    }
+
+    private static void checkDigestCost(Path root, boolean existing) throws Exception {
+        int previousPolls = 0;
+        for (int megabytes : List.of(1, 4)) {
+            Path dir = Files.createDirectory(root.resolve("digest-" + existing + "-" + megabytes));
+            Path input = Files.writeString(dir.resolve("input"), "original ELF");
+            var original = FileDigests.read(input);
+            List<Path> outputs = List.of(dir.resolve("image.dbg"), dir.resolve("image.dbg.c"), dir.resolve("image.dbg.gdb.py"));
+            byte[] data = new byte[megabytes * 1024 * 1024];
+            if (existing) {
+                for (Path path : outputs) Files.write(path, data);
+            }
+            var fullChecks = new AtomicInteger();
+            var polls = new AtomicInteger();
+            var plan = SourceBundle.prepare(original.sha256(), outputs.get(1).getFileName().toString(),
+                SourceBundleSmoke.fixture(), 3, () -> false);
+            var dependencies = new SourceBundleStore.Installed[1];
+            CompanionArtifactPublisher.stageAndPublish(input, outputs, stages -> {
+                dependencies[0] = SourceBundleStore.install(outputs.get(1), plan, List.of(input), () -> false);
+                for (Path path : stages) Files.write(path, data);
+            }, () -> {
+                fullChecks.incrementAndGet();
+                require(FileDigests.read(input).equals(original), "input digest changed");
+                if (dependencies[0] != null) dependencies[0].verify(() -> false);
+            }, () -> { polls.incrementAndGet(); });
+            require(fullChecks.get() == 3, "full input rehash escaped publication boundaries");
+            require(polls.get() > previousPolls, "larger output was not polled during hashing");
+            previousPolls = polls.get();
+            System.out.println("companion-digest overwrite=" + existing + " MiB=" + megabytes +
+                " checks=" + fullChecks + " polls=" + polls + " sourceParts=" + plan.manifest().parts().size());
+            for (Path path : outputs) require(Files.size(path) == data.length, "generation incomplete");
+            var cancelled = new AtomicInteger();
+            try {
+                CompanionArtifactPublisher.stageAndPublish(input, outputs, stages -> {
+                    throw new AssertionError("writer ran after cancellation while hashing outputs");
+                }, () -> { }, () -> {
+                    if (cancelled.incrementAndGet() == 8) throw new CancellationException("during output digest");
+                });
+                throw new AssertionError("ignored cancellation during output digest");
+            }
+            catch (CancellationException expected) {
+                require(cancelled.get() == 8, "late cancellation during output digest");
+            }
+            try (var paths = Files.list(dir)) {
+                require(paths.noneMatch(path -> path.getFileName().toString().startsWith(".forge-generation-")),
+                    "failed publication leaked stages");
             }
         }
     }

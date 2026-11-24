@@ -12,6 +12,8 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
 
 /** Recoverable publication of a sidecar/source generation with up to three companions. */
 public final class CompanionArtifactPublisher {
@@ -31,6 +33,13 @@ public final class CompanionArtifactPublisher {
     }
 
     private record State(Object key, long size, FileTime modified, String sha256, Path link) {
+        void record(Properties inventory, String prefix) {
+            inventory.setProperty(prefix + ".type", link == null ? "regular" : "symlink");
+            inventory.setProperty(prefix + (link == null ? ".sha256" : ".link"), link == null ? sha256 : link.toString());
+            inventory.setProperty(prefix + ".size", Long.toString(size));
+            inventory.setProperty(prefix + ".modified", modified.toString());
+            if (key != null) inventory.setProperty(prefix + ".fileKey", key.toString());
+        }
     }
 
     private static final class CheckFailure extends RuntimeException {
@@ -71,39 +80,70 @@ public final class CompanionArtifactPublisher {
     static void stageAndPublish(Path input, Path sidecar, Path source, Path companion,
             StagedWriter writer, ArtifactPairPublisher.PrePublishCheck check, InstallHook hook)
             throws Exception {
-        stageAndPublish(input, List.of(sidecar, source, companion),
-            stages -> writer.write(stages.get(0), stages.get(1), stages.get(2)), check, hook);
+        logWarning(stageAndPublish(input, List.of(sidecar, source, companion),
+            stages -> writer.write(stages.get(0), stages.get(1), stages.get(2)), check, hook));
     }
 
     /** First two paths are sidecar/source; remaining paths are generation-bound companions. */
     public static void stageAndPublish(Path input, List<Path> outputs,
             GenerationWriter writer, ArtifactPairPublisher.PrePublishCheck check) throws Exception {
-        stageAndPublish(input, outputs, writer, check, index -> { });
+        logWarning(stageAndPublish(input, outputs, writer, check, index -> { }));
     }
 
-    static void stageAndPublish(Path input, List<Path> outputs, GenerationWriter writer,
+    private static void logWarning(Optional<IOException> warning) {
+        warning.ifPresent(problem -> System.getLogger(CompanionArtifactPublisher.class.getName())
+            .log(System.Logger.Level.WARNING, problem.getMessage(), problem));
+    }
+
+    /** A returned warning means all outputs were committed and private cleanup needs attention. */
+    public static Optional<IOException> stageAndPublish(Path input, List<Path> outputs, GenerationWriter writer,
+            ArtifactPairPublisher.PrePublishCheck check, ArtifactPairPublisher.PrePublishCheck pollCancellation)
+            throws Exception {
+        return stageAndPublish(input, outputs, writer, check, pollCancellation, index -> { });
+    }
+
+    static Optional<IOException> stageAndPublish(Path input, List<Path> outputs, GenerationWriter writer,
             ArtifactPairPublisher.PrePublishCheck check, InstallHook hook) throws Exception {
+        // The original overload accepts one combined monitor/consistency callback.
+        // Its callers can cancel during a long digest even before the writer starts.
+        return stageAndPublish(input, outputs, writer, check, check, hook);
+    }
+
+    static Optional<IOException> stageAndPublish(Path input, List<Path> outputs, GenerationWriter writer,
+            ArtifactPairPublisher.PrePublishCheck check, ArtifactPairPublisher.PrePublishCheck pollCancellation,
+            InstallHook hook) throws Exception {
+        return publishResolved(resolve(input, outputs), false, writer, check, pollCancellation, hook);
+    }
+
+    static Optional<IOException> publishResolved(List<Path> targets, boolean exclusive, GenerationWriter writer,
+            ArtifactPairPublisher.PrePublishCheck check, ArtifactPairPublisher.PrePublishCheck pollCancellation,
+            InstallHook hook) throws Exception {
         Objects.requireNonNull(writer, "writer");
+        Objects.requireNonNull(pollCancellation, "pollCancellation");
         Objects.requireNonNull(check, "check");
         Objects.requireNonNull(hook, "hook");
-        List<Path> targets = resolve(input, outputs);
+        check.check();
         List<State> previous = new ArrayList<>();
         for (Path target : targets) {
-            previous.add(observe(target, check));
+            State before = observe(target, pollCancellation);
+            if (exclusive && before != null) throw new java.nio.file.FileAlreadyExistsException(target.toString());
+            previous.add(before);
         }
-        check.check();
         Path directory = Files.createTempDirectory(targets.get(0).getParent(), ".forge-generation-");
         Path[] stages = new Path[targets.size()];
+        var journal = new PublicationJournal(directory);
+        Path[] backupCandidates = new Path[targets.size()];
         Path[] backups = new Path[targets.size()];
         State[] installed = new State[targets.size()];
         boolean[] replaced = new boolean[targets.size()];
         boolean retainRecovery = false;
+        IOException cleanupWarning = null;
         Exception failure = null;
         try {
             for (int index = 0; index < stages.length; index++) {
                 // The existing line-table writer derives its source directory
                 // from the stage parent. Keep stages beside the final files.
-                stages[index] = Files.createTempFile(directory.getParent(),
+                stages[index] = Files.createTempFile(targets.get(index).getParent(),
                     directory.getFileName() + "-stage-" + index + "-", ".staged");
             }
             writer.write(List.of(stages));
@@ -118,26 +158,50 @@ public final class CompanionArtifactPublisher {
             if (Files.getLastModifiedTime(stages[0]).compareTo(sourceTime) < 0) {
                 Files.setLastModifiedTime(stages[0], sourceTime);
             }
+            Properties inventory = new Properties();
+            for (int index = 0; index < targets.size(); index++) {
+                String prefix = "file." + index;
+                Path target = targets.get(index);
+                backupCandidates[index] = journal.backup(index, target);
+                inventory.setProperty(prefix + ".target", target.toString());
+                inventory.setProperty(prefix + ".stage", stages[index].toString());
+                inventory.setProperty(prefix + ".backup", backupCandidates[index].toString());
+                if (previous.get(index) == null) inventory.setProperty(prefix + ".old.type", "absent");
+                else previous.get(index).record(inventory, prefix + ".old");
+                installed[index] = observe(stages[index], pollCancellation);
+                if (installed[index] == null || installed[index].link() != null) {
+                    throw new IOException("staged file disappeared or changed type: " + stages[index]);
+                }
+                installed[index].record(inventory, prefix + ".new");
+            }
+            journal.prepare(inventory, targets);
             check.check();
             for (int index = 0; index < targets.size(); index++) {
-                requireUnchanged(targets.get(index), previous.get(index), check);
+                requireUnchanged(targets.get(index), previous.get(index), pollCancellation);
             }
             for (int index = 0; index < targets.size(); index++) {
-                check.check();
+                pollCancellation.check();
                 Path target = targets.get(index);
-                State next = observe(stages[index], check);
-                requireUnchanged(target, previous.get(index), check);
+                if (!exclusive) requireUnchanged(target, previous.get(index), pollCancellation);
                 if (previous.get(index) != null) {
-                    Path backup = directory.resolve("backup-" + index);
+                    Path backup = backupCandidates[index];
                     move(target, backup);
                     backups[index] = backup;
+                    requireUnchanged(backup, previous.get(index), pollCancellation);
                 }
-                move(stages[index], target);
+                if (exclusive) {
+                    // link(2)/CreateHardLink cannot replace a leaf created after preflight.
+                    Files.createLink(target, stages[index]);
+                }
+                else move(stages[index], target);
                 replaced[index] = true;
-                installed[index] = next;
                 hook.afterInstall(index);
             }
             check.check();
+            for (int index = 0; index < targets.size(); index++) {
+                requireUnchanged(targets.get(index), installed[index], pollCancellation);
+            }
+            journal.committed();
         }
         catch (Exception problem) {
             failure = problem;
@@ -146,13 +210,9 @@ public final class CompanionArtifactPublisher {
                     continue;
                 }
                 try {
-                    // Do not roll an unrelated concurrent user's change back.
-                    // An unobserved install is uncertain, so retain recovery.
-                    if (replaced[index] && installed[index] == null) {
-                        throw new IOException("installed output could not be observed: " + targets.get(index));
-                    }
-                    requireUnchanged(targets.get(index), installed[index]);
+                    requireUnchanged(targets.get(index), replaced[index] ? installed[index] : null);
                     if (backups[index] != null) {
+                        requireUnchanged(backups[index], previous.get(index));
                         move(backups[index], targets.get(index));
                     }
                     else if (replaced[index]) {
@@ -173,6 +233,9 @@ public final class CompanionArtifactPublisher {
         finally {
             if (!retainRecovery) {
                 try {
+                    // No public names are changed after this point. Keep the inventory and
+                    // backups reachable until every cooperating-writer claim is released.
+                    journal.release();
                     for (Path stage : stages) {
                         if (stage != null) {
                             Files.deleteIfExists(stage);
@@ -183,19 +246,21 @@ public final class CompanionArtifactPublisher {
                             Files.deleteIfExists(backup);
                         }
                     }
+                    journal.removeInventories();
                     Files.delete(directory);
                 }
-                catch (IOException cleanupFailure) {
+                catch (IOException | SecurityException cleanupFailure) {
                     if (failure != null) {
                         failure.addSuppressed(cleanupFailure);
                     }
                     else {
-                        throw new IOException("generation installed but staging cleanup failed: " + directory,
-                            cleanupFailure);
+                        cleanupWarning = new IOException("Export committed. Staging cleanup failed at " +
+                            directory + ": " + cleanupFailure, cleanupFailure);
                     }
                 }
             }
         }
+        return Optional.ofNullable(cleanupWarning);
     }
 
     private static List<Path> resolve(Path input, List<Path> outputs)
@@ -205,8 +270,8 @@ public final class CompanionArtifactPublisher {
             throw new IOException("original ELF is not a readable regular file: " + original);
         }
         outputs = List.copyOf(outputs);
-        if (outputs.size() < 3 || outputs.size() > 5) {
-            throw new IllegalArgumentException("generation needs sidecar/source and one to three companions");
+        if (outputs.size() < 2 || outputs.size() > 5) {
+            throw new IllegalArgumentException("generation needs sidecar/source and at most three companions");
         }
         List<Path> targets = new ArrayList<>();
         for (int index = 0; index < outputs.size(); index++) {

@@ -47,6 +47,16 @@ public final class Dwarf5RangeListsSmoke {
             throw new AssertionError("big-endian ELF32 range-list encoding is incorrect");
         }
 
+        for (var order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+            var functions = List.of(split, new FunctionSymbol("last", 0xffff_fff0L, 16));
+            DwarfAddressRanges.build(functions, 4, order);
+            var edge = Dwarf5RangeLists.build(functions, 4, order);
+            var bytes = ByteBuffer.wrap(edge.section()).order(order);
+            bytes.position(Math.toIntExact(edge.compilationUnitOffset()) + 2 * 9);
+            if (bytes.get() != 7 || Integer.toUnsignedLong(bytes.getInt()) != 0xffff_fff0L ||
+                    bytes.get() != 16 || bytes.get() != 0) throw new AssertionError("lost final ELF32 byte");
+        }
+
         if (!Dwarf5RangeLists.build(List.of(contiguous), 8,
                 ByteOrder.LITTLE_ENDIAN).empty()) {
             throw new AssertionError("contiguous-only input should not need .debug_rnglists");

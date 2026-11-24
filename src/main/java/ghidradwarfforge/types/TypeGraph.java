@@ -15,12 +15,11 @@ import java.util.Map;
 public record TypeGraph(List<TypeNode> nodes) {
     /** Meaningful value bytes for location proofs, excluding floating ABI tail padding. */
     public long valueByteSize(TypeRef reference) {
-        var types = byKey();
         var seen = new java.util.HashSet<String>();
-        TypeNode node = types.get(reference.key());
+        TypeNode node = lookup(reference.key());
         while (node != null && seen.add(node.key())) {
-            if (node instanceof TypedefType alias) node = types.get(alias.target().key());
-            else if (node instanceof QualifiedType qualified) node = types.get(qualified.target().key());
+            if (node instanceof TypedefType alias) node = lookup(alias.target().key());
+            else if (node instanceof QualifiedType qualified) node = lookup(qualified.target().key());
             else return node instanceof BaseType base ? base.valueByteSize() : node.byteSize();
         }
         throw new IllegalArgumentException("unresolved value size for " + reference.key());
@@ -322,6 +321,21 @@ public record TypeGraph(List<TypeNode> nodes) {
             }
         }
         nodes = nodes.stream().sorted(Comparator.comparing(TypeNode::key)).toList();
+    }
+
+    /** Search the canonical key-sorted list without materializing an index for one reference. */
+    public TypeNode lookup(String key) {
+        int low = 0;
+        int high = nodes.size() - 1;
+        while (low <= high) {
+            int middle = (low + high) >>> 1;
+            TypeNode node = nodes.get(middle);
+            int order = node.key().compareTo(key);
+            if (order == 0) return node;
+            if (order < 0) low = middle + 1;
+            else high = middle - 1;
+        }
+        return null;
     }
 
     public Map<String, TypeNode> byKey() {

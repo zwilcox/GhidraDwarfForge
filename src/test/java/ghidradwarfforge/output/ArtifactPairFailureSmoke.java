@@ -135,17 +135,18 @@ public final class ArtifactPairFailureSmoke {
             throw new AssertionError("late source collision ignored");
         }
         catch (FileAlreadyExistsException expected) {
-            require(expected.getSuppressed().length == 1 && expected.getSuppressed()[0] instanceof IOException,
-                "unsafe rollback was not reported as a suppressed cleanup failure");
-            if (!missing) require(expected.getSuppressed()[0].getMessage().contains("fresh artifact changed before rollback"),
-                "replacement identity mismatch was not diagnosed");
+            require(java.util.Arrays.stream(expected.getSuppressed()).anyMatch(problem ->
+                problem.getMessage().contains("recovery files retained")), "unsafe rollback lost recovery location");
+            require(java.util.Arrays.stream(expected.getSuppressed()).anyMatch(problem ->
+                problem.getMessage().contains("changed concurrently")), "changed fresh output lacked an ownership diagnostic");
         }
         text(source, "concurrent source");
         text(artifactStage, "owned artifact stage");
         text(sourceStage, "owned source stage");
         if (missing) require(!Files.exists(artifact), "rollback recreated an externally removed artifact");
         else text(artifact, "concurrent artifact");
-        require(names(root).size() == (missing ? 3 : 4), "exclusive rollback created unexpected files");
+        require(Files.isRegularFile(PublicationJournal.claimPath(artifact).resolve("owner.properties")),
+            "exclusive rollback lost the generation recovery claim");
     }
 
     private static void failedRestoration(Path root) throws Exception {
@@ -168,15 +169,15 @@ public final class ArtifactPairFailureSmoke {
             throw new AssertionError("post-install failure ignored");
         }
         catch (IOException observed) {
-            require(observed == failure && observed.getSuppressed().length == 1 &&
-                observed.getSuppressed()[0] instanceof IOException, "restoration failure hid original or cleanup error");
+            require(observed == failure && java.util.Arrays.stream(observed.getSuppressed()).anyMatch(error ->
+                error.getMessage().contains("recovery files retained")), "restoration failure hid primary error or recovery location");
         }
         text(artifact.resolve("concurrent"), "must survive rollback");
         text(source, "untouched original source");
         require(Files.getLastModifiedTime(source).equals(sourceTime), "rollback touched unchanged source");
         List<Path> backups;
-        try (var paths = Files.list(root)) {
-            backups = paths.filter(path -> path.getFileName().toString().endsWith(".backup")).toList();
+        try (var paths = Files.walk(root)) {
+            backups = paths.filter(path -> path.getFileName().toString().equals("backup-0")).toList();
         }
         require(backups.size() == 1, "failed rollback discarded recovery backup");
         text(backups.getFirst(), "recoverable original artifact");

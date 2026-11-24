@@ -96,7 +96,7 @@ public final class CompanionObservationRecoverySmoke {
         Saved[] concurrent = {null};
         try {
             CompanionArtifactPublisher.stageAndPublish(fixture.original, fixture.outputs,
-                stages -> { throw new AssertionError("writer ran after unstable output observation"); }, () -> {
+                stages -> { throw new AssertionError("writer ran after unstable output observation"); }, () -> { }, () -> {
                     // observe's check precedes its metadata read; FileDigests' first check
                     // follows that read, before it opens the file. No timing/thread race.
                     if (++polls[0] != 2) return;

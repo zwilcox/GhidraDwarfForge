@@ -72,6 +72,9 @@ PY
 }
 
 for target in "${targets[@]}"; do
+    if [[ "$target" == x86_64 && "$expectation" == fixed ]]; then
+        "$repository/src/test/integration/partial-stack-location.sh" "$ghidra"
+    fi
     case "$target" in
         x86_64) cc=gcc; objcopy=objcopy; objdump=objdump; extra=(-fcf-protection=none) ;;
         aarch64) cc=aarch64-linux-gnu-gcc; objcopy=aarch64-linux-gnu-objcopy

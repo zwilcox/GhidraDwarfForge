@@ -85,7 +85,7 @@ public final class MipsFunctionAliasSymbolsSmoke {
                         check(root, bytes, split, start == 0x1010 && size == 16 ? null : "word aligned");
                     }
                 }
-                Path path = root.resolve("cancel.elf");
+                Path path = root.resolve("fixture.elf");
                 Files.write(path, bytes);
                 var image = ElfImage.read(path);
                 for (int limit : List.of(1, 5, 12)) {
