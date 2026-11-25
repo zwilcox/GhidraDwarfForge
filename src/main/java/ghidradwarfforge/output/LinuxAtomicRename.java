@@ -20,6 +20,7 @@ public final class LinuxAtomicRename {
 
     private static final int AT_FDCWD = -100;
     private static final int RENAME_NOREPLACE = 1;
+    private static final int RENAME_EXCHANGE = 2;
     private final LibC libc;
 
     public LinuxAtomicRename() throws IOException {
@@ -49,6 +50,11 @@ public final class LinuxAtomicRename {
      */
     public void replaceAtomic(Path stage, Path target) throws IOException {
         rename(stage, target, 0, "replacement");
+    }
+
+    /** Both directory entries stay present. The caller retains the exact displaced inode. */
+    void exchange(Path privateName, Path target) throws IOException {
+        rename(privateName, target, RENAME_EXCHANGE, "exchange");
     }
 
     private void rename(Path stage, Path destination, int flags, String operation) throws IOException {

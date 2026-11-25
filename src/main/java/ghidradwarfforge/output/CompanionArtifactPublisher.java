@@ -142,7 +142,9 @@ public final class CompanionArtifactPublisher {
         Path[] backupCandidates = new Path[targets.size()];
         Path[] backups = new Path[targets.size()];
         State[] installed = new State[targets.size()];
+        State[] displaced = previous.toArray(State[]::new);
         boolean[] replaced = new boolean[targets.size()];
+        PublicationExchange exchange = null;
         boolean cleanupSafe = true;
         IOException cleanupWarning = null;
         Exception failure = null;
@@ -192,24 +194,34 @@ public final class CompanionArtifactPublisher {
             for (int index = 0; index < targets.size(); index++) {
                 pollCancellation.check();
                 Path target = targets.get(index);
-                if (!exclusive) requireUnchanged(target, previous.get(index), pollCancellation);
                 if (previous.get(index) != null) {
+                    if (exchange == null) exchange = PublicationExchange.open();
                     Path backup = backupCandidates[index];
-                    move(target, backup);
+                    Files.createLink(backup, stages[index]);
                     backups[index] = backup;
-                    requireUnchanged(backup, previous.get(index), pollCancellation);
+                    pollCancellation.check();
+                    // The backup name receives the actual occupant, even if an editor has
+                    // replaced it since our check. Keep the staged inode at its own name.
+                    exchange.exchange(backup, target);
+                    replaced[index] = true;
+                    State occupant = observe(backup, pollCancellation);
+                    if (occupant == null) throw new IOException("displaced output disappeared: " + backup);
+                    displaced[index] = occupant;
+                    if (!occupant.equals(previous.get(index))) {
+                        throw new IOException("generation destination changed concurrently: " + target);
+                    }
                 }
-                if (exclusive) {
-                    // link(2)/CreateHardLink cannot replace a leaf created after preflight.
+                else {
+                    // The same no-replace rule applies to ordinary first exports.
                     Files.createLink(target, stages[index]);
+                    replaced[index] = true;
                 }
-                else move(stages[index], target);
-                replaced[index] = true;
                 hook.afterInstall(index);
             }
             check.check();
             for (int index = 0; index < targets.size(); index++) {
                 requireUnchanged(targets.get(index), installed[index], pollCancellation);
+                if (backups[index] != null) requireUnchanged(backups[index], displaced[index], pollCancellation);
             }
             journal.committed();
             cleanupSafe = true;
@@ -218,17 +230,30 @@ public final class CompanionArtifactPublisher {
             failure = problem;
             boolean rolledBack = true;
             for (int index = targets.size() - 1; index >= 0; index--) {
-                if (!replaced[index] && backups[index] == null) {
-                    continue;
-                }
+                if (!replaced[index]) continue;
                 try {
-                    requireUnchanged(targets.get(index), replaced[index] ? installed[index] : null);
+                    Path target = targets.get(index);
+                    requireUnchanged(target, installed[index]);
                     if (backups[index] != null) {
-                        requireUnchanged(backups[index], previous.get(index));
-                        move(backups[index], targets.get(index));
+                        requireUnchanged(backups[index], displaced[index]);
+                        exchange.exchange(backups[index], target);
+                        // A racing save after the precheck is now held under the private name.
+                        if (!Objects.equals(observe(backups[index]), installed[index])) {
+                            requireUnchanged(target, displaced[index]);
+                            exchange.exchange(backups[index], target);
+                            throw new IOException("preserved an independent save during rollback: " + target);
+                        }
                     }
-                    else if (replaced[index]) {
-                        Files.delete(targets.get(index));
+                    else {
+                        Path retired = backupCandidates[index];
+                        move(target, retired);
+                        backups[index] = retired;
+                        if (!Objects.equals(observe(retired), installed[index])) {
+                            // An independent replacement won the race to the public name.
+                            // Exclusive restoration also preserves any newer arrival there.
+                            Files.createLink(target, retired);
+                            throw new IOException("preserved an independent save during rollback: " + target);
+                        }
                     }
                 }
                 catch (Exception rollbackFailure) {

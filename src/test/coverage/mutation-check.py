@@ -1740,7 +1740,7 @@ MUTANTS = [
     ("publication-loses-primary-cleanup-diagnostic", PUBLISH, PUBLISH_TEST,
      "failure.addSuppressed(cleanupFailure);", "failure.getMessage();"),
     ("publication-loses-previous-generation", PUBLISH, PUBLISH_TEST,
-     "move(backups[index], targets.get(index));", "Files.deleteIfExists(backups[index]);"),
+     "if (!replaced[index]) continue;", "if (!replaced[index] || backups[index] != null) continue;"),
     ("publication-ignores-final-cancellation", PUBLISH,
      "ghidradwarfforge.output.CompanionArtifactPublisherSmoke",
      "hook.afterInstall(index);\n            }\n            check.check();",
@@ -1759,8 +1759,8 @@ PROJECT_MUTANTS = [
     ("project-allows-descendant", PROTECT, PROTECT_TEST,
      "if (path.startsWith(directory))", "if (false)"),
     ("project-misses-file-alias", PROTECT, PROTECT_TEST,
-     "ghidradwarfforge.output.FileSystemPaths.aliases(output, protectedPath)",
-     "output.equals(protectedPath)"),
+     "ghidradwarfforge.output.FileSystemPaths.aliases(output, path)",
+     "output.equals(path)"),
     ("project-skips-linked-file", PROTECT, PROTECT_TEST,
      "Files.isRegularFile(path)", "Files.isRegularFile(path, java.nio.file.LinkOption.NOFOLLOW_LINKS)"),
     ("project-ignores-cancellation", PROTECT, PROTECT_TEST,
@@ -2420,6 +2420,7 @@ def main():
     parser.add_argument("--java-home", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ghidra", type=Path, help="also check project protection, records, unwind and analyst selections using Ghidra's API/Gson")
+    parser.add_argument("--jna", type=Path, help="JNA JAR for publisher tests when running without --ghidra")
     parser.add_argument("--only", action="append", help="run an exact mutation label and its baseline; repeatable")
     args = parser.parse_args()
     classes, tests, output = args.classes.resolve(), args.tests.resolve(), args.output.resolve()
@@ -2437,6 +2438,9 @@ def main():
     dependencies = sorted(args.ghidra.resolve().glob("Ghidra/**/lib/*.jar")) if args.ghidra else []
     if args.ghidra and not dependencies:
         raise ValueError("Ghidra installation libraries are required")
+    jna = args.jna or next((jar for jar in dependencies if jar.name == "jna-5.14.0.jar"), None)
+    if any(source == PUBLISH for _, source, *_ in mutants) and (jna is None or not jna.is_file()):
+        parser.error("publisher mutation checks require --ghidra or --jna")
     sources = {row[1]: REPO / "src/main/java" / row[1] for row in mutants}
     original = {name: path.read_text() for name, path in sources.items()}
     hashes = {name: digest(path) for name, path in sources.items()}
@@ -2483,7 +2487,10 @@ def main():
                                                  "-d", root, path])
             if compiled.returncode:
                 raise AssertionError(f"{label}: compilation failed, not a detected mutant\n{compiled.stdout}")
-            classpath = os.pathsep.join(map(str, [root, classes, tests, *selected_dependencies]))
+            runtime_dependencies = list(selected_dependencies)
+            if jna is not None and jna not in runtime_dependencies:
+                runtime_dependencies.append(jna.resolve())
+            classpath = os.pathsep.join(map(str, [root, classes, tests, *runtime_dependencies]))
             if test in (GDB_COMPANION_TEST, FORMATTER_SELECTION_TEST):
                 # Rendering requires the same checked-in runtime resources packaged by CI.
                 classpath += os.pathsep + str(REPO / "src/main/resources")

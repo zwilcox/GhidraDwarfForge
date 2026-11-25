@@ -34,7 +34,8 @@ public final class PublicationInterruptionSmoke {
             Files.writeString(fixtures.resolve("input"), "original");
             for (String name : NAMES) Files.writeString(fixtures.resolve(name), "old " + name);
             String cp = classes(PublicationInterruptionSmoke.class) + File.pathSeparator +
-                classes(CompanionArtifactPublisher.class) + File.pathSeparator + classes(FileDigests.class);
+                classes(CompanionArtifactPublisher.class) + File.pathSeparator + classes(FileDigests.class) +
+                File.pathSeparator + classes(com.sun.jna.Native.class);
             Process child = new ProcessBuilder(ProcessHandle.current().info().command().orElseThrow(),
                 "-cp", cp, PublicationInterruptionSmoke.class.getName(), fixtures.toString())
                 .redirectErrorStream(true).redirectOutput(fixtures.resolve("child.log").toFile()).start();

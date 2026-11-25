@@ -42,7 +42,9 @@ ELF64 target virtual addresses above 0x7fffffffffffffff are currently unsupporte
 
 Ordinary export replaces each public file atomically. A reader opening multiple
 names during publication can see different generations. Wait for the terminal
-report before opening the set. An interrupted process can leave an active claim
+report before opening the set. Updating an existing file uses a Linux atomic
+exchange or Windows transactional rename on NTFS. On filesystems without an
+exchange primitive, select unused output names. An interrupted process can leave an active claim
 in a .ghidra-dwarf-forge-publishing-* file beside each output. It names
 the process and generation.properties recovery inventory. Verify that process
 has stopped before recovery. Preserve the listed stages and backups. Compare
