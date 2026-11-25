@@ -296,16 +296,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Windows wrapper log-collision safety
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force 'build\test-results\native-windows' | Out-Null
-          & pwsh -NoLogo -NoProfile -File .\src\test\integration\headless-wrapper.ps1 2>&1 |
-            Tee-Object -FilePath 'build\test-results\native-windows\headless-wrapper.log'
-          if ($LASTEXITCODE -ne 0) {
-            throw "PowerShell wrapper safety checks failed with exit code $LASTEXITCODE"
-          }
-
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -699,6 +689,7 @@ jobs:
               fi
               sleep "$((attempt * 15))"
             done
+            ./gradlew --no-daemon jar
             src/test/integration/headless-wrapper.sh
             python3 src/test/integration/attachment-launcher.py
             src/test/integration/architecture-neutrality.sh
@@ -4193,6 +4184,9 @@ jobs:
           if ($null -eq $extension) { throw 'extension ZIP is missing' }
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
+          & pwsh -NoLogo -NoProfile -File .\src\test\integration\headless-wrapper.ps1 2>&1 |
+            Tee-Object -FilePath "$resultDirectory\headless-wrapper.log"
+          if ($LASTEXITCODE -ne 0) { throw "PowerShell wrapper checks failed with exit code $LASTEXITCODE" }
           & .\gradlew.bat formatterPlanSmoke exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
             dwarfInfoRepairSmoke dwarfInfoRepairBoundarySmoke sourceRelocationBoundarySmoke `
             syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke buildIdHelperSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `

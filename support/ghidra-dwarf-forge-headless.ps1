@@ -433,7 +433,7 @@ try {
         [IO.File]::Copy($Log, $requestedProjectLog, $false)
     }
     $reportLines = @(Get-Content -LiteralPath $Log | Where-Object {
-        $_ -cmatch '^INFO[ \t]+GhidraDwarfForge\.java>[ \t]+GhidraDwarfForge report: '
+        $_ -cmatch '^(?:INFO|ERROR)[ \t]+GhidraDwarfForge\.java>[ \t]+GhidraDwarfForge report: '
     })
     if ($reportLines.Count -ne 1) {
         [Console]::Error.WriteLine(
@@ -447,40 +447,25 @@ try {
     if ($payload.EndsWith($suffix, [StringComparison]::Ordinal)) {
         $payload = $payload.Substring(0, $payload.Length - $suffix.Length)
     }
-    $report = ConvertFrom-Json -InputObject $payload -ErrorAction Stop
-    if ($report -isnot [PSCustomObject] -or
-            ($report.schemaVersion -isnot [int] -and $report.schemaVersion -isnot [long]) -or
-            $report.schemaVersion -notin @(1, 2)) { throw 'unsupported export report schema' }
-    $status = $report.status
-    if ($status -cin @('SUCCESS', 'PARTIAL')) {
-        if (($report.counts.functionsExported -isnot [int] -and $report.counts.functionsExported -isnot [long]) -or
-                $report.counts.functionsExported -lt 0 -or $report.artifacts.outputPath -isnot [string] -or
-                $report.artifacts.outputPath.Length -eq 0 -or ($report.schemaVersion -eq 2 -and $report.coverage -isnot [PSCustomObject]) -or
-                $null -eq $report.PSObject.Properties['failure'] -or $null -ne $report.failure) {
-            throw 'incomplete successful export report'
-        }
+    $reportFile = Join-Path $temporaryRoot 'export-report.json'
+    [IO.File]::WriteAllText($reportFile, $payload, [Text.UTF8Encoding]::new($false))
+    $extension = Split-Path -Parent $PSScriptRoot
+    if (-not (Test-Path -LiteralPath (Join-Path $extension 'lib/GhidraDwarfForge.jar') -PathType Leaf)) {
+        $extension = Join-Path $GhidraDirectory 'Ghidra/Extensions/GhidraDwarfForge'
     }
-    elseif ($status -cin @('FATAL', 'CANCELLED')) {
-        if ($report.failure.message -isnot [string] -or $report.failure.type -isnot [string] -or $null -eq $report.PSObject.Properties['artifacts'] -or
-                $null -ne $report.artifacts) { throw 'incomplete failure report' }
-    }
-    else { throw 'unknown report status' }
-    switch ($status) {
-        { $_ -in @('SUCCESS', 'PARTIAL') } {
+    & (Join-Path $PSScriptRoot 'ghidra-dwarf-forge-report.ps1') -ReportFile $reportFile -TerminalStatus `
+        -GhidraDirectory $GhidraDirectory -ExtensionDirectory $extension
+    switch ($LASTEXITCODE) {
+        0 {
             if ($headlessStatus -ne 0) {
-                [Console]::Error.WriteLine(
-                    "ghidra-dwarf-forge-headless: Ghidra exited $headlessStatus after $status")
+                [Console]::Error.WriteLine("ghidra-dwarf-forge-headless: Ghidra exited $headlessStatus after a completed export")
                 exit 12
             }
             exit 0
         }
-        'FATAL' { exit 10 }
-        'CANCELLED' { exit 11 }
-        default {
-            [Console]::Error.WriteLine(
-                "ghidra-dwarf-forge-headless: unknown report status: $status")
-            exit 12
-        }
+        10 { exit 10 }
+        11 { exit 11 }
+        default { exit 12 }
     }
 }
 catch {

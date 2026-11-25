@@ -418,59 +418,46 @@ except OSError as error:
 PYLOG
 fi
 
-status=$(python3 - "$log_path" <<'PYTHON'
-import json
+report_file="$temporary_root/export-report.json"
+python3 - "$log_path" "$report_file" <<'PYTHON' || exit 12
 import re
 import sys
 
-marker = re.compile(rb"^INFO[ \t]+GhidraDwarfForge\.java>[ \t]+GhidraDwarfForge report: ")
-status = None
+marker = re.compile(rb"^(?:INFO|ERROR)[ \t]+GhidraDwarfForge\.java>[ \t]+GhidraDwarfForge report: ")
 try:
+    found = False
     with open(sys.argv[1], "rb") as transcript:
         for line in transcript:
             message = marker.match(line)
             if not message:
                 continue
-            if status is not None:
+            if found:
                 raise ValueError("multiple export reports")
-            payload = line[message.end():].strip()
-            suffix = b" (GhidraScript)"
-            if payload.endswith(suffix):
-                payload = payload[:-len(suffix)]
-            report = json.loads(payload)
-            if not isinstance(report, dict) or type(report.get("schemaVersion")) is not int or report["schemaVersion"] not in (1, 2):
-                raise ValueError("unsupported export report schema")
-            status = report["status"]
-            if status in ("SUCCESS", "PARTIAL"):
-                if (not isinstance(report["artifacts"]["outputPath"], str) or not report["artifacts"]["outputPath"]
-                        or type(report["counts"]["functionsExported"]) is not int or report["counts"]["functionsExported"] < 0
-                        or report["failure"] is not None or (report["schemaVersion"] == 2 and not isinstance(report["coverage"], dict))):
-                    raise ValueError("incomplete successful export report")
-            elif status in ("FATAL", "CANCELLED"):
-                if not isinstance(report["failure"]["message"], str) or not isinstance(report["failure"]["type"], str) or report["artifacts"] is not None:
-                    raise ValueError("incomplete failure report")
-            else:
-                raise ValueError("unknown report status")
-    if status is None:
+            found = True
+            payload = line[message.end():].strip().removesuffix(b" (GhidraScript)")
+            with open(sys.argv[2], "xb") as output:
+                output.write(payload)
+    if not found:
         raise ValueError("missing export report")
-except (KeyError, TypeError, ValueError, OSError, RecursionError) as error:
+except (ValueError, OSError) as error:
     sys.exit("ghidra-dwarf-forge-headless: " + str(error))
-print(status)
 PYTHON
-) || exit 12
 
-case "$status" in
-    SUCCESS|PARTIAL)
+support_dir=$(cd -- "$(dirname -- "$0")" && pwd -P)
+extension_dir="$support_dir/.."
+if [[ ! -f "$extension_dir/lib/GhidraDwarfForge.jar" ]]; then
+    extension_dir="$ghidra_dir/Ghidra/Extensions/GhidraDwarfForge"
+fi
+report_status=0
+"$support_dir/ghidra-dwarf-forge-report" --ghidra-dir="$ghidra_dir" --extension-dir="$extension_dir" \
+    --report="$report_file" --terminal-status || report_status=$?
+case "$report_status" in
+    0)
         if ((headless_status != 0)); then
-            echo "ghidra-dwarf-forge-headless: Ghidra exited $headless_status after $status" >&2
+            echo "ghidra-dwarf-forge-headless: Ghidra exited $headless_status after a completed export" >&2
             exit 12
         fi
-        exit 0
-        ;;
-    FATAL) exit 10 ;;
-    CANCELLED) exit 11 ;;
-    *)
-        echo "ghidra-dwarf-forge-headless: unknown report status: $status" >&2
-        exit 12
-        ;;
+        exit 0 ;;
+    10|11) exit "$report_status" ;;
+    *) exit 12 ;;
 esac

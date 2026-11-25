@@ -15,6 +15,8 @@ cleanup() {
     esac
 }
 trap cleanup EXIT
+python3 "$repository_dir/src/test/integration/headless-wrapper-fixture.py" \
+    "${GHIDRA_INSTALL_DIR:?select the test Ghidra installation}" "$repository_dir/build/libs/GhidraDwarfForge.jar" "$fake_ghidra"
 
 consumer="$work/libdwarf.so"
 producer="$work/libdwarfp.so"
@@ -116,7 +118,7 @@ run_status 0 PARTIAL 0 --import="$input"
 run_status 0 PATH_MARKER 0 --import="$input"
 run_status 10 FATAL 0 --import="$input"
 run_status 11 CANCELLED 0 --import="$input"
-for malformed in NONE TRUNCATED INCOMPLETE TRAILING_SUCCESS; do
+for malformed in NONE TRUNCATED INCOMPLETE MISSING_HASH TRAILING_SUCCESS; do
     run_status 12 "$malformed" 0 --import="$input"
 done
 # Real tee writes a completely valid transcript; its reported failure must still win.
