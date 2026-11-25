@@ -5,6 +5,7 @@ import com.sun.jna.Pointer;
 import com.sun.jna.WString;
 import com.sun.jna.win32.StdCallLibrary;
 import java.io.IOException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Path;
 
 /** Swap two existing leaf names without exposing an empty public name or discarding its occupant. */
@@ -43,16 +44,18 @@ interface PublicationExchange {
         public void exchange(Path privateName, Path publicName) throws IOException {
             // A single namespace transaction also exchanges a symlink itself without opening
             // its referent. The third name lives in the writer's private directory.
-            WString owned = wide(privateName);
-            WString target = wide(publicName);
-            WString holding = wide(privateName.resolveSibling(privateName.getFileName() + ".exchange"));
+            Path holding = privateName.resolveSibling(privateName.getFileName() + ".exchange");
             Pointer transaction = transactions.CreateTransaction(null, null, 0, 0, 0, 0, null);
-            if (transaction == null || Pointer.nativeValue(transaction) == -1) throw failure("CreateTransaction");
+            if (transaction == null || Pointer.nativeValue(transaction) == -1) {
+                throw failure("CreateTransaction", publicName, privateName);
+            }
             try {
-                move(target, holding, transaction);
-                move(owned, target, transaction);
-                move(holding, owned, transaction);
-                if (transactions.CommitTransaction(transaction) == 0) throw failure("CommitTransaction");
+                move(publicName, holding, transaction);
+                move(privateName, publicName, transaction);
+                move(holding, privateName, transaction);
+                if (transactions.CommitTransaction(transaction) == 0) {
+                    throw failure("CommitTransaction", publicName, privateName);
+                }
             }
             finally {
                 // Closing the last handle rolls back an uncommitted transaction, including on process exit.
@@ -66,15 +69,16 @@ interface PublicationExchange {
             return new WString(path.startsWith("\\\\") ? "\\\\?\\UNC\\" + path.substring(2) : "\\\\?\\" + path);
         }
 
-        private void move(WString source, WString target, Pointer transaction) throws IOException {
-            if (kernel.MoveFileTransactedW(source, target, null, null, 0, transaction) == 0) {
-                throw failure("MoveFileTransactedW");
+        private void move(Path source, Path target, Pointer transaction) throws IOException {
+            if (kernel.MoveFileTransactedW(wide(source), wide(target), null, null, 0, transaction) == 0) {
+                throw failure("MoveFileTransactedW", source, target);
             }
         }
 
-        private static IOException failure(String operation) {
-            return new IOException(operation + " failed during atomic output exchange (Win32 error " +
-                Native.getLastError() + ")");
+        private static FileSystemException failure(String operation, Path source, Path target) {
+            int code = Native.getLastError();
+            return new FileSystemException(source.toString(), target.toString(),
+                operation + " failed during atomic output exchange (Win32 error " + code + ")");
         }
     }
 }

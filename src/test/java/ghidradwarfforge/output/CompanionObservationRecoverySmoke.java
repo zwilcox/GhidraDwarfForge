@@ -1,9 +1,12 @@
 package ghidradwarfforge.output;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
@@ -28,6 +31,7 @@ public final class CompanionObservationRecoverySmoke {
             missingStageAfterBackup(root);
             for (SaveAt point : SaveAt.values()) replacementWhileObserved(root, point);
             readDuringSuccessfulReplacements(root);
+            if (System.getProperty("os.name").startsWith("Windows")) lockedExchange(root);
             System.out.println("companion-observation-recovery=PASS checks=" + checks);
         }
         finally {
@@ -35,6 +39,27 @@ public final class CompanionObservationRecoverySmoke {
                 for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
             }
         }
+    }
+
+    private static void lockedExchange(Path root) throws Exception {
+        Path staged = Files.writeString(root.resolve("exchange-stage"), "staged");
+        Path target = Files.writeString(root.resolve("locked-public"), "previous");
+        Saved beforeStage = Saved.read(staged);
+        Saved beforeTarget = Saved.read(target);
+        try (var lock = FileChannel.open(target, StandardOpenOption.READ,
+                com.sun.nio.file.ExtendedOpenOption.NOSHARE_DELETE)) {
+            var exchange = PublicationExchange.open();
+            try {
+                exchange.exchange(staged, target);
+                throw new AssertionError("transaction exchanged a delete-locked file");
+            }
+            catch (FileSystemException expected) {
+                check(target.toString().equals(expected.getFile()), "exchange error omitted the locked path");
+                check(expected.getReason().contains("Win32 error"), "exchange error omitted the native diagnostic");
+            }
+        }
+        beforeStage.unchanged(staged);
+        beforeTarget.unchanged(target);
     }
 
     private record Saved(byte[] bytes, Object key, FileTime modified) {
