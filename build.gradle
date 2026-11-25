@@ -1627,22 +1627,16 @@ tasks.register("packagedNativeLibrariesSmoke", JavaExec) {
 // Select runtime files and corresponding sources for the installable extension.
 buildExtension {
     includeEmptyDirs = false
-    def launchers = ["headless", "report", "attach", "build-id"].collect { "ghidra-dwarf-forge-${it}".toString() }
-    def installed = ["extension.properties", "Module.manifest", "LICENSE", "VERSION", "THIRD_PARTY_NOTICES.md",
-        "third_party/CORRESPONDING_SOURCE.md", "lib/GhidraDwarfForge.jar", "lib/GhidraDwarfForge-src.zip",
-        "docs/images/ghidra-dwarf-forge.jpg", "support/mmio/forge_mmio.py", "native/libdwarf/PROVENANCE.md",
-        "native/supervisor/forge-supervisor-linux.c", "native/supervisor/forge-supervisor-windows.c"] as Set
-    launchers.each { name ->
-        installed.add("support/" + name)
-        installed.add("support/" + name + ".ps1")
-    }
+    def manifest = file("support/extension-files.txt")
+    inputs.file(manifest)
+    def installed = manifest.readLines("UTF-8") as Set
+    def launchers = ["headless", "report", "attach", "build-id"].collect { "support/ghidra-dwarf-forge-${it}".toString() } as Set
     eachFile { details ->
         def path = details.path.substring("GhidraDwarfForge/".length())
-        if (path in launchers.collect { "support/" + it }) {
+        if (path in launchers) {
             details.permissions { it.unix("rwxr-xr-x") }
         }
-        if (!(path in installed || path ==~ /ghidra_scripts\/[^\/]+\.java/ ||
-                path ==~ /native\/libdwarf\/patches\/[^\/]+\.patch/)) {
+        if (!(path in installed)) {
             details.exclude()
         }
     }

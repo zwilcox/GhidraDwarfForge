@@ -19,19 +19,14 @@ if (( $# > 1 )); then
     exit 64
 fi
 if (( $# == 1 )); then
+    sed 's|^|GhidraDwarfForge/|' "$repository_dir/support/extension-files.txt" | LC_ALL=C sort > "$work/expected-files"
+    zipinfo -1 "$1" | sed '/\/$/d' | LC_ALL=C sort > "$work/actual-files"
+    diff -u "$work/expected-files" "$work/actual-files"
     unzip -q "$1" -d "$work/development"
     installed="$work/development/GhidraDwarfForge/support"
-    {
-        for command in attach build-id headless report; do
-            launcher="ghidra-dwarf-forge-$command"
-            echo "$launcher"
-            echo "$launcher.ps1"
-            test "$(stat -c %a "$installed/$launcher")" = 755
-        done
-        echo mmio/forge_mmio.py
-    } | LC_ALL=C sort > "$work/support-expected"
-    find "$installed" -type f -printf '%P\n' | LC_ALL=C sort > "$work/support-actual"
-    diff -u "$work/support-expected" "$work/support-actual"
+    for command in attach build-id headless report; do
+        test "$(stat -c %a "$installed/ghidra-dwarf-forge-$command")" = 755
+    done
     "$installed/ghidra-dwarf-forge-report" --help > "$work/development-report-help"
     grep -Fq 'Usage: ghidra-dwarf-forge-report' "$work/development-report-help"
 fi
@@ -54,6 +49,23 @@ reject_inventory windows libdwarf
 # A readable host ELF lets readelf and nm inspect the one member that is present.
 cp -- "$(type -P true)" "$work/incomplete-native/libdwarf.so"
 reject_inventory linux libdwarfp
+
+# Two populated pairs with the same filenames must still agree on exported symbols.
+mkdir "$work/first-abi" "$work/second-abi"
+for library in libdwarf libdwarfp; do
+    printf 'int fixture_%s(void) { return 0; }\n' "$library" |
+        cc -x c -fPIC -shared -o "$work/first-abi/$library.so" -
+    cp "$work/first-abi/$library.so" "$work/second-abi/"
+done
+"$compare" linux "$work/first-abi" "$work/second-abi" "$work/equal-abi-report" > /dev/null
+grep -Fxq 'native-abi-inventory=PASS' "$work/equal-abi-report"
+cp "$work/first-abi/libdwarf.so" "$work/second-abi/libdwarfp.so"
+if "$compare" linux "$work/first-abi" "$work/second-abi" "$work/unequal-abi-report" > /dev/null; then
+    echo "native comparison accepted a producer with the wrong exported symbol" >&2
+    exit 1
+fi
+grep -Fxq -- '-T fixture_libdwarfp' "$work/unequal-abi-report"
+grep -Fxq -- '+T fixture_libdwarf' "$work/unequal-abi-report"
 
 mkdir -p "$work/base/GhidraDwarfForge/support" \
     "$work/base/GhidraDwarfForge/ghidra_scripts" \
