@@ -37,6 +37,9 @@ public final class ElfImageReaderSmoke {
                     checkPartialNotes(input, elf64, order);
                 }
             }
+            for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+                checkUpperHalfAddresses(directory.resolve("high-address.elf"), order);
+            }
             checkLimits(directory.resolve("limits.elf"));
             checkChangedSource(directory.resolve("changed.elf"));
             checkSymlinkTraversal(directory.resolve("paths"));
@@ -159,6 +162,36 @@ public final class ElfImageReaderSmoke {
         expectFailure(() -> ElfImage.read(input), "ELF identification range");
         Files.write(input, Arrays.copyOf(valid, elf64 ? 63 : 51));
         expectFailure(() -> ElfImage.read(input), "ELF header range");
+    }
+
+    private static void checkUpperHalfAddresses(Path input, ByteOrder order) throws Exception {
+        Fixture fixture = create(input, true, order, 2, 3, true, 0, 0, 0, NAMES.length);
+        long kernel = 0xffffffff81000000L;
+        String limitation = " is valid. GhidraDwarfForge does not yet support upper-half addresses. " +
+            "ELF header field: ";
+        String unsupported = "ELF64 virtual address 0xffffffff81000000" + limitation;
+        fixture.address(24, kernel);
+        expectFailure(() -> ElfImage.readForExport(input), unsupported + "e_entry");
+        require(ByteBuffer.wrap(ElfImage.read(input).headerBytes()).order(order).getLong(24) == kernel,
+            "metadata inspection lost the raw ELF64 entry-point bits");
+        fixture.address(24, 0);
+        fixture.address(fixture.sectionOffset(1) + 16, kernel);
+        expectWriterFailure(input, unsupported + "sh_addr[1]");
+        fixture.address(fixture.sectionOffset(1) + 16, 0);
+        fixture.address(fixture.programs + 16, kernel);
+        expectWriterFailure(input, unsupported + "p_vaddr[0]");
+
+        // A four-byte load ending at the last low address is representable.
+        fixture.address(fixture.programs + 16, Long.MAX_VALUE - 3);
+        require(ElfImage.read(input).preferredImageBase() == Long.MAX_VALUE - 3,
+            "last four bytes below the upper half were rejected");
+        fixture.address(fixture.programs + 16, Long.MAX_VALUE - 2);
+        expectFailure(() -> ElfImage.readForExport(input), "0x8000000000000000" + limitation + "p_vaddr[0]");
+        require(ElfImage.read(input).segments().size() == 2, "metadata inspection lost a crossing LOAD");
+        fixture.address(fixture.programs + 16, 0);
+        fixture.address(fixture.sectionOffset(1) + 8, 2); // SHF_ALLOC
+        fixture.address(fixture.sectionOffset(1) + 16, Long.MAX_VALUE);
+        expectFailure(() -> ElfImage.readForExport(input), "0x8000000000000000" + limitation + "sh_addr[1]");
     }
 
     private static void checkProgramCounts(Path input, boolean elf64, ByteOrder order)

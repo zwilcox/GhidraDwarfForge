@@ -1,5 +1,9 @@
 # TODO.md — GhidraDwarfForge
 
+## ELF64 virtual address scope
+
+**CONFIRMED** — The exporter currently handles lower-half target virtual addresses. Upper-half addresses such as `0xffffffff81000000` are valid ELF64 addresses. Full export and GDB support are **PLANNED** in [issue #216](https://github.com/zwilcox/GhidraDwarfForge/issues/216).
+
 ## Current goal and accepted milestones — 2026-11-13
 
 - **CONFIRMED:** #119 raw firmware is accepted in [PR #198](https://github.com/zwilcox/GhidraDwarfForge/pull/198), merged as `95fc00d0`. Its required PR gate and [post-merge main gate](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/43432295894) passed. Scope: [RAW-FIRMWARE.md](docs/RAW-FIRMWARE.md).

@@ -547,7 +547,7 @@ public final class MinimalDwarfSidecarExporter {
         FunctionSymbol.validateDisplayNames(ordered);
         Path destination = FileSystemPaths.resolveLeaf(output, "DWARF sidecar path");
 
-        ElfImage elf = ElfImage.read(source);
+        ElfImage elf = ElfImage.readForExport(source);
         DwarfTarget target = DwarfTarget.fromElf(elf);
         if (typeModel != null && typeModel.classScopes().inheritance().abi() !=
                 ghidradwarfforge.targets.CxxAbiProfile.UNSPECIFIED) {

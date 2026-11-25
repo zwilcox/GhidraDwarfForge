@@ -38,6 +38,8 @@ Common options:
   --log=<path>            Preserve the complete headless transcript
   --analysis-timeout=<s> Import-mode analysis timeout (default: 120)
 
+ELF64 target virtual addresses above 0x7fffffffffffffff are currently unsupported.
+
 Existing-project mode opens one saved program through a read-only project
 handle. A basename selects a root file; /folder/program selects a nested file.
 Analysis is disabled. The saved project and program are never deleted or saved.
