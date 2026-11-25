@@ -19,4 +19,8 @@ partial_stack:
     addq $32,%rsp
     ret
     .size partial_stack,.-partial_stack
+    .data
+    .globl scope_storage
+scope_storage:
+    .long 101, 202
     .section .note.GNU-stack,"",@progbits

@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,10 +48,17 @@ public final class Dwarf5RangeLists {
 
     public static Result build(List<FunctionSymbol> functions, List<LexicalScopeModel> scopes,
             int addressBytes, ByteOrder order) {
-        for (var scope : scopes) {
-            var owners = functions.stream().filter(function -> function.address() == scope.functionAddress()).toList();
-            if (owners.size() != 1 || !owners.getFirst().ranges().equals(scope.body())) {
-                throw new IllegalArgumentException("lexical ranges refer to a different function body");
+        if (!scopes.isEmpty()) {
+            var owners = new HashMap<Long, FunctionSymbol>();
+            var ambiguous = new HashSet<Long>();
+            for (var function : functions) {
+                if (owners.putIfAbsent(function.address(), function) != null) ambiguous.add(function.address());
+            }
+            for (var scope : scopes) {
+                var owner = owners.get(scope.functionAddress());
+                if (owner == null || ambiguous.contains(scope.functionAddress()) || !owner.ranges().equals(scope.body())) {
+                    throw new IllegalArgumentException("lexical ranges refer to a different function body");
+                }
             }
         }
         if (addressBytes != 4 && addressBytes != 8) {

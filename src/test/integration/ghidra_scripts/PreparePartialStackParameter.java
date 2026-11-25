@@ -28,6 +28,22 @@ public class PreparePartialStackParameter extends GhidraScript {
             (byte) 0, monitor, true);
         currentProgram.getFunctionManager().createFunction("overlay_only", currentProgram.getGlobalNamespace(),
             overlay.getStart(), new AddressSet(overlay.getStart(), overlay.getEnd()), SourceType.USER_DEFINED);
+        var sibling = memory.createInitializedBlock("second_bank", entry, 32, (byte) 0, monitor, true);
+        var table = currentProgram.getSymbolTable();
+        var owner = currentProgram.getFunctionManager().createFunction(function.getName(),
+            table.createNameSpace(currentProgram.getGlobalNamespace(), "bank", SourceType.USER_DEFINED),
+            sibling.getStart(), new AddressSet(sibling.getStart(), sibling.getEnd()), SourceType.USER_DEFINED);
+        var storage = toAddr(getScriptArgs()[1]);
+        clearListing(storage, storage.add(7));
+        createData(storage, IntegerDataType.dataType);
+        createData(storage.add(4), IntegerDataType.dataType);
+        table.createLabel(storage, "bank_private", owner, SourceType.USER_DEFINED);
+        table.createLabel(storage.add(4), "real_private", function, SourceType.USER_DEFINED);
+        var extra = memory.createInitializedBlock("analysis_scratch", toAddr(0x61000000L), 32,
+            (byte) 0, monitor, false);
+        extra.setExecute(true);
+        currentProgram.getFunctionManager().createFunction("analysis_block_only", currentProgram.getGlobalNamespace(),
+            extra.getStart(), new AddressSet(extra.getStart(), extra.getEnd()), SourceType.USER_DEFINED);
         println("partial-stack-first-instruction=PASS");
     }
 }

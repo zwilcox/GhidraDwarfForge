@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import ghidra.program.model.address.Address;
 import ghidra.program.model.data.AbstractFloatDataType;
 import ghidra.program.model.data.AbstractIntegerDataType;
 import ghidra.program.model.data.Array;
@@ -184,6 +185,7 @@ public final class GhidraTypeGraph {
             selected.put(symbol.address(), symbol);
         }
         List<ProgramTypeModel.FunctionSignature> signatures = new ArrayList<>();
+        var functionOwners = new HashMap<Address, Long>();
         List<ProgramTypeModel.FunctionStaticVariable> functionStatics = new ArrayList<>();
         var lexicalScopes = new ArrayList<ghidradwarfforge.types.LexicalScopeModel>();
         List<ProgramTypeModel.FunctionDeclaration> declarations = new ArrayList<>();
@@ -192,6 +194,7 @@ public final class GhidraTypeGraph {
         while (functions.hasNext()) {
             monitor.checkCancelled();
             Function function = functions.next();
+            if (!function.getEntryPoint().getAddressSpace().equals(program.getAddressFactory().getDefaultAddressSpace())) continue;
             long address;
             try {
                 address = AddressNormalizer.toElfAddress(
@@ -493,6 +496,7 @@ public final class GhidraTypeGraph {
             }
             classScopes.record(function,
                 ghidradwarfforge.types.ClassScopeModel.FunctionReference.definition(symbol.name(), address), parameters);
+            functionOwners.put(function.getEntryPoint(), address);
             signatures.add(new ProgramTypeModel.FunctionSignature(symbol.name(), address,
                 returnType, parameters, locals, function.hasVarArgs(), function.hasNoReturn(),
                 nonNull(function.getCallingConventionName()),
@@ -504,9 +508,6 @@ public final class GhidraTypeGraph {
                 missing.name());
         }
         List<ProgramTypeModel.GlobalVariable> globals = new ArrayList<>();
-        java.util.Set<Long> functionOwners = signatures.stream()
-            .map(ProgramTypeModel.FunctionSignature::address)
-            .collect(java.util.stream.Collectors.toSet());
         SymbolIterator symbols = program.getSymbolTable().getAllSymbols(true);
         while (symbols.hasNext()) {
             monitor.checkCancelled();
@@ -532,11 +533,12 @@ public final class GhidraTypeGraph {
             boolean inferredType = objectType == null || !data.isDefined();
             if (inferredType) {
                 if (!(symbol.getParentNamespace() instanceof Function owner)) continue;
-                long ownerAddress;
-                try {
-                    ownerAddress = AddressNormalizer.toElfAddress(owner.getEntryPoint().getOffset(), rebaseDelta);
+                Long ownerAddress = functionOwners.get(owner.getEntryPoint());
+                if (ownerAddress == null) {
+                    diagnostic.accept("Skipped function-owned static variable " +
+                        symbol.getName(true) + "; owning function was not exported");
+                    continue;
                 }
-                catch (ArithmeticException overflow) { continue; }
                 objectType = GhidraStaticRecovery.accept(program, owner, symbol, symbol.getAddress(), 0,
                     recoveredStatic(recoveredStatics.get(ownerAddress), symbol.getID()), monitor, diagnostic);
             }
@@ -558,15 +560,8 @@ public final class GhidraTypeGraph {
             }
             if (staticBinding.status() == GhidraStaticBindings.Status.VALID) {
                 var binding = staticBinding.binding();
-                long ownerAddress;
-                try {
-                    ownerAddress = AddressNormalizer.toElfAddress(binding.owner().getEntryPoint().getOffset(), rebaseDelta);
-                }
-                catch (ArithmeticException overflow) {
-                    diagnostic.accept("Omitted explicitly scoped static " + symbol.getName(true) + ": untranslatable owner");
-                    continue;
-                }
-                if (!functionOwners.contains(ownerAddress) || (!binding.block().isEmpty() && lexicalScopes.stream()
+                Long ownerAddress = functionOwners.get(binding.owner().getEntryPoint());
+                if (ownerAddress == null || (!binding.block().isEmpty() && lexicalScopes.stream()
                         .noneMatch(scope -> scope.functionAddress() == ownerAddress && scope.blocks().stream()
                             .anyMatch(lexical -> lexical.id().equals(binding.block()))))) {
                     diagnostic.accept("Omitted explicitly scoped static " + symbol.getName(true) +
@@ -581,17 +576,8 @@ public final class GhidraTypeGraph {
                 continue;
             }
             if (symbol.getParentNamespace() instanceof Function owner) {
-                long ownerAddress;
-                try {
-                    ownerAddress = AddressNormalizer.toElfAddress(
-                        owner.getEntryPoint().getOffset(), rebaseDelta);
-                }
-                catch (ArithmeticException overflow) {
-                    diagnostic.accept("Skipped function-owned static variable " +
-                        symbol.getName(true) + "; untranslatable owner address");
-                    continue;
-                }
-                if (!functionOwners.contains(ownerAddress)) {
+                Long ownerAddress = functionOwners.get(owner.getEntryPoint());
+                if (ownerAddress == null) {
                     diagnostic.accept("Skipped function-owned static variable " +
                         symbol.getName(true) + "; owning function was not exported");
                     continue;

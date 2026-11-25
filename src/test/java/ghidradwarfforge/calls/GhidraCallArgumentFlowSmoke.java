@@ -412,6 +412,29 @@ public final class GhidraCallArgumentFlowSmoke {
         var baseline = GhidraCallParameters.bind(program, callee, signature, graph, List.of(saved), state,
             registers, image, delta, TaskMonitor.DUMMY);
         require(baseline.arguments().size() == 1 && baseline.omissions().isEmpty(), "missing boundary baseline");
+        var allocation = java.lang.management.ManagementFactory.getPlatformMXBean(com.sun.management.ThreadMXBean.class);
+        if (allocation != null && allocation.isThreadAllocatedMemorySupported()) {
+            allocation.setThreadAllocatedMemoryEnabled(true);
+            var expanded = new ArrayList<>(graph.nodes());
+            for (int i = 0; i < 4096; i++) {
+                expanded.add(new ghidradwarfforge.types.TypeGraph.BaseType("unrelated" + i, "unrelated" + i,
+                    4, ghidradwarfforge.types.TypeGraph.BaseEncoding.SIGNED));
+            }
+            var large = new ghidradwarfforge.types.TypeGraph(expanded);
+            long[] best = {Long.MAX_VALUE, Long.MAX_VALUE};
+            for (int round = 0; round < 3; round++) {
+                for (int size = 0; size < 2; size++) {
+                    var selected = size == 0 ? graph : large;
+                    long start = allocation.getCurrentThreadAllocatedBytes();
+                    for (int i = 0; i < 32; i++) {
+                        require(baseline.equals(GhidraCallParameters.bind(program, callee, signature, selected,
+                            List.of(saved), state, registers, image, delta, TaskMonitor.DUMMY)), "unrelated types changed binding");
+                    }
+                    best[size] = Math.min(best[size], allocation.getCurrentThreadAllocatedBytes() - start);
+                }
+            }
+            require(best[1] < best[0] + 1024 * 1024, "binding allocated an index of unrelated types for each call");
+        }
         for (boolean missingSignature : List.of(false, true)) {
             var unavailable = GhidraCallParameters.bind(program, callee, missingSignature ? null : signature,
                 graph, List.of(saved), missingSignature ? state : null, registers, image, delta, TaskMonitor.DUMMY);

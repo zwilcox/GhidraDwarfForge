@@ -326,7 +326,7 @@ public class GhidraDwarfForge extends GhidraScript {
                 return result;
             });
             var extraction = GhidraFunctionSymbols.extractDetailed(currentProgram, monitor,
-                diagnostic, rebaseDelta);
+                diagnostic, rebaseDelta, firmware == null ? originalElf : null);
             var functions = extraction.functions();
             var decoded = ExportPhase.measure("coverage-instruction-capture", () ->
                 GhidraInstructionEvidence.capture(currentProgram, functions,
@@ -539,21 +539,17 @@ public class GhidraDwarfForge extends GhidraScript {
                 println("  Load explicitly in GDB with: source " + companionOutput);
             }
             if (synthesizeUnwind) println("  unwind evidence: " + unwindOutput + " (recovered rules, independent validation NOT_RUN)");
-            println("  decompiled functions: " + source.functions().stream()
-                .filter(function -> function.decompiled()).count());
-            println("  mapped source lines: " + source.mappedLines().size());
-            println("  function signatures: " + typeModel.functions().size());
-            println("  local variables: " + typeModel.functions().stream()
-                .mapToInt(function -> function.locals().size()).sum());
-            println("  defensible variable locations: " + typeModel.variableStorage().variables()
-                .stream().filter(variable -> variable.hasDefensibleLocation()).count());
-            println("  omitted variable locations: " + typeModel.variableStorage().variables()
-                .stream().filter(variable -> !variable.hasDefensibleLocation()).count());
-            println("  canonical types: " + typeModel.types().nodes().size());
-            println("  global variables: " + typeModel.globals().size());
-            println("  function-owned static variables: " +
-                ghidradwarfforge.source.FunctionStaticPolicy.select(typeModel, source)
-                    .exported().size());
+            var counts = prepared.report().counts();
+            println("  decompiled functions: " + counts.functionsDecompiled());
+            println("  mapped source lines: " + counts.mappedSourceLines());
+            println("  function signatures: " + counts.functionSignatures());
+            println("  local variables: " + counts.localVariables());
+            println("  defensible variable locations: " + counts.defensibleVariableLocations());
+            println("  omitted variable locations: " +
+                (typeModel.variableStorage().variables().size() - counts.defensibleVariableLocations()));
+            println("  canonical types: " + counts.canonicalTypes());
+            println("  global variables: " + counts.globalVariables());
+            println("  function-owned static variables: " + counts.functionStaticVariables());
 
         }
     }

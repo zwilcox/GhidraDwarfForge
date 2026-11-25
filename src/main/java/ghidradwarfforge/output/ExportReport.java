@@ -262,6 +262,10 @@ public final class ExportReport {
         return status;
     }
 
+    public Counts counts() {
+        return counts;
+    }
+
     /**
      * Explicit schema-two writer. The legacy toJson() preserves schema-one bytes.
      * Full reader preflight finishes before returning publishable text; callers

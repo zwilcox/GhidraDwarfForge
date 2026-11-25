@@ -85,13 +85,19 @@ public final class GhidraProjectOutputProtectionSmoke {
         refuse(root, program, original, "aliases a saved project file");
 
         var counter = new CountingMonitor(Integer.MAX_VALUE);
+        Path unrelated = Files.writeString(outside.resolve("unrelated"), "external file");
         Map<String, String> before = snapshot(root);
         GhidraProjectOutputProtection.requireSafeOutputs(program, List.of(newOutput), counter);
-        if (counter.calls < 8) throw new AssertionError("fixture did not traverse all protection phases");
+        if (counter.calls != 1) throw new AssertionError("fresh output traversed the saved project");
+        counter = new CountingMonitor(Integer.MAX_VALUE);
+        GhidraProjectOutputProtection.requireSafeOutputs(program, List.of(unrelated), counter);
+        try (var entries = Files.walk(project)) {
+            if (counter.calls != 1 + entries.count()) throw new AssertionError("project traversal skipped a cancellation check");
+        }
         for (int index = 1; index <= counter.calls; index++) {
             var cancelled = new CountingMonitor(index);
             try {
-                GhidraProjectOutputProtection.requireSafeOutputs(program, List.of(newOutput), cancelled);
+                GhidraProjectOutputProtection.requireSafeOutputs(program, List.of(unrelated), cancelled);
                 throw new AssertionError("ignored cancellation at checkpoint " + index);
             }
             catch (CancelledException expected) {

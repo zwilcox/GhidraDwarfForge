@@ -39,6 +39,7 @@ public final class GhidraInstructionEvidence {
         while (functions.hasNext()) {
             monitor.checkCancelled();
             var function = functions.next();
+            if (!function.getEntryPoint().getAddressSpace().equals(program.getAddressFactory().getDefaultAddressSpace())) continue;
             long entry;
             try {
                 entry = AddressNormalizer.toElfAddress(function.getEntryPoint().getOffset(), rebaseDelta);
