@@ -13,7 +13,7 @@ interface PublicationExchange {
 
     static PublicationExchange open() throws IOException {
         String host = System.getProperty("os.name");
-        if (host.equals("Linux")) return new LinuxAtomicRename()::exchange;
+        if (host.equals("Linux")) return LinuxAtomicRename.forOutputExchange()::exchange;
         if (host.startsWith("Windows")) {
             try { return new WindowsExchange(); }
             catch (RuntimeException | LinkageError unavailable) {

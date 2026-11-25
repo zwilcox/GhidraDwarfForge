@@ -5,6 +5,7 @@ import com.sun.jna.Native;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Arrays;
 
@@ -22,14 +23,20 @@ public final class LinuxAtomicRename {
     private static final int RENAME_NOREPLACE = 1;
     private static final int RENAME_EXCHANGE = 2;
     private final LibC libc;
+    private final Charset pathCharset;
 
     public LinuxAtomicRename() throws IOException {
+        this(Charset.forName(System.getProperty("sun.jnu.encoding")));
+        if (!pathCharset.equals(StandardCharsets.UTF_8)) {
+            throw new IOException("Linux atomic rename requires UTF-8 native paths");
+        }
+    }
+
+    private LinuxAtomicRename(Charset pathCharset) throws IOException {
         if (!System.getProperty("os.name").equals("Linux")) {
             throw new IOException("Linux atomic rename requires a Linux host");
         }
-        if (!Charset.forName(System.getProperty("sun.jnu.encoding")).equals(StandardCharsets.UTF_8)) {
-            throw new IOException("Linux atomic rename requires UTF-8 native paths");
-        }
+        this.pathCharset = pathCharset;
         try {
             libc = Native.load("c", LibC.class);
         }
@@ -50,6 +57,10 @@ public final class LinuxAtomicRename {
      */
     public void replaceAtomic(Path stage, Path target) throws IOException {
         rename(stage, target, 0, "replacement");
+    }
+
+    static LinuxAtomicRename forOutputExchange() throws IOException {
+        return new LinuxAtomicRename(Charset.forName(System.getProperty("sun.jnu.encoding")));
     }
 
     /** Both directory entries stay present. The caller retains the exact displaced inode. */
@@ -75,15 +86,20 @@ public final class LinuxAtomicRename {
         }
     }
 
-    private static byte[] pathBytes(Path path) throws IOException {
+    private byte[] pathBytes(Path path) throws IOException {
         Path absolute = path.toAbsolutePath();
         String text = absolute.toString();
         // Linux paths can contain bytes that Java cannot round-trip as text.
         // Refuse these rather than selecting a different file through replacement characters.
-        if (!Path.of(text).equals(absolute)) {
-            throw new IOException("Linux attachment path cannot be represented losslessly");
+        try {
+            if (!pathCharset.newEncoder().canEncode(text) || !Path.of(text).equals(absolute)) {
+                throw new IOException("Linux rename path cannot be represented losslessly");
+            }
         }
-        byte[] utf8 = text.getBytes(StandardCharsets.UTF_8);
-        return Arrays.copyOf(utf8, utf8.length + 1);
+        catch (InvalidPathException invalid) {
+            throw new IOException("Linux rename path cannot be represented losslessly", invalid);
+        }
+        byte[] bytes = text.getBytes(pathCharset);
+        return Arrays.copyOf(bytes, bytes.length + 1);
     }
 }

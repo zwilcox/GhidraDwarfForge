@@ -1266,7 +1266,7 @@ CALL_PARAMETERS_MUTANTS = [
     ("call-parameters-assign-overlapping-carrier", CALL_PARAMETERS, CALL_PARAMETERS_TEST,
      "if (counts.get(argument.dwarfRegister()) == 1) return false;", "if (counts.get(argument.dwarfRegister()) >= 1) return false;"),
     ("call-parameters-reject-qualified-integer", CALL_PARAMETERS, CALL_PARAMETERS_TEST,
-     "else if (node instanceof TypeGraph.QualifiedType qualified) node = nodes.get(qualified.target().key());",
+     "else if (node instanceof TypeGraph.QualifiedType qualified) node = graph.lookup(qualified.target().key());",
      "else if (node instanceof TypeGraph.QualifiedType qualified) return -1;"),
     ("call-parameters-bind-hidden-return", CALL_PARAMETERS, CALL_PARAMETERS_TEST,
      'require(!formal.returnStorage(), "hidden return carrier is not a formal argument");',

@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Native Linux x86-64: no Ghidra/native producer needed for publication metadata.
+# Native Linux x86-64. The publisher uses JNA for its atomic file exchange.
 repository=$(realpath "$(dirname "$0")/../../..")
+jna=${FORGE_JNA_JAR:-${GHIDRA_INSTALL_DIR:-}/Ghidra/Framework/Pty/lib/jna-5.14.0.jar}
+if [[ ! -f "$jna" ]]; then
+    echo 'Set GHIDRA_INSTALL_DIR or supply the JNA 5.14.0 JAR in FORGE_JNA_JAR.' >&2
+    exit 1
+fi
 for tool in gcc objcopy javac java gdb readelf llvm-dwarfdump dwarfdump python3; do
     command -v "$tool" >/dev/null
 done
@@ -54,11 +59,11 @@ grep -Fxq "SOURCE_OBJFILE=$artifact" "$work/before.txt"
 grep -Fq "$original'" "$work/before.txt"
 test "$(cat "$work/before.stderr")" = 'warning: Source file is more recent than executable.'
 
-javac --release 21 -sourcepath "$repository/src/main/java" -d "$work/classes" \
+javac --release 21 -cp "$jna" -sourcepath "$repository/src/main/java" -d "$work/classes" \
     "$repository/src/main/java/ghidradwarfforge/output/FileSystemPaths.java" \
     "$repository/src/main/java/ghidradwarfforge/output/ArtifactPairPublisher.java" \
     "$repository/src/test/java/ghidradwarfforge/output/ArtifactPairTimestampFixture.java"
-java -cp "$work/classes" ghidradwarfforge.output.ArtifactPairTimestampFixture \
+LC_ALL=C java -cp "$work/classes:$jna" ghidradwarfforge.output.ArtifactPairTimestampFixture \
     "$work/template.dbg" "$source" "$artifact" "$published_source" > "$work/publication.txt"
 readelf -h -S -n --debug-dump=info --debug-dump=abbrev --debug-dump=aranges \
     --debug-dump=decodedline --debug-dump=Ranges --debug-dump=loc \
