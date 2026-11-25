@@ -4,29 +4,29 @@
     "measurement": "SINGLE_CI_RUN",
     "publicationEligible": true,
     "repository": "zwilcox/GhidraDwarfForge",
-    "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
-    "runId": 45528494838,
+    "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
+    "runId": 45619782379,
     "sessions": 1270,
-    "productionJarSha256": "ee02144b3e27943d5ab7f4513582d13970b8f83b5792ee70625a04039974c889",
-    "inventorySha256": "6f49f04cbe19a93ad271b6a24daa9cd4487405827150a41d9e3a1f150d12afd4",
+    "productionJarSha256": "402eea63d9a6f1d4da11bb92fe032b61fbb46661c3bf6d3dbdc3ba3b5b60a7b4",
+    "inventorySha256": "1123d16fa98c3e65f99411a3574eb2b18d59a3dfb6fa0a5ef47eb74726c6880c",
     "origins": [
         {
             "kind": "javaexec",
-            "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
-            "run": "45528494838",
+            "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
+            "run": "45619782379",
             "job": "extension-build",
-            "manifestSha256": "9e653f5928f5f21af2ee116ae1affb55fddab3a793751796e2e93b2775ecde30",
+            "manifestSha256": "7ceb4e7bd3ae77df45ef3c320e569156203f6ba9694673835c1be1d25c390270",
             "sessions": 212
         },
         {
             "kind": "linux",
-            "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
-            "run": "45528494838",
+            "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
+            "run": "45619782379",
             "job": "target-coverage",
             "integrationGroups": {
                 "attempt": 1,
                 "inventorySha256": "76395b43e144a75c5aff064d97140160f7a07ee34685e1138f298fe28caeaa3c",
-                "groupsSha256": "4e4114c707c2ad54b60f28b922e93c67e2e59f8c23531368ac2625d5733933f0",
+                "groupsSha256": "a20f5dc4e77eb86172d041ca28d07af3c1d8cfb3dbae4e6cae365a37af194b85",
                 "groups": {
                     "i386-mmio": {
                         "collections": 1,
@@ -62,169 +62,169 @@
                     }
                 }
             },
-            "summarySha256": "33a5189c3a42eabda4fb612baedb4e0dcb77b021b406d46e7c6986763d17d834",
+            "summarySha256": "49d8fa0add0d811a93af41b67f6d93e7d5e4b51ae52712f9b8b3d870dd369aec",
             "receipts": {
-                "annotation-export-0r_8hl3j": "0c4683586c3a8da65ba39aa7bc2ccefc84257f5421040767932f18758335151c",
-                "annotation-export-td_gd23f": "64a00bf21cb3e2fb5ef2ed3b5400540d6755f1a915a7edbe6d4cbd45ffcf68b5",
-                "annotation-inventory-a438ajk8": "041688c13feac8fde93e53c8c7ec1feb29722390f1ff2dd18ba8f486fd5ea13a",
-                "bitfield-values-c8d3gf8d": "84a3fd01fa7a3d710de1ffc173db0cce02e10239b1eb16e6a511984c3f600d8a",
-                "build-id-command-p2qmgs5n": "69a11a056548fbb49991dc82f5f3c93b38573d14c28674a75cb7cb2c0f6592f4",
-                "build-id-identity-73i5n6ma": "b82e2d23e0aa4fdba639edea151365d39f1363a190f04a6ba92bc594e1adc6ba",
-                "build-id-installation-_fmb7m5l": "5fa4c838b19748d8c48306e6853b621acbcf2b64d52043dfacf0cccf9c14ccb7",
-                "build-id-installation-eixqjbjt": "19ef8eabd9e26489410d499479bf327ac8c69496a5f3afeda089dcb27c59eef2",
-                "build-id-source-bundle-b6enzdwz": "68165607bf0cb1239309455ed457ba024c59ddc2f9150f3711fe403a29b95594",
-                "call-site-packaged-cq6mon7a": "94f3a566c699eee05228367e8f11f77040f07032547161ea5db5475db616d6aa",
-                "call-site-packaged-j1miqzuj": "2fea328e47d78296884951eecafafe337446d527ec4051c9d53f89ed1b933246",
-                "callable-type-producer-81em85bi": "e3707112527bf5957916cb0c1b3e459e00ff1102e993abf78e71f293cd9b6192",
-                "calling-convention-3jx3avol": "2cc49db62ad9c3bd368630efc968c0939806122f01df980eb6e9ab50f6edfb85",
-                "calling-convention-w0hvkgk0": "a0506e596b27387b365f9fba1a55f431ce009b737a545e3312d4f3799fd0910e",
-                "calling-convention-z8jogv8e": "64ab90bfe5611d1c9b82bb54d4f29a9ed70bda0324aab31424e5743761af054f",
-                "cfi-composition-explicit-uw3_cwmf": "fe50c65fb13c9ba59eaa6edca28d8cf16549db9da134ce7bfed5c0dec2b1d5dc",
-                "cfi-composition-gabi-oz6fczb1": "ce644496e21c4e74d8f26381ed65cffd790a088d72f017935210b0c64822e231",
-                "cfi-composition-gnu-sofu3pk0": "8e5942c2b3275a18c9ac3f17bb4bebd00998692fb29ee597bc5dc322c2a78943",
-                "cfi-composition-plain-i9_1c0pc": "4f517349336e82818d21106065c6bf0ad91008bdee001afdd9b791cc6337ca26",
-                "cfi-encoder-g33c30va": "4bf90a2939f997eb28cf9749438ce2ae2d637a44d67c4ede74a1d8b178cb2111",
-                "class-scopes-lucv01t1": "3a73f686fca204df494ddc808919f05a91808b1ece67774b73d02ab4af5f9341",
-                "custom-call-storage-0tu1834e": "461ba606793d9febe6cf52b6fce51106c2eef6b9cd217beb149fc0e0f918872a",
-                "custom-call-storage-6bk26odw": "2f207dc568c5ac4fdf50cb2c75852268ffb10cc4b8ba30aeabb900f71d34e663",
-                "custom-call-storage-6lrk8ws2": "2b17d8922f408c5f7a651c8ca48b128e8e2ed5eb9f100fba6280b0df132a2619",
-                "custom-call-storage-b_erv_vc": "96c87b97c9188c69e08e1a69f14757d498992e7e85af6c266859a7608af64630",
-                "custom-call-storage-lwg7a4c5": "bc07078bc851dadb552cfea012050c03d599ad667f7528bebd1854d09b5e567e",
-                "custom-call-storage-s5wcoo6f": "54500e880f866cbf0f8632e6ef26bfed5bdfe7fa719c78055a60cfd96e9cb186",
-                "derived-validation-2zsfbx0n": "c9ec14e56b12f3caa10d4344bf85d9fb92c4c4976b77c51d9e7c1e158b65e73b",
-                "derived-validation-7t4q2zx_": "92c0bbfe9cee4dc78044b56ebe35e618a92026d643d365cdfb4d29222b900bc2",
-                "derived-validation-r3xnaws1": "0918d70749c6307f725bf2132e1086113802f8337d4c043645f92eb2ca5379e1",
-                "derived-validation-vtavlpqi": "386df179cda317db7504a3f1dc2113312ce6cabeddbf47db32d1ca84f723e9da",
-                "equate-constants-ot2yntgn": "57860ef58e71ae86b3495079a3f2543329a96d04aa3f7ca0a9b59327b11489a5",
-                "equate-evidence-yakw2glr": "42eb9cfb609793ae7ecb1a77000eefe3b7949887c35d3a3d4c735fc7beea70d1",
-                "equate-retained-names-dbv4b3qh": "826decc04e246aeb61dac00f6c4ef95c25806d5622af9c9956de141cbc20e38b",
-                "external-declarations-r_75860q": "dd5755a609df4461c1bf33daab09c33a842d4ea0ed35660e1cf6841ff928eb26",
-                "failed-source-export-4newpa1v": "ca6febab6cc5e8e2d2b8fe7b23f0809f8304ca58c1d39398bd49b70dbc9f87b9",
-                "failed-source-export-ur1ypgfr": "cdaf040f0b4911fd53e910b4da5519143d0a1b21cd2ad6fa7e0abc98c36663af",
-                "formatter-export-lt6opyt6": "24c0b4a284df653f9d7ade393d82086af5fb0355d07beab6bf82af73e11091c4",
-                "formatter-export-so8ljtb7": "ae9fa055a261bc99a6ad44a2ec71aa8db1da722790b99063f0879d81254b1df7",
-                "formatter-export-tgxg_g7k": "99f9c5064a0327547b96f9f710a89836ebde654fff2bb4ff7d111f5844c04bc6",
-                "function-entry-alias-export-_s7yav8k": "ee0703e19336ce744602f5e87fd9e10e67d450564b5264f350e3541d30cd3a4a",
-                "function-entry-export-4j596h5s": "c60aeed9e8c974629f84ac15471f7f40131cce4480f1bf82deeefb6ea9a3bdf7",
-                "gdb-companion-ap2c9exv": "8a01afd80ed07491904f561f67377e20c22e94e9027d04f8865b5d77d59fe8ac",
-                "gui-script-manager-compressed-fd2m7rpj": "1fc18e9baa044aaee7a442cddc054b8bd6f2724c55a1e0a53518d3c86584c11e",
-                "gui-script-manager-loader-r7bu149_": "c6cbac8a8f47a7f8b3c9260d969f3a94c135085d92009f9ef2fcd6c2ba8d2d7f",
-                "gui-script-manager-unwind-s8emjhuz": "a20a087f55e64ffb277ae053d508e2c5319794152936078e0ad03e53dc4efe97",
-                "gui-script-manager-vvpwh0g5": "6b24459388e885e63ff9551adec068276787ea5df4b4090196a00c0713dddb04",
-                "inheritance-names-7pbyn7u2": "d890c93035d3703eff582357f00b7bdfd56a9e9bea1a23837e2343c71b0d982c",
-                "inheritance-producer-pm43j_8n": "b46e301c2460e7150c28092f9e32ec5c42c651d2783ee21c8bfb275318e0ada2",
-                "instruction-context-xw5506h8": "8a9e506c0249d924f94bac4f0b31f76cc7cc0bfda1dbf52dfdb3482cc21ee925",
-                "lexical-shadow-5zlp6vn8": "366eed768f28ba53906023c8ded27b7ea8bed92a4e7a4e523acc73d55401d42b",
-                "lexical-shadow-66n7yljw": "19c5f6e50289abe2ad4a4c3e98d6fafc6449312c43868189c7d52fbf2bb0918d",
-                "lexical-shadow-6lu5b5ah": "f7f7809f9f797f98c358fdfe89b77720d9f603a33dc714591aa754ebd8f7db2d",
-                "lexical-shadow-6m_5utx2": "e7201a85e8f89d42fdecd5bfeaa2e3411ea5f3ee608be6d8e0db09e347df48ea",
-                "lexical-shadow-ant7el6d": "1ec8df0bd7c1e7a3a1bb7ee0baafe169294cb4c131ac308ff8e95f765184cac7",
-                "lexical-shadow-boc6f2yt": "d7af9d1d5e4c9d10b86530e2a2e5d631295348c695e32f818d8cc63f16dfa411",
-                "lexical-shadow-kxci311p": "db385828b52123a7d2732da3fc2d9051069d445b66eb2c0e06580e211097fddf",
-                "lexical-shadow-kyfkwg6a": "81a265a8144bbd306128f3a54a02c48050ec71857d5d75e57781a38ef7dd860e",
-                "lexical-shadow-pk9i2ydn": "43218e3073b6d6bf655f8185f116572912733770152a5e2c7caac32384182d05",
-                "lexical-shadow-x_5p2mx8": "76d8b545431a22f9287792fca89cd673768366a6576c830b8ef1d74c7af2735c",
-                "lexical-shadow-z4jtk2zs": "114624050013438a0604876cf1361b360cf9170d0cd5b876c3a7381192329bdc",
-                "lexical-shadow-zl7c_y64": "cf416eb4065cbe8b0855d3c90b24cb6c92b5243bc3dcfdea1e4a5f4e02e3c2b4",
-                "lexical-statics-3rwbfh4j": "4e0cdec07a9c3ea4a7d03720179a84c56c9b876d19b95cfc547c62b17cd5bf8a",
-                "lexical-statics-57_fd4f7": "537140c8f91551809ebed7eec9e781667da34a3ecee08ab6e5ab332635740af1",
-                "lexical-statics-controls-004wb2ub": "0b6b46b56e1fdef8f88cf9238b53fe066f72ea5a3e78686a809b0b4bea3c50c3",
-                "lexical-statics-controls-0zd5acsn": "efb948d8d5a1600495e7400cf9abc6c015913f7f5c72c5f2cdc999f643874cbd",
-                "lexical-statics-controls-op2x065q": "4decb911ea038ed484765d1a3aea72a27f324cb90c0a6593495c9bd8192f6a91",
-                "lexical-statics-kwm6_t_v": "64554533e9ee408cac09679545335faafae83afb520fd14e63c896259b51ad25",
-                "lexical-statics-sc_9him7": "dc0c6b9599898e7c076cef152a1bca3df049c0f4ed0253d05c56329288875934",
-                "lexical-statics-t2t3uj9c": "b93a7a4dfe2a1af10e141d354051e9d00bf2cf2a5ee1b102cd617474cc09c0fd",
-                "lexical-statics-xsm2uouq": "32473bfb7c7fc684cc331b5d91bc18d802f69cc91975b793e510f15f402d5340",
-                "linux-attachment-exec-6_00kxc8": "1a2af1c9c2236201e1c9037668a1beba255419eb7cd18c5397d7c8ef37470e06",
-                "linux-attachment-exec-no-build-id-eh3fph5t": "0a0efb4dc76e469fe130e9541436aab33e6879835847825b48f2817bcab16c1d",
-                "linux-attachment-pie-g3hgeqnk": "50bbcbc7e7a263f4855130cf36b721111cd278421d36af93f4e6a3f43ea5e9b1",
-                "location-width-producer-20n62fzf": "da1b8b8691852a10b3b18e9f2803943e8a7ac267f13595b2538320c1d4d030f7",
-                "location-width-producer-4wgwaswb": "4d1d3f57cad6161c699f2cdc8bd15fd7a2695ec8add2dd94fa68a8d43c1af0cb",
-                "location-width-producer-_qgrcucc": "2c9c5539c038933be7dde1e7036735a146af6b11a85f48deea88076d1a5de254",
-                "location-width-producer-dibf9_y9": "71ed82bb2e973b85f6b8b1373f9418080d08ff26c45a99509984c41ce6db7c54",
-                "location-width-producer-g9l780wj": "a9eb6a56dfbea437419dcf068a8530b8ba5d7096ea1382652c5a3655d85624b4",
-                "location-width-producer-k_acc0dx": "357e28e07f20209eb0b4871a6a55e16eb9d83c5647af0b1ce81629c3145ebc49",
-                "location-width-producer-lsyqowmx": "5f813f20a290d27ab3f08fbeffedd7a70953b679933f593436bd0801b3505c7d",
-                "location-width-producer-t42hgfea": "6cd12e6649eef3db351e3ae65db7abda73971df7b450519dbfa2fd699bc52591",
-                "mmio-failure-controls-vz7a4_f_": "eaf30599a0553e950344788111cb99d15d0de92f73bf6e0150ad8e954be9eb94",
-                "namespace-globals-x72tpaoi": "3de9c8d8c3cd5d849d8da40b49302726772623c89e1425c36b91247e854fbc7c",
-                "object-parameter-6c991b6u": "d62a0b60c82542d508af92f3834735a00d5574a6cf2e4e4aa6cd7f5f5e23c67a",
-                "object-parameter-84qk3bvs": "26e0eb9695aa85edcef961b03102c850ea80f4e829bd443697c5565d67029bdf",
-                "object-parameter-e4hwh98m": "739fd220f9df876aa29fd221f54f83b2b4e57767e4d626dfcda42d3f6582d167",
-                "object-parameter-e6vz9j_o": "3a7e6ab3307e1a0fe7fde51d612d65af57b16a5c27ea2d4dd23bd2e48382e554",
-                "object-parameter-ilh5ryxf": "971eb85fb49e8a15a4f3005098f7fc69582da25d481a25c679823663eea7f362",
-                "object-parameter-ilzk1v59": "848c03e9b3050d797313ae721e13ba9022dfaa05a051edcbf0e5bebdaa7101f1",
-                "object-parameter-j9aw3ohq": "bbbec8108d21e2296751299213b3c793df3acc2658b733cc17070af94dcd9651",
-                "object-parameter-jt5yq5k5": "96b2bd597e1e4d731f3bce8e379807f699bd7fddd9f0ee854dcbc21cd417dd48",
-                "object-parameter-k71u560r": "e0528c45ccc4f1f2661f803ac061c6f1f83e6cef6dffff203b0011883e28cd0a",
-                "object-parameter-micp3gdp": "af4d1ad310b183c0dcf46e91e03022b8874ff946563425995074774b168e766b",
-                "object-parameter-muozh099": "7d71844ac6c8e3a6eb36963dc98c3c58754b57696a56f1f0091e5ed4c02b6e5c",
-                "object-parameter-q_9h3382": "5d490d8d2ecf6f563c2f66c50b19c8a5fd09d5049f3df80415e831375482e2ad",
-                "object-return-5hz1_wkg": "2baeefd010e44c56b26a1c306dfee1d4b445607e74e1c19c7a7e4194d7218126",
-                "object-return-bijo7l7z": "806bc0e7d552cb49b010da6f99aab5d7c9c174c751c653cb6aeb4c6b600592e3",
-                "object-return-h6orie7l": "e39d1a33f4c3b3b9c7de91d43732874be9efc49310916e33a1371b0dfe790516",
-                "producer-failures-5_9d1oq1": "9589dfa6fb58504bd2d3bccb19d4ef684d4a7bde5816bb40336cba9d033c3c8c",
-                "qualified-type-producer-dw2tyl_c": "458d51262028e41e38d30e468c4aa63e8ecce6816c6830510bdfb11baf39a185",
-                "recovered-parameters-odq1h5x3": "08b0a3d7415e4eea74cea6f2c3a1fff007775e7eb3d5655d47d2b8038ce83678",
-                "recovered-returns-uliitd8n": "1ab818c2f235e8838de261c04ced5836afec0d7372e2beacef296e2276de596b",
-                "recovered-statics-controls-hdhntfsb": "35dd923eff59cd89909a03c8837ae8d1d9464edbf1085e32957674ad23904471",
-                "recovered-statics-controls-htdvnrsn": "ea8fece0944f2057012412cf7f44337f0adfd82042d0fa62a6baaa2a9ed84801",
-                "recovered-statics-controls-wseb_e39": "9a5a6b5f66484031f96411c686f44b26c947d964ca0ae69dfb800aeb9ae337f8",
-                "recovered-statics-positive-5pb_k1c6": "82cc313f14c3a6a1564bcbb7a039de95ac7753e51dd5d8c0513093e04844fc2c",
-                "recovered-statics-positive-bag9jqf9": "82b7da44ca6c75c2702962a463e26a686364347be788e2af3029cdb6b897a28b",
-                "recovered-statics-positive-ugz1g48d": "42dea87bc2176108fa32a4c5a321763d12b767700638274652524fb0e930a852",
-                "saved-inheritance-1u8nu9h3": "8a36cce6fd2335fc7f7b1d834964872dba919f32f73d6bc191eb152b871b3a7e",
-                "saved-inheritance-2s5f6sl2": "9b1b79541d07cfd4efa8a4c89b9a8483d3f52dd335bfd56e5ea78ee612025516",
-                "saved-inheritance-3g9jn7on": "4b455a6e426987df76133eb8210a1dcc619caf9177570dbfa5fff74fdbdbb2c7",
-                "saved-inheritance-469c6dqa": "e587d29d1808d34e60536ee1171df5a1de76859081c75a243f44f818dc176c08",
-                "saved-inheritance-_hl0bm01": "ad9be0acc286443f57b2e5c6b60e5a8c44f6bc0c6fd47914e47530b3b0afcdfa",
-                "saved-inheritance-d9yhjcdj": "cb0f7a989865780189ac2f07e2a5059a474d03816c3c8b582d2c8e433a0fb667",
-                "saved-inheritance-fdtvg9zt": "4597d7547dd6526ca92b57a81afd022e776c8d6ec89337ecce38d1ab085a6376",
-                "saved-inheritance-gn1e_b1e": "60e5a6b5075a6820d6fca658e985e8549abcab9d91bb1dac0bb547ad08be8aa2",
-                "saved-inheritance-hesmfs15": "80d202878e747ea1bdb3c34907d29ab84b66e68ded0e64e7be6e26d8781147a2",
-                "saved-inheritance-j83r1693": "a99f949ea75f4a2a70f123e686b6a7bad50757d34a42c3ca720eb35f0954e177",
-                "saved-inheritance-jounoigy": "857b02b862470040acc01090b678dc4423b373b03a30bc91836d05386615df49",
-                "saved-inheritance-o_hfhc4c": "35f81b6e57c648f3bdacfa80e3efab62cd5f1738f6613bb101f6ffc3bef1d0d1",
-                "saved-inheritance-pe_5r5am": "d88bc3113d39936f2aaf40f054f93e9b3ab374a5a8fc51afb5093c16f8ffd2ae",
-                "saved-inheritance-pjfefhj4": "330554ff1f847c7362245181144dc9bed7f20174167addd269bb4918b55b1c2e",
-                "saved-inheritance-pxy1uas6": "a0caf0d1a2c0b2342e5e8271c63c3fb940cbf126c9f69061be3ceb0d0e319fed",
-                "saved-inheritance-rxlowcv0": "58ed975de64ecf3570e6f8ab84cddfecdfebed2151d960acb54d0eb9bbf7d112",
-                "saved-inheritance-rz006dlh": "175c774d167ed0195a1f36a4887887ce9ba0b9145e275a0884fa14f0fbda1a2b",
-                "saved-inheritance-sd56l3ut": "e9137e9969b5dc371f4c7756abae694826d918aaeee80f8032e91104fb528ede",
-                "saved-inheritance-segpqd7x": "f86d331cbe8ec109a92cc82a426a0dfe6d2f8d455c252e164456dd8462d8e330",
-                "saved-inheritance-ss34_u1q": "a81347ab49f73545a69333cc3b2daf50fb339bb1cac179381107ee2f77055177",
-                "saved-inheritance-stsggubd": "41fe5c45f601fba072ab90bfc5b5e30a0b2d8c316288ef73e637c61744b9d568",
-                "saved-inheritance-u1cxh4he": "0eab152b17f8e44f88f1cadbbf00580b7c0d2d3724267b04664f3d9cea4f8e4f",
-                "saved-inheritance-ui87so__": "1c319b18175eaec4dc2bb9455acb9e6b97d08e3d31b3c84b578155e801793d60",
-                "saved-inheritance-uwn4i0ch": "a6de220181560c39cb860c32226e1a4d6d8546f440104a0322a4d6f70aec7932",
-                "saved-inheritance-v7leu5v5": "8ef747ad43411ca7e46637aaa5ba09480de00b01637f7cf645bf5f7f0487f47f",
-                "saved-inheritance-vlti99ms": "7b029656bdafa4909ecf3c66d9e7a38643ae6998720a107aaee6e61e0e2222c8",
-                "saved-inheritance-vxsoopwb": "2a967bab57ed63e037ffabb05a4fbc7bb36a650c3c54f54031875f6f80082219",
-                "saved-inheritance-w6ifv5a3": "5c839c07c7b2fb9e5771fb1aab69a3222c75ed08f330dc8d744cb2877f277450",
-                "saved-inheritance-wh8lhky9": "999c937d5c65d6bff6434a23dee7983eca9e4f408a77ca75b019a160c2f7d40b",
-                "saved-inheritance-xwbre6l3": "25dbbb362966880bd0b5f88a65ea89c9248449b6032ee87b12f4f2bd2cce33ce",
-                "saved-inheritance-y50y_9d4": "cc89cfd6f0bd2a4b59e7800c075a18b822b308987b0bab197d7e03d96477a430",
-                "saved-inheritance-yy1irt2y": "152864a730f01031126015ca84cebcb5ca322fb7bbcb9fb86c4612df1391d8ad",
-                "saved-inheritance-z89rg8q_": "c26be11e3587db96319b2378b0a4ad3f76b0c0951dedb9b9562c17c5c2435167",
-                "saved-inheritance-zgr2m2jm": "850d99d46699c2d1724314208c8211becf9253248db2485b8b7ce9674a9fa2a9",
-                "sectionless-validation-mivmwenq": "3d50e15bae78c75c7a2f68cf35fe44be28b7a7cdff3fca8510d4f6de01b12412",
-                "source-bundle-binding-eqapzsb5": "206402fee566bad102923634c6d36844d716f29734eddafa51ed906980db859b",
-                "source-bundle-binding-ljg8udum": "57c1d823943723e09eb96c0eb23e45a76351ee51bc620f03bbf4c0cdcb26756c",
-                "source-bundle-binding-s0gaye5y": "0ba098576bb8a67c0318fa7ac74f143531591e8cfa027de4adfc918113d203c8",
-                "source-context-anoyga5u": "74913e7c0741c25bc2d0a5231bbcf300d4f812967d3ff0eb8b1d71250bf53982",
-                "source-relocation-0roiba43": "1d63489b70eed2018bdbd885563ef7a560f7a789446bdddc783e82fe56169baa",
-                "source-relocation-6vi4uwbd": "2b59396012a6381ae287094a5beaf81ea6db3b06d36e66c157976a1bbf5c82ee",
-                "source-relocation-9i2l6f74": "03a012f38e225b3564d7d29129ec2bea7672a210d0dd5ce5bd2bdef18056980f",
-                "source-relocation-a60fhdxv": "1a769a161ec1aecc6716c2291d19fbb5a3615f0832f53b5cba5dc9eb0663d6f7",
-                "stack-control-flow-2s5dva4g": "38be95f0146a2d563ee26349318f98aac717706b28742c992a429706fc74a6ab",
-                "stack-control-flow-54jvu0k2": "27799d244f6547829384a21be4f754b094dbc97c4e1740885906d786b31c2cf8",
-                "stack-control-flow-htcij_wt": "31b86c5a455e8740dc9d45da8570b15dc6a7442a375caa6679ba1da66e30b54e",
-                "stack-control-flow-msx6zhri": "628a6f1d9d93612ba19dcf15197207580c0da7d981aceebccbdba490afae67d2",
-                "stack-control-flow-vkxb2qpv": "35fe09963cf4d2d79d9c2543c614f213399d5ed2a4f09a09acfd2c280bcc508e",
-                "stack-control-flow-wux8z67i": "f5020007a10173fcea59824940e51a053d6a7bc61d2cf1e24534a06501b2933a",
-                "stack-value-transitions-1qhdz8rx": "82bfe97818f1e56faa2fb00403c3d326dc4a09d0e62c0bc6fc17cb57efe6af19",
-                "stack-value-transitions-6xqqu8b9": "5c024ebae46978c099cad0b36b374edafecbabdb725d8ca64d7500126cf5c906",
-                "stack-value-transitions-n8x9_43u": "443d0a05c882dcb71c41fc45566f06b8456f8c99c3cfb182a12ad0f2c1b06f0d"
+                "annotation-export-37mwq5v0": "79be8cab63f61437170097a93ffaa4c229230cb662640ece329fa7544634c085",
+                "annotation-export-anq2tdm3": "baee7811f6ac074ee3766e88eacf48e5177940257268b4cde0f06a6079e77fbe",
+                "annotation-inventory-71jrmdth": "9633f7c47e549b612c66aa393780c2156261beecab1158a725131650a7a1ced8",
+                "bitfield-values-0cgr3vsd": "4980173394f1de6fe73478bd4d64cff490c53ea1373ba9aa5bd53436320bac4b",
+                "build-id-command-oxu0mxtd": "19186b4f760944e9e936fb0416e8b83c5ea9c571f8fdfd3c5b60b21dfb367c19",
+                "build-id-identity-ch_ib8o3": "5b255ea94c2975d03e38da61065f78048f69996e9251febcf9235c8f84dac3a9",
+                "build-id-installation-e8bk1o1q": "e5fd6ffd1e97b58ff476f66faf2fa78aba302b7f27d3b45a2677f5e533cdcfde",
+                "build-id-installation-yc499ui1": "ccf242facdb01c330bd9f7f2cba8264199a60b422a4e3d112fa5625fefc3bed2",
+                "build-id-source-bundle-etdo9q8b": "31b35bc2a6bc8a16f79fb233c1dbe30c5fb77fd3459743d3e1558e9a9cb78c1c",
+                "call-site-packaged-pard7_q5": "618fd4a43d32d188932b58f6f240b6cafafa1b8349287452ebd8eefa39aaa57b",
+                "call-site-packaged-shll_ckh": "c73fa31830acc32533fe86441dc4c2aa68410775923ab59bfe3a60447c251528",
+                "callable-type-producer-j1p5qgy8": "cce0c989f12c8c35efda62bed29d49467c4bc3a64e50b44cf155932a11bf9efb",
+                "calling-convention-3pjjkzjb": "a1c6dea6ba251ee2a2985aeec7f2ac17d63879ea2b28903cb3a7ad676e81eff4",
+                "calling-convention-jqgbqpoy": "976f9f611e5ab46952bdd2a18e06808059015cbd710b3e57d352d55e280e519f",
+                "calling-convention-lo6hb9__": "ccd45847d4378d2ee2cd3ac900369f3d30ebc5ebeed034c940d62d91f89618fd",
+                "cfi-composition-explicit-jy6l07kv": "7edaf6b9cdca1ea0901bd7ea7eac8e3ba5be2fdca67af0b3fcd3d47c8b8c3c7b",
+                "cfi-composition-gabi-cphp9qfd": "95528dca66ec96d8d3278df3760b17ac96e5c372a7d6a6079323d39f15e1f41a",
+                "cfi-composition-gnu-h0wrk6h8": "5895774bb224faafec09db6455c08d53bbf843955d910cc6fe409d6843391900",
+                "cfi-composition-plain-hfy0_ie7": "3b9967a2d529a26ea064bb5c02a94e34ada893be2b3ef69020dfccf43c78c675",
+                "cfi-encoder-r08qscsc": "962721f6a4da28ca363bb743f65ef0327c6b9077ffd002d1657db3e98d8c2aed",
+                "class-scopes-nca7bb99": "ddedcf7876d35984b212b8cd819e7fd94578a8bb36582795969063cfe080136a",
+                "custom-call-storage-h5j_zbyh": "094a9c0f56afbdb7d7d68854961b5352401edf678b8883771748c85029e5c633",
+                "custom-call-storage-hytwvcrd": "eef1f44451945b255c964362e68819835cd7713ec61131ca51e7c547b260a1e4",
+                "custom-call-storage-i05e9wes": "c245e5b5a2c340ac8da751deccbef18fdd0802b7e8e4ce75bf9833870d3b4c16",
+                "custom-call-storage-lfuejrvi": "309c153a3c4f73025f60a17f29d5354bfe65126e63401df674fa38646d352e99",
+                "custom-call-storage-s_hhbymi": "6980bdb15aafe4bd1562d2571101466612830eece9d50664caf0a0f7002c9a8f",
+                "custom-call-storage-wrynt3r7": "4349045e2525fd3246854f99e832518dbb3b6b05043a9cda7c6386d287770656",
+                "derived-validation-2fy3a5hn": "8f116916bb5ea846a76339e3d2b692b2057fd975c31e1ec5d2184e7e136fc4ea",
+                "derived-validation-5ctna886": "e06137cdffad204fd80e8381663c7f9f268fcd5c72c6535066589428a9d29429",
+                "derived-validation-ikwdxy34": "c8544d7324e942392b66020fa6ce5654d423f7b224cbee00d056b22652639612",
+                "derived-validation-rez_drwj": "5b64db04d44873e147a40e513ed8d869f51fd451a8c76b895e6c44aede7f72f9",
+                "equate-constants-krgqeix8": "73e4ef48a85f60161b680a873e60f3946a8a08f063d456b410be3dfa19c92e24",
+                "equate-evidence-_0ad90w6": "c4a9131b91cda19509f4bd508ff7ffbb83b6ab587d38a739d97276c61a8d44f4",
+                "equate-retained-names-b5yxlbtu": "ca9c6ed9b0f9fe5f7383629425aa842c0ea8b4206eb632d00c3ad8795829e15a",
+                "external-declarations-30vkberx": "e3beacf0e43322fc5d8495d24d9342da7c68970130bc9ce0ba6360d7ee1b135c",
+                "failed-source-export-4dcoi2xn": "4bc9e09313f31639cff98c0fc6bb60fafc9d6f79d9c78b8a79044c71cf11176e",
+                "failed-source-export-_ya0fahv": "2ce13d9ca03e3c22057c111d10e1efb887791db4d1a6b83d02817e28877c61e0",
+                "formatter-export-5_c5b0up": "025f0eefb764a72e3f90f617c4e7d0933f33da3baea10ffc26b9a1078103fd45",
+                "formatter-export-7yxnvpmd": "775a0d78da3700188055ca84ebe1f814f55cd49c82e60f70a095f13c0bf18cf7",
+                "formatter-export-er76vklj": "0bc4193439ba2830972eeb5a0dd0c0ea74392f925f65d9830327d3b56f164430",
+                "function-entry-alias-export-kmlhgtu9": "cf0545fcd229b5966035c1970b9ccc5ee08ef36cdd492987dc2c73da873ea269",
+                "function-entry-export-rbcq3l6b": "df24ab26857a7c153a1eab19906b7be1282ede47b98103534f528054077e9d2a",
+                "gdb-companion-p702axnu": "1f78a7fbbbcc43f5104159b620f0d5fb1807037f400807aa0f8896f3507fe2bb",
+                "gui-script-manager-compressed-1ng0vhf2": "f644faa25ae10ba78230b7eab6363fa7b417683695296b21850de3a1dff5f7b2",
+                "gui-script-manager-loader-afrhhiyh": "a3c6cc899f91742e7cb6b871dd99b8f447d8c5c0fe2d7fadbb18a5dae13afdf1",
+                "gui-script-manager-pgoihsx9": "705bbeb4e54c8a17b42e15da1c8f6b31f94fb5e19afd828324441452c65943bb",
+                "gui-script-manager-unwind-grkg8sf7": "70055a1c4ed9acf7d8c39e47ecd1649b3a25c530f6597f3372a4796076d82852",
+                "inheritance-names-z4718ou3": "5b21018a8472e7acd7ee11a30b5ac48311031385c21821b8d9d15d8347320321",
+                "inheritance-producer-_g6xr2pc": "56916fe653b1a11aefe6c1b92944e7af3c88461986f3a959cce53b74de28d994",
+                "instruction-context-5y1ga_6c": "61d4764f90db9c95e66b9f6b56f46d05de65082968e7d3d84bbe48296aed4eb7",
+                "lexical-shadow-34ffo3e_": "63e0eaa97d7bebde91826cb30c5a51fddd98a47098d180a719bb3a64d194afc4",
+                "lexical-shadow-5424ffa5": "f47a66d90524c39ff414a199990a14787212989bb6f66c8c6192a82212b1962c",
+                "lexical-shadow-59px4t4h": "9da9cf2cf0e6862bc71bd9fd95166ac7132c2fcc24865d9245e7e4d29032d433",
+                "lexical-shadow-6mfbfwv9": "1d758116865ac2ac1cd721f019b594bfa2bed5844527138ed43ffb810cef72fd",
+                "lexical-shadow-9bq92e0t": "ba56406cda5596d88a4864375c2d6cf56ea5855a66cf9de11a73f9829a0920f2",
+                "lexical-shadow-9zzswod8": "fc7c704bc1c5512d522758245324dccd6296da11b81e34aab20da2ac0498abe9",
+                "lexical-shadow-_wnmjhg4": "31f0fd447fccc4391942ff7453c5f7503a798bdfbce31caa0c862f52ac506494",
+                "lexical-shadow-i8sr_i9i": "2f9d62a68774bbadc12a1bcb275e60c5b48135fe6068242800a42c341c745efc",
+                "lexical-shadow-kqg3qpmq": "5f83e7d55def065edf930d700f01d7e2e0e1ce4f9e93e1159980d7cd2df948bb",
+                "lexical-shadow-lz2i3gmi": "632ac675aed5c25d81ddbe1c65d47462fe28783390d9de9d86c990d1a9b252da",
+                "lexical-shadow-s5qascw1": "72075bdcc134351a632447f4cccf09fa01e29afd4d453e0c8c43fb4ca845f6b3",
+                "lexical-shadow-x3bkzxhi": "a9cba82250f7db9c230232ad36e4be21f527a4dfda25161de8760a615f60db1a",
+                "lexical-statics-22ldr5y3": "8dc82bfe8e36faf6400661b6a5cfa638c24bc9db3d69217f17662057f01ee45d",
+                "lexical-statics-50g_xumu": "06845a91fd6ce5e47df6c4f88213cf210fda370ac7f351326f212cb02b3a99ad",
+                "lexical-statics-8dc58tk2": "c0839fa1a4b0215912c5fb5e0954eaa40b8647c9988202b09bff0da86fab0eb1",
+                "lexical-statics-cgvp5srx": "64e601f6eba8e78de2f4bed46c68045924cc85ad9fc300720899dcc3781b5484",
+                "lexical-statics-controls-8rpmxaez": "37f1061719982bfc017d4f467894c644c9d8c91ffefbb7b6352424054352080d",
+                "lexical-statics-controls-_fjvvt3p": "35ec2abd38cd37662ecca402d48cc93d5e9f72d44d238a75e3265636f21c7638",
+                "lexical-statics-controls-d8hvp3rt": "250df4704cfda10132b1ebc813ceaf77cae0729b69fb2fe437c491f30e21d36d",
+                "lexical-statics-fbzuowpx": "318c1a6f5d969f4002267f844d1f43fd1d0d044eef1abd14c1d4034f6ad3cd51",
+                "lexical-statics-z8hgi1gl": "167e4625aa559f8aeafa7386907c220d27b065d8ddee904f3317feafe27b9541",
+                "linux-attachment-exec-no-build-id-rkyd2yot": "c25d148a438a362d997ea4ccae41cd2127ac6558fd9084bf07b52bf46fb0f2e7",
+                "linux-attachment-exec-vzuoj0s5": "ee710ab6b23f53b9c72fb41345f02861154ebdb1fc36ce04b26251dd42ec5034",
+                "linux-attachment-pie-zc_bocqn": "1c3896acb6b290bdef38616b76c659882e069615a5e28e56356bafa761e2d1f2",
+                "location-width-producer-948m_pxj": "068863a20cb96eb5a5f86428531196377221bd99b24573253affff97d58d1c0d",
+                "location-width-producer-bd0huhwj": "43dcb23788e31dbea1bcb29cf239e57b9645540b18e1748d00ebdd1ba836ef50",
+                "location-width-producer-c661r2i_": "717fe2b0ccf3f878cae66ecf1292cd75026163594d2b2c6496ca02e40e2bbdc8",
+                "location-width-producer-fqjq8dzm": "b99b02a65abf98e5f7f4bd141dadbac1a630be63e7f9236b6170561208883bf2",
+                "location-width-producer-lo7bk48v": "6d0c63f46d4db3ea5ae0d1f24a958ba9acba57ee09dc38a29b1b44498d37a441",
+                "location-width-producer-mf9c2blm": "c3b64d36ccdf3a2a30ca765b56879359ae84c56b46f5a9cbea3a31059c58b2b5",
+                "location-width-producer-r5bzwrtv": "78383e4314569bba72e989f2ddffd063b84f8371ca0916f583c1121321e84967",
+                "location-width-producer-wirznc8g": "d0b4b6a03afb16fac8ed2e504fefe00da9efd8a7c028d178f6b98a778ec8329a",
+                "mmio-failure-controls-_8xfwh58": "1593b5abfb0121f5c5f0d84bd9bfb13afbd08188d4351d347e2c90f41a81b63b",
+                "namespace-globals-3c5xyux0": "00c8d0a00ef87d936ab4d07ab277185a29a042c545bfcf5cc7b1df2e6fb7f424",
+                "object-parameter-5k86j4ne": "87d9b4448b603130458991c1c15bcd317395db3a0248064f49b51b32a8a19b53",
+                "object-parameter-90g3akf9": "e48cb73eae39830ddd07740b197d09a35df0d6a60edfe1d823349ee598ffcbbe",
+                "object-parameter-9jdcjv3e": "439d30761ff675ab6540bfe14c87272f629f8c1d8641b44620ea0e6e07393615",
+                "object-parameter-b83_tekw": "13a99af102bfd91f9c80528221c1a4b24bcb0a2dcac7886327a46081252a4ec4",
+                "object-parameter-d7rnefnn": "7d3aa18e5ad218a117b1c1f7a0b39c2b443973732a665974593f6b22f0bb6f09",
+                "object-parameter-gh8s5ldp": "32a00a1406ed1d916284fda52c296b6a14d7fbea9188a0ba53997f92556e3176",
+                "object-parameter-i2oe97pr": "c7c2709d4d2524a3989367c57f67f06a572e69fcd125aa525526bdce36fdcab6",
+                "object-parameter-ndc654dj": "c90a9865ea5036fd4e459ef52a0c10e260737735f906f59a7ce5a42006910299",
+                "object-parameter-nifybyrx": "4a93ae67ec6628e145c1e49c1fc282a8c971bb5a2298a7f34a170a48ab576b18",
+                "object-parameter-r6nfbkv3": "56d6a0ce2cd1e068aa2f81ebd67d7e5f2f2e83116a2208885452091e9d548c3e",
+                "object-parameter-wjr1d4i_": "2e8cde991163ddd8f86993f83ce982588ee9268c8f8040feb8c62e73928077b8",
+                "object-parameter-xokvktop": "61ccdab4f90fb132241064bc83711794220f72affb390f4c0bcda37b412d2862",
+                "object-return-i3luv1uc": "e865b3cf19b67637a30d8f3804af165474bc41f8e990692a6aa9cf36c75d3553",
+                "object-return-orpfj7o8": "fc381089d0e65022358a43d280a9a60731c902582f5731c4f43e3774d2bd2792",
+                "object-return-y2yj4vov": "bda7219326fada4640733f6552b14fb8ddf9d9ebbd17c0d441d032b19f82e89b",
+                "producer-failures-whvuilfz": "13009351b75af05c3d288135cf8bdf88abf463423c6c4d539c6e55b8f9aafc23",
+                "qualified-type-producer-q_kx2uy2": "b82a746d57e9e212748a2caac607143755943782f49b39888eaadc7dca3db262",
+                "recovered-parameters-zen9p2iz": "3169df38aabe14ae283de0cfd88bf3ba8160bedc3ee513a64eb4825be405258b",
+                "recovered-returns-yy5ulsof": "c16f344688770221fbb3442ae1d7e5d3347aebfc33c91f4d86d7ead2e869574c",
+                "recovered-statics-controls-5amgl12g": "664051701941488ea7988c018abead8e4a945a20c02e21570accfe1fd81f2636",
+                "recovered-statics-controls-ht8wdv6z": "cbd53c391fa4d9b6b6aba8b97f8e08d3bf20b4b12053c24158d777db23219613",
+                "recovered-statics-controls-k6ang_ws": "0553db0aa98ffee7d7d06e8cc0d1fa5c59a6f1876fd9c98c8b67edd09fc87e47",
+                "recovered-statics-positive-77fco10e": "1378b62af5ea0469017cc8889a50f97b3683204bf3ae9809a0aa90fa6635754e",
+                "recovered-statics-positive-_60142oz": "65ad6d5996e74bcca15038274be3e43f5a82ff58625349c1bf0b2e76e96ccde0",
+                "recovered-statics-positive-kue15xll": "75231ce0bba3965dbaa02c039e8322313b191a3dc439f764e26773f1f9f5e406",
+                "saved-inheritance-1c7hj862": "51f350b7975d509781e2b6169d161357be6a92c2af24962cea5e085fa9e267e7",
+                "saved-inheritance-353etw1m": "d4e7e5aa06292fa9748046493a7a9d86ce4af8a4537da09a664ed01ff912fa42",
+                "saved-inheritance-4wci98sh": "1215f1abc8269115dbe6c721330a1e3bf54297c8dd5b46da86ba572672151100",
+                "saved-inheritance-50fs1qca": "f2b95446c5582026f93a26afbce74044c536630b3ce93570e69ffbf842d7aa18",
+                "saved-inheritance-675e1dc1": "363fe7ce2984ea5f5d3fa9d04e202ce70739e5707fc394d5db77723661d917e7",
+                "saved-inheritance-8w_9o2sx": "f7ec242d4036da7030ef12f12e9c99d1a1e9c32f1c37f8c2c5c5ca6d6fc56f42",
+                "saved-inheritance-_arton_c": "72cdd2b6f74ba136c811b504e19d8905493f37571670ced7488f7a35cbf1b003",
+                "saved-inheritance-as6ahy7n": "13e30678405b4907603bc6710080d54592dbbd9cb609a2a03e714ef675c03b84",
+                "saved-inheritance-auaknfom": "628d7600500d315f596360f6ee7ede6a94c362d37de9e1e0d854384136846319",
+                "saved-inheritance-buekudi5": "da945cd794111ff867c55519c40cb4592b388716a94f343df3205b78eec93b07",
+                "saved-inheritance-cl29vg5d": "418f08d73f81e45e85c40e5565264aa6d8ef5fa4adca916f8b54cd9b3e168c71",
+                "saved-inheritance-dkyagt3l": "5432925d4c6c3b98f220687f7b3f0f58552a74136fc829941ebf6cdc1dd35b51",
+                "saved-inheritance-fnzr0nna": "37fbd6131aa9d967d13bda128537508753965714c08f37891675d65c791262f3",
+                "saved-inheritance-gqz9iaph": "b28e77ac70f46c524bc4d7cb2f7a970707f58f9979d2d8de5dd5ae84b82f85f2",
+                "saved-inheritance-gvo0c86m": "d27c89ef768d02918f95c9e3fc66a0f3474f3db5835700e198455ec42b016275",
+                "saved-inheritance-gyz2vewi": "e8bac98d3f0df4fb654361bf684754dddaf4e34b63b90706a9c517986600bf1d",
+                "saved-inheritance-iuz3o178": "d9aec1929759912777e44a4c1b997d20d5734b23b03f8e3e30209d2aec969cb8",
+                "saved-inheritance-iz3qaemu": "b83e7ccae4e9a16a05693779a1936f3b3d4b9967be5f53355fa4fcd3a51dc950",
+                "saved-inheritance-jtpkhhrh": "9d5a318d116ca24f31600b085b1403de83fa8dec8000e9117ff4feb500e7e0e1",
+                "saved-inheritance-jwtw_i0x": "bea4df00ae8fe83de369506a2ee6333076497f65232253a0a7f7ddf76d231892",
+                "saved-inheritance-kaxljmx4": "632aa72510941f3215055b0a7635e883a58ac6818e4d12e8da0cef573c051bce",
+                "saved-inheritance-kylgqffw": "f73b7242ffaf62a6425551e4460b0c36506326a9a9dff96b338b1c5fe360300d",
+                "saved-inheritance-mqcb4hm5": "a553f43f4ca996ccdc056bade9a443188364e55fb196ebcabf850773f4b05fdc",
+                "saved-inheritance-mttiarva": "38bf234e7b912608844d979649b2959ef1093167fa874da89fc906b58a4d3efe",
+                "saved-inheritance-nu2ergyg": "0c74d3dd23fd13447e287cb3d648c82e0dc423bb40b073679e386fa4b64a5e6d",
+                "saved-inheritance-o4ssa7dp": "7ef73e1c52bf3b590f70906520cc46c660c8945b06f6f7eae60a400cf2476e2e",
+                "saved-inheritance-oforhref": "57e0f1b045c7d3a27cd747bc90eb9273ff86a2e781d44bfd075d3ed586db5539",
+                "saved-inheritance-oqk8vp4f": "b8581897ae3ee11718204a4c6c5fc58800362842acb86316521da9b604709ac6",
+                "saved-inheritance-p0eqrm5d": "4b74c202af58be0504c9428a3498d55c90ef51527321e3e89efd7c410739f649",
+                "saved-inheritance-pwf4q38j": "effb6fc99290137d0f24b0d6363cf9a9670afd4c81570e8d2405e994fb5474c7",
+                "saved-inheritance-wa51cskm": "c8b178a65c711c98c69b3f429132d91c560d9112a84fbfa3b3c6c099cf1ce525",
+                "saved-inheritance-yvrot5fz": "a506975cab2e1463bc76c8b95914d0dc4fa4410ae4aa4c77669c9c93d810a728",
+                "saved-inheritance-z_5cnww1": "6db1ce20982b08972a83d8023269c0b705aea7e4b69e98f60a315f3d979d92d2",
+                "saved-inheritance-zzlkm7r2": "11bef36a33a6c916230839731f298ee8529313a85b70bb6e2639addbccefbaa0",
+                "sectionless-validation-57skdc0f": "38e872c2267622cfdbcb49d4035ec9067a9ea35c035c5a6828419999fea89aaa",
+                "source-bundle-binding-6qhvy797": "69e008d1f7c0caf2602771e249edd3f0457af677c468d6a3981458e8c519cd08",
+                "source-bundle-binding-koorsc59": "30267f0f23b048cdfe1cbb41d61406fb2c8f37bd8cf19f341f2806e2498a2c10",
+                "source-bundle-binding-t2ua29t2": "be2ba1234db98186517dd120dcf0bad62646de28bcbdee27922ccbd318bf2fcc",
+                "source-context-9kauawne": "87bab9e5b0fcfa5bd347f6fa7c70f36a0694be8fcfa2e41b1a8eb552204219a0",
+                "source-relocation-d0ehmdxl": "1375104e823439e8c915502c450e708722b70cedb4cb19c21c4d01f509b17a5a",
+                "source-relocation-ftwxs9xi": "e257c0a8848e835c1f6edaec066ae369b9d3dd7a84feb98e51acc10815aa2709",
+                "source-relocation-gize2jrc": "93b46abf96ada4f3ec89b9516c2e7836c507844f67ffd04557ce8cc27b7c3eae",
+                "source-relocation-hfz8vd6e": "29fe47dde4d77fba5af5f272d9963d9ffa1de559fd12c6a257b93ab223176e0e",
+                "stack-control-flow-093ivjop": "9c60f39ac0b85e06bf015dee4cf4c3b0b9e083aa28a0340bd5dc77d111378da7",
+                "stack-control-flow-4z0t2n5o": "5e4476d46facb533321d0a1055043acf9102a7d6a4620c161e6c4523382664be",
+                "stack-control-flow-5ttrsf5h": "5bb6843cd7cf04108e09b11b7e02fa7e7deb912edaa1559b2a5d35cb0f338e75",
+                "stack-control-flow-7nsd9nny": "3b36c7390e9d088c35b687c709b2efb834150e90359d261b7afb7b53683984d7",
+                "stack-control-flow-fr5pwckv": "7874d7cd5fe3bed6443bddfaaf40f7f220130fe16a5837454db70cd7015fc313",
+                "stack-control-flow-isjzc8ti": "782e94aba5638a69fbfce9eb2e29b36b80d4d16e3a4735755c86187aa51838f6",
+                "stack-value-transitions-4jz057jy": "9299312b9fd1a5dfe59a7643dd630b377e3d2804bf2f126cae7ce8b91ee6bb10",
+                "stack-value-transitions-72emqy82": "2b2a70a501b564c2739759dba47d1e68654a6a9bfbb5840d4a0d971fb44c176f",
+                "stack-value-transitions-zgr__g4b": "976291860e6a89d2a591a89b831425d9fa9148dd1f449b71e9f2d2e55436ee84"
             },
             "sessions": 897,
             "suites": [
@@ -436,13 +436,13 @@
         },
         {
             "kind": "linux_aarch64",
-            "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
-            "run": "45528494838",
+            "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
+            "run": "45619782379",
             "job": "target-coverage",
             "integrationGroups": {
                 "attempt": 1,
                 "inventorySha256": "76395b43e144a75c5aff064d97140160f7a07ee34685e1138f298fe28caeaa3c",
-                "groupsSha256": "0f0e28fa5db491f6600990aa3ad7f28087dfff0d5c2dfbb638699c893c516f8b",
+                "groupsSha256": "9f72973ffdf33742ac6234d6ba20906f011e64ac135cef8d31a4bbbad9b87dc0",
                 "groups": {
                     "primary": {
                         "collections": 4,
@@ -470,17 +470,17 @@
                     }
                 }
             },
-            "summarySha256": "f67d6aa867176ef054448a442c43429d97622925203ccc3b3fb74d1159bd5d32",
+            "summarySha256": "70cd774301920f2337288e2063c73e8a2b88c3e609bb6babe0c3f07ee5ebc3aa",
             "receipts": {
-                "bitfield-values-qsonwbzl": "947ba3a098e05efd345f9518c65c494c8e21506e0090758f8be987114428616f",
-                "location-width-producer-4sdqnoxo": "1d5ed79153e6d38e94061ab4c463def62401c9e42d19c9e992406942959875d0",
-                "location-width-producer-5m27btm_": "7a88f2554b7e9317291829944dc7a8972514ff9f465f61e18d88d1453331b938",
-                "location-width-producer-8gm8os2y": "9abe0cdf8c463a7937daef254eb72d060aa3d7d9bc4956f2f2bd8bbf3a6d0fff",
-                "location-width-producer-cagy4ol6": "9f1709f83c5101479b6b89e4c3b4cda17f69651e511e8ed0a66ab529ae83f2ad",
-                "namespace-globals-f00yvpb_": "7f9ebcf5afcd82d1e3d5482872f4d0beef91b3967fb29a2707248495f54133bc",
-                "stack-value-transitions-3iz8s6qb": "e129d49d63b1d37f77302179953f19f642f23eb3853b4f56904107ffcd338233",
-                "stack-value-transitions-b6f2185n": "578d4e09de271061dbbd734f961ff376ef19b7ed5933968881e0d053672f5553",
-                "stack-value-transitions-pm613ul5": "8167b3b3f8e3860bbfd5f0e6b89a22358d4eb5ec578d6ca486e9a4558c803127"
+                "bitfield-values-ugytb5t5": "a2ec45ec9f8f2986106cb098a0c629e43c5f3b04d3b9965cead13e39198603a2",
+                "location-width-producer-1f93zvmq": "5e0f8990fab99868a91937741f62629da6012326b8904ceeb82494a51f6be373",
+                "location-width-producer-a6mxmn68": "18bc152cdc9ca7a0decea50849914ca34b7422c6fe29d0a3585c9c2df5bdd422",
+                "location-width-producer-awkcxis3": "2463734df16872795e5e1119dc55de30d027c1d11e04fbab6a01f347752d9ce8",
+                "location-width-producer-qol_jny2": "a051baf38f19444961d3b8631c38ec32c0fe3602a87dcde32b7cc12629210c5e",
+                "namespace-globals-0o9uy762": "4330e7ac633217cfd925f85969b371a47a6c34999f968449dcbc4af8e038d74e",
+                "stack-value-transitions-3amc0x6g": "5ce35330bd4d221c3603e5c7f4b84eebdcaa43a93689e834e4b97ff160deff2c",
+                "stack-value-transitions-3phfr_9_": "9c8a564ad7eca3ab669f8d33bff586201fa4ed5ab68527138a6db8fef38067b5",
+                "stack-value-transitions-ot5vbaui": "94480700a265f47ac8af9406b25f8bd919406895262093e0d33ac721a017d540"
             },
             "sessions": 26,
             "suites": [
@@ -493,13 +493,13 @@
         },
         {
             "kind": "linux_arm32",
-            "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
-            "run": "45528494838",
+            "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
+            "run": "45619782379",
             "job": "target-coverage",
             "integrationGroups": {
                 "attempt": 1,
                 "inventorySha256": "76395b43e144a75c5aff064d97140160f7a07ee34685e1138f298fe28caeaa3c",
-                "groupsSha256": "6141ee149ef0eb6ebd6d23ceb3060f98617688721f6e2c406f7fd04162873caf",
+                "groupsSha256": "0f595371a1882d1f25464613506c1d67a2e4f16e94b7f920bb825a9b560bfb48",
                 "groups": {
                     "aggregate": {
                         "collections": 0,
@@ -519,13 +519,13 @@
                     }
                 }
             },
-            "summarySha256": "109a98332edc60e0cd300dc499bfcb261817e6a979b62b3ebcdd674dd774f880",
+            "summarySha256": "125f6a9793d1877a7739b4a8180d86654bede0529ac90905001f4f6025e26205",
             "receipts": {
-                "context-boundaries-2296tw3l": "4e8f90c55492b9431e7e27f43e941d5cc562b3be0f457881802a675f4b907b5b",
-                "location-width-producer-093szwjn": "beff32f2496c68f33cd096a78c1fa7efd7f692dfd189926b934223e1b0a0979e",
-                "location-width-producer-8_5s2szg": "0d77965f5b5654502e4902b50908d536d9e039c280f373e62df84b795e20ac94",
-                "location-width-producer-id27s464": "eca04e37a10cd95c06295581c878de4aa9e5dc81bc36524a9b024b6289ab4481",
-                "location-width-producer-ucvsk5un": "728c9fa3a593be9f96e82b2e0386f426ef249ed8fe888f57e04af0f10afae75c"
+                "context-boundaries-vhlpdj4c": "a4a91eefda5c84bd6c920cb48547dd6472dd1267e34fe11a8ec40fa880fd6792",
+                "location-width-producer-c_0ivkww": "002fee273b96388c67199e50bfd523054b1f9bc099425176f4d7ee851aefcbf5",
+                "location-width-producer-f77r6spf": "273ead87ef94985a6186e64a201dc4bfae649330db3301616a008e3e65dbe014",
+                "location-width-producer-v0y63n1a": "e0bc92a9eeefbb17e46c72e278439431d7855ad344e525f061d44e7a51d30e4c",
+                "location-width-producer-w5uwykdw": "23e5ae45945b80161b09f6f18dd33d4edcbf8f7b13ce6883a3283be363bc60c8"
             },
             "sessions": 7,
             "suites": [
@@ -536,13 +536,13 @@
         },
         {
             "kind": "linux_mips32be",
-            "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
-            "run": "45528494838",
+            "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
+            "run": "45619782379",
             "job": "target-coverage",
             "integrationGroups": {
                 "attempt": 1,
                 "inventorySha256": "76395b43e144a75c5aff064d97140160f7a07ee34685e1138f298fe28caeaa3c",
-                "groupsSha256": "0c9aa04abae3ee2ab746676cf62f2b3214a1ab24516b04108b32b8b58911c497",
+                "groupsSha256": "09e46068cd0931eba5b54b0e875cfce03e27626a32ed23c24964b02c967285b0",
                 "groups": {
                     "abi32": {
                         "collections": 0,
@@ -558,14 +558,14 @@
                     }
                 }
             },
-            "summarySha256": "c9914e6c8566d0e6a2431c1edf8782e4723fb4deef3ad1a382fe5180dd8243b7",
+            "summarySha256": "82dd49b31801d193570acd099b167ee8757aef94d3ce361f03face07fbf8e852",
             "receipts": {
-                "context-boundaries-sbewtzms": "a4ade9bca67fdeb681833edb3dc5270771d5d2b60c8d6e5080871d4c1b8112a8",
-                "location-width-producer-g9t7km1q": "0445c985a9d92ded1569f4f1283f92d3b5635577979d2e0debd38e9d04e8e563",
-                "location-width-producer-ilrinm8n": "72550039271d38a506cfb6a7ba6810eafaf6b55e495d9b9b0258ef48ac817a2f",
-                "location-width-producer-s_r13nxq": "8bdcff11f025c6f574752a928f1c4d1d124d6ea702503f5a184692be60583cb7",
-                "location-width-producer-y0x400nz": "63f5c14b4b77473681671b49dfe6314bab4a451db634ad77d7bc638cf890182e",
-                "mips-truncated-space-kpa6ol0k": "8f5a68158a2c81da711796f1a9b93403407c5a7bc098707b5567d235a66b3cce"
+                "context-boundaries-2flyvzee": "a49bfc55b1e2efb4aaa31636a17c3edce479190bf273a3c6e015bc88c88dd8a1",
+                "location-width-producer-5_67wt78": "07fc02453384886cd1e90c9a5ce7919fe4059d4ea9ec704f6922864c6daef71a",
+                "location-width-producer-b8iigk0v": "be724593152734ccae2500421dd45c32cc2fc437cb05d9ed58dcf4ec03678a8f",
+                "location-width-producer-d5ipn7ex": "ad08610d4d87eb3b7271063955362e9b938f7cbc0ce955fa29aa8b7375db9a0d",
+                "location-width-producer-ui9r30iw": "aeb22692a037495ecdcc935f0f62fc538d470d007003b7dc5190aa0fc705ad15",
+                "mips-truncated-space-wn4saw9s": "f192fbd4a2112027192eac697ec65155e485ad4e6e45c489b5826e6558399f77"
             },
             "sessions": 11,
             "suites": [
@@ -577,13 +577,13 @@
         },
         {
             "kind": "linux_mips32le",
-            "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
-            "run": "45528494838",
+            "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
+            "run": "45619782379",
             "job": "target-coverage",
             "integrationGroups": {
                 "attempt": 1,
                 "inventorySha256": "76395b43e144a75c5aff064d97140160f7a07ee34685e1138f298fe28caeaa3c",
-                "groupsSha256": "8b50fb82337bfa55d2239d7d1ff17efd67c71eecdcaf996b82b68e4b2d2ca6b3",
+                "groupsSha256": "0f8da67e46cadee129368fe76740d6205cfddd29c6376a193dddbbdfde879852",
                 "groups": {
                     "abi32": {
                         "collections": 0,
@@ -599,14 +599,14 @@
                     }
                 }
             },
-            "summarySha256": "ec56bf926586016a49db03e9a8049c79de8f28a29b45652e9f26303714079cb8",
+            "summarySha256": "f0fc31e1335b32e81db4dde299e4f38731c529f8d0d65bdddd7cf1dabfffbe6e",
             "receipts": {
-                "context-boundaries-gy4_m_9q": "0b69b1aeb1e7c52c4917e59e3fb1c975a8f8e1eeb05eef2656253cbd4d379b77",
-                "location-width-producer-42pnu0i2": "7a4b8f328d23ff4fb36fc01714a98f029d31fb9c87f1dc94ba61c84f2b7ccf39",
-                "location-width-producer-_p44xm7g": "0dc60afaeb256482fff27edecaea145021019de454d606aa854276a484f104c8",
-                "location-width-producer-oe1xkd68": "b8b93a8afbfb2031f6097b2839b3a93f83bce5a2826496ae3a7f7469425c78e8",
-                "location-width-producer-yjzc1blx": "b5a066200784f0df576a9547b72d6c06a37a333fd5432d09e17fe56c32a108bf",
-                "mips-truncated-space-kzo36mta": "09b7d974d4c9a3a77d4e8939314ea346f36392e7dc2954f07b67946cdc0c11aa"
+                "context-boundaries-stwazdk8": "c2ad1d9fd6df9dd2c46617814be639e9a50f4fdcf2061917be48d5de1a6f8359",
+                "location-width-producer-840f2lfc": "06eb606229002791f1e8c9e95246d02c13bb82824863b2403a4772b532eb1664",
+                "location-width-producer-ai_3z767": "c78264867359cfeeca6b11900fb5b18f87c8990220899d6641c8cf6916340acb",
+                "location-width-producer-bolhm6rv": "32f7bbcf3f935c31fab1ecbe6692eafe060309b74542f062ed197d53f0528934",
+                "location-width-producer-xkugtku2": "27bbe50afb753cc78b6bab8bb7760f26401ad05f91270875010223a62d49aee2",
+                "mips-truncated-space-s6fk4lhp": "9a436cf6f26c66e4b26e19d4cca08b881dc171d7cec293561f660dbef7230dcb"
             },
             "sessions": 11,
             "suites": [
@@ -618,14 +618,14 @@
         },
         {
             "kind": "linux_host",
-            "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
-            "run": "45528494838",
+            "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
+            "run": "45619782379",
             "job": "extension-build",
-            "summarySha256": "a4ff5a1966dda0cc6cd88c230cb6651dacc5ea7ac926bc6fc1d01d072882daf2",
+            "summarySha256": "f2fd9d4e6f67bc1765a4b697b35f4905bbe92799243feb57c2bdb928e0d4fec1",
             "receipts": {
-                "linux-directory-sync-ukr1htmk": "14e6b95cf195121e4d12e695d4f609bf98dc680bcdd1c22f4d0e8caed177ad36",
-                "linux-file-metadata-oowwgtiu": "27ad83b317e504cd7062ee56801f0f068a480485d435185e073a534d32610fa4",
-                "linux-metadata-visibility-vcb653cx": "7203eff75f4ac8076f86d94aef0898427dc3d6717eada124eef24ee00fe12b53"
+                "linux-directory-sync-eb6l3w83": "4fe66d8a9b6cbb3e81c73dc252868528cca894246d72acf88a4b7408ef8260bd",
+                "linux-file-metadata-zofzt0cv": "1796a1677a9b7f8946a15129ec161c93fc860625dbf05ca552ba1cfa064908ff",
+                "linux-metadata-visibility-e2o2xhu0": "d5d49ef41e89791fa12ea988cff90b9d7dd9e70035ad00c2c9c8b8ac7e2cb283"
             },
             "sessions": 45,
             "suites": [
@@ -637,13 +637,13 @@
         },
         {
             "kind": "firmware",
-            "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
-            "run": "45528494838",
+            "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
+            "run": "45619782379",
             "job": "cortex-m-profile",
-            "summarySha256": "4882a9681abe514a8c6a396eb4d9d321ad77504235a7936cf017f7b705fa7194",
+            "summarySha256": "8bda9f9b56df27f45962c09426c32869fd1065e95c4202d1f8fef8b5db61511f",
             "receipts": {
-                "raw-firmware-0rc01654": "4555b8cd520434036466c8fdd36f8d3e3b423f5d061d5a29ce322a88a9f1e4e3",
-                "raw-firmware-ya35d9ng": "eb99a24e4bd980196bb477c20dbc1fa1670ebf36e76c8cafe04da3c6c6ef65f7"
+                "raw-firmware-3tdmvfu7": "843e761cf191e38cfd81b8ee566d2c3cad31bbf837dd557c6190b10c5583e16b",
+                "raw-firmware-y1p1hdbj": "73f8248b3f599cf538452bc66516eb0cb303a5b8004c5807c7d9b37abaf15c9c"
             },
             "sessions": 4,
             "suites": [
@@ -653,14 +653,14 @@
         },
         {
             "kind": "windows",
-            "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
-            "run": "45528494838",
+            "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
+            "run": "45619782379",
             "job": "windows-host",
-            "summarySha256": "f91539fbc371250b20c32c2d82415e4ab85d9105024f54f094025b7051fe0399",
+            "summarySha256": "35e379cc501decf18aea86972a7ac247a600e577e7eecaa4da26f107cd15a792",
             "receipts": {
-                "windows-attachment-6s36f6l7": "22beede25ae0de74eeaaeaf780fe447de872751f75deeb309a1793f182c13e2e",
-                "windows-build-id-installation-gt_oo083": "ac3960d2c5d539ab163b9276c267563baf1d26a3ae6500edc8d3997317261c72",
-                "windows-host-primitives-f9dpc9bi": "afdf303534c489c6f912d83da3b606304d82b9b4c169d51c5e50ea4f12e3e6bd"
+                "windows-attachment-8nhr7w7z": "4e484ddcea729587de395b116c754868af297c54c4260e80545132874fdb490a",
+                "windows-build-id-installation-eqi38zh_": "1e74342cdb474cbd8c440dc571ceaca19ce921fc7ceebbaf21d68097c63f4f54",
+                "windows-host-primitives-oel1f108": "8620b0a0d55edf5968b6c4ab1d79efe0b4a18bb3907f8551e5e88cc21a2dd675"
             },
             "sessions": 57,
             "suites": [
@@ -760,22 +760,22 @@
         "combined": {
             "counters": {
                 "LINE": {
-                    "covered": 29003,
-                    "missed": 812
+                    "covered": 29146,
+                    "missed": 830
                 },
                 "BRANCH": {
-                    "covered": 23123,
-                    "missed": 2801
+                    "covered": 23209,
+                    "missed": 2809
                 }
             },
             "sources": {
                 "ghidradwarfforge/dwarf/Dwarf5RangeLists.java": {
                     "LINE": {
-                        "covered": 94,
+                        "covered": 96,
                         "missed": 1
                     },
                     "BRANCH": {
-                        "covered": 53,
+                        "covered": 61,
                         "missed": 1
                     }
                 },
@@ -851,22 +851,22 @@
                 },
                 "ghidradwarfforge/dwarf/Dwarf5LocationLists.java": {
                     "LINE": {
-                        "covered": 119,
+                        "covered": 120,
                         "missed": 5
                     },
                     "BRANCH": {
-                        "covered": 63,
+                        "covered": 69,
                         "missed": 4
                     }
                 },
                 "ghidradwarfforge/output/ArtifactPairPublisher.java": {
                     "LINE": {
-                        "covered": 143,
-                        "missed": 2
+                        "covered": 88,
+                        "missed": 6
                     },
                     "BRANCH": {
-                        "covered": 58,
-                        "missed": 8
+                        "covered": 38,
+                        "missed": 6
                     }
                 },
                 "ghidradwarfforge/output/LinuxMetadataVisibility.java": {
@@ -941,12 +941,12 @@
                 },
                 "ghidradwarfforge/output/OutputPathPolicy.java": {
                     "LINE": {
-                        "covered": 33,
-                        "missed": 2
+                        "covered": 31,
+                        "missed": 0
                     },
                     "BRANCH": {
-                        "covered": 20,
-                        "missed": 6
+                        "covered": 18,
+                        "missed": 4
                     }
                 },
                 "ghidradwarfforge/output/WindowsFileMetadata.java": {
@@ -1101,12 +1101,12 @@
                 },
                 "ghidradwarfforge/output/CompanionArtifactPublisher.java": {
                     "LINE": {
-                        "covered": 155,
-                        "missed": 9
+                        "covered": 192,
+                        "missed": 10
                     },
                     "BRANCH": {
-                        "covered": 88,
-                        "missed": 4
+                        "covered": 110,
+                        "missed": 6
                     }
                 },
                 "ghidradwarfforge/output/LinuxFileMetadata.java": {
@@ -1449,13 +1449,23 @@
                         "missed": 6
                     }
                 },
+                "ghidradwarfforge/output/PublicationJournal.java": {
+                    "LINE": {
+                        "covered": 69,
+                        "missed": 6
+                    },
+                    "BRANCH": {
+                        "covered": 15,
+                        "missed": 3
+                    }
+                },
                 "ghidradwarfforge/output/ExportReport.java": {
                     "LINE": {
-                        "covered": 405,
+                        "covered": 418,
                         "missed": 0
                     },
                     "BRANCH": {
-                        "covered": 130,
+                        "covered": 134,
                         "missed": 2
                     }
                 },
@@ -1921,11 +1931,11 @@
                 },
                 "ghidradwarfforge/GhidraExportConsistency.java": {
                     "LINE": {
-                        "covered": 27,
+                        "covered": 31,
                         "missed": 0
                     },
                     "BRANCH": {
-                        "covered": 8,
+                        "covered": 10,
                         "missed": 2
                     }
                 },
@@ -2011,12 +2021,12 @@
                 },
                 "ghidradwarfforge/GhidraFunctionSymbols.java": {
                     "LINE": {
-                        "covered": 95,
+                        "covered": 108,
                         "missed": 4
                     },
                     "BRANCH": {
-                        "covered": 38,
-                        "missed": 0
+                        "covered": 51,
+                        "missed": 3
                     }
                 },
                 "ghidradwarfforge/RegisterDefinitionFlow.java": {
@@ -2881,8 +2891,8 @@
                 },
                 "ghidradwarfforge/firmware/GhidraFirmwareSession.java": {
                     "LINE": {
-                        "covered": 108,
-                        "missed": 9
+                        "covered": 106,
+                        "missed": 11
                     },
                     "BRANCH": {
                         "covered": 30,
@@ -2931,12 +2941,12 @@
                 },
                 "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": {
                     "LINE": {
-                        "covered": 1173,
-                        "missed": 33
+                        "covered": 1226,
+                        "missed": 40
                     },
                     "BRANCH": {
-                        "covered": 686,
-                        "missed": 56
+                        "covered": 718,
+                        "missed": 60
                     }
                 },
                 "ghidradwarfforge/nativeapi/LibDwarfProducer.java": {
@@ -3061,11 +3071,11 @@
                 },
                 "ghidradwarfforge/types/TypeGraph.java": {
                     "LINE": {
-                        "covered": 146,
+                        "covered": 156,
                         "missed": 0
                     },
                     "BRANCH": {
-                        "covered": 118,
+                        "covered": 124,
                         "missed": 0
                     }
                 },
@@ -3320,28 +3330,28 @@
                     }
                 }
             },
-            "productionClasses": 901,
-            "xmlSha256": "c82cebb702b4f380b267ef1c5e87f25d6e7e22794b4247f9c8827f741eea8b8a"
+            "productionClasses": 904,
+            "xmlSha256": "5a1b40a0201cdeee7960d40ea5f178690428cdb3d1a7525e4087d43b0eef71dd"
         },
         "javaexec": {
             "counters": {
                 "LINE": {
-                    "covered": 24583,
-                    "missed": 5232
+                    "covered": 24714,
+                    "missed": 5262
                 },
                 "BRANCH": {
-                    "covered": 20552,
-                    "missed": 5372
+                    "covered": 20625,
+                    "missed": 5393
                 }
             },
             "sources": {
                 "ghidradwarfforge/dwarf/Dwarf5RangeLists.java": {
                     "LINE": {
-                        "covered": 94,
+                        "covered": 96,
                         "missed": 1
                     },
                     "BRANCH": {
-                        "covered": 53,
+                        "covered": 61,
                         "missed": 1
                     }
                 },
@@ -3417,22 +3427,22 @@
                 },
                 "ghidradwarfforge/dwarf/Dwarf5LocationLists.java": {
                     "LINE": {
-                        "covered": 119,
+                        "covered": 120,
                         "missed": 5
                     },
                     "BRANCH": {
-                        "covered": 62,
+                        "covered": 68,
                         "missed": 5
                     }
                 },
                 "ghidradwarfforge/output/ArtifactPairPublisher.java": {
                     "LINE": {
-                        "covered": 143,
-                        "missed": 2
+                        "covered": 88,
+                        "missed": 6
                     },
                     "BRANCH": {
-                        "covered": 58,
-                        "missed": 8
+                        "covered": 38,
+                        "missed": 6
                     }
                 },
                 "ghidradwarfforge/output/LinuxMetadataVisibility.java": {
@@ -3507,12 +3517,12 @@
                 },
                 "ghidradwarfforge/output/OutputPathPolicy.java": {
                     "LINE": {
-                        "covered": 33,
-                        "missed": 2
+                        "covered": 31,
+                        "missed": 0
                     },
                     "BRANCH": {
-                        "covered": 18,
-                        "missed": 8
+                        "covered": 16,
+                        "missed": 6
                     }
                 },
                 "ghidradwarfforge/output/WindowsFileMetadata.java": {
@@ -3667,12 +3677,12 @@
                 },
                 "ghidradwarfforge/output/CompanionArtifactPublisher.java": {
                     "LINE": {
-                        "covered": 153,
-                        "missed": 11
+                        "covered": 192,
+                        "missed": 10
                     },
                     "BRANCH": {
-                        "covered": 88,
-                        "missed": 4
+                        "covered": 110,
+                        "missed": 6
                     }
                 },
                 "ghidradwarfforge/output/LinuxFileMetadata.java": {
@@ -4015,13 +4025,23 @@
                         "missed": 9
                     }
                 },
+                "ghidradwarfforge/output/PublicationJournal.java": {
+                    "LINE": {
+                        "covered": 69,
+                        "missed": 6
+                    },
+                    "BRANCH": {
+                        "covered": 15,
+                        "missed": 3
+                    }
+                },
                 "ghidradwarfforge/output/ExportReport.java": {
                     "LINE": {
-                        "covered": 405,
+                        "covered": 418,
                         "missed": 0
                     },
                     "BRANCH": {
-                        "covered": 129,
+                        "covered": 133,
                         "missed": 3
                     }
                 },
@@ -4487,11 +4507,11 @@
                 },
                 "ghidradwarfforge/GhidraExportConsistency.java": {
                     "LINE": {
-                        "covered": 26,
+                        "covered": 30,
                         "missed": 1
                     },
                     "BRANCH": {
-                        "covered": 8,
+                        "covered": 10,
                         "missed": 2
                     }
                 },
@@ -4577,12 +4597,12 @@
                 },
                 "ghidradwarfforge/GhidraFunctionSymbols.java": {
                     "LINE": {
-                        "covered": 95,
+                        "covered": 108,
                         "missed": 4
                     },
                     "BRANCH": {
-                        "covered": 38,
-                        "missed": 0
+                        "covered": 51,
+                        "missed": 3
                     }
                 },
                 "ghidradwarfforge/RegisterDefinitionFlow.java": {
@@ -5497,12 +5517,12 @@
                 },
                 "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": {
                     "LINE": {
-                        "covered": 150,
-                        "missed": 1056
+                        "covered": 187,
+                        "missed": 1079
                     },
                     "BRANCH": {
-                        "covered": 90,
-                        "missed": 652
+                        "covered": 109,
+                        "missed": 669
                     }
                 },
                 "ghidradwarfforge/nativeapi/LibDwarfProducer.java": {
@@ -5627,11 +5647,11 @@
                 },
                 "ghidradwarfforge/types/TypeGraph.java": {
                     "LINE": {
-                        "covered": 146,
+                        "covered": 156,
                         "missed": 0
                     },
                     "BRANCH": {
-                        "covered": 118,
+                        "covered": 124,
                         "missed": 0
                     }
                 },
@@ -5886,29 +5906,29 @@
                     }
                 }
             },
-            "productionClasses": 901,
-            "xmlSha256": "6ff1fd4a60869037879bd5c1ca2099e12c953b100e61d068a7c60499880a01d9"
+            "productionClasses": 904,
+            "xmlSha256": "d27b26174026fdec03a7070dc89f31c592ea649441d86ec9abe74cafdc980988"
         },
         "headless": {
             "counters": {
                 "LINE": {
-                    "covered": 18245,
-                    "missed": 11570
+                    "covered": 18347,
+                    "missed": 11629
                 },
                 "BRANCH": {
-                    "covered": 11944,
-                    "missed": 13980
+                    "covered": 12002,
+                    "missed": 14016
                 }
             },
             "sources": {
                 "ghidradwarfforge/dwarf/Dwarf5RangeLists.java": {
                     "LINE": {
-                        "covered": 89,
+                        "covered": 91,
                         "missed": 6
                     },
                     "BRANCH": {
-                        "covered": 45,
-                        "missed": 9
+                        "covered": 50,
+                        "missed": 12
                     }
                 },
                 "ghidradwarfforge/dwarf/SyntheticSourceRelocation.java": {
@@ -5983,22 +6003,22 @@
                 },
                 "ghidradwarfforge/dwarf/Dwarf5LocationLists.java": {
                     "LINE": {
-                        "covered": 111,
+                        "covered": 112,
                         "missed": 13
                     },
                     "BRANCH": {
-                        "covered": 51,
-                        "missed": 16
+                        "covered": 54,
+                        "missed": 19
                     }
                 },
                 "ghidradwarfforge/output/ArtifactPairPublisher.java": {
                     "LINE": {
-                        "covered": 90,
-                        "missed": 55
+                        "covered": 29,
+                        "missed": 65
                     },
                     "BRANCH": {
-                        "covered": 31,
-                        "missed": 35
+                        "covered": 12,
+                        "missed": 32
                     }
                 },
                 "ghidradwarfforge/output/LinuxMetadataVisibility.java": {
@@ -6073,12 +6093,12 @@
                 },
                 "ghidradwarfforge/output/OutputPathPolicy.java": {
                     "LINE": {
-                        "covered": 26,
-                        "missed": 9
+                        "covered": 24,
+                        "missed": 7
                     },
                     "BRANCH": {
-                        "covered": 14,
-                        "missed": 12
+                        "covered": 12,
+                        "missed": 10
                     }
                 },
                 "ghidradwarfforge/output/WindowsFileMetadata.java": {
@@ -6233,12 +6253,12 @@
                 },
                 "ghidradwarfforge/output/CompanionArtifactPublisher.java": {
                     "LINE": {
-                        "covered": 115,
-                        "missed": 49
+                        "covered": 145,
+                        "missed": 57
                     },
                     "BRANCH": {
-                        "covered": 56,
-                        "missed": 36
+                        "covered": 71,
+                        "missed": 45
                     }
                 },
                 "ghidradwarfforge/output/LinuxFileMetadata.java": {
@@ -6581,14 +6601,24 @@
                         "missed": 60
                     }
                 },
+                "ghidradwarfforge/output/PublicationJournal.java": {
+                    "LINE": {
+                        "covered": 63,
+                        "missed": 12
+                    },
+                    "BRANCH": {
+                        "covered": 12,
+                        "missed": 6
+                    }
+                },
                 "ghidradwarfforge/output/ExportReport.java": {
                     "LINE": {
-                        "covered": 240,
-                        "missed": 165
+                        "covered": 239,
+                        "missed": 179
                     },
                     "BRANCH": {
                         "covered": 68,
-                        "missed": 64
+                        "missed": 68
                     }
                 },
                 "ghidradwarfforge/output/WindowsAttachmentPrivilege.java": {
@@ -7037,8 +7067,8 @@
                         "missed": 0
                     },
                     "BRANCH": {
-                        "covered": 16,
-                        "missed": 2
+                        "covered": 17,
+                        "missed": 1
                     }
                 },
                 "ghidradwarfforge/GhidraImageBase.java": {
@@ -7053,12 +7083,12 @@
                 },
                 "ghidradwarfforge/GhidraExportConsistency.java": {
                     "LINE": {
-                        "covered": 25,
-                        "missed": 2
+                        "covered": 28,
+                        "missed": 3
                     },
                     "BRANCH": {
-                        "covered": 5,
-                        "missed": 5
+                        "covered": 6,
+                        "missed": 6
                     }
                 },
                 "ghidradwarfforge/GhidraCompilerCallPolicy.java": {
@@ -7143,12 +7173,12 @@
                 },
                 "ghidradwarfforge/GhidraFunctionSymbols.java": {
                     "LINE": {
-                        "covered": 72,
-                        "missed": 27
+                        "covered": 79,
+                        "missed": 33
                     },
                     "BRANCH": {
-                        "covered": 27,
-                        "missed": 11
+                        "covered": 34,
+                        "missed": 20
                     }
                 },
                 "ghidradwarfforge/RegisterDefinitionFlow.java": {
@@ -8013,8 +8043,8 @@
                 },
                 "ghidradwarfforge/firmware/GhidraFirmwareSession.java": {
                     "LINE": {
-                        "covered": 108,
-                        "missed": 9
+                        "covered": 106,
+                        "missed": 11
                     },
                     "BRANCH": {
                         "covered": 30,
@@ -8063,12 +8093,12 @@
                 },
                 "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": {
                     "LINE": {
-                        "covered": 1119,
-                        "missed": 87
+                        "covered": 1172,
+                        "missed": 94
                     },
                     "BRANCH": {
-                        "covered": 578,
-                        "missed": 164
+                        "covered": 608,
+                        "missed": 170
                     }
                 },
                 "ghidradwarfforge/nativeapi/LibDwarfProducer.java": {
@@ -8193,12 +8223,12 @@
                 },
                 "ghidradwarfforge/types/TypeGraph.java": {
                     "LINE": {
-                        "covered": 117,
-                        "missed": 29
+                        "covered": 126,
+                        "missed": 30
                     },
                     "BRANCH": {
-                        "covered": 66,
-                        "missed": 52
+                        "covered": 71,
+                        "missed": 53
                     }
                 },
                 "ghidradwarfforge/types/GlobalScopeNames.java": {
@@ -8452,29 +8482,29 @@
                     }
                 }
             },
-            "productionClasses": 901,
-            "xmlSha256": "313abb00e5feeb5d79660180b2aff279268cbaed87f291bfd3fe3639ddaf25d0"
+            "productionClasses": 904,
+            "xmlSha256": "649860304d9edf54332088bc1a2dfc59c828006b60338337a79b47ef8ae79ef2"
         },
         "native-java": {
             "counters": {
                 "LINE": {
-                    "covered": 17407,
-                    "missed": 12408
+                    "covered": 17496,
+                    "missed": 12480
                 },
                 "BRANCH": {
-                    "covered": 9605,
-                    "missed": 16319
+                    "covered": 9663,
+                    "missed": 16355
                 }
             },
             "sources": {
                 "ghidradwarfforge/dwarf/Dwarf5RangeLists.java": {
                     "LINE": {
-                        "covered": 80,
+                        "covered": 82,
                         "missed": 15
                     },
                     "BRANCH": {
-                        "covered": 38,
-                        "missed": 16
+                        "covered": 41,
+                        "missed": 21
                     }
                 },
                 "ghidradwarfforge/dwarf/SyntheticSourceRelocation.java": {
@@ -8549,22 +8579,22 @@
                 },
                 "ghidradwarfforge/dwarf/Dwarf5LocationLists.java": {
                     "LINE": {
-                        "covered": 110,
+                        "covered": 111,
                         "missed": 14
                     },
                     "BRANCH": {
-                        "covered": 55,
-                        "missed": 12
+                        "covered": 57,
+                        "missed": 16
                     }
                 },
                 "ghidradwarfforge/output/ArtifactPairPublisher.java": {
                     "LINE": {
-                        "covered": 102,
-                        "missed": 43
+                        "covered": 26,
+                        "missed": 68
                     },
                     "BRANCH": {
-                        "covered": 31,
-                        "missed": 35
+                        "covered": 11,
+                        "missed": 33
                     }
                 },
                 "ghidradwarfforge/output/LinuxMetadataVisibility.java": {
@@ -8639,12 +8669,12 @@
                 },
                 "ghidradwarfforge/output/OutputPathPolicy.java": {
                     "LINE": {
-                        "covered": 27,
-                        "missed": 8
+                        "covered": 25,
+                        "missed": 6
                     },
                     "BRANCH": {
-                        "covered": 14,
-                        "missed": 12
+                        "covered": 12,
+                        "missed": 10
                     }
                 },
                 "ghidradwarfforge/output/WindowsFileMetadata.java": {
@@ -8799,12 +8829,12 @@
                 },
                 "ghidradwarfforge/output/CompanionArtifactPublisher.java": {
                     "LINE": {
-                        "covered": 99,
-                        "missed": 65
+                        "covered": 129,
+                        "missed": 73
                     },
                     "BRANCH": {
-                        "covered": 46,
-                        "missed": 46
+                        "covered": 65,
+                        "missed": 51
                     }
                 },
                 "ghidradwarfforge/output/LinuxFileMetadata.java": {
@@ -9147,14 +9177,24 @@
                         "missed": 27
                     }
                 },
+                "ghidradwarfforge/output/PublicationJournal.java": {
+                    "LINE": {
+                        "covered": 61,
+                        "missed": 14
+                    },
+                    "BRANCH": {
+                        "covered": 12,
+                        "missed": 6
+                    }
+                },
                 "ghidradwarfforge/output/ExportReport.java": {
                     "LINE": {
                         "covered": 239,
-                        "missed": 166
+                        "missed": 179
                     },
                     "BRANCH": {
                         "covered": 63,
-                        "missed": 69
+                        "missed": 73
                     }
                 },
                 "ghidradwarfforge/output/WindowsAttachmentPrivilege.java": {
@@ -9599,12 +9639,12 @@
                 },
                 "ghidradwarfforge/GhidraProjectOutputProtection.java": {
                     "LINE": {
-                        "covered": 0,
-                        "missed": 31
+                        "covered": 2,
+                        "missed": 29
                     },
                     "BRANCH": {
-                        "covered": 0,
-                        "missed": 18
+                        "covered": 2,
+                        "missed": 16
                     }
                 },
                 "ghidradwarfforge/GhidraImageBase.java": {
@@ -9619,12 +9659,12 @@
                 },
                 "ghidradwarfforge/GhidraExportConsistency.java": {
                     "LINE": {
-                        "covered": 25,
-                        "missed": 2
+                        "covered": 28,
+                        "missed": 3
                     },
                     "BRANCH": {
-                        "covered": 5,
-                        "missed": 5
+                        "covered": 6,
+                        "missed": 6
                     }
                 },
                 "ghidradwarfforge/GhidraCompilerCallPolicy.java": {
@@ -9709,12 +9749,12 @@
                 },
                 "ghidradwarfforge/GhidraFunctionSymbols.java": {
                     "LINE": {
-                        "covered": 69,
-                        "missed": 30
+                        "covered": 76,
+                        "missed": 36
                     },
                     "BRANCH": {
-                        "covered": 22,
-                        "missed": 16
+                        "covered": 29,
+                        "missed": 25
                     }
                 },
                 "ghidradwarfforge/RegisterDefinitionFlow.java": {
@@ -10629,12 +10669,12 @@
                 },
                 "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": {
                     "LINE": {
-                        "covered": 1090,
-                        "missed": 116
+                        "covered": 1142,
+                        "missed": 124
                     },
                     "BRANCH": {
-                        "covered": 608,
-                        "missed": 134
+                        "covered": 637,
+                        "missed": 141
                     }
                 },
                 "ghidradwarfforge/nativeapi/LibDwarfProducer.java": {
@@ -10759,12 +10799,12 @@
                 },
                 "ghidradwarfforge/types/TypeGraph.java": {
                     "LINE": {
-                        "covered": 123,
-                        "missed": 23
+                        "covered": 132,
+                        "missed": 24
                     },
                     "BRANCH": {
-                        "covered": 63,
-                        "missed": 55
+                        "covered": 68,
+                        "missed": 56
                     }
                 },
                 "ghidradwarfforge/types/GlobalScopeNames.java": {
@@ -11018,29 +11058,29 @@
                     }
                 }
             },
-            "productionClasses": 901,
-            "xmlSha256": "38ac1114a66d8f06de9f0cc79bb2742d8329f50be88b360e728df170fa6b0bc6"
+            "productionClasses": 904,
+            "xmlSha256": "777131bb7154c0097931402fd055aec7d826743026ee60e100f138951d36726a"
         },
         "windows": {
             "counters": {
                 "LINE": {
                     "covered": 5632,
-                    "missed": 24183
+                    "missed": 24344
                 },
                 "BRANCH": {
                     "covered": 2991,
-                    "missed": 22933
+                    "missed": 23027
                 }
             },
             "sources": {
                 "ghidradwarfforge/dwarf/Dwarf5RangeLists.java": {
                     "LINE": {
                         "covered": 0,
-                        "missed": 95
+                        "missed": 97
                     },
                     "BRANCH": {
                         "covered": 0,
-                        "missed": 54
+                        "missed": 62
                     }
                 },
                 "ghidradwarfforge/dwarf/SyntheticSourceRelocation.java": {
@@ -11116,21 +11156,21 @@
                 "ghidradwarfforge/dwarf/Dwarf5LocationLists.java": {
                     "LINE": {
                         "covered": 0,
-                        "missed": 124
+                        "missed": 125
                     },
                     "BRANCH": {
                         "covered": 0,
-                        "missed": 67
+                        "missed": 73
                     }
                 },
                 "ghidradwarfforge/output/ArtifactPairPublisher.java": {
                     "LINE": {
                         "covered": 0,
-                        "missed": 145
+                        "missed": 94
                     },
                     "BRANCH": {
                         "covered": 0,
-                        "missed": 66
+                        "missed": 44
                     }
                 },
                 "ghidradwarfforge/output/LinuxMetadataVisibility.java": {
@@ -11206,11 +11246,11 @@
                 "ghidradwarfforge/output/OutputPathPolicy.java": {
                     "LINE": {
                         "covered": 0,
-                        "missed": 35
+                        "missed": 31
                     },
                     "BRANCH": {
                         "covered": 0,
-                        "missed": 26
+                        "missed": 22
                     }
                 },
                 "ghidradwarfforge/output/WindowsFileMetadata.java": {
@@ -11366,11 +11406,11 @@
                 "ghidradwarfforge/output/CompanionArtifactPublisher.java": {
                     "LINE": {
                         "covered": 0,
-                        "missed": 164
+                        "missed": 202
                     },
                     "BRANCH": {
                         "covered": 0,
-                        "missed": 92
+                        "missed": 116
                     }
                 },
                 "ghidradwarfforge/output/LinuxFileMetadata.java": {
@@ -11713,14 +11753,24 @@
                         "missed": 28
                     }
                 },
+                "ghidradwarfforge/output/PublicationJournal.java": {
+                    "LINE": {
+                        "covered": 0,
+                        "missed": 75
+                    },
+                    "BRANCH": {
+                        "covered": 0,
+                        "missed": 18
+                    }
+                },
                 "ghidradwarfforge/output/ExportReport.java": {
                     "LINE": {
                         "covered": 24,
-                        "missed": 381
+                        "missed": 394
                     },
                     "BRANCH": {
                         "covered": 21,
-                        "missed": 111
+                        "missed": 115
                     }
                 },
                 "ghidradwarfforge/output/WindowsAttachmentPrivilege.java": {
@@ -12186,11 +12236,11 @@
                 "ghidradwarfforge/GhidraExportConsistency.java": {
                     "LINE": {
                         "covered": 0,
-                        "missed": 27
+                        "missed": 31
                     },
                     "BRANCH": {
                         "covered": 0,
-                        "missed": 10
+                        "missed": 12
                     }
                 },
                 "ghidradwarfforge/GhidraCompilerCallPolicy.java": {
@@ -12276,11 +12326,11 @@
                 "ghidradwarfforge/GhidraFunctionSymbols.java": {
                     "LINE": {
                         "covered": 0,
-                        "missed": 99
+                        "missed": 112
                     },
                     "BRANCH": {
                         "covered": 0,
-                        "missed": 38
+                        "missed": 54
                     }
                 },
                 "ghidradwarfforge/RegisterDefinitionFlow.java": {
@@ -13196,11 +13246,11 @@
                 "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": {
                     "LINE": {
                         "covered": 18,
-                        "missed": 1188
+                        "missed": 1248
                     },
                     "BRANCH": {
                         "covered": 16,
-                        "missed": 726
+                        "missed": 762
                     }
                 },
                 "ghidradwarfforge/nativeapi/LibDwarfProducer.java": {
@@ -13326,11 +13376,11 @@
                 "ghidradwarfforge/types/TypeGraph.java": {
                     "LINE": {
                         "covered": 5,
-                        "missed": 141
+                        "missed": 151
                     },
                     "BRANCH": {
                         "covered": 2,
-                        "missed": 116
+                        "missed": 122
                     }
                 },
                 "ghidradwarfforge/types/GlobalScopeNames.java": {
@@ -13584,21 +13634,21 @@
                     }
                 }
             },
-            "productionClasses": 901,
-            "xmlSha256": "62accea1c7f4a89832119c65087cc8925547f6c9570cc7df5df3ab9d98dc8942"
+            "productionClasses": 904,
+            "xmlSha256": "7a1fc7476af70ccf1706950c7d5b1eba5b7bdb5ecc6d7c1bead63de97603f8fd"
         }
     },
     "overall": {
         "LINE": {
-            "covered": 29003,
-            "missed": 812,
-            "percent": "97.3",
+            "covered": 29146,
+            "missed": 830,
+            "percent": "97.2",
             "target": 85,
             "targetMet": true
         },
         "BRANCH": {
-            "covered": 23123,
-            "missed": 2801,
+            "covered": 23209,
+            "missed": 2809,
             "percent": "89.2",
             "target": 80,
             "targetMet": true
@@ -13609,15 +13659,15 @@
             "sources": 152,
             "metrics": {
                 "LINE": {
-                    "covered": 18746,
-                    "missed": 480,
+                    "covered": 18827,
+                    "missed": 489,
                     "percent": "97.5",
                     "target": 95,
                     "targetMet": true
                 },
                 "BRANCH": {
-                    "covered": 16898,
-                    "missed": 1874,
+                    "covered": 16965,
+                    "missed": 1881,
                     "percent": "90.0",
                     "target": 90,
                     "targetMet": true
@@ -13625,19 +13675,19 @@
             }
         },
         "fileTransactionsAndValidation": {
-            "sources": 61,
+            "sources": 62,
             "metrics": {
                 "LINE": {
-                    "covered": 6522,
-                    "missed": 155,
-                    "percent": "97.7",
+                    "covered": 6584,
+                    "missed": 164,
+                    "percent": "97.6",
                     "target": 95,
                     "targetMet": true
                 },
                 "BRANCH": {
-                    "covered": 3831,
-                    "missed": 419,
-                    "percent": "90.1",
+                    "covered": 3850,
+                    "missed": 420,
+                    "percent": "90.2",
                     "target": 90,
                     "targetMet": true
                 }
@@ -13665,95 +13715,22 @@
     },
     "changedCode": {
         "schema": 1,
-        "baseCommit": "d15d021f7cdc2269f4d4fe91f654c99324df9123",
-        "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
+        "baseCommit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
+        "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
         "scope": "Added or modified executable production Java lines; all branches on those lines",
         "exceptionHandling": "JaCoCo excludes catch edges; review failure and recovery assertions separately",
         "files": {
-            "ghidradwarfforge/elf/ElfImage.java": {
-                "changedLines": [
-                    24,
-                    49,
-                    54,
-                    55,
-                    91,
-                    92,
-                    93,
-                    154,
-                    155,
-                    156,
-                    157,
-                    158,
-                    159,
-                    295,
-                    298,
-                    299,
-                    355,
-                    358,
-                    359,
-                    473,
-                    474,
-                    475,
-                    476,
-                    477,
-                    478,
-                    479,
-                    480,
-                    481,
-                    482,
-                    483
-                ],
-                "executableLines": [
-                    54,
-                    55,
-                    91,
-                    92,
-                    154,
-                    159,
-                    295,
-                    298,
-                    355,
-                    358,
-                    359,
-                    474,
-                    475,
-                    477,
-                    478,
-                    479,
-                    480
-                ],
+            "ghidradwarfforge/CompositeValueFlow.java": {
+                "changedLines": [],
+                "executableLines": [],
                 "uncoveredLines": [],
                 "linesWithUncoveredBranches": [],
                 "LINE": {
-                    "covered": 17,
+                    "covered": 0,
                     "missed": 0,
                     "target": 90,
-                    "percent": "100.0",
-                    "targetMet": true
-                },
-                "BRANCH": {
-                    "covered": 22,
-                    "missed": 0,
-                    "target": 85,
-                    "percent": "100.0",
-                    "targetMet": true
-                }
-            },
-            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": {
-                "changedLines": [
-                    550
-                ],
-                "executableLines": [
-                    550
-                ],
-                "uncoveredLines": [],
-                "linesWithUncoveredBranches": [],
-                "LINE": {
-                    "covered": 1,
-                    "missed": 0,
-                    "target": 90,
-                    "percent": "100.0",
-                    "targetMet": true
+                    "percent": null,
+                    "targetMet": null
                 },
                 "BRANCH": {
                     "covered": 0,
@@ -13762,21 +13739,1367 @@
                     "percent": null,
                     "targetMet": null
                 }
+            },
+            "ghidradwarfforge/GhidraExportConsistency.java": {
+                "changedLines": [
+                    15,
+                    19,
+                    22,
+                    32,
+                    38,
+                    39,
+                    46,
+                    47,
+                    48
+                ],
+                "executableLines": [
+                    19,
+                    22,
+                    32,
+                    38,
+                    46,
+                    47
+                ],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 6,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": "100.0",
+                    "targetMet": true
+                },
+                "BRANCH": {
+                    "covered": 2,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": "100.0",
+                    "targetMet": true
+                }
+            },
+            "ghidradwarfforge/GhidraFunctionSymbols.java": {
+                "changedLines": [
+                    30,
+                    31,
+                    98,
+                    101,
+                    102,
+                    103,
+                    104,
+                    105,
+                    113,
+                    121,
+                    122,
+                    123,
+                    124,
+                    161,
+                    162,
+                    163,
+                    164,
+                    165,
+                    166,
+                    167,
+                    168,
+                    169,
+                    170,
+                    171,
+                    172,
+                    173,
+                    174,
+                    175,
+                    176
+                ],
+                "executableLines": [
+                    30,
+                    31,
+                    98,
+                    101,
+                    102,
+                    104,
+                    105,
+                    113,
+                    121,
+                    122,
+                    123,
+                    162,
+                    163,
+                    164,
+                    169,
+                    170,
+                    171,
+                    172,
+                    173,
+                    174
+                ],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [
+                    170,
+                    173
+                ],
+                "LINE": {
+                    "covered": 20,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": "100.0",
+                    "targetMet": true
+                },
+                "BRANCH": {
+                    "covered": 15,
+                    "missed": 3,
+                    "target": 85,
+                    "percent": "83.3",
+                    "targetMet": false
+                }
+            },
+            "ghidradwarfforge/GhidraProjectOutputProtection.java": {
+                "changedLines": [
+                    11
+                ],
+                "executableLines": [],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": null,
+                    "targetMet": null
+                },
+                "BRANCH": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": null,
+                    "targetMet": null
+                }
+            },
+            "ghidradwarfforge/annotations/EquateCatalog.java": {
+                "changedLines": [],
+                "executableLines": [],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": null,
+                    "targetMet": null
+                },
+                "BRANCH": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": null,
+                    "targetMet": null
+                }
+            },
+            "ghidradwarfforge/dwarf/Dwarf5LineTable.java": {
+                "changedLines": [
+                    292
+                ],
+                "executableLines": [],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": null,
+                    "targetMet": null
+                },
+                "BRANCH": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": null,
+                    "targetMet": null
+                }
+            },
+            "ghidradwarfforge/dwarf/Dwarf5LocationLists.java": {
+                "changedLines": [
+                    23,
+                    140,
+                    141,
+                    142,
+                    143,
+                    144,
+                    145
+                ],
+                "executableLines": [
+                    140,
+                    141,
+                    142,
+                    143,
+                    144,
+                    145
+                ],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 6,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": "100.0",
+                    "targetMet": true
+                },
+                "BRANCH": {
+                    "covered": 8,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": "100.0",
+                    "targetMet": true
+                }
+            },
+            "ghidradwarfforge/dwarf/Dwarf5RangeLists.java": {
+                "changedLines": [
+                    19,
+                    160,
+                    161,
+                    163,
+                    164
+                ],
+                "executableLines": [
+                    160,
+                    161,
+                    163,
+                    164
+                ],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 4,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": "100.0",
+                    "targetMet": true
+                },
+                "BRANCH": {
+                    "covered": 8,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": "100.0",
+                    "targetMet": true
+                }
+            },
+            "ghidradwarfforge/firmware/GhidraFirmwareSession.java": {
+                "changedLines": [],
+                "executableLines": [],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": null,
+                    "targetMet": null
+                },
+                "BRANCH": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": null,
+                    "targetMet": null
+                }
+            },
+            "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java": {
+                "changedLines": [
+                    338,
+                    352,
+                    353,
+                    354,
+                    355,
+                    356,
+                    357,
+                    358,
+                    359,
+                    360,
+                    361,
+                    362,
+                    363,
+                    364,
+                    365,
+                    366,
+                    367,
+                    368,
+                    369,
+                    370,
+                    371,
+                    372,
+                    373,
+                    470,
+                    471,
+                    472,
+                    478,
+                    502,
+                    503,
+                    504,
+                    521,
+                    522,
+                    523,
+                    524,
+                    525,
+                    526,
+                    527,
+                    530,
+                    531,
+                    532,
+                    536,
+                    537,
+                    538,
+                    542,
+                    544,
+                    545,
+                    546,
+                    547,
+                    548,
+                    549,
+                    550,
+                    561,
+                    562,
+                    563,
+                    566,
+                    572,
+                    573,
+                    574,
+                    575,
+                    576,
+                    618,
+                    622,
+                    627,
+                    650,
+                    662,
+                    663,
+                    664,
+                    695,
+                    696,
+                    697,
+                    698,
+                    699,
+                    700,
+                    701,
+                    702,
+                    703,
+                    704,
+                    705,
+                    706,
+                    707,
+                    708,
+                    709,
+                    710,
+                    711,
+                    712,
+                    713,
+                    714,
+                    715,
+                    718,
+                    720,
+                    721,
+                    722,
+                    723,
+                    724,
+                    725,
+                    726,
+                    733,
+                    734,
+                    735,
+                    736,
+                    816,
+                    817,
+                    818,
+                    819,
+                    820,
+                    821,
+                    822,
+                    823,
+                    903,
+                    972,
+                    1178,
+                    1179,
+                    1180,
+                    1181,
+                    1182,
+                    1183,
+                    1184,
+                    1185,
+                    1778,
+                    1924,
+                    1925,
+                    1926,
+                    1927,
+                    1928,
+                    1929,
+                    1930,
+                    1931,
+                    1932,
+                    1933,
+                    1934,
+                    1935,
+                    1936,
+                    1937,
+                    1938,
+                    1939,
+                    1940,
+                    1941,
+                    1942,
+                    1943,
+                    1944,
+                    1945,
+                    1946
+                ],
+                "executableLines": [
+                    359,
+                    360,
+                    361,
+                    362,
+                    363,
+                    364,
+                    365,
+                    366,
+                    367,
+                    371,
+                    470,
+                    502,
+                    521,
+                    530,
+                    531,
+                    532,
+                    536,
+                    537,
+                    538,
+                    544,
+                    545,
+                    546,
+                    547,
+                    548,
+                    549,
+                    550,
+                    561,
+                    562,
+                    563,
+                    566,
+                    572,
+                    573,
+                    574,
+                    576,
+                    618,
+                    622,
+                    627,
+                    650,
+                    662,
+                    663,
+                    664,
+                    695,
+                    696,
+                    697,
+                    698,
+                    699,
+                    700,
+                    701,
+                    702,
+                    703,
+                    704,
+                    705,
+                    707,
+                    708,
+                    709,
+                    710,
+                    712,
+                    713,
+                    715,
+                    720,
+                    721,
+                    722,
+                    723,
+                    724,
+                    733,
+                    734,
+                    735,
+                    736,
+                    816,
+                    817,
+                    818,
+                    819,
+                    820,
+                    821,
+                    822,
+                    903,
+                    972,
+                    1179,
+                    1180,
+                    1185,
+                    1778,
+                    1926,
+                    1927,
+                    1928,
+                    1929,
+                    1930,
+                    1931,
+                    1932,
+                    1933,
+                    1934,
+                    1935,
+                    1936,
+                    1937,
+                    1938,
+                    1939,
+                    1940,
+                    1941,
+                    1942,
+                    1943,
+                    1944,
+                    1945,
+                    1946
+                ],
+                "uncoveredLines": [
+                    502,
+                    521,
+                    574,
+                    724,
+                    733,
+                    734,
+                    735
+                ],
+                "linesWithUncoveredBranches": [
+                    532,
+                    573,
+                    709,
+                    710,
+                    723,
+                    1944
+                ],
+                "LINE": {
+                    "covered": 95,
+                    "missed": 7,
+                    "target": 90,
+                    "percent": "93.1",
+                    "targetMet": true
+                },
+                "BRANCH": {
+                    "covered": 62,
+                    "missed": 6,
+                    "target": 85,
+                    "percent": "91.2",
+                    "targetMet": true
+                }
+            },
+            "ghidradwarfforge/output/ArtifactPairPublisher.java": {
+                "changedLines": [
+                    11,
+                    12,
+                    38,
+                    45,
+                    48,
+                    49,
+                    50,
+                    51,
+                    52,
+                    53,
+                    54,
+                    55,
+                    56,
+                    57,
+                    58,
+                    59,
+                    62,
+                    63,
+                    66,
+                    72,
+                    77,
+                    80,
+                    81,
+                    84,
+                    85,
+                    86,
+                    89,
+                    90,
+                    100,
+                    102,
+                    103,
+                    104,
+                    105,
+                    106,
+                    107,
+                    108,
+                    109,
+                    110,
+                    111,
+                    112,
+                    113,
+                    114,
+                    115,
+                    116,
+                    117,
+                    118,
+                    119,
+                    120,
+                    121,
+                    122,
+                    123,
+                    124,
+                    125,
+                    126,
+                    127,
+                    128,
+                    129,
+                    130,
+                    132,
+                    134,
+                    135,
+                    136,
+                    137,
+                    138,
+                    139,
+                    140,
+                    141,
+                    144,
+                    145,
+                    146,
+                    147,
+                    148,
+                    149,
+                    154,
+                    155,
+                    156,
+                    157,
+                    158
+                ],
+                "executableLines": [
+                    38,
+                    45,
+                    50,
+                    51,
+                    52,
+                    53,
+                    54,
+                    55,
+                    62,
+                    63,
+                    66,
+                    72,
+                    77,
+                    81,
+                    86,
+                    100,
+                    102,
+                    103,
+                    104,
+                    106,
+                    107,
+                    108,
+                    109,
+                    110,
+                    111,
+                    113,
+                    114,
+                    115,
+                    123,
+                    124,
+                    125,
+                    126,
+                    127,
+                    128,
+                    129,
+                    132,
+                    135,
+                    136,
+                    137,
+                    140,
+                    141,
+                    147,
+                    148,
+                    149,
+                    155,
+                    156,
+                    157
+                ],
+                "uncoveredLines": [
+                    77,
+                    129,
+                    156
+                ],
+                "linesWithUncoveredBranches": [
+                    63,
+                    128
+                ],
+                "LINE": {
+                    "covered": 44,
+                    "missed": 3,
+                    "target": 90,
+                    "percent": "93.6",
+                    "targetMet": true
+                },
+                "BRANCH": {
+                    "covered": 22,
+                    "missed": 4,
+                    "target": 85,
+                    "percent": "84.6",
+                    "targetMet": false
+                }
+            },
+            "ghidradwarfforge/output/CompanionArtifactPublisher.java": {
+                "changedLines": [
+                    15,
+                    16,
+                    35,
+                    36,
+                    37,
+                    38,
+                    39,
+                    40,
+                    41,
+                    42,
+                    83,
+                    84,
+                    90,
+                    91,
+                    92,
+                    93,
+                    94,
+                    95,
+                    96,
+                    97,
+                    98,
+                    99,
+                    100,
+                    101,
+                    102,
+                    105,
+                    106,
+                    107,
+                    108,
+                    109,
+                    110,
+                    111,
+                    112,
+                    114,
+                    115,
+                    116,
+                    117,
+                    118,
+                    119,
+                    120,
+                    121,
+                    122,
+                    123,
+                    124,
+                    125,
+                    126,
+                    127,
+                    129,
+                    132,
+                    135,
+                    136,
+                    137,
+                    141,
+                    142,
+                    147,
+                    153,
+                    168,
+                    169,
+                    170,
+                    171,
+                    172,
+                    173,
+                    174,
+                    175,
+                    176,
+                    177,
+                    178,
+                    179,
+                    180,
+                    181,
+                    182,
+                    183,
+                    184,
+                    187,
+                    190,
+                    192,
+                    194,
+                    197,
+                    198,
+                    199,
+                    200,
+                    201,
+                    203,
+                    208,
+                    209,
+                    210,
+                    211,
+                    220,
+                    222,
+                    243,
+                    244,
+                    245,
+                    256,
+                    259,
+                    264,
+                    265,
+                    270,
+                    280,
+                    281,
+                    314,
+                    364
+                ],
+                "executableLines": [
+                    35,
+                    37,
+                    38,
+                    39,
+                    40,
+                    41,
+                    42,
+                    83,
+                    84,
+                    90,
+                    91,
+                    94,
+                    95,
+                    96,
+                    102,
+                    109,
+                    116,
+                    122,
+                    129,
+                    132,
+                    135,
+                    136,
+                    137,
+                    141,
+                    142,
+                    147,
+                    153,
+                    168,
+                    169,
+                    170,
+                    171,
+                    172,
+                    173,
+                    174,
+                    175,
+                    176,
+                    177,
+                    178,
+                    179,
+                    180,
+                    182,
+                    184,
+                    187,
+                    190,
+                    192,
+                    194,
+                    197,
+                    199,
+                    201,
+                    203,
+                    208,
+                    209,
+                    211,
+                    220,
+                    222,
+                    245,
+                    256,
+                    259,
+                    264,
+                    270,
+                    280,
+                    281
+                ],
+                "uncoveredLines": [
+                    90,
+                    91,
+                    95,
+                    180
+                ],
+                "linesWithUncoveredBranches": [
+                    41,
+                    179
+                ],
+                "LINE": {
+                    "covered": 58,
+                    "missed": 4,
+                    "target": 90,
+                    "percent": "93.5",
+                    "targetMet": true
+                },
+                "BRANCH": {
+                    "covered": 29,
+                    "missed": 3,
+                    "target": 85,
+                    "percent": "90.6",
+                    "targetMet": true
+                }
+            },
+            "ghidradwarfforge/output/ExportReport.java": {
+                "changedLines": [
+                    242,
+                    243,
+                    244,
+                    245,
+                    246,
+                    247,
+                    248,
+                    249,
+                    250,
+                    251,
+                    252,
+                    253,
+                    254,
+                    255,
+                    256,
+                    257,
+                    258,
+                    259,
+                    260
+                ],
+                "executableLines": [
+                    244,
+                    245,
+                    246,
+                    248,
+                    249,
+                    250,
+                    251,
+                    252,
+                    253,
+                    254,
+                    255,
+                    256,
+                    257
+                ],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 13,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": "100.0",
+                    "targetMet": true
+                },
+                "BRANCH": {
+                    "covered": 4,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": "100.0",
+                    "targetMet": true
+                }
+            },
+            "ghidradwarfforge/output/OutputPathPolicy.java": {
+                "changedLines": [],
+                "executableLines": [],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": null,
+                    "targetMet": null
+                },
+                "BRANCH": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": null,
+                    "targetMet": null
+                }
+            },
+            "ghidradwarfforge/output/PublicationJournal.java": {
+                "changedLines": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8,
+                    9,
+                    10,
+                    11,
+                    12,
+                    13,
+                    14,
+                    15,
+                    16,
+                    17,
+                    18,
+                    19,
+                    20,
+                    21,
+                    22,
+                    23,
+                    24,
+                    25,
+                    26,
+                    27,
+                    28,
+                    29,
+                    30,
+                    31,
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    37,
+                    38,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44,
+                    45,
+                    46,
+                    47,
+                    48,
+                    49,
+                    50,
+                    51,
+                    52,
+                    53,
+                    54,
+                    55,
+                    56,
+                    57,
+                    58,
+                    59,
+                    60,
+                    61,
+                    62,
+                    63,
+                    64,
+                    65,
+                    66,
+                    67,
+                    68,
+                    69,
+                    70,
+                    71,
+                    72,
+                    73,
+                    74,
+                    75,
+                    76,
+                    77,
+                    78,
+                    79,
+                    80,
+                    81,
+                    82,
+                    83,
+                    84,
+                    85,
+                    86,
+                    87,
+                    88,
+                    89,
+                    90,
+                    91,
+                    92,
+                    93,
+                    94,
+                    95,
+                    96,
+                    97,
+                    98,
+                    99,
+                    100,
+                    101,
+                    102,
+                    103,
+                    104,
+                    105,
+                    106,
+                    107,
+                    108,
+                    109,
+                    110,
+                    111,
+                    112,
+                    113,
+                    114,
+                    115,
+                    116,
+                    117,
+                    118,
+                    119,
+                    120,
+                    121,
+                    122,
+                    123,
+                    124,
+                    125,
+                    126,
+                    127,
+                    128,
+                    129,
+                    130,
+                    131,
+                    132,
+                    133,
+                    134,
+                    135,
+                    136,
+                    137,
+                    138
+                ],
+                "executableLines": [
+                    28,
+                    29,
+                    31,
+                    32,
+                    33,
+                    34,
+                    37,
+                    38,
+                    39,
+                    40,
+                    41,
+                    43,
+                    47,
+                    49,
+                    51,
+                    53,
+                    55,
+                    57,
+                    58,
+                    60,
+                    64,
+                    65,
+                    68,
+                    69,
+                    70,
+                    71,
+                    72,
+                    73,
+                    74,
+                    76,
+                    77,
+                    78,
+                    79,
+                    80,
+                    82,
+                    84,
+                    85,
+                    86,
+                    87,
+                    88,
+                    89,
+                    90,
+                    91,
+                    94,
+                    95,
+                    96,
+                    98,
+                    102,
+                    103,
+                    106,
+                    107,
+                    108,
+                    109,
+                    110,
+                    111,
+                    114,
+                    115,
+                    117,
+                    118,
+                    119,
+                    120,
+                    122,
+                    123,
+                    124,
+                    125,
+                    126,
+                    128,
+                    129,
+                    131,
+                    132,
+                    133,
+                    134,
+                    135,
+                    136,
+                    137
+                ],
+                "uncoveredLines": [
+                    40,
+                    41,
+                    60,
+                    122,
+                    123,
+                    133
+                ],
+                "linesWithUncoveredBranches": [
+                    39,
+                    109,
+                    132
+                ],
+                "LINE": {
+                    "covered": 69,
+                    "missed": 6,
+                    "target": 90,
+                    "percent": "92.0",
+                    "targetMet": true
+                },
+                "BRANCH": {
+                    "covered": 15,
+                    "missed": 3,
+                    "target": 85,
+                    "percent": "83.3",
+                    "targetMet": false
+                }
+            },
+            "ghidradwarfforge/output/UnwindEvidenceJson.java": {
+                "changedLines": [],
+                "executableLines": [],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": null,
+                    "targetMet": null
+                },
+                "BRANCH": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": null,
+                    "targetMet": null
+                }
+            },
+            "ghidradwarfforge/targets/ArmCompositeParameterAllocation.java": {
+                "changedLines": [],
+                "executableLines": [],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": null,
+                    "targetMet": null
+                },
+                "BRANCH": {
+                    "covered": 0,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": null,
+                    "targetMet": null
+                }
+            },
+            "ghidradwarfforge/types/ProgramTypeModel.java": {
+                "changedLines": [
+                    202,
+                    236,
+                    258,
+                    260,
+                    262,
+                    268,
+                    269,
+                    273,
+                    279,
+                    286,
+                    296
+                ],
+                "executableLines": [
+                    236,
+                    258,
+                    260,
+                    262,
+                    268,
+                    269,
+                    273,
+                    279,
+                    286,
+                    296
+                ],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 10,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": "100.0",
+                    "targetMet": true
+                },
+                "BRANCH": {
+                    "covered": 14,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": "100.0",
+                    "targetMet": true
+                }
+            },
+            "ghidradwarfforge/types/TypeGraph.java": {
+                "changedLines": [
+                    19,
+                    21,
+                    22,
+                    326,
+                    327,
+                    328,
+                    329,
+                    330,
+                    331,
+                    332,
+                    333,
+                    334,
+                    335,
+                    336,
+                    337,
+                    338,
+                    339,
+                    340
+                ],
+                "executableLines": [
+                    19,
+                    21,
+                    22,
+                    328,
+                    329,
+                    330,
+                    331,
+                    332,
+                    333,
+                    334,
+                    335,
+                    336,
+                    337,
+                    338
+                ],
+                "uncoveredLines": [],
+                "linesWithUncoveredBranches": [],
+                "LINE": {
+                    "covered": 14,
+                    "missed": 0,
+                    "target": 90,
+                    "percent": "100.0",
+                    "targetMet": true
+                },
+                "BRANCH": {
+                    "covered": 10,
+                    "missed": 0,
+                    "target": 85,
+                    "percent": "100.0",
+                    "targetMet": true
+                }
             }
         },
         "pureRenames": [],
         "LINE": {
-            "covered": 18,
-            "missed": 0,
+            "covered": 339,
+            "missed": 20,
             "target": 90,
-            "percent": "100.0",
+            "percent": "94.4",
             "targetMet": true
         },
         "BRANCH": {
-            "covered": 22,
-            "missed": 0,
+            "covered": 189,
+            "missed": 19,
             "target": 85,
-            "percent": "100.0",
+            "percent": "90.9",
             "targetMet": true
         },
         "preferredBranchTarget": 90,

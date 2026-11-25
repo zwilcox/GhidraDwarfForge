@@ -1,7 +1,7 @@
 {
     "schema": 1,
-    "productionJarSha256": "ee02144b3e27943d5ab7f4513582d13970b8f83b5792ee70625a04039974c889",
-    "xmlSha256": "c82cebb702b4f380b267ef1c5e87f25d6e7e22794b4247f9c8827f741eea8b8a",
+    "productionJarSha256": "402eea63d9a6f1d4da11bb92fe032b61fbb46661c3bf6d3dbdc3ba3b5b60a7b4",
+    "xmlSha256": "5a1b40a0201cdeee7960d40ea5f178690428cdb3d1a7525e4087d43b0eef71dd",
     "meaning": "Unexecuted lines or decision outcomes in this measurement. This alone does not establish missing tests or missing assertions. JaCoCo excludes exception-handler edges.",
     "groups": {
         "binaryAndLocationCorrectness": {
@@ -99,28 +99,34 @@
             ],
             "ghidradwarfforge/CompositeValueFlow.java": [
                 {
-                    "line": 43,
+                    "line": 42,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
-                    "line": 44,
+                    "line": 43,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 3
                 },
                 {
-                    "line": 47,
+                    "line": 46,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
                 },
                 {
-                    "line": 54,
+                    "line": 53,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
+                },
+                {
+                    "line": 61,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
                 },
                 {
                     "line": 62,
@@ -131,65 +137,59 @@
                 {
                     "line": 63,
                     "lineCovered": true,
-                    "coveredBranches": 1,
+                    "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
                     "line": 64,
                     "lineCovered": true,
-                    "coveredBranches": 3,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 65,
-                    "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 3
                 },
                 {
-                    "line": 73,
+                    "line": 72,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 77,
+                    "line": 76,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 79,
+                    "line": 78,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
                 },
                 {
-                    "line": 85,
+                    "line": 84,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 93,
+                    "line": 92,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 96,
+                    "line": 95,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 118,
+                    "line": 117,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
-                    "line": 119,
+                    "line": 118,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
@@ -1339,13 +1339,13 @@
             ],
             "ghidradwarfforge/GhidraExportConsistency.java": [
                 {
-                    "line": 27,
+                    "line": 29,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 50,
+                    "line": 57,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
@@ -1567,28 +1567,40 @@
             ],
             "ghidradwarfforge/GhidraFunctionSymbols.java": [
                 {
-                    "line": 127,
+                    "line": 132,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 128,
+                    "line": 133,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 130,
+                    "line": 135,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 131,
+                    "line": 136,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
+                },
+                {
+                    "line": 170,
+                    "lineCovered": true,
+                    "coveredBranches": 6,
+                    "missedBranches": 2
+                },
+                {
+                    "line": 173,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
                 }
             ],
             "ghidradwarfforge/GhidraInheritanceBindings.java": [
@@ -6081,55 +6093,55 @@
             ],
             "ghidradwarfforge/dwarf/Dwarf5LocationLists.java": [
                 {
-                    "line": 78,
+                    "line": 79,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
-                    "line": 79,
+                    "line": 80,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 161,
+                    "line": 162,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 162,
+                    "line": 163,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 165,
+                    "line": 166,
                     "lineCovered": true,
                     "coveredBranches": 4,
                     "missedBranches": 1
                 },
                 {
-                    "line": 179,
+                    "line": 180,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 181,
+                    "line": 182,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 188,
+                    "line": 189,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 189,
+                    "line": 190,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
@@ -6137,13 +6149,13 @@
             ],
             "ghidradwarfforge/dwarf/Dwarf5RangeLists.java": [
                 {
-                    "line": 135,
+                    "line": 136,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 136,
+                    "line": 137,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
@@ -9363,43 +9375,49 @@
             ],
             "ghidradwarfforge/firmware/GhidraFirmwareSession.java": [
                 {
-                    "line": 27,
+                    "line": 26,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 3
                 },
                 {
-                    "line": 28,
+                    "line": 27,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 64,
+                    "line": 63,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 65,
+                    "line": 64,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 78,
+                    "line": 77,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 87,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
                     "line": 88,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
                 },
                 {
-                    "line": 89,
+                    "line": 97,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
@@ -9423,37 +9441,43 @@
                     "missedBranches": 0
                 },
                 {
-                    "line": 101,
+                    "line": 114,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 120,
+                    "line": 115,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 119,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
                 },
                 {
-                    "line": 121,
+                    "line": 120,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 124,
+                    "line": 123,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
-                    "line": 125,
+                    "line": 124,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 134,
+                    "line": 133,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
@@ -9617,37 +9641,55 @@
                     "missedBranches": 1
                 },
                 {
-                    "line": 465,
+                    "line": 487,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 467,
+                    "line": 489,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 501,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
                     "line": 502,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 503,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 556,
-                    "lineCovered": true,
-                    "coveredBranches": 4,
-                    "missedBranches": 2
+                    "line": 521,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
                 },
                 {
-                    "line": 557,
+                    "line": 532,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 533,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 573,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 574,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
@@ -9655,155 +9697,173 @@
                 {
                     "line": 583,
                     "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
+                    "coveredBranches": 4,
+                    "missedBranches": 2
                 },
                 {
-                    "line": 624,
-                    "lineCovered": true,
-                    "coveredBranches": 3,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 638,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 639,
+                    "line": 584,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
+                },
+                {
+                    "line": 610,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
                 },
                 {
                     "line": 651,
                     "lineCovered": true,
-                    "coveredBranches": 1,
+                    "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
-                    "line": 652,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 655,
+                    "line": 670,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 656,
+                    "line": 671,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 659,
+                    "line": 674,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 660,
+                    "line": 675,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 690,
+                    "line": 678,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 691,
+                    "line": 679,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 703,
+                    "line": 709,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 710,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 723,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 724,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 733,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 734,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 735,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 738,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 739,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 751,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
-                    "line": 760,
+                    "line": 808,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 761,
+                    "line": 809,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 831,
+                    "line": 887,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 832,
+                    "line": 888,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 1009,
+                    "line": 1064,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 1010,
+                    "line": 1065,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 1011,
+                    "line": 1066,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 1027,
+                    "line": 1082,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
                 },
                 {
-                    "line": 1060,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1082,
-                    "lineCovered": true,
-                    "coveredBranches": 5,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1088,
-                    "lineCovered": true,
-                    "coveredBranches": 4,
-                    "missedBranches": 2
-                },
-                {
-                    "line": 1103,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1104,
+                    "line": 1115,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
@@ -9811,86 +9871,86 @@
                 {
                     "line": 1137,
                     "lineCovered": true,
-                    "coveredBranches": 1,
+                    "coveredBranches": 5,
                     "missedBranches": 1
                 },
                 {
-                    "line": 1139,
+                    "line": 1143,
                     "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1160,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1168,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1169,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1285,
-                    "lineCovered": true,
-                    "coveredBranches": 3,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1314,
-                    "lineCovered": true,
-                    "coveredBranches": 3,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1331,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1347,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1359,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
+                    "coveredBranches": 4,
                     "missedBranches": 2
                 },
                 {
-                    "line": 1376,
+                    "line": 1158,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 1377,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 1405,
+                    "line": 1159,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 1406,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
+                    "line": 1198,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1200,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1221,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1229,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1230,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1346,
+                    "lineCovered": true,
+                    "coveredBranches": 3,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1375,
+                    "lineCovered": true,
+                    "coveredBranches": 3,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1392,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1408,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1420,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 2
                 },
                 {
                     "line": 1437,
@@ -9905,82 +9965,46 @@
                     "missedBranches": 0
                 },
                 {
-                    "line": 1621,
+                    "line": 1466,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 1636,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 2
-                },
-                {
-                    "line": 1638,
+                    "line": 1467,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 1639,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 1658,
+                    "line": 1498,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 1661,
+                    "line": 1499,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 1674,
-                    "lineCovered": true,
-                    "coveredBranches": 7,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1675,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 1687,
-                    "lineCovered": true,
-                    "coveredBranches": 3,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1694,
+                    "line": 1682,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
                     "line": 1697,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 1698,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 2
                 },
                 {
                     "line": 1699,
                     "lineCovered": false,
                     "coveredBranches": 0,
-                    "missedBranches": 2
+                    "missedBranches": 0
                 },
                 {
                     "line": 1700,
@@ -9989,115 +10013,181 @@
                     "missedBranches": 0
                 },
                 {
-                    "line": 1702,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 1718,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
                     "line": 1719,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1722,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 1725,
+                    "line": 1735,
                     "lineCovered": true,
-                    "coveredBranches": 1,
+                    "coveredBranches": 7,
                     "missedBranches": 1
                 },
                 {
-                    "line": 1726,
+                    "line": 1736,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 1835,
+                    "line": 1748,
+                    "lineCovered": true,
+                    "coveredBranches": 3,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1755,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 1856,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1857,
+                    "line": 1758,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 1892,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1893,
+                    "line": 1759,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 1905,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
+                    "line": 1760,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 2
                 },
                 {
-                    "line": 1906,
+                    "line": 1761,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 1955,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 1964,
+                    "line": 1763,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 1966,
+                    "line": 1779,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 1967,
+                    "line": 1780,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 2001,
+                    "line": 1786,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 2133,
+                    "line": 1787,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 1896,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 2134,
+                    "line": 1917,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1918,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 1944,
+                    "lineCovered": true,
+                    "coveredBranches": 3,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1968,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1969,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 1981,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 1982,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 2031,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 2040,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 2042,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 2043,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 2077,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 2209,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 2210,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
@@ -10319,16 +10409,22 @@
             ],
             "ghidradwarfforge/targets/ArmCompositeParameterAllocation.java": [
                 {
-                    "line": 49,
+                    "line": 48,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 54,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
                     "line": 55,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
                 },
                 {
                     "line": 56,
@@ -10337,61 +10433,61 @@
                     "missedBranches": 0
                 },
                 {
-                    "line": 57,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 74,
+                    "line": 73,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 80,
+                    "line": 79,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
                 },
                 {
-                    "line": 81,
+                    "line": 80,
                     "lineCovered": true,
                     "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 84,
+                    "lineCovered": true,
+                    "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
                     "line": 85,
                     "lineCovered": true,
-                    "coveredBranches": 3,
+                    "coveredBranches": 5,
                     "missedBranches": 1
                 },
                 {
                     "line": 86,
                     "lineCovered": true,
-                    "coveredBranches": 5,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 87,
-                    "lineCovered": true,
                     "coveredBranches": 4,
                     "missedBranches": 2
                 },
                 {
-                    "line": 88,
+                    "line": 87,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 90,
+                    "line": 89,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
-                    "line": 106,
+                    "line": 105,
+                    "lineCovered": true,
+                    "coveredBranches": 2,
+                    "missedBranches": 2
+                },
+                {
+                    "line": 112,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
@@ -10399,47 +10495,41 @@
                 {
                     "line": 113,
                     "lineCovered": true,
-                    "coveredBranches": 2,
-                    "missedBranches": 2
-                },
-                {
-                    "line": 114,
-                    "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 119,
+                    "line": 118,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
                 },
                 {
-                    "line": 124,
+                    "line": 123,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 130,
+                    "line": 129,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 138,
+                    "line": 137,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
                 },
                 {
-                    "line": 142,
+                    "line": 141,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 144,
+                    "line": 143,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
@@ -11691,43 +11781,55 @@
         "fileTransactionsAndValidation": {
             "ghidradwarfforge/output/ArtifactPairPublisher.java": [
                 {
-                    "line": 54,
+                    "line": 63,
                     "lineCovered": true,
-                    "coveredBranches": 3,
-                    "missedBranches": 3
-                },
-                {
-                    "line": 82,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 115,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 227,
-                    "lineCovered": true,
-                    "coveredBranches": 2,
+                    "coveredBranches": 4,
                     "missedBranches": 2
                 },
                 {
-                    "line": 257,
-                    "lineCovered": true,
-                    "coveredBranches": 3,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 274,
+                    "line": 77,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 275,
+                    "line": 78,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 128,
+                    "lineCovered": true,
+                    "coveredBranches": 2,
+                    "missedBranches": 2
+                },
+                {
+                    "line": 129,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 156,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 179,
+                    "lineCovered": true,
+                    "coveredBranches": 2,
+                    "missedBranches": 2
+                },
+                {
+                    "line": 204,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 205,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
@@ -12817,79 +12919,91 @@
             ],
             "ghidradwarfforge/output/CompanionArtifactPublisher.java": [
                 {
-                    "line": 51,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 52,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 151,
-                    "lineCovered": true,
-                    "coveredBranches": 3,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 152,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 158,
+                    "line": 41,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 177,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 204,
-                    "lineCovered": true,
-                    "coveredBranches": 3,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 246,
+                    "line": 60,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
+                },
+                {
+                    "line": 61,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 90,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 91,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 95,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 179,
+                    "lineCovered": true,
+                    "coveredBranches": 2,
+                    "missedBranches": 2
+                },
+                {
+                    "line": 180,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 225,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
                 },
                 {
                     "line": 247,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 276,
+                    "lineCovered": true,
+                    "coveredBranches": 3,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 321,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 249,
+                    "line": 322,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 250,
+                    "line": 381,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
                 },
                 {
-                    "line": 309,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 310,
+                    "line": 382,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
@@ -12925,7 +13039,7 @@
             ],
             "ghidradwarfforge/output/ExportReport.java": [
                 {
-                    "line": 360,
+                    "line": 379,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
@@ -13499,40 +13613,72 @@
                     "missedBranches": 1
                 },
                 {
-                    "line": 42,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 43,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 53,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
-                },
-                {
-                    "line": 54,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 65,
+                    "line": 59,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
                 },
                 {
-                    "line": 70,
+                    "line": 64,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
+                }
+            ],
+            "ghidradwarfforge/output/PublicationJournal.java": [
+                {
+                    "line": 39,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 40,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 41,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 60,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 109,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 122,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 123,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
+                },
+                {
+                    "line": 132,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 133,
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
                 }
             ],
             "ghidradwarfforge/output/ReportJsonReader.java": [
@@ -13797,43 +13943,43 @@
             ],
             "ghidradwarfforge/output/UnwindEvidenceJson.java": [
                 {
-                    "line": 159,
+                    "line": 158,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
-                    "line": 162,
+                    "line": 161,
                     "lineCovered": true,
                     "coveredBranches": 2,
                     "missedBranches": 2
                 },
                 {
-                    "line": 163,
+                    "line": 162,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 193,
+                    "line": 192,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
-                    "line": 207,
+                    "line": 206,
                     "lineCovered": true,
                     "coveredBranches": 4,
                     "missedBranches": 2
                 },
                 {
-                    "line": 242,
+                    "line": 241,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 245,
+                    "line": 244,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0
@@ -15625,82 +15771,88 @@
             ],
             "ghidradwarfforge/annotations/EquateCatalog.java": [
                 {
-                    "line": 44,
+                    "line": 43,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 86,
+                    "line": 85,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 101,
+                    "line": 100,
                     "lineCovered": true,
                     "coveredBranches": 3,
                     "missedBranches": 1
                 },
                 {
-                    "line": 103,
+                    "line": 102,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
-                    "line": 119,
+                    "line": 118,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 3
                 },
                 {
-                    "line": 123,
+                    "line": 122,
                     "lineCovered": true,
                     "coveredBranches": 5,
                     "missedBranches": 1
                 },
                 {
-                    "line": 135,
+                    "line": 134,
+                    "lineCovered": true,
+                    "coveredBranches": 1,
+                    "missedBranches": 1
+                },
+                {
+                    "line": 136,
                     "lineCovered": true,
                     "coveredBranches": 1,
                     "missedBranches": 1
                 },
                 {
                     "line": 137,
-                    "lineCovered": true,
-                    "coveredBranches": 1,
-                    "missedBranches": 1
+                    "lineCovered": false,
+                    "coveredBranches": 0,
+                    "missedBranches": 0
                 },
                 {
                     "line": 138,
                     "lineCovered": false,
                     "coveredBranches": 0,
-                    "missedBranches": 0
+                    "missedBranches": 4
                 },
                 {
                     "line": 139,
                     "lineCovered": false,
                     "coveredBranches": 0,
-                    "missedBranches": 4
+                    "missedBranches": 0
                 },
                 {
                     "line": 140,
                     "lineCovered": false,
                     "coveredBranches": 0,
-                    "missedBranches": 0
+                    "missedBranches": 2
                 },
                 {
                     "line": 141,
                     "lineCovered": false,
                     "coveredBranches": 0,
-                    "missedBranches": 2
+                    "missedBranches": 4
                 },
                 {
                     "line": 142,
                     "lineCovered": false,
                     "coveredBranches": 0,
-                    "missedBranches": 4
+                    "missedBranches": 2
                 },
                 {
                     "line": 143,
@@ -15709,10 +15861,10 @@
                     "missedBranches": 2
                 },
                 {
-                    "line": 144,
+                    "line": 145,
                     "lineCovered": false,
                     "coveredBranches": 0,
-                    "missedBranches": 2
+                    "missedBranches": 0
                 },
                 {
                     "line": 146,
@@ -15721,13 +15873,7 @@
                     "missedBranches": 0
                 },
                 {
-                    "line": 147,
-                    "lineCovered": false,
-                    "coveredBranches": 0,
-                    "missedBranches": 0
-                },
-                {
-                    "line": 167,
+                    "line": 166,
                     "lineCovered": false,
                     "coveredBranches": 0,
                     "missedBranches": 0

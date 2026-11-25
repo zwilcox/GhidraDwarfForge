@@ -2,14 +2,14 @@
     "schema": 1,
     "scope": "Production Java line coverage from extension-build JavaExec tests",
     "repository": "zwilcox/GhidraDwarfForge",
-    "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
-    "runId": 45528494838,
+    "commit": "8bcc8b76b277f698f620241d13bd652edb7eb812",
+    "runId": 45619782379,
     "metric": "LINE",
-    "covered": 24583,
-    "missed": 5232,
-    "percent": "82.5",
+    "covered": 24714,
+    "missed": 5262,
+    "percent": "82.4",
     "jacocoVersion": "0.8.16",
-    "xmlSha256": "5bad648ad75224c6261aa9ed77dd3bc4ad113ba7747409bd5d19c2cb4943be47",
+    "xmlSha256": "5f3b9ddce62a09997d692b2df9e652dfc9f804d581b118e26343ec52bdcce7fb",
     "tasks": [
         "aarch64AbiSelectionSmoke",
         "aarch64ParameterAllocationSmoke",
@@ -353,9 +353,9 @@
         },
         {
             "source": "ghidradwarfforge/GhidraExportConsistency.java",
-            "covered": 26,
+            "covered": 30,
             "missed": 1,
-            "percent": "96.3"
+            "percent": "96.8"
         },
         {
             "source": "ghidradwarfforge/GhidraFunctionAliases.java",
@@ -371,9 +371,9 @@
         },
         {
             "source": "ghidradwarfforge/GhidraFunctionSymbols.java",
-            "covered": 95,
+            "covered": 108,
             "missed": 4,
-            "percent": "96.0"
+            "percent": "96.4"
         },
         {
             "source": "ghidradwarfforge/GhidraImageBase.java",
@@ -683,15 +683,15 @@
         },
         {
             "source": "ghidradwarfforge/dwarf/Dwarf5LocationLists.java",
-            "covered": 119,
+            "covered": 120,
             "missed": 5,
             "percent": "96.0"
         },
         {
             "source": "ghidradwarfforge/dwarf/Dwarf5RangeLists.java",
-            "covered": 94,
+            "covered": 96,
             "missed": 1,
-            "percent": "98.9"
+            "percent": "99.0"
         },
         {
             "source": "ghidradwarfforge/dwarf/DwarfAddressRanges.java",
@@ -1091,9 +1091,9 @@
         },
         {
             "source": "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java",
-            "covered": 150,
-            "missed": 1056,
-            "percent": "12.4"
+            "covered": 187,
+            "missed": 1079,
+            "percent": "14.8"
         },
         {
             "source": "ghidradwarfforge/nativeapi/PackagedNativeLibraries.java",
@@ -1103,9 +1103,9 @@
         },
         {
             "source": "ghidradwarfforge/output/ArtifactPairPublisher.java",
-            "covered": 143,
-            "missed": 2,
-            "percent": "98.6"
+            "covered": 88,
+            "missed": 6,
+            "percent": "93.6"
         },
         {
             "source": "ghidradwarfforge/output/ArtifactValidationBinding.java",
@@ -1241,9 +1241,9 @@
         },
         {
             "source": "ghidradwarfforge/output/CompanionArtifactPublisher.java",
-            "covered": 153,
-            "missed": 11,
-            "percent": "93.3"
+            "covered": 192,
+            "missed": 10,
+            "percent": "95.0"
         },
         {
             "source": "ghidradwarfforge/output/CoverageComparison.java",
@@ -1319,7 +1319,7 @@
         },
         {
             "source": "ghidradwarfforge/output/ExportReport.java",
-            "covered": 405,
+            "covered": 418,
             "missed": 0,
             "percent": "100.0"
         },
@@ -1403,9 +1403,15 @@
         },
         {
             "source": "ghidradwarfforge/output/OutputPathPolicy.java",
-            "covered": 33,
-            "missed": 2,
-            "percent": "94.3"
+            "covered": 31,
+            "missed": 0,
+            "percent": "100.0"
+        },
+        {
+            "source": "ghidradwarfforge/output/PublicationJournal.java",
+            "covered": 69,
+            "missed": 6,
+            "percent": "92.0"
         },
         {
             "source": "ghidradwarfforge/output/ReportFileSave.java",
@@ -1679,7 +1685,7 @@
         },
         {
             "source": "ghidradwarfforge/types/TypeGraph.java",
-            "covered": 146,
+            "covered": 156,
             "missed": 0,
             "percent": "100.0"
         },
