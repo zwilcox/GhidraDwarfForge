@@ -99,18 +99,12 @@ public final class ArtifactPairPublisher {
         requireDestination(sourceTarget);
         if (hook == null) throw new IllegalArgumentException("publish hook is required");
 
-        List<Path> supplied = List.of(artifactStage, sourceStage);
-        try {
+        try (var suppliedArtifact = new SuppliedStage(artifactStage, exclusive);
+                var suppliedSource = new SuppliedStage(sourceStage, exclusive)) {
             var warning = CompanionArtifactPublisher.publishResolved(List.of(artifactTarget, sourceTarget), exclusive,
                 stages -> {
-                    for (int i = 0; i < stages.size(); i++) {
-                        if (exclusive) {
-                            // Caller owns the supplied staging names throughout fresh publication.
-                            Files.delete(stages.get(i));
-                            Files.createLink(stages.get(i), supplied.get(i));
-                        }
-                        else moveAtomically(supplied.get(i), stages.get(i));
-                    }
+                    suppliedArtifact.transferTo(stages.get(0));
+                    suppliedSource.transferTo(stages.get(1));
                 }, () -> { }, () -> { }, index -> {
                     if (index == 0) hook.afterArtifactInstall();
                 });
@@ -118,6 +112,43 @@ public final class ArtifactPairPublisher {
         }
         catch (IOException | RuntimeException failure) { throw failure; }
         catch (Exception failure) { throw new IOException("could not publish artifact pair", failure); }
+    }
+
+    /** Replacing a pair consumes its supplied stages. Fresh publication borrows them. */
+    private static final class SuppliedStage implements AutoCloseable {
+        private final Path path;
+        private final boolean exclusive;
+        private CompanionArtifactPublisher.State owned;
+
+        SuppliedStage(Path path, boolean exclusive) throws IOException {
+            this.path = path;
+            this.exclusive = exclusive;
+            if (!exclusive) {
+                owned = CompanionArtifactPublisher.observe(path);
+                if (owned == null || owned.link() != null) {
+                    throw new IOException("staged file changed before publication: " + path);
+                }
+            }
+        }
+
+        void transferTo(Path destination) throws IOException {
+            if (exclusive) {
+                Files.delete(destination);
+                Files.createLink(destination, path);
+            }
+            else {
+                moveAtomically(path, destination);
+                owned = null;
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (owned != null) {
+                CompanionArtifactPublisher.requireUnchanged(path, owned);
+                Files.delete(path);
+            }
+        }
     }
 
     private static void logWarning(Optional<IOException> warning) {

@@ -32,7 +32,7 @@ public final class CompanionArtifactPublisher {
         void afterInstall(int index) throws Exception;
     }
 
-    private record State(Object key, long size, FileTime modified, String sha256, Path link) {
+    record State(Object key, long size, FileTime modified, String sha256, Path link) {
         void record(Properties inventory, String prefix) {
             inventory.setProperty(prefix + ".type", link == null ? "regular" : "symlink");
             inventory.setProperty(prefix + (link == null ? ".sha256" : ".link"), link == null ? sha256 : link.toString());
@@ -311,7 +311,7 @@ public final class CompanionArtifactPublisher {
         return targets;
     }
 
-    private static State observe(Path path) throws IOException {
+    static State observe(Path path) throws IOException {
         try {
             return observe(path, () -> { });
         }
@@ -361,7 +361,7 @@ public final class CompanionArtifactPublisher {
         return new State(attributes.fileKey(), attributes.size(), attributes.lastModifiedTime(), hash, link);
     }
 
-    private static void requireUnchanged(Path path, State expected) throws IOException {
+    static void requireUnchanged(Path path, State expected) throws IOException {
         if (!Objects.equals(expected, observe(path))) {
             throw new IOException("generation destination changed concurrently: " + path);
         }

@@ -1504,6 +1504,7 @@ tasks.register("artifactPairPublisherSmoke", JavaExec) {
         }
         if (configuredLockProperties.size() == lockProperties.size()) {
             args lockProperties.collect { project.property(it) }
+            if (project.hasProperty("denyDeleteSource")) args project.property("denyDeleteSource")
         }
     }
 }
