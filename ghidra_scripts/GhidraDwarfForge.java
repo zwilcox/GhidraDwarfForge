@@ -243,6 +243,7 @@ public class GhidraDwarfForge extends GhidraScript {
         var consistency = ghidradwarfforge.GhidraExportConsistency.capture(
             currentProgram, requestedInput, monitor::isCancelled);
         Path input = consistency.inputPath();
+        Path reportedInput = paths.input();
         Path output = paths.artifact();
         Path sourceOutput = paths.source();
         boolean gdbLoader = options.containsKey("gdb-loader");
@@ -257,7 +258,7 @@ public class GhidraDwarfForge extends GhidraScript {
         if (gdbLoader) generation.add(companionOutput);
         if (formatterSelection != null) generation.add(formatterOutput);
         if (mmioProfile != null) generation.add(mmioOutput);
-        var protectedInputs = new ArrayList<>(List.of(consumer, producer, paths.input()));
+        var protectedInputs = new ArrayList<>(List.of(consumer, producer, reportedInput));
         String importedPath = currentProgram.getExecutablePath();
         if (importedPath != null && !importedPath.isBlank()) {
             try {
@@ -278,7 +279,7 @@ public class GhidraDwarfForge extends GhidraScript {
             throw new IllegalStateException("selected original ELF does not match Ghidra's " +
                 "imported executable SHA-256: " + input);
         }
-        println("  input: " + input);
+        println("  input: " + reportedInput);
         println("  output policy: " + (guiFallback ? "GUI fallback" :
             (paths.defaultOutput() ? "default beside executable" : "explicit")));
 
@@ -425,6 +426,9 @@ public class GhidraDwarfForge extends GhidraScript {
 
                 void verify() throws Exception {
                     consistency.requireUnchanged(monitor::isCancelled);
+                    if (!reportedInput.toRealPath().equals(input)) {
+                        throw new IOException("Original ELF selection changed during export: " + reportedInput);
+                    }
                     if (firmware != null) firmware.requireUnchanged(monitor);
                     // The first consistency check runs before the writer installs source parts.
                     if (sourceDependencies != null) sourceDependencies.verify(monitor::isCancelled);
@@ -460,7 +464,7 @@ public class GhidraDwarfForge extends GhidraScript {
                     String outputHash = FileDigests.read(stagedOutput, monitor::isCancelled).sha256();
                     String sourceHash = FileDigests.read(stagedSource, monitor::isCancelled).sha256();
                     ExportReport report = ExportReport.completed(result.target(), result.libdwarfVersion(),
-                        input, inputHash, output, outputHash, sourceOutput, sourceHash,
+                        reportedInput, inputHash, output, outputHash, sourceOutput, sourceHash,
                         result.functionCount(), result.sectionNames(), source, typeModel,
                         extraction.skippedFunctions(), diagnostics);
                     var typeEvidence = ExportPhase.measure("coverage-type-evidence", () ->
