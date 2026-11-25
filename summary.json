@@ -2,14 +2,14 @@
     "schema": 1,
     "scope": "Production Java line coverage from extension-build JavaExec tests",
     "repository": "zwilcox/GhidraDwarfForge",
-    "commit": "d15d021f7cdc2269f4d4fe91f654c99324df9123",
-    "runId": 45468398324,
+    "commit": "1b922641a60f13d99f2441e6eab072973e6b4f8d",
+    "runId": 45528494838,
     "metric": "LINE",
-    "covered": 24570,
+    "covered": 24583,
     "missed": 5232,
-    "percent": "82.4",
+    "percent": "82.5",
     "jacocoVersion": "0.8.16",
-    "xmlSha256": "6ef30bff5be23ea5b423488b8302c8b44ab22f585e49e68f149e585c10f5a73c",
+    "xmlSha256": "5bad648ad75224c6261aa9ed77dd3bc4ad113ba7747409bd5d19c2cb4943be47",
     "tasks": [
         "aarch64AbiSelectionSmoke",
         "aarch64ParameterAllocationSmoke",
@@ -815,7 +815,7 @@
         },
         {
             "source": "ghidradwarfforge/elf/ElfImage.java",
-            "covered": 268,
+            "covered": 281,
             "missed": 3,
             "percent": "98.9"
         },
