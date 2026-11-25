@@ -145,7 +145,7 @@ def main():
                 os.environ.pop('JAVA_TOOL_OPTIONS', None)
             else:
                 os.environ['JAVA_TOOL_OPTIONS'] = previous
-        sample['runtime'] = SUPPORT.verify_headless(case / (name + '.log'), module, exported=True)
+        sample['runtime'] = SUPPORT.verify_headless(case / (name + '.log'), module, saved_project=True)
         reports = [json.JSONDecoder().raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
             for line in (case / (name + '.log')).read_text().splitlines() if 'GhidraDwarfForge report: {' in line]
         report, = reports

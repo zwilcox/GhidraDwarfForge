@@ -10,6 +10,37 @@ spec.loader.exec_module(observations)
 
 
 class HeadlessObservationTest(unittest.TestCase):
+    def test_saved_project_entry_point_and_delegated_export(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            scripts = root / 'module/ghidra_scripts'
+            scripts.mkdir(parents=True)
+            direct = scripts / 'GhidraDwarfForge.java'
+            direct.touch()
+            read_only = scripts / 'GhidraDwarfForgeReadOnly.java'
+            log = root / 'export.log'
+            log.with_suffix('.stderr').write_text('openjdk version "21.0.12"\n')
+            direct_record = f'INFO  SCRIPT: {direct} (HeadlessAnalyzer)\n'
+            selected = f'INFO  SCRIPT: {read_only} (HeadlessAnalyzer)\n'
+            completed = 'INFO  GhidraDwarfForge.java> GhidraDwarfForge symbol export PASS (GhidraScript)\n'
+            log.write_text(direct_record)
+            self.assertEqual(observations.verify(log, scripts.parent, saved_project=True)['packagedScript'],
+                str(direct.resolve()))
+            read_only.touch()
+            log.write_text(selected + completed)
+            self.assertEqual(observations.verify(log, scripts.parent, saved_project=True)['packagedScript'],
+                str(read_only.resolve()))
+            with self.assertRaises(ValueError):
+                observations.verify(log, scripts.parent, exported=True)
+            other = root / read_only.name
+            other.touch()
+            for transcript in (selected, selected + completed * 2, selected * 2 + completed,
+                    direct_record + completed, direct_record + selected + completed,
+                    selected.replace(str(read_only), str(other)) + completed):
+                log.write_text(transcript)
+                with self.subTest(transcript=transcript), self.assertRaises(ValueError):
+                    observations.verify(log, scripts.parent, saved_project=True)
+
     def test_runtime_and_actual_script(self):
         with tempfile.TemporaryDirectory(prefix='forge-headless-observation-') as temporary:
             root = Path(temporary)
