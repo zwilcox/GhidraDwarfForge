@@ -35,8 +35,15 @@ def verify(platform, directory):
         raise ValueError("build metadata differs from the shipped library set or bytes")
     manifest = directory / "NATIVE-RUNTIME-SHA256SUMS"
     if manifest.exists():
-        lines = manifest.read_text(encoding="ascii").splitlines()
-        if sorted(lines) != sorted(f"{digest}  {name}" for name, digest in observed.items()):
+        entries = []
+        for line in manifest.read_text(encoding="ascii").splitlines():
+            # GNU sha256sum uses a space for text mode and an asterisk for binary mode.
+            match = re.fullmatch(r"([a-f0-9]{64}) [ *](.+)", line)
+            if not match:
+                raise ValueError("invalid runtime checksum manifest record")
+            digest, name = match.groups()
+            entries.append((name, digest))
+        if sorted(entries) != sorted(observed.items()):
             raise ValueError("runtime checksum manifest differs from build metadata")
 
 

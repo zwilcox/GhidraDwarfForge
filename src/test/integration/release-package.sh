@@ -130,7 +130,11 @@ printf 'call-site source patch SHA-256:\r\n\\%s *D:\\fixture\\call-site.patch\r\
 for platform in linux windows; do
     (
         cd "$work/$platform"
-        if [[ $platform == linux ]]; then sha256sum -- *.so*; else sha256sum -- *.dll; fi > NATIVE-RUNTIME-SHA256SUMS
+        if [[ $platform == linux ]]; then
+            sha256sum -- *.so*
+        else
+            sha256sum --binary -- *.dll
+        fi > NATIVE-RUNTIME-SHA256SUMS
         { echo 'SHA-256:'; cat NATIVE-RUNTIME-SHA256SUMS; echo 'Dependencies:'; } >> BUILD-METADATA.txt
     )
 done
@@ -246,6 +250,11 @@ for platform in linux windows; do
         reject_patch_metadata stale-windows-runtime "$work/linux" "$candidate" 'native runtime provenance mismatch'
     fi
 done
+cp -R "$work/windows" "$work/windows-duplicate-runtime"
+sed -n '1p' "$work/windows/NATIVE-RUNTIME-SHA256SUMS" >> "$work/windows-duplicate-runtime/NATIVE-RUNTIME-SHA256SUMS"
+reject_patch_metadata duplicate-windows-runtime "$work/linux" "$work/windows-duplicate-runtime" \
+    'runtime checksum manifest differs from build metadata'
+
 cp -R "$work/windows" "$work/windows-crlf-patch"
 printf 'source patch SHA-256:\n%s  /fixture/patch.patch\n' \
     733405d03e2fd34f7bba971e6bbfe534d72ee9b3c1856879a7652f4eff17bc2a \
@@ -446,7 +455,7 @@ PY_ZIP_TIMESTAMPS
 # imported basename, package notices and hashes for either reviewed runtime.
 cp -R "$work/windows" "$work/windows-zlib14"
 mv "$work/windows-zlib14/zlib1.dll" "$work/windows-zlib14/libz-1.dll"
-sed -i 's/  zlib1.dll$/  libz-1.dll/' "$work/windows-zlib14/BUILD-METADATA.txt" "$work/windows-zlib14/NATIVE-RUNTIME-SHA256SUMS"
+sed -i 's/zlib1[.]dll$/libz-1.dll/' "$work/windows-zlib14/BUILD-METADATA.txt" "$work/windows-zlib14/NATIVE-RUNTIME-SHA256SUMS"
 sed -i 's/zlib 1.3.1-1/zlib 1.4-2/' \
     "$work/windows-zlib14/compliance/windows-runtime/PACKAGE-VERSIONS.txt"
 (
