@@ -19,11 +19,12 @@ repository_dir=$(realpath "$(dirname "$0")/../../..")
 fixture_source_dir="$repository_dir/src/test/fixtures"
 fixture_dir="$repository_dir/build/fixtures/$target"
 result_dir="$repository_dir/build/test-results/fixture-metadata/$target"
-temporary_root=$(mktemp -d -t ghidra-dwarf-forge-fixtures.XXXXXXXX)
+temporary_parent=$(realpath -- "${TMPDIR:-/tmp}")
+temporary_root=$(mktemp -d -p "$temporary_parent" ghidra-dwarf-forge-fixtures.XXXXXXXX)
 
 cleanup() {
     case "$temporary_root" in
-        /tmp/ghidra-dwarf-forge-fixtures.*)
+        "$temporary_parent"/ghidra-dwarf-forge-fixtures.*)
             rm -rf -- "$temporary_root"
             ;;
         *)
@@ -128,6 +129,7 @@ expected_sources=(
     opaque-register-effects.c
     outside-body-flow.c
     overloaded-signatures.cpp
+    partial-stack.S
     perf-build-id.c
     recovered-default-returns.c
     recovered-parameter-types.c

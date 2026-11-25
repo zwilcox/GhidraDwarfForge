@@ -39,9 +39,6 @@ public final class OutputPathPolicy {
             throw new IOException("original ELF is missing, unreadable, or not a regular file: " +
                 original + "; supply --input=<path> when Ghidra's executable path is stale");
         }
-        if (original.getFileName() == null) {
-            throw new IOException("original ELF has no usable filename: " + original);
-        }
 
         boolean useDefault = explicitOutput == null;
         Path artifact = useDefault
@@ -50,9 +47,6 @@ public final class OutputPathPolicy {
         Path source = artifact.resolveSibling(artifact.getFileName() + ".c");
         validateDestination(original, artifact, "DWARF sidecar", writableDirectory);
         validateDestination(original, source, "synthetic source", writableDirectory);
-        if (!artifact.getParent().equals(source.getParent())) {
-            throw new IOException("sidecar and synthetic source must share an output directory");
-        }
         return new ExportPaths(original, artifact, source, useDefault);
     }
 

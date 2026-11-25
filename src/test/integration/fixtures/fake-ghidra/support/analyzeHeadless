@@ -3,10 +3,18 @@ set -u
 
 printf '%s\n' "$@" >"$FAKE_ARGUMENT_LOG"
 status=${FAKE_REPORT_STATUS:-SUCCESS}
-if [[ "$status" != NONE ]]; then
-    echo "INFO  GhidraDwarfForge.java> GhidraDwarfForge report: {\"schemaVersion\":1,\"status\":\"$status\"} (GhidraScript)"
-fi
-if [[ "$status" == MULTIPLE ]]; then
-    echo 'INFO  GhidraDwarfForge.java> GhidraDwarfForge report: {"schemaVersion":1,"status":"SUCCESS"} (GhidraScript)'
-fi
+fields='"artifacts":{"outputPath":"fixture.dbg"},"counts":{"functionsExported":1},"failure":null'
+case "$status" in
+    FATAL|CANCELLED) fields='"artifacts":null,"counts":null,"failure":{"type":"fixture","message":"fixture"}' ;;
+esac
+report='{"schemaVersion":1,"status":"'"$status"'",'"$fields"'}'
+case "$status" in
+    NONE) exit "${FAKE_HEADLESS_EXIT:-0}" ;;
+    TRUNCATED) report='{"schemaVersion":2,"status":"SUCCESS","counts":' ;;
+    INCOMPLETE) report='{"schemaVersion":2,"status":"SUCCESS"}' ;;
+    TRAILING) report="$report unexpected" ;;
+    MULTIPLE) report=${report/MULTIPLE/SUCCESS}; echo "INFO GhidraDwarfForge report: $report" ;;
+    TRAILING_SUCCESS) report=${report/TRAILING_SUCCESS/SUCCESS}' unexpected' ;;
+esac
+echo "INFO  GhidraDwarfForge.java> GhidraDwarfForge report: $report (GhidraScript)"
 exit "${FAKE_HEADLESS_EXIT:-0}"

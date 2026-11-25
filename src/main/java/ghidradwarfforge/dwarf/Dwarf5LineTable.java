@@ -289,7 +289,7 @@ public final class Dwarf5LineTable {
         }
     }
 
-    private static void writeUleb(ByteArrayOutputStream output, long value) {
+    static void writeUleb(ByteArrayOutputStream output, long value) {
         if (value < 0) {
             throw new IllegalArgumentException("negative ULEB128 value");
         }

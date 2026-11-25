@@ -3,13 +3,17 @@ import importlib.util
 from pathlib import Path
 import unittest
 
+from windows_host_admission import WindowsHostCases
+
 SPEC = importlib.util.spec_from_file_location('windows_backup_admission',
     Path(__file__).with_name('windows-backup-failure-admission.py'))
 admission = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(admission)
 
 
-class WindowsBackupFailureAdmission(unittest.TestCase):
+class WindowsBackupFailureAdmission(WindowsHostCases, unittest.TestCase):
+    oracle = staticmethod(admission.oracle)
+
     def fixture(self):
         # Parser fixtures only; not native execution or coverage artifacts.
         record = {'suite': 'windows-host-primitives', 'layer': 'windows', 'host': 'nt',
@@ -26,14 +30,6 @@ class WindowsBackupFailureAdmission(unittest.TestCase):
 
     def test_complete_shape(self):
         admission.oracle(*self.fixture())
-
-    def test_actual_windows_required(self):
-        record, evidence = self.fixture()
-        for key, value in [('suite', 'fake'), ('layer', 'javaexec'), ('host', 'posix')]:
-            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'actual Windows'):
-                admission.oracle({**record, key: value}, evidence)
-        with self.assertRaisesRegex(ValueError, 'actual Windows'):
-            admission.oracle(record, {**evidence, 'status': 'FAILED'})
 
     def test_missing_or_corrupt_controls_rejected(self):
         record, evidence = self.fixture()

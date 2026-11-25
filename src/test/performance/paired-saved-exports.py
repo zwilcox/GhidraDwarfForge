@@ -116,7 +116,7 @@ def main():
                 command += ['--gdb-loader']
             sample = run(name, command, timeout=1800, measured=True)
             sample['runtime'] = support.verify_headless(case / (name + '.log'),
-                ghidra / 'Ghidra/Extensions/GhidraDwarfForge', exported=True)
+                ghidra / 'Ghidra/Extensions/GhidraDwarfForge', saved_project=True)
             bodies = [line.split('GhidraDwarfForge report: ', 1)[1]
                 for line in (case / (name + '.log')).read_text().splitlines()
                 if 'GhidraDwarfForge report: {' in line]

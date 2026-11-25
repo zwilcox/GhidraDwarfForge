@@ -17,12 +17,61 @@ public final class ArtifactPairFailureSmoke {
     static void run(Path root) throws Exception {
         checks = 0;
         callbacks(Files.createDirectory(root.resolve("callbacks")));
+        unreadableDestination(Files.createDirectory(root.resolve("unreadable")));
+        reusedStageNames(Files.createDirectory(root.resolve("reused")));
         parents(Files.createDirectory(root.resolve("parents")));
         for (boolean missing : List.of(false, true)) {
             changedFreshTarget(Files.createDirectory(root.resolve("fresh-" + missing)), missing);
         }
         failedRestoration(Files.createDirectory(root.resolve("restore")));
         System.out.println("artifact-pair-failure-boundaries=PASS checks=" + checks);
+    }
+
+    private static void unreadableDestination(Path root) throws Exception {
+        if (!Files.getFileStore(root).supportsFileAttributeView("posix")) return;
+        Path artifact = Files.writeString(root.resolve("pair.dbg"), "previous artifact");
+        Path source = Files.writeString(root.resolve("pair.dbg.c"), "previous source");
+        var permissions = Files.getPosixFilePermissions(source);
+        try {
+            Files.setPosixFilePermissions(source, java.util.Set.of());
+            if (Files.isReadable(source)) return;
+            Path artifactStage = Files.writeString(root.resolve("artifact.stage"), "new artifact");
+            Path sourceStage = Files.writeString(root.resolve("source.stage"), "new source");
+            try {
+                ArtifactPairPublisher.publish(artifactStage, artifact, sourceStage, source,
+                    () -> { throw new AssertionError("unreadable destination reached installation"); });
+                throw new AssertionError("published over an unreadable destination");
+            }
+            catch (java.nio.file.AccessDeniedException expected) {
+                require(source.toString().equals(expected.getFile()), "wrong unreadable destination");
+            }
+            require(names(root).equals(List.of("pair.dbg", "pair.dbg.c")),
+                "unreadable destination left supplied staging files");
+        }
+        finally { Files.setPosixFilePermissions(source, permissions); }
+        text(artifact, "previous artifact");
+        text(source, "previous source");
+    }
+
+    private static void reusedStageNames(Path root) throws Exception {
+        Path artifact = Files.writeString(root.resolve("pair.dbg"), "previous artifact");
+        Path source = Files.writeString(root.resolve("pair.dbg.c"), "previous source");
+        Path first = Files.writeString(root.resolve("artifact.stage"), "new artifact");
+        Path second = Files.writeString(root.resolve("source.stage"), "new source");
+        var stop = new IOException("stop after installing the artifact");
+        try {
+            ArtifactPairPublisher.publish(first, artifact, second, source, () -> {
+                Files.writeString(first, "another artifact stage", java.nio.file.StandardOpenOption.CREATE_NEW);
+                Files.writeString(second, "another source stage", java.nio.file.StandardOpenOption.CREATE_NEW);
+                throw stop;
+            });
+            throw new AssertionError("controlled interruption was ignored");
+        }
+        catch (IOException expected) { require(expected == stop, "wrong publication failure"); }
+        text(artifact, "previous artifact");
+        text(source, "previous source");
+        text(first, "another artifact stage");
+        text(second, "another source stage");
     }
 
     private static void callbacks(Path root) throws Exception {
@@ -135,17 +184,18 @@ public final class ArtifactPairFailureSmoke {
             throw new AssertionError("late source collision ignored");
         }
         catch (FileAlreadyExistsException expected) {
-            require(expected.getSuppressed().length == 1 && expected.getSuppressed()[0] instanceof IOException,
-                "unsafe rollback was not reported as a suppressed cleanup failure");
-            if (!missing) require(expected.getSuppressed()[0].getMessage().contains("fresh artifact changed before rollback"),
-                "replacement identity mismatch was not diagnosed");
+            require(java.util.Arrays.stream(expected.getSuppressed()).anyMatch(problem ->
+                problem.getMessage().contains("recovery files retained")), "unsafe rollback lost recovery location");
+            require(java.util.Arrays.stream(expected.getSuppressed()).anyMatch(problem ->
+                problem.getMessage().contains("changed concurrently")), "changed fresh output lacked an ownership diagnostic");
         }
         text(source, "concurrent source");
         text(artifactStage, "owned artifact stage");
         text(sourceStage, "owned source stage");
         if (missing) require(!Files.exists(artifact), "rollback recreated an externally removed artifact");
         else text(artifact, "concurrent artifact");
-        require(names(root).size() == (missing ? 3 : 4), "exclusive rollback created unexpected files");
+        require(Files.isRegularFile(PublicationJournal.claimPath(artifact).resolve("owner.properties")),
+            "exclusive rollback lost the generation recovery claim");
     }
 
     private static void failedRestoration(Path root) throws Exception {
@@ -168,15 +218,15 @@ public final class ArtifactPairFailureSmoke {
             throw new AssertionError("post-install failure ignored");
         }
         catch (IOException observed) {
-            require(observed == failure && observed.getSuppressed().length == 1 &&
-                observed.getSuppressed()[0] instanceof IOException, "restoration failure hid original or cleanup error");
+            require(observed == failure && java.util.Arrays.stream(observed.getSuppressed()).anyMatch(error ->
+                error.getMessage().contains("recovery files retained")), "restoration failure hid primary error or recovery location");
         }
         text(artifact.resolve("concurrent"), "must survive rollback");
         text(source, "untouched original source");
         require(Files.getLastModifiedTime(source).equals(sourceTime), "rollback touched unchanged source");
         List<Path> backups;
-        try (var paths = Files.list(root)) {
-            backups = paths.filter(path -> path.getFileName().toString().endsWith(".backup")).toList();
+        try (var paths = Files.walk(root)) {
+            backups = paths.filter(path -> path.getFileName().toString().equals("backup-0")).toList();
         }
         require(backups.size() == 1, "failed rollback discarded recovery backup");
         text(backups.getFirst(), "recoverable original artifact");

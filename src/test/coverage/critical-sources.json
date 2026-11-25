@@ -206,6 +206,7 @@
             "ghidradwarfforge/output/LinuxMetadataVisibility.java",
             "ghidradwarfforge/output/MmioSelection.java",
             "ghidradwarfforge/output/OutputPathPolicy.java",
+            "ghidradwarfforge/output/PublicationJournal.java",
             "ghidradwarfforge/output/ReportFileSave.java",
             "ghidradwarfforge/output/ReportJsonReader.java",
             "ghidradwarfforge/output/ReportValueReader.java",

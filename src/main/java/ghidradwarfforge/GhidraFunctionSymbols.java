@@ -27,7 +27,8 @@ public final class GhidraFunctionSymbols {
         NON_MEMORY,
         ENTRY_OUTSIDE_BODY,
         UNSUPPORTED_RANGE,
-        UNTRANSLATABLE_ADDRESS
+        UNTRANSLATABLE_ADDRESS,
+        UNMAPPED_MEMORY
     }
 
     public record SkippedFunction(String name, SkipReason reason) {
@@ -94,10 +95,14 @@ public final class GhidraFunctionSymbols {
             }
             List<FunctionRange> translated = new ArrayList<>();
             AddressRange range = first;
-            boolean valid = true;
+            SkipReason rejection = null;
             while (true) {
                 if (!range.getMinAddress().isMemoryAddress()) {
-                    valid = false;
+                    rejection = SkipReason.UNSUPPORTED_RANGE;
+                    break;
+                }
+                if (!hasRuntimeMapping(program, range)) {
+                    rejection = SkipReason.UNMAPPED_MEMORY;
                     break;
                 }
                 try {
@@ -105,7 +110,7 @@ public final class GhidraFunctionSymbols {
                         range.getMinAddress().getOffset(), rebaseDelta), range.getLength()));
                 }
                 catch (ArithmeticException | IllegalArgumentException failure) {
-                    valid = false;
+                    rejection = SkipReason.UNSUPPORTED_RANGE;
                     break;
                 }
                 if (!ranges.hasNext()) {
@@ -113,10 +118,10 @@ public final class GhidraFunctionSymbols {
                 }
                 range = ranges.next();
             }
-            if (!valid) {
-                skipped.add(new SkippedFunction(function.getName(),
-                    SkipReason.UNSUPPORTED_RANGE));
-                diagnostic.accept("Skipped unsupported function range " + function.getName());
+            if (rejection != null) {
+                skipped.add(new SkippedFunction(function.getName(), rejection));
+                diagnostic.accept("Skipped function " + function.getName() + " at " + range +
+                    ": " + rejection);
                 continue;
             }
             long entry;
@@ -151,6 +156,22 @@ public final class GhidraFunctionSymbols {
         }
         FunctionSymbol.validateDisplayNames(result);
         return new ExtractionResult(result, skipped);
+    }
+
+    private static boolean hasRuntimeMapping(Program program, AddressRange range) {
+        var cursor = range.getMinAddress();
+        if (!cursor.getAddressSpace().equals(program.getAddressFactory().getDefaultAddressSpace())) {
+            return false;
+        }
+        // A function range can span several adjacent blocks. Every byte must have
+        // the same evidenced mapping before we discard its Ghidra address space.
+        while (true) {
+            var block = program.getMemory().getBlock(cursor);
+            if (block == null || !block.isLoaded() || block.isMapped() || block.isOverlay()) return false;
+            if (block.contains(range.getMaxAddress())) return true;
+            cursor = block.getEnd().next();
+            if (cursor == null) return false;
+        }
     }
 
     private static List<String> displayNamespacePath(Function function,

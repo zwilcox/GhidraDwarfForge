@@ -56,6 +56,16 @@ public final class GhidraExportConsistencySmoke {
                 }
                 finally { Files.move(saved, input); }
                 cancellation(cancelled -> GhidraExportConsistency.capture(program, input, cancelled));
+                Path link = Files.createSymbolicLink(work.resolve("selected-link"), input);
+                try {
+                    var bound = GhidraExportConsistency.capture(program, link, () -> false);
+                    if (!Files.isSameFile(bound.inputPath(), input)) throw new AssertionError("unbound input");
+                    Files.delete(link);
+                    Files.createSymbolicLink(link, Files.write(work.resolve("new-target"), bytes));
+                    rejected(() -> bound.requireUnchanged(() -> false), "selection changed");
+                    if (!Files.isSameFile(bound.inputPath(), input)) throw new AssertionError("bound target moved");
+                }
+                finally { Files.deleteIfExists(link); }
                 cancellation(refreshed::requireUnchanged);
                 refreshed.requireUnchanged(() -> false); checks++;
             }

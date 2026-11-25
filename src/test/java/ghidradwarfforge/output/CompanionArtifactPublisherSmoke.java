@@ -17,6 +17,9 @@ public final class CompanionArtifactPublisherSmoke {
                     exercise(root, existing, failAfter);
                 }
             }
+            // The journal resolves physical parent directories, including Windows short-name aliases.
+            PublicationInterruptionSmoke.exercise(root.resolve("."));
+            freshPair(root);
             multipleFiles(root, 4);
             multipleFiles(root, 5);
             rejectAliases(root);
@@ -35,6 +38,31 @@ public final class CompanionArtifactPublisherSmoke {
                 for (Path path : files.sorted(Comparator.reverseOrder()).toList()) {
                     Files.delete(path);
                 }
+            }
+        }
+    }
+
+    private static void freshPair(Path root) throws Exception {
+        Path directory = Files.createDirectory(root.resolve("fresh-pair"));
+        Path input = Files.writeString(directory.resolve("original"), "binary");
+        Path sidecar = directory.resolve("original.dbg");
+        Path source = directory.resolve("original.dbg.c");
+        var warning = CompanionArtifactPublisher.stageAndPublishNewPair(input, sidecar, source, stages -> {
+            Files.writeString(stages.get(0), "first sidecar");
+            Files.writeString(stages.get(1), "first source");
+        }, () -> { }, () -> { });
+        if (warning.isPresent()) throw warning.get();
+        Files.delete(source);
+        try {
+            CompanionArtifactPublisher.stageAndPublishNewPair(input, sidecar, source,
+                stages -> { throw new AssertionError("existing attachment destination reached the writer"); },
+                () -> { }, () -> { });
+            throw new AssertionError("exclusive attachment pair replaced an existing file");
+        }
+        catch (java.nio.file.FileAlreadyExistsException expected) {
+            if (!Files.readString(sidecar).equals("first sidecar") || Files.exists(source) ||
+                    !Files.readString(input).equals("binary")) {
+                throw new AssertionError("fresh attachment rejection changed a public file");
             }
         }
     }
@@ -89,8 +117,8 @@ public final class CompanionArtifactPublisherSmoke {
         }
         boolean[] installed = {false};
         try {
-            CompanionArtifactPublisher.stageAndPublish(input, sidecar, source, companion,
-                (a, b, c) -> {
+            CompanionArtifactPublisher.stageAndPublish(input, outputs, stages -> {
+                    Path a = stages.get(0), b = stages.get(1), c = stages.get(2);
                     if (!Files.isSameFile(a.getParent(), directory) || !Files.isSameFile(b.getParent(), directory) ||
                             !Files.isSameFile(c.getParent(), directory)) {
                         throw new AssertionError("source directory would refer to private staging: selected=" + directory +
@@ -109,7 +137,7 @@ public final class CompanionArtifactPublisherSmoke {
                     if (installed[0] && failAfter == 2) {
                         throw new CancellationException("cancelled after complete installation");
                     }
-                }, index -> {
+                }, () -> { }, index -> {
                     installed[0] = index == 2;
                     if (index == failAfter && index != 2) {
                         throw new IOException("injected install failure " + index);

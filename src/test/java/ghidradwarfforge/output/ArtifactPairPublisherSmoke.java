@@ -14,9 +14,9 @@ public final class ArtifactPairPublisherSmoke {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 0 && args.length != 2) {
+        if (args.length != 0 && args.length != 2 && args.length != 3) {
             throw new IllegalArgumentException(
-                "usage: ArtifactPairPublisherSmoke [<locked-artifact> <locked-source>]");
+                "usage: ArtifactPairPublisherSmoke [<artifact> <unreadable-source> [<deny-delete-source>]]");
         }
         Path directory = Files.createTempDirectory("forge-artifact-pair-");
         try {
@@ -118,8 +118,12 @@ public final class ArtifactPairPublisherSmoke {
             }
         }
         System.out.println("artifact-pair-publisher-smoke=PASS");
-        if (args.length == 2) {
-            testExternallyLockedSource(Path.of(args[0]), Path.of(args[1]));
+        if (args.length >= 2) {
+            testExternallyLockedSource(Path.of(args[0]), Path.of(args[1]), false);
+            System.out.println("windows-file-lock-preflight=PASS");
+        }
+        if (args.length == 3) {
+            testExternallyLockedSource(Path.of(args[0]), Path.of(args[2]), true);
             System.out.println("windows-file-lock-rollback=PASS");
         }
     }
@@ -222,10 +226,10 @@ public final class ArtifactPairPublisherSmoke {
     }
 
     /**
-     * Exercises Windows deny-delete semantics. The caller must hold source open
-     * with FileShare.None for the duration of this process.
+     * FileShare.None blocks observation. FileShare.Read permits observation but
+     * denies renaming the old source after the first public file is installed.
      */
-    private static void testExternallyLockedSource(Path artifact, Path source)
+    private static void testExternallyLockedSource(Path artifact, Path source, boolean expectInstall)
             throws Exception {
         Path artifactTarget = artifact.toAbsolutePath().normalize();
         Path sourceTarget = source.toAbsolutePath().normalize();
@@ -251,13 +255,15 @@ public final class ArtifactPairPublisherSmoke {
         boolean[] artifactInstalled = { false };
         try {
             ArtifactPairPublisher.publish(artifactStage, artifactTarget, sourceStage,
-                sourceTarget, () -> artifactInstalled[0] = true);
-            throw new AssertionError("publication replaced a FileShare.None source");
+                sourceTarget, () -> {
+                    assertText(artifactTarget, "replacement artifact");
+                    artifactInstalled[0] = true;
+                });
+            throw new AssertionError("publication replaced a locked source");
         }
-        catch (IOException expected) {
-            if (!artifactInstalled[0]) {
-                throw new AssertionError(
-                    "file-lock failure occurred before the artifact install", expected);
+        catch (java.nio.file.FileSystemException expected) {
+            if (!sourceTarget.equals(Path.of(expected.getFile())) || artifactInstalled[0] != expectInstall) {
+                throw new AssertionError("unexpected file or installation state at lock failure", expected);
             }
         }
         if (!Arrays.equals(originalArtifact, Files.readAllBytes(artifactTarget))) {

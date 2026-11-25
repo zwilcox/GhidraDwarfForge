@@ -52,9 +52,9 @@ jobs:
               run: |
                   $ErrorActionPreference = 'Stop'
                   python --version
-                  python src/test/performance/test-headless-observations.py
+                  python src/test/python/test_headless_observations.py
                   if ($LASTEXITCODE -ne 0) { throw 'headless observation controls failed' }
-                  python src/test/performance/test-jfr-phases.py
+                  python src/test/python/test_jfr_phases.py
                   if ($LASTEXITCODE -ne 0) { throw 'JFR phase controls failed' }
                   python src/test/performance/test-catalog-source-equivalence.py
                   if ($LASTEXITCODE -ne 0) { throw 'source catalog comparison controls failed' }
@@ -109,7 +109,7 @@ jobs:
 
     packages:
         runs-on: ubuntu-24.04
-        timeout-minutes: 70
+        timeout-minutes: 130
         steps:
             - uses: actions/checkout@v7
               with:

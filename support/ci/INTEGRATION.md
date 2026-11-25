@@ -161,3 +161,22 @@ Against the other two successful serial baselines, workflow elapsed time is
 limits inference from one grouped run. Actual-main confirmation and publication
 are tracked in [PR #213](https://github.com/zwilcox/GhidraDwarfForge/pull/213)
 and [issue #211](https://github.com/zwilcox/GhidraDwarfForge/issues/211).
+
+## ELF32 upper address boundary
+
+An ELF32 range can include address `0xffffffff`. Forge encodes its length so the
+exclusive end fits the DWARF range representation. LLVM and libdwarf accepted
+the resulting i386, MIPS32BE and MIPS32LE files. GDB 15.1 resolved the function
+on i386. On both MIPS byte orders it dropped the function's DWARF symbol when
+the function ended at the final byte. A GCC 12.4 reference showed the same
+behavior. Moving the reference function down 16 bytes restored GDB lookup.
+
+## Manual comparisons
+
+The following commands use artifacts from a previous run. Supply the indicated case or isolated Ghidra installation.
+
+| Comparison | Entry point | Input and result |
+| --- | --- | --- |
+| Variable shadowing across extension versions | `python3 src/test/integration/lexical-shadow-previous.py CASE PREVIOUS_GHIDRA` | Reopen the completed lexical-shadow project with a pre-lexical package and compare GDB's inner-scope lookup with the current observations. |
+| Debugger performance with alternative section layouts | `python3 src/test/performance/consumer-candidates.py CASE --workload sqlite` | Use a completed SQLite workload or choose `--workload uboot` for a U-Boot case. Measure compression and index variants on private copies. |
+| Re-export a curated project after attaching a debug link | `bash src/test/scenarios/debuglink/reexport.sh GHIDRA STRIPPED_ELF` | Attach to a private copy of a source-built x86-64 executable, retry export using the saved original and compare both generated files. |

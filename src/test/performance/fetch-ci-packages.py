@@ -30,7 +30,8 @@ def main():
         ('checker-windows', args.candidate_sha, 'dwarfdump-windows-validation'),
         ('checker-linux', args.candidate_sha, 'dwarfdump-linux-validation'),
         ('baseline', args.baseline_sha, 'ghidra-dwarf-forge-extension')]
-    deadline = time.monotonic() + 3600
+    # The release package waits for the extension build and both native hosts.
+    deadline = time.monotonic() + 2 * 60 * 60
     receipts = {}
     for role, sha, name in roles:
         while True:

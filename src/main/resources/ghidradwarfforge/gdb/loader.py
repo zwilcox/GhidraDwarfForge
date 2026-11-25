@@ -36,6 +36,7 @@ _MAPPING = re.compile(
     r"^\s*(" + _HEX + r")\s+(" + _HEX + r")\s+(" + _HEX +
     r")\s+(" + _HEX + r")(?:\s+(.*))?$")
 _PERMISSIONS = re.compile(r"^[r-][w-][x-][ps-](?:\s+|$)")
+_MEMORY_CHUNK_BYTES = 65536
 _MAX_ROWS = 4096
 _MAX_SEGMENTS = 1024
 _MAX_CANDIDATES = 256
@@ -315,6 +316,11 @@ def verify_files(manifest):
             raise LoaderError("cannot verify " + role + ": " + str(error)) from error
 
 
+def verification_work(manifest):
+    sizes = [check["size"] for check in manifest["checks"]]
+    return sum(sizes), sum((size + _MEMORY_CHUNK_BYTES - 1) // _MEMORY_CHUNK_BYTES for size in sizes)
+
+
 def verify_memory(manifest, bias, read_memory):
     """Check selected immutable file bytes at the proposed runtime addresses.
 
@@ -332,7 +338,7 @@ def verify_memory(manifest, bias, read_memory):
         digest = hashlib.sha256()
         cursor = 0
         while cursor < check["size"]:
-            count = min(65536, check["size"] - cursor)
+            count = min(_MEMORY_CHUNK_BYTES, check["size"] - cursor)
             try:
                 chunk = bytes(read_memory(bias + check["address"] + cursor, count))
             except Exception as error:
@@ -506,6 +512,8 @@ class _Registry:
         finally:
             self.busy = False
         gdb.write("Forge companion loaded at bias " + hex(bias) + "\n")
+        size, reads = verification_work(manifest)
+        gdb.write(f"Forge verifies {size} executable bytes in {reads} GDB memory reads on each stop.\n")
 
     def source_rule(self, directory):
         text = self.gdb.execute("show substitute-path " + _quote(directory), to_string=True)

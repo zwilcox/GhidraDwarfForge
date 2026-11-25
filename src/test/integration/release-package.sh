@@ -14,6 +14,59 @@ cleanup() {
 }
 trap cleanup EXIT
 
+if (( $# > 1 )); then
+    echo "usage: $0 [base-extension.zip]" >&2
+    exit 64
+fi
+if (( $# == 1 )); then
+    sed 's|^|GhidraDwarfForge/|' "$repository_dir/support/extension-files.txt" | LC_ALL=C sort > "$work/expected-files"
+    zipinfo -1 "$1" | sed '/\/$/d' | LC_ALL=C sort > "$work/actual-files"
+    diff -u "$work/expected-files" "$work/actual-files"
+    unzip -q "$1" -d "$work/development"
+    installed="$work/development/GhidraDwarfForge/support"
+    for command in attach build-id headless report; do
+        test "$(stat -c %a "$installed/ghidra-dwarf-forge-$command")" = 755
+    done
+    "$installed/ghidra-dwarf-forge-report" --help > "$work/development-report-help"
+    grep -Fq 'Usage: ghidra-dwarf-forge-report' "$work/development-report-help"
+fi
+
+# Two equally incomplete native builds must not produce a successful comparison report.
+compare="$repository_dir/support/compare-native-builds.sh"
+mkdir "$work/incomplete-native"
+reject_inventory() {
+    local platform=$1 missing=$2
+    if "$compare" "$platform" "$work/incomplete-native" "$work/incomplete-native" "$work/inventory-report" \
+            > "$work/inventory.log" 2>&1; then
+        echo "native comparison accepted an incomplete $platform inventory" >&2
+        exit 1
+    fi
+    grep -Fxq "$platform native ABI inventory is missing $missing" "$work/inventory.log"
+    test ! -e "$work/inventory-report"
+}
+reject_inventory linux libdwarf
+reject_inventory windows libdwarf
+# A readable host ELF lets readelf and nm inspect the one member that is present.
+cp -- "$(type -P true)" "$work/incomplete-native/libdwarf.so"
+reject_inventory linux libdwarfp
+
+# Two populated pairs with the same filenames must still agree on exported symbols.
+mkdir "$work/first-abi" "$work/second-abi"
+for library in libdwarf libdwarfp; do
+    printf 'int fixture_%s(void) { return 0; }\n' "$library" |
+        cc -x c -fPIC -shared -o "$work/first-abi/$library.so" -
+    cp "$work/first-abi/$library.so" "$work/second-abi/"
+done
+"$compare" linux "$work/first-abi" "$work/second-abi" "$work/equal-abi-report" > /dev/null
+grep -Fxq 'native-abi-inventory=PASS' "$work/equal-abi-report"
+cp "$work/first-abi/libdwarf.so" "$work/second-abi/libdwarfp.so"
+if "$compare" linux "$work/first-abi" "$work/second-abi" "$work/unequal-abi-report" > /dev/null; then
+    echo "native comparison accepted a producer with the wrong exported symbol" >&2
+    exit 1
+fi
+grep -Fxq -- '-T fixture_libdwarfp' "$work/unequal-abi-report"
+grep -Fxq -- '+T fixture_libdwarf' "$work/unequal-abi-report"
+
 mkdir -p "$work/base/GhidraDwarfForge/support" \
     "$work/base/GhidraDwarfForge/ghidra_scripts" \
     "$work/base/GhidraDwarfForge/third_party" \
@@ -86,6 +139,17 @@ printf 'source patch SHA-256:\r\n\\%s *D:\\\\fixture\\\\patch.patch\r\n' "$patch
     > "$work/windows/BUILD-METADATA.txt"
 printf 'call-site source patch SHA-256:\r\n\\%s *D:\\fixture\\call-site.patch\r\n' "$call_site_patch_hash" \
     >> "$work/windows/BUILD-METADATA.txt"
+for platform in linux windows; do
+    (
+        cd "$work/$platform"
+        if [[ $platform == linux ]]; then
+            sha256sum -- *.so*
+        else
+            sha256sum --binary -- *.dll
+        fi > NATIVE-RUNTIME-SHA256SUMS
+        { echo 'SHA-256:'; cat NATIVE-RUNTIME-SHA256SUMS; echo 'Dependencies:'; } >> BUILD-METADATA.txt
+    )
+done
 printf 'upstream copying\n' \
     > "$work/linux/compliance/libdwarf/licenses/UPSTREAM-COPYING"
 printf 'lgpl text\n' > "$work/linux/compliance/libdwarf/licenses/LGPL-2.1.txt"
@@ -186,6 +250,22 @@ sed -i 's/^[0-9a-f]\{64\}/000000000000000000000000000000000000000000000000000000
     "$work/linux-wrong-supervisor-source/SUPERVISOR-BUILD-METADATA.txt"
 reject_patch_metadata supervisor-wrong-source "$work/linux-wrong-supervisor-source" "$work/windows" \
     'validator supervisor source provenance mismatch'
+
+for platform in linux windows; do
+    candidate="$work/$platform-stale-runtime"
+    cp -R "$work/$platform" "$candidate"
+    if [[ $platform == linux ]]; then
+        printf changed >> "$candidate/libdwarfp.so.2.3.2"
+        reject_patch_metadata stale-linux-runtime "$candidate" "$work/windows" 'native runtime provenance mismatch'
+    else
+        printf changed >> "$candidate/libdwarf-2.dll"
+        reject_patch_metadata stale-windows-runtime "$work/linux" "$candidate" 'native runtime provenance mismatch'
+    fi
+done
+cp -R "$work/windows" "$work/windows-duplicate-runtime"
+sed -n '1p' "$work/windows/NATIVE-RUNTIME-SHA256SUMS" >> "$work/windows-duplicate-runtime/NATIVE-RUNTIME-SHA256SUMS"
+reject_patch_metadata duplicate-windows-runtime "$work/linux" "$work/windows-duplicate-runtime" \
+    'runtime checksum manifest differs from build metadata'
 
 cp -R "$work/windows" "$work/windows-crlf-patch"
 printf 'source patch SHA-256:\n%s  /fixture/patch.patch\n' \
@@ -346,7 +426,8 @@ grep -Fxq 'consumer=libdwarf.so.2.3.2' \
 grep -Fxq 'producer=libdwarfp-2.dll' \
     "$module/os/win_x86_64/NATIVE-PAIR.properties"
 test -s "$module/THIRD_PARTY_NOTICES.md"
-test -x "$module/support/ghidra-dwarf-forge-report"
+"$module/support/ghidra-dwarf-forge-report" --help > "$work/release-report-help"
+grep -Fq 'Usage: ghidra-dwarf-forge-report' "$work/release-report-help"
 for report_launcher in ghidra-dwarf-forge-report ghidra-dwarf-forge-report.ps1; do
     cmp "$repository_dir/support/$report_launcher" "$module/support/$report_launcher"
 done
@@ -386,6 +467,7 @@ PY_ZIP_TIMESTAMPS
 # imported basename, package notices and hashes for either reviewed runtime.
 cp -R "$work/windows" "$work/windows-zlib14"
 mv "$work/windows-zlib14/zlib1.dll" "$work/windows-zlib14/libz-1.dll"
+sed -i 's/zlib1[.]dll$/libz-1.dll/' "$work/windows-zlib14/BUILD-METADATA.txt" "$work/windows-zlib14/NATIVE-RUNTIME-SHA256SUMS"
 sed -i 's/zlib 1.3.1-1/zlib 1.4-2/' \
     "$work/windows-zlib14/compliance/windows-runtime/PACKAGE-VERSIONS.txt"
 (

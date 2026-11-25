@@ -7,8 +7,9 @@ import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
+import java.util.Optional;
 
 /** Publishes an already-staged sidecar/source pair with rollback on failure. */
 public final class ArtifactPairPublisher {
@@ -34,174 +35,125 @@ public final class ArtifactPairPublisher {
     public static void stageAndPublish(Path artifact, Path source,
             StagedWriter artifactWriter, StagedWriter sourceWriter,
             PrePublishCheck prePublishCheck) throws Exception {
-        stageAndPublish(artifact, source, artifactWriter, sourceWriter, prePublishCheck, false);
+        logWarning(stageAndPublish(artifact, source, artifactWriter, sourceWriter, prePublishCheck, false));
     }
 
     /** Fresh attachment generations must never overwrite an earlier pair. */
     public static void stageAndPublishNew(Path artifact, Path source,
             StagedWriter artifactWriter, StagedWriter sourceWriter,
             PrePublishCheck prePublishCheck) throws Exception {
-        stageAndPublish(artifact, source, artifactWriter, sourceWriter, prePublishCheck, true);
+        logWarning(stageAndPublish(artifact, source, artifactWriter, sourceWriter, prePublishCheck, true));
     }
 
-    private static void stageAndPublish(Path artifact, Path source,
-            StagedWriter artifactWriter, StagedWriter sourceWriter,
-            PrePublishCheck prePublishCheck, boolean exclusive) throws Exception {
+    private static Optional<IOException> stageAndPublish(Path artifact, Path source, StagedWriter artifactWriter,
+            StagedWriter sourceWriter, PrePublishCheck prePublishCheck, boolean exclusive) throws Exception {
+        List<Path> targets = validatePair(artifact, source, artifactWriter, sourceWriter, prePublishCheck);
+        return CompanionArtifactPublisher.publishResolved(targets, exclusive, stages -> {
+            artifactWriter.write(stages.get(0));
+            sourceWriter.write(stages.get(1));
+            prePublishCheck.check();
+        }, () -> { }, () -> { }, index -> { });
+    }
+
+    private static List<Path> validatePair(Path artifact, Path source, StagedWriter artifactWriter,
+            StagedWriter sourceWriter, PrePublishCheck check) throws IOException {
         Path artifactTarget = resolve(artifact);
         Path sourceTarget = resolve(source);
-        Path artifactParent = artifactTarget.getParent();
-        Path sourceParent = sourceTarget.getParent();
-        if (artifactParent == null || !Files.isDirectory(artifactParent) ||
-                sourceParent == null || !artifactParent.equals(sourceParent)) {
+        Path parent = artifactTarget.getParent();
+        if (parent == null || !Files.isDirectory(parent) || !parent.equals(sourceTarget.getParent())) {
             throw new IOException("artifact pair must share an existing output directory");
         }
-        if (artifactWriter == null || sourceWriter == null || prePublishCheck == null) {
+        if (artifactWriter == null || sourceWriter == null || check == null) {
             throw new IllegalArgumentException("artifact pair callbacks are required");
         }
         requireDistinct(artifactTarget, sourceTarget);
         requireDestination(artifactTarget);
         requireDestination(sourceTarget);
-        if (exclusive) {
-            requireAbsent(artifactTarget);
-            requireAbsent(sourceTarget);
-        }
-        Path stagedArtifact = Files.createTempFile(artifactParent,
-            "." + artifactTarget.getFileName() + "-", ".staged");
-        Path stagedSource = null;
-        try {
-            stagedSource = Files.createTempFile(sourceParent,
-                "." + sourceTarget.getFileName() + "-", ".staged");
-            artifactWriter.write(stagedArtifact);
-            sourceWriter.write(stagedSource);
-            prePublishCheck.check();
-            if (exclusive) publishNew(stagedArtifact, artifactTarget, stagedSource, sourceTarget, () -> { });
-            else publish(stagedArtifact, artifactTarget, stagedSource, sourceTarget);
-        }
-        finally {
-            Files.deleteIfExists(stagedArtifact);
-            if (stagedSource != null) {
-                Files.deleteIfExists(stagedSource);
-            }
-        }
+        return List.of(artifactTarget, sourceTarget);
     }
 
     static void publishNew(Path stagedArtifact, Path artifact, Path stagedSource, Path source,
             PublishHook hook) throws IOException {
+        publish(stagedArtifact, artifact, stagedSource, source, hook, true);
+    }
+
+    public static void publish(Path stagedArtifact, Path artifact, Path stagedSource, Path source) throws IOException {
+        publish(stagedArtifact, artifact, stagedSource, source, () -> { });
+    }
+
+    static void publish(Path stagedArtifact, Path artifact, Path stagedSource, Path source,
+            PublishHook hook) throws IOException {
+        publish(stagedArtifact, artifact, stagedSource, source, hook, false);
+    }
+
+    private static void publish(Path stagedArtifact, Path artifact, Path stagedSource, Path source,
+            PublishHook hook, boolean exclusive) throws IOException {
         Path artifactStage = resolve(stagedArtifact);
         Path artifactTarget = resolve(artifact);
         Path sourceStage = resolve(stagedSource);
         Path sourceTarget = resolve(source);
-        requireDistinct(artifactStage, artifactTarget, sourceStage, sourceTarget);
-        requireStagedFile(artifactStage, artifactTarget);
-        requireStagedFile(sourceStage, sourceTarget);
-        requireAbsent(artifactTarget);
-        requireAbsent(sourceTarget);
-        if (hook == null) throw new IllegalArgumentException("publish hook is required");
-        FileTime sourceTime = Files.getLastModifiedTime(sourceStage);
-        if (Files.getLastModifiedTime(artifactStage).compareTo(sourceTime) < 0) {
-            Files.setLastModifiedTime(artifactStage, sourceTime);
-        }
-        // link(2)/CreateHardLink publishes complete bytes exclusively. Unlike
-        // ATOMIC_MOVE, it cannot replace a file that appeared after preflight.
-        // Staging links are removed by their owner before returning the pair.
-        boolean installed = false;
-        try {
-            Files.createLink(artifactTarget, artifactStage);
-            installed = true;
-            hook.afterArtifactInstall();
-            Files.createLink(sourceTarget, sourceStage);
-        }
-        catch (IOException | RuntimeException failure) {
-            if (installed) {
-                try {
-                    if (!Files.isSameFile(artifactTarget, artifactStage)) {
-                        throw new IOException("fresh artifact changed before rollback; preserve selected files");
-                    }
-                    Files.delete(artifactTarget);
-                }
-                catch (IOException cleanup) { failure.addSuppressed(cleanup); }
-            }
-            throw failure;
-        }
-    }
-
-    private static void requireAbsent(Path path) throws IOException {
-        try { Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS); }
-        catch (NoSuchFileException missing) { return; }
-        throw new IOException("fresh output already exists: " + path);
-    }
-
-    public static void publish(Path stagedArtifact, Path artifact,
-            Path stagedSource, Path source) throws IOException {
-        publish(stagedArtifact, artifact, stagedSource, source, () -> {
-            // Production has no injected interruption.
-        });
-    }
-
-    static void publish(Path stagedArtifact, Path artifact, Path stagedSource,
-            Path source, PublishHook hook) throws IOException {
-        Path artifactStage = resolve(stagedArtifact);
-        Path artifactTarget = resolve(artifact);
-        Path sourceStage = resolve(stagedSource);
-        Path sourceTarget = resolve(source);
-        // This precedes timestamps and cleanup: a caller-owned target must never
-        // be mistaken for a disposable stage, including cross-pair aliases.
         requireDistinct(artifactStage, artifactTarget, sourceStage, sourceTarget);
         requireStagedFile(artifactStage, artifactTarget);
         requireStagedFile(sourceStage, sourceTarget);
         requireDestination(artifactTarget);
         requireDestination(sourceTarget);
-        if (hook == null) {
-            throw new IllegalArgumentException("publish hook is required");
-        }
+        if (hook == null) throw new IllegalArgumentException("publish hook is required");
 
-        Path artifactBackup = null;
-        Path sourceBackup = null;
-        boolean artifactInstalled = false;
-        boolean sourceInstalled = false;
-        boolean success = false;
-        try {
-            // GDB compares source freshness with the separate debug objfile.
-            // Both callbacks are complete now: make the staged sidecar at least
-            // as recent as its source, without lowering either timestamp or
-            // touching the original executable. Later source edits still warn.
-            FileTime sourceTime = Files.getLastModifiedTime(sourceStage);
-            if (Files.getLastModifiedTime(artifactStage).compareTo(sourceTime) < 0) {
-                Files.setLastModifiedTime(artifactStage, sourceTime);
-            }
-            if (Files.exists(artifactTarget, LinkOption.NOFOLLOW_LINKS)) {
-                artifactBackup = backupPath(artifactTarget);
-                moveAtomically(artifactTarget, artifactBackup);
-            }
-            moveAtomically(artifactStage, artifactTarget);
-            artifactInstalled = true;
-            hook.afterArtifactInstall();
+        try (var suppliedArtifact = new SuppliedStage(artifactStage, exclusive);
+                var suppliedSource = new SuppliedStage(sourceStage, exclusive)) {
+            var warning = CompanionArtifactPublisher.publishResolved(List.of(artifactTarget, sourceTarget), exclusive,
+                stages -> {
+                    suppliedArtifact.transferTo(stages.get(0));
+                    suppliedSource.transferTo(stages.get(1));
+                }, () -> { }, () -> { }, index -> {
+                    if (index == 0) hook.afterArtifactInstall();
+                });
+            logWarning(warning);
+        }
+        catch (IOException | RuntimeException failure) { throw failure; }
+        catch (Exception failure) { throw new IOException("could not publish artifact pair", failure); }
+    }
 
-            if (Files.exists(sourceTarget, LinkOption.NOFOLLOW_LINKS)) {
-                sourceBackup = backupPath(sourceTarget);
-                moveAtomically(sourceTarget, sourceBackup);
-            }
-            moveAtomically(sourceStage, sourceTarget);
-            sourceInstalled = true;
-            success = true;
-        }
-        catch (IOException failure) {
-            rollback(sourceTarget, sourceBackup, sourceInstalled, failure);
-            rollback(artifactTarget, artifactBackup, artifactInstalled, failure);
-            throw failure;
-        }
-        finally {
-            Files.deleteIfExists(artifactStage);
-            Files.deleteIfExists(sourceStage);
-            if (success) {
-                if (artifactBackup != null) {
-                    Files.deleteIfExists(artifactBackup);
-                }
-                if (sourceBackup != null) {
-                    Files.deleteIfExists(sourceBackup);
+    /** Replacing a pair consumes its supplied stages. Fresh publication borrows them. */
+    private static final class SuppliedStage implements AutoCloseable {
+        private final Path path;
+        private final boolean exclusive;
+        private CompanionArtifactPublisher.State owned;
+
+        SuppliedStage(Path path, boolean exclusive) throws IOException {
+            this.path = path;
+            this.exclusive = exclusive;
+            if (!exclusive) {
+                owned = CompanionArtifactPublisher.observe(path);
+                if (owned == null || owned.link() != null) {
+                    throw new IOException("staged file changed before publication: " + path);
                 }
             }
         }
+
+        void transferTo(Path destination) throws IOException {
+            if (exclusive) {
+                Files.delete(destination);
+                Files.createLink(destination, path);
+            }
+            else {
+                moveAtomically(path, destination);
+                owned = null;
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (owned != null) {
+                CompanionArtifactPublisher.requireUnchanged(path, owned);
+                Files.delete(path);
+            }
+        }
+    }
+
+    private static void logWarning(Optional<IOException> warning) {
+        warning.ifPresent(problem -> System.getLogger(ArtifactPairPublisher.class.getName())
+            .log(System.Logger.Level.WARNING, problem.getMessage(), problem));
     }
 
     private static Path resolve(Path path) throws IOException {
@@ -241,28 +193,6 @@ public final class ArtifactPairPublisher {
         }
         catch (NoSuchFileException missing) {
             // A new output leaf is allowed; its parent was resolved already.
-        }
-    }
-
-    private static Path backupPath(Path target) throws IOException {
-        Path backup = Files.createTempFile(target.getParent(),
-            "." + target.getFileName() + "-", ".backup");
-        Files.delete(backup);
-        return backup;
-    }
-
-    private static void rollback(Path target, Path backup, boolean installed,
-            IOException failure) {
-        try {
-            if (backup != null && Files.exists(backup, LinkOption.NOFOLLOW_LINKS)) {
-                moveAtomically(backup, target);
-            }
-            else if (installed) {
-                Files.deleteIfExists(target);
-            }
-        }
-        catch (IOException rollbackFailure) {
-            failure.addSuppressed(rollbackFailure);
         }
     }
 

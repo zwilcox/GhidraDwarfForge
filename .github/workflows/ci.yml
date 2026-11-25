@@ -165,7 +165,7 @@ jobs:
             echo 'configure: --enable-shared --enable-dwarfgen --disable-static'
             gcc --version
             echo 'SHA-256:'
-            sha256sum ../native-out/*.so*
+            (cd ../native-out && LC_ALL=C sha256sum -- *.so* | tee NATIVE-RUNTIME-SHA256SUMS)
             echo 'Dependencies:'
             readelf -d ../native-out/libdwarfp.so.2.3.2
           } > ../native-out/BUILD-METADATA.txt
@@ -322,7 +322,9 @@ jobs:
             'src/main/java/ghidradwarfforge/output/FileDigests.java'
             'src/main/java/ghidradwarfforge/output/ArtifactPairPublisher.java'
             'src/main/java/ghidradwarfforge/output/CompanionArtifactPublisher.java'
+            'src/main/java/ghidradwarfforge/output/PublicationJournal.java'
             'src/test/java/ghidradwarfforge/output/CompanionArtifactPublisherSmoke.java'
+            'src/test/java/ghidradwarfforge/output/PublicationInterruptionSmoke.java'
             'src/test/java/ghidradwarfforge/output/CompanionObservationRecoverySmoke.java'
           )
           & javac --release 21 -d $classes @sources 2>&1 | Tee-Object -FilePath "$results/compile.log"
@@ -560,7 +562,7 @@ jobs:
             cat "$runtime_compliance/PACKAGE-VERSIONS.txt"
             gcc --version
             echo 'SHA-256:'
-            sha256sum ../native-windows-out/*.dll
+            (cd ../native-windows-out && LC_ALL=C sha256sum -- *.dll | tee NATIVE-RUNTIME-SHA256SUMS)
             echo 'Dependencies:'
             for dll in ../native-windows-out/*.dll; do
               echo "$(basename "$dll")"
@@ -760,9 +762,7 @@ jobs:
             python3 -B src/test/integration/linux-directory-sync.py \
                 --jar build/libs/GhidraDwarfForge.jar --ghidra "$GHIDRA_INSTALL_DIR" \
                 --results "$PWD/build/test-results/extension-build/linux-directory-sync"
-            src/test/integration/release-package.sh
-            zipinfo -l dist/*.zip | grep -Eq \
-              '^-rwxr-xr-x.*GhidraDwarfForge/support/ghidra-dwarf-forge-headless$'
+            src/test/integration/release-package.sh dist/*.zip
           } 2>&1 | tee build/test-results/extension-build/build.log
 
       - name: Measure Java test code coverage
@@ -4215,32 +4215,41 @@ jobs:
           New-Item -ItemType Directory -Force $lockDirectory | Out-Null
           $artifact = Join-Path $lockDirectory 'locked.dbg'
           $source = Join-Path $lockDirectory 'locked.dbg.c'
+          $denyDelete = Join-Path $lockDirectory 'deny-delete.dbg.c'
           $utf8 = [System.Text.UTF8Encoding]::new($false)
           [System.IO.File]::WriteAllText($artifact, 'preserved artifact', $utf8)
           [System.IO.File]::WriteAllText($source, 'preserved source', $utf8)
+          [System.IO.File]::WriteAllText($denyDelete, 'readable preserved source', $utf8)
           $artifactHash = (Get-FileHash -Algorithm SHA256 $artifact).Hash
           $sourceHash = (Get-FileHash -Algorithm SHA256 $source).Hash
+          $denyDeleteHash = (Get-FileHash -Algorithm SHA256 $denyDelete).Hash
+          $deleteLock = $null
           $sourceLock = [System.IO.File]::Open($source,
             [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite,
             [System.IO.FileShare]::None)
           try {
+            $deleteLock = [System.IO.File]::Open($denyDelete,
+              [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read,
+              [System.IO.FileShare]::Read)
             & .\gradlew.bat artifactPairPublisherSmoke `
-              "-PlockedArtifact=$artifact" "-PlockedSource=$source" 2>&1 |
+              "-PlockedArtifact=$artifact" "-PlockedSource=$source" "-PdenyDeleteSource=$denyDelete" 2>&1 |
               Tee-Object -FilePath (Join-Path $lockDirectory 'gradle.log')
             $lockStatus = $LASTEXITCODE
           }
           finally {
+            if ($null -ne $deleteLock) { $deleteLock.Dispose() }
             $sourceLock.Dispose()
           }
           if ($lockStatus -ne 0) {
             throw "Windows file-lock regression failed with exit code $lockStatus"
           }
           if ((Get-FileHash -Algorithm SHA256 $artifact).Hash -ne $artifactHash -or
-              (Get-FileHash -Algorithm SHA256 $source).Hash -ne $sourceHash) {
+              (Get-FileHash -Algorithm SHA256 $source).Hash -ne $sourceHash -or
+              (Get-FileHash -Algorithm SHA256 $denyDelete).Hash -ne $denyDeleteHash) {
             throw 'file-lock failure did not preserve the previous artifact pair'
           }
           $leftovers = Get-ChildItem $lockDirectory -Force | Where-Object {
-            $_.Name -match '\.(?:staged|backup)$'
+            $_.Name -notin @('locked.dbg', 'locked.dbg.c', 'deny-delete.dbg.c', 'gradle.log', 'result.txt')
           }
           if ($leftovers.Count -ne 0) {
             throw "file-lock failure left temporary files: $($leftovers.Name -join ', ')"

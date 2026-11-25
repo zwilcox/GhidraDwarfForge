@@ -130,7 +130,7 @@ def main():
         hashes = observed
         assert support.digest(binary) == input_hash
         sample.update({'counts': report['counts'], 'status': report['status'], 'profiled': profiling})
-        sample['runtime'] = support.verify_headless(case / (name + '.log'), module, exported=True)
+        sample['runtime'] = support.verify_headless(case / (name + '.log'), module, saved_project=True)
         if not profiling:
             samples.append(sample)
         else:

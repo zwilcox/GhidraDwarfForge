@@ -16,10 +16,11 @@ if [[ ! -d "$first_directory" || ! -d "$second_directory" ]]; then
     exit 64
 fi
 
-temporary=$(mktemp -d -t ghidra-dwarf-forge-native-compare.XXXXXXXX)
+temporary_parent=$(realpath -- "${TMPDIR:-/tmp}")
+temporary=$(mktemp -d -p "$temporary_parent" ghidra-dwarf-forge-native-compare.XXXXXXXX)
 cleanup() {
     case "$temporary" in
-        /tmp/ghidra-dwarf-forge-native-compare.*) rm -rf -- "$temporary" ;;
+        "$temporary_parent"/ghidra-dwarf-forge-native-compare.*) rm -rf -- "$temporary" ;;
         *) echo "refusing to remove unexpected temporary path $temporary" >&2 ;;
     esac
 }
@@ -82,12 +83,25 @@ case "$platform" in
         ;;
 esac
 
+for inventory in "$temporary/first.files" "$temporary/second.files"; do
+    for stem in libdwarf libdwarfp; do
+        if [[ $platform == linux ]]; then
+            pattern="^${stem}\.so(\.[0-9]+)*$"
+        else
+            pattern="^${stem}(-[0-9]+)?\.dll$"
+        fi
+        if ! grep -Eiq -- "$pattern" "$inventory"; then
+            echo "$platform native ABI inventory is missing $stem" >&2
+            exit 1
+        fi
+    done
+done
+
 mkdir -p "$(dirname "$report")"
 {
-    echo "native-functional-equivalence=$platform"
+    echo "native-abi-inventory=$platform"
     diff -u "$temporary/first.files" "$temporary/second.files"
     diff -u "$temporary/first" "$temporary/second"
-    echo "native-functional-equivalence=PASS"
     echo "first-build-sha256:"
     (cd "$first_directory" && find . -maxdepth 1 -type f \
         \( -name 'libdwarf*.so*' -o -iname '*.dll' \) -print0 |
@@ -96,4 +110,5 @@ mkdir -p "$(dirname "$report")"
     (cd "$second_directory" && find . -maxdepth 1 -type f \
         \( -name 'libdwarf*.so*' -o -iname '*.dll' \) -print0 |
         sort -z | xargs -0 sha256sum)
+    echo "native-abi-inventory=PASS"
 } | tee "$report"

@@ -42,18 +42,36 @@ public final class MinimalDwarfSidecarSmoke {
         TypeGraph types = new TypeGraph(List.of(
             new BaseType(signedInt.key(), "int", 4, BaseEncoding.SIGNED)));
         FunctionSignature signature = new FunctionSignature(args[4], address, signedInt,
-            List.of(new Parameter("register_parameter", signedInt, false)), List.of(),
+            List.of(new Parameter("register_parameter", signedInt, false),
+                new Parameter("entry_value", signedInt, false)), List.of(),
             false, false, "smoke", "USER_DEFINED");
         VariableLocation registerParameter = new VariableLocation(args[4], address,
             "register_parameter", VariableKind.PARAMETER, 4,
             List.of(new LocationRange(address, Math.addExact(address, 0x40),
                 TargetRegisterMap.forTarget("x86_64").register("RDI", 0, 32),
                 new Evidence(Confidence.USER_DEFINED, "isolated exporter smoke"))));
+        var entryValue = new VariableLocation(args[4], address, "entry_value", VariableKind.PARAMETER, 4,
+            List.of(new LocationRange(address, address + 4,
+                TargetRegisterMap.forTarget("x86_64").register("RSI", 0, 32),
+                new Evidence(Confidence.USER_DEFINED, "first four bytes only"))));
         ProgramTypeModel typeModel = new ProgramTypeModel(types, List.of(signature),
-            List.of(), new VariableStorageModel(List.of(registerParameter)));
+            List.of(), new VariableStorageModel(List.of(registerParameter, entryValue)));
+        boolean[] requestedGc = {false};
+        var walker = StackWalker.getInstance();
         var result = new MinimalDwarfSidecarExporter().export(Path.of(args[2]),
             Path.of(args[3]), Path.of(args[0]), Path.of(args[1]),
-            List.of(new FunctionSymbol(args[4], address, 0x40)), source, typeModel);
+            List.of(new FunctionSymbol(args[4], address, 0x40)), source, typeModel,
+            Path.of(args[3]).getFileName() + ".c", () -> {
+                if (!requestedGc[0] && walker.walk(frames -> frames.anyMatch(frame ->
+                        frame.getClassName().equals(MinimalDwarfSidecarExporter.class.getName()) &&
+                        frame.getMethodName().equals("produce")))) {
+                    // Force a collection between producer initialization and its native callback.
+                    requestedGc[0] = true;
+                    System.gc();
+                }
+                return false;
+            });
+        if (!requestedGc[0]) throw new AssertionError("did not exercise the live native producer");
         System.out.printf("minimal-sidecar=PASS target=%s functions=%d sections=%s%n",
             result.target().name(), result.functionCount(), result.sectionNames());
     }

@@ -199,12 +199,11 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
     }
 
-    private static void validateObjectParameterTypes(TypeGraph types, List<Parameter> parameters) {
+    private static void validateObjectParameterTypes(java.util.Map<String, TypeGraph.TypeNode> byKey, List<Parameter> parameters) {
         for (Parameter parameter : parameters) {
             if (!parameter.objectPointer()) {
                 continue;
             }
-            var byKey = types.byKey();
             var visited = new java.util.HashSet<String>();
             TypeRef reference = parameter.type();
             while (visited.add(reference.key())) {
@@ -234,6 +233,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             throw new IllegalArgumentException(
                 "types/functions/globals/variable storage/function statics are required");
         }
+        var byKey = types.byKey();
         functions = functions.stream()
             .sorted(Comparator.comparingLong(FunctionSignature::address)
                 .thenComparing(FunctionSignature::name))
@@ -255,35 +255,35 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             .toList();
         var declarationKeys = new java.util.HashSet<String>();
         for (FunctionDeclaration declaration : functionDeclarations) {
-            validateObjectParameterTypes(types, declaration.parameters());
+            validateObjectParameterTypes(byKey, declaration.parameters());
             if (!declarationKeys.add(declaration.key()) ||
-                    !types.byKey().containsKey(declaration.returnType().key()) ||
+                    !byKey.containsKey(declaration.returnType().key()) ||
                     declaration.parameters().stream().anyMatch(parameter ->
-                        !types.byKey().containsKey(parameter.type().key()))) {
+                        !byKey.containsKey(parameter.type().key()))) {
                 throw new IllegalArgumentException("duplicate identity or missing type for declaration " +
                     declaration.name());
             }
         }
         for (FunctionSignature function : functions) {
-            validateObjectParameterTypes(types, function.parameters());
-            if (!types.byKey().containsKey(function.returnType().key())) {
+            validateObjectParameterTypes(byKey, function.parameters());
+            if (!byKey.containsKey(function.returnType().key())) {
                 throw new IllegalArgumentException("missing return type for " + function.name());
             }
             for (Parameter parameter : function.parameters()) {
-                if (!types.byKey().containsKey(parameter.type().key())) {
+                if (!byKey.containsKey(parameter.type().key())) {
                     throw new IllegalArgumentException(
                         "missing parameter type for " + function.name());
                 }
             }
             for (LocalVariable local : function.locals()) {
-                if (!types.byKey().containsKey(local.type().key())) {
+                if (!byKey.containsKey(local.type().key())) {
                     throw new IllegalArgumentException(
                         "missing local type for " + function.name() + "::" + local.name());
                 }
             }
         }
         for (GlobalVariable global : globals) {
-            if (!types.byKey().containsKey(global.type().key())) {
+            if (!byKey.containsKey(global.type().key())) {
                 throw new IllegalArgumentException("missing type for global " + global.name());
             }
         }
@@ -293,7 +293,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
             if (!owners.contains(variable.ownerAddress())) {
                 throw new IllegalArgumentException("missing function owner for " + variable.name());
             }
-            if (!types.byKey().containsKey(variable.type().key())) {
+            if (!byKey.containsKey(variable.type().key())) {
                 throw new IllegalArgumentException("missing type for function static " +
                     variable.name());
             }

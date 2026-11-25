@@ -157,7 +157,7 @@ def main():
                 environment['JAVA_TOOL_OPTIONS'] = '-Xlog:jfr+startup=off -XX:StartFlightRecording=filename=' + \
                     str(case / 'export.jfr') + ',settings=profile,dumponexit=true'
             sample = run(case, name, command, env=environment)
-            sample['runtime'] = support.verify_headless(case / (name + '.log'), module, exported=True)
+            sample['runtime'] = support.verify_headless(case / (name + '.log'), module, saved_project=True)
             bodies = [line.split('GhidraDwarfForge report: ', 1)[1]
                 for line in (case / (name + '.log')).read_text(encoding='utf-8').splitlines()
                 if 'GhidraDwarfForge report: {' in line]

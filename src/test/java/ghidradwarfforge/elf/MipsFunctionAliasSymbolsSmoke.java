@@ -22,6 +22,16 @@ public final class MipsFunctionAliasSymbolsSmoke {
 
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("forge-mips-alias-");
+        try {
+            checkFixtures(root);
+        }
+        finally {
+            Files.deleteIfExists(root.resolve("fixture.elf"));
+            Files.delete(root);
+        }
+    }
+
+    private static void checkFixtures(Path root) throws Exception {
         String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(new byte[16]));
         var alias = new ElfFunctionAlias("alternate", "primary", 0x1040, 16, hash);
         for (ByteOrder order : List.of(ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN)) {
@@ -75,7 +85,7 @@ public final class MipsFunctionAliasSymbolsSmoke {
                         check(root, bytes, split, start == 0x1010 && size == 16 ? null : "word aligned");
                     }
                 }
-                Path path = root.resolve("cancel.elf");
+                Path path = root.resolve("fixture.elf");
                 Files.write(path, bytes);
                 var image = ElfImage.read(path);
                 for (int limit : List.of(1, 5, 12)) {

@@ -155,6 +155,7 @@ public final class ExportReportSmoke {
             skipped, diagnostics).toJson();
         requireContains(pathReport, "\"inputPath\":\"" +
             unresolved.toAbsolutePath().toString().replace("\\", "\\\\") + "\"");
+        publicationWarnings(clean, first, fatal);
         textRoundTrips(cleanModel, cleanSource);
         terminalMessages();
         ExportReportContractSmoke.check();
@@ -216,6 +217,32 @@ public final class ExportReportSmoke {
             }
         }
         System.out.println("export-report-text-roundtrips=PASS cases=" + values.size());
+    }
+
+    private static void publicationWarnings(ExportReport clean, ExportReport partial, ExportReport fatal) {
+        String warning = "A staging directory needs cleanup";
+        for (ExportReport completed : List.of(clean, partial)) {
+            String before = completed.toJson();
+            var expected = decoded(before);
+            var messages = new com.google.gson.JsonArray();
+            messages.add(warning);
+            messages.addAll(expected.getAsJsonArray("diagnostics"));
+            expected.add("diagnostics", messages);
+            expected.getAsJsonObject("counts").addProperty("diagnostics", messages.size());
+            expected.addProperty("status", "PARTIAL");
+
+            var warned = completed.withPublicationWarning(warning);
+            if (!expected.equals(decoded(warned.toJson())) ||
+                    !expected.equals(decoded(warned.withPublicationWarning(warning).toJson())) ||
+                    !before.equals(completed.toJson())) {
+                throw new AssertionError("cleanup warning changed completed claims or appeared more than once");
+            }
+        }
+        try {
+            fatal.withPublicationWarning(warning);
+            throw new AssertionError("failed export reported committed artifacts needing cleanup");
+        }
+        catch (IllegalStateException expected) { }
     }
 
     private static void terminalMessages() {

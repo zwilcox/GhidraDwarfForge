@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Research only. The target and backup below are private copies created by this test.
+# The target and backup are private copies made by this comparison.
 if [[ $# -ne 2 ]]; then
     echo "usage: $0 <isolated-ghidra-with-packaged-extension> <source-built-x86-64-exec.stripped>" >&2
     exit 64
@@ -40,7 +40,7 @@ cp "$output.c" "$work/initial.dbg.c"
 test ! -e "$backup"
 cp --preserve=all "$input" "$backup"
 objcopy "--add-gnu-debuglink=$output" "$input" "$work/attached.stage"
-javac --release 21 -d "$work/classes" \
+javac --release 21 -sourcepath "$repository/src/main/java" -d "$work/classes" \
     "$repository/src/main/java/ghidradwarfforge/elf/ElfImage.java" \
     "$repository/src/main/java/ghidradwarfforge/elf/ExecutableProgramBytes.java" \
     "$repository/src/main/java/ghidradwarfforge/elf/DebuglinkCandidateContent.java" \

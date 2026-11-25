@@ -10,32 +10,73 @@ spec.loader.exec_module(observations)
 
 
 class HeadlessObservationTest(unittest.TestCase):
-    def test_runtime_and_actual_script(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            module = root / 'module'
-            (module / 'ghidra_scripts').mkdir(parents=True)
-            script = module / 'ghidra_scripts/GhidraDwarfForge.java'
-            script.write_text('selected script')
+    def test_saved_project_entry_point_and_delegated_export(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            scripts = root / 'module/ghidra_scripts'
+            scripts.mkdir(parents=True)
+            direct = scripts / 'GhidraDwarfForge.java'
+            direct.touch()
+            read_only = scripts / 'GhidraDwarfForgeReadOnly.java'
             log = root / 'export.log'
-            log.with_suffix('.stderr').write_text('openjdk version "21.0.12.1"\n')
-            log.write_text(f'INFO  SCRIPT: {script} (HeadlessAnalyzer)  \n')
-            result = observations.verify(log, module, exported=True)
-            self.assertEqual(result['javaVersions'], ['21.0.12.1'])
-            self.assertEqual(result['packagedScript'], str(script.resolve()))
-            old = root / 'GhidraDwarfForge.java'
+            log.with_suffix('.stderr').write_text('openjdk version "21.0.12"\n')
+            direct_record = f'INFO  SCRIPT: {direct} (HeadlessAnalyzer)\n'
+            selected = f'INFO  SCRIPT: {read_only} (HeadlessAnalyzer)\n'
+            completed = 'INFO  GhidraDwarfForge.java> GhidraDwarfForge symbol export PASS (GhidraScript)\n'
+            log.write_text(direct_record)
+            self.assertEqual(observations.verify(log, scripts.parent, saved_project=True)['packagedScript'],
+                str(direct.resolve()))
+            read_only.touch()
+            log.write_text(selected + completed)
+            self.assertEqual(observations.verify(log, scripts.parent, saved_project=True)['packagedScript'],
+                str(read_only.resolve()))
+            with self.assertRaises(ValueError):
+                observations.verify(log, scripts.parent, exported=True)
+            other = root / read_only.name
+            other.touch()
+            for transcript in (selected, selected + completed * 2, selected * 2 + completed,
+                    direct_record + completed, direct_record + selected + completed,
+                    selected.replace(str(read_only), str(other)) + completed):
+                log.write_text(transcript)
+                with self.subTest(transcript=transcript), self.assertRaises(ValueError):
+                    observations.verify(log, scripts.parent, saved_project=True)
+
+    def test_runtime_and_actual_script(self):
+        with tempfile.TemporaryDirectory(prefix='forge-headless-observation-') as temporary:
+            root = Path(temporary)
+            module = root / 'module'
+            scripts = module / 'ghidra_scripts'
+            scripts.mkdir(parents=True)
+            script = scripts / 'GhidraDwarfForge.java'
+            script.write_text('// observation fixture\n', encoding='utf-8')
+            log, stderr = root / 'export.log', root / 'export.stderr'
+            banner = 'openjdk version "21.0.13" 2026-10-20 LTS\n'
+            selected = f'INFO  SCRIPT: {script} (HeadlessAnalyzer)\n'
+            old = root / 'old/GhidraDwarfForge.java'
+            old.parent.mkdir()
             old.write_text('old shared-install script')
-            log.write_text(f'INFO  SCRIPT: {old} (HeadlessAnalyzer)  \n')
-            with self.assertRaises(ValueError):
-                observations.verify(log, module, exported=True)
-            log.write_text(f'INFO  SCRIPT: {script} (HeadlessAnalyzer)  \n')
-            for version in ('25.0.4.1', ''):
-                log.with_suffix('.stderr').write_text(f'openjdk version "{version}"\n')
-                with self.assertRaises(ValueError):
+            for out, err in ((selected, banner), (banner + selected, ''),
+                    ('\x1b[31;1m' + banner.rstrip() + '\x1b[0m\n' + selected, ''),
+                    (selected, '\x1b[31;1m' + banner.rstrip() + '\x1b[0m\n')):
+                log.write_text(out, encoding='utf-8')
+                stderr.write_text(err, encoding='utf-8')
+                observed = observations.verify(log, module, exported=True)
+                self.assertEqual(observed['javaVersions'], ['21.0.13'])
+                self.assertEqual(observed['packagedScript'], str(script.resolve()))
+            log.write_text(selected.rstrip() + '  \n', encoding='utf-8')
+            stderr.write_text('openjdk version "21.0.12.1"\n', encoding='utf-8')
+            self.assertEqual(observations.verify(log, module, exported=True)['javaVersions'], ['21.0.12.1'])
+            for out, err in ((selected, ''), ('mentioned ' + banner + selected, ''),
+                    (banner + selected, 'java version "25.0.1"\n'),
+                    ('\x1b[31;1m' + banner.replace('21.', '25.') + '\x1b[0m' + selected, ''),
+                    (banner, ''), (banner + selected * 2, ''), (selected, 'openjdk version ""\n'),
+                    (selected.replace(str(script), str(old)), banner),
+                    (banner + selected.replace(str(script), str(root / 'wrong/GhidraDwarfForge.java')), ''),
+                    ('\x1b[2K' + banner + selected, '')):
+                log.write_text(out, encoding='utf-8')
+                stderr.write_text(err, encoding='utf-8')
+                with self.subTest(out=out, err=err), self.assertRaises((ValueError, FileNotFoundError)):
                     observations.verify(log, module, exported=True)
-            log.with_suffix('.stderr').write_text('')
-            with self.assertRaises(ValueError):
-                observations.verify(log, module, exported=True)
 
 
 if __name__ == '__main__':

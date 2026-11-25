@@ -115,7 +115,18 @@ done
 run_status 0 PARTIAL 0 --import="$input"
 run_status 10 FATAL 0 --import="$input"
 run_status 11 CANCELLED 0 --import="$input"
-run_status 12 NONE 0 --import="$input"
+for malformed in NONE TRUNCATED INCOMPLETE TRAILING_SUCCESS; do
+    run_status 12 "$malformed" 0 --import="$input"
+done
+# Real tee writes a completely valid transcript; its reported failure must still win.
+mkdir "$work/tee-failure"
+cat >"$work/tee-failure/tee" <<'SH'
+#!/bin/sh
+/usr/bin/tee "$@" || exit 1
+exit 1
+SH
+chmod +x "$work/tee-failure/tee"
+PATH="$work/tee-failure:$PATH" run_status 12 SUCCESS 0 --import="$input"
 run_status 12 MULTIPLE 0 --import="$input"
 run_status 12 SUCCESS 9 --import="$input"
 

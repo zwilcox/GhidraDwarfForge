@@ -20,6 +20,7 @@ import ghidradwarfforge.locations.VariableStorageModel.VariableLocation;
 public final class Dwarf5LocationLists {
     private static final int DW_LLE_END_OF_LIST = 0x00;
     private static final int DW_LLE_START_END = 0x07;
+    private static final int DW_LLE_START_LENGTH = 0x08;
     private static final int DW_OP_ADDR = 0x03;
     public record PlannedRange(LocationRange range, Expression expression) {
         public PlannedRange {
@@ -114,9 +115,6 @@ public final class Dwarf5LocationLists {
     }
 
     private static PlannedList plan(VariableLocation variable, BooleanSupplier cancelled) {
-        if (variable.locations().size() <= 1) {
-            return null;
-        }
         java.util.ArrayList<PlannedRange> ranges = new java.util.ArrayList<>();
         for (LocationRange range : variable.locations()) {
             checkCancelled(cancelled);
@@ -139,9 +137,12 @@ public final class Dwarf5LocationLists {
         for (PlannedRange planned : list.ranges()) {
             checkCancelled(cancelled);
             byte[] expression = encodeExpression(planned.expression(), addressBytes, order, cancelled);
-            output.write(DW_LLE_START_END);
-            writeUnsigned(output, planned.range().start(), addressBytes, order);
-            writeUnsigned(output, planned.range().end(), addressBytes, order);
+            var range = planned.range();
+            boolean endsAfterLastAddress = addressBytes == 4 && range.end() == (1L << 32);
+            output.write(endsAfterLastAddress ? DW_LLE_START_LENGTH : DW_LLE_START_END);
+            writeUnsigned(output, range.start(), addressBytes, order);
+            if (endsAfterLastAddress) writeUleb(output, range.end() - range.start());
+            else writeUnsigned(output, range.end(), addressBytes, order);
             writeUleb(output, expression.length);
             output.writeBytes(expression);
         }

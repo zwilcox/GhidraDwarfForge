@@ -80,7 +80,24 @@ exit $LASTEXITCODE
         [IO.File]::WriteAllText($launcher, @'
 @echo off
 > "%FAKE_ARGUMENT_LOG%" echo launched %*
-echo INFO GhidraDwarfForge report: {"schemaVersion":1,"status":"%FAKE_REPORT_STATUS%"}
+set "status=%FAKE_REPORT_STATUS%"
+set "fields="artifacts":{"outputPath":"fixture.dbg"},"counts":{"functionsExported":1},"failure":null"
+if "%status%"=="FATAL" goto failure
+if "%status%"=="CANCELLED" goto failure
+if "%status%"=="NONE" goto done
+if "%status%"=="MULTIPLE" set "status=SUCCESS"
+if "%status%"=="TRAILING_SUCCESS" set "status=SUCCESS"
+goto report
+:failure
+set "fields="artifacts":null,"counts":null,"failure":{"type":"fixture","message":"fixture"}"
+:report
+set "record={"schemaVersion":1,"status":"%status%",%fields%}"
+if "%FAKE_REPORT_STATUS%"=="TRUNCATED" set "record={"schemaVersion":2,"status":"SUCCESS","counts":"
+if "%FAKE_REPORT_STATUS%"=="INCOMPLETE" set "record={"schemaVersion":2,"status":"SUCCESS"}"
+if "%FAKE_REPORT_STATUS%"=="TRAILING_SUCCESS" set "record=%record% unexpected"
+if "%FAKE_REPORT_STATUS%"=="MULTIPLE" echo INFO GhidraDwarfForge.java^> GhidraDwarfForge report: %record%
+echo INFO GhidraDwarfForge.java^> GhidraDwarfForge report: %record% (GhidraScript)
+:done
 exit /b %FAKE_HEADLESS_EXIT%
 '@)
     }
@@ -119,6 +136,21 @@ exit /b %FAKE_HEADLESS_EXIT%
     $projectOptions = @('-ProjectDirectory', $project, '-ProjectName', 'Existing',
         '-Program', '/folder/program', '-OriginalElf', $inputElf)
 
+    foreach ($invalid in @('TRUNCATED', 'INCOMPLETE', 'MULTIPLE', 'TRAILING_SUCCESS', 'NONE')) {
+        $env:FAKE_REPORT_STATUS = $invalid
+        $null = Invoke-Wrapper 12 $projectOptions
+    }
+    $env:FAKE_REPORT_STATUS = 'FATAL'
+    $null = Invoke-Wrapper 10 $projectOptions
+    $env:FAKE_REPORT_STATUS = 'CANCELLED'
+    $null = Invoke-Wrapper 11 $projectOptions
+    $env:FAKE_REPORT_STATUS = 'SUCCESS'
+    if ($env:OS -eq 'Windows_NT') {
+        $lockedLog = Join-Path $work 'read-only-handle.log'
+        $handle = [IO.File]::Open($lockedLog, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::Read)
+        try { $null = Invoke-Wrapper 12 ($projectOptions + @('-Log', $lockedLog)) }
+        finally { $handle.Dispose() }
+    }
     $null = Invoke-Wrapper 0 $projectOptions
     $savedArguments = Get-Content -LiteralPath $argumentLog -Raw
     Assert-Condition ($savedArguments.Contains('GhidraDwarfForgeReadOnly.java')) 'saved export did not use read-only host'

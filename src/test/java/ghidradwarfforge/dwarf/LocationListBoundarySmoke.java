@@ -64,6 +64,12 @@ public final class LocationListBoundarySmoke {
                 new MemoryStorage(7))), 4, order));
             rejects(() -> Dwarf5LocationLists.build(List.of(variable(0xffff_fffcL, 1,
                 new MemoryStorage(7))), 4, order));
+            var edge = variable(0xffff_fffbL, 1, new MemoryStorage(7));
+            var encoded = Dwarf5LocationLists.build(List.of(edge), 4, order);
+            var edgeBytes = ByteBuffer.wrap(encoded.section()).order(order);
+            edgeBytes.position(Math.toIntExact(encoded.offsets().get(edge)) + 15);
+            require(edgeBytes.get() == 8 && Integer.toUnsignedLong(edgeBytes.getInt()) == 0xffff_fffeL &&
+                edgeBytes.get() == 2, "last ELF32 location needs start and length");
             var high = variable(0x1_0000_0000L, 1, new MemoryStorage(0x1_0000_0007L));
             require(expressions(high, 8, order).size() == 2, "64-bit address was wrongly rejected");
         }
