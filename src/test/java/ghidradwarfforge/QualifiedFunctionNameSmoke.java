@@ -41,6 +41,7 @@ public final class QualifiedFunctionNameSmoke {
             var program = new ProgramDB("qualified-functions", language,
                 language.getDefaultCompilerSpec(), consumer);
             try {
+                checkBlockBoundaries(program);
                 checkProgram(program);
             }
             finally {
@@ -49,6 +50,38 @@ public final class QualifiedFunctionNameSmoke {
             System.out.println("qualified-function-name-target=PASS " + id);
         }
         System.out.println("qualified-function-name-smoke=PASS");
+    }
+
+    private static void checkBlockBoundaries(ProgramDB program) throws Exception {
+        int transaction = program.startTransaction("function bodies crossing memory blocks");
+        try {
+            var memory = program.getMemory();
+            var space = program.getAddressFactory().getDefaultAddressSpace();
+            var start = space.getAddress(0x600000);
+            var gap = start.add(0x100);
+            var alias = start.add(0x200);
+            memory.createInitializedBlock("first", start, 8, (byte) 0, TaskMonitor.DUMMY, false);
+            memory.createInitializedBlock("second", start.add(8), 8, (byte) 0, TaskMonitor.DUMMY, false);
+            memory.createInitializedBlock("before_gap", gap, 8, (byte) 0, TaskMonitor.DUMMY, false);
+            memory.createInitializedBlock("before_alias", alias, 8, (byte) 0, TaskMonitor.DUMMY, false);
+            memory.createByteMappedBlock("alias", alias.add(8), start, 8, false);
+            var global = program.getGlobalNamespace();
+            function(program, "crosses_blocks", global, start.getOffset());
+            function(program, "crosses_gap", global, gap.getOffset());
+            function(program, "crosses_alias", global, alias.getOffset());
+
+            var result = GhidraFunctionSymbols.extractDetailed(program, TaskMonitor.DUMMY, ignored -> { }, 0x1000);
+            require(result.functions().equals(List.of(new FunctionSymbol("crosses_blocks", 0x5ff000, 16))),
+                "adjacent loaded blocks did not preserve the complete rebased function body: " + result);
+            var unmapped = GhidraFunctionSymbols.SkipReason.UNMAPPED_MEMORY;
+            require(result.skippedFunctions().equals(List.of(
+                new GhidraFunctionSymbols.SkippedFunction("crosses_alias", unmapped),
+                new GhidraFunctionSymbols.SkippedFunction("crosses_gap", unmapped))),
+                "function admitted across a byte-mapped block or a gap: " + result);
+        }
+        finally {
+            program.endTransaction(transaction, false);
+        }
     }
 
     private static void modelControls() throws Exception {
