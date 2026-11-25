@@ -271,7 +271,6 @@ public class GhidraDwarfForge extends GhidraScript {
         if (formatterSelectionPath != null) protectedInputs.add(formatterSelectionPath);
         if (firmwareInputs != null) protectedInputs.add(firmwareInputs);
         ghidradwarfforge.GhidraProjectOutputProtection.requireSafeOutputs(currentProgram, generation, monitor);
-        CompanionArtifactPublisher.validate(input, generation, protectedInputs.toArray(Path[]::new));
         String inputHash = consistency.inputSha256();
         String importedHash = currentProgram.getExecutableSHA256();
         if (importedHash != null && !importedHash.isBlank() &&
@@ -287,14 +286,14 @@ public class GhidraDwarfForge extends GhidraScript {
                 ghidradwarfforge.firmware.GhidraFirmwareSession.open(currentProgram, rawTarget,
                     input, firmwareInputs, monitor)) {
             ElfImage originalElf = firmware == null ? ElfImage.readForExport(input) : firmware.image().witness();
-            if (firmware != null) {
-                protectedInputs.addAll(firmware.protectedInputs());
-                CompanionArtifactPublisher.validate(input, generation, protectedInputs.toArray(Path[]::new));
-            }
             DwarfTarget target = GhidraTargetAgreement.requireAgreement(currentProgram, originalElf);
             if (targetProfile != null) {
                 ghidradwarfforge.GhidraCortexM3Profile.requireAgreement(currentProgram, originalElf, monitor);
             }
+            // Resolving protected native paths requires their parent directories to exist.
+            // Diagnose a wrong target before that check, while outputs are still untouched.
+            if (firmware != null) protectedInputs.addAll(firmware.protectedInputs());
+            CompanionArtifactPublisher.validate(input, generation, protectedInputs.toArray(Path[]::new));
             long importedImageBase = firmware == null ? GhidraImageBase.originalImageBase(currentProgram) :
                 currentProgram.getImageBase().getOffset();
             long rebaseDelta = firmware == null ? AddressNormalizer.rebaseDelta(
