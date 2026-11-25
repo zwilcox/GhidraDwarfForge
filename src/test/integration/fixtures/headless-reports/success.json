@@ -1,0 +1,451 @@
+{
+    "schemaVersion": 2,
+    "status": "SUCCESS",
+    "target": {
+        "architecture": "x86_64",
+        "addressBits": 64,
+        "byteOrder": "LITTLE_ENDIAN"
+    },
+    "artifacts": {
+        "inputPath": "clean.so",
+        "inputSha256": "d364b2709a7ad853fd7d3fa6b6b272b192333add612365695e7ebc3ad50cb05e",
+        "outputPath": "clean.so.dbg",
+        "outputSha256": "9966ae16476ea60cdae8bea14413a086ef55b3d89fc9a0f53eeba9999e50c1ea",
+        "sourcePath": "clean.so.dbg.c",
+        "sourceSha256": "6d5799573bbf1274e85014dc065b2f5f24c530b5f75b3004162d4957ae4c39fa"
+    },
+    "counts": {
+        "functionsExported": 1,
+        "functionsDecompiled": 1,
+        "functionsFailed": 0,
+        "functionsSkipped": 0,
+        "functionSignatures": 1,
+        "parameters": 0,
+        "localVariables": 0,
+        "globalVariables": 3,
+        "functionStaticVariables": 0,
+        "canonicalTypes": 10,
+        "defensibleVariableLocations": 0,
+        "omittedLocationRanges": 0,
+        "mappedSourceLines": 2,
+        "unsupportedConstructs": 0,
+        "diagnostics": 0
+    },
+    "sections": [
+        ".debug_abbrev",
+        ".debug_aranges",
+        ".debug_info",
+        ".debug_line",
+        ".debug_str"
+    ],
+    "failedFunctions": [],
+    "skippedFunctions": [],
+    "omittedLocations": [],
+    "unsupportedConstructs": [],
+    "diagnostics": [],
+    "validation": {
+        "status": "NOT_RUN"
+    },
+    "native": {
+        "libdwarfVersion": "2.3.2"
+    },
+    "failure": null,
+    "coverage": {
+        "definitionVersion": 2,
+        "addressModel": "ELF_LINK_TIME",
+        "profile": {
+            "languageId": "x86:LE:64:default",
+            "compilerSpecId": "gcc"
+        },
+        "summary": {
+            "functions": "1",
+            "unknownSignatureFunctions": "0",
+            "recoveredGlobalsKnown": "YES",
+            "recoveredGlobals": "3",
+            "source": {
+                "functions": "1",
+                "unavailableInstructionFunctions": "0",
+                "unavailableTokenFunctions": "0",
+                "decodedInstructions": "3",
+                "anchoredInstructions": "1",
+                "lineVisibleInstructions": "3"
+            },
+            "variables": {
+                "recoveredVariables": "0",
+                "emittedVariables": "0",
+                "variablesWithLocation": "0",
+                "knownScopeVariables": "0",
+                "unknownScopeVariables": "0",
+                "knownScopeBytes": "0",
+                "coveredScopeBytes": "0",
+                "extentUnavailableReason": ""
+            },
+            "variablesByKind": {
+                "PARAMETER": {
+                    "recoveredVariables": "0",
+                    "emittedVariables": "0",
+                    "variablesWithLocation": "0",
+                    "knownScopeVariables": "0",
+                    "unknownScopeVariables": "0",
+                    "knownScopeBytes": "0",
+                    "coveredScopeBytes": "0",
+                    "extentUnavailableReason": ""
+                },
+                "LOCAL": {
+                    "recoveredVariables": "0",
+                    "emittedVariables": "0",
+                    "variablesWithLocation": "0",
+                    "knownScopeVariables": "0",
+                    "unknownScopeVariables": "0",
+                    "knownScopeBytes": "0",
+                    "coveredScopeBytes": "0",
+                    "extentUnavailableReason": ""
+                },
+                "FUNCTION_STATIC": {
+                    "recoveredVariables": "0",
+                    "emittedVariables": "0",
+                    "variablesWithLocation": "0",
+                    "knownScopeVariables": "0",
+                    "unknownScopeVariables": "0",
+                    "knownScopeBytes": "0",
+                    "coveredScopeBytes": "0",
+                    "extentUnavailableReason": ""
+                }
+            },
+            "functionTypes": {
+                "recoveredRoots": "1",
+                "emittedRoots": "1",
+                "opaqueFreeEmittedRoots": "1",
+                "recoveredNodes": "1",
+                "resolvedEmittedNodes": "1",
+                "opaqueEmittedNodes": "0",
+                "notEmittedNodes": "0",
+                "implicitVoidNodes": "0",
+                "emittedImplicitVoidNodes": "0"
+            }
+        },
+        "functions": [
+            {
+                "entry": "0x1000",
+                "name": "fixture_answer",
+                "namespace": [],
+                "ranges": [
+                    [
+                        "0x1000",
+                        "0x100a"
+                    ]
+                ],
+                "source": {
+                    "disposition": "DECOMPILED",
+                    "diagnostic": "",
+                    "decodedInstructions": "3",
+                    "anchoredInstructions": "1",
+                    "lineVisibleInstructions": "3",
+                    "instructionUnavailableReason": "",
+                    "tokenUnavailableReason": "",
+                    "decodedStarts": [
+                        "0x1000",
+                        "0x1004",
+                        "0x1009"
+                    ],
+                    "anchoredStarts": [
+                        "0x1009"
+                    ],
+                    "lineVisibleStarts": [
+                        "0x1000",
+                        "0x1004",
+                        "0x1009"
+                    ]
+                },
+                "signature": {
+                    "recovered": "YES",
+                    "emitted": "YES",
+                    "source": "IMPORTED",
+                    "recordedCallingConvention": "unknown",
+                    "emittedEffectiveCallingConvention": "__stdcall",
+                    "debuggerCallRestriction": ""
+                },
+                "typeProvenance": "UNKNOWN_PER_TYPE",
+                "types": {
+                    "recoveredRoots": "1",
+                    "emittedRoots": "1",
+                    "opaqueFreeEmittedRoots": "1",
+                    "recoveredNodes": "1",
+                    "resolvedEmittedNodes": "1",
+                    "opaqueEmittedNodes": "0",
+                    "notEmittedNodes": "0",
+                    "implicitVoidNodes": "0",
+                    "emittedImplicitVoidNodes": "0"
+                },
+                "variables": {
+                    "recoveredVariables": "0",
+                    "emittedVariables": "0",
+                    "variablesWithLocation": "0",
+                    "knownScopeVariables": "0",
+                    "unknownScopeVariables": "0",
+                    "knownScopeBytes": "0",
+                    "coveredScopeBytes": "0",
+                    "extentUnavailableReason": ""
+                },
+                "variablesByKind": {
+                    "PARAMETER": {
+                        "recoveredVariables": "0",
+                        "emittedVariables": "0",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    },
+                    "LOCAL": {
+                        "recoveredVariables": "0",
+                        "emittedVariables": "0",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    },
+                    "FUNCTION_STATIC": {
+                        "recoveredVariables": "0",
+                        "emittedVariables": "0",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    }
+                }
+            }
+        ],
+        "variables": [],
+        "recoveredGlobals": [
+            {
+                "name": "__DT_GNU_HASH",
+                "namespace": [],
+                "address": "0x2b8",
+                "byteSize": "4",
+                "type": "type:ghidra.program.model.data.DWordDataType:/dword:4",
+                "source": "IMPORTED",
+                "declaration": "NO"
+            },
+            {
+                "name": "__DT_SYMTAB",
+                "namespace": [],
+                "address": "0x2e0",
+                "byteSize": "48",
+                "type": "type:ghidra.program.database.data.ArrayDB:/ELF/Elf64_Sym[2]:48",
+                "source": "IMPORTED",
+                "declaration": "NO"
+            },
+            {
+                "name": "_DYNAMIC",
+                "namespace": [],
+                "address": "0x2f50",
+                "byteSize": "96",
+                "type": "type:ghidra.program.database.data.ArrayDB:/ELF/Elf64_Dyn[6]:96",
+                "source": "IMPORTED",
+                "declaration": "NO"
+            }
+        ],
+        "storageEvidenceDetails": [],
+        "typeNodes": [
+            {
+                "key": "type:ghidra.program.database.data.ArrayDB:/ELF/Elf64_Dyn[6]:96",
+                "name": "Elf64_Dyn[6]",
+                "definitionKind": "ArrayType",
+                "byteSize": "96",
+                "kind": "RESOLVED",
+                "emitted": "YES",
+                "recoveredReferences": [
+                    {
+                        "key": "uid:3442797221b71627",
+                        "count": "1"
+                    }
+                ],
+                "emittedReferences": [
+                    {
+                        "key": "uid:3442797221b71627",
+                        "count": "1"
+                    }
+                ],
+                "diagnostic": ""
+            },
+            {
+                "key": "type:ghidra.program.database.data.ArrayDB:/ELF/Elf64_Sym[2]:48",
+                "name": "Elf64_Sym[2]",
+                "definitionKind": "ArrayType",
+                "byteSize": "48",
+                "kind": "RESOLVED",
+                "emitted": "YES",
+                "recoveredReferences": [
+                    {
+                        "key": "uid:344279722237162b",
+                        "count": "1"
+                    }
+                ],
+                "emittedReferences": [
+                    {
+                        "key": "uid:344279722237162b",
+                        "count": "1"
+                    }
+                ],
+                "diagnostic": ""
+            },
+            {
+                "key": "type:ghidra.program.model.data.ByteDataType:/byte:1",
+                "name": "byte",
+                "definitionKind": "BaseType",
+                "byteSize": "1",
+                "kind": "RESOLVED",
+                "emitted": "YES",
+                "recoveredReferences": [],
+                "emittedReferences": [],
+                "diagnostic": ""
+            },
+            {
+                "key": "type:ghidra.program.model.data.DWordDataType:/dword:4",
+                "name": "dword",
+                "definitionKind": "BaseType",
+                "byteSize": "4",
+                "kind": "RESOLVED",
+                "emitted": "YES",
+                "recoveredReferences": [],
+                "emittedReferences": [],
+                "diagnostic": ""
+            },
+            {
+                "key": "type:ghidra.program.model.data.IntegerDataType:/int:4",
+                "name": "int",
+                "definitionKind": "BaseType",
+                "byteSize": "4",
+                "kind": "RESOLVED",
+                "emitted": "YES",
+                "recoveredReferences": [],
+                "emittedReferences": [],
+                "diagnostic": ""
+            },
+            {
+                "key": "type:ghidra.program.model.data.QWordDataType:/qword:8",
+                "name": "qword",
+                "definitionKind": "BaseType",
+                "byteSize": "8",
+                "kind": "RESOLVED",
+                "emitted": "YES",
+                "recoveredReferences": [],
+                "emittedReferences": [],
+                "diagnostic": ""
+            },
+            {
+                "key": "type:ghidra.program.model.data.WordDataType:/word:2",
+                "name": "word",
+                "definitionKind": "BaseType",
+                "byteSize": "2",
+                "kind": "RESOLVED",
+                "emitted": "YES",
+                "recoveredReferences": [],
+                "emittedReferences": [],
+                "diagnostic": ""
+            },
+            {
+                "key": "uid:3442797221b71627",
+                "name": "Elf64_Dyn",
+                "definitionKind": "AggregateType",
+                "byteSize": "16",
+                "kind": "RESOLVED",
+                "emitted": "YES",
+                "recoveredReferences": [
+                    {
+                        "key": "type:ghidra.program.model.data.QWordDataType:/qword:8",
+                        "count": "1"
+                    },
+                    {
+                        "key": "uid:3442797221b71628",
+                        "count": "1"
+                    }
+                ],
+                "emittedReferences": [
+                    {
+                        "key": "type:ghidra.program.model.data.QWordDataType:/qword:8",
+                        "count": "1"
+                    },
+                    {
+                        "key": "uid:3442797221b71628",
+                        "count": "1"
+                    }
+                ],
+                "diagnostic": ""
+            },
+            {
+                "key": "uid:3442797221b71628",
+                "name": "Elf64_DynTag",
+                "definitionKind": "EnumType",
+                "byteSize": "8",
+                "kind": "RESOLVED",
+                "emitted": "YES",
+                "recoveredReferences": [],
+                "emittedReferences": [],
+                "diagnostic": ""
+            },
+            {
+                "key": "uid:344279722237162b",
+                "name": "Elf64_Sym",
+                "definitionKind": "AggregateType",
+                "byteSize": "24",
+                "kind": "RESOLVED",
+                "emitted": "YES",
+                "recoveredReferences": [
+                    {
+                        "key": "type:ghidra.program.model.data.ByteDataType:/byte:1",
+                        "count": "2"
+                    },
+                    {
+                        "key": "type:ghidra.program.model.data.DWordDataType:/dword:4",
+                        "count": "1"
+                    },
+                    {
+                        "key": "type:ghidra.program.model.data.QWordDataType:/qword:8",
+                        "count": "2"
+                    },
+                    {
+                        "key": "type:ghidra.program.model.data.WordDataType:/word:2",
+                        "count": "1"
+                    }
+                ],
+                "emittedReferences": [
+                    {
+                        "key": "type:ghidra.program.model.data.ByteDataType:/byte:1",
+                        "count": "2"
+                    },
+                    {
+                        "key": "type:ghidra.program.model.data.DWordDataType:/dword:4",
+                        "count": "1"
+                    },
+                    {
+                        "key": "type:ghidra.program.model.data.QWordDataType:/qword:8",
+                        "count": "2"
+                    },
+                    {
+                        "key": "type:ghidra.program.model.data.WordDataType:/word:2",
+                        "count": "1"
+                    }
+                ],
+                "diagnostic": ""
+            }
+        ],
+        "functionTypeRoots": [
+            {
+                "entry": "0x1000",
+                "recovered": [
+                    "type:ghidra.program.model.data.IntegerDataType:/int:4"
+                ],
+                "emitted": [
+                    "type:ghidra.program.model.data.IntegerDataType:/int:4"
+                ]
+            }
+        ]
+    }
+}

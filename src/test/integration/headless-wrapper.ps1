@@ -122,7 +122,9 @@ exit /b %FAKE_HEADLESS_EXIT%
     $projectOptions = @('-ProjectDirectory', $project, '-ProjectName', 'Existing',
         '-Program', '/folder/program', '-OriginalElf', $inputElf)
 
-    foreach ($invalid in @('TRUNCATED', 'INCOMPLETE', 'MISSING_HASH', 'MULTIPLE', 'TRAILING_SUCCESS', 'NONE')) {
+    $missingFields = @(Get-ChildItem -LiteralPath (Join-Path $fakeGhidra 'reports') -Filter 'MISSING_*.log')
+    Assert-Condition ($missingFields.Count -gt 0) 'missing-field reports were not generated'
+    foreach ($invalid in @('TRUNCATED', 'INCOMPLETE', 'MULTIPLE', 'TRAILING_SUCCESS', 'NONE') + $missingFields.BaseName) {
         $env:FAKE_REPORT_STATUS = $invalid
         $null = Invoke-Wrapper 12 $projectOptions
     }

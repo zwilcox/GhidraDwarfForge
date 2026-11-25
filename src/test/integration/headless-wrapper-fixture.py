@@ -15,19 +15,16 @@ def prepare(ghidra, jar, fake):
         shutil.copyfile(source, destination)
     reports = fake / 'reports'
     reports.mkdir()
-    fields = ('functionsExported functionsDecompiled functionsFailed functionsSkipped functionSignatures '
-              'parameters localVariables globalVariables functionStaticVariables canonicalTypes '
-              'defensibleVariableLocations omittedLocationRanges mappedSourceLines unsupportedConstructs diagnostics')
-    completed = dict(schemaVersion=1, status='SUCCESS', target=dict(architecture='x86_64', addressBits=64,
-                     byteOrder='LITTLE_ENDIAN'), counts=dict.fromkeys(fields.split(), 0), sections=[],
-                     failedFunctions=[], skippedFunctions=[], omittedLocations=[], unsupportedConstructs=[],
-                     diagnostics=[], validation={'status': 'NOT_RUN'}, native={'libdwarfVersion': 'fixture'},
-                     artifacts={k + suffix: value for k in ('input', 'output', 'source')
-                                for suffix, value in [('Path', k + '.elf'), ('Sha256', 'a' * 64)]}, failure=None)
-    partial = dict(completed, status='PARTIAL', diagnostics=['fixture diagnostic'],
-                   counts=dict(completed['counts'], diagnostics=1))
-    terminal = dict(completed, target=None, artifacts=None, counts=None, native={'libdwarfVersion': None},
-                    failure={'type': 'fixture', 'message': 'fixture'})
+    # Ghidra 12.0.3 exports from a one-function x86-64 shared object and executable.
+    # The three artifact paths were shortened to their basenames for portability.
+    samples = Path(__file__).parent / 'fixtures' / 'headless-reports'
+    completed = json.loads((samples / 'success.json').read_text(encoding='utf-8'))
+    partial = json.loads((samples / 'partial.json').read_text(encoding='utf-8'))
+    assert completed['status'] == 'SUCCESS' and partial['status'] == 'PARTIAL'
+    terminal = dict(schemaVersion=2, target=None, artifacts=None, counts=None, sections=[],
+                    failedFunctions=[], skippedFunctions=[], omittedLocations=[], unsupportedConstructs=[],
+                    diagnostics=[], validation={'status': 'NOT_RUN'}, native={'libdwarfVersion': None},
+                    failure={'type': 'fixture', 'message': 'fixture'}, coverage=None)
     incomplete = dict(schemaVersion=2, status='SUCCESS', artifacts={'outputPath': 'fixture.dbg'},
                       counts={'functionsExported': 1}, coverage={}, failure=None)
     marker = 'INFO  GhidraDwarfForge.java> GhidraDwarfForge report: '
@@ -37,14 +34,17 @@ def prepare(ghidra, jar, fake):
         return prefix + json.dumps(document, separators=(',', ':')) + ' (GhidraScript)\n'
 
     success = record(completed)
-    artifacts_without_hash = completed['artifacts'].copy()
-    del artifacts_without_hash['sourceSha256']
     logs = {'SUCCESS': success, 'PARTIAL': record(partial), 'NONE': '', 'MULTIPLE': success * 2,
             'FATAL': record(dict(terminal, status='FATAL')), 'CANCELLED': record(dict(terminal, status='CANCELLED')),
             'INCOMPLETE': record(incomplete), 'TRUNCATED': marker + '{"schemaVersion":2,"status":"SUCCESS","counts":',
-            'MISSING_HASH': record(dict(completed, artifacts=artifacts_without_hash)),
             'TRAILING_SUCCESS': success.rstrip() + ' unexpected\n',
             'PATH_MARKER': 'INFO  GhidraDwarfForge.java> input: /tmp/GhidraDwarfForge report: filename\n' + success}
+    for group in ('artifacts', 'coverage'):
+        logs['MISSING_' + group] = record({k: value for k, value in completed.items() if k != group})
+        for key in completed[group]:
+            fields = completed[group].copy()
+            del fields[key]
+            logs[f'MISSING_{group}_{key}'] = record({**completed, group: fields})
     for name, contents in logs.items():
         (reports / (name + '.log')).write_text(contents, encoding='utf-8')
 

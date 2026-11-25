@@ -118,8 +118,12 @@ run_status 0 PARTIAL 0 --import="$input"
 run_status 0 PATH_MARKER 0 --import="$input"
 run_status 10 FATAL 0 --import="$input"
 run_status 11 CANCELLED 0 --import="$input"
-for malformed in NONE TRUNCATED INCOMPLETE MISSING_HASH TRAILING_SUCCESS; do
+for malformed in NONE TRUNCATED INCOMPLETE TRAILING_SUCCESS; do
     run_status 12 "$malformed" 0 --import="$input"
+done
+for sample in "$fake_ghidra"/reports/MISSING_*.log; do
+    test -s "$sample"
+    run_status 12 "$(basename "$sample" .log)" 0 --import="$input"
 done
 # Real tee writes a completely valid transcript; its reported failure must still win.
 mkdir "$work/tee-failure"

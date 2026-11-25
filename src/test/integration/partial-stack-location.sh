@@ -20,8 +20,9 @@ if ! grep -q 'partial-stack-first-instruction=PASS' export.log || ! grep -q 'Ghi
     tail -n 50 export.log >&2
     exit 1
 fi
-python3 - <<'PYREPORT'
+python3 - "$entry" <<'PYREPORT'
 import json
+import sys
 from pathlib import Path
 
 marker = "GhidraDwarfForge.java> GhidraDwarfForge report: "
@@ -34,6 +35,11 @@ for name in ("partial_stack", "analysis_block_only"):
 assert any("bank_private" in message and "owning function was not exported" in message
            for message in records[0]["diagnostics"])
 assert not any("Source coverage unavailable for partial_stack" in message for message in records[0]["diagnostics"])
+functions = [f for f in records[0]["coverage"]["functions"] if f["name"] == "partial_stack"]
+assert len(functions) == 1, functions
+source = functions[0]["source"]
+assert source["decodedInstructions"] == "1", source
+assert [int(address, 16) for address in source["decodedStarts"]] == [int(sys.argv[1], 16)], source
 PYREPORT
 sha256sum --check original.sha256
 llvm-dwarfdump --verify partial.dbg
