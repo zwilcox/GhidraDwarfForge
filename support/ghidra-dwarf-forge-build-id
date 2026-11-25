@@ -12,7 +12,11 @@ The request selects install, update, remove or recover and an existing debug roo
 The original executable is never modified. A read-only preview precedes execution.
 --preview only displays selections; it does not run validators or install files.
 No elevation is requested. Retain installation state and source generations.
-See docs/BUILD-ID-INSTALLATION.md for request examples and consumer setup.
+Use request schema "forge-build-id-request-v1" with action and an absolute debug
+root in "root". For install/update, "files" selects original, sidecar, source
+and report. "tools" selects helper, readelf, llvm, strict and configuration.
+For remove/recover, supply "buildId" instead of files and tools.
+In GDB, use "set debug-file-directory <root>" before loading the executable.
 EOF
 }
 

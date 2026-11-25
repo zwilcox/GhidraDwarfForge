@@ -103,7 +103,25 @@ copy_platform() {
         exit 1
     fi
     mkdir -p "$destination"
-    find "$input" -maxdepth 1 -type f ! -name 'SHA256SUMS' -exec cp {} "$destination/" \;
+    local file name
+    for file in "$input"/*; do
+        [[ -f $file && ! -L $file ]] || continue
+        name=${file##*/}
+        case "$platform/$name" in
+            */BUILD-METADATA.txt|*/SUPERVISOR-BUILD-METADATA.txt|*/NATIVE-RUNTIME-SHA256SUMS|\
+            linux_x86_64/forge-validator-supervisor|linux_x86_64/libdwarf.so.2|\
+            linux_x86_64/libdwarf.so.2.3.2|linux_x86_64/libdwarfp.so.2.3.2|\
+            win_x86_64/forge-validator-supervisor.exe|win_x86_64/libdwarf-2.dll|win_x86_64/libdwarfp-2.dll|\
+            win_x86_64/libzstd.dll|win_x86_64/zlib1.dll|win_x86_64/libz-1.dll)
+                cp -- "$file" "$destination/" ;;
+            win_x86_64/*.[dD][lL][lL])
+                echo "bundled DLL has no reviewed notice policy: $name" >&2
+                return 1 ;;
+            linux_x86_64/*.so|linux_x86_64/*.so.*)
+                echo "unexpected native Linux library: $name" >&2
+                return 1 ;;
+        esac
+    done
 
     local consumers=() producers=()
     mapfile -t consumers < <(find "$destination" -maxdepth 1 -type f \
@@ -165,17 +183,6 @@ done
 # Artifact downloads preserve bytes but normalize file permissions. Restore the
 # executable contract in the assembled ZIP, after verifying exact provenance.
 chmod 755 "$module/os/linux_x86_64/forge-validator-supervisor"
-for bundled_dll in "$module/os/win_x86_64"/*.dll; do
-    bundled_name=$(basename "$bundled_dll" | tr '[:upper:]' '[:lower:]')
-    case "$bundled_name" in
-        libdwarf-*.dll|libdwarfp-*.dll|libzstd.dll|zlib1.dll|libz-1.dll) ;;
-        *)
-            echo "bundled DLL has no reviewed notice policy: $bundled_name" >&2
-            exit 1
-            ;;
-    esac
-done
-
 libdwarf_compliance="$linux_input/compliance/libdwarf"
 windows_runtime_compliance="$windows_input/compliance/windows-runtime"
 required_compliance_files=(

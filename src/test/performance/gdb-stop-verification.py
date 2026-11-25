@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Measure the strict loader's executable-byte check per step, locally and over QEMU's GDB transport."""
+"""Measure the strict loader's executable-byte check per step on Linux x86-64.
+
+Run with Python 3, GNU as/ld/readelf, GDB with Python support, and qemu-x86_64.
+The script builds a disposable 64 MiB executable and prints JSON for native and
+emulated stepping. Each verified stop must read all 1,024 64 KiB chunks. Times
+are medians over three trials and depend on the host and debugger transport.
+"""
 import hashlib
 import json
 import os

@@ -105,6 +105,8 @@ printf consumer > "$work/linux/libdwarf.so.2.3.2"
 printf dependency > "$work/linux/libdwarf.so.2"
 printf producer > "$work/linux/libdwarfp.so.2.3.2"
 printf supervisor > "$work/linux/forge-validator-supervisor"
+printf 'compiler output\n' > "$work/linux/build.log"
+printf 'compiler output\n' > "$work/windows/build.log"
 patch_hash=$(sha256sum < "$repository_dir/native/libdwarf/patches/0001-preserve-aarch64-relocation-type.patch")
 patch_hash=${patch_hash%% *}
 call_site_patch_hash=$(sha256sum < "$repository_dir/native/libdwarf/patches/0002-admit-dwarf5-call-site-attributes.patch")
@@ -423,6 +425,9 @@ zipinfo -l "$work/first.zip" | grep -Eq \
 )
 grep -Fxq 'consumer=libdwarf.so.2.3.2' \
     "$module/os/linux_x86_64/NATIVE-PAIR.properties"
+for platform in linux_x86_64 win_x86_64; do
+    test ! -e "$module/os/$platform/build.log"
+done
 grep -Fxq 'producer=libdwarfp-2.dll' \
     "$module/os/win_x86_64/NATIVE-PAIR.properties"
 test -s "$module/THIRD_PARTY_NOTICES.md"
