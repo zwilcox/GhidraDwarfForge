@@ -1,6 +1,6 @@
 # Combined Java coverage
 
-Single-run measurement for [8bcc8b76b277f698f620241d13bd652edb7eb812](https://github.com/zwilcox/GhidraDwarfForge/commit/8bcc8b76b277f698f620241d13bd652edb7eb812); [CI run 45619782379](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/45619782379).
+Single-run measurement for [a55a6717a66e0a943a5061cee48d0d2b5f7d6910](https://github.com/zwilcox/GhidraDwarfForge/commit/a55a6717a66e0a943a5061cee48d0d2b5f7d6910); [CI run 45703599546](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/45703599546).
 
 This unions matching JaCoCo execution probes. It does not add or average percentages. Every production Java class remains in each denominator, including GUI/framework code and classes that were never loaded. Native C/libdwarf, Python, shell and external libraries are outside this Java metric.
 
@@ -38,8 +38,8 @@ Production JAR SHA-256: `402eea63d9a6f1d4da11bb92fe032b61fbb46661c3bf6d3dbdc3ba3
 
 ## Changed executable Java
 
-Compared with `1b922641a60f13d99f2441e6eab072973e6b4f8d`: MEASURED.
+Compared with `8bcc8b76b277f698f620241d13bd652edb7eb812`: NOT_APPLICABLE.
 
-Lines: 94.4% (339/359); branches: 90.9% (189/208).
+Lines: not applicable; branches: not applicable.
 
 Targets: 90% lines, 85% branches minimum, 90% branches preferred. No executable changes are reported as not applicable, never as 100%.
