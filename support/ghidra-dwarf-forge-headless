@@ -43,7 +43,7 @@ ELF64 target virtual addresses above 0x7fffffffffffffff are currently unsupporte
 Ordinary export replaces each public file atomically. A reader opening multiple
 names during publication can see different generations. Wait for the terminal
 report before opening the set. An interrupted process can leave an active claim
-in .ghidra-dwarf-forge-publishing-*/owner.properties beside each output. It names
+in a .ghidra-dwarf-forge-publishing-* file beside each output. It names
 the process and generation.properties recovery inventory. Verify that process
 has stopped before recovery. Preserve the listed stages and backups. Compare
 the current files to the recorded old/new SHA-256 values or symlink targets,
@@ -53,8 +53,8 @@ change. Retire the recorded claim only after checking every output.
 Existing-project mode opens one saved program through a read-only project
 handle. A basename selects a root file; /folder/program selects a nested file.
 Analysis is disabled. The saved project and program are never deleted or saved.
-An explicit --log in existing-project mode also requires --input so log
-preflight can protect the original executable and its default output paths.
+In existing-project mode, --log requires --input and a new filename. The
+wrapper captures the transcript privately and copies it without overwriting.
 Raw mode requires existing-project mode and --input. Its memory map comes from
 the saved program. With --firmware-inputs, omit --log: only a private transcript
 is safe before Java validates every input path in that descriptor.
@@ -311,6 +311,7 @@ command -v python3 >/dev/null || { echo "Python 3 is required to read the export
 
 temporary_root=
 temporary_log=0
+requested_project_log=
 temporary_base=${TMPDIR:-/tmp}
 [[ -d "$temporary_base" ]] || die_usage "temporary directory does not exist: $temporary_base"
 temporary_base=$(cd "$temporary_base" && pwd -P)
@@ -339,6 +340,12 @@ else
     [[ -d "$log_parent" && -w "$log_parent" ]] ||
         die_usage "log directory is not writable: $log_parent"
     validate_log_path
+    if ((project_mode)); then
+        if [[ -e "$log_path" || -L "$log_path" ]]; then
+            die_usage "existing-project mode requires a new log file: $log_path"
+        fi
+        requested_project_log=$log_path
+    fi
 fi
 
 if [[ -n "$consumer" ]]; then
@@ -376,6 +383,9 @@ else
     [[ "$program" == /* ]] || program="/$program"
     temporary_root=$(mktemp -d \
         "$temporary_base/ghidra-dwarf-forge-headless-wrapper.XXXXXXXX") || exit 12
+    if [[ -n "$requested_project_log" ]]; then
+        log_path="$temporary_root/transcript.log"
+    fi
     headless_arguments=(
         "$temporary_root" GhidraDwarfForgeHeadless -deleteProject -noanalysis
         -postScript GhidraDwarfForgeReadOnly.java "$project_dir" "$project_name" "$program"
@@ -393,20 +403,37 @@ if ((pipeline_status[1] != 0)); then
     exit 12
 fi
 
-status=$(python3 - "$log_path" <<'PYTHON'
-import json
+if [[ -n "$requested_project_log" ]]; then
+    # The saved program may name a different original than the supplied --input.
+    # Exclusive creation also protects a destination created while Ghidra ran.
+    python3 - "$log_path" "$requested_project_log" <<'PYLOG' || exit 12
+import shutil
 import sys
 
-marker = b"GhidraDwarfForge report: "
+try:
+    with open(sys.argv[1], "rb") as source, open(sys.argv[2], "xb") as destination:
+        shutil.copyfileobj(source, destination)
+except OSError as error:
+    sys.exit(f"could not preserve the transcript: {error}")
+PYLOG
+fi
+
+status=$(python3 - "$log_path" <<'PYTHON'
+import json
+import re
+import sys
+
+marker = re.compile(rb"^INFO[ \t]+GhidraDwarfForge\.java>[ \t]+GhidraDwarfForge report: ")
 status = None
 try:
     with open(sys.argv[1], "rb") as transcript:
         for line in transcript:
-            if marker not in line:
+            message = marker.match(line)
+            if not message:
                 continue
             if status is not None:
                 raise ValueError("multiple export reports")
-            payload = line.split(marker, 1)[1].strip()
+            payload = line[message.end():].strip()
             suffix = b" (GhidraScript)"
             if payload.endswith(suffix):
                 payload = payload[:-len(suffix)]

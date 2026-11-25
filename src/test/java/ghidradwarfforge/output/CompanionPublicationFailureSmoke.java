@@ -140,7 +140,7 @@ public final class CompanionPublicationFailureSmoke {
         Path input = Files.writeString(dir.resolve("input"), "original");
         List<Path> outputs = outputs(dir);
         seed(outputs);
-        Path owner = PublicationJournal.claimPath(outputs.get(0)).resolve("owner.properties");
+        Path owner = PublicationJournal.claimPath(outputs.get(0));
         Path[] inventory = new Path[1];
         var warning = CompanionArtifactPublisher.stageAndPublish(input, outputs, CompanionPublicationFailureSmoke::write,
             () -> { }, index -> {

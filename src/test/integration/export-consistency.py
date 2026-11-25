@@ -24,6 +24,18 @@ def report_records(log):
             for line in log.splitlines() if marker in line]
 
 
+def verify_saved_project_log(ghidra, project, original, copy, output, source):
+    protected = (original, copy, output, source)
+    before = [digest(path) for path in protected]
+    command = [ROOT / 'support/ghidra-dwarf-forge-headless', '--ghidra-dir=' + str(ghidra),
+               '--project-dir=' + str(project), '--project-name=Consistency', '--program=/' + original.name,
+               '--input=' + str(copy), '--output=' + str(output), '--log=' + str(original)]
+    result = subprocess.run(command, capture_output=True, text=True, timeout=180)
+    assert result.returncode == 64 and 'requires a new log file' in result.stderr, result
+    assert [digest(path) for path in protected] == before
+    print('headless-export-failure=PASS recorded-original-as-log', flush=True)
+
+
 def verify_export_failures(ghidra, project, original, consumer, producer, work):
     work.mkdir()
     copy = work / 'selected-input'
@@ -47,6 +59,7 @@ def verify_export_failures(ghidra, project, original, consumer, producer, work):
         ('missing-producer-symbol', original, output, consumer, consumer, 'Could not load or call libdwarf'),
     ]
     try:
+        verify_saved_project_log(ghidra, project, original, copy, output, source)
         for name, selected, artifact, lib, libp, message in cases:
             protected = {original, copy, project_marker, fake, native_alias, output, source, consumer, producer,
                          artifact, Path(str(artifact) + '.c')}

@@ -303,6 +303,7 @@ foreach ($required in $requiredFiles) {
 
 $temporaryRoot = $null
 $temporaryLog = $false
+$requestedProjectLog = $null
 if ([string]::IsNullOrWhiteSpace($Log)) {
     $Log = Join-Path ([IO.Path]::GetTempPath()) (
         "ghidra-dwarf-forge-headless-report-$([guid]::NewGuid()).log")
@@ -315,6 +316,12 @@ else {
             Exit-Usage "log directory does not exist: $logParent"
         }
         Assert-SafeLogPath
+        if ($projectMode) {
+            if (Get-Item -LiteralPath $Log -Force -ErrorAction SilentlyContinue) {
+                Exit-Usage "existing-project mode requires a new log file: $Log"
+            }
+            $requestedProjectLog = Get-AbsoluteFilesystemPath $Log
+        }
     }
     catch {
         Exit-Usage "cannot validate log path: $($_.Exception.Message)"
@@ -417,10 +424,16 @@ try {
         ) + $exportOptions
     }
 
+    if ($null -ne $requestedProjectLog) {
+        $Log = Join-Path $temporaryRoot 'transcript.log'
+    }
     & $headless @headlessArguments 2>&1 | Tee-Object -LiteralPath $Log
     $headlessStatus = $LASTEXITCODE
+    if ($null -ne $requestedProjectLog) {
+        [IO.File]::Copy($Log, $requestedProjectLog, $false)
+    }
     $reportLines = @(Get-Content -LiteralPath $Log | Where-Object {
-        $_ -match 'GhidraDwarfForge report: '
+        $_ -cmatch '^INFO[ \t]+GhidraDwarfForge\.java>[ \t]+GhidraDwarfForge report: '
     })
     if ($reportLines.Count -ne 1) {
         [Console]::Error.WriteLine(

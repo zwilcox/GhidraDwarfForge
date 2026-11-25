@@ -194,7 +194,7 @@ public final class ArtifactPairFailureSmoke {
         text(sourceStage, "owned source stage");
         if (missing) require(!Files.exists(artifact), "rollback recreated an externally removed artifact");
         else text(artifact, "concurrent artifact");
-        require(Files.isRegularFile(PublicationJournal.claimPath(artifact).resolve("owner.properties")),
+        require(Files.isRegularFile(PublicationJournal.claimPath(artifact)),
             "exclusive rollback lost the generation recovery claim");
     }
 

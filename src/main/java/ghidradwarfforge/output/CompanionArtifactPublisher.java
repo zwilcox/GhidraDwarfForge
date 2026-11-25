@@ -143,7 +143,7 @@ public final class CompanionArtifactPublisher {
         Path[] backups = new Path[targets.size()];
         State[] installed = new State[targets.size()];
         boolean[] replaced = new boolean[targets.size()];
-        boolean retainRecovery = false;
+        boolean cleanupSafe = true;
         IOException cleanupWarning = null;
         Exception failure = null;
         try {
@@ -181,6 +181,9 @@ public final class CompanionArtifactPublisher {
                 }
                 installed[index].record(inventory, prefix + ".new");
             }
+            // An Error can bypass ordinary rollback, including while rollback itself runs.
+            // Keep the claims and both generations until commit or verified rollback finishes.
+            cleanupSafe = false;
             journal.prepare(inventory, targets);
             check.check();
             for (int index = 0; index < targets.size(); index++) {
@@ -209,9 +212,11 @@ public final class CompanionArtifactPublisher {
                 requireUnchanged(targets.get(index), installed[index], pollCancellation);
             }
             journal.committed();
+            cleanupSafe = true;
         }
         catch (Exception problem) {
             failure = problem;
+            boolean rolledBack = true;
             for (int index = targets.size() - 1; index >= 0; index--) {
                 if (!replaced[index] && backups[index] == null) {
                     continue;
@@ -227,18 +232,19 @@ public final class CompanionArtifactPublisher {
                     }
                 }
                 catch (Exception rollbackFailure) {
-                    retainRecovery = true;
+                    rolledBack = false;
                     problem.addSuppressed(rollbackFailure);
                 }
             }
-            if (retainRecovery) {
+            cleanupSafe = rolledBack;
+            if (!rolledBack) {
                 problem.addSuppressed(new IOException("generation recovery files retained at " + directory +
                     "; uninstalled stages: " + java.util.Arrays.toString(stages)));
             }
             throw problem;
         }
         finally {
-            if (!retainRecovery) {
+            if (cleanupSafe) {
                 try {
                     // No public names are changed after this point. Keep the inventory and
                     // backups reachable until every cooperating-writer claim is released.

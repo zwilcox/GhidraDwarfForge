@@ -113,6 +113,7 @@ for option in --synthesize-unwind=conditioned --unwind-stack-separation=100:107 
 done
 
 run_status 0 PARTIAL 0 --import="$input"
+run_status 0 PATH_MARKER 0 --import="$input"
 run_status 10 FATAL 0 --import="$input"
 run_status 11 CANCELLED 0 --import="$input"
 for malformed in NONE TRUNCATED INCOMPLETE TRAILING_SUCCESS; do
@@ -145,6 +146,24 @@ fi
 run_status 0 SUCCESS 0 --project-dir="$project_dir" --project-name=Existing \
     --program=program --input="$input"
 grep -Fxq -- '/program' "$argument_log"
+
+# A byte-identical working copy cannot identify the path recorded in the saved program.
+recorded="$work/recorded.elf"
+cp -- "$input" "$recorded"
+ln "$recorded" "$work/recorded-hardlink.log"
+ln -s "$recorded" "$work/recorded-symlink.log"
+saved=(--project-dir="$project_dir" --project-name=Existing --program=/folder/program --input="$input")
+for existing in "$recorded" "$work/recorded-hardlink.log" "$work/recorded-symlink.log"; do
+    rm -f -- "$argument_log"
+    run_status 64 SUCCESS 0 "${saved[@]}" --log="$existing"
+    test ! -e "$argument_log"
+    cmp "$recorded" "$input"
+done
+run_status 10 FATAL 0 "${saved[@]}" --log="$work/saved-failure.log"
+grep -Fq '"status":"FATAL"' "$work/saved-failure.log"
+# A path created after admission must also survive, including its original bytes.
+FAKE_NEW_LOG="$work/late.log" run_status 12 SUCCESS 0 "${saved[@]}" --log="$work/late.log"
+grep -Fxq 'concurrent save' "$work/late.log"
 
 raw_options=(--project-dir="$project_dir" --project-name=Existing --program=/folder/program
     --input="$input" --raw-firmware=cortex-m3)

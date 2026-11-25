@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -24,6 +23,7 @@ import java.util.Properties;
 final class PublicationJournal {
     private static final String CLAIM_PREFIX = ".ghidra-dwarf-forge-publishing-";
     static final String INVENTORY = "generation.properties";
+    private static final String OWNER = "owner.properties";
     private final Path directory;
     private final Map<Path, Path> backupDirectories = new HashMap<>();
     private final List<Path> claims = new ArrayList<>();
@@ -64,7 +64,7 @@ final class PublicationJournal {
         inventory.setProperty("version", "1");
         inventory.setProperty("recovery", "Confirm the owner process has stopped. Preserve listed backups and stages. " +
             "Match every file to its old or new SHA-256 or symlink target before restoring a complete generation. " +
-            "Preserve divergent files. Release the directory claims only after verifying all outputs.");
+            "Preserve divergent files. Release the claims only after verifying all outputs.");
         inventory.setProperty("pid", Long.toString(ProcessHandle.current().pid()));
         inventory.setProperty("count", Integer.toString(targets.size()));
         List<Path> required = new ArrayList<>();
@@ -77,17 +77,50 @@ final class PublicationJournal {
         Properties owner = new Properties();
         owner.setProperty("inventory", directory.resolve(INVENTORY).toString());
         owner.setProperty("pid", inventory.getProperty("pid"));
+        for (Path backups : backupDirectories.values()) {
+            writeProperties(backups.resolve(OWNER), owner);
+        }
         for (Path claim : required.stream().distinct().sorted().toList()) {
             try {
-                Files.createDirectory(claim);
+                Files.createLink(claim, backupDirectories.get(claim.getParent()).resolve(OWNER));
             }
-            catch (FileAlreadyExistsException busy) {
+            catch (IOException busy) {
+                if (!Files.exists(claim, LinkOption.NOFOLLOW_LINKS)) throw busy;
                 throw new IOException("Another export is publishing here or needs recovery after interruption. " +
-                    "Inspect " + claim.resolve("owner.properties") + " before retrying", busy);
+                    recoveryLocation(claim), busy);
             }
             claims.add(claim);
-            writeProperties(claim.resolve("owner.properties"), owner);
         }
+    }
+
+    private String recoveryLocation(Path claim) throws IOException {
+        if (Files.isRegularFile(claim, LinkOption.NOFOLLOW_LINKS)) return "Inspect " + claim + " before retrying";
+        Path legacyOwner = claim.resolve(OWNER);
+        if (Files.isDirectory(claim, LinkOption.NOFOLLOW_LINKS) &&
+                Files.isRegularFile(legacyOwner, LinkOption.NOFOLLOW_LINKS)) {
+            return "Inspect " + legacyOwner + " before retrying";
+        }
+        // Older writers could stop between creating their claim directory and recording its owner.
+        List<Path> candidates = new ArrayList<>();
+        for (Path parent : backupDirectories.keySet()) {
+            try (var siblings = Files.newDirectoryStream(parent, ".forge-generation-*")) {
+                for (Path sibling : siblings) {
+                    Path inventory = sibling.resolve(INVENTORY);
+                    if (sibling.equals(directory) || !Files.isDirectory(sibling, LinkOption.NOFOLLOW_LINKS) ||
+                            !Files.isRegularFile(inventory, LinkOption.NOFOLLOW_LINKS)) continue;
+                    Properties previous = new Properties();
+                    try (var stream = Files.newInputStream(inventory, LinkOption.NOFOLLOW_LINKS)) {
+                        previous.load(stream);
+                    }
+                    catch (IOException | IllegalArgumentException unreadable) { continue; }
+                    if (previous.stringPropertyNames().stream().anyMatch(key -> key.matches("file\\.\\d+\\.claim") &&
+                            claim.toString().equals(previous.getProperty(key)))) candidates.add(inventory);
+                }
+            }
+        }
+        return "Preserve the incomplete claim " + claim + " and all stages and backups. " +
+            (candidates.isEmpty() ? "No matching recovery inventory found in " + backupDirectories.keySet() :
+                "Inspect matching recovery inventories " + candidates);
     }
 
     private static void writeProperties(Path path, Properties properties) throws IOException {
@@ -106,6 +139,7 @@ final class PublicationJournal {
         Files.deleteIfExists(directory.resolve("committed"));
         Files.deleteIfExists(directory.resolve(INVENTORY));
         for (Path backups : backupDirectories.values()) {
+            Files.deleteIfExists(backups.resolve(OWNER));
             if (!backups.equals(directory)) Files.delete(backups);
         }
     }
@@ -114,18 +148,16 @@ final class PublicationJournal {
         IOException failure = null;
         for (Path claim : claims.reversed()) {
             try {
-                Path owner = claim.resolve("owner.properties");
                 Properties record = new Properties();
-                try (var input = Files.newInputStream(owner, LinkOption.NOFOLLOW_LINKS)) {
+                try (var input = Files.newInputStream(claim, LinkOption.NOFOLLOW_LINKS)) {
                     record.load(input);
                 }
                 catch (IllegalArgumentException malformed) {
-                    throw new IOException("Unreadable publication claim at " + owner, malformed);
+                    throw new IOException("Unreadable publication claim at " + claim, malformed);
                 }
                 if (!directory.resolve(INVENTORY).toString().equals(record.getProperty("inventory"))) {
                     throw new IOException("Publication claim changed during export: " + claim);
                 }
-                Files.delete(owner);
                 Files.delete(claim);
             }
             catch (IOException problem) {

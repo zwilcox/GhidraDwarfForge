@@ -2,6 +2,9 @@
 set -u
 
 printf '%s\n' "$@" >"$FAKE_ARGUMENT_LOG"
+if [[ -n "${FAKE_NEW_LOG:-}" ]]; then
+    printf '%s\n' 'concurrent save' > "$FAKE_NEW_LOG"
+fi
 status=${FAKE_REPORT_STATUS:-SUCCESS}
 fields='"artifacts":{"outputPath":"fixture.dbg"},"counts":{"functionsExported":1},"failure":null'
 case "$status" in
@@ -13,7 +16,8 @@ case "$status" in
     TRUNCATED) report='{"schemaVersion":2,"status":"SUCCESS","counts":' ;;
     INCOMPLETE) report='{"schemaVersion":2,"status":"SUCCESS"}' ;;
     TRAILING) report="$report unexpected" ;;
-    MULTIPLE) report=${report/MULTIPLE/SUCCESS}; echo "INFO GhidraDwarfForge report: $report" ;;
+    MULTIPLE) report=${report/MULTIPLE/SUCCESS}; echo "INFO GhidraDwarfForge.java> GhidraDwarfForge report: $report" ;;
+    PATH_MARKER) report=${report/PATH_MARKER/SUCCESS}; echo "INFO GhidraDwarfForge.java> input: /tmp/GhidraDwarfForge report: filename" ;;
     TRAILING_SUCCESS) report=${report/TRAILING_SUCCESS/SUCCESS}' unexpected' ;;
 esac
 echo "INFO  GhidraDwarfForge.java> GhidraDwarfForge report: $report (GhidraScript)"
