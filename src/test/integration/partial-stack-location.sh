@@ -32,11 +32,30 @@ PYREPORT
 sha256sum --check original.sha256
 llvm-dwarfdump --verify partial.dbg
 readelf --debug-dump=loc partial.dbg >locations.txt
-gdb -nx -q -batch -ex 'set debuginfod enabled off' -ex 'set auto-solib-add off' \
-    -ex 'file image' -ex 'symbol-file partial.dbg' -ex 'python assert gdb.lookup_global_symbol("overlay_only") is None' \
-    -ex "break *$entry" -ex run \
-    -ex 'print stack_argument' -ex stepi -ex 'print stack_argument' \
-    -ex 'printf "real_stack_argument=%d\n", *(int *)($rsp+40)' >runtime.txt 2>&1
+cat >verify.gdb <<'GDB'
+set debuginfod enabled off
+set auto-solib-add off
+file image
+symbol-file partial.dbg
+python
+assert not gdb.lookup_static_symbols("overlay_only"), "unexpected file-local overlay symbol"
+assert gdb.lookup_global_symbol("overlay_only") is None, "unexpected global overlay symbol"
+entry = int(gdb.parse_and_eval("$fixture_entry"))
+for address in range(entry, entry + 32):
+    block = gdb.block_for_pc(address)
+    assert block and block.function and block.function.name == "partial_stack", hex(address)
+end
+break *$fixture_entry
+run
+print stack_argument
+stepi
+print stack_argument
+printf "real_stack_argument=%d\n", *(int *)($rsp+40)
+GDB
+if ! gdb -nx -q -batch -ex "set \$fixture_entry = $entry" -x verify.gdb >runtime.txt 2>&1; then
+    cat runtime.txt >&2
+    exit 1
+fi
 if ! grep -Fqx '$1 = 23' runtime.txt || ! grep -Fqx '$2 = <optimized out>' runtime.txt ||
         ! grep -Fqx 'real_stack_argument=23' runtime.txt; then
     cat runtime.txt locations.txt >&2

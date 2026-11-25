@@ -15,6 +15,8 @@ public class PreparePartialStackParameter extends GhidraScript {
         if (function == null || getInstructionAt(entry).getLength() != 4) {
             throw new IllegalStateException("expected the x86-64 four-byte sub rsp,32");
         }
+        var memory = currentProgram.getMemory();
+        memory.split(memory.getBlock(entry), entry.add(4));
         currentProgram.getListing().clearCodeUnits(entry.add(4), last, false);
         function.setBody(new AddressSet(entry, last));
         function.replaceParameters(Function.FunctionUpdateType.CUSTOM_STORAGE, true, SourceType.USER_DEFINED,
@@ -22,7 +24,7 @@ public class PreparePartialStackParameter extends GhidraScript {
         if (currentProgram.getListing().getInstructions(new AddressSet(entry.add(4), last), true).hasNext()) {
             throw new AssertionError("undecoded tail fixture contains an instruction");
         }
-        var overlay = currentProgram.getMemory().createInitializedBlock("overlay_bank", entry, 32,
+        var overlay = memory.createInitializedBlock("overlay_bank", entry, 32,
             (byte) 0, monitor, true);
         currentProgram.getFunctionManager().createFunction("overlay_only", currentProgram.getGlobalNamespace(),
             overlay.getStart(), new AddressSet(overlay.getStart(), overlay.getEnd()), SourceType.USER_DEFINED);
