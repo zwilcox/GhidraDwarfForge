@@ -34,7 +34,20 @@ def verify_headless(output, module, exported=False, saved_project=False):
     return observations.verify(output, module, exported=exported, saved_project=saved_project)
 
 
-def run(command, output, timeout=1800, measured=False, cwd=None):
+def profiled_environment(ghidra, recording):
+    env = os.environ.copy()
+    launcher = ghidra / 'support' / ('analyzeHeadless.bat' if os.name == 'nt' else 'analyzeHeadless')
+    # Scope the recording to the analyzer. The report reader runs in a later JVM.
+    # Retain the original recording method when replaying the 12.0.3 benchmark.
+    key = 'GHIDRA_HEADLESS_JAVA_OPTIONS'
+    if key.encode('ascii') not in launcher.read_bytes():
+        key = 'JAVA_TOOL_OPTIONS'
+    options = f'-Xlog:jfr+startup=off -XX:StartFlightRecording=filename={recording},settings=profile,dumponexit=true'
+    env[key] = ' '.join(filter(None, (env.get(key), options)))
+    return env
+
+
+def run(command, output, timeout=1800, measured=False, cwd=None, env=None):
     command = [str(item) for item in command]
     output.with_suffix(".command.json").write_text(json.dumps(command, indent=4) + "\n")
     metrics_path = output.with_suffix(".metrics.json")
@@ -45,7 +58,7 @@ def run(command, output, timeout=1800, measured=False, cwd=None):
     with output.open("w") as stdout, output.with_suffix(".stderr").open("w") as stderr:
         process = subprocess.Popen(command, stdout=stdout, stderr=stderr,
                                    start_new_session=True, cwd=cwd,
-                                   env={**os.environ, "LC_ALL": "C"})
+                                   env={**(os.environ if env is None else env), "LC_ALL": "C"})
         try:
             status = process.wait(timeout=timeout)
         except (subprocess.TimeoutExpired, KeyboardInterrupt):

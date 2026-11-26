@@ -98,6 +98,12 @@ def recording(names):
 
 
 class PhaseControls(unittest.TestCase):
+    def test_export_with_call_site_recovery(self):
+        names = phases.PHASES | phases.TYPE_COVERAGE_PHASES | phases.EQUATE_PHASES | {'call-site-recovery'}
+        self.assertEqual(phases.summarize(recording(names))['phases']['call-site-recovery']['elapsedSeconds'], 1)
+        with self.assertRaises(ValueError):
+            phases.summarize(recording(names - {'annotation-inventory'}))
+
     def test_complete_generations(self):
         for names in phases.COMPLETE_PHASE_SETS:
             with self.subTest(names=names):
@@ -107,7 +113,7 @@ class PhaseControls(unittest.TestCase):
                 self.assertEqual(result['phases']['export']['elapsedSeconds'], 20)
 
     def test_every_unrecognized_subset_rejected(self):
-        names = sorted(phases.PHASES | phases.TYPE_COVERAGE_PHASES | phases.EQUATE_PHASES)
+        names = sorted(phases.CURRENT_PHASES)
         for mask in range(1 << len(names)):
             selected = {name for bit, name in enumerate(names) if mask & (1 << bit)}
             if selected in phases.COMPLETE_PHASE_SETS:

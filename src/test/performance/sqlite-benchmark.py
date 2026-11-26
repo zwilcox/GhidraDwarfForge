@@ -108,16 +108,8 @@ def main():
         profiling = iteration == args.repeats
         name = 'profile' if profiling else 'export-' + str(iteration)
         print('sqlite benchmark: ' + name, flush=True)
-        previous_options = os.environ.get('JAVA_TOOL_OPTIONS')
-        try:
-            if profiling:
-                os.environ['JAVA_TOOL_OPTIONS'] = (previous_options or '') + ' -Xlog:jfr+startup=off -XX:StartFlightRecording=filename=' + str(case / 'export.jfr') + ',settings=profile,dumponexit=true'
-            sample = run(name, command, timeout=1800, measured=True)
-        finally:
-            if previous_options is None:
-                os.environ.pop('JAVA_TOOL_OPTIONS', None)
-            else:
-                os.environ['JAVA_TOOL_OPTIONS'] = previous_options
+        env = support.profiled_environment(ghidra, case / 'export.jfr') if profiling else None
+        sample = run(name, command, timeout=1800, measured=True, env=env)
         lines = [line.split('GhidraDwarfForge report: ', 1)[1] for line in (case / (name + '.log')).read_text().splitlines()
             if 'GhidraDwarfForge report: ' in line]
         assert len(lines) == 1

@@ -135,16 +135,8 @@ def main():
         profiling = iteration == args.repeats
         name = 'profile' if profiling else 'export-' + str(iteration)
         print('uboot benchmark: ' + name, flush=True)
-        previous = os.environ.get('JAVA_TOOL_OPTIONS')
-        try:
-            if profiling:
-                os.environ['JAVA_TOOL_OPTIONS'] = (previous or '') + ' -Xlog:jfr+startup=off -XX:StartFlightRecording=filename=' + str(case / 'export.jfr') + ',settings=profile,dumponexit=true'
-            sample = run(name, command, timeout=3900, measured=True)
-        finally:
-            if previous is None:
-                os.environ.pop('JAVA_TOOL_OPTIONS', None)
-            else:
-                os.environ['JAVA_TOOL_OPTIONS'] = previous
+        env = SUPPORT.profiled_environment(ghidra, case / 'export.jfr') if profiling else None
+        sample = run(name, command, timeout=3900, measured=True, env=env)
         sample['runtime'] = SUPPORT.verify_headless(case / (name + '.log'), module, saved_project=True)
         reports = [json.JSONDecoder().raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
             for line in (case / (name + '.log')).read_text().splitlines() if 'GhidraDwarfForge report: {' in line]

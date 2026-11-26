@@ -164,8 +164,7 @@ def main():
             environment = os.environ.copy()
             assert not environment.get('JAVA_TOOL_OPTIONS'), 'uncontrolled JVM options'
             if profiled:
-                environment['JAVA_TOOL_OPTIONS'] = '-Xlog:jfr+startup=off -XX:StartFlightRecording=filename=' + \
-                    str(case / 'export.jfr') + ',settings=profile,dumponexit=true'
+                environment = support.profiled_environment(ghidra, case / 'export.jfr')
             sample = run(case, name, command, env=environment)
             sample['runtime'] = support.verify_headless(case / (name + '.log'), module, saved_project=True)
             bodies = [line.split('GhidraDwarfForge report: ', 1)[1]
