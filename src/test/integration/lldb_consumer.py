@@ -54,6 +54,8 @@ def run(original, symbols, output, debugger, target, before, after, environment,
         command = [debugger, '--no-lldbinit', '--batch']
         for item in commands:
             command.extend(['-o', item])
+        # These fixtures supply their own symbols and local discovery roots.
+        environment = dict(environment, DEBUGINFOD_URLS='')
         (output / 'command.json').write_text(json.dumps(command, indent=4) + '\n')
         (output / 'environment.json').write_text(json.dumps(environment, indent=4) + '\n')
         with (output / 'lldb.log').open('w') as log:

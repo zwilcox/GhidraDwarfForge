@@ -19,7 +19,6 @@ result = Path(os.environ["FORGE_LOADER_RESULT"])
 original = Path(fixture + ".stripped")
 sidecar = Path(os.environ["FORGE_LOADER_SIDECAR"])
 sectionless = os.environ["FORGE_LOADER_ROLE"] == "exec.no-sections"
-target = os.environ["FORGE_LOADER_TARGET"]
 remote = os.environ["FORGE_LOADER_REMOTE"]
 source = Path(str(sidecar) + ".c")
 companion = Path(str(sidecar) + ".gdb.py")
@@ -38,12 +37,9 @@ assert header[:4] == b"\x7fELF"
 bits = {1: 32, 2: 64}[header[4]]
 order = {1: "little", 2: "big"}[header[5]]
 entry = int.from_bytes(header[24:24 + bits // 8], order)
-# Match the existing sectionless extraction contract: Ghidra does not recover
-# the tiny add function separately on the two ARM profiles, but recovers main.
-reference_function = "main" if sectionless and target in ("aarch64", "arm32") else "recovered_add"
 symbols = subprocess.check_output(["readelf", "-Ws", os.environ["FORGE_LOADER_REFERENCE"]], text=True)
 function_link = {int(line.split()[1], 16) for line in symbols.splitlines()
-    if len(line.split()) >= 8 and line.split()[7] == reference_function}
+    if len(line.split()) >= 8 and line.split()[3] == "FUNC" and line.split()[7] == "recovered_add"}
 assert len(function_link) == 1
 function_link = function_link.pop()
 function = "FUN_" + format(function_link, "08x") if sectionless else "recovered_add"

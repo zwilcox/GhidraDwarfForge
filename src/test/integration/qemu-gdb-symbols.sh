@@ -25,17 +25,11 @@ mkdir -p "$result_dir"
 
 function_name() {
     if [[ "$fixture_role" == "exec.no-sections" ]]; then
-        local symbol=recovered_add
-        if [[ "$1" == "aarch64" || "$1" == "arm32" ]]; then
-            # Ghidra 12.0.3 does not discover the tiny recovered_add
-            # function separately without section headers; main is valid.
-            symbol=main
-        fi
         local link_hex
         link_hex=$(readelf -Ws "$fixture_dir/$1/semantic.exec.reference" |
-            awk -v symbol="$symbol" '$4 == "FUNC" && $8 == symbol && !found { print $2; found = 1 }')
+            awk '$4 == "FUNC" && $8 == "recovered_add" && !found { print $2; found = 1 }')
         if [[ -z "$link_hex" ]]; then
-            echo "missing fixture symbol $symbol for $1" >&2
+            echo "missing fixture symbol recovered_add for $1" >&2
             return 1
         fi
         printf 'FUN_%08x\n' "$((16#$link_hex))"
