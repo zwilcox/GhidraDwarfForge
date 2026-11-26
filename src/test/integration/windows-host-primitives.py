@@ -29,7 +29,7 @@ def main():
     names = ('WindowsFileSecurityProbe', 'WindowsAttachmentPrivilegeProbe',
         'WindowsAttachmentHostSmoke', 'WindowsAttachmentTransactionSmoke', 'BuildIdFileLockSmoke',
         'WindowsMetadataFailureControls', 'WindowsDirectoryFailureControls', 'WindowsSecurityFailureControls',
-        'WindowsBackupFailureControls', 'WindowsPrivilegeReadbackControls')
+        'WindowsBackupFailureControls', 'WindowsPrivilegeReadbackControls', 'CompanionObservationRecoverySmoke')
     sources = [Path(__file__).resolve().parents[1] / 'java/ghidradwarfforge/output' / (name + '.java')
         for name in names]
     protected = {str(path): digest(path) for path in [*dependencies, *sources]}
@@ -65,6 +65,11 @@ def main():
     run('compile', [java.with_name('javac.exe'), '--release', '21', '-cp', classpath,
         '-d', classes, *sources])
     prefix = [java, '--enable-native-access=ALL-UNNAMED', '-cp', classpath]
+    run('publication', [*prefix, 'ghidradwarfforge.output.CompanionObservationRecoverySmoke'],
+        marker='companion-observation-recovery=PASS')
+    locked_publication = b'windows-locked-publication=PASS' in (root / 'publication.stdout').read_bytes().splitlines()
+    if not locked_publication:
+        raise AssertionError('missing delete-locked publication and preservation checks')
     # Match the established isolated probes' interpreter/GC settings for native
     # handle accounting. Do not inject agents into their deliberate halt children.
     stable = [java, '-Xint', '-XX:+UseSerialGC', *prefix[1:]]
@@ -117,7 +122,7 @@ def main():
     if protected != {path: digest(path) for path in protected}:
         raise AssertionError('probe changed production dependencies or test sources')
     save(root / 'result.json', {'status': 'PASS_NATIVE_WINDOWS_HOST_PRIMITIVES',
-        'hostChecks': host['checks'], 'transactionChecks': transactions['checks'],
+        'hostChecks': host['checks'], 'transactionChecks': transactions['checks'], 'lockedPublication': locked_publication,
         'controlledFailures': json.loads((root / 'metadata-failures/result.json').read_text(encoding='utf-8')),
         'directoryFailures': json.loads((root / 'directory-failures/result.json').read_text(encoding='utf-8')),
         'securityFailures': json.loads((root / 'security-failures/result.json').read_text(encoding='utf-8')),
@@ -128,11 +133,11 @@ def main():
         'unmeasuredNestedChildren': [{'case': row['case'], 'exitCode': row['childExit']} for row in abrupt],
         'lockContendersMeasured': False,
         'scope': 'Existing native Windows privilege/host/transaction/lock assertions over owned fixtures. '
-            'Eight direct JVMs measured, including controlled native metadata, directory, security and backup failures; '
+            'Nine direct JVMs measured, including publication and controlled native metadata, directory, security and backup failures; '
             'nested lock contenders and eight deliberate halt children remain unmeasured. '
             'No real ELF or power-loss claim; those require separate integration oracles.'})
     coverage.finish(root / 'result.json')
-    print('windows-host-primitives=PASS sessions=8 abrupt-process-exits=8')
+    print('windows-host-primitives=PASS sessions=9 abrupt-process-exits=8')
 
 
 if __name__ == '__main__':

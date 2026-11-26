@@ -2,11 +2,14 @@
 set -euo pipefail
 usage() {
     cat <<'HELP'
-Usage: ghidra-dwarf-forge-report --report=<json> [--summary | --function=0xENTRY | --before=<json>]
+Usage: ghidra-dwarf-forge-report --report=<json> [--summary | --function=0xENTRY | --before=<json> | --terminal-status]
        [--ghidra-dir=<installation>] [--extension-dir=<installed-extension>] [--java=<executable>]
 Read-only reported evidence; no referenced ELF/source files are opened.
 Default output is a summary and per-function TSV rows. Comparisons disclose identity limitations.
+--terminal-status checks the report schema and exits 0 for SUCCESS/PARTIAL, 10 for FATAL, or 11 for CANCELLED.
 Exit: 0 displayed, 1 report/output error, 2 incomparable, 11 cancelled, 64 usage.
+With --terminal-status, validate the report and return 0 for a completed export,
+10 for FATAL, or 11 for CANCELLED.
 HELP
 }
 fail() { echo "ghidra-dwarf-forge-report: $1" >&2; exit 64; }
@@ -25,7 +28,7 @@ for argument in "$@"; do
         --extension-dir=*) extension_dir=${argument#*=} ;;
         --java=*) java_path=${argument#*=} ;;
         --report=*|--before=*|--function=*) arguments+=("$key" "${argument#*=}") ;;
-        --summary) arguments+=(--summary) ;;
+        --summary|--terminal-status) arguments+=("$key") ;;
         *) fail "unknown option: $key" ;;
     esac
 done

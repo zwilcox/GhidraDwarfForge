@@ -84,10 +84,16 @@ class IntegrationCoverageTest(unittest.TestCase):
     @unittest.skipUnless(os.name == 'posix', 'Linux headless wrapper adapter')
     def test_headless_wrapper_preserves_arguments_pid_and_exit(self):
         ghidra, collection = self.headless_collection()
+        dependency = Path('Ghidra/Framework/Pty/lib/jna-5.14.0.jar')
+        (ghidra / dependency).parent.mkdir(parents=True)
+        (ghidra / dependency).write_bytes(b'report reader dependency')
         arguments = ['project with spaces', 'Formatters', '-readOnly', '-postScript',
             'GhidraDwarfForgeReadOnly.java', 'λ "quoted"', '', '$(never-execute)', 'line\nbreak']
         with collection.launcher_headless(ghidra, 'expected-failure') as selected:
             adapter = Path(selected) / 'support/analyzeHeadless'
+            self.assertTrue((Path(selected) / dependency).samefile(ghidra / dependency))
+            installed = Path(selected) / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+            self.assertTrue(installed.samefile(collection.jar))
             process = subprocess.Popen([adapter, *arguments], stdout=subprocess.PIPE, text=True,
                 env=dict(os.environ, FIXTURE_EXIT='10'))
             output, _ = process.communicate(timeout=10)

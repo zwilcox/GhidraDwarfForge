@@ -1,9 +1,13 @@
 package ghidradwarfforge.output;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
@@ -11,6 +15,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Real owned-filesystem changes at observation, installation and cleanup boundaries. */
 public final class CompanionObservationRecoverySmoke {
@@ -22,6 +30,9 @@ public final class CompanionObservationRecoverySmoke {
             for (String change : List.of("identity", "size", "timestamp")) observationRace(root, change);
             for (boolean directory : List.of(false, true)) changedDestination(root, directory);
             missingStageAfterBackup(root);
+            for (SaveAt point : SaveAt.values()) replacementWhileObserved(root, point);
+            readDuringSuccessfulReplacements(root);
+            if (System.getProperty("os.name").startsWith("Windows")) lockedExchange(root);
             System.out.println("companion-observation-recovery=PASS checks=" + checks);
         }
         finally {
@@ -29,6 +40,30 @@ public final class CompanionObservationRecoverySmoke {
                 for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
             }
         }
+    }
+
+    private static void lockedExchange(Path root) throws Exception {
+        Path staged = Files.writeString(root.resolve("exchange-stage"), "staged");
+        Path target = Files.writeString(root.resolve("locked-public"), "previous");
+        Saved beforeStage = Saved.read(staged);
+        Saved beforeTarget = Saved.read(target);
+        // Resolve the Windows-only sharing option when the native NTFS test runs.
+        OpenOption denyDelete = (OpenOption) Class.forName("com.sun.nio.file.ExtendedOpenOption")
+            .getField("NOSHARE_DELETE").get(null);
+        try (var lock = FileChannel.open(target, StandardOpenOption.READ, denyDelete)) {
+            var exchange = PublicationExchange.open();
+            try {
+                exchange.exchange(staged, target);
+                throw new AssertionError("transaction exchanged a delete-locked file");
+            }
+            catch (FileSystemException expected) {
+                check(target.toString().equals(expected.getFile()), "exchange error omitted the locked path");
+                check(expected.getReason().contains("Win32 error"), "exchange error omitted the native diagnostic");
+            }
+        }
+        beforeStage.unchanged(staged);
+        beforeTarget.unchanged(target);
+        System.out.println("windows-locked-publication=PASS");
     }
 
     private record Saved(byte[] bytes, Object key, FileTime modified) {
@@ -186,6 +221,102 @@ public final class CompanionObservationRecoverySmoke {
             check(expected.getSuppressed().length == 0, "backup restoration failed after missing stage");
         }
         fixture.unchanged();
+        fixture.noStages(4);
+    }
+
+    private enum SaveAt { NEVER, BEFORE_EXCHANGE, AFTER_EXCHANGE }
+
+    private static void replacementWhileObserved(Path root, SaveAt save) throws Exception {
+        var fixture = Fixture.create(root.resolve("observed-replacement-" + save));
+        Path source = fixture.outputs.get(1);
+        Path claim = PublicationJournal.claimPath(source);
+        Path[] backup = {null};
+        boolean[] observed = {false};
+        boolean[] edited = {false};
+        boolean[] missingName = {false};
+        try {
+            CompanionArtifactPublisher.stageAndPublish(fixture.original, fixture.outputs,
+                CompanionObservationRecoverySmoke::write, () -> { }, () -> {
+                    if (backup[0] == null && Files.isRegularFile(claim)) {
+                        var owner = new java.util.Properties();
+                        try (var stream = Files.newInputStream(claim)) { owner.load(stream); }
+                        backup[0] = Path.of(owner.getProperty("inventory")).resolveSibling("backup-1");
+                    }
+                    if (backup[0] == null || !Files.exists(backup[0])) return;
+                    try {
+                        String bytes = Files.readString(source);
+                        check(bytes.equals("old source") || bytes.equals("new generation 1") ||
+                            edited[0] && bytes.equals("independent save"), "reader observed partial output bytes");
+                        boolean editNow = save == SaveAt.BEFORE_EXCHANGE && bytes.equals("old source") ||
+                            save == SaveAt.AFTER_EXCHANGE && bytes.equals("new generation 1");
+                        if (editNow && !edited[0]) {
+                            Path replacement = Files.writeString(fixture.root.resolve("editor.stage"), "independent save");
+                            Files.move(replacement, source, java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                            edited[0] = true;
+                        }
+                    }
+                    catch (java.nio.file.NoSuchFileException missing) { missingName[0] = true; }
+                    observed[0] = true;
+                });
+            check(save == SaveAt.NEVER, "re-export reported success after overwriting the editor's save");
+        }
+        catch (IOException conflict) {
+            if (!edited[0] || !conflict.getMessage().contains("changed concurrently")) throw conflict;
+            if (save == SaveAt.AFTER_EXCHANGE) {
+                check(Files.readString(backup[0]).equals("old source"), "conflict lost prior source backup");
+                check(Files.exists(claim), "conflict lost recovery claim");
+            }
+        }
+        check(observed[0] && !missingName[0], "public source disappeared while verifying its backup");
+        check(Files.readString(source).equals(edited[0] ? "independent save" : "new generation 1"),
+            "public source lost the independent save");
+        if (edited[0]) {
+            fixture.prior.get(0).unchanged(fixture.outputs.get(0));
+            fixture.prior.get(2).unchanged(fixture.outputs.get(2));
+        }
+        fixture.input.unchanged(fixture.original);
+    }
+
+    private static void readDuringSuccessfulReplacements(Path root) throws Exception {
+        var fixture = Fixture.create(root.resolve("concurrent-reader"));
+        var sawOld = new CountDownLatch(1);
+        var sawNew = new CountDownLatch(1);
+        var finished = new AtomicBoolean();
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            var reader = executor.submit(() -> {
+                try {
+                    while (!finished.get()) {
+                        for (int i = 0; i < fixture.outputs.size(); i++) {
+                            Path output = fixture.outputs.get(i);
+                            String bytes = Files.readString(output);
+                            if (bytes.equals("new generation " + i)) sawNew.countDown();
+                            else if (bytes.equals("old " + output.getFileName())) sawOld.countDown();
+                            else throw new AssertionError("reader observed partial bytes in " + output);
+                        }
+                    }
+                }
+                finally {
+                    // Surface a reader failure immediately if the writer is waiting for it.
+                    sawOld.countDown();
+                    sawNew.countDown();
+                }
+                return null;
+            });
+            try {
+                check(sawOld.await(30, TimeUnit.SECONDS), "reader did not see the first generation");
+                for (int generation = 0; generation < 4; generation++) {
+                    CompanionArtifactPublisher.stageAndPublish(fixture.original, fixture.outputs,
+                        CompanionObservationRecoverySmoke::write, () -> { });
+                }
+                check(sawNew.await(30, TimeUnit.SECONDS), "reader did not see the published generation");
+            }
+            finally {
+                finished.set(true);
+                reader.get(30, TimeUnit.SECONDS);
+            }
+        }
+        fixture.input.unchanged(fixture.original);
         fixture.noStages(4);
     }
 

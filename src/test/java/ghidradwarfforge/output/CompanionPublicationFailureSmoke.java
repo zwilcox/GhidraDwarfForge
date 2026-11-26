@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Filesystem fault injection with byte and exception-identity oracles. */
 public final class CompanionPublicationFailureSmoke {
@@ -19,8 +20,11 @@ public final class CompanionPublicationFailureSmoke {
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("forge-publication-failures-");
         try {
+            WindowsPublicationExchangeSmoke.exercise(root);
+            exchangeAdmission(root);
             preflight(root);
             invalidStages(root);
+            changedStagesBeforeInventory(root);
             cleanupFailure(root, false);
             cleanupFailure(root, true);
             changedClaim(root);
@@ -33,6 +37,37 @@ public final class CompanionPublicationFailureSmoke {
             try (var paths = Files.walk(root)) {
                 for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
             }
+        }
+    }
+
+    private static void exchangeAdmission(Path root) throws Exception {
+        String host = System.getProperty("os.name");
+        try {
+            System.setProperty("os.name", "unsupported publication host");
+            PublicationExchange.open();
+            throw new AssertionError("accepted an unsupported atomic exchange host");
+        }
+        catch (IOException expected) {
+            require(expected.getMessage().contains("unsupported publication host"), "missing host diagnostic");
+        }
+        finally { System.setProperty("os.name", host); }
+        if (host.equals("Linux") && System.getProperty("sun.jnu.encoding").equalsIgnoreCase("UTF-8")) {
+            Path raw = Path.of(java.net.URI.create(root.toUri().toASCIIString() + "name-%FF"));
+            Path decoded = Path.of(raw.toString());
+            Path target = root.resolve("exchange-target");
+            require(!raw.equals(decoded), "invalid UTF-8 fixture did not produce distinct paths");
+            Files.writeString(raw, "raw");
+            Files.writeString(decoded, "decoded");
+            Files.writeString(target, "original");
+            try {
+                PublicationExchange.open().exchange(raw, target);
+                throw new AssertionError("native exchange accepted a lossy pathname");
+            }
+            catch (IOException expected) {
+                require(expected.getMessage().contains("represented losslessly"), "wrong path refusal: " + expected);
+            }
+            require(Files.readString(raw).equals("raw") && Files.readString(decoded).equals("decoded") &&
+                Files.readString(target).equals("original"), "lossy path exchange modified a file");
         }
     }
 
@@ -93,6 +128,41 @@ public final class CompanionPublicationFailureSmoke {
         }
     }
 
+    private static void changedStagesBeforeInventory(Path root) throws Exception {
+        for (boolean replaceWithLink : List.of(false, true)) {
+            Path dir = Files.createDirectory(root.resolve(replaceWithLink ? "replaced-stage" : "removed-stage"));
+            Path original = Files.writeString(dir.resolve("input"), "original");
+            List<Path> outputs = outputs(dir);
+            seed(outputs);
+            var pending = new AtomicReference<Path>();
+            try {
+                CompanionArtifactPublisher.stageAndPublish(original, outputs, stages -> {
+                    write(stages);
+                    pending.set(stages.getFirst());
+                }, () -> { }, () -> {
+                    // The first poll after writing occurs when the publisher observes the staged sidecar.
+                    Path stage = pending.getAndSet(null);
+                    if (stage != null) {
+                        Files.delete(stage);
+                        if (replaceWithLink) Files.createSymbolicLink(stage, original);
+                    }
+                });
+                throw new AssertionError("accepted a changed stage into the recovery inventory");
+            }
+            catch (IOException expected) {
+                require(expected.getMessage().contains("staged file disappeared or changed type"),
+                    "unexpected stage refusal: " + expected);
+            }
+            previous(outputs, true);
+            require(Files.readString(original).equals("original"), "changed stage modified the original");
+            noStages(dir);
+            for (Path output : outputs) {
+                require(!Files.exists(PublicationJournal.claimPath(output)), "changed stage left a claim");
+            }
+            cases++;
+        }
+    }
+
     private static void cleanupFailure(Path root, boolean installed) throws Exception {
         Path dir = Files.createDirectory(root.resolve("cleanup-" + installed));
         Path input = Files.writeString(dir.resolve("input"), "original");
@@ -140,7 +210,7 @@ public final class CompanionPublicationFailureSmoke {
         Path input = Files.writeString(dir.resolve("input"), "original");
         List<Path> outputs = outputs(dir);
         seed(outputs);
-        Path owner = PublicationJournal.claimPath(outputs.get(0)).resolve("owner.properties");
+        Path owner = PublicationJournal.claimPath(outputs.get(0));
         Path[] inventory = new Path[1];
         var warning = CompanionArtifactPublisher.stageAndPublish(input, outputs, CompanionPublicationFailureSmoke::write,
             () -> { }, index -> {

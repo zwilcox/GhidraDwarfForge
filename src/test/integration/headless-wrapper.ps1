@@ -80,24 +80,7 @@ exit $LASTEXITCODE
         [IO.File]::WriteAllText($launcher, @'
 @echo off
 > "%FAKE_ARGUMENT_LOG%" echo launched %*
-set "status=%FAKE_REPORT_STATUS%"
-set "fields="artifacts":{"outputPath":"fixture.dbg"},"counts":{"functionsExported":1},"failure":null"
-if "%status%"=="FATAL" goto failure
-if "%status%"=="CANCELLED" goto failure
-if "%status%"=="NONE" goto done
-if "%status%"=="MULTIPLE" set "status=SUCCESS"
-if "%status%"=="TRAILING_SUCCESS" set "status=SUCCESS"
-goto report
-:failure
-set "fields="artifacts":null,"counts":null,"failure":{"type":"fixture","message":"fixture"}"
-:report
-set "record={"schemaVersion":1,"status":"%status%",%fields%}"
-if "%FAKE_REPORT_STATUS%"=="TRUNCATED" set "record={"schemaVersion":2,"status":"SUCCESS","counts":"
-if "%FAKE_REPORT_STATUS%"=="INCOMPLETE" set "record={"schemaVersion":2,"status":"SUCCESS"}"
-if "%FAKE_REPORT_STATUS%"=="TRAILING_SUCCESS" set "record=%record% unexpected"
-if "%FAKE_REPORT_STATUS%"=="MULTIPLE" echo INFO GhidraDwarfForge.java^> GhidraDwarfForge report: %record%
-echo INFO GhidraDwarfForge.java^> GhidraDwarfForge report: %record% (GhidraScript)
-:done
+type "%~dp0..\reports\%FAKE_REPORT_STATUS%.log"
 exit /b %FAKE_HEADLESS_EXIT%
 '@)
     }
@@ -106,6 +89,9 @@ exit /b %FAKE_HEADLESS_EXIT%
         & chmod '+x' $launcher
         Assert-Condition ($LASTEXITCODE -eq 0) 'could not make fake launcher executable'
     }
+    $reader = Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
+    & python (Join-Path $PSScriptRoot 'headless-wrapper-fixture.py') $env:GHIDRA_INSTALL_DIR $reader $fakeGhidra
+    Assert-Condition ($LASTEXITCODE -eq 0) 'could not prepare report reader fixtures'
     $env:FAKE_ARGUMENT_LOG = $argumentLog
     $env:FAKE_REPORT_STATUS = 'SUCCESS'
     $env:FAKE_HEADLESS_EXIT = '0'
@@ -136,10 +122,14 @@ exit /b %FAKE_HEADLESS_EXIT%
     $projectOptions = @('-ProjectDirectory', $project, '-ProjectName', 'Existing',
         '-Program', '/folder/program', '-OriginalElf', $inputElf)
 
-    foreach ($invalid in @('TRUNCATED', 'INCOMPLETE', 'MULTIPLE', 'TRAILING_SUCCESS', 'NONE')) {
+    $missingFields = @(Get-ChildItem -LiteralPath (Join-Path $fakeGhidra 'reports') -Filter 'MISSING_*.log')
+    Assert-Condition ($missingFields.Count -gt 0) 'missing-field reports were not generated'
+    foreach ($invalid in @('TRUNCATED', 'INCOMPLETE', 'MULTIPLE', 'TRAILING_SUCCESS', 'NONE') + $missingFields.BaseName) {
         $env:FAKE_REPORT_STATUS = $invalid
         $null = Invoke-Wrapper 12 $projectOptions
     }
+    $env:FAKE_REPORT_STATUS = 'PATH_MARKER'
+    $null = Invoke-Wrapper 0 $importOptions
     $env:FAKE_REPORT_STATUS = 'FATAL'
     $null = Invoke-Wrapper 10 $projectOptions
     $env:FAKE_REPORT_STATUS = 'CANCELLED'
@@ -148,9 +138,19 @@ exit /b %FAKE_HEADLESS_EXIT%
     if ($env:OS -eq 'Windows_NT') {
         $lockedLog = Join-Path $work 'read-only-handle.log'
         $handle = [IO.File]::Open($lockedLog, [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::Read)
-        try { $null = Invoke-Wrapper 12 ($projectOptions + @('-Log', $lockedLog)) }
+        try { $null = Invoke-Wrapper 12 ($importOptions + @('-Log', $lockedLog)) }
         finally { $handle.Dispose() }
     }
+    $recorded = Join-Path $work 'recorded.elf'
+    [IO.File]::Copy($inputElf, $recorded, $false)
+    $protectedHashes[$recorded] = $protectedHashes[$inputElf]
+    Remove-Item -LiteralPath $argumentLog -Force -ErrorAction SilentlyContinue
+    $null = Invoke-Wrapper 64 ($projectOptions + @('-Log', $recorded))
+    Assert-Condition (-not (Test-Path -LiteralPath $argumentLog)) 'recorded import log launched Ghidra'
+    Assert-Preserved
+    $savedLog = Join-Path $work 'saved-project.log'
+    $null = Invoke-Wrapper 0 ($projectOptions + @('-Log', $savedLog))
+    Assert-Condition ((Get-Content -LiteralPath $savedLog -Raw).Contains('GhidraDwarfForge report: ')) 'saved transcript missing'
     $null = Invoke-Wrapper 0 $projectOptions
     $savedArguments = Get-Content -LiteralPath $argumentLog -Raw
     Assert-Condition ($savedArguments.Contains('GhidraDwarfForgeReadOnly.java')) 'saved export did not use read-only host'

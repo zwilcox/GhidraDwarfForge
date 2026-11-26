@@ -543,6 +543,10 @@ public final class ElfImage {
         long fileSize;
         long memorySize;
         long alignment;
+
+        public boolean mapsMemory() { return type == PT_LOAD && memorySize != 0; }
+        public long virtualAddress() { return virtualAddress; }
+        public long memorySize() { return memorySize; }
     }
 
 }

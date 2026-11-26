@@ -161,6 +161,7 @@ public final class GhidraSyntheticSource {
             while (functions.hasNext()) {
                 monitor.checkCancelled();
                 Function function = functions.next();
+                if (!function.getEntryPoint().getAddressSpace().equals(program.getAddressFactory().getDefaultAddressSpace())) continue;
                 long address;
                 try {
                     address = AddressNormalizer.toElfAddress(

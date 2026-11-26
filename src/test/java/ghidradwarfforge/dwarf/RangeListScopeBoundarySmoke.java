@@ -53,7 +53,27 @@ public final class RangeListScopeBoundarySmoke {
             List.of(), "explicit contiguous lexical block");
         check(Dwarf5RangeLists.build(List.of(function), List.of(simple), 8,
             ByteOrder.LITTLE_ENDIAN).empty(), "contiguous lexical block needs no range list");
+        linearOwnerValidation();
         System.out.println("range-list-scope-boundaries=PASS checks=" + checks);
+    }
+
+    private static void linearOwnerValidation() {
+        var symbols = new ArrayList<FunctionSymbol>();
+        var scopes = new ArrayList<LexicalScopeModel>();
+        for (int i = 0; i < 1000; i++) {
+            var symbol = new FunctionSymbol("f" + i, 64L * i, 64);
+            symbols.add(symbol);
+            scopes.add(new LexicalScopeModel(symbol.address(), symbol.ranges(),
+                List.of(new Block("child", "", List.of(new FunctionRange(symbol.address(), 4)))),
+                List.of(), "saved scope"));
+        }
+        var counted = new java.util.AbstractList<FunctionSymbol>() {
+            int reads;
+            @Override public FunctionSymbol get(int index) { reads++; return symbols.get(index); }
+            @Override public int size() { return symbols.size(); }
+        };
+        check(Dwarf5RangeLists.build(counted, scopes, 8, ByteOrder.LITTLE_ENDIAN).empty(), "unexpected ranges");
+        check(counted.reads <= 3 * counted.size(), "function inventory repeatedly scanned for lexical owners");
     }
 
     private static LexicalScopeModel scope(FunctionSymbol function, int gap) {

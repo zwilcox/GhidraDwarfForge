@@ -11,9 +11,10 @@ import java.util.function.BooleanSupplier;
 /** Standalone read-only CLI. Opens selected reports only; never their referenced artifacts. */
 public final class CoverageReportTool {
     private CoverageReportTool() { }
-    private static final String USAGE = "Usage: CoverageReportTool --report FILE [--summary | --function 0xELF_ENTRY | --before FILE]\n" +
+    private static final String USAGE = "Usage: CoverageReportTool --report FILE [--summary | --function 0xELF_ENTRY | --before FILE | --terminal-status]\n" +
         "Default: summary and per-function tab-separated rows. --function: bounded evidence details.\n" +
         "--before: compare reported function/source/variable/type evidence with an earlier report; identity limitations are explicit.\n" +
+        "--terminal-status: validate one report and exit 0 for SUCCESS/PARTIAL, 10 for FATAL, or 11 for CANCELLED.\n" +
         "Exit codes: 0 displayed (not validation/semantic equivalence), 1 read/output error, 2 incomparable, 11 cancelled, 64 usage.\n";
 
     public static void main(String[] args) {
@@ -30,11 +31,11 @@ public final class CoverageReportTool {
                 String key = args[index];
                 boolean encoded = key.equals("--report-utf8-base64") || key.equals("--before-utf8-base64");
                 if (encoded) key = key.substring(0, key.indexOf("-utf8-base64"));
-                if (!java.util.Set.of("--report", "--before", "--function", "--summary").contains(key) || options.containsKey(key)) {
+                if (!java.util.Set.of("--report", "--before", "--function", "--summary", "--terminal-status").contains(key) || options.containsKey(key)) {
                     throw new IllegalArgumentException("unknown or repeated option: " + key);
                 }
                 String value = "";
-                if (!key.equals("--summary")) {
+                if (!key.equals("--summary") && !key.equals("--terminal-status")) {
                     if (++index == args.length) throw new IllegalArgumentException("missing value for " + key);
                     value = encoded ? AttachmentPathArgument.decode(args[index]) : args[index];
                     if (value.isEmpty()) throw new IllegalArgumentException("empty value for " + key);
@@ -42,7 +43,7 @@ public final class CoverageReportTool {
                 options.put(key, value);
             }
             if (!options.containsKey("--report") ||
-                    java.util.stream.Stream.of("--summary", "--function", "--before").filter(options::containsKey).count() > 1) {
+                    java.util.stream.Stream.of("--summary", "--function", "--before", "--terminal-status").filter(options::containsKey).count() > 1) {
                 throw new IllegalArgumentException("select one report and at most one display/comparison mode");
             }
             Long selected = null;
@@ -52,7 +53,17 @@ public final class CoverageReportTool {
                 selected = Long.parseUnsignedLong(value.substring(2), 16);
                 if (selected < 0) throw new IllegalArgumentException("function outside supported address domain");
             }
-            var report = ExportReportClaims.readWithCoverage(Path.of(options.get("--report")), cancelled);
+            Path path = Path.of(options.get("--report"));
+            if (options.containsKey("--terminal-status")) {
+                try {
+                    ExportReportClaims.read(path, cancelled);
+                    return 0;
+                }
+                catch (ExportReportClaims.TerminalReportException terminal) {
+                    return terminal.status() == ExportReport.Status.FATAL ? 10 : 11;
+                }
+            }
+            var report = ExportReportClaims.readWithCoverage(path, cancelled);
             if (options.containsKey("--before")) {
                 var before = ExportReportClaims.readWithCoverage(Path.of(options.get("--before")), cancelled);
                 out.println("Function/source/variable/type evidence comparison. Reported claims only; no artifact validation.");

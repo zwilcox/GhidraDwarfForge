@@ -505,10 +505,8 @@ public final class MinimalDwarfSidecarExporter {
     }
 
     /**
-     * Explicit raw-firmware path. Reuses target code-evidence and DWARF production
-     * against a private byte witness; publishes only synthetic allocation metadata.
-     * The caller owns the image, supplies a staging output, and must publish its
-     * provenance manifest with the pair after final consistency checks.
+     * Compatibility overload for callers that supply the firmware export arguments individually.
+     * New callers can pass the same settings in an {@link ExportRequest}.
      */
     public ExportResult exportFirmware(ghidradwarfforge.firmware.FirmwareExportImage firmware,
             Path output, Path consumerLibrary, Path producerLibrary, List<FunctionSymbol> functions,
@@ -523,6 +521,11 @@ public final class MinimalDwarfSidecarExporter {
             sectionModes, syntheticConstants, diagnostic, framePlan));
     }
 
+    /**
+     * Produce DWARF from a private firmware byte witness and synthetic allocation metadata.
+     * The caller owns the image, supplies a staging output, and publishes the provenance
+     * manifest with the output pair after final consistency checks.
+     */
     public ExportResult exportFirmware(ghidradwarfforge.firmware.FirmwareExportImage firmware,
             Path output, ExportRequest request) throws IOException {
         Objects.requireNonNull(firmware, "explicit firmware image");

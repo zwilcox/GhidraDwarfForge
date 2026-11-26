@@ -3,7 +3,6 @@ package ghidradwarfforge;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import ghidra.program.model.address.Address;
@@ -84,14 +83,13 @@ public final class GhidraCallParameters {
         }
         var arguments = new ArrayList<CallSitePlan.Argument>();
         var omissions = new ArrayList<String>();
-        var nodes = graph.byKey();
         int addressBytes = image.is64Bit() ? 8 : 4;
         for (int ordinal = 0; ordinal < signature.parameters().size(); ordinal++) {
             monitor.checkCancelled();
             var formal = signature.parameters().get(ordinal);
             var entry = snapshots.get(ordinal);
             try {
-                var destination = destination(program, formal, entry, nodes, registers, profile, addressBytes);
+                var destination = destination(program, formal, entry, graph, registers, profile, addressBytes);
                 var cell = destination.cell();
                 // Use the whole destination register. A known low word alone is
                 // insufficient evidence for the upper bits of DW_OP_entry_value.
@@ -138,7 +136,6 @@ public final class GhidraCallParameters {
             snapshots.computeIfAbsent(entry.function(), ignored -> new ArrayList<>()).add(entry);
         }
         var variables = new ArrayList<VariableLocation>();
-        var nodes = model.types().byKey();
         for (var variable : model.variableStorage().variables()) {
             monitor.checkCancelled();
             VariableLocation refined = variable;
@@ -160,8 +157,8 @@ public final class GhidraCallParameters {
                         "stale entry storage identity");
                     var formal = signature.parameters().get(entry.ordinal());
                     var profile = UnwindAbiProfile.selectForCallSites(program, function, image, delta, monitor);
-                    var mapped = destination(program, formal, entry, nodes, registers, profile, image.is64Bit() ? 8 : 4);
-                    require(variable.byteSize() == integerBytes(nodes, formal.type()), "variable/formal widths differ");
+                    var mapped = destination(program, formal, entry, model.types(), registers, profile, image.is64Bit() ? 8 : 4);
+                    require(variable.byteSize() == integerBytes(model.types(), formal.type()), "variable/formal widths differ");
                     long elfEntryAddress = variable.functionAddress();
                     var ranges = new ArrayList<LocationRange>();
                     boolean changed = false;
@@ -192,11 +189,11 @@ public final class GhidraCallParameters {
     }
 
     private static Destination destination(Program program, TypeGraph.Parameter formal, Entry entry,
-            Map<String, TypeGraph.TypeNode> nodes, TargetRegisterMap registers, UnwindAbiProfile.Bound profile, int addressBytes) {
+            TypeGraph graph, TargetRegisterMap registers, UnwindAbiProfile.Bound profile, int addressBytes) {
         require(entry != null, "no captured entry storage (possibly decompiler-only parameter)");
         require(entry.formal().equals(formal), "formal identity changed after storage capture");
         require(!formal.returnStorage(), "hidden return carrier is not a formal argument");
-        long bytes = integerBytes(nodes, formal.type());
+        long bytes = integerBytes(graph, formal.type());
         require(bytes > 0 && bytes <= addressBytes, "unsupported integer formal type or width");
         require(entry.assigned() && !entry.indirect() && entry.pieces().size() == 1,
             "entry storage is unavailable, indirect or composite");
@@ -210,12 +207,12 @@ public final class GhidraCallParameters {
         return new Destination(view.storage(), cell);
     }
 
-    private static long integerBytes(Map<String, TypeGraph.TypeNode> nodes, TypeGraph.TypeRef reference) {
+    private static long integerBytes(TypeGraph graph, TypeGraph.TypeRef reference) {
         var seen = new java.util.HashSet<String>();
-        var node = nodes.get(reference.key());
+        var node = graph.lookup(reference.key());
         while (node != null && seen.add(node.key()) && seen.size() <= 64) {
-            if (node instanceof TypeGraph.TypedefType alias) node = nodes.get(alias.target().key());
-            else if (node instanceof TypeGraph.QualifiedType qualified) node = nodes.get(qualified.target().key());
+            if (node instanceof TypeGraph.TypedefType alias) node = graph.lookup(alias.target().key());
+            else if (node instanceof TypeGraph.QualifiedType qualified) node = graph.lookup(qualified.target().key());
             else if (node instanceof TypeGraph.EnumType enumeration) return enumeration.byteSize();
             else if (node instanceof TypeGraph.BaseType base) return switch (base.encoding()) {
                 case SIGNED, UNSIGNED, SIGNED_CHAR, UNSIGNED_CHAR, BOOLEAN, UTF -> base.byteSize();

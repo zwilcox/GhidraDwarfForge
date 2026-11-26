@@ -17,18 +17,23 @@ public final class GhidraProjectOutputProtection {
         if (file == null || file.getProjectLocator() == null) return;
         var locator = file.getProjectLocator();
         Path directory = locator.getProjectDir().toPath().toRealPath();
-        var resolved = new ArrayList<Path>();
+        var marker = ghidradwarfforge.output.FileSystemPaths.resolveLeaf(locator.getMarkerFile().toPath(), "project marker");
+        var lock = ghidradwarfforge.output.FileSystemPaths.resolveLeaf(locator.getProjectLockFile().toPath(), "project lock");
+        var existing = new ArrayList<Path>();
         for (Path output : outputs) {
             monitor.checkCancelled();
             Path path = ghidradwarfforge.output.FileSystemPaths.resolveLeaf(output, "export output");
             if (path.startsWith(directory)) {
                 throw new IOException("export output is inside the saved project: " + path);
             }
-            resolved.add(path);
+            for (Path reserved : List.of(marker, lock)) {
+                if (ghidradwarfforge.output.FileSystemPaths.aliases(path, reserved)) {
+                    throw new IOException("export output aliases a saved project file: " + reserved);
+                }
+            }
+            if (!Files.notExists(path)) existing.add(path);
         }
-        var protectedPaths = new ArrayList<Path>();
-        protectedPaths.add(locator.getMarkerFile().toPath());
-        protectedPaths.add(locator.getProjectLockFile().toPath());
+        if (existing.isEmpty()) return;
         // Do not follow directory symlinks recursively. Existing file symlinks
         // are still compared by identity, like hard links, by aliases().
         try (var files = Files.walk(directory)) {
@@ -36,15 +41,12 @@ public final class GhidraProjectOutputProtection {
             while (iterator.hasNext()) {
                 monitor.checkCancelled();
                 Path path = iterator.next();
-                if (Files.isRegularFile(path)) protectedPaths.add(path);
-            }
-        }
-        for (Path path : protectedPaths) {
-            monitor.checkCancelled();
-            Path protectedPath = ghidradwarfforge.output.FileSystemPaths.resolveLeaf(path, "saved project file");
-            for (Path output : resolved) {
-                if (ghidradwarfforge.output.FileSystemPaths.aliases(output, protectedPath)) {
-                    throw new IOException("export output aliases a saved project file: " + path);
+                if (Files.isRegularFile(path)) {
+                    for (Path output : existing) {
+                        if (ghidradwarfforge.output.FileSystemPaths.aliases(output, path)) {
+                            throw new IOException("export output aliases a saved project file: " + path);
+                        }
+                    }
                 }
             }
         }

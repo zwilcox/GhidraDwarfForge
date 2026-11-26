@@ -65,6 +65,20 @@ public final class GhidraArm32SectionModesSmoke {
             program.endTransaction(transaction, true);
             require(extract(program, image, 0, TaskMonitor.DUMMY, new ArrayList<>()).equals(List.of(Arm32SectionModesSmoke.evidence())),
                 "exact complete section evidence includes explicit undefined4 data");
+            int added = program.startTransaction("analyst block outside the original ELF");
+            try {
+                var outside = start.add(0x200000);
+                program.getMemory().createInitializedBlock("analysis_only", outside, 4, (byte) 0,
+                    TaskMonitor.DUMMY, false).setExecute(true);
+                program.getFunctionManager().createFunction("analysis_only", outside,
+                    new AddressSet(outside, outside.add(3)), SourceType.USER_DEFINED);
+                var admitted = GhidraFunctionSymbols.extractDetailed(program, TaskMonitor.DUMMY, ignored -> { }, 0, image);
+                require(admitted.functions().size() == 1 && admitted.functions().getFirst().name().equals("mixed") &&
+                    admitted.skippedFunctions().equals(List.of(new GhidraFunctionSymbols.SkippedFunction("analysis_only",
+                        GhidraFunctionSymbols.SkipReason.UNMAPPED_MEMORY))),
+                    "ELF load-range admission lost the original function or exported analysis-only memory");
+            }
+            finally { program.endTransaction(added, false); }
             allocationBoundaries(program, image, start);
             transaction = program.startTransaction("literal is unknown");
             try {

@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 
 import ghidra.program.model.address.AddressRange;
 import ghidra.program.model.address.AddressRangeIterator;
+import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
@@ -15,6 +16,7 @@ import ghidra.program.model.symbol.Namespace;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
+import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 
@@ -60,6 +62,23 @@ public final class GhidraFunctionSymbols {
 
     public static ExtractionResult extractDetailed(Program program, TaskMonitor monitor,
             Consumer<String> diagnostic, long rebaseDelta) throws CancelledException {
+        return extractDetailed(program, monitor, diagnostic, rebaseDelta, null);
+    }
+
+    /** Ordinary ELF functions must also belong to the linked image. Raw firmware uses its explicit map. */
+    public static ExtractionResult extractDetailed(Program program, TaskMonitor monitor,
+            Consumer<String> diagnostic, long rebaseDelta, ElfImage original) throws CancelledException {
+        var space = program.getAddressFactory().getDefaultAddressSpace();
+        AddressSet mapped = new AddressSet();
+        if (original != null) {
+            for (var segment : original.segments()) {
+                monitor.checkCancelled();
+                if (!segment.mapsMemory()) continue;
+                long first = segment.virtualAddress();
+                long last = Math.addExact(first, segment.memorySize() - 1);
+                mapped.addRange(space.getAddress(first), space.getAddress(last));
+            }
+        }
         List<FunctionSymbol> result = new ArrayList<>();
         List<SkippedFunction> skipped = new ArrayList<>();
         FunctionIterator functions = program.getFunctionManager().getFunctions(true);
@@ -106,8 +125,14 @@ public final class GhidraFunctionSymbols {
                     break;
                 }
                 try {
-                    translated.add(new FunctionRange(AddressNormalizer.toElfAddress(
-                        range.getMinAddress().getOffset(), rebaseDelta), range.getLength()));
+                    var linked = new FunctionRange(AddressNormalizer.toElfAddress(
+                        range.getMinAddress().getOffset(), rebaseDelta), range.getLength());
+                    if (original != null && !mapped.contains(space.getAddress(linked.address()),
+                            space.getAddress(linked.endExclusive() - 1))) {
+                        rejection = SkipReason.UNMAPPED_MEMORY;
+                        break;
+                    }
+                    translated.add(linked);
                 }
                 catch (ArithmeticException | IllegalArgumentException failure) {
                     rejection = SkipReason.UNSUPPORTED_RANGE;

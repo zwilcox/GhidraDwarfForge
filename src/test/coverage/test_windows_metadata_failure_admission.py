@@ -22,6 +22,7 @@ class WindowsMetadataFailureAdmission(unittest.TestCase):
                 'allocated': allocated, 'freed': allocated, 'sourceUnchanged': True,
                 'diagnostic': 'fixture expected failure'})
         return record, {'status': 'PASS_NATIVE_WINDOWS_HOST_PRIMITIVES', 'hostChecks': 1, 'transactionChecks': 1,
+            'lockedPublication': True,
             'controlledFailures': {'status': 'PASS_CONTROLLED_WINDOWS_FAILURES', 'cases': rows,
                 'handlesBefore': 100, 'handlesAfter': 100},
             'unmeasuredNestedChildren': [{'case': str(index), 'exitCode': 89} for index in range(8)],
@@ -35,7 +36,8 @@ class WindowsMetadataFailureAdmission(unittest.TestCase):
         for key, value in [('suite', 'fake'), ('layer', 'javaexec'), ('host', 'posix')]:
             with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'real Windows'):
                 admission.oracle({**record, key: value}, evidence)
-        for key, value in [('status', 'FAILED'), ('hostChecks', 0), ('hostChecks', True), ('transactionChecks', None)]:
+        for key, value in [('status', 'FAILED'), ('hostChecks', 0), ('hostChecks', True),
+                ('transactionChecks', None), ('lockedPublication', False)]:
             with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'real Windows'):
                 admission.oracle(record, {**evidence, key: value})
 
@@ -82,7 +84,7 @@ class WindowsMetadataFailureAdmission(unittest.TestCase):
                 with self.subTest(key=key, value=value), self.assertRaisesRegex(ValueError, 'stable process handle'):
                     admission.oracle(record, changed)
 
-    def test_eight_completed_isolated_sessions_required(self):
+    def test_completed_isolated_sessions_required(self):
         record, evidence = self.fixture()
         for fault in ('missing', 'duplicate', 'wrong-label', 'incomplete', 'nested', 'halt'):
             changed = copy.deepcopy(record)
@@ -96,7 +98,7 @@ class WindowsMetadataFailureAdmission(unittest.TestCase):
                 changed['sessions'][0]['status'] = 'INCOMPLETE'
             else:
                 changed['launcherInvocations' if fault == 'nested' else 'unmeasuredForcedHalts'] = [{}]
-            with self.subTest(fault=fault), self.assertRaisesRegex(ValueError, 'eight completed'):
+            with self.subTest(fault=fault), self.assertRaisesRegex(ValueError, 'completed isolated sessions'):
                 admission.oracle(changed, evidence)
 
     def test_nested_process_disclosure_retained(self):

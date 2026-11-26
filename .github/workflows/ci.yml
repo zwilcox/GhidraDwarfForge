@@ -296,26 +296,31 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Windows wrapper log-collision safety
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force 'build\test-results\native-windows' | Out-Null
-          & pwsh -NoLogo -NoProfile -File .\src\test\integration\headless-wrapper.ps1 2>&1 |
-            Tee-Object -FilePath 'build\test-results\native-windows\headless-wrapper.log'
-          if ($LASTEXITCODE -ne 0) {
-            throw "PowerShell wrapper safety checks failed with exit code $LASTEXITCODE"
-          }
-
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
+
+      - name: Fetch the pinned Java test dependencies
+        shell: pwsh
+        run: |
+          $dependencies = Join-Path $PWD 'build/test-dependencies'
+          New-Item -ItemType Directory -Force $dependencies | Out-Null
+          $jna = Join-Path $dependencies 'jna-5.14.0.jar'
+          $gson = Join-Path $dependencies 'gson-2.9.0.jar'
+          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar' -OutFile $jna
+          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.9.0/gson-2.9.0.jar' -OutFile $gson
+          if ((Get-FileHash $jna -Algorithm SHA256).Hash.ToLowerInvariant() -ne '34ed1e1f27fa896bca50dbc4e99cf3732967cec387a7a0d5e3486c09673fe8c6' -or
+              (Get-FileHash $gson -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'c96d60551331a196dac54b745aa642cd078ef89b6f267146b705f2c2cbef052d') {
+              throw 'Test dependency differs from the selected Ghidra JNA/Gson bytes'
+          }
 
       - name: Check companion publication before building native libraries
         shell: pwsh
         run: |
           $results = 'build/test-results/native-windows/companion-publisher'
           $classes = "$results/classes"
+          $jna = Join-Path $PWD 'build/test-dependencies/jna-5.14.0.jar'
           New-Item -ItemType Directory -Force $classes | Out-Null
           $sources = @(
             'src/main/java/ghidradwarfforge/output/FileSystemPaths.java'
@@ -323,13 +328,15 @@ jobs:
             'src/main/java/ghidradwarfforge/output/ArtifactPairPublisher.java'
             'src/main/java/ghidradwarfforge/output/CompanionArtifactPublisher.java'
             'src/main/java/ghidradwarfforge/output/PublicationJournal.java'
+            'src/main/java/ghidradwarfforge/output/PublicationExchange.java'
+            'src/main/java/ghidradwarfforge/output/LinuxAtomicRename.java'
             'src/test/java/ghidradwarfforge/output/CompanionArtifactPublisherSmoke.java'
             'src/test/java/ghidradwarfforge/output/PublicationInterruptionSmoke.java'
             'src/test/java/ghidradwarfforge/output/CompanionObservationRecoverySmoke.java'
           )
-          & javac --release 21 -d $classes @sources 2>&1 | Tee-Object -FilePath "$results/compile.log"
+          & javac --release 21 -cp $jna -d $classes @sources 2>&1 | Tee-Object -FilePath "$results/compile.log"
           if ($LASTEXITCODE -ne 0) { throw 'Companion publication test compilation failed' }
-          & java -cp $classes ghidradwarfforge.output.CompanionArtifactPublisherSmoke 2>&1 |
+          & java -cp "$classes;$jna" ghidradwarfforge.output.CompanionArtifactPublisherSmoke 2>&1 |
             Tee-Object -FilePath "$results/runtime.log"
           if ($LASTEXITCODE -ne 0) { throw 'Companion publication test failed' }
 
@@ -373,16 +380,8 @@ jobs:
       - name: Isolated Windows identity and metadata application
         shell: pwsh
         run: |
-          $dependencies = Join-Path $PWD 'build/test-dependencies'
-          New-Item -ItemType Directory -Force $dependencies | Out-Null
-          $jna = Join-Path $dependencies 'jna-5.14.0.jar'
-          $gson = Join-Path $dependencies 'gson-2.9.0.jar'
-          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar' -OutFile $jna
-          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.9.0/gson-2.9.0.jar' -OutFile $gson
-          if ((Get-FileHash $jna -Algorithm SHA256).Hash.ToLowerInvariant() -ne '34ed1e1f27fa896bca50dbc4e99cf3732967cec387a7a0d5e3486c09673fe8c6' -or
-              (Get-FileHash $gson -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'c96d60551331a196dac54b745aa642cd078ef89b6f267146b705f2c2cbef052d') {
-              throw 'Test dependency differs from the selected Ghidra JNA/Gson bytes'
-          }
+          $jna = Join-Path $PWD 'build/test-dependencies/jna-5.14.0.jar'
+          $gson = Join-Path $PWD 'build/test-dependencies/gson-2.9.0.jar'
           & ./src/test/integration/windows-file-metadata.ps1 `
               -JavaExe (Get-Command java).Source -JavacExe (Get-Command javac).Source `
               -Compiler $env:FORGE_METADATA_CC -Jna $jna -Gson $gson `
@@ -699,6 +698,7 @@ jobs:
               fi
               sleep "$((attempt * 15))"
             done
+            ./gradlew --no-daemon jar
             src/test/integration/headless-wrapper.sh
             python3 src/test/integration/attachment-launcher.py
             src/test/integration/architecture-neutrality.sh
@@ -4193,6 +4193,9 @@ jobs:
           if ($null -eq $extension) { throw 'extension ZIP is missing' }
           Expand-Archive -Path $extension.FullName `
             -DestinationPath (Join-Path $env:GHIDRA_INSTALL_DIR 'Ghidra\Extensions') -Force
+          & pwsh -NoLogo -NoProfile -File .\src\test\integration\headless-wrapper.ps1 2>&1 |
+            Tee-Object -FilePath "$resultDirectory\headless-wrapper.log"
+          if ($LASTEXITCODE -ne 0) { throw "PowerShell wrapper checks failed with exit code $LASTEXITCODE" }
           & .\gradlew.bat formatterPlanSmoke exportPhaseSmoke dwarfTargetSmoke variableStorageSmoke addressNormalizerSmoke outputPathPolicySmoke companionArtifactPublisherSmoke strictDwarfReportSmoke attachmentProtocolSmoke attachmentInvocationSmoke attachmentHelperSmoke attachmentGuiProcessSmoke attachmentPreparationSmoke attachmentRecoveryInvocationSmoke exportReportSmoke `
             dwarfInfoRepairSmoke dwarfInfoRepairBoundarySmoke sourceRelocationBoundarySmoke `
             syntheticSourceSmoke sourcePartitionSmoke sourceBundleSmoke sourceBundleStoreSmoke sourceBundleFilesSmoke buildIdRecordsSmoke buildIdHelperSmoke annotationTextSmoke annotatedSourceSmoke artifactPairPublisherSmoke ghidraTargetAgreementSmoke `

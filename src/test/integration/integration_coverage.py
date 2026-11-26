@@ -278,6 +278,8 @@ class Collection:
             with tempfile.TemporaryDirectory(prefix='headless-', dir=self.root) as temporary:
                 directory = Path(temporary)
                 (directory / 'support').mkdir()
+                # Post-export report validation uses the same installed extension and framework JARs.
+                (directory / 'Ghidra').symlink_to(Path(ghidra).resolve() / 'Ghidra', target_is_directory=True)
                 adapter = directory / 'support/analyzeHeadless'
                 adapter.write_text('#!' + sys.executable + '\n' + template.read_text(encoding='utf-8'), encoding='utf-8')
                 adapter.chmod(0o700)

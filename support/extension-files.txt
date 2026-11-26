@@ -2,7 +2,6 @@ LICENSE
 Module.manifest
 THIRD_PARTY_NOTICES.md
 VERSION
-docs/images/ghidra-dwarf-forge.jpg
 extension.properties
 ghidra_scripts/AttachGhidraDwarfForge.java
 ghidra_scripts/ExportAndAttachGhidraDwarfForge.java

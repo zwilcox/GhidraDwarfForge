@@ -1,0 +1,260 @@
+{
+    "schemaVersion": 2,
+    "status": "PARTIAL",
+    "target": {
+        "architecture": "x86_64",
+        "addressBits": 64,
+        "byteOrder": "LITTLE_ENDIAN"
+    },
+    "artifacts": {
+        "inputPath": "fixture.elf",
+        "inputSha256": "2da7cc0bd1e01821dcc44d6fa2050147bdd3c448b30be6c1d8a5f93c0925d161",
+        "outputPath": "fixture.dbg",
+        "outputSha256": "cf3e076cad8a1b3aed07fbd6535db9649978405ad3429a10c64ce01ff38cc581",
+        "sourcePath": "fixture.dbg.c",
+        "sourceSha256": "1b5c9a76d402da9a4f13a50417c3690d303f77ef74a27a0be2532a2b3dcf47af"
+    },
+    "counts": {
+        "functionsExported": 1,
+        "functionsDecompiled": 1,
+        "functionsFailed": 0,
+        "functionsSkipped": 0,
+        "functionSignatures": 1,
+        "parameters": 0,
+        "localVariables": 0,
+        "globalVariables": 0,
+        "functionStaticVariables": 0,
+        "canonicalTypes": 1,
+        "defensibleVariableLocations": 0,
+        "omittedLocationRanges": 0,
+        "mappedSourceLines": 2,
+        "unsupportedConstructs": 1,
+        "diagnostics": 3
+    },
+    "sections": [
+        ".debug_abbrev",
+        ".debug_aranges",
+        ".debug_info",
+        ".debug_line",
+        ".debug_str"
+    ],
+    "failedFunctions": [],
+    "skippedFunctions": [],
+    "omittedLocations": [],
+    "unsupportedConstructs": [
+        {
+            "kind": "OPAQUE_TYPE",
+            "name": "undefined",
+            "diagnostic": "undefined Ghidra type"
+        }
+    ],
+    "diagnostics": [
+        "Call-site metadata at ELF address 0x401000: ELF process entry is not an ordinary called frame",
+        "Calling convention requires target ABI classification for fixture_entry: selected Ghidra calling convention processEntry differs from the program default; no debugger ABI mapping is established",
+        "Type /undefined retained as opaque: undefined Ghidra type"
+    ],
+    "validation": {
+        "status": "NOT_RUN"
+    },
+    "native": {
+        "libdwarfVersion": "2.3.2"
+    },
+    "failure": null,
+    "coverage": {
+        "definitionVersion": 2,
+        "addressModel": "ELF_LINK_TIME",
+        "profile": {
+            "languageId": "x86:LE:64:default",
+            "compilerSpecId": "gcc"
+        },
+        "summary": {
+            "functions": "1",
+            "unknownSignatureFunctions": "0",
+            "recoveredGlobalsKnown": "YES",
+            "recoveredGlobals": "0",
+            "source": {
+                "functions": "1",
+                "unavailableInstructionFunctions": "0",
+                "unavailableTokenFunctions": "0",
+                "decodedInstructions": "2",
+                "anchoredInstructions": "1",
+                "lineVisibleInstructions": "2"
+            },
+            "variables": {
+                "recoveredVariables": "0",
+                "emittedVariables": "0",
+                "variablesWithLocation": "0",
+                "knownScopeVariables": "0",
+                "unknownScopeVariables": "0",
+                "knownScopeBytes": "0",
+                "coveredScopeBytes": "0",
+                "extentUnavailableReason": ""
+            },
+            "variablesByKind": {
+                "PARAMETER": {
+                    "recoveredVariables": "0",
+                    "emittedVariables": "0",
+                    "variablesWithLocation": "0",
+                    "knownScopeVariables": "0",
+                    "unknownScopeVariables": "0",
+                    "knownScopeBytes": "0",
+                    "coveredScopeBytes": "0",
+                    "extentUnavailableReason": ""
+                },
+                "LOCAL": {
+                    "recoveredVariables": "0",
+                    "emittedVariables": "0",
+                    "variablesWithLocation": "0",
+                    "knownScopeVariables": "0",
+                    "unknownScopeVariables": "0",
+                    "knownScopeBytes": "0",
+                    "coveredScopeBytes": "0",
+                    "extentUnavailableReason": ""
+                },
+                "FUNCTION_STATIC": {
+                    "recoveredVariables": "0",
+                    "emittedVariables": "0",
+                    "variablesWithLocation": "0",
+                    "knownScopeVariables": "0",
+                    "unknownScopeVariables": "0",
+                    "knownScopeBytes": "0",
+                    "coveredScopeBytes": "0",
+                    "extentUnavailableReason": ""
+                }
+            },
+            "functionTypes": {
+                "recoveredRoots": "1",
+                "emittedRoots": "1",
+                "opaqueFreeEmittedRoots": "0",
+                "recoveredNodes": "1",
+                "resolvedEmittedNodes": "0",
+                "opaqueEmittedNodes": "1",
+                "notEmittedNodes": "0",
+                "implicitVoidNodes": "0",
+                "emittedImplicitVoidNodes": "0"
+            }
+        },
+        "functions": [
+            {
+                "entry": "0x401000",
+                "name": "fixture_entry",
+                "namespace": [],
+                "ranges": [
+                    [
+                        "0x401000",
+                        "0x401006"
+                    ]
+                ],
+                "source": {
+                    "disposition": "DECOMPILED",
+                    "diagnostic": "",
+                    "decodedInstructions": "2",
+                    "anchoredInstructions": "1",
+                    "lineVisibleInstructions": "2",
+                    "instructionUnavailableReason": "",
+                    "tokenUnavailableReason": "",
+                    "decodedStarts": [
+                        "0x401000",
+                        "0x401005"
+                    ],
+                    "anchoredStarts": [
+                        "0x401005"
+                    ],
+                    "lineVisibleStarts": [
+                        "0x401000",
+                        "0x401005"
+                    ]
+                },
+                "signature": {
+                    "recovered": "YES",
+                    "emitted": "YES",
+                    "source": "DEFAULT",
+                    "recordedCallingConvention": "processEntry",
+                    "emittedEffectiveCallingConvention": "processEntry",
+                    "debuggerCallRestriction": ""
+                },
+                "typeProvenance": "UNKNOWN_PER_TYPE",
+                "types": {
+                    "recoveredRoots": "1",
+                    "emittedRoots": "1",
+                    "opaqueFreeEmittedRoots": "0",
+                    "recoveredNodes": "1",
+                    "resolvedEmittedNodes": "0",
+                    "opaqueEmittedNodes": "1",
+                    "notEmittedNodes": "0",
+                    "implicitVoidNodes": "0",
+                    "emittedImplicitVoidNodes": "0"
+                },
+                "variables": {
+                    "recoveredVariables": "0",
+                    "emittedVariables": "0",
+                    "variablesWithLocation": "0",
+                    "knownScopeVariables": "0",
+                    "unknownScopeVariables": "0",
+                    "knownScopeBytes": "0",
+                    "coveredScopeBytes": "0",
+                    "extentUnavailableReason": ""
+                },
+                "variablesByKind": {
+                    "PARAMETER": {
+                        "recoveredVariables": "0",
+                        "emittedVariables": "0",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    },
+                    "LOCAL": {
+                        "recoveredVariables": "0",
+                        "emittedVariables": "0",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    },
+                    "FUNCTION_STATIC": {
+                        "recoveredVariables": "0",
+                        "emittedVariables": "0",
+                        "variablesWithLocation": "0",
+                        "knownScopeVariables": "0",
+                        "unknownScopeVariables": "0",
+                        "knownScopeBytes": "0",
+                        "coveredScopeBytes": "0",
+                        "extentUnavailableReason": ""
+                    }
+                }
+            }
+        ],
+        "variables": [],
+        "recoveredGlobals": [],
+        "storageEvidenceDetails": [],
+        "typeNodes": [
+            {
+                "key": "type:ghidra.program.model.data.DefaultDataType:/undefined:1",
+                "name": "undefined",
+                "definitionKind": "OpaqueType",
+                "byteSize": "1",
+                "kind": "OPAQUE",
+                "emitted": "YES",
+                "recoveredReferences": [],
+                "emittedReferences": [],
+                "diagnostic": "undefined Ghidra type"
+            }
+        ],
+        "functionTypeRoots": [
+            {
+                "entry": "0x401000",
+                "recovered": [
+                    "type:ghidra.program.model.data.DefaultDataType:/undefined:1"
+                ],
+                "emitted": [
+                    "type:ghidra.program.model.data.DefaultDataType:/undefined:1"
+                ]
+            }
+        ]
+    }
+}

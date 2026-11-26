@@ -71,6 +71,7 @@ public final class CuratedTypeBoundarySmoke {
         var ownedAddress = start.add(0x500);
         program.getListing().createData(ownedAddress, new IntegerDataType(manager));
         program.getSymbolTable().createLabel(ownedAddress, "owned_static", owner, SourceType.USER_DEFINED);
+        program.getSymbolTable().createLabel(start.add(0x510), "untyped_static", owner, SourceType.USER_DEFINED);
         long modification = program.getModificationNumber();
         var diagnostics = new ArrayList<String>();
         ProgramTypeModel model;
@@ -82,7 +83,10 @@ public final class CuratedTypeBoundarySmoke {
         }
         require(diagnostics.stream().anyMatch(message -> message.contains("owned_static")
             && message.contains("owning function was not exported")), "orphaned static needs a diagnostic");
-        require(model.functionStatics().isEmpty() && model.globals().stream().noneMatch(global -> global.name().equals("owned_static")),
+        require(diagnostics.stream().anyMatch(message -> message.contains("untyped_static")
+            && message.contains("owning function was not exported")), "untyped orphan needs an owner diagnostic");
+        require(model.functionStatics().isEmpty() && model.globals().stream().noneMatch(global ->
+            global.name().equals("owned_static") || global.name().equals("untyped_static")),
             "unexported function's static was promoted to a global");
         for (int index = 0; index < 3; index++) {
             var node = globalType(model, "wide_" + index * 32);

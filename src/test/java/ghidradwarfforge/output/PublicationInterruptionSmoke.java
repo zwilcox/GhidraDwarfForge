@@ -26,18 +26,23 @@ public final class PublicationInterruptionSmoke {
     }
 
     static void exercise(Path root) throws Exception {
+        legacyClaim(root.resolve("legacy-claim"));
+        splitDirectoryPair(root.resolve("split-pair"));
+        interruptedByError(root.resolve("error-before-install"), false);
+        interruptedByError(root.resolve("error-after-install"), true);
         for (boolean kill : List.of(false, true)) {
             Path fixtures = Files.createDirectory(root.resolve(kill ? "interrupted" : "overlap"));
             Files.writeString(fixtures.resolve("input"), "original");
             for (String name : NAMES) Files.writeString(fixtures.resolve(name), "old " + name);
             String cp = classes(PublicationInterruptionSmoke.class) + File.pathSeparator +
-                classes(CompanionArtifactPublisher.class) + File.pathSeparator + classes(FileDigests.class);
+                classes(CompanionArtifactPublisher.class) + File.pathSeparator + classes(FileDigests.class) +
+                File.pathSeparator + classes(com.sun.jna.Native.class);
             Process child = new ProcessBuilder(ProcessHandle.current().info().command().orElseThrow(),
                 "-cp", cp, PublicationInterruptionSmoke.class.getName(), fixtures.toString())
                 .redirectErrorStream(true).redirectOutput(fixtures.resolve("child.log").toFile()).start();
             try {
                 await(fixtures.resolve("ready"));
-                Path owner = PublicationJournal.claimPath(fixtures.resolve(NAMES.get(0))).resolve("owner.properties");
+                Path owner = PublicationJournal.claimPath(fixtures.resolve(NAMES.get(0)));
                 Path inventory = Path.of(properties(owner).getProperty("inventory"));
                 Properties record = properties(inventory);
                 require(record.getProperty("count").equals("3"), "incomplete generation inventory");
@@ -77,7 +82,7 @@ public final class PublicationInterruptionSmoke {
                     require(child.waitFor(15, TimeUnit.SECONDS) && child.exitValue() == 0, "ordinary export failed");
                     for (String name : NAMES) require(Files.readString(fixtures.resolve(name)).equals("new " + name),
                         "overlap returned a mixed generation");
-                    require(!Files.exists(owner.getParent()) && !Files.exists(inventory), "successful export leaked its claim");
+                    require(!Files.exists(owner) && !Files.exists(inventory), "successful export leaked its claim");
                 }
                 require(Files.readString(fixtures.resolve("input")).equals("original"), "publication changed input");
             }
@@ -91,7 +96,113 @@ public final class PublicationInterruptionSmoke {
         System.out.println("generation-overlap-and-process-interruption=PASS");
     }
 
+    private static void legacyClaim(Path root) throws Exception {
+        Files.createDirectory(root);
+        Path target = root.toRealPath().resolve(NAMES.getFirst());
+        Path claim = Files.createDirectory(PublicationJournal.claimPath(target));
+        Path inventory = Files.createDirectory(target.resolveSibling(".forge-generation-legacy"))
+            .resolve(PublicationJournal.INVENTORY);
+        Properties legacy = new Properties();
+        legacy.setProperty("file.0.claim", claim.toString());
+        try (var out = Files.newOutputStream(inventory)) { legacy.store(out, null); }
+        Path unrelated = Files.createDirectory(target.resolveSibling(".forge-generation-unrelated"))
+            .resolve(PublicationJournal.INVENTORY);
+        Properties other = new Properties();
+        other.setProperty("file.0.claim", PublicationJournal.claimPath(target.resolveSibling("other")).toString());
+        other.setProperty("description", claim.toString());
+        try (var out = Files.newOutputStream(unrelated)) { other.store(out, null); }
+        Path malformed = Files.createDirectory(target.resolveSibling(".forge-generation-malformed"))
+            .resolve(PublicationJournal.INVENTORY);
+        Files.writeString(malformed, "file.0.claim=\\uZZZZ");
+        Files.createDirectory(target.resolveSibling(".forge-generation-unrecorded"));
+        String diagnostic = refusedLegacyClaim(target);
+        require(diagnostic.contains(inventory.toString()) && !diagnostic.contains(unrelated.toString()) &&
+            !diagnostic.contains(malformed.toString()) && !diagnostic.contains("owner.properties"),
+            "wrong recovery inventories selected: " + diagnostic);
+        require(properties(inventory).equals(legacy) && properties(unrelated).equals(other) &&
+            Files.readString(malformed).equals("file.0.claim=\\uZZZZ"), "retry modified prior recovery evidence");
+        Files.delete(inventory);
+        diagnostic = refusedLegacyClaim(target);
+        require(diagnostic.contains("No matching recovery inventory") && diagnostic.contains(claim.toString()),
+            "orphan claim lacked preservation instructions: " + diagnostic);
+        Path owner = Files.writeString(claim.resolve("owner.properties"), "legacy owner");
+        require(refusedLegacyClaim(target).contains(owner.toString()) && Files.readString(owner).equals("legacy owner"),
+            "legacy owner was lost or omitted from retry instructions");
+        require(Files.isDirectory(claim) && !Files.exists(target) && !Files.exists(target.resolveSibling(NAMES.get(1))),
+            "retry removed the claim or published a partial generation");
+    }
+
+    private static String refusedLegacyClaim(Path target) throws Exception {
+        try {
+            ArtifactPairPublisher.stageAndPublish(target, target.resolveSibling(NAMES.get(1)),
+                p -> Files.writeString(p, "sidecar"), p -> Files.writeString(p, "source"), () -> { });
+            throw new AssertionError("export ignored an interrupted legacy claim");
+        }
+        catch (IOException expected) {
+            return expected.getMessage();
+        }
+    }
+
+    private static void splitDirectoryPair(Path root) throws Exception {
+        Files.createDirectory(root);
+        Path sources = Files.createDirectory(root.resolve("sources"));
+        Path artifact = Files.writeString(root.resolve(NAMES.get(0)), "old symbols");
+        Path source = Files.writeString(sources.resolve(NAMES.get(1)), "old source");
+        for (boolean interrupt : List.of(true, false)) {
+            Path artifactStage = Files.writeString(root.resolve("symbols.stage"), "new symbols");
+            Path sourceStage = Files.writeString(sources.resolve("source.stage"), "new source");
+            IOException stop = new IOException("interrupted before source install");
+            try {
+                ArtifactPairPublisher.publish(artifactStage, artifact, sourceStage, source, () -> {
+                    if (interrupt) throw stop;
+                });
+                require(!interrupt, "split-directory publication ignored interruption");
+            }
+            catch (IOException failure) {
+                if (failure != stop || failure.getSuppressed().length != 0) throw failure;
+            }
+            String generation = interrupt ? "old" : "new";
+            require(Files.readString(artifact).equals(generation + " symbols") &&
+                Files.readString(source).equals(generation + " source"), "mixed split-directory generation");
+            try (var all = Files.walk(root)) {
+                require(all.count() == 4, "split-directory publication left recovery files");
+            }
+        }
+    }
+
+    private static void interruptedByError(Path root, boolean afterInstall) throws Exception {
+        Files.createDirectory(root);
+        Path original = Files.writeString(root.resolve("input"), "original");
+        List<Path> targets = NAMES.stream().map(root::resolve).toList();
+        for (Path target : targets) Files.writeString(target, "old " + target.getFileName());
+        Path claim = PublicationJournal.claimPath(targets.getFirst());
+        AssertionError failure = new AssertionError("simulated fatal installation error");
+        try {
+            CompanionArtifactPublisher.stageAndPublish(original, targets, stages -> {
+                for (int i = 0; i < stages.size(); i++) Files.writeString(stages.get(i), "new " + NAMES.get(i));
+            }, () -> {
+                if (!afterInstall && Files.exists(claim)) throw failure;
+            }, () -> { }, index -> { if (index == 0 && afterInstall) throw failure; });
+            throw new AssertionError("publication swallowed the installation error");
+        }
+        catch (AssertionError observed) { if (observed != failure) throw observed; }
+        Path inventory = Path.of(properties(claim).getProperty("inventory"));
+        Properties record = properties(inventory);
+        require(!Files.exists(inventory.resolveSibling("committed")), "incomplete publication marked committed");
+        refuseCompetingPair(root);
+        for (int i = 0; i < targets.size(); i++) {
+            boolean installed = i == 0 && afterInstall;
+            String prefix = "file." + i;
+            Path old = installed ? Path.of(record.getProperty(prefix + ".backup")) : targets.get(i);
+            Path next = installed ? targets.get(i) : Path.of(record.getProperty(prefix + ".stage"));
+            require(Files.readString(old).equals("old " + NAMES.get(i)) &&
+                Files.readString(next).equals("new " + NAMES.get(i)), "fatal error discarded a generation");
+        }
+        require(Files.readString(original).equals("original"), "fatal error changed the original");
+    }
+
     private static void refuseCompetingPair(Path root) throws Exception {
+        root = root.toRealPath();
         try {
             ArtifactPairPublisher.stageAndPublish(root.resolve(NAMES.get(0)), root.resolve(NAMES.get(1)),
                 path -> Files.writeString(path, "competitor sidecar"), path -> Files.writeString(path, "competitor source"),
@@ -99,7 +210,9 @@ public final class PublicationInterruptionSmoke {
             throw new AssertionError("competing writer replaced a claimed generation");
         }
         catch (IOException expected) {
-            require(expected.getMessage().contains("owner.properties"), "missing recovery location: " + expected);
+            require(expected.getMessage().contains(PublicationJournal.claimPath(root.resolve(NAMES.get(0))).toString()) ||
+                expected.getMessage().contains(PublicationJournal.claimPath(root.resolve(NAMES.get(1))).toString()),
+                "missing recovery location: " + expected);
         }
     }
 

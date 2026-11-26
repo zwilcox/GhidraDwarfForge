@@ -5,6 +5,7 @@ param(
     [string]$BeforeFile,
     [string]$Function,
     [switch]$Summary,
+    [switch]$TerminalStatus,
     [string]$GhidraDirectory = $env:GHIDRA_INSTALL_DIR,
     [string]$ExtensionDirectory = (Split-Path -Parent $PSScriptRoot),
     [string]$JavaExecutable
@@ -47,6 +48,7 @@ foreach ($argument in @('-cp',($dependencies -join [IO.Path]::PathSeparator),
 if ($PSBoundParameters.ContainsKey('BeforeFile')) { $info.ArgumentList.Add('--before-utf8-base64'); $info.ArgumentList.Add((Encode-PathArgument $BeforeFile)) }
 if ($PSBoundParameters.ContainsKey('Function')) { $info.ArgumentList.Add('--function'); $info.ArgumentList.Add($Function) }
 if ($Summary) { $info.ArgumentList.Add('--summary') }
+if ($TerminalStatus) { $info.ArgumentList.Add('--terminal-status') }
 $child = [Diagnostics.Process]::new()
 $child.StartInfo = $info
 $started = $false
