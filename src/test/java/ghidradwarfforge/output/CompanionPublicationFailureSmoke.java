@@ -20,6 +20,8 @@ public final class CompanionPublicationFailureSmoke {
     public static void main(String[] args) throws Exception {
         Path root = Files.createTempDirectory("forge-publication-failures-");
         try {
+            WindowsPublicationExchangeSmoke.exercise(root);
+            exchangeAdmission(root);
             preflight(root);
             invalidStages(root);
             changedStagesBeforeInventory(root);
@@ -35,6 +37,37 @@ public final class CompanionPublicationFailureSmoke {
             try (var paths = Files.walk(root)) {
                 for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
             }
+        }
+    }
+
+    private static void exchangeAdmission(Path root) throws Exception {
+        String host = System.getProperty("os.name");
+        try {
+            System.setProperty("os.name", "unsupported publication host");
+            PublicationExchange.open();
+            throw new AssertionError("accepted an unsupported atomic exchange host");
+        }
+        catch (IOException expected) {
+            require(expected.getMessage().contains("unsupported publication host"), "missing host diagnostic");
+        }
+        finally { System.setProperty("os.name", host); }
+        if (host.equals("Linux") && System.getProperty("sun.jnu.encoding").equalsIgnoreCase("UTF-8")) {
+            Path raw = Path.of(java.net.URI.create(root.toUri().toASCIIString() + "name-%FF"));
+            Path decoded = Path.of(raw.toString());
+            Path target = root.resolve("exchange-target");
+            require(!raw.equals(decoded), "invalid UTF-8 fixture did not produce distinct paths");
+            Files.writeString(raw, "raw");
+            Files.writeString(decoded, "decoded");
+            Files.writeString(target, "original");
+            try {
+                PublicationExchange.open().exchange(raw, target);
+                throw new AssertionError("native exchange accepted a lossy pathname");
+            }
+            catch (IOException expected) {
+                require(expected.getMessage().contains("represented losslessly"), "wrong path refusal: " + expected);
+            }
+            require(Files.readString(raw).equals("raw") && Files.readString(decoded).equals("decoded") &&
+                Files.readString(target).equals("original"), "lossy path exchange modified a file");
         }
     }
 

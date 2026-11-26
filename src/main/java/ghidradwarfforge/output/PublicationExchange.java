@@ -25,20 +25,29 @@ interface PublicationExchange {
     }
 
     final class WindowsExchange implements PublicationExchange {
-        private interface Transactions extends StdCallLibrary {
+        interface Transactions extends StdCallLibrary {
             Pointer CreateTransaction(Pointer security, Pointer id, int options, int isolation,
                 int isolationFlags, int timeout, WString description);
             int CommitTransaction(Pointer transaction);
         }
 
-        private interface Kernel extends StdCallLibrary {
+        interface Kernel extends StdCallLibrary {
             int MoveFileTransactedW(WString source, WString target, Pointer callback, Pointer data,
                 int flags, Pointer transaction);
             int CloseHandle(Pointer handle);
         }
 
-        private final Transactions transactions = Native.load("KtmW32", Transactions.class);
-        private final Kernel kernel = Native.load("kernel32", Kernel.class);
+        private final Transactions transactions;
+        private final Kernel kernel;
+
+        WindowsExchange() {
+            this(Native.load("KtmW32", Transactions.class), Native.load("kernel32", Kernel.class));
+        }
+
+        WindowsExchange(Transactions transactions, Kernel kernel) {
+            this.transactions = transactions;
+            this.kernel = kernel;
+        }
 
         @Override
         public void exchange(Path privateName, Path publicName) throws IOException {

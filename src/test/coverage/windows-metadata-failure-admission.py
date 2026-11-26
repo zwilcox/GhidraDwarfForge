@@ -10,13 +10,14 @@ CASES = (
     'stream-unaligned', 'stream-short-next', 'stream-long-next', 'stream-excess-count',
     'stream-invalid-utf16', 'free-error-after-release', 'close-error-after-release')
 NO_ALLOCATION = frozenset(CASES[:7] + CASES[8:16])
-SESSIONS = frozenset(('privilege', 'host', 'transactions', 'lock', 'controlled-native-failures',
+SESSIONS = frozenset(('publication', 'privilege', 'host', 'transactions', 'lock', 'controlled-native-failures',
     'controlled-directory-failures', 'controlled-security-failures', 'controlled-backup-failures'))
 
 
 def oracle(record, evidence):
     if (record.get('suite') != 'windows-host-primitives' or record.get('layer') != 'windows'
             or record.get('host') != 'nt' or evidence.get('status') != 'PASS_NATIVE_WINDOWS_HOST_PRIMITIVES'
+            or evidence.get('lockedPublication') is not True
             or any(type(evidence.get(key)) is not int or evidence[key] <= 0
                    for key in ('hostChecks', 'transactionChecks'))):
         raise ValueError('metadata failures require the real Windows host primitive suite')
@@ -45,7 +46,7 @@ def oracle(record, evidence):
             or any(not isinstance(row, dict) or row.get('status') != 'ORACLE_PASSED' for row in sessions)
             or {row.get('label') for row in sessions} != SESSIONS
             or record.get('unmeasuredForcedHalts') or record.get('launcherInvocations')):
-        raise ValueError('Windows metadata failures lack the eight completed isolated sessions')
+        raise ValueError('Windows host primitives lack the required completed isolated sessions')
     children = evidence.get('unmeasuredNestedChildren')
     if (not isinstance(children, list) or len(children) != 8
             or any(not isinstance(row, dict) or type(row.get('exitCode')) is not int or row['exitCode'] != 89

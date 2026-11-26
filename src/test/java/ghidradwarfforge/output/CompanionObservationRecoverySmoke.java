@@ -60,6 +60,7 @@ public final class CompanionObservationRecoverySmoke {
         }
         beforeStage.unchanged(staged);
         beforeTarget.unchanged(target);
+        System.out.println("windows-locked-publication=PASS");
     }
 
     private record Saved(byte[] bytes, Object key, FileTime modified) {

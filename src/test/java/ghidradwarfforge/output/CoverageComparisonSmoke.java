@@ -27,6 +27,7 @@ public final class CoverageComparisonSmoke {
             Path after = directory.resolve("after.json");
             Files.writeString(before, report("old name", List.of(100L, 102L, 104L), List.of(100L, 104L), List.of(100L, 102L, 104L)));
             Files.writeString(after, report("renamed", List.of(100L, 102L, 104L), List.of(102L, 104L), List.of(102L, 104L)));
+            terminalStatus(directory, before);
             var first = ExportReportClaims.readWithCoverage(before, () -> false);
             var second = ExportReportClaims.readWithCoverage(after, () -> false);
             var changes = new ArrayList<CoverageComparison.Change>();
@@ -130,6 +131,32 @@ public final class CoverageComparisonSmoke {
             unknown ? 0 : decoded.size(), unknown ? 0 : anchors.size(), unknown ? 0 : visible.size()), base.variables(), base.variablesByKind(),
             base.functionTypeUnion(), 0, List.of(), true);
         return ExportReportClaimsFixtures.completed(false, 1).toJsonWithCoverage(new CoverageReportClaims(PROFILE, coverage), () -> false);
+    }
+
+    private static void terminalStatus(Path directory, Path completed) throws Exception {
+        require(run("--terminal-status", "--report-utf8-base64", AttachmentPathArgument.encode(completed.toString()))
+            .equals(new Run(0, "", "")), "completed schema-two status was not silent success");
+        Path path = directory.resolve("terminal report.json");
+        for (var status : ExportReport.Status.values()) {
+            ExportReport record = switch (status) {
+                case SUCCESS, PARTIAL -> ExportReportClaimsFixtures.completed(status == ExportReport.Status.PARTIAL);
+                case FATAL, CANCELLED -> ExportReportClaimsFixtures.terminal(status);
+            };
+            String json = record.toJson();
+            Files.writeString(path, json);
+            int code = switch (status) { case SUCCESS, PARTIAL -> 0; case FATAL -> 10; case CANCELLED -> 11; };
+            require(run("--report", path.toString(), "--terminal-status").equals(new Run(code, "", "")),
+                "wrong terminal status for " + status);
+            require(Files.readString(path).equals(json), "terminal status check changed the selected report");
+        }
+        Files.writeString(path, "{\"status\":\"SUCCESS\"}");
+        Run incomplete = run("--terminal-status", "--report", path.toString());
+        require(incomplete.status() == 1 && incomplete.out().isEmpty() && incomplete.err().contains("Coverage report error"),
+            "incomplete report presented as terminal success");
+        for (String extra : List.of("--terminal-status", "--summary", "--unknown")) {
+            require(run("--report", path.toString(), "--terminal-status", extra).status() == 64,
+                "conflicting or unknown terminal option accepted");
+        }
     }
 
     private static Run run(String... arguments) {
