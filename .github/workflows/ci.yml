@@ -3049,7 +3049,8 @@ jobs:
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --compiler windows
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --compiler golang
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --language AppleSilicon --compiler golang
-          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --language AppleSilicon --compiler swift
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --language AppleSilicon --swift-stdcall
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --swift-stdcall
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --flags 1
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --abi-version 1
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --osabi 9

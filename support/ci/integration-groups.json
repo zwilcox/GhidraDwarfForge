@@ -2583,7 +2583,8 @@
             "groups": {
                 "aarch64": "types"
             },
-            "stepSha256": "59454b1f9898d8afbde77a9d532e0f1ea92d648487161133007e6620ca50887b"
+            "stepSha256": "59454b1f9898d8afbde77a9d532e0f1ea92d648487161133007e6620ca50887b",
+            "groupedStepSha256": "8d8930a006fa4275209dd932437a821b2252137b12aa6cbebfb0f156f2910127"
         },
         {
             "id": "target-166",

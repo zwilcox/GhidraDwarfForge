@@ -23,7 +23,8 @@ def main():
     parser.add_argument('ghidra', type=Path)
     parser.add_argument('--target', choices=('aarch64', 'i386'), default='aarch64')
     parser.add_argument('--language', choices=('v8A', 'AppleSilicon', 'default', 'compat32'))
-    parser.add_argument('--compiler', choices=('default', 'windows', 'clangwindows', 'gcc', 'golang', 'swift'))
+    parser.add_argument('--compiler', choices=('default', 'windows', 'clangwindows', 'gcc', 'golang'))
+    parser.add_argument('--swift-stdcall', action='store_true', help='apply the SDK Swift calling convention to the fixture')
     parser.add_argument('--osabi', type=int, default=0)
     parser.add_argument('--abi-version', type=int, default=0)
     parser.add_argument('--flags', type=lambda value: int(value, 0), default=0)
@@ -34,15 +35,18 @@ def main():
     args.compiler = args.compiler or ('default' if args.target == 'aarch64' else 'gcc')
     if args.target == 'aarch64':
         assert args.language in ('v8A', 'AppleSilicon')
-        assert args.compiler in ({'default', 'windows', 'golang'} if args.language == 'v8A' else {'default', 'swift', 'golang'})
+        assert args.compiler in ({'default', 'windows', 'golang'} if args.language == 'v8A' else {'default', 'golang'})
         language_id = 'AARCH64:LE:64:' + args.language
         baseline_pair = args.language == 'v8A' and args.compiler == 'default'
     else:
+        assert not args.swift_stdcall
         assert args.language in ('default', 'compat32')
         assert args.compiler in ({'gcc', 'windows', 'clangwindows', 'golang'} if args.language == 'default' else {'gcc', 'windows'})
         language_id = 'x86:LE:' + ('64:compat32' if args.language == 'compat32' else '32:default')
         baseline_pair = args.compiler == 'gcc'
-    blocked = not (baseline_pair and args.osabi in (0, 3) and args.abi_version == args.flags == 0)
+    profile_blocked = not (baseline_pair and args.osabi in (0, 3) and args.abi_version == args.flags == 0)
+    blocked = profile_blocked or args.swift_stdcall
+    convention_args = ['__swift_stdcall'] if args.swift_stdcall else []
     ghidra = args.ghidra.resolve(strict=True)
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     root = repository / 'build/test-results/abi-profile'
@@ -104,7 +108,7 @@ def main():
     run('import', [ghidra / 'support/analyzeHeadless', project, 'FloatingCall', '-import', binary,
         '-processor', language_id, '-cspec', args.compiler,
         '-analysisTimeoutPerFile', '120', '-scriptPath', source / 'ghidra_scripts', *rebase,
-        '-postScript', 'PrepareAbiProfile.java', 'curate', 'double', case / 'import.json'], timeout=240)
+        '-postScript', 'PrepareAbiProfile.java', 'curate', 'double', case / 'import.json', *convention_args], timeout=240)
     import_log = (case / 'import.log').read_text()
     assert 'REPORT: Analysis succeeded' in import_log and 'REPORT SCRIPT ERROR' not in import_log
     # Forced Go selection on a C fixture has no Go runtime tables; account only
@@ -122,13 +126,15 @@ def main():
         output = case / 'fixed.dbg'
         run(variant, [installation / 'support/analyzeHeadless', project, 'FloatingCall', '-process', binary.name,
             '-readOnly', '-noanalysis', '-scriptPath', source / 'ghidra_scripts',
-            '-postScript', 'PrepareAbiProfile.java', 'observe', 'double', case / (variant + '.json'),
+            '-postScript', 'PrepareAbiProfile.java', 'observe', 'double', case / (variant + '.json'), *convention_args,
             '-postScript', 'GhidraDwarfForge.java', '--packaged-natives', '--output=' + str(output)], timeout=240)
         text = (case / (variant + '.log')).read_text()
         assert 'GhidraDwarfForge symbol export PASS' in text and 'abi-profile-preparation=PASS' in text
         observed = json.loads((case / (variant + '.json')).read_text())
         for row in observed['functions']:
             assert row['entry'] == symbols[row['name']] and row['customStorage'] is False
+            if args.swift_stdcall:
+                assert row['convention'] == '__swift_stdcall', row
         if args.role == 'pie-rebased':
             assert observed['rebaseDelta'] >= 0x2000000
         imported = json.loads((case / 'import.json').read_text())
@@ -137,7 +143,9 @@ def main():
         assert Path(unquote(urlsplit(observed['origin']).path)).resolve() == expected_jar.resolve()
         assert observed['language'] == language_id and observed['compiler'] == args.compiler
         for name in ('fp_call', 'integer_call'):
-            assert ('Debugger-injected calls disabled for ' + name + ':' in text) == blocked
+            assert ('Debugger-injected calls disabled for ' + name + ':' in text) == profile_blocked
+            if args.swift_stdcall:
+                assert f'classification for {name}: selected Ghidra calling convention __swift_stdcall' in text
         current = [support.digest(output), support.digest(Path(str(output) + '.c'))]
         if hashes is not None:
             assert hashes == current
@@ -187,7 +195,7 @@ def main():
     write('protected-after.json', after)
     assert before == after
     write('result.json', {'status': 'PASS', 'language': args.language, 'compiler': args.compiler, 'blocked': blocked,
-        'role': args.role, 'inputSha256': before[str(binary)], 'hashes': hashes,
+        'role': args.role, 'swiftStdcall': args.swift_stdcall, 'inputSha256': before[str(binary)], 'hashes': hashes,
         'projectBackupChanges': changes,
         'jarSha256': support.digest(module / 'lib/GhidraDwarfForge.jar')})
     print('abi-profile-export=PASS ' + str(case), flush=True)
