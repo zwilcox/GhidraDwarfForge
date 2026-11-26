@@ -39,8 +39,7 @@ if [[ -n "$emulator" ]]; then
 fi
 FORGE_LOADER_FIXTURE="$fixture" FORGE_LOADER_RESULT="$result" \
     FORGE_LOADER_SIDECAR="$sidecar" FORGE_LOADER_REFERENCE="$reference" \
-    FORGE_LOADER_ROLE="$role" FORGE_LOADER_TARGET="$target" \
-    FORGE_LOADER_DISCOVERY="$discovery" \
+    FORGE_LOADER_ROLE="$role" FORGE_LOADER_DISCOVERY="$discovery" \
     FORGE_LOADER_REMOTE="$qemu_socket_path" FORGE_LOADER_SYSROOT="$sysroot" \
     timeout 90s "${FORGE_LOADER_GDB:-gdb-multiarch}" -nx -q -batch \
         -ex 'set python print-stack full' \

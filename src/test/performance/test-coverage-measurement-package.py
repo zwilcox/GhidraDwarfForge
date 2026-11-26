@@ -2,6 +2,7 @@
 """Reject unexplained bytecode drift, wrong Java levels and corrupt package manifests."""
 import copy
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -55,6 +56,46 @@ class PackageControls(unittest.TestCase):
                     else:
                         with self.assertRaises(AssertionError):
                             package.inventory(module)
+            with zipfile.ZipFile(jar, 'w') as archive:
+                archive.writestr('p/A.class', java21[:-1] + b'\x45')
+            self.assertIn('p/A.class', package.inventory(module, 69)[0])
+            with self.assertRaises(AssertionError):
+                package.inventory(module, 65)
+
+    def test_production_pair(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            expected = {'baseline': 'a' * 40, 'candidate': 'b' * 40}
+            receipts, installations = {}, {}
+            for index, (role, commit) in enumerate(expected.items()):
+                ghidra = root / (role + '-sdk')
+                installations[role] = ghidra
+                module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+                module.mkdir(parents=True)
+                properties = b'version=12.2\n'
+                (module / 'extension.properties').write_bytes(properties)
+                manifest = (package.digest(properties) + '  extension.properties\n').encode()
+                (module / 'RELEASE-SHA256SUMS').write_bytes(manifest)
+                directory = root / role
+                directory.mkdir()
+                release = directory / 'release.zip'
+                with zipfile.ZipFile(release, 'w') as archive:
+                    archive.write(module / 'RELEASE-SHA256SUMS', 'GhidraDwarfForge/RELEASE-SHA256SUMS')
+                    archive.write(module / 'extension.properties', 'GhidraDwarfForge/extension.properties')
+                download = root / (role + '.zip')
+                with zipfile.ZipFile(download, 'w') as archive:
+                    archive.write(release, release.name)
+                digest = package.digest(download.read_bytes())
+                receipts[role] = {'requestedSha': commit, 'run': {'head_sha': commit, 'id': index},
+                    'verifiedArchiveSha256': digest, 'artifact': {'digest': 'sha256:' + digest}}
+            (root / 'receipts.json').write_text(json.dumps(receipts))
+            result = package.installed_production(root, installations, expected)
+            self.assertEqual({role: row['commit'] for role, row in result.items()}, expected)
+            with self.assertRaises(AssertionError):
+                package.installed_production(root, installations, dict(expected, candidate='c' * 40))
+            (installations['baseline'] / 'Ghidra/Extensions/GhidraDwarfForge/extension.properties').write_text('version=12.0.3\n')
+            with self.assertRaises(AssertionError):
+                package.installed_production(root, installations, expected)
 
     def test_manifest_changes(self):
         with tempfile.TemporaryDirectory() as temporary:

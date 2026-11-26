@@ -36,7 +36,9 @@ def main():
     parser.add_argument('helper', type=Path)
     parser.add_argument('results', type=Path)
     parser.add_argument('--checker-configuration', type=Path, required=True)
-    parser.add_argument('--baseline-control-receipt', type=Path, required=True)
+    study = parser.add_mutually_exclusive_group(required=True)
+    study.add_argument('--baseline-control-receipt', type=Path)
+    study.add_argument('--production-packages', type=Path)
     parser.add_argument('--pairs', type=int, default=5)
     args = parser.parse_args()
     if os.name != 'nt' or not 2 <= args.pairs <= 10:
@@ -63,7 +65,6 @@ def main():
         SOURCE / 'headless-observations.py', SOURCE / 'jfr-phases.py',
         SOURCE / 'coverage-measurement-package.py', SOURCE / 'catalog-source-equivalence.py',
         SOURCE / 'dwarf-revision-equivalence.py',
-        args.baseline_control_receipt.resolve(strict=True),
         corpus / 'corpus.json']
     protected += [corpus / name for name in metadata['files']]
     for ghidra in installations.values():
@@ -77,25 +78,34 @@ def main():
     package = load('coverage-measurement-package')
     baseline_module = installations['baseline'] / 'Ghidra/Extensions/GhidraDwarfForge'
     candidate_module = installations['candidate'] / 'Ghidra/Extensions/GhidraDwarfForge'
-    control = json.loads(args.baseline_control_receipt.read_text(encoding='utf-8'))
-    assert control['status'] == 'PASS' and control['compiledClassesMatchCandidate']
-    assert control['productionInputsUnchanged']
-    assert Path(control['controlModule']).resolve() == baseline_module.resolve()
-    assert control['controlFiles'] == package.manifest(baseline_module)
-    assert control['correctedSourceSha256'] == package.CORRECTED_SOURCE_SHA
-    original_module = Path(control['sourceModule']).resolve(strict=True)
-    assert package.manifest(original_module) == control['originalFiles']
-    protected += [original_module / name for name in control['originalFiles']]
-    protected.append(original_module / 'RELEASE-SHA256SUMS')
+    historical = args.baseline_control_receipt is not None
+    if historical:
+        receipt = args.baseline_control_receipt.resolve(strict=True)
+        control = json.loads(receipt.read_text(encoding='utf-8'))
+        assert control['status'] == 'PASS' and control['compiledClassesMatchCandidate']
+        assert control['productionInputsUnchanged']
+        assert Path(control['controlModule']).resolve() == baseline_module.resolve()
+        assert control['controlFiles'] == package.manifest(baseline_module)
+        assert control['correctedSourceSha256'] == package.CORRECTED_SOURCE_SHA
+        original_module = Path(control['sourceModule']).resolve(strict=True)
+        assert package.manifest(original_module) == control['originalFiles']
+        protected += [original_module / name for name in control['originalFiles']]
+        protected.append(original_module / 'RELEASE-SHA256SUMS')
+    else:
+        receipt = args.production_packages.resolve(strict=True) / 'receipts.json'
+        control = package.installed_production(receipt.parent, installations,
+            {role: os.environ['PERFORMANCE_' + role.upper()] for role in installations})
+    protected.append(receipt)
     before = {str(p): support.digest(p) for p in protected}
     write(root / 'protected-before.json', before)
-    class_comparison = package.audit(baseline_module, candidate_module)
+    class_comparison = package.audit(baseline_module, candidate_module, class_major=65 if historical else 69)
     write(root / 'baseline-control.json', control)
     write(root / 'environment.json', {'host': platform.platform(), 'cpuCount': os.cpu_count(),
         'python': sys.version, 'pairs': args.pairs, 'installations': {k: str(v) for k, v in installations.items()},
         'helperSha256': support.digest(helper), 'corpusSha256': support.digest(corpus / 'corpus.json'),
         'classComparison': class_comparison,
-        'baselineControlReceiptSha256': support.digest(args.baseline_control_receipt),
+        'study': 'historical-coverage' if historical else 'production',
+        'baselineControlReceiptSha256': support.digest(receipt),
         'measurementBoundary': 'Fresh PowerShell/wrapper/JVM jobs; all descendant CPU and peak commitment. '
             'Launcher CPU excluded; 10ms membership polling included in wall time. '
             'Peak commitment is NOT Linux RSS. Import, validation, profiling and Linux GDB replay separate. '
@@ -167,11 +177,12 @@ def main():
             raw_report = body[:end].encode('utf-8')
             report_sha = hashlib.sha256(raw_report).hexdigest()
             assert report_sha == first_reports.setdefault(variant, report_sha), 'report bytes changed'
-            assert report['schemaVersion'] == (1 if variant == 'baseline' else 2)
-            if variant == 'candidate':
+            old_schema = historical and variant == 'baseline'
+            assert report['schemaVersion'] == (1 if old_schema else 2)
+            if not old_schema:
                 assert report['coverage']['definitionVersion'] == 2
                 assert len(raw_report) <= 64 * 1024 * 1024
-                if not selected_report.exists():
+                if variant == 'candidate' and not selected_report.exists():
                     selected_report.write_bytes(raw_report)
             else:
                 assert 'coverage' not in report
@@ -200,8 +211,10 @@ def main():
                 if dwarf_result is None:
                     dwarf_result = dwarf_comparison.compare(case / 'baseline-first.dbg',
                         case / 'candidate-first.dbg', Path(str(output) + '.c'),
-                        case / 'dwarf-comparison')
+                        case / 'dwarf-comparison', identical=not historical)
                 source_comparison = catalog.compare(first_sources['baseline'], first_sources['candidate'])
+                if not historical:
+                    assert first_sources['baseline'] == first_sources['candidate'], 'paired production source changed'
                 write(case / 'source-comparison.json', source_comparison)
             sample.update(pair=pair, variant=variant, artifactSha256=hashes,
                 reportSha256=report_sha, reportUtf8Bytes=len(raw_report))

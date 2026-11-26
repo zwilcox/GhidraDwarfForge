@@ -9,10 +9,10 @@ public final class GhidraImageBase {
     }
 
     /**
-     * Ghidra 12.0.3 ElfProgramBuilder maps ELF addresses by adding the current
-     * program base minus this recorded value. DWARFProgram uses the same
-     * property to relocate compiler DWARF. Recomputing the minimum PT_LOAD VA
-     * is insufficient: Ghidra's base search examines only its first 20 headers.
+     * ElfProgramBuilder maps ELF addresses by adding the current program base
+     * minus the recorded import base. Ghidra 12.2's DIEContainer reads the same
+     * property for compiler DWARF that needs a base fixup. ElfHeader selects
+     * the import base from the first 20 program headers.
      */
     public static long originalImageBase(Program program) {
         final Long recorded;

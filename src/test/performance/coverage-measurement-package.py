@@ -42,7 +42,7 @@ def manifest(module):
     return result
 
 
-def inventory(module):
+def inventory(module, class_major=65):
     classes = {name: value for name, value in packed(module / 'lib/GhidraDwarfForge.jar').items()
         if name.endswith('.class')}
     sources = {name.removeprefix('src/main/java/'): value
@@ -50,7 +50,7 @@ def inventory(module):
         if name.startswith('src/main/java/') and name.endswith('.java')}
     assert classes and sources
     for name, value in classes.items():
-        assert value[:4] == b'\xca\xfe\xba\xbe' and int.from_bytes(value[6:8], 'big') == 65, name
+        assert value[:4] == b'\xca\xfe\xba\xbe' and int.from_bytes(value[6:8], 'big') == class_major, name
         assert source_for(name) in sources, 'class has no corresponding source: ' + name
     return classes, sources
 
@@ -59,7 +59,32 @@ def source_for(class_name):
     return class_name.removesuffix('.class').split('$', 1)[0] + '.java'
 
 
-def audit_classes(baseline_classes, candidate_classes, baseline_sources, candidate_sources):
+def installed_production(packages, installations, expected_commits):
+    """Bind each installed module to the release from its recorded production CI run."""
+    receipts = json.loads((packages / 'receipts.json').read_text(encoding='utf-8'))
+    assert expected_commits['baseline'] != expected_commits['candidate'], 'select distinct production revisions'
+    result = {}
+    for role, ghidra in installations.items():
+        receipt = receipts[role]
+        assert expected_commits[role] == receipt['requestedSha'] == receipt['run']['head_sha']
+        artifact = packages / (role + '.zip')
+        archive_hash = digest(artifact.read_bytes())
+        assert archive_hash == receipt['verifiedArchiveSha256']
+        assert 'sha256:' + archive_hash == receipt['artifact']['digest']
+        release, = (packages / role).glob('*.zip')
+        with zipfile.ZipFile(artifact) as download:
+            with download.open(release.name) as stream:
+                assert hashlib.file_digest(stream, 'sha256').hexdigest() == digest(release.read_bytes())
+        module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
+        with zipfile.ZipFile(release) as extension:
+            assert extension.read('GhidraDwarfForge/RELEASE-SHA256SUMS') == (module / 'RELEASE-SHA256SUMS').read_bytes()
+        assert 'version=12.2' in (module / 'extension.properties').read_text().splitlines()
+        result[role] = {'commit': receipt['requestedSha'], 'runId': receipt['run']['id'],
+            'artifactSha256': archive_hash, 'installedFiles': manifest(module)}
+    return result
+
+
+def audit_classes(baseline_classes, candidate_classes, baseline_sources, candidate_sources, class_major=65):
     changed_sources = {name for name in baseline_sources.keys() | candidate_sources.keys()
         if baseline_sources.get(name) != candidate_sources.get(name)}
     changed = sorted(name for name in baseline_classes.keys() & candidate_classes.keys()
@@ -70,18 +95,18 @@ def audit_classes(baseline_classes, candidate_classes, baseline_sources, candida
         assert source_for(name) in changed_sources, 'unexplained bytecode drift: ' + name
     return {'changed': changed, 'added': added, 'removed': removed,
         'unchangedShared': len(baseline_classes.keys() & candidate_classes.keys()) - len(changed),
-        'classMajor': 65, 'changedSources': {name: {
+        'classMajor': class_major, 'changedSources': {name: {
             'baselineSha256': digest(baseline_sources[name]) if name in baseline_sources else None,
             'candidateSha256': digest(candidate_sources[name]) if name in candidate_sources else None}
             for name in sorted(changed_sources)},
-        'scope': 'Whole coverage revision comparison, not phase-hook overhead. Every bytecode delta '
+        'scope': 'Whole revision comparison. Every bytecode delta '
             'has a changed source root; all classes from unchanged source must be byte-identical.'}
 
 
-def audit(baseline, candidate):
-    old_classes, old_sources = inventory(baseline)
-    new_classes, new_sources = inventory(candidate)
-    result = audit_classes(old_classes, new_classes, old_sources, new_sources)
+def audit(baseline, candidate, class_major=65):
+    old_classes, old_sources = inventory(baseline, class_major)
+    new_classes, new_sources = inventory(candidate, class_major)
+    result = audit_classes(old_classes, new_classes, old_sources, new_sources, class_major)
     # Record native differences rather than incorrectly attributing independent
     # production rebuild effects solely to coverage Java code.
     old_manifest, new_manifest = manifest(baseline), manifest(candidate)

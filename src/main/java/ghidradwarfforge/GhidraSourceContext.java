@@ -80,8 +80,7 @@ public final class GhidraSourceContext {
                 monitor.checkCancelled();
                 String text = token.getText();
                 if (token instanceof ClangCommentToken) {
-                    // Ghidra 12.0.3 toLines() supplies the whole native comment,
-                    // including delimiters, rather than one token per word.
+                    // DecompilerUtils.toLines() combines the full comment, including its delimiters.
                     if (text != null && text.startsWith("/* WARNING:")) warning = true;
                     if (text != null) {
                         if (comment.length() < 1024) {

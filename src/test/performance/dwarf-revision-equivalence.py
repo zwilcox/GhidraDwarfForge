@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Compare the pinned pre-comp_dir performance control with current DWARF.
+"""Verify paired production sidecars or compare the historical pre-comp_dir control.
 
-Only the documented CU compilation-directory addition and resulting DIE/string
+The historical comparison permits only the CU compilation-directory addition and resulting DIE/string
 encoding offsets may differ. Every DIE attribute/form/reference and every other
 ELF section remains checked. This is specific to the ELF64-LE workload corpus.
 """
@@ -145,11 +145,14 @@ def compare_sections(old, new, directory=None):
     return {name: row for name, row in new_sections.items() if name not in encoding}
 
 
-def compare(baseline, candidate, source, evidence):
+def compare(baseline, candidate, source, evidence, *, identical=False):
     evidence.mkdir(parents=True, exist_ok=False)
     decoded = []
     for label, path in (('baseline', baseline), ('candidate', candidate)):
-        for kind, options in (('verify', ['--verify']), ('info', ['--debug-info', '--show-form'])):
+        inspections = [('verify', ['--verify'])]
+        if not identical:
+            inspections.append(('info', ['--debug-info', '--show-form']))
+        for kind, options in inspections:
             command = ['llvm-dwarfdump', *options, str(path)]
             run = subprocess.run(command, capture_output=True, text=True, encoding='utf-8', timeout=300)
             (evidence / (label + '-' + kind + '.txt')).write_text(run.stdout, encoding='utf-8')
@@ -161,11 +164,14 @@ def compare(baseline, candidate, source, evidence):
             else:
                 decoded.append(run.stdout)
     old, new = baseline.read_bytes(), candidate.read_bytes()
-    directory = str(source.parent).replace('\\', '/') if source.drive else str(source.parent)
-    count = compare_decoded(*decoded, directory)
-    stable = compare_sections(old, new, directory)
-    result = {'status': 'PASS', 'acceptedDifference': 'CU DW_AT_comp_dir added by 75860c6',
-        'diesIncludingNull': count, 'directory': directory, 'stableSections': stable,
-        'baselineSha256': digest(old), 'candidateSha256': digest(new)}
+    result = {'status': 'PASS', 'baselineSha256': digest(old), 'candidateSha256': digest(new)}
+    if identical:
+        require(old == new, 'paired production sidecar bytes differ')
+        result['acceptedDifference'] = None
+    else:
+        directory = str(source.parent).replace('\\', '/') if source.drive else str(source.parent)
+        result.update(acceptedDifference='CU DW_AT_comp_dir added by 75860c6',
+            diesIncludingNull=compare_decoded(*decoded, directory), directory=directory,
+            stableSections=compare_sections(old, new, directory))
     (evidence / 'result.json').write_text(json.dumps(result, indent=4) + '\n', encoding='utf-8')
     return result

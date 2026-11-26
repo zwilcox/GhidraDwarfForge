@@ -18,12 +18,10 @@ synthetic C source. The original executable remains unchanged by default.
 
 ## Current status
 
-The published corrective release is
-[v0.1.0-alpha.2](https://github.com/zwilcox/GhidraDwarfForge/releases/tag/v0.1.0-alpha.2),
-from exact-main commit `2f88c4a`, with verified Linux/Windows bundles. Alpha.1
-remains unchanged and affected by the recorded correctness findings. The
-function-static and scalar-floating additions below are subsequent development
-work, separate from alpha.2.
+Download the installable extension from a successful
+[production CI run](https://github.com/zwilcox/GhidraDwarfForge/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush).
+The run's `ghidra-dwarf-forge-extension` artifact contains the extension ZIP
+for Linux x86-64 and Windows x86-64. Its filename identifies the Ghidra version it supports.
 
 The installable extension now exports deterministic synthetic C and DWARF 5
 functions, source rows, canonical recursive types, signatures, globals,
@@ -80,7 +78,6 @@ breakpoint and quote it in C11 type/value expressions; a static variable uses
 remain unchanged. This is a display policy, not reconstructed C++ scope or
 linkage. See [function naming](docs/FUNCTION-NAMING.md) and its
 [validation status](docs/FUNCTION-NAMING.md).
-This behavior is not in published alpha.2.
 
 Development scalar floating locations now use audited logical register aliases.
 Hosted GDB tests cover float/double arguments on x86-64, AArch64 and ARM32,
@@ -151,11 +148,15 @@ export GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC
 
 The extension ZIP is written to `dist/`.
 
-CI additionally assembles the versioned Linux/Windows bundle documented in
-[`docs/RELEASE.md`](docs/RELEASE.md). That bundle installs without compiling
-libdwarf locally and carries third-party notices plus the exact corresponding
-source inputs for its bundled LGPL libraries. Official GitHub Release
-publication remains a separate step.
+## Install the CI package
+
+Download `ghidra-dwarf-forge-extension` from the run's **Artifacts** section and
+unpack the downloaded archive. Inside is `GhidraDwarfForge-<version>-ghidra-<ghidra-version>.zip`.
+With Ghidra closed, extract this inner ZIP into the `Ghidra/Extensions` directory
+of a fresh, matching Ghidra installation. On either host, the installed module
+contains `Ghidra/Extensions/GhidraDwarfForge/extension.properties`, the scripts,
+and both platforms' native libraries. Open an analyzed program in Ghidra's CodeBrowser,
+then run `ExportGhidraDwarfForge.java` from **Script Manager**.
 
 ## Headless entry point
 
@@ -361,8 +362,7 @@ profiles in both byte orders; ARM/Thumb, BE8 and per-function base/VFP behavior;
 and libc-backed i386 x87/SSE/vector/aggregate/convention cases. It identifies
 each tested layout and the limits of the debugger and recovered storage.
 [The ABI acceptance audit](docs/TARGET-ABI-ACCEPTANCE.md) links the complete
-requirements, combined hosted checks and independent artifact review. These
-development-branch additions are separate from the published alpha.2 release.
+requirements, combined hosted checks and independent artifact review.
 
 CI has Linux lanes for x86-64, AArch64, ARM32, and both MIPS byte orders, plus
 a Windows-hosted x86-64 ELF export lane. Linux runs real headless export,

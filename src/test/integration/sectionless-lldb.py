@@ -34,9 +34,7 @@ def main():
     data = original.read_bytes()
     assert data[:6] == b'\x7fELF\x02\x01' and struct.unpack_from('<H', data, 16)[0] == 2
     assert struct.unpack_from('<Q', data, 40)[0] == 0 and struct.unpack_from('<HH', data, 60) == (0, 0)
-    # Use only actually recovered functions. Ghidra does not separately discover
-    # the tiny AArch64 recovered_add in this sectionless fixture; main is present.
-    compiler_name = 'recovered_add' if args.target == 'x86_64' else 'main'
+    compiler_name = 'recovered_add'
     entries = {int(fields[1], 16) for line in subprocess.check_output(['readelf', '-Ws', str(reference)], text=True).splitlines()
         if len(fields := line.split()) == 8 and fields[3] == 'FUNC' and fields[7] == compiler_name}
     entry, = entries
