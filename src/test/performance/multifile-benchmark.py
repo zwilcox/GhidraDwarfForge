@@ -43,7 +43,7 @@ def main():
     parser.add_argument('--counts', type=int, nargs='+', default=[1000, 10000])
     parser.add_argument('--pairs', type=int, default=3)
     parser.add_argument('--source-lines', type=int, default=1000)
-    parser.add_argument('--java', type=Path, help='explicit Java 21 runtime with isolated script caches')
+    parser.add_argument('--java', type=Path, help='explicit SDK-compatible Java runtime with isolated script caches')
     args = parser.parse_args()
     if platform.system() != 'Linux' or platform.machine() != 'x86_64':
         parser.error('this measured runtime fixture requires Linux x86-64')
