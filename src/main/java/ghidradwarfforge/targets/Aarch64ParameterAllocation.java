@@ -111,8 +111,8 @@ public final class Aarch64ParameterAllocation {
                 if (!parameter.isAutoParameter()) types.add(parameter.getFormalDataType());
             }
             var signature = types.toArray(DataType[]::new);
-            var expected = original.getStorageLocations(program, signature, true);
-            var adjusted = corrected.getStorageLocations(program, signature, true);
+            var expected = original.getStorageLocations(program, signature, true, function.hasVarArgs());
+            var adjusted = corrected.getStorageLocations(program, signature, true, function.hasVarArgs());
             if (expected.length != parameters.length + 1 || adjusted.length != expected.length ||
                     !adjusted[0].equals(expected[0])) {
                 throw new IllegalStateException("Audited parameter allocation changed the return or automatic parameters");

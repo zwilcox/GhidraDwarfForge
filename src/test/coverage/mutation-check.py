@@ -2476,11 +2476,6 @@ def main():
             # mutations; retain all other warnings as errors for this source.
             if name == DYNAMIC:
                 lint += ",-cast"
-            # GhidraTypeGraph's existing DataType.VOID reference is deprecated
-            # by the pinned API. Its bytecode and that unrelated use remain
-            # unchanged; retain every other warning as an error for this file.
-            if name == CURATED_TYPES:
-                lint += ",-deprecation"
             compiled, compile_seconds = execute([javac, lint, "-proc:none", "-Werror", "-cp", compile_path,
                                                  "-d", root, path])
             if compiled.returncode:

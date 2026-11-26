@@ -60,7 +60,7 @@ public final class GhidraCustomCallStorage {
         try {
             // Pinned Ghidra 12.0.3 API: return first, then ordered parameters.
             // Auto/forced-indirect assignments are checked below, never guessed.
-            expected = fallback.getStorageLocations(program, types, true);
+            expected = fallback.getStorageLocations(program, types, true, function.hasVarArgs());
         }
         catch (IllegalArgumentException | IllegalStateException unsupported) {
             return "default prototype cannot classify the custom signature storage";

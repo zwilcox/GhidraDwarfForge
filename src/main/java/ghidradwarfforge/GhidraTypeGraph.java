@@ -823,7 +823,7 @@ public final class GhidraTypeGraph {
 
         TypeRef reserve(DataType type) {
             if (type == null) {
-                type = DataType.VOID;
+                type = VoidDataType.dataType;
             }
             String existing = keys.get(type);
             if (existing != null) {

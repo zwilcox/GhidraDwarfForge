@@ -76,9 +76,9 @@ public final class I386ParameterAllocation {
                     task.checkCancelled();
                     types.add(argument.getDataType());
                 }
-                var expected = original.getStorageLocations(program, types.toArray(DataType[]::new), true);
+                var expected = original.getStorageLocations(program, types.toArray(DataType[]::new), true, signature.hasVarArgs());
                 types.set(0, new DoubleDataType(program.getDataTypeManager()));
-                var adjusted = original.getStorageLocations(program, types.toArray(DataType[]::new), true);
+                var adjusted = original.getStorageLocations(program, types.toArray(DataType[]::new), true, signature.hasVarArgs());
                 if (expected.length != types.size() + 1 || adjusted.length != types.size() ||
                         expected[1].getAutoParameterType() != AutoParameterType.RETURN_STORAGE_PTR ||
                         !adjusted[0].isRegisterStorage() || adjusted[0].size() != 10 ||
@@ -138,12 +138,12 @@ public final class I386ParameterAllocation {
                     if (parameters[index].isAutoParameter()) return unchanged;
                     types.add(parameters[index].getFormalDataType());
                 }
-                var expected = original.getStorageLocations(program, types.toArray(DataType[]::new), true);
+                var expected = original.getStorageLocations(program, types.toArray(DataType[]::new), true, function.hasVarArgs());
                 // Ghidra 12.0.3 compares aligned length 12 with ST0's size 10 and
                 // falls back to indirect return. Use the same scalar x87 return
                 // class solely to allocate inputs; never replace the formal type.
                 types.set(0, new DoubleDataType(program.getDataTypeManager()));
-                var adjusted = original.getStorageLocations(program, types.toArray(DataType[]::new), true);
+                var adjusted = original.getStorageLocations(program, types.toArray(DataType[]::new), true, function.hasVarArgs());
                 if (expected.length != parameters.length + 1 || adjusted.length != parameters.length ||
                         !same(expected[0], function.getReturn().getVariableStorage()) ||
                         !adjusted[0].isRegisterStorage() || adjusted[0].size() != 10 ||
