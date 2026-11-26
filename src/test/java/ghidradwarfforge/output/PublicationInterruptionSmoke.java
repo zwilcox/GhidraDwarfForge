@@ -27,6 +27,7 @@ public final class PublicationInterruptionSmoke {
 
     static void exercise(Path root) throws Exception {
         legacyClaim(root.resolve("legacy-claim"));
+        splitDirectoryPair(root.resolve("split-pair"));
         interruptedByError(root.resolve("error-before-install"), false);
         interruptedByError(root.resolve("error-after-install"), true);
         for (boolean kill : List.of(false, true)) {
@@ -104,17 +105,69 @@ public final class PublicationInterruptionSmoke {
         Properties legacy = new Properties();
         legacy.setProperty("file.0.claim", claim.toString());
         try (var out = Files.newOutputStream(inventory)) { legacy.store(out, null); }
+        Path unrelated = Files.createDirectory(target.resolveSibling(".forge-generation-unrelated"))
+            .resolve(PublicationJournal.INVENTORY);
+        Properties other = new Properties();
+        other.setProperty("file.0.claim", PublicationJournal.claimPath(target.resolveSibling("other")).toString());
+        other.setProperty("description", claim.toString());
+        try (var out = Files.newOutputStream(unrelated)) { other.store(out, null); }
+        Path malformed = Files.createDirectory(target.resolveSibling(".forge-generation-malformed"))
+            .resolve(PublicationJournal.INVENTORY);
+        Files.writeString(malformed, "file.0.claim=\\uZZZZ");
+        Files.createDirectory(target.resolveSibling(".forge-generation-unrecorded"));
+        String diagnostic = refusedLegacyClaim(target);
+        require(diagnostic.contains(inventory.toString()) && !diagnostic.contains(unrelated.toString()) &&
+            !diagnostic.contains(malformed.toString()) && !diagnostic.contains("owner.properties"),
+            "wrong recovery inventories selected: " + diagnostic);
+        require(properties(inventory).equals(legacy) && properties(unrelated).equals(other) &&
+            Files.readString(malformed).equals("file.0.claim=\\uZZZZ"), "retry modified prior recovery evidence");
+        Files.delete(inventory);
+        diagnostic = refusedLegacyClaim(target);
+        require(diagnostic.contains("No matching recovery inventory") && diagnostic.contains(claim.toString()),
+            "orphan claim lacked preservation instructions: " + diagnostic);
+        Path owner = Files.writeString(claim.resolve("owner.properties"), "legacy owner");
+        require(refusedLegacyClaim(target).contains(owner.toString()) && Files.readString(owner).equals("legacy owner"),
+            "legacy owner was lost or omitted from retry instructions");
+        require(Files.isDirectory(claim) && !Files.exists(target) && !Files.exists(target.resolveSibling(NAMES.get(1))),
+            "retry removed the claim or published a partial generation");
+    }
+
+    private static String refusedLegacyClaim(Path target) throws Exception {
         try {
             ArtifactPairPublisher.stageAndPublish(target, target.resolveSibling(NAMES.get(1)),
                 p -> Files.writeString(p, "sidecar"), p -> Files.writeString(p, "source"), () -> { });
             throw new AssertionError("export ignored an interrupted legacy claim");
         }
         catch (IOException expected) {
-            require(expected.getMessage().contains(inventory.toString()), "missing legacy inventory: " + expected);
-            require(!expected.getMessage().contains("owner.properties"), "suggested an absent owner file");
+            return expected.getMessage();
         }
-        require(properties(inventory).equals(legacy) && Files.isDirectory(claim) && !Files.exists(target),
-            "legacy recovery or output was modified by a retry");
+    }
+
+    private static void splitDirectoryPair(Path root) throws Exception {
+        Files.createDirectory(root);
+        Path sources = Files.createDirectory(root.resolve("sources"));
+        Path artifact = Files.writeString(root.resolve(NAMES.get(0)), "old symbols");
+        Path source = Files.writeString(sources.resolve(NAMES.get(1)), "old source");
+        for (boolean interrupt : List.of(true, false)) {
+            Path artifactStage = Files.writeString(root.resolve("symbols.stage"), "new symbols");
+            Path sourceStage = Files.writeString(sources.resolve("source.stage"), "new source");
+            IOException stop = new IOException("interrupted before source install");
+            try {
+                ArtifactPairPublisher.publish(artifactStage, artifact, sourceStage, source, () -> {
+                    if (interrupt) throw stop;
+                });
+                require(!interrupt, "split-directory publication ignored interruption");
+            }
+            catch (IOException failure) {
+                if (failure != stop || failure.getSuppressed().length != 0) throw failure;
+            }
+            String generation = interrupt ? "old" : "new";
+            require(Files.readString(artifact).equals(generation + " symbols") &&
+                Files.readString(source).equals(generation + " source"), "mixed split-directory generation");
+            try (var all = Files.walk(root)) {
+                require(all.count() == 4, "split-directory publication left recovery files");
+            }
+        }
     }
 
     private static void interruptedByError(Path root, boolean afterInstall) throws Exception {

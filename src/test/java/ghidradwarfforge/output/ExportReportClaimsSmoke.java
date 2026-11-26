@@ -35,6 +35,7 @@ public final class ExportReportClaimsSmoke {
         writerFixtures(success, partial);
         objectFields(partial);
         scalarContracts(success, partial);
+        completedClaims(parse(success.toString()));
         lexicalControls(success);
         budgets(success);
         resources(success);
@@ -183,6 +184,21 @@ public final class ExportReportClaimsSmoke {
     }
 
     private static void scalarContracts(JsonObject success, JsonObject partial) throws Exception {
+        JsonObject mips = success.deepCopy();
+        mips.getAsJsonObject("target").addProperty("architecture", "mips32be");
+        mips.getAsJsonObject("target").addProperty("addressBits", 32);
+        mips.getAsJsonObject("target").addProperty("byteOrder", "BIG_ENDIAN");
+        require(parse(mips.toString()).target().equals(new ExportReport.TargetInfo("mips32be", 32, "BIG_ENDIAN")),
+            "valid 32-bit big-endian report lost target information");
+        mips.getAsJsonObject("target").addProperty("byteOrder", "MIXED");
+        reject(mips.toString());
+        mips.getAsJsonObject("target").addProperty("byteOrder", "LITTLE_ENDIAN");
+        mips.getAsJsonObject("target").addProperty("addressBits", 16);
+        reject(mips.toString());
+        JsonObject highStart = partial.deepCopy();
+        highStart.getAsJsonArray("omittedLocations").get(0).getAsJsonObject()
+            .addProperty("startAddress", "0x8000000000000000");
+        reject(highStart.toString());
         for (String field : List.of("functionsFailed", "functionsSkipped", "omittedLocationRanges",
                 "unsupportedConstructs", "diagnostics")) {
             JsonObject bad = partial.deepCopy();
@@ -239,6 +255,22 @@ public final class ExportReportClaimsSmoke {
         opaque.getAsJsonObject("artifacts").addProperty("inputPath", "C:\\missing\\..\\foreign\u0000path");
         require(parse(opaque.toString()).artifacts().inputPath().equals("C:\\missing\\..\\foreign\u0000path"),
             "opaque foreign path was interpreted locally");
+    }
+
+    private static void completedClaims(ExportReportClaims valid) throws Exception {
+        for (var status : List.of(ExportReport.Status.FATAL, ExportReport.Status.CANCELLED)) {
+            expect(IllegalArgumentException.class, () -> new ExportReportClaims(valid.schemaVersion(), status,
+                valid.target(), valid.artifacts(), valid.counts(), valid.validationStatus(), valid.libdwarfVersion()));
+        }
+        expect(IllegalArgumentException.class, () -> new ExportReportClaims(3, valid.status(),
+            valid.target(), valid.artifacts(), valid.counts(), valid.validationStatus(), valid.libdwarfVersion()));
+        for (String version : new String[] {null, " "}) {
+            expect(IllegalArgumentException.class, () -> new ExportReportClaims(valid.schemaVersion(), valid.status(),
+                valid.target(), valid.artifacts(), valid.counts(), valid.validationStatus(), version));
+        }
+        var current = new ExportReportClaims(2, valid.status(), valid.target(), valid.artifacts(),
+            valid.counts(), valid.validationStatus(), valid.libdwarfVersion());
+        expect(IllegalArgumentException.class, () -> new ExportReportClaims.WithCoverage(current, null));
     }
 
     private static String rawPath(JsonObject document, String rawContents) {

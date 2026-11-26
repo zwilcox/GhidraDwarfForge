@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Filesystem fault injection with byte and exception-identity oracles. */
 public final class CompanionPublicationFailureSmoke {
@@ -21,6 +22,7 @@ public final class CompanionPublicationFailureSmoke {
         try {
             preflight(root);
             invalidStages(root);
+            changedStagesBeforeInventory(root);
             cleanupFailure(root, false);
             cleanupFailure(root, true);
             changedClaim(root);
@@ -90,6 +92,41 @@ public final class CompanionPublicationFailureSmoke {
             previous(outputs, true);
             require(Files.readString(input).equals("original"), "invalid stage modified input");
             noStages(dir);
+        }
+    }
+
+    private static void changedStagesBeforeInventory(Path root) throws Exception {
+        for (boolean replaceWithLink : List.of(false, true)) {
+            Path dir = Files.createDirectory(root.resolve(replaceWithLink ? "replaced-stage" : "removed-stage"));
+            Path original = Files.writeString(dir.resolve("input"), "original");
+            List<Path> outputs = outputs(dir);
+            seed(outputs);
+            var pending = new AtomicReference<Path>();
+            try {
+                CompanionArtifactPublisher.stageAndPublish(original, outputs, stages -> {
+                    write(stages);
+                    pending.set(stages.getFirst());
+                }, () -> { }, () -> {
+                    // The first poll after writing occurs when the publisher observes the staged sidecar.
+                    Path stage = pending.getAndSet(null);
+                    if (stage != null) {
+                        Files.delete(stage);
+                        if (replaceWithLink) Files.createSymbolicLink(stage, original);
+                    }
+                });
+                throw new AssertionError("accepted a changed stage into the recovery inventory");
+            }
+            catch (IOException expected) {
+                require(expected.getMessage().contains("staged file disappeared or changed type"),
+                    "unexpected stage refusal: " + expected);
+            }
+            previous(outputs, true);
+            require(Files.readString(original).equals("original"), "changed stage modified the original");
+            noStages(dir);
+            for (Path output : outputs) {
+                require(!Files.exists(PublicationJournal.claimPath(output)), "changed stage left a claim");
+            }
+            cases++;
         }
     }
 
