@@ -106,7 +106,8 @@ class InventoryTests(unittest.TestCase):
         workflow = yaml.safe_load((HERE.parent.parent / '.github/workflows/ci.yml').read_text())
         plan.validate_workflow(INVENTORY, workflow)
         for number, field, value in [(71, 'run', 'true'), (123, 'if', "matrix.target == 'x86_64'"),
-                (0, 'uses', 'actions/checkout@v1')]:
+                (0, 'uses', 'actions/checkout@v1'),
+                (2, 'with', {'distribution': 'temurin', 'java-version': 21})]:
             broken = copy.deepcopy(workflow)
             row = next(step for step in broken['jobs']['target-integration']['steps']
                 if step.get('name', '').startswith(f'[target-{number + 1:03}]'))

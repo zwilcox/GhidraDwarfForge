@@ -55,7 +55,8 @@
                 "mips32le"
             ],
             "groups": {},
-            "stepSha256": "100d41bc116fb7b7f2e626c47ea90b65048e6cd539de67d74eabd04605fabb74"
+            "stepSha256": "100d41bc116fb7b7f2e626c47ea90b65048e6cd539de67d74eabd04605fabb74",
+            "groupedStepSha256": "30e9e84c4aa298584756cb9c3766df78b4c32e354ccf01b6554b568c7cb3beca"
         },
         {
             "id": "target-004",
@@ -160,7 +161,8 @@
                 "mips32le"
             ],
             "groups": {},
-            "stepSha256": "d3a71fe6438f6ab4af2b9e2b5867e9bde74aef39ab1823794872b365b0fc185f"
+            "stepSha256": "d3a71fe6438f6ab4af2b9e2b5867e9bde74aef39ab1823794872b365b0fc185f",
+            "groupedStepSha256": "a96c4175b23769dc68980eb80910b943c807d690dc86ca6ee8aaee1efc628434"
         },
         {
             "id": "target-012",
@@ -175,7 +177,8 @@
                 "mips32le"
             ],
             "groups": {},
-            "stepSha256": "2d2c5bced10a68447f375dbd549cadcc989e16f5f5225d55497314cec39e1666"
+            "stepSha256": "2d2c5bced10a68447f375dbd549cadcc989e16f5f5225d55497314cec39e1666",
+            "groupedStepSha256": "39f945c78282ddf7f7a51e816865408ce10fda9da7ee80c72895c336b6b8913d"
         },
         {
             "id": "target-013",

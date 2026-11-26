@@ -63,7 +63,7 @@ def main():
                                    ('GhidraDwarfForge.jar', 'jna-5.14.0.jar', 'gson-2.13.2.jar'))
     run('compile-probe', ['javac', '--release', '25', '-cp', dependencies, '-d', classes,
                           provenance / source.name])
-    result = run('probe', [java, '-cp', str(classes) + os.pathsep + dependencies,
+    result = run('probe', [java, '--enable-native-access=ALL-UNNAMED', '-cp', str(classes) + os.pathsep + dependencies,
                            'ghidradwarfforge.output.LinuxDirectorySyncSmoke', observer, root / 'owned'])
     assert b'linux-directory-sync=PASS' in result.stdout
     assert all(hashlib.sha256(Path(path).read_bytes()).hexdigest() == digest for path, digest in digests.items())

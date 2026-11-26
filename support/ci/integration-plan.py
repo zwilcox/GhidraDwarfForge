@@ -71,7 +71,8 @@ def validate(inventory):
                 or not isinstance(row.get('targets'), list) or not row['targets']
                 or row['targets'] != [t for t in TARGETS if t in row['targets']]
                 or not isinstance(row.get('groups'), dict)
-                or not re.fullmatch(r'[0-9a-f]{64}', row.get('stepSha256', ''))):
+                or not re.fullmatch(r'[0-9a-f]{64}', row.get('stepSha256', ''))
+                or ('groupedStepSha256' in row and not re.fullmatch(r'[0-9a-f]{64}', row['groupedStepSha256']))):
             raise ValueError('invalid or reordered step inventory at ' + str(number))
         if row['kind'] == 'test':
             if set(row['groups']) != set(row['targets']):
@@ -206,7 +207,10 @@ def validate_workflow(inventory, workflow):
             seen.add(identifier)
             restored = original_step(row, step)
             targets = [target for target in TARGETS if successful_condition(restored.get('if'), target)]
-            if step_digest(restored) != row['stepSha256'] or targets != row['targets']:
+            # SDK migrations may change a grouped setup step while its historical
+            # serial workflow remains independently bound to the original digest.
+            expected_digest = row.get('groupedStepSha256', row['stepSha256'])
+            if step_digest(restored) != expected_digest or targets != row['targets']:
                 raise ValueError('baseline command, condition or action changed: ' + identifier)
             validate_fixture_owner(known, row, restored)
     if seen != set(known):

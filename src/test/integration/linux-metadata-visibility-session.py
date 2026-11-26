@@ -75,7 +75,7 @@ def main():
                         '-d', classes, provenance / source.name, provenance / mount_source.name, provenance / host_source.name])
     java = Path(shutil.which(os.environ.get('JAVA', 'java'))).resolve()
     assert b'version "25.' in run('java-version', [java, '-version']).stderr
-    prefix = [java, '-cp', str(classes) + os.pathsep + dependencies,
+    prefix = [java, '--enable-native-access=ALL-UNNAMED', '-cp', str(classes) + os.pathsep + dependencies,
               'ghidradwarfforge.output.LinuxMetadataVisibilitySmoke']
     mount = run('mount-binding', [*prefix[:-1], 'ghidradwarfforge.output.LinuxAttachmentMountSmoke',
                                   results / 'mount λ directory'])

@@ -107,7 +107,7 @@ def main():
                         provenance / application_controls.name])
     java = os.environ.get('JAVA', 'java')
     assert b'version "25.' in run('java-version', [java, '-version']).stderr
-    prefix = [java, '-cp', str(classes) + os.pathsep + dependencies, 'ghidradwarfforge.output.LinuxFileMetadataProbe']
+    prefix = [java, '--enable-native-access=ALL-UNNAMED', '-cp', str(classes) + os.pathsep + dependencies, 'ghidradwarfforge.output.LinuxFileMetadataProbe']
     fixture = root / 'owned'
     fixture.mkdir()
     original = fixture / 'ordinary λ file'

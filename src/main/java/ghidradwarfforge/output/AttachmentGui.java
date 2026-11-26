@@ -148,7 +148,7 @@ public final class AttachmentGui {
                 throw new IOException("Missing or ambiguous installed helper dependency: " + path);
             }
         }
-        var previewCommand = new ArrayList<>(List.of(java.toString(), "-cp",
+        var previewCommand = new ArrayList<>(List.of(java.toString(), "--enable-native-access=ALL-UNNAMED", "-cp",
             String.join(File.pathSeparator, dependencies.stream().map(Path::toString).toList()),
             "ghidradwarfforge.output.AttachmentHelper", windows ? "--request-utf8-base64" : "--request",
             windows ? AttachmentPathArgument.encode(request.toString()) : request.toString(), "--request-sha256", sha,
