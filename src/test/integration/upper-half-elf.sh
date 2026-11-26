@@ -12,8 +12,14 @@ cd "$work"
 
 layout=${4:-kernel}
 compile_options=()
+strip_option=--strip-all
 case "$layout" in
     kernel) link_address=0xffffffff81000000; modes=(linked rebased) ;;
+    sectionless)
+        link_address=0xffffffff81000000
+        modes=(sectionless)
+        strip_option=--strip-section-headers
+        ;;
     crossing)
         # Place nonzero_add first so its instructions and variable locations span bit 63.
         link_address=0x7ffffffffffffff8
@@ -26,8 +32,21 @@ gcc -O0 -g -gdwarf-5 -ffreestanding -fno-stack-protector -fno-omit-frame-pointer
     -fno-pie -no-pie -mcmodel=kernel -nostdlib -Wl,--build-id=sha1 \
     "${compile_options[@]}" "-Wl,--defsym=forge_text_address=$link_address" "-Wl,-T,$fixtures/nonzero_load_offset.ld" \
     "$fixtures/upper_half_stack.c" "$fixtures/nonzero_load_offset.c" -o reference
-objcopy --strip-all reference kernel.elf
+objcopy "$strip_option" reference kernel.elf
+if [[ $layout == sectionless ]]; then
+    python3 - <<'PYELF'
+from pathlib import Path
+import struct
+
+header = Path('kernel.elf').read_bytes()[:64]
+assert header[:6] == b'\x7fELF\x02\x01'
+assert struct.unpack_from('<Q', header, 40) == (0,)
+assert struct.unpack_from('<HH', header, 60) == (0, 0)
+PYELF
+fi
 cp kernel.elf original.elf
+build_id=$(readelf -n kernel.elf | awk '/Build ID:/ {print $3}')
+[[ $build_id =~ ^[[:xdigit:]]{40}$ ]]
 readelf -lW kernel.elf > segments
 awk -v address="$link_address" '$1 == "LOAD" && $3 == address && / E / {found=1} END {exit !found}' segments
 address_of() {
@@ -103,6 +122,7 @@ for mode in "${modes[@]}"; do
     cmp original.elf kernel.elf
     test -s kernel.elf.dbg.c
     readelf -hSW kernel.elf.dbg > headers
+    [[ $(readelf -n kernel.elf.dbg | awk '/Build ID:/ {print $3}') == "$build_id" ]]
     readelf --debug-dump=info,decodedline,loc kernel.elf.dbg > dwarf.txt 2> warnings
     test ! -s warnings || { cat warnings >&2; exit 1; }
     llvm-dwarfdump --verify kernel.elf.dbg
@@ -116,7 +136,7 @@ for mode in "${modes[@]}"; do
     echo "upper-half-elf=PASS $mode static GDB function, breakpoint, source, global, register and stack parameters"
 done
 
-if [[ $layout == crossing ]]; then exit 0; fi
+if [[ $layout != kernel ]]; then exit 0; fi
 # Corrupt only the data section's virtual extent in a disposable input.
 cd "$work"
 python3 - <<'PYELF'

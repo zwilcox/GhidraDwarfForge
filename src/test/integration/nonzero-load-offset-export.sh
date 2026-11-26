@@ -155,7 +155,7 @@ run_case repeat 0
 cmp "$result_dir/baseline/nonzero.dbg" "$result_dir/repeat/nonzero.dbg"
 cmp "$result_dir/baseline/nonzero.dbg.c" "$result_dir/repeat/nonzero.dbg.c"
 test "$input_hash" = "$(sha256sum "$input" | cut -d' ' -f1)"
-for layout in kernel crossing; do
+for layout in kernel crossing sectionless; do
     "$repository_dir/src/test/integration/upper-half-elf.sh" "$ghidra_dir" "$consumer" "$producer" "$layout"
 done
 echo "nonzero-load-offset-export=PASS"
