@@ -72,7 +72,7 @@ public record LocationCoverage(boolean declarationEmitted, boolean scopeComplete
             for (var range : list.ranges()) {
                 checkCancelled(cancelled);
                 intervals.add(new FunctionRange(range.range().start(),
-                    Math.subtractExact(range.range().end(), range.range().start())));
+                    UnsignedAddress.distance(range.range().start(), range.range().end())));
             }
             located = intersect(owner, union(intervals, cancelled), cancelled);
         }

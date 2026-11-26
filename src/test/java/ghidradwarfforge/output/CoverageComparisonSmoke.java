@@ -23,6 +23,7 @@ public final class CoverageComparisonSmoke {
     public static void main(String[] args) throws Exception {
         Path directory = Files.createTempDirectory("forge-coverage-cli-");
         try {
+            crossingAddresses(directory);
             Path before = directory.resolve("before λ 🛠.json");
             Path after = directory.resolve("after.json");
             Files.writeString(before, report("old name", List.of(100L, 102L, 104L), List.of(100L, 104L), List.of(100L, 102L, 104L)));
@@ -117,9 +118,32 @@ public final class CoverageComparisonSmoke {
     }
 
     static String report(String name, List<Long> decoded, List<Long> anchors, List<Long> visible) throws Exception {
+        return report(100, name, decoded, anchors, visible);
+    }
+
+    private static void crossingAddresses(Path directory) throws Exception {
+        long start = Long.MAX_VALUE - 1;
+        var points = List.of(start, start + 2, start + 4);
+        Path before = Files.writeString(directory.resolve("crossing-before.json"),
+            report(start, "crossing", points, List.of(start), points));
+        Path after = Files.writeString(directory.resolve("crossing-after.json"),
+            report(start, "crossing", points, List.of(start + 2), points));
+        var changes = new ArrayList<CoverageComparison.Change>();
+        CoverageComparison.compare(ExportReportClaims.readWithCoverage(before, () -> false),
+            ExportReportClaims.readWithCoverage(after, () -> false), changes::add, () -> false);
+        require(changes.size() == 2 && has(changes, "ANCHOR_LOST", "0x7ffffffffffffffe") &&
+            has(changes, "ANCHOR_GAINED", "0x8000000000000000"), "missed anchor change across bit 63");
+        Path high = Files.writeString(directory.resolve("upper.json"),
+            report(Long.MIN_VALUE, "upper", List.of(Long.MIN_VALUE), List.of(), List.of()));
+        require(run("--report", high.toString(), "--function", "0x8000000000000000").status() == 0,
+            "CLI rejected an exported upper-half function");
+    }
+
+    private static String report(long entry, String name, List<Long> decoded, List<Long> anchors,
+            List<Long> visible) throws Exception {
         var base = CoverageReportClaimsSmoke.knownFixture();
         var function = base.functions().getFirst();
-        var symbol = new FunctionSymbol(name, 100, 10);
+        var symbol = new FunctionSymbol(name, entry, 10);
         boolean unknown = decoded == null;
         var points = unknown ? null : new Points(decoded, anchors, visible);
         var source = new SourceCoverageInventory.FunctionInventory(symbol, "DECOMPILED", "",

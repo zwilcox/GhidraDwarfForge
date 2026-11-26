@@ -51,7 +51,6 @@ public final class CoverageReportTool {
                 String value = options.get("--function");
                 if (!value.matches("0x[0-9a-fA-F]{1,16}")) throw new IllegalArgumentException("function must be an ELF-link-time hexadecimal entry");
                 selected = Long.parseUnsignedLong(value.substring(2), 16);
-                if (selected < 0) throw new IllegalArgumentException("function outside supported address domain");
             }
             Path path = Path.of(options.get("--report"));
             if (options.containsKey("--terminal-status")) {

@@ -607,7 +607,7 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
             int cursor = 0;
             for (long value : part) {
                 check();
-                while (cursor < whole.size() && whole.get(cursor) < value) cursor++;
+                while (cursor < whole.size() && Long.compareUnsigned(whole.get(cursor), value) < 0) cursor++;
                 if (cursor == whole.size() || whole.get(cursor) != value) return false;
             }
             return true;

@@ -10,15 +10,26 @@ work=$(mktemp -d "${TMPDIR:-/tmp}/forge-upper-half-elf.XXXXXXXX")
 trap 'rm -rf -- "$work"' EXIT
 cd "$work"
 
-# This image is linked at kernel addresses. Linux userspace cannot execute it.
+layout=${4:-kernel}
+compile_options=()
+case "$layout" in
+    kernel) link_address=0xffffffff81000000; modes=(linked rebased) ;;
+    crossing)
+        # Place nonzero_add first so its instructions and variable locations span bit 63.
+        link_address=0x7ffffffffffffff8
+        compile_options=(-ffunction-sections -falign-functions=1)
+        modes=(crossing)
+        ;;
+    *) echo "unknown ELF layout: $layout" >&2; exit 2 ;;
+esac
 gcc -O0 -g -gdwarf-5 -ffreestanding -fno-stack-protector -fno-omit-frame-pointer \
     -fno-pie -no-pie -mcmodel=kernel -nostdlib -Wl,--build-id=sha1 \
-    -Wl,--defsym=forge_text_address=0xffffffff81000000 "-Wl,-T,$fixtures/nonzero_load_offset.ld" \
+    "${compile_options[@]}" "-Wl,--defsym=forge_text_address=$link_address" "-Wl,-T,$fixtures/nonzero_load_offset.ld" \
     "$fixtures/upper_half_stack.c" "$fixtures/nonzero_load_offset.c" -o reference
 objcopy --strip-all reference kernel.elf
 cp kernel.elf original.elf
 readelf -lW kernel.elf > segments
-awk '$1 == "LOAD" && $3 == "0xffffffff81000000" && / E / {found=1} END {exit !found}' segments
+awk -v address="$link_address" '$1 == "LOAD" && $3 == address && / E / {found=1} END {exit !found}' segments
 address_of() {
     nm -n --defined-only reference | awk -v name="$1" '$3 == name {print "0x" $1; found=1} END {exit !found}'
 }
@@ -44,6 +55,11 @@ source $work/kernel.elf.dbg.gdb.py
 symbol-file $work/kernel.elf.dbg
 python
 import re
+if '$layout' == 'crossing':
+    assert $function_address < (1 << 63) < $function_address + $function_size
+    for pc in ((1 << 63) - 1, 1 << 63):
+        line = gdb.find_pc_line(pc)
+        assert line.line > 0 and line.symtab.fullname() == '$work/kernel.elf.dbg.c'
 assert int(gdb.parse_and_eval('(unsigned long)&nonzero_add')) == $function_address
 assert int(gdb.parse_and_eval('(unsigned long)&nonzero_sink')) == $global_address
 assert int(gdb.parse_and_eval('(unsigned long)&kernel_stack_argument')) == $stack_address
@@ -66,7 +82,7 @@ list nonzero_add
 info scope *$function_address
 GDB
 
-for mode in linked rebased; do
+for mode in "${modes[@]}"; do
     cd "$work"
     prepare=()
     delta=0
@@ -81,8 +97,8 @@ for mode in linked rebased; do
         -analysisTimeoutPerFile 120 -scriptPath "$repo/src/test/integration/ghidra_scripts" \
         "${prepare[@]}" -postScript PrepareNonzeroLoadOffset.java "$analyzed_function" "$analyzed_global" "$analyzed_stack" \
         -postScript GhidraDwarfForge.java "--libdwarf=$consumer" "--libdwarfp=$producer" --gdb-loader \
-        > headless.log 2>&1 || { tail -40 headless.log >&2; exit 1; }
-    grep -Fq 'GhidraDwarfForge symbol export PASS' headless.log || { tail -40 headless.log >&2; exit 1; }
+        > headless.log 2>&1 || { tail -80 headless.log >&2; exit 1; }
+    grep -Fq 'GhidraDwarfForge symbol export PASS' headless.log || { tail -80 headless.log >&2; exit 1; }
     grep -Fq "Ghidra-to-ELF address delta: $(printf '0x%x' "$delta")" headless.log
     cmp original.elf kernel.elf
     test -s kernel.elf.dbg.c
@@ -100,6 +116,7 @@ for mode in linked rebased; do
     echo "upper-half-elf=PASS $mode static GDB function, breakpoint, source, global, register and stack parameters"
 done
 
+if [[ $layout == crossing ]]; then exit 0; fi
 # Corrupt only the data section's virtual extent in a disposable input.
 cd "$work"
 python3 - <<'PYELF'
