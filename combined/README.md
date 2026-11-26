@@ -1,28 +1,28 @@
 # Combined Java coverage
 
-Single-run measurement for [a55a6717a66e0a943a5061cee48d0d2b5f7d6910](https://github.com/zwilcox/GhidraDwarfForge/commit/a55a6717a66e0a943a5061cee48d0d2b5f7d6910); [CI run 45703599546](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/45703599546).
+Single-run measurement for [920b3612ae686225e5113b4a9698464dc78bd1b2](https://github.com/zwilcox/GhidraDwarfForge/commit/920b3612ae686225e5113b4a9698464dc78bd1b2); [CI run 45755488551](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/45755488551).
 
 This unions matching JaCoCo execution probes. It does not add or average percentages. Every production Java class remains in each denominator, including GUI/framework code and classes that were never loaded. Native C/libdwarf, Python, shell and external libraries are outside this Java metric.
 
 The native-java layer includes standalone integration JVMs and measured interactive Linux GUI suites. Per-suite receipts identify the workflows and any uninstrumented child processes.
 
-1270 measured JVM sessions; 904 production classes; 256 source files.
+1271 measured JVM sessions; 908 production classes; 257 source files.
 
 | Measurement | Lines | Branches |
 | --- | ---: | ---: |
-| [Combined Java](combined.md) | 97.2% (29,146/29,976) | 89.2% (23,209/26,018) |
-| [JavaExec](javaexec.md) | 82.4% (24,714/29,976) | 79.3% (20,625/26,018) |
-| [Headless Ghidra](headless.md) | 61.2% (18,347/29,976) | 46.1% (12,002/26,018) |
-| [Native-Java integration](native-java.md) | 58.4% (17,496/29,976) | 37.1% (9,663/26,018) |
-| [Windows Java](windows.md) | 18.8% (5,632/29,976) | 11.5% (2,991/26,018) |
+| [Combined Java](combined.md) | 97.3% (29,267/30,088) | 89.3% (23,302/26,106) |
+| [JavaExec](javaexec.md) | 82.5% (24,831/30,088) | 79.3% (20,714/26,106) |
+| [Headless Ghidra](headless.md) | 61.2% (18,401/30,088) | 46.1% (12,037/26,106) |
+| [Native-Java integration](native-java.md) | 58.2% (17,523/30,088) | 37.1% (9,680/26,106) |
+| [Windows Java](windows.md) | 19.6% (5,888/30,088) | 11.9% (3,095/26,106) |
 
 ## Accepted targets
 
 | Scope | Lines | Branches |
 | --- | ---: | ---: |
-| Overall | 97.2% (29,146/29,976) / target 85% | 89.2% (23,209/26,018) / target 80% |
-| binaryAndLocationCorrectness | 97.5% (18,827/19,316) / target 95% | 90.0% (16,965/18,846) / target 90% |
-| fileTransactionsAndValidation | 97.6% (6,584/6,748) / target 95% | 90.2% (3,850/4,270) / target 90% |
+| Overall | 97.3% (29,267/30,088) / target 85% | 89.3% (23,302/26,106) / target 80% |
+| binaryAndLocationCorrectness | 97.5% (18,852/19,334) / target 95% | 90.0% (16,989/18,874) / target 90% |
+| fileTransactionsAndValidation | 97.6% (6,674/6,836) / target 95% | 90.5% (3,912/4,324) / target 90% |
 
 **All accepted coverage targets met: yes.**
 
@@ -34,12 +34,12 @@ Intentional forced-halt tests and uninstrumented nested JVMs may have behavioral
 
 The existing JavaExec badge retains its original scope. Reports on the publication branch are written only after the protected main validation gate; PR artifacts remain provisional.
 
-Production JAR SHA-256: `402eea63d9a6f1d4da11bb92fe032b61fbb46661c3bf6d3dbdc3ba3b5b60a7b4`.
+Production JAR SHA-256: `715b5707b32190d0cb46e0c2c5725f476fc1c71c4c3048b6fdaf191baf79a383`.
 
 ## Changed executable Java
 
-Compared with `8bcc8b76b277f698f620241d13bd652edb7eb812`: NOT_APPLICABLE.
+Compared with `a55a6717a66e0a943a5061cee48d0d2b5f7d6910`: MEASURED.
 
-Lines: not applicable; branches: not applicable.
+Lines: 94.3% (183/194); branches: 89.7% (131/146).
 
 Targets: 90% lines, 85% branches minimum, 90% branches preferred. No executable changes are reported as not applicable, never as 100%.
