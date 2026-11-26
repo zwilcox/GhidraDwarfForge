@@ -176,9 +176,9 @@ try:
             "instruction": arch.disassemble(pc, count=1)}
         if phase in ("next", "step"):
             sal = gdb.selected_frame().find_sal()
-            if variant != 'compiler' and labels.get('split', False) and offset == 8:
-                # GDB stops at the second discontiguous range's entry. Ghidra's
-                # first expression token is later; never fabricate a line here.
+            if (variant != 'compiler' and labels.get('split', False) and offset == 8
+                    and not any(offset in line['offsets'] for line in labels['sourceRows'])):
+                # A new discontiguous range cannot inherit a line across the data gap.
                 assert sal.line == 0
                 row['source'] = {'line': 0, 'reason': 'unmapped second range entry'}
             else:
@@ -187,8 +187,13 @@ try:
             if variant != "compiler" and sal.line > 0:
                 assert Path(sal.symtab.fullname()).resolve() == (case / "curated.dbg.c").resolve()
                 text = Path(sal.symtab.fullname()).read_text().splitlines()[sal.line - 1].strip()
-                assert text == "return value + 0x1243;" or (
-                    offset == 0 and text == "int recovered_mixed_body(int value)"), text
+                anchor = int(sal.pc) - start
+                if offset == 0 and text == "int recovered_mixed_body(int value)":
+                    assert anchor == 0
+                else:
+                    assert any(text == line['text'] and anchor in line['offsets']
+                               for line in labels['sourceRows']), (offset, anchor, text, labels['sourceRows'])
+                row['source']['text'] = text
         result["observations"].append(row)
         visited.append(offset)
         gdb.execute(phase if phase in ("next", "step") else "stepi")
@@ -197,6 +202,8 @@ try:
     if phase not in ("next", "step"):
         expected_visits = [offset for offset in expected['offsets'] if phase != 'address' or offset >= thumb_offset]
         assert visited == expected_visits
+    elif variant != "compiler":
+        assert any(row['source'].get('text', '').endswith(';') for row in result['observations'])
     result["returnedPc"] = int(gdb.parse_and_eval("$pc"))
     assert int(gdb.parse_and_eval("$r0")) == 4686
     assert bytes(gdb.selected_inferior().read_memory(start + expected['codeEnd'], 4)).hex() == "34120000"

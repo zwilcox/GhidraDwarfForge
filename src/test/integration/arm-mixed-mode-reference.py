@@ -217,8 +217,7 @@ def main():
         "textAddress": inventory.section(image, ".text")["row"][3],
         "sectionless": args.sectionless, "mappingAllocation": mapping_allocation,
         "symbols": symbols, "hex": section["data"].hex()}
-    (case / "labels.json").write_text(json.dumps(labels, indent=4) + "\n")
-    before.update({str(case / name): digest(case / name) for name in ("mixed.reference", "mixed.stripped", "labels.json")})
+    before.update({str(case / name): digest(case / name) for name in ("mixed.reference", "mixed.stripped")})
     project = case / "project"
     project.mkdir()
     text = run("import", [ghidra / "support/analyzeHeadless", project, "MixedModes", "-import",
@@ -228,12 +227,17 @@ def main():
         "mixed.stripped", "-noanalysis", "-scriptPath", source / "ghidra_scripts",
         "-postScript", "PrepareArmMixedBody.java", *prepare_arguments(labels)])
     assert "REPORT SCRIPT ERROR" not in text
+    model = inventory.transcript(case / "prepare.stdout", "ARM_MIXED_MODEL=")
+    labels['sourceRows'] = model['sourceRows']
+    assert labels['sourceRows'], 'native decompiler supplied no addressable statements'
+    label_path = case / 'labels.json'
+    label_path.write_text(json.dumps(labels, indent=4) + '\n')
+    before[str(label_path)] = digest(label_path)
     program_before = {str(p.relative_to(project)): digest(p) for p in project.rglob("*") if p.is_file()}
     text = run("export", [ghidra / "support/analyzeHeadless", project, "MixedModes", "-process",
         "mixed.stripped", "-noanalysis", "-readOnly", "-postScript", "GhidraDwarfForge.java",
         "--packaged-natives", "--output=" + str(case / "curated.dbg")])
     assert "GhidraDwarfForge symbol export PASS" in text and "REPORT SCRIPT ERROR" not in text
-    model = inventory.transcript(case / "prepare.stdout", "ARM_MIXED_MODEL=")
     assert len(model['units']) == len(expected['units'])
     for row, offset, width in zip(model['units'], expected['units'], expected['lengths']):
         assert int(row['address'], 16) - start - model['imageBaseDelta'] == offset

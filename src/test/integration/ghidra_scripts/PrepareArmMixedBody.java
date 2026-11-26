@@ -2,7 +2,13 @@
 // @category DWARF.Tests
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 import com.google.gson.Gson;
+import ghidra.app.decompiler.ClangToken;
+import ghidra.app.decompiler.DecompInterface;
+import ghidra.app.decompiler.component.DecompilerUtils;
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.listing.Function;
@@ -109,6 +115,42 @@ public class PrepareArmMixedBody extends GhidraScript {
         result.put("block", memory.getName());
         result.put("units", rows);
         result.put("imageBaseDelta", delta);
+        result.put("sourceRows", sourceRows(function));
         println("ARM_MIXED_MODEL=" + new Gson().toJson(result));
+    }
+
+    private List<Map<String, Object>> sourceRows(Function function) throws Exception {
+        var decompiler = new DecompInterface();
+        try {
+            if (!decompiler.openProgram(currentProgram)) {
+                throw new AssertionError(decompiler.getLastMessage());
+            }
+            var result = decompiler.decompileFunction(function, 60, monitor);
+            if (!result.decompileCompleted()) {
+                throw new AssertionError(result.getErrorMessage());
+            }
+            var lines = result.getDecompiledFunction().getC().split("\\R", -1);
+            var rows = new ArrayList<Map<String, Object>>();
+            for (var line : DecompilerUtils.toLines(result.getCCodeMarkup())) {
+                var offsets = new TreeSet<Long>();
+                for (var token : line.getAllTokens()) {
+                    if (token.getText().isBlank() || token.getSyntaxType() == ClangToken.COMMENT_COLOR) {
+                        continue;
+                    }
+                    var operation = token.getPcodeOp();
+                    var at = operation == null ? token.getMinAddress() : operation.getSeqnum().getTarget();
+                    if (at != null && function.getBody().contains(at)) {
+                        offsets.add(at.subtract(function.getEntryPoint()));
+                    }
+                }
+                if (!offsets.isEmpty()) {
+                    rows.add(Map.of("text", lines[line.getLineNumber() - 1].strip(), "offsets", offsets));
+                }
+            }
+            return rows;
+        }
+        finally {
+            decompiler.dispose();
+        }
     }
 }
