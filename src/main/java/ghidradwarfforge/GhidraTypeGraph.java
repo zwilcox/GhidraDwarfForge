@@ -754,16 +754,9 @@ public final class GhidraTypeGraph {
         List<LocationRange> result = new ArrayList<>();
         for (GhidraVariableStorage.StorageInterval interval :
                 GhidraVariableStorage.stackIntervals(stackDepths, stack, registerMap)) {
-            long start;
-            long end;
-            try {
-                start = AddressNormalizer.toElfAddress(interval.start(), rebaseDelta);
-                end = AddressNormalizer.toElfAddress(interval.end(), rebaseDelta);
-            }
-            catch (ArithmeticException overflow) {
-                continue;
-            }
-            if (start >= 0 && end > start) {
+            long start = AddressNormalizer.toElfAddress(interval.start(), rebaseDelta);
+            long end = AddressNormalizer.toElfAddress(interval.end(), rebaseDelta);
+            if (Long.compareUnsigned(start, end) < 0) {
                 result.add(new LocationRange(start, end, interval.storage(),
                     evidence(source, interval.storage())));
             }

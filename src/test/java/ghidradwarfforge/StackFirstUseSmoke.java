@@ -116,6 +116,11 @@ public final class StackFirstUseSmoke {
                     TargetRegisterMap.forTarget(target.map()), TaskMonitor.DUMMY).equals(new StackStorage(16)),
                     "stack parameter convention changed");
                 var baseline = extract(program, function, target, 0);
+                if (program.getDefaultPointerSize() == 8) {
+                    for (long linkAddress : new long[] {Long.MAX_VALUE - 3, 0xffff_ffff_8100_0000L}) {
+                        verifyRebasedStack(program, function, target, baseline, linkAddress);
+                    }
+                }
                 for (int firstUse : new int[] { 4, 1, -1, code.length + 4,
                         Integer.MIN_VALUE, Integer.MAX_VALUE }) {
                     require(local.setFirstUseOffset(firstUse), "setter refused curated first-use");
@@ -218,6 +223,27 @@ public final class StackFirstUseSmoke {
                 "unsupported stack first-use diagnostic was lost or duplicated");
         }
         return model.variableStorage();
+    }
+
+    private static void verifyRebasedStack(ProgramDB program, Function function, Target target,
+            VariableStorageModel baseline, long linkAddress) throws Exception {
+        long entry = function.getEntryPoint().getOffset();
+        var linked = new FunctionSymbol(function.getName(), linkAddress, function.getBody().getNumAddresses());
+        var model = GhidraTypeGraph.extract(program, List.of(linked), target.map(), entry - linkAddress,
+            TaskMonitor.DUMMY, ignored -> { });
+        for (var original : baseline.variables()) {
+            var result = model.variableStorage().variables().stream().filter(variable -> variable.name().equals(original.name()))
+                .findFirst().orElseThrow();
+            require(result.functionAddress() == linkAddress && result.locations().size() == original.locations().size(),
+                "rebasing changed the stack location count for " + original.name());
+            for (int index = 0; index < original.locations().size(); index++) {
+                var before = original.locations().get(index);
+                var after = result.locations().get(index);
+                require(after.start() == linkAddress + (before.start() - entry) &&
+                    after.end() == linkAddress + (before.end() - entry) && after.storage().equals(before.storage()),
+                    "rebasing lost a proven stack location for " + original.name() + " at " + Long.toHexString(linkAddress));
+            }
+        }
     }
 
     private static FunctionSymbol symbol(Function function) {

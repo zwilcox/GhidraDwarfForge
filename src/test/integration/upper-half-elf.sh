@@ -14,7 +14,7 @@ cd "$work"
 gcc -O0 -g -gdwarf-5 -ffreestanding -fno-stack-protector -fno-omit-frame-pointer \
     -fno-pie -no-pie -mcmodel=kernel -nostdlib -Wl,--build-id=sha1 \
     -Wl,--defsym=forge_text_address=0xffffffff81000000 "-Wl,-T,$fixtures/nonzero_load_offset.ld" \
-    "$fixtures/nonzero_load_offset_start.S" "$fixtures/nonzero_load_offset.c" -o reference
+    "$fixtures/upper_half_stack.c" "$fixtures/nonzero_load_offset.c" -o reference
 objcopy --strip-all reference kernel.elf
 cp kernel.elf original.elf
 readelf -lW kernel.elf > segments
@@ -24,6 +24,14 @@ address_of() {
 }
 function_address=$(address_of nonzero_add)
 global_address=$(address_of nonzero_sink)
+stack_address=$(address_of kernel_stack_argument)
+stack_size=$(nm -n -S --defined-only reference | awk '$4 == "kernel_stack_argument" {print "0x" $2; found=1} END {exit !found}')
+mapfile -t stack_changes < <(objdump -d --no-show-raw-insn --disassemble=kernel_stack_argument reference |
+    awk '/^[[:space:]]*[[:xdigit:]]+:/ {
+        if (changed) { sub(/:$/, "", $1); print "0x" $1 }
+        changed = (($2 == "push" || $2 == "pop") && $3 == "%rbp")
+    }')
+test "${#stack_changes[@]}" -eq 2
 function_size=$(nm -n -S --defined-only reference | awk '$4 == "nonzero_add" {print "0x" $2; found=1} END {exit !found}')
 
 # Resolve the sidecar from another directory so GDB also verifies the source location.
@@ -34,8 +42,10 @@ set auto-solib-add off
 file $work/kernel.elf
 symbol-file $work/kernel.elf.dbg
 python
+import re
 assert int(gdb.parse_and_eval('(unsigned long)&nonzero_add')) == $function_address
 assert int(gdb.parse_and_eval('(unsigned long)&nonzero_sink')) == $global_address
+assert int(gdb.parse_and_eval('(unsigned long)&kernel_stack_argument')) == $stack_address
 bp = gdb.Breakpoint('*nonzero_add')
 assert int(bp.locations[0].address) == $function_address
 sal = gdb.find_pc_line($function_address)
@@ -44,6 +54,12 @@ for pc in ($function_address, $function_address + $function_size - 1):
     scope = gdb.execute('info scope *%#x' % pc, to_string=True)
     for parameter, register in [('left', 'rdi'), ('right', 'rsi')]:
         assert f'Symbol {parameter} is a variable in \$' + register + ', length 4.' in scope, scope
+stack_scope = gdb.execute('info scope *%#x' % $stack_address, to_string=True)
+stack_value = stack_scope.split('Symbol stack_value ', 1)[1].split('\nSymbol ', 1)[0]
+rows = re.findall(r'Range (0x[0-9a-f]+)-(0x[0-9a-f]+):[^\n]*\n\s*0: DW_OP_bregx register 7 [^\n]* offset (\d+)', stack_value)
+observed = [(int(low, 16), int(high, 16), int(offset)) for low, high, offset in rows]
+assert observed == [($stack_address, ${stack_changes[0]}, 8), (${stack_changes[0]}, ${stack_changes[1]}, 16),
+    (${stack_changes[1]}, $stack_address + $stack_size, 8)], stack_value
 end
 list nonzero_add
 info scope *$function_address
@@ -59,9 +75,10 @@ for mode in linked rebased; do
     fi
     analyzed_function=$(printf '0x%x' "$((function_address + delta))")
     analyzed_global=$(printf '0x%x' "$((global_address + delta))")
+    analyzed_stack=$(printf '0x%x' "$((stack_address + delta))")
     "$ghidra_dir/support/analyzeHeadless" "$work/projects" "HighElf_$mode" -deleteProject -import "$work/kernel.elf" \
         -analysisTimeoutPerFile 120 -scriptPath "$repo/src/test/integration/ghidra_scripts" \
-        "${prepare[@]}" -postScript PrepareNonzeroLoadOffset.java "$analyzed_function" "$analyzed_global" \
+        "${prepare[@]}" -postScript PrepareNonzeroLoadOffset.java "$analyzed_function" "$analyzed_global" "$analyzed_stack" \
         -postScript GhidraDwarfForge.java "--libdwarf=$consumer" "--libdwarfp=$producer" \
         > headless.log 2>&1 || { tail -40 headless.log >&2; exit 1; }
     grep -Fq 'GhidraDwarfForge symbol export PASS' headless.log || { tail -40 headless.log >&2; exit 1; }
@@ -78,7 +95,7 @@ for mode in linked rebased; do
     cat gdb.txt
     grep -Eq 'int nonzero_add\(' gdb.txt
     cmp "$work/original.elf" "$work/kernel.elf"
-    echo "upper-half-elf=PASS $mode static GDB function, breakpoint, source, global and parameter storage"
+    echo "upper-half-elf=PASS $mode static GDB function, breakpoint, source, global, register and stack parameters"
 done
 
 # Corrupt only the data section's virtual extent in a disposable input.
