@@ -150,7 +150,12 @@ gdb.Breakpoint('*navigation_control', temporary=True)
 gdb.execute('continue')
 assert int(gdb.parse_and_eval('$pc')) == int(gdb.parse_and_eval('&navigation_control'))
 for command in ('next', 'step'):
+    before_line = gdb.selected_frame().find_sal().line
     gdb.execute(command)
+    frame = gdb.selected_frame()
+    assert frame.name() == 'navigation_control'
+    line = frame.find_sal().line
+    assert line > 0 and line != before_line
 gdb.execute('continue')
 assert int(gdb.parse_and_eval('$_exitcode')) == 0
 if compiler:
