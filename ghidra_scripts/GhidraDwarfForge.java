@@ -233,8 +233,16 @@ public class GhidraDwarfForge extends GhidraScript {
                         ? "; supply --output=<writable-sidecar-path>" : "";
                 throw new IOException(defaultFailure.getMessage() + hint, defaultFailure);
             }
-            Path selectedDirectory = askDirectory(
-                "Select GhidraDwarfForge output directory", "Select").toPath();
+            // Ghidra 12.2 also feeds script arguments into GUI prompts. Forge has
+            // already parsed these flags, so the analyst must choose the directory.
+            Path selectedDirectory;
+            setScriptArgs(null);
+            try {
+                selectedDirectory = askDirectory("Select GhidraDwarfForge output directory", "Select").toPath();
+            }
+            finally {
+                setScriptArgs(arguments);
+            }
             Path selectedOutput = selectedDirectory.resolve(
                 requestedInput.getFileName() + ".dbg");
             paths = OutputPathPolicy.resolve(requestedInput, selectedOutput);
