@@ -29,6 +29,16 @@ task distributeExtension {
 tasks.named("processResources") {
     exclude "**/__pycache__/**", "**/*.pyc"
 }
+// Gson's compiled JsonParser references Error Prone annotations. The pinned
+// Gradle distribution supplies them for strict mutation-test compilation.
+tasks.named("processTestResources") {
+    from({ fileTree(new File(gradle.gradleHomeDir, "lib")).matching {
+        include "error_prone_annotations-*.jar"
+    }.singleFile }) {
+        into "mutation-compiler"
+        rename { "error_prone_annotations.jar" }
+    }
+}
 tasks.named("zipSource") {
     exclude "**/__pycache__/**", "**/*.pyc"
 }
