@@ -53,7 +53,8 @@ public class PrepareObjectParameter extends GhidraScript {
                     GhidraClassBindings.save(currentProgram, owner, bound,
                         "Fixture analyst confirms the compiler object layout", monitor);
                     if (control.equals("stale")) {
-                        if (!currentProgram.getDataTypeManager().remove(bound, monitor)) {
+                        monitor.checkCancelled();
+                        if (!currentProgram.getDataTypeManager().remove(bound)) {
                             throw new AssertionError("could not retire saved type identity");
                         }
                     }

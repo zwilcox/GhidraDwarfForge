@@ -704,7 +704,7 @@ jobs:
           mkdir -p build/test-results/extension-build
           {
             ./gradlew --no-daemon --offline prepareIntegrationCoverage
-            ./gradlew --no-daemon jar
+            ./gradlew --no-daemon jar compileGhidraScripts
             src/test/integration/headless-wrapper.sh
             python3 src/test/integration/attachment-launcher.py
             src/test/integration/architecture-neutrality.sh
