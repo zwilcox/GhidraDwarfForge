@@ -1,6 +1,9 @@
 package ghidradwarfforge;
 
-/** Focused regression for rebased-Ghidra to link-time-ELF conversion. */
+import java.math.BigInteger;
+import java.util.function.LongSupplier;
+
+/** Checks rebasing and unsigned ELF address arithmetic against exact integer results. */
 public final class AddressNormalizerSmoke {
     private AddressNormalizerSmoke() {
     }
@@ -22,7 +25,41 @@ public final class AddressNormalizerSmoke {
         assertEquals(Long.MIN_VALUE, AddressNormalizer.toGhidraAddress(Long.MAX_VALUE, 1));
         assertEquals(0x401123L, AddressNormalizer.toGhidraAddress(kernel + 0x123,
             AddressNormalizer.rebaseDelta(0x401000L, kernel)));
+        checkUnsignedArithmetic();
         System.out.println("address-normalizer-smoke=PASS");
+    }
+
+    private static void checkUnsignedArithmetic() {
+        BigInteger addressLimit = BigInteger.ONE.shiftLeft(64).subtract(BigInteger.ONE);
+        BigInteger countLimit = BigInteger.valueOf(Long.MAX_VALUE);
+        long[] words = {0, 1, 0xffff_ffffL, Long.MAX_VALUE - 1, Long.MAX_VALUE, Long.MIN_VALUE,
+            Long.MIN_VALUE + 1, 0xffff_ffff_8100_0000L, -2, -1};
+        for (long base : words) {
+            BigInteger original = new BigInteger(Long.toUnsignedString(base));
+            for (long word : words) {
+                BigInteger unsigned = new BigInteger(Long.toUnsignedString(word));
+                checkBounded(unsigned.subtract(original), countLimit,
+                    () -> UnsignedAddress.distance(base, word));
+                checkBounded(original.add(unsigned), addressLimit,
+                    () -> UnsignedAddress.addDisplacement(base, word, false));
+                checkBounded(original.add(BigInteger.valueOf(word)), addressLimit,
+                    () -> UnsignedAddress.addDisplacement(base, word, true));
+            }
+        }
+    }
+
+    private static void checkBounded(BigInteger expected, BigInteger limit, LongSupplier operation) {
+        boolean representable = expected.signum() >= 0 && expected.compareTo(limit) <= 0;
+        long actual;
+        try {
+            actual = operation.getAsLong();
+        }
+        catch (IllegalArgumentException rejected) {
+            if (representable) throw new AssertionError("rejected representable result " + expected, rejected);
+            return;
+        }
+        if (!representable) throw new AssertionError("accepted out-of-range result " + expected);
+        assertEquals(expected.longValue(), actual);
     }
 
     private static void assertEquals(long expected, long actual) {
