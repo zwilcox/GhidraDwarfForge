@@ -32,6 +32,14 @@ public final class UnsignedAddress {
         return last;
     }
 
+    /** Memory-backed objects must fit the original ELF class, including the last byte. */
+    public static boolean fitsObject(long address, long size, int addressBytes) {
+        if (size <= 0) return false;
+        long last = address + (size - 1);
+        return Long.compareUnsigned(last, address) >= 0 &&
+            (addressBytes == 8 || addressBytes == 4 && Long.compareUnsigned(last, 0xffff_ffffL) <= 0);
+    }
+
     public static long distance(long start, long end) {
         long size = end - start;
         if (Long.compareUnsigned(start, end) > 0 || size < 0) {

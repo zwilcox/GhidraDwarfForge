@@ -134,12 +134,18 @@ public final class CuratedTypeBoundarySmoke {
             "curated type extraction is not deterministic");
         for (long delta : new long[] { 0x10000, Long.MIN_VALUE }) {
             diagnostics.clear();
-            var rejected = GhidraTypeGraph.extract(program, List.of(), target, delta, TaskMonitor.DUMMY, diagnostics::add);
-            require(rejected.globals().isEmpty() && rejected.functionStatics().isEmpty(), "untranslatable address emitted a variable");
-            String reason = delta == Long.MIN_VALUE ? "Skipped untranslatable global" : "Skipped unsupported global address";
-            for (String name : List.of("wide_0", "wide_32", "wide_64", "qualified_object", "bit_object")) {
-                require(diagnostics.stream().anyMatch(message -> message.contains(reason) && message.contains(name)),
-                    "missing address omission diagnostic for " + name);
+            var translated = GhidraTypeGraph.extract(program, List.of(), target, delta, TaskMonitor.DUMMY, diagnostics::add);
+            for (var original : model.globals()) {
+                var found = translated.globals().stream().filter(variable -> variable.name().equals(original.name())).findFirst();
+                if (program.getDefaultPointerSize() == 8) {
+                    require(found.isPresent() && found.get().address() == original.address() - delta,
+                        "upper-half global translation changed " + original.name());
+                }
+                else {
+                    require(found.isEmpty() && diagnostics.stream().anyMatch(message ->
+                        message.contains("unsupported global address extent") && message.contains(original.name())),
+                        "out-of-class global escaped or lacked a diagnostic for " + original.name());
+                }
             }
         }
         require(program.getModificationNumber() == modification, "extraction modified analyst program state");
