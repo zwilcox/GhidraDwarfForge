@@ -1,5 +1,6 @@
 package ghidradwarfforge.output;
 
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
@@ -241,7 +242,7 @@ public final class ValidatorSupervisor {
         String reason = null;
         Boolean complete = null;
         try (var reader = new JsonReader(new StringReader(new String(bytes, StandardCharsets.US_ASCII)))) {
-            reader.setLenient(false);
+            reader.setStrictness(Strictness.LEGACY_STRICT);
             reader.beginObject();
             while (reader.hasNext()) {
                 String name = reader.nextName();

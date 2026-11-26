@@ -1,5 +1,6 @@
 package ghidradwarfforge.output;
 
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
@@ -91,7 +92,7 @@ public record AttachmentInvocation(AttachmentOperation.Request operation, Map<St
     /** Owns and closes its bounded, strictly decoded stream, including rejection/cancellation. */
     static AttachmentInvocation read(InputStream input, BooleanSupplier cancelled) throws IOException {
         try (var json = new JsonReader(new ReportJsonReader(input, cancelled, LIMITS))) {
-            json.setLenient(false);
+            json.setStrictness(Strictness.LEGACY_STRICT);
             var names = new HashSet<String>();
             String version = null;
             String action = null;

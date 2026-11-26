@@ -19,6 +19,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
@@ -196,7 +197,7 @@ public final class CoverageReportClaimsSmoke {
         String wrapped = "{\"before\":0,\"coverage\":" + text + ",\"after\":0}";
         var limits = limits(wrapped.getBytes(StandardCharsets.UTF_8).length, budget, 250000);
         try (var json = new JsonReader(new ReportJsonReader(new ByteArrayInputStream(wrapped.getBytes(StandardCharsets.UTF_8)), () -> false, limits))) {
-            json.setLenient(false);
+            json.setStrictness(Strictness.LEGACY_STRICT);
             new ReportValueReader(json, () -> false, limits) {
                 void read() throws IOException {
                     object("envelope", Set.of("before", "coverage", "after"), name -> {

@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
@@ -62,7 +63,7 @@ public final class ReportValueReaderSmoke {
         };
         var limits = new ReportJsonReader.Limits(1024, 32, 3, values, arrayItems);
         try (var json = new JsonReader(new ReportJsonReader(input, cancelled::get, limits))) {
-            json.setLenient(false);
+            json.setStrictness(Strictness.LEGACY_STRICT);
             int result = new Parent(json, cancelled, limits, cancelChild).read();
             require(json.peek() == JsonToken.END_DOCUMENT, "complete document consumed");
             return result;

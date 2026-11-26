@@ -1,5 +1,6 @@
 package ghidradwarfforge.output;
 
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
@@ -199,7 +200,7 @@ public record AttachmentReceipt(String operationId, Mode mode, Phase phase,
     /** Owns and closes the supplied stream, including malformed/cancelled reads. */
     static AttachmentReceipt read(InputStream input, BooleanSupplier cancelled) throws IOException {
         try (JsonReader json = new JsonReader(new ReportJsonReader(input, cancelled, LIMITS))) {
-            json.setLenient(false);
+            json.setStrictness(Strictness.LEGACY_STRICT);
             Map<String, String> values = new TreeMap<>();
             Map<String, Artifact> artifacts = new TreeMap<>();
             Set<String> names = new HashSet<>();
