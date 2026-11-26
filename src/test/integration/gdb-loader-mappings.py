@@ -247,7 +247,7 @@ int main(void) { return mapping_function(19, 23) == 42 ? 0 : 1; }
             if line.startswith("FORGE_MAPPING_RESULT=")))}
 
 
-def shared_check(directory, classpath, coverage):
+def shared_check(directory, classpath, coverage, link_base):
     source = directory / "library source.c"
     source.write_text("""volatile int shared_value = 7;
 __attribute__((noinline)) int shared_function(int left, int right) {
@@ -257,16 +257,17 @@ __attribute__((noinline)) int shared_function(int left, int right) {
 """)
     driver_source = directory / "driver.c"
     driver_source.write_text("""#include <dlfcn.h>
+int (*resolved_function)(int, int);
 __attribute__((noinline)) void after_load(void) { __asm__ volatile ("" ::: "memory"); }
 __attribute__((noinline)) void after_unload(void) { __asm__ volatile ("" ::: "memory"); }
 int main(int argc, char **argv) {
     for (int i = 0; i < 2; i++) {
         void *handle = dlopen(argv[1], RTLD_NOW);
         if (!handle) return 2;
-        int (*function)(int, int) = dlsym(handle, "shared_function");
-        if (!function) return 3;
+        resolved_function = dlsym(handle, "shared_function");
+        if (!resolved_function) return 3;
         after_load();
-        if (function(19, 23) != 42) return 4;
+        if (resolved_function(19, 23) != 42) return 4;
         if (dlclose(handle)) return 5;
         after_unload();
     }
@@ -276,7 +277,8 @@ int main(int argc, char **argv) {
     original = directory / "mapped library.so"
     sidecar = directory / "mapped library.so.dbg"
     driver = directory / "driver"
-    run(["gcc", "-O0", "-gdwarf-5", "-shared", "-fPIC", str(source), "-o", str(original)],
+    layout = [] if link_base is None else [f"-Wl,-Ttext-segment={link_base:#x}"]
+    run(["gcc", "-O0", "-gdwarf-5", "-shared", "-fPIC", *layout, str(source), "-o", str(original)],
         directory, directory / "compile-library.txt")
     run(["gcc", "-O0", "-g", str(driver_source), "-ldl", "-o", str(driver)],
         directory, directory / "compile-driver.txt")
@@ -288,6 +290,8 @@ int main(int argc, char **argv) {
     sidecar, companion = generated_companion(directory, original, sidecar, source, classpath, coverage)
     validate_reference(original, sidecar, directory)
     bits, segments, checks = elf_loads(original)
+    if link_base is not None and min(segment[1] for segment in segments) != link_base:
+        raise AssertionError("linked shared object did not use the requested load address")
     binding = manifest(original, sidecar, source, bits, segments, checks)
     before = {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in (original, sidecar, source, driver, driver_source)}
@@ -313,6 +317,7 @@ int main(int argc, char **argv) {
             "biases.append(bias)\n"
             "gdb.execute('forge-load ' + identifier)\n"
             f"assert int(gdb.parse_and_eval('&shared_function')) == bias + {addresses['shared_function']}\n"
+            "assert int(gdb.parse_and_eval('&shared_function')) == int(gdb.parse_and_eval('resolved_function'))\n"
             f"assert int(gdb.parse_and_eval('&shared_value')) == bias + {addresses['shared_value']}\n"
             "assert int(gdb.parse_and_eval('shared_value')) == 7\n"
             "assert 'shared_value = left + right' in gdb.execute('list shared_function', to_string=True)\n"
@@ -343,9 +348,11 @@ int main(int argc, char **argv) {
     for path, digest in before.items():
         if hashlib.sha256(Path(path).read_bytes()).hexdigest() != digest:
             raise AssertionError(f"fixture changed: {path}")
-    return {"role": "shared", "bits": bits, "preserved": before,
-        "biases": json.loads(next(line.split("=", 1)[1] for line in text.splitlines()
-            if line.startswith("FORGE_MAPPING_RESULT=")))}
+    biases = json.loads(next(line.split("=", 1)[1] for line in text.splitlines()
+        if line.startswith("FORGE_MAPPING_RESULT=")))
+    if link_base is not None and not all(bias < -(1 << 63) for bias in biases):
+        raise AssertionError("upper-half shared object did not exercise a bias below INT64_MIN")
+    return {"role": directory.name, "bits": bits, "preserved": before, "biases": biases}
 
 
 def main():
@@ -379,9 +386,10 @@ def main():
         case = directory / role
         case.mkdir()
         results.append(live_check(case, role, classpath, coverage))
-    shared = directory / "shared"
-    shared.mkdir()
-    results.append(shared_check(shared, classpath, coverage))
+    for role, link_base in (("shared", None), ("shared-upper-half", 0xffffffff81000000)):
+        shared = directory / role
+        shared.mkdir()
+        results.append(shared_check(shared, classpath, coverage, link_base))
     (directory / "result.json").write_text(json.dumps({"status": "PASS",
         "engineSha256": hashlib.sha256(ENGINE.read_bytes()).hexdigest(),
         "packagedGenerator": classpath is not None,
