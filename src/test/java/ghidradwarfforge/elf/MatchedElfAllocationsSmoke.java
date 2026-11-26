@@ -413,8 +413,13 @@ public final class MatchedElfAllocationsSmoke {
             issue(observe(absent), Status.UNSUPPORTED_CASE, "p_vaddr/p_memsz");
         }
         else {
-            MatchedElfAllocationsFixtures.program(absent.original(), 0, "address", Long.MAX_VALUE - 7);
-            MatchedElfAllocationsFixtures.program(absent.original(), 0, "memorySize", 8);
+            for (long base : new long[] {Long.MAX_VALUE - 3, -8L}) {
+                MatchedElfAllocationsFixtures.program(absent.original(), 0, "address", base);
+                MatchedElfAllocationsFixtures.program(absent.original(), 0, "memorySize", 8);
+                MatchedElfAllocationsFixtures.rewrite(absent);
+                unchangedMatch(absent);
+            }
+            MatchedElfAllocationsFixtures.program(absent.original(), 0, "memorySize", 9);
             issue(observe(absent), Status.UNSUPPORTED_CASE, "p_vaddr/p_memsz");
         }
         Pair zero = MatchedElfAllocationsFixtures.create(root.resolve("zero-load"), wide, order, Shape.SECTIONLESS);
@@ -475,10 +480,20 @@ public final class MatchedElfAllocationsSmoke {
         MatchedElfAllocationsFixtures.program(misaligned.original(), 1, "alignment", 8);
         issue(observe(misaligned), Status.UNSUPPORTED_CASE, "note gap");
         if (wide) {
+            Pair crossing = named(root.resolve("note-crossing-bit-63"), true, order);
+            long base = Long.MAX_VALUE - 16;
+            MatchedElfAllocationsFixtures.field(crossing.original(), 2, "address", base);
+            MatchedElfAllocationsFixtures.program(crossing.original(), 1, "address", base);
+            MatchedElfAllocationsFixtures.program(crossing.original(), 1, "fileSize", 48);
+            MatchedElfAllocationsFixtures.program(crossing.original(), 1, "memorySize", 48);
+            MatchedElfAllocationsFixtures.rewrite(crossing);
+            unchangedMatch(crossing);
+            require(ElfImage.read(crossing.candidate()).sections().get(4).address == Long.MIN_VALUE + 19,
+                "reconstructed note lost its upper-half address");
             Pair overflow = named(root.resolve("note-address-overflow"), true, order);
-            MatchedElfAllocationsFixtures.field(overflow.original(), 2, "address", Long.MAX_VALUE - 16);
-            MatchedElfAllocationsFixtures.field(overflow.candidate(), 2, "address", Long.MAX_VALUE - 16);
-            MatchedElfAllocationsFixtures.program(overflow.original(), 1, "address", Long.MAX_VALUE - 16);
+            MatchedElfAllocationsFixtures.field(overflow.original(), 2, "address", -36L);
+            MatchedElfAllocationsFixtures.field(overflow.candidate(), 2, "address", -36L);
+            MatchedElfAllocationsFixtures.program(overflow.original(), 1, "address", -36L);
             MatchedElfAllocationsFixtures.program(overflow.original(), 1, "fileSize", 48);
             issue(observe(overflow), Status.UNSUPPORTED_CASE, "p_vaddr");
         }

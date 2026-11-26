@@ -68,7 +68,7 @@ public final class GdbCompanion {
                 MatchedElfAllocations.Status.MATCHING_ALLOCATED_METADATA) {
             throw new IOException("GDB companion requires a matched Forge sidecar for the selected input");
         }
-        ElfImage image = ElfImage.read(target);
+        ElfImage image = ElfImage.readForExport(target);
         List<ElfImage.Segment> loads = image.segments().stream()
             .filter(segment -> segment.type == 1).toList();
         if (loads.isEmpty() || loads.size() > MAX_SEGMENTS) {
@@ -127,7 +127,7 @@ public final class GdbCompanion {
             if (index != 0) {
                 manifest.append(',');
             }
-            manifest.append('[').append(segment.offset).append(',').append(segment.virtualAddress)
+            manifest.append('[').append(segment.offset).append(',').append(Long.toUnsignedString(segment.virtualAddress))
                 .append(',').append(segment.fileSize).append(',').append(segment.memorySize).append(']');
         }
         manifest.append("],\"checks\":[");
@@ -137,7 +137,7 @@ public final class GdbCompanion {
                 if (index != 0) {
                     manifest.append(',');
                 }
-                manifest.append("{\"address\":").append(probe.address())
+                manifest.append("{\"address\":").append(Long.toUnsignedString(probe.address()))
                     .append(",\"size\":").append(probe.size()).append(",\"sha256\":")
                     .append(quote(digest(channel, probe, cancelled))).append('}');
             }

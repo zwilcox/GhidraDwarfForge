@@ -40,8 +40,9 @@ space. The x86-64 kernel-style fixture places code at `0xffffffff81000000`.
 With the original ELF and its sidecar loaded, the static GDB test resolves a
 function, its breakpoint and source lines, a global, and two register
 parameters. It also checks the stack offset of a seventh integer argument
-before and after the function saves the frame pointer. These checks run at
-the linked image base and after rebasing the Ghidra project across bit 63.
+before and after the function saves the frame pointer. GDB also registers the
+generated loader companion. These checks run at the linked image base and
+after rebasing the Ghidra project across bit 63.
 Live stepping and value checks use runnable lower-address
 fixtures. Address ranges may cross bit 63. A function whose last instruction
 byte is at `0xffffffffffffffff` has an exclusive end of 2⁶⁴, which cannot be

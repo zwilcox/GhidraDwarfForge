@@ -40,6 +40,7 @@ cat > debugger/verify.gdb <<GDB
 set debuginfod enabled off
 set auto-solib-add off
 file $work/kernel.elf
+source $work/kernel.elf.dbg.gdb.py
 symbol-file $work/kernel.elf.dbg
 python
 import re
@@ -79,7 +80,7 @@ for mode in linked rebased; do
     "$ghidra_dir/support/analyzeHeadless" "$work/projects" "HighElf_$mode" -deleteProject -import "$work/kernel.elf" \
         -analysisTimeoutPerFile 120 -scriptPath "$repo/src/test/integration/ghidra_scripts" \
         "${prepare[@]}" -postScript PrepareNonzeroLoadOffset.java "$analyzed_function" "$analyzed_global" "$analyzed_stack" \
-        -postScript GhidraDwarfForge.java "--libdwarf=$consumer" "--libdwarfp=$producer" \
+        -postScript GhidraDwarfForge.java "--libdwarf=$consumer" "--libdwarfp=$producer" --gdb-loader \
         > headless.log 2>&1 || { tail -40 headless.log >&2; exit 1; }
     grep -Fq 'GhidraDwarfForge symbol export PASS' headless.log || { tail -40 headless.log >&2; exit 1; }
     grep -Fq "Ghidra-to-ELF address delta: $(printf '0x%x' "$delta")" headless.log
@@ -93,6 +94,7 @@ for mode in linked rebased; do
     cd debugger
     gdb-multiarch -q -nx -batch -x verify.gdb > gdb.txt 2>&1 || { cat gdb.txt >&2; exit 1; }
     cat gdb.txt
+    grep -Fq 'Forge companion registered: forge-load' gdb.txt
     grep -Eq 'int nonzero_add\(' gdb.txt
     cmp "$work/original.elf" "$work/kernel.elf"
     echo "upper-half-elf=PASS $mode static GDB function, breakpoint, source, global, register and stack parameters"

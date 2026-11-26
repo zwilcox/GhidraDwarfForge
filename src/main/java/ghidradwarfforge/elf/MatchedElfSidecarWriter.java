@@ -794,9 +794,12 @@ public final class MatchedElfSidecarWriter {
                 section.name = ".note.forge." + noteIndex++;
                 section.type = SHT_NOTE;
                 section.flags = SHF_ALLOC;
-                section.address = addOffset(segment.virtualAddress, offset - segment.offset);
+                section.address = UnsignedAddress.addOffset(segment.virtualAddress, offset - segment.offset);
                 section.offset = offset;
                 section.size = uncoveredEnd - offset;
+                if (!UnsignedAddress.fitsObject(section.address, section.size, image.is64Bit() ? 8 : 4)) {
+                    throw new IllegalArgumentException("reconstructed PT_NOTE exceeds ELF virtual address space");
+                }
                 section.alignment = alignment;
                 sections.add(section);
                 coverNoteRange(covered, offset, uncoveredEnd);
