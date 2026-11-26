@@ -121,7 +121,7 @@ public final class GhidraEquateEvidence {
             throws CancelledException {
         String name = equate.storedName();
         if (!name.startsWith("dtID")) return noEnum(Status.NOT_ENUM);
-        // Ghidra 12.0.3 EquateManager formats dtID:<signed long UUID>:<signed long value>.
+        // EquateManager formats dtID:<signed long UUID>:<signed long value>.
         // Its display helpers can throw for stale/malformed records, so validate first.
         String[] fields = name.split(":", -1);
         if (fields.length != 3 || !fields[0].equals("dtID") ||
