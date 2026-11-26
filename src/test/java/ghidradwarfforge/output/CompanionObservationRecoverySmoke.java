@@ -5,6 +5,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -46,8 +47,10 @@ public final class CompanionObservationRecoverySmoke {
         Path target = Files.writeString(root.resolve("locked-public"), "previous");
         Saved beforeStage = Saved.read(staged);
         Saved beforeTarget = Saved.read(target);
-        try (var lock = FileChannel.open(target, StandardOpenOption.READ,
-                com.sun.nio.file.ExtendedOpenOption.NOSHARE_DELETE)) {
+        // Resolve the Windows-only sharing option when the native NTFS test runs.
+        OpenOption denyDelete = (OpenOption) Class.forName("com.sun.nio.file.ExtendedOpenOption")
+            .getField("NOSHARE_DELETE").get(null);
+        try (var lock = FileChannel.open(target, StandardOpenOption.READ, denyDelete)) {
             var exchange = PublicationExchange.open();
             try {
                 exchange.exchange(staged, target);
