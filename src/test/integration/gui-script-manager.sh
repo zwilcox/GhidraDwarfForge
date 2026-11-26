@@ -25,8 +25,9 @@ done
 test -s "$module/ghidra_scripts/GhidraDwarfForge.java"
 test -s "$module/ghidra_scripts/ExportGhidraDwarfForge.java"
 (cd "$module" && sha256sum -c RELEASE-SHA256SUMS) >/dev/null
-root="$repository/build/test-results/gui-script-manager"
-if [[ ${GHIDRA_GUI_UNWIND:-0} == 1 ]]; then root="$repository/build/test-results/gui-unwind"; fi
+results="${FORGE_GUI_RESULTS_ROOT:-$repository/build/test-results}"
+root="$results/gui-script-manager"
+if [[ ${GHIDRA_GUI_UNWIND:-0} == 1 ]]; then root="$results/gui-unwind"; fi
 mkdir -p "$root"
 work=$(mktemp -d "$root/run.XXXXXXXX")
 mkdir -p "$work/classes" "$work/settings" "$work/cache" "$work/tmp" "$work/user" \

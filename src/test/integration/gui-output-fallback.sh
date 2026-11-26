@@ -24,7 +24,7 @@ if [[ $(id -u) == 0 ]]; then
     exit 2
 fi
 
-result_root="$repository_dir/build/test-results/gui-output-fallback"
+result_root="${FORGE_GUI_RESULTS_ROOT:-$repository_dir/build/test-results}/gui-output-fallback"
 mkdir -p "$result_root"
 result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
 mkdir -p "$result_dir/classes" "$result_dir/settings" "$result_dir/cache" \
