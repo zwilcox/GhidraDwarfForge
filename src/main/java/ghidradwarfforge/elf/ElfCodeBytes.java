@@ -1,5 +1,7 @@
 package ghidradwarfforge.elf;
 
+import ghidradwarfforge.UnsignedAddress;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -37,17 +39,16 @@ public final class ElfCodeBytes implements AutoCloseable {
         for (var segment : image.segments()) {
             check(cancelled);
             if (segment.type != 1 || segment.memorySize == 0) continue;
-            long end;
-            try { end = Math.addExact(segment.virtualAddress, segment.memorySize - 1); }
-            catch (ArithmeticException overflow) { throw new IllegalArgumentException("load address extent overflows", overflow); }
-            if (!image.is64Bit() && end > 0xffff_ffffL) throw new IllegalArgumentException("load extent exceeds ELF address width");
+            long end = UnsignedAddress.lastByte(segment.virtualAddress, segment.memorySize);
+            if (!image.is64Bit() && Long.compareUnsigned(end, 0xffff_ffffL) > 0) throw new IllegalArgumentException("load extent exceeds ELF address width");
             loads.add(new Load(segment.virtualAddress, end, segment.offset, segment.fileSize, segment.flags));
         }
-        loads.sort(Comparator.comparingLong(Load::start));
+        loads.sort(Comparator.comparing(Load::start, Long::compareUnsigned));
         var ends = new long[loads.size()];
         for (int index = 0; index < loads.size(); index++) {
             check(cancelled);
-            ends[index] = Math.max(index == 0 ? 0 : ends[index - 1], loads.get(index).end());
+            long current = loads.get(index).end();
+            ends[index] = index == 0 || Long.compareUnsigned(current, ends[index - 1]) > 0 ? current : ends[index - 1];
         }
         check(cancelled);
         FileChannel input = FileChannel.open(image.sourcePath(), StandardOpenOption.READ);
@@ -70,28 +71,26 @@ public final class ElfCodeBytes implements AutoCloseable {
     public Match requireMatches(long address, byte[] decoded, BooleanSupplier cancelled) throws IOException {
         check(cancelled);
         Objects.requireNonNull(decoded);
-        if (address < 0 || decoded.length == 0 || decoded.length > 4096) {
+        if (decoded.length == 0 || decoded.length > 4096) {
             throw new IllegalArgumentException("invalid or unbounded instruction byte agreement request");
         }
-        long end;
-        try { end = Math.addExact(address, decoded.length - 1); }
-        catch (ArithmeticException overflow) { throw new IllegalArgumentException("instruction address extent overflows", overflow); }
+        long end = UnsignedAddress.lastByte(address, decoded.length);
         int low = 0, high = loads.size();
         while (low < high) {
             check(cancelled);
             int middle = (low + high) >>> 1;
-            if (loads.get(middle).start() <= end) low = middle + 1;
+            if (Long.compareUnsigned(loads.get(middle).start(), end) <= 0) low = middle + 1;
             else high = middle;
         }
         Load selected = null;
-        for (int index = low - 1; index >= 0 && prefixEnds[index] >= address; index--) {
+        for (int index = low - 1; index >= 0 && Long.compareUnsigned(prefixEnds[index], address) >= 0; index--) {
             check(cancelled);
             Load candidate = loads.get(index);
-            if (candidate.end() < address) continue;
+            if (Long.compareUnsigned(candidate.end(), address) < 0) continue;
             if (selected != null) throw new IllegalArgumentException("instruction intersects overlapping ELF load mappings");
             selected = candidate;
         }
-        if (selected == null || selected.start() > address || selected.end() < end) {
+        if (selected == null || Long.compareUnsigned(selected.start(), address) > 0 || Long.compareUnsigned(selected.end(), end) < 0) {
             throw new IllegalArgumentException("instruction lacks one complete ELF load mapping");
         }
         long delta = address - selected.start();
@@ -124,13 +123,13 @@ public final class ElfCodeBytes implements AutoCloseable {
      */
     public byte[] readReadOnlyData(long address, int bytes, BooleanSupplier cancelled) throws IOException {
         check(cancelled);
-        if (address < 0 || bytes < 1 || bytes > 8) throw new IllegalArgumentException("invalid scalar table read");
-        long end = Math.addExact(address, bytes - 1);
+        if (bytes < 1 || bytes > 8) throw new IllegalArgumentException("invalid scalar table read");
+        long end = UnsignedAddress.lastByte(address, bytes);
         Load selected = null;
         for (var load : loads) {
             check(cancelled);
-            if (load.start() > end || load.end() < address) continue;
-            if (selected != null || load.start() > address || load.end() < end ||
+            if (Long.compareUnsigned(load.start(), end) > 0 || Long.compareUnsigned(load.end(), address) < 0) continue;
+            if (selected != null || Long.compareUnsigned(load.start(), address) > 0 || Long.compareUnsigned(load.end(), end) < 0 ||
                     (load.flags() & 2) != 0 || address - load.start() > load.fileSize() ||
                     bytes > load.fileSize() - (address - load.start())) {
                 throw new IllegalArgumentException("table lacks a unique non-writable file-backed load mapping");

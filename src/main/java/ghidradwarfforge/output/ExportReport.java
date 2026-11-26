@@ -94,7 +94,7 @@ public final class ExportReport {
             requireText(kind, "omitted-location variable kind");
             requireText(reason, "omitted-location reason");
             requireText(diagnostic, "omitted-location diagnostic");
-            if (startAddress < 0 || endAddress <= startAddress) {
+            if (Long.compareUnsigned(endAddress, startAddress) <= 0) {
                 throw new IllegalArgumentException("invalid omitted-location range");
             }
         }

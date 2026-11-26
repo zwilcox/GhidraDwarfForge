@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TreeMap;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 import ghidradwarfforge.source.SyntheticSourceFile.SourceLine;
@@ -164,7 +165,7 @@ public final class Dwarf5LineTable {
                     writeUleb(program, position.file());
                     currentFile = position.file();
                 }
-                long addressDelta = Math.subtractExact(row.address(), currentAddress);
+                long addressDelta = UnsignedAddress.distance(currentAddress, row.address());
                 if (addressDelta != 0) {
                     program.write(DW_LNS_ADVANCE_PC);
                     writeUleb(program, addressDelta);
@@ -178,7 +179,7 @@ public final class Dwarf5LineTable {
                 currentAddress = row.address();
                 currentLine = position.line();
             }
-            long finalDelta = Math.subtractExact(sequence.endExclusive(), currentAddress);
+            long finalDelta = UnsignedAddress.distance(currentAddress, sequence.endExclusive());
             if (finalDelta != 0) {
                 program.write(DW_LNS_ADVANCE_PC);
                 writeUleb(program, finalDelta);
@@ -243,9 +244,9 @@ public final class Dwarf5LineTable {
     static List<LineSequence> plan(List<FunctionSymbol> functions,
             List<SourceLine> sourceLines) {
         List<FunctionSymbol> ordered = new ArrayList<>(functions);
-        ordered.sort(Comparator.comparingLong(FunctionSymbol::address)
+        ordered.sort(Comparator.comparing(FunctionSymbol::address, Long::compareUnsigned)
             .thenComparing(FunctionSymbol::name));
-        TreeMap<Long, Integer> sourceRows = new TreeMap<>();
+        TreeMap<Long, Integer> sourceRows = new TreeMap<>(Long::compareUnsigned);
         for (SourceLine sourceLine : sourceLines) {
             for (long address : sourceLine.addresses()) {
                 sourceRows.merge(address, sourceLine.line(), Math::min);

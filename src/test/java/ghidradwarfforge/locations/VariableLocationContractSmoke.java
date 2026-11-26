@@ -167,7 +167,7 @@ final class VariableLocationContractSmoke {
         rejects(() -> new UnavailableStorage(null, "not available"), "missing omission reason");
         rejects(() -> new LocationRange(100, 110, null, EVIDENCE), "missing storage");
         rejects(() -> new LocationRange(100, 110, REGISTER, null), "missing evidence");
-        rejects(() -> new MemoryStorage(-1), "negative memory address");
+        require(new MemoryStorage(-1L).address() == -1L, "last target byte lost its address");
         rejects(() -> new RegisterStorage(null, 0, 32), "missing DWARF register identity");
         rejects(() -> new DwarfRegister("RAX", -1, 0), "negative DWARF register number");
         rejects(() -> new DwarfRegister("RAX", 0, -8), "negative low-byte-piece contract");
@@ -181,7 +181,7 @@ final class VariableLocationContractSmoke {
         }
         rejects(() -> new RegisterStorage(REGISTER.register(), -1, 32), "negative register offset");
         rejects(() -> new RegisterRelativeStorage(null, -16), "missing frame register");
-        rejects(() -> variable("f", -1, "x", VariableKind.LOCAL, 4, location(4, REGISTER).locations()), "negative function address");
+        require(variable("f", Long.MIN_VALUE, "x", VariableKind.LOCAL, 4, location(4, REGISTER).locations()).functionAddress() == Long.MIN_VALUE, "upper-half function address was narrowed");
         rejects(() -> variable("f", 100, "x", null, 4, location(4, REGISTER).locations()), "missing variable kind");
         rejects(() -> variable("f", 100, "x", VariableKind.LOCAL, 0, location(4, REGISTER).locations()), "empty variable");
         rejects(() -> variable("f", 100, "x", VariableKind.LOCAL, 4, null), "missing lifetimes");
@@ -198,8 +198,7 @@ final class VariableLocationContractSmoke {
             require(operation.opcode() == opcode && operation.operand1() == Long.MIN_VALUE &&
                 operation.operand2() == Long.MAX_VALUE, "generic operation narrowed its operands");
         }
-        rejects(() -> new AddressOperation(-1), "negative emitted address");
-        for (long address : new long[] {0, 0x100000007L, Long.MAX_VALUE}) {
+        for (long address : new long[] {0, 0x100000007L, Long.MAX_VALUE, Long.MIN_VALUE, -1L}) {
             require(new AddressOperation(address).address() == address, "address narrowed before producer boundary");
         }
         rejects(() -> new Expression(null), "missing expression operations");

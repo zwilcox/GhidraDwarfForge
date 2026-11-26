@@ -1,6 +1,6 @@
 package ghidradwarfforge;
 
-/** Focused regression for checked rebased-Ghidra to link-time-ELF conversion. */
+/** Focused regression for rebased-Ghidra to link-time-ELF conversion. */
 public final class AddressNormalizerSmoke {
     private AddressNormalizerSmoke() {
     }
@@ -14,8 +14,11 @@ public final class AddressNormalizerSmoke {
             AddressNormalizer.rebaseDelta(0x300000L, 0x400000L));
         assertEquals(0x401136L,
             AddressNormalizer.toElfAddress(0x301136L, -0x100000L));
-        assertOverflow(() -> AddressNormalizer.rebaseDelta(Long.MAX_VALUE, -1));
-        assertOverflow(() -> AddressNormalizer.toElfAddress(Long.MIN_VALUE, 1));
+        assertEquals(Long.MIN_VALUE, AddressNormalizer.rebaseDelta(Long.MAX_VALUE, -1));
+        assertEquals(Long.MAX_VALUE, AddressNormalizer.toElfAddress(Long.MIN_VALUE, 1));
+        long kernel = 0xffffffff81000000L;
+        assertEquals(kernel + 0x123, AddressNormalizer.toElfAddress(0x401123L,
+            AddressNormalizer.rebaseDelta(0x401000L, kernel)));
         System.out.println("address-normalizer-smoke=PASS");
     }
 
@@ -26,13 +29,4 @@ public final class AddressNormalizerSmoke {
         }
     }
 
-    private static void assertOverflow(Runnable operation) {
-        try {
-            operation.run();
-            throw new AssertionError("expected checked address overflow");
-        }
-        catch (ArithmeticException expected) {
-            // Expected.
-        }
-    }
 }

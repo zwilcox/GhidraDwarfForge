@@ -5,56 +5,51 @@ ghidra_dir=$(realpath "${1:?Ghidra installation required}")
 consumer=$(realpath "${2:?libdwarf required}")
 producer=$(realpath "${3:?libdwarfp required}")
 repo=$(realpath "$(dirname "$0")/../../..")
+fixtures="$repo/src/test/fixtures"
 work=$(mktemp -d "${TMPDIR:-/tmp}/forge-upper-half-elf.XXXXXXXX")
 trap 'rm -rf -- "$work"' EXIT
 cd "$work"
 
-# Link a normal x86-64 ELF at a kernel address. It is only imported, never run.
-printf '%s\n' '.text' '.globl _start' '.type _start,@function' '_start: ret' |
-    as --64 -o entry.o
-ld -m elf_x86_64 -Ttext=0xffffffff81000000 -e _start -o kernel.elf entry.o
-readelf -lW kernel.elf >segments
-awk '$1 == "LOAD" && $3 == "0xffffffff81000000" && / E / {found=1} END {exit !found}' segments
+# This image is linked at kernel addresses. Linux userspace cannot execute it.
+gcc -O0 -g -gdwarf-5 -ffreestanding -fno-stack-protector -fno-omit-frame-pointer \
+    -fno-pie -no-pie -mcmodel=kernel -nostdlib -Wl,--build-id=sha1 \
+    -Wl,--defsym=forge_text_address=0xffffffff81000000 "-Wl,-T,$fixtures/nonzero_load_offset.ld" \
+    "$fixtures/nonzero_load_offset_start.S" "$fixtures/nonzero_load_offset.c" -o reference
+objcopy --strip-all reference kernel.elf
 cp kernel.elf original.elf
-printf '%s\n' 'previous sidecar' >previous.dbg
-printf '%s\n' 'previous source' >previous.c
-
-expect_rejection() {
-    local log="$work/$1.log" status=0
-    "$repo/support/ghidra-dwarf-forge-headless" --ghidra-dir="$ghidra_dir" \
-        --import="$work/kernel.elf" --libdwarf="$consumer" --libdwarfp="$producer" \
-        --log="$log" >wrapper.log 2>&1 || status=$?
-    if [[ $status != 10 ]]; then
-        tail -n 40 wrapper.log >&2
-        return 1
-    fi
-    python3 - "$log" <<'PYREPORT'
-import json
-import pathlib
-import sys
-
-marker = "GhidraDwarfForge.java> GhidraDwarfForge report: "
-reports = [json.loads(line.split(marker, 1)[1].rstrip().removesuffix(" (GhidraScript)"))
-           for line in pathlib.Path(sys.argv[1]).read_text().splitlines() if marker in line]
-assert len(reports) == 1, reports
-report = reports[0]
-assert report["status"] == "FATAL", report
-assert report["failure"]["message"] == (
-    "ELF64 virtual address 0xffffffff81000000 is valid. "
-    "GhidraDwarfForge does not yet support upper-half addresses. ELF header field: e_entry"
-), report["failure"]
-PYREPORT
-    cmp original.elf kernel.elf
+readelf -lW kernel.elf > segments
+awk '$1 == "LOAD" && $3 == "0xffffffff81000000" && / E / {found=1} END {exit !found}' segments
+address_of() {
+    nm -n --defined-only reference | awk -v name="$1" '$3 == name {print "0x" $1; found=1} END {exit !found}'
 }
+function_address=$(address_of nonzero_add)
+global_address=$(address_of nonzero_sink)
 
-cp previous.dbg kernel.elf.dbg
-cp previous.c kernel.elf.dbg.c
-expect_rejection existing-outputs
-cmp previous.dbg kernel.elf.dbg
-cmp previous.c kernel.elf.dbg.c
-rm -- kernel.elf.dbg kernel.elf.dbg.c
-expect_rejection absent-outputs
-for path in kernel.elf.dbg kernel.elf.dbg.c; do
-    [[ ! -e "$path" && ! -L "$path" ]]
-done
-echo 'upper-half-elf-rejection=PASS'
+mkdir projects
+"$ghidra_dir/support/analyzeHeadless" "$work/projects" HighElf -deleteProject -import "$work/kernel.elf" \
+    -analysisTimeoutPerFile 120 -scriptPath "$repo/src/test/integration/ghidra_scripts" \
+    -postScript PrepareNonzeroLoadOffset.java "$function_address" "$global_address" \
+    -postScript GhidraDwarfForge.java "--libdwarf=$consumer" "--libdwarfp=$producer" \
+    > headless.log 2>&1 || { tail -40 headless.log >&2; exit 1; }
+grep -Fq 'GhidraDwarfForge symbol export PASS' headless.log || { tail -40 headless.log >&2; exit 1; }
+cmp original.elf kernel.elf
+test -s kernel.elf.dbg.c
+readelf -hSW kernel.elf.dbg > headers
+readelf --debug-dump=info,decodedline,loc kernel.elf.dbg > dwarf.txt 2> warnings
+test ! -s warnings || { cat warnings >&2; exit 1; }
+llvm-dwarfdump --verify kernel.elf.dbg
+python3 "$repo/src/test/integration/check-dwarfdump.py" kernel.elf.dbg validator.txt --original kernel.elf
+
+# Resolve the sidecar from another directory so GDB also verifies the source location.
+mkdir debugger
+cd debugger
+gdb-multiarch -q -nx -batch -ex 'set debuginfod enabled off' -ex 'set auto-solib-add off' \
+    -ex "file $work/kernel.elf" -ex "symbol-file $work/kernel.elf.dbg" \
+    -ex "python assert int(gdb.parse_and_eval('(unsigned long)&nonzero_add')) == $function_address" \
+    -ex "python assert int(gdb.parse_and_eval('(unsigned long)&nonzero_sink')) == $global_address" \
+    -ex "python bp = gdb.Breakpoint('*nonzero_add'); assert int(bp.locations[0].address) == $function_address" \
+    -ex "python sal = gdb.find_pc_line($function_address); assert sal.line > 0 and sal.symtab.fullname() == '$work/kernel.elf.dbg.c'" \
+    -ex 'list nonzero_add' > gdb.txt
+grep -Eq 'int nonzero_add\(' gdb.txt
+cmp "$work/original.elf" "$work/kernel.elf"
+echo 'upper-half-elf=PASS static GDB symbol, breakpoint, source and global address'

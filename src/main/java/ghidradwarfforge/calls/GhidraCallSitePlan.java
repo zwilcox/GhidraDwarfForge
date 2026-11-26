@@ -126,7 +126,7 @@ public final class GhidraCallSitePlan {
                 // No delay slots are admitted by capture. The tail key follows
                 // the instruction for GDB lookup; it is not a runtime return address.
                 Address continuation = tail ? instruction.end().next() : transfer.returnPc();
-                if (continuation == null || normalize(continuation, delta) <= instructionAddress ||
+                if (continuation == null || Long.compareUnsigned(normalize(continuation, delta), instructionAddress) <= 0 ||
                         exported.get(owner).ranges().stream().noneMatch(range -> range.contains(instructionAddress))) {
                     reasons.add(instruction.address() + ": unrepresentable call-site owner or return key");
                     continue;

@@ -101,7 +101,7 @@ public final class GhidraInstructionEvidence {
             }
             result.add(evidence);
         }
-        result.sort(Comparator.comparingLong((DecodedInstructions item) -> item.function().address())
+        result.sort(Comparator.comparing((DecodedInstructions item) -> item.function().address(), Long::compareUnsigned)
             .thenComparing(item -> item.function().name()));
         return List.copyOf(result);
     }

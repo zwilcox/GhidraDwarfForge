@@ -474,7 +474,7 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
                         }
                     }
                 });
-            if (bounds[0] < 0 || bounds[1] <= bounds[0]) {
+            if (Long.compareUnsigned(bounds[1], bounds[0]) <= 0) {
                 throw invalid("invalid omitted-location range");
             }
             if (retained != null) {

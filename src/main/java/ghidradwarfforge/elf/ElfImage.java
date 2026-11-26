@@ -21,7 +21,7 @@ import java.util.function.BooleanSupplier;
  * Bounded, file-backed ELF32/ELF64 metadata for the matched sidecar writer.
  * No source channel remains open after an operation. File sizes/offsets use signed
  * 64-bit values; the original image is never buffered in its entirety.
- * ELF64 target virtual addresses are currently limited to 0..0x7fffffffffffffff.
+ * Virtual addresses retain all target bits independently of host file offsets.
  * Safety limits are 262144 entries per header table, 64 MiB per table or
  * convenience byte-array read, 16 MiB for the section-name table and aggregate
  * decoded names, and 65536 bytes per individual name (excluding its NUL).
@@ -88,9 +88,6 @@ public final class ElfImage {
             }
             requireRange(0, encodedHeaderSize, "ELF header");
 
-            if (elf64 && exportAddresses) {
-                requireSupportedAddress(buffer.getLong(24), 0, "e_entry", -1);
-            }
             long sectionOffset = elf64 ? unsignedLong(buffer, 40) : unsignedInt(buffer, 32);
             int entrySize = unsignedShort(elf64 ? 58 : 46);
             int encodedCount = unsignedShort(elf64 ? 60 : 48);
@@ -154,7 +151,7 @@ public final class ElfImage {
         return new ElfImage(path, false);
     }
 
-    /** Export uses the entry point as a target address. Metadata comparison preserves its raw bits. */
+    /** Additionally validate virtual memory extents used by the exporter. */
     public static ElfImage readForExport(Path path) throws IOException {
         return new ElfImage(path, true);
     }
@@ -270,14 +267,14 @@ public final class ElfImage {
      * recorded import base, which is authoritative for database rebasing.
      */
     public long preferredImageBase() {
-        long result = Long.MAX_VALUE;
+        long result = -1L; // Largest unsigned ELF64 address.
         boolean foundLoad = false;
         for (Segment segment : segments) {
             if (segment.type != PT_LOAD) {
                 continue;
             }
             foundLoad = true;
-            result = Math.min(result, segment.virtualAddress);
+            if (Long.compareUnsigned(segment.virtualAddress, result) < 0) result = segment.virtualAddress;
         }
         if (!foundLoad) {
             throw new IllegalArgumentException("ELF has no PT_LOAD image base");
@@ -295,8 +292,9 @@ public final class ElfImage {
             section.address = table.getLong(offset + 16);
             section.offset = unsignedLong(table, offset + 24);
             section.size = unsignedLong(table, offset + 32);
-            requireSupportedAddress(section.address, exportAddresses && (section.flags & 2) != 0 ? section.size : 0,
-                "sh_addr", index);
+            if (exportAddresses && (section.flags & 2) != 0) {
+                requireAddressExtent(section.address, section.size, "sh_addr", index);
+            }
             section.link = unsignedInt(table, offset + 40);
             section.info = unsignedInt(table, offset + 44);
             section.alignment = unsignedLong(table, offset + 48);
@@ -355,8 +353,9 @@ public final class ElfImage {
                 segment.virtualAddress = table.getLong(offset + 16);
                 segment.fileSize = unsignedLong(table, offset + 32);
                 segment.memorySize = unsignedLong(table, offset + 40);
-                requireSupportedAddress(segment.virtualAddress,
-                    exportAddresses && segment.type == PT_LOAD ? segment.memorySize : 0, "p_vaddr", index);
+                if (exportAddresses && segment.type == PT_LOAD) {
+                    requireAddressExtent(segment.virtualAddress, segment.memorySize, "p_vaddr", index);
+                }
                 segment.alignment = unsignedLong(table, offset + 48);
             }
             else {
@@ -470,15 +469,11 @@ public final class ElfImage {
         return Integer.toUnsignedLong(data.getInt(offset));
     }
 
-    private static void requireSupportedAddress(long start, long size, String field, int index) {
-        if (start >= 0 && (size == 0 || size - 1 <= Long.MAX_VALUE - start)) {
-            return;
+    static void requireAddressExtent(long start, long size, String field, int index) {
+        // An extent may include UINT64_MAX. Only bytes beyond it wrap.
+        if (size > 0 && Long.compareUnsigned(start + (size - 1), start) < 0) {
+            throw new IllegalArgumentException("ELF64 virtual address range wraps at " + field + "[" + index + "]");
         }
-        long firstUnsupported = start < 0 ? start : Long.MIN_VALUE;
-        String location = index < 0 ? field : field + "[" + index + "]";
-        throw new IllegalArgumentException("ELF64 virtual address 0x" +
-            Long.toHexString(firstUnsupported) + " is valid. GhidraDwarfForge does not yet " +
-            "support upper-half addresses. ELF header field: " + location);
     }
 
     private static long unsignedLong(ByteBuffer data, int offset) {

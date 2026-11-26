@@ -37,7 +37,7 @@ import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
 public final class GhidraVariableStorage {
     public record StackDepthInterval(long start, long end, int depth, boolean known) {
         public StackDepthInterval {
-            if (start < 0 || end <= start) {
+            if (Long.compareUnsigned(end, start) <= 0) {
                 throw new IllegalArgumentException("invalid stack-depth interval");
             }
         }
@@ -55,7 +55,7 @@ public final class GhidraVariableStorage {
 
     public record StorageInterval(long start, long end, Storage storage) {
         public StorageInterval {
-            if (start < 0 || end <= start || storage == null) {
+            if (Long.compareUnsigned(end, start) <= 0 || storage == null) {
                 throw new IllegalArgumentException("invalid Ghidra storage interval");
             }
         }

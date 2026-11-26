@@ -10,7 +10,7 @@ PHDRS
 
 SECTIONS
 {
-    . = 0x401000;
+    . = DEFINED(forge_text_address) ? forge_text_address : 0x401000;
     .text : { *(.text.start) *(.text .text.*) } :text
     .rodata : { *(.rodata .rodata.*) } :text
     .eh_frame : { *(.eh_frame) } :text

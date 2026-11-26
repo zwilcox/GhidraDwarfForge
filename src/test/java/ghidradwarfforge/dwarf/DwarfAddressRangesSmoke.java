@@ -45,9 +45,9 @@ public final class DwarfAddressRangesSmoke {
         rejects(() -> DwarfAddressRanges.build(List.of(simple), 2, ByteOrder.LITTLE_ENDIAN));
         rejects(() -> DwarfAddressRanges.build(List.of(simple), 16, ByteOrder.BIG_ENDIAN));
         rejects(() -> DwarfAddressRanges.build(List.of(new FunctionSymbol(
-            "overflow", Long.MAX_VALUE, 1)), 8, ByteOrder.LITTLE_ENDIAN));
+            "wraps_to_one", -2L, 3)), 8, ByteOrder.LITTLE_ENDIAN));
         rejects(() -> DwarfAddressRanges.build(List.of(new FunctionSymbol(
-            "negative", -1, 1)), 8, ByteOrder.BIG_ENDIAN));
+            "end_at_2_to_64", -1L, 1)), 8, ByteOrder.BIG_ENDIAN));
         rejects(() -> DwarfAddressRanges.build(List.of(new FunctionSymbol(
             "empty", 0, 0)), 4, ByteOrder.LITTLE_ENDIAN));
         System.out.println("dwarf-address-ranges-smoke=PASS");
@@ -109,10 +109,11 @@ public final class DwarfAddressRangesSmoke {
         else {
             List<FunctionSymbol> wide = List.of(
                 new FunctionSymbol("wide_address", 0x1_0000_0000L, 0x1_0000_0000L),
-                new FunctionSymbol("model_upper_bound", Long.MAX_VALUE - 16, 16));
+                new FunctionSymbol("crosses_bit_63", Long.MAX_VALUE - 16, 32),
+                new FunctionSymbol("kernel_text", 0xffffffff81000000L, 8));
             require(decode(DwarfAddressRanges.build(wide, width, order), width, order)
                 .equals(List.of(new Interval(0x1_0000_0000L, 0x1_0000_0000L),
-                    new Interval(Long.MAX_VALUE - 16, 16))), "ELF64 words truncated");
+                    new Interval(Long.MAX_VALUE - 16, 32), new Interval(0xffffffff81000000L, 8))), "ELF64 words truncated");
         }
     }
 
@@ -138,7 +139,7 @@ public final class DwarfAddressRangesSmoke {
                 require(!input.hasRemaining(), "bytes after terminating tuple");
                 return List.copyOf(result);
             }
-            require(address >= 0 && length > 0, "invalid nonterminal tuple");
+            require(length > 0, "invalid nonterminal tuple");
             result.add(new Interval(address, length));
         }
         throw new AssertionError("missing terminating tuple");

@@ -60,7 +60,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
 
         public GlobalVariable {
-            if (name == null || name.isBlank() || address < 0 || size <= 0 ||
+            if (name == null || name.isBlank() || size <= 0 ||
                     type == null || source == null || namespace == null ||
                     namespace.stream().anyMatch(part -> part == null || part.isBlank())) {
                 throw new IllegalArgumentException("invalid global variable");
@@ -78,8 +78,8 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
 
         public FunctionStaticVariable {
-            if (name == null || name.isBlank() || address < 0 || size <= 0 ||
-                    type == null || ownerAddress < 0 || source == null || source.isBlank() || block == null) {
+            if (name == null || name.isBlank() || size <= 0 ||
+                    type == null || source == null || source.isBlank() || block == null) {
                 throw new IllegalArgumentException("invalid function-owned static variable");
             }
         }
@@ -103,7 +103,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
 
         public FunctionSignature {
-            if (name == null || name.isBlank() || address < 0 || returnType == null ||
+            if (name == null || name.isBlank() || returnType == null ||
                     parameters == null || locals == null || callingConvention == null ||
                     signatureSource == null || debuggerCallRestriction == null || effectiveCallingConvention == null) {
                 throw new IllegalArgumentException("invalid function signature");
@@ -235,19 +235,19 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
         var byKey = types.byKey();
         functions = functions.stream()
-            .sorted(Comparator.comparingLong(FunctionSignature::address)
+            .sorted(Comparator.comparing(FunctionSignature::address, Long::compareUnsigned)
                 .thenComparing(FunctionSignature::name))
             .toList();
         globals = globals.stream()
-            .sorted(Comparator.comparingLong(GlobalVariable::address)
+            .sorted(Comparator.comparing(GlobalVariable::address, Long::compareUnsigned)
                 .thenComparing(global -> String.join("\u0000", global.namespace()))
                 .thenComparing(GlobalVariable::name))
             .toList();
         functionStatics = functionStatics.stream()
-            .sorted(Comparator.comparingLong(FunctionStaticVariable::ownerAddress)
+            .sorted(Comparator.comparing(FunctionStaticVariable::ownerAddress, Long::compareUnsigned)
                 .thenComparing(FunctionStaticVariable::block)
                 .thenComparing(FunctionStaticVariable::name)
-                .thenComparingLong(FunctionStaticVariable::address))
+                .thenComparing(FunctionStaticVariable::address, Long::compareUnsigned))
             .toList();
         functionDeclarations = functionDeclarations.stream()
             .sorted(Comparator.comparing(FunctionDeclaration::name)
@@ -303,7 +303,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         if (functionRelations == null) throw new IllegalArgumentException("function relationships are required");
         functionRelations.validate(functions, functionDeclarations);
         if (lexicalScopes == null) throw new IllegalArgumentException("lexical scopes are required");
-        lexicalScopes = lexicalScopes.stream().sorted(Comparator.comparingLong(LexicalScopeModel::functionAddress)).toList();
+        lexicalScopes = lexicalScopes.stream().sorted(Comparator.comparing(LexicalScopeModel::functionAddress, Long::compareUnsigned)).toList();
         var scopedOwners = new java.util.HashMap<Long, LexicalScopeModel>();
         for (var scope : lexicalScopes) {
             if (scopedOwners.put(scope.functionAddress(), scope) != null) throw new IllegalArgumentException("duplicate lexical owner");

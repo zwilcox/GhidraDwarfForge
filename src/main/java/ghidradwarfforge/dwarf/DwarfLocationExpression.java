@@ -45,11 +45,6 @@ public final class DwarfLocationExpression {
 
     /** Relocation-aware absolute link-time address operation. */
     public record AddressOperation(long address) implements Operation {
-        public AddressOperation {
-            if (address < 0) {
-                throw new IllegalArgumentException("DWARF address must be nonnegative");
-            }
-        }
     }
 
     public record Expression(List<Operation> operations) implements Result {

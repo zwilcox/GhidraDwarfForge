@@ -44,8 +44,8 @@ public record ClassScopeModel(List<Scope> scopes, List<Binding> bindings, List<M
     public record FunctionReference(String name, long address, String declarationKey) {
         public FunctionReference {
             text(name);
-            if (declarationKey == null || (declarationKey.isEmpty() ? address < 0 :
-                    address != -1 || declarationKey.isBlank())) throw invalid("invalid method target");
+            if (declarationKey == null || (!declarationKey.isEmpty() &&
+                    (address != -1 || declarationKey.isBlank()))) throw invalid("invalid method target");
         }
 
         public static FunctionReference definition(String name, long address) {
@@ -121,7 +121,7 @@ public record ClassScopeModel(List<Scope> scopes, List<Binding> bindings, List<M
                     bindings.stream().noneMatch(binding -> binding.classId() == table.classId() &&
                         binding.source() == BindingSource.EXPLICIT_SAVED)) throw invalid("missing or conflicting explicit vtable class");
         }
-        vtables = vtables.stream().sorted(Comparator.comparingLong(VtableEvidence::address)
+        vtables = vtables.stream().sorted(Comparator.comparing(VtableEvidence::address, Long::compareUnsigned)
             .thenComparing(VtableEvidence::mangledName).thenComparingLong(VtableEvidence::symbolId)).toList();
         methods = methods.stream().sorted(Comparator.comparingLong(Method::classId)
             .thenComparing(Method::name).thenComparingLong(Method::id)).toList();
