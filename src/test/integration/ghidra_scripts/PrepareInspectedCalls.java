@@ -48,8 +48,15 @@ public class PrepareInspectedCalls extends GhidraScript {
             }
             if (!fields[3].equals("FUNC")) continue;
             Function function = getFunctionAt(entry);
+            // The stripped fixture includes uncalled controls. Recover their known
+            // compiler entries when analysis has left them undefined.
+            if (function == null && !observe) {
+                if (getInstructionAt(entry) == null) disassemble(entry);
+                function = createFunction(entry, name);
+            }
             if (function == null || !function.getBody().getMaxAddress().next().equals(entry.add(Long.parseLong(fields[2])))) {
-                throw new AssertionError("callee extent " + name);
+                throw new AssertionError("callee extent " + name + " at " + entry + " with compiler size " +
+                    fields[2] + ", Ghidra body " + (function == null ? "absent" : function.getBody()));
             }
             if (!observe) {
                 function.setName(name, SourceType.USER_DEFINED);
