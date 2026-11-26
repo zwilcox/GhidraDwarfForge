@@ -78,12 +78,21 @@ hfa_control:
 .type hfa_alias,%function
 hfa_alias:
     .cfi_startproc
+    @ Keep SP aligned and pass a pointer into the callee's future spill slot.
+    push {r4,lr}
+    .cfi_def_cfa_offset 8
+    .cfi_offset 4,-8
+    .cfi_offset 14,-4
 #if FORGE_CORE_STORAGE
     sub r2,sp,#12
 #else
     sub r0,sp,#12
 #endif
-    b hfa_control
+    bl hfa_control
+    pop {r4,pc}
+    .cfi_restore 4
+    .cfi_restore 14
+    .cfi_def_cfa_offset 0
     .cfi_endproc
 .size hfa_alias,.-hfa_alias
 .section .note.GNU-stack,"",%progbits
