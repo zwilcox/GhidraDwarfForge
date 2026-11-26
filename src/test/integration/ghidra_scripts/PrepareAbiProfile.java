@@ -3,8 +3,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
 import com.google.gson.GsonBuilder;
 import ghidra.app.script.GhidraScript;
+import ghidra.app.util.importer.MessageLog;
+import ghidra.app.util.sourcelanguage.SourceLanguageService;
+import ghidra.app.util.sourcelanguage.SwiftSourceLanguage;
+import ghidra.app.util.sourcelanguage.SwiftSourceLanguageSpecExtension;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataUtilities;
 import ghidra.program.model.data.DoubleDataType;
@@ -22,9 +27,21 @@ public class PrepareAbiProfile extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] args = getScriptArgs();
-        if (args.length != 3 || !java.util.List.of("curate", "observe").contains(args[0]) ||
-                !java.util.List.of("float", "double").contains(args[1])) {
-            throw new IllegalArgumentException("<curate|observe> <float|double> <output.json>");
+        if (args.length < 3 || args.length > 4 || !java.util.List.of("curate", "observe").contains(args[0]) ||
+                !java.util.List.of("float", "double").contains(args[1]) || (args.length == 4 &&
+                !SwiftSourceLanguageSpecExtension.SWIFT_STDCALL.equals(args[3]))) {
+            throw new IllegalArgumentException("<curate|observe> <float|double> <output.json> [__swift_stdcall]");
+        }
+        String convention = currentProgram.getCompilerSpec().getDefaultCallingConvention().getName();
+        if (args.length == 4) {
+            convention = args[3];
+            var log = new MessageLog();
+            if (args[0].equals("curate")) {
+                SourceLanguageService.addSpecExtensions(currentProgram, Set.of(SwiftSourceLanguage.SWIFT_ID), log, monitor);
+            }
+            if (currentProgram.getCompilerSpec().getCallingConvention(convention) == null) {
+                throw new AssertionError("Swift calling convention unavailable: " + log);
+            }
         }
         // The source-built C oracle has four-byte int objects even when the
         // deliberately mismatched Go compiler model uses eight-byte native int.
@@ -39,7 +56,7 @@ public class PrepareAbiProfile extends GhidraScript {
                 new ParameterImpl("a", type, currentProgram), new ParameterImpl("b", type, currentProgram) } :
                 new ParameterImpl[] { new ParameterImpl("value", type, currentProgram) };
             if (args[0].equals("curate")) {
-                function.updateFunction(currentProgram.getCompilerSpec().getDefaultCallingConvention().getName(),
+                function.updateFunction(convention,
                     new ReturnParameterImpl(type, currentProgram), Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS,
                     true, SourceType.USER_DEFINED, parameters);
             }
