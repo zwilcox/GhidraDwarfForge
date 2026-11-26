@@ -183,8 +183,8 @@ public final class ExportReport {
         omitted.sort(Comparator.comparing(OmittedLocation::function)
             .thenComparing(OmittedLocation::kind)
             .thenComparing(OmittedLocation::variable)
-            .thenComparingLong(OmittedLocation::startAddress)
-            .thenComparingLong(OmittedLocation::endAddress)
+            .thenComparing(OmittedLocation::startAddress, Long::compareUnsigned)
+            .thenComparing(OmittedLocation::endAddress, Long::compareUnsigned)
             .thenComparing(OmittedLocation::reason));
         List<UnsupportedConstruct> unsupported = java.util.stream.Stream.concat(
             typeModel.types().nodes().stream()

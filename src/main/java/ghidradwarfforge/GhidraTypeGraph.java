@@ -587,10 +587,10 @@ public final class GhidraTypeGraph {
         }
         var conflictingStatics = ProgramTypeModel.conflictingStatics(signatures, lexicalScopes, functionStatics);
         for (var variable : conflictingStatics.stream().sorted(Comparator
-                .comparingLong(ProgramTypeModel.FunctionStaticVariable::ownerAddress)
+                .comparing(ProgramTypeModel.FunctionStaticVariable::ownerAddress, Long::compareUnsigned)
                 .thenComparing(ProgramTypeModel.FunctionStaticVariable::block)
                 .thenComparing(ProgramTypeModel.FunctionStaticVariable::name)
-                .thenComparingLong(ProgramTypeModel.FunctionStaticVariable::address)).toList()) {
+                .thenComparing(ProgramTypeModel.FunctionStaticVariable::address, Long::compareUnsigned)).toList()) {
             monitor.checkCancelled();
             diagnostic.accept("Omitted static " + variable.name() + " at 0x" + Long.toHexString(variable.address()) +
                 ": conflicting declaration in the same function/lexical scope");

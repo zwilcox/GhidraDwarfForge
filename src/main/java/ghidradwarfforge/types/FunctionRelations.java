@@ -48,7 +48,7 @@ public record FunctionRelations(List<Thunk> thunks) {
             }
             done.addAll(path);
         }
-        thunks = thunks.stream().sorted(Comparator.comparingLong((Thunk t) -> t.function().address())
+        thunks = thunks.stream().sorted(Comparator.comparing((Thunk t) -> t.function().address(), Long::compareUnsigned)
             .thenComparingLong(Thunk::id)).toList();
     }
 

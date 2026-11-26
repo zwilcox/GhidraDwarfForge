@@ -30,6 +30,9 @@ public final class FunctionRelationsSmoke {
         var two = new Thunk(2, second, 3, target, "saved direct target");
         var graph = new FunctionRelations(List.of(two, one));
         require(graph.thunks().equals(List.of(one, two)), "stable chain order");
+        var upper = new Thunk(5, FunctionReference.definition("upper", Long.MIN_VALUE), 3, target, "saved direct target");
+        require(new FunctionRelations(List.of(upper, one)).thunks().equals(List.of(one, upper)),
+            "thunk addresses must be ordered as unsigned ELF addresses");
         reject(() -> new FunctionRelations(null));
         reject(() -> new FunctionRelations(java.util.Collections.singletonList(null)));
         reject(() -> new Thunk(1, null, 2, second, "missing origin"));

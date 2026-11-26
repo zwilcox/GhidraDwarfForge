@@ -129,7 +129,7 @@ public final class GhidraBoundedSwitch {
                             require(target == null && op == ops[ops.length - 1] && ops == window.getLast(),
                                 "multiple dispatch transfers");
                             target = numericRead(op.getInput(0), values);
-                            require(target != null && target >= 0, "computed target is not a proven address");
+                            require(target != null, "computed target is not a proven address");
                             continue;
                         }
                         require(op.getOutput() != null && (op.getOutput().isRegister() || op.getOutput().isUnique()),
