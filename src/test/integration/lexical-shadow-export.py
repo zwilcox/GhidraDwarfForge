@@ -46,7 +46,7 @@ def main():
     case = Path(tempfile.mkdtemp(prefix=args.target + '-' + args.role + '-', dir=results))
     if args.java:
         # Ghidra caches compiled scripts under user.home. A cache created by a
-        # newer runtime cannot be loaded by Java 21; keep this explicit-runtime
+        # newer runtime cannot be loaded by Java 25; keep this explicit-runtime
         # run isolated instead of deleting or rewriting the user's cache.
         for name in ('java-home', 'java-tmp'):
             (case / name).mkdir()
@@ -120,7 +120,7 @@ def main():
         *rebase, '-postScript', 'PrepareLexicalShadow.java', case / 'labels.json',
         case / 'compiler-storage.json', case / 'prepared.json'])
     assert 'lexical-shadow-preparation=PASS' in (case / 'import.log').read_text()
-    assert json.loads((case / 'prepared.json').read_text())['javaVersion'].startswith('21.')
+    assert json.loads((case / 'prepared.json').read_text())['javaVersion'].startswith('25.')
     project_before = {str(p): digest(p) for p in project.rglob('*') if p.is_file() and not p.name.endswith('.lock')}
     source_options = []
     if args.source_lines is not None:
@@ -203,7 +203,7 @@ def main():
     receipt = {'status': 'LEXICAL_SHADOW_PASS', 'target': target, 'role': args.role,
         'discontiguous': args.discontiguous, 'calls': args.calls,
         'sourceLines': args.source_lines, 'sourceInventory': inventory,
-        'javaRuntime': 21, 'protected': protected, 'outputPair': pair,
+        'javaRuntime': 25, 'protected': protected, 'outputPair': pair,
         'observations': len(json.loads((case / 'forge-observations.json').read_text())),
         'scope': 'explicit analyst block visibility, shadow lookup, initialization gaps; full goal remains open'}
     (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')

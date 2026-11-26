@@ -3,7 +3,7 @@ set -euo pipefail
 
 if [[ $# -ne 4 ]]; then
     echo "usage: $0 <ghidra-dir> <installed-extension-module> <fixture.stripped> <fixture.reference>" >&2
-    echo "requires Linux, Xvfb (or XVFB_BIN), Openbox (or OPENBOX_BIN), xprop/xwininfo, GUI Java 21+ (or JAVA_BIN), javac, Python 3, GNU/LLVM/libdwarf and GDB" >&2
+    echo "requires Linux, Xvfb (or XVFB_BIN), Openbox (or OPENBOX_BIN), xprop/xwininfo, GUI Java 25+ (or JAVA_BIN), javac, Python 3, GNU/LLVM/libdwarf and GDB" >&2
     exit 64
 fi
 repository=$(realpath "$(dirname "$0")/../../..")
@@ -53,7 +53,7 @@ while IFS= read -r -d '' jar; do
     classpath+=":$jar"
 done < <(find -L "$ghidra/Ghidra" \( -path '*/Extensions' -o -path '*/data' \) -prune \
     -o -type f -name '*.jar' -print0)
-javac --release 21 -cp "$classpath" -d "$work/classes" \
+javac --release 25 -cp "$classpath" -d "$work/classes" \
     "$repository/src/test/integration/gui/GuiTestSupport.java" \
     "$repository/src/test/integration/gui/GuiWindowGeometrySmoke.java" \
     "$repository/src/test/integration/gui/GuiTableClickSmoke.java" \

@@ -176,7 +176,8 @@ public final class VtableBindingEvidenceSmoke {
                     "_ZTV5Child", "Child", 48, request.points(), "missing original file"), MONITOR));
                 require(GhidraVtableBindings.read(program, anonymous.getID(), MONITOR, ignored -> { }).status() == Status.ABSENT,
                     "rejected unbacked table created evidence");
-                symbol.setName("renamed_table", SourceType.USER_DEFINED);
+                // Moving the block invalidates its cached SymbolDB instance.
+                program.getSymbolTable().getSymbol(symbolId).setName("renamed_table", SourceType.USER_DEFINED);
                 method.setName("renamed_method", SourceType.USER_DEFINED);
                 program.setImageBase(space.getAddress(0x600000), true);
                 require(valid(program, symbolId).equals(expected), "rename/rebase changed byte witness");

@@ -132,7 +132,7 @@ def main():
     jar = (args.module / "lib/GhidraDwarfForge.jar").resolve(strict=True)
     classes = work / "classes"
     classes.mkdir()
-    run([os.environ.get("JAVAC", "javac"), "--release", "21", "-cp", jar, "-d", classes,
+    run([os.environ.get("JAVAC", "javac"), "--release", "25", "-cp", jar, "-d", classes,
          REPOSITORY / "src/test/java/ghidradwarfforge/elf/ElfBuildIdProbe.java"], work / "compile")
     run(["readelf", "--version"], work / "gnu-version")
     elf_class, byte_order, machine, objcopy = PROFILES[args.target]

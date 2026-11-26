@@ -148,7 +148,7 @@ def probe(groups, jar, classes, prefix, rejected=None):
         require(lines[index].startswith(label + "-class-source="), "missing production origin")
         uri = urlparse(lines[index].split("=", 1)[1])
         require(uri.scheme == "file" and Path(unquote(uri.path)).resolve() == jar, "wrong installed production origin")
-    require(re.fullmatch(r"java-version=21(?:[.+-].*)?", lines[4]), "actual Java21 required")
+    require(re.fullmatch(r"java-version=25(?:[.+-].*)?", lines[4]), "actual Java25 required")
     require(lines[5].startswith("max-heap=") and 0 < int(lines[5].split("=")[1]) <= 64 * 1024 * 1024,
             "bounded content observer heap required")
     results = []
@@ -407,7 +407,7 @@ def parent_binding(args, module, jar, script, original, candidate, sidecar, work
         require(lines[index].startswith(label + "-class-source="), "parent origin missing")
         uri = urlparse(lines[index].split("=", 1)[1])
         require(uri.scheme == "file" and Path(unquote(uri.path)).resolve() == jar, "parent production origin differs")
-    require(re.fullmatch(r"java-version=21(?:[.+-].*)?", lines[2]) and lines[3].startswith("max-heap=") and
+    require(re.fullmatch(r"java-version=25(?:[.+-].*)?", lines[2]) and lines[3].startswith("max-heap=") and
             0 < int(lines[3].split("=")[1]) <= 64 * 1024 * 1024, "parent runtime differs")
     for index, line in enumerate(lines[4:]):
         fields = line.split("\t")
@@ -451,7 +451,7 @@ def main():
             require(snapshot(output)["sha256"] == before[str(source)]["sha256"], "content evidence copy changed")
             copies.append({"role": label, "source": str(source), "retained": str(output), "snapshot": snapshot(output)})
         require(program.image(original)["profile"] == list(program.common.PROFILES[args.target]), "wrong fixture target")
-        run([os.environ.get("JAVAC", "javac"), "--release", "21", "-cp", jar, "-d", classes, adapter], work / "compile")
+        run([os.environ.get("JAVAC", "javac"), "--release", "25", "-cp", jar, "-d", classes, adapter], work / "compile")
         basename = os.fsencode(sidecar.name)
         group = (basename, original, candidate, sidecar)
         results = probe([group, group], jar, classes, work / "installed")

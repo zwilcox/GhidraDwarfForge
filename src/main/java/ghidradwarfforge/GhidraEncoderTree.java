@@ -24,6 +24,7 @@ final class GhidraEncoderTree implements Encoder {
                 case "space" -> output.writeSpace(id, (AddressSpace)value);
                 case "space-id" -> output.writeSpace(id, index, text);
                 case "opcode" -> output.writeOpcode(id, (OpCode)value);
+                case "opcode-id" -> output.writeOpcode(id, index);
                 default -> throw new IOException("Unknown captured encoding kind");
             }
         }
@@ -122,5 +123,6 @@ final class GhidraEncoderTree implements Encoder {
     @Override public void writeStringIndexed(AttributeId id, int index, String value) throws IOException { attribute(new Attribute("indexed", id, null, index, value)); }
     @Override public void writeSpace(AttributeId id, AddressSpace value) throws IOException { attribute(new Attribute("space", id, value, 0, null)); }
     @Override public void writeSpace(AttributeId id, int index, String value) throws IOException { attribute(new Attribute("space-id", id, null, index, value)); }
+    @Override public void writeOpcode(AttributeId id, int value) throws IOException { attribute(new Attribute("opcode-id", id, null, value, null)); }
     @Override public void writeOpcode(AttributeId id, OpCode value) throws IOException { attribute(new Attribute("opcode", id, value, 0, null)); }
 }

@@ -127,7 +127,7 @@ def main():
         origin, = re.findall(r'composite-value-flow-origin=(\S+)', log)
         assert Path(unquote(urlsplit(origin).path)).resolve() == (installation / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar').resolve()
         java_version, = re.findall(r'composite-value-flow-java=(\S+)', log)
-        assert int(java_version.split('.')[0]) >= 21
+        assert int(java_version.split('.')[0]) >= 25
         assert json.loads((case / (variant + '.json')).read_text()) == json.loads((case / 'prepared.json').read_text())
         report, = [json.JSONDecoder().raw_decode(line.split('GhidraDwarfForge report: ', 1)[1])[0]
             for line in log.splitlines() if 'GhidraDwarfForge report: {' in line]

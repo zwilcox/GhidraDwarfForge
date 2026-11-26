@@ -120,6 +120,26 @@ public final class DelayedReturnPrefixSmoke {
     private static void delayContracts(List<Instruction> instructions,
             ghidra.program.model.lang.Register base, long boundary) throws Exception {
         Instruction owner = instructions.get(1), slot = instructions.get(2);
+        var operations = owner.getPcode();
+        for (int i = 0; i < operations.length; i++) {
+            var op = operations[i];
+            if (op.getOpcode() != PcodeOp.CALLOTHER) continue;
+            var selector = op.getInput(0);
+            var mode = op.getInput(1);
+            var wrongSelector = new Varnode(selector.getAddress().getAddressSpace().getAddress(0xffff), selector.getSize());
+            var otherRegister = new Varnode(base.getAddress(), base.getMinimumByteSize());
+            for (var invalid : List.of(
+                    new PcodeOp(owner.getAddress(), i, PcodeOp.CALLOTHER, new Varnode[] { wrongSelector, mode }, null),
+                    new PcodeOp(owner.getAddress(), i, PcodeOp.CALLOTHER, new Varnode[] { selector, otherRegister }, null),
+                    new PcodeOp(owner.getAddress(), i, PcodeOp.CALLOTHER, new Varnode[] { selector, mode }, mode))) {
+                var altered = operations.clone();
+                altered[i] = invalid;
+                var changed = new ArrayList<>(instructions);
+                changed.set(1, decorate(owner, Map.of("getPcode", altered)));
+                require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) < 0,
+                    "unproven delayed return user operation acquired a location");
+            }
+        }
         for (var mutation : List.<Map<String, Object>>of(
                 Map.of("getLength", 0, "getParsedLength", 0), Map.of("getParsedLength", owner.getLength() + 1),
                 Map.of("isLengthOverridden", true), Map.of("isFallThroughOverridden", true),

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Linux x86-64 compiler-DWARF container oracle, independent of Ghidra/native producers.
-# Requires Java 21+, a C compiler, GNU binutils, LLVM dwarfdump, libdwarf dwarfdump,
+# Requires Java 25+, a C compiler, GNU binutils, LLVM dwarfdump, libdwarf dwarfdump,
 # and gdb-multiarch (or gdb). About 5 GiB of temporary disk space is needed; the
 # large sparse input and sidecars are removed after validation, including failures.
 # This bounds source-copy memory, not Ghidra analysis or generated DWARF/model memory.

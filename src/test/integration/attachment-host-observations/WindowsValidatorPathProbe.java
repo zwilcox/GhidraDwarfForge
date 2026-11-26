@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/** Owned, standalone Java21 observations; not attachment acceptance. */
+/** Owned, standalone Java25 observations; not attachment acceptance. */
 public final class WindowsValidatorPathProbe {
     public static void main(String[] args) throws Exception {
         if (args.length == 1 && args[0].equals("--child")) {

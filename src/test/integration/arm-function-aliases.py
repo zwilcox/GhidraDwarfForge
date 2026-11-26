@@ -42,9 +42,9 @@ def main():
     assert population == {(role, symbols) for role in ('exec', 'pie', 'pie-rebased') for symbols in ('retained', 'stripped')}
     probe = repository / 'src/test/java/ghidradwarfforge/elf/LocalSymbolMergeProbe.java'
     classes = Path(tempfile.mkdtemp(prefix='classes.', dir=root))
-    java = str(Path(os.environ['FORGE_JAVA21_HOME']) / 'bin/java') if 'FORGE_JAVA21_HOME' in os.environ else 'java'
+    java = str(Path(os.environ['FORGE_JAVA25_HOME']) / 'bin/java') if 'FORGE_JAVA25_HOME' in os.environ else 'java'
     javac = str(Path(os.environ['JAVA_HOME']) / 'bin/javac') if 'JAVA_HOME' in os.environ else 'javac'
-    command = [javac, '--release', '21', '-cp', str(jar), '-d', str(classes), str(probe)]
+    command = [javac, '--release', '25', '-cp', str(jar), '-d', str(classes), str(probe)]
     result = subprocess.run(command, capture_output=True, timeout=60)
     (classes / 'compile.command.json').write_text(json.dumps(command) + '\n')
     (classes / 'compile.stdout').write_bytes(result.stdout)
@@ -138,7 +138,7 @@ def main():
         for name in ('writer.dbg', 'writer-repeat.dbg'):
             text = run(name, [java, '-cp', os.pathsep.join((str(classes), str(jar))), 'ghidradwarfforge.elf.LocalSymbolMergeProbe',
                 case / 'aliases.input', case / 'automatic.dbg', case / 'symbols.tsv', case / name, len(records)])
-            assert 'java=21.' in text and 'curated-alias-writer=PASS' in text
+            assert 'java=25.' in text and 'curated-alias-writer=PASS' in text
             assert jar.resolve().as_uri() in text.replace('file:/', 'file:///')
             assert (case / name).read_bytes() == (case / 'automatic.dbg').read_bytes()
         for name, (_, payload) in baseline.items():

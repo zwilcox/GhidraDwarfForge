@@ -12,12 +12,15 @@ else if (project.hasProperty("GHIDRA_INSTALL_DIR")) {
     ghidraInstallDir = project.getProperty("GHIDRA_INSTALL_DIR")
 }
 else {
-    throw new GradleException("Set GHIDRA_INSTALL_DIR to a Ghidra 12.0.3 installation")
+    throw new GradleException("Set GHIDRA_INSTALL_DIR to a Ghidra 12.2 installation")
 }
 
 task distributeExtension {
     group = "Ghidra"
     apply from: new File(ghidraInstallDir).getCanonicalPath() + "/support/buildExtension.gradle"
+    if (project.ext.ghidra_version != "12.2") {
+        throw new GradleException("GhidraDwarfForge requires the Ghidra 12.2 SDK, found ${project.ext.ghidra_version}")
+    }
     dependsOn ":buildExtension"
 }
 

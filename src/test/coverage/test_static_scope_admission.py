@@ -47,7 +47,7 @@ def fixture(suite, layer='headless', role='exec'):
         'compilerObjects': objects, 'labels': labels, 'compilerObservations': observed('compiler')}
     if suite == 'lexical-statics':
         evidence.update(status='PASS_LEXICAL_STATICS_MEASUREMENT', oracleStatus='LEXICAL_STATICS_PASS',
-            javaRuntime=21, controls=True, recovered=True, outputPair=['c' * 64, 'd' * 64], observations=9,
+            javaRuntime=25, controls=True, recovered=True, outputPair=['c' * 64, 'd' * 64], observations=9,
             debuggerObservations={name: observed(name) for name in ('isolated', 'forge')},
             measurement={'directAnalyzerSessions': 3, 'directNativeSessions': 1,
                 'measuredNestedSuites': ['lexical-statics-controls', 'recovered-statics-positive', 'recovered-statics-controls']})
@@ -135,7 +135,7 @@ class Admission(unittest.TestCase):
         record, evidence = fixture('lexical-statics')
         for key, value in (('target', 'aarch64'), ('role', 'unknown'), ('validators', ['readelf']),
                 ('debugger', 'PASS'), ('protected', {}), ('harnessSha256', {}), ('compilerObjects', {}),
-                ('labels', {}), ('status', 'PASS'), ('oracleStatus', 'PASS'), ('javaRuntime', 25),
+                ('labels', {}), ('status', 'PASS'), ('oracleStatus', 'PASS'), ('javaRuntime', 21),
                 ('controls', False), ('recovered', False), ('outputPair', ['c' * 64]),
                 ('observations', 8), ('debuggerObservations', {}), ('measurement', {})):
             with self.subTest(key=key), self.assertRaises(ValueError):

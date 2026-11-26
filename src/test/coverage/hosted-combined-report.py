@@ -301,7 +301,7 @@ def lexical_oracle(record, oracle):
     protected = oracle.get('protected')
     if (oracle.get('status') != 'PASS_LEXICAL_SHADOW_MEASUREMENT'
             or oracle.get('oracleStatus') != 'LEXICAL_SHADOW_PASS' or oracle.get('target') != 'x86_64'
-            or oracle.get('javaRuntime') != 21 or role not in ('exec', 'pie', 'pie-rebased')
+            or oracle.get('javaRuntime') != 25 or role not in ('exec', 'pie', 'pie-rebased')
             or type(gap) is not bool or type(calls) is not bool
             or (lines is not None and type(lines) is not int)
             or (gap, calls, lines) not in ((False, False, None), (True, False, None), (True, True, None), (True, True, 8))
@@ -332,7 +332,7 @@ def object_oracle(record, oracle):
     if (suite not in ('object-parameter', 'object-return') or record.get('layer') != 'headless'
             or oracle.get('status') != 'PASS_' + marker + '_MEASUREMENT'
             or oracle.get('oracleStatus') != marker + '_PASS'
-            or oracle.get('target') != 'x86_64' or oracle.get('javaRuntime') != 21
+            or oracle.get('target') != 'x86_64' or oracle.get('javaRuntime') != 25
             or role not in ('exec', 'pie', 'pie-rebased')
             or [row.get('label') for row in record['sessions']] != ['import', 'export-first', 'export-repeat']
             or not isinstance(pair, list) or len(pair) != 2

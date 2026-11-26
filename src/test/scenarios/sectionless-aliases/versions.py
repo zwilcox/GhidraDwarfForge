@@ -35,11 +35,11 @@ def main():
     prior = args.base_root.resolve()
     module = args.ghidra.resolve() / 'Ghidra/Extensions/GhidraDwarfForge'
     jar = module / 'lib/GhidraDwarfForge.jar'
-    java = Path(os.environ['FORGE_JAVA21_HOME']) / 'bin/java'
+    java = Path(os.environ.get('FORGE_JAVA25_HOME', os.environ['JAVA_HOME'])) / 'bin/java'
     javac = Path(os.environ['JAVA_HOME']) / 'bin/javac'
     classes = root / 'classes'
     classes.mkdir()
-    subprocess.run([str(javac), '--release', '21', '-cp', str(jar), '-d', str(classes),
+    subprocess.run([str(javac), '--release', '25', '-cp', str(jar), '-d', str(classes),
         str(source / 'SectionlessSymbolProbe.java')], check=True)
     protected = {str(p): digest(p) for p in source.glob('*') if p.is_file()}
     protected.update({str(p): digest(p) for p in module.rglob('*') if p.is_file()})
@@ -67,7 +67,7 @@ def main():
         text = run('writer', [java, '-cp', str(classes) + os.pathsep + str(jar),
             'ghidradwarfforge.elf.SectionlessSymbolProbe', binary, base / 'automatic.dbg',
             base / 'symbols.tsv', case / 'unmirrored.dbg'])
-        assert 'java=21.' in text and jar.as_uri() in text.replace('file:/', 'file:///')
+        assert 'java=25.' in text and jar.as_uri() in text.replace('file:/', 'file:///')
         inventory = merge(binary, case / 'unmirrored.dbg', case / 'aliases.dbg')
         merge(binary, case / 'unmirrored.dbg', case / 'repeat.dbg')
         assert digest(case / 'aliases.dbg') == digest(case / 'repeat.dbg')

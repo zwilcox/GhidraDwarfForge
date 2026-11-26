@@ -68,7 +68,7 @@ def main():
                 '-postScript', 'InspectScopeEvidence.java', observation])
             require('SCOPE_EVIDENCE_PROBE_PASS' in (output / (name + '.log')).read_text(), 'headless script did not finish')
             record = json.loads(observation.read_text())
-            require(record['javaVersion'].startswith('21.'), 'actual Java 21 required for this probe')
+            require(record['javaVersion'].startswith('25.'), 'actual Java 25 required for this probe')
             methods = [f for f in record['functions'] if 'inspect_scope' in f['name']]
             if variant == 'reference':
                 require(len(methods) == 1, 'imported method identity')

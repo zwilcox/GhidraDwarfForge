@@ -180,8 +180,8 @@ def prepare(group, name, parent, jar, gson, classes, destination, failure=None):
         uri = urlparse(lines[index].split("=", 1)[1])
         require(uri.scheme == "file" and Path(unquote(uri.path)).resolve() == (gson if label == "gson" else jar),
                 "connected helper was not loaded from installed dependency")
-    require(re.fullmatch(r"java-version=21(?:[.+-].*)?", lines[12]) and lines[13].startswith("max-heap=") and
-            0 < int(lines[13].split("=")[1]) <= 64 * 1024 * 1024, "actual Java21/64MiB required")
+    require(re.fullmatch(r"java-version=25(?:[.+-].*)?", lines[12]) and lines[13].startswith("max-heap=") and
+            0 < int(lines[13].split("=")[1]) <= 64 * 1024 * 1024, "actual Java25/64MiB required")
     result = json.loads(base64.b64decode(lines[14].split("=", 1)[1], validate=True).decode("utf-8", errors="strict"),
                         object_pairs_hook=reader.unique_object)
     construction = result["construction"]
@@ -542,7 +542,7 @@ def main():
         (args.module, args.original, args.gnu_candidate, args.debug_file, args.source, args.reference))
     jar = (module / "lib/GhidraDwarfForge.jar").resolve(strict=True)
     script = (module / "ghidra_scripts/GhidraDwarfForge.java").resolve(strict=True)
-    gson = (module.parent.parent / "Framework/Generic/lib/gson-2.9.0.jar").resolve(strict=True)
+    gson = (module.parent.parent / "Framework/Generic/lib/gson-2.13.2.jar").resolve(strict=True)
     require(snapshot(gson)["sha256"] == reader.GSON_SHA256, "unexpected provided Gson")
     adapter = REPOSITORY / "src/test/java/ghidradwarfforge/output/ReportedCandidatePreparationProbe.java"
     work = args.result_dir.absolute()
@@ -591,7 +591,7 @@ def main():
         for directory in (classes, workspace, empty_root):
             directory.mkdir()
         shutil.copyfile(adapter, work / adapter.name)
-        program.run([os.environ.get("JAVAC", "javac"), "--release", "21", "-cp",
+        program.run([os.environ.get("JAVAC", "javac"), "--release", "25", "-cp",
                      os.pathsep.join(map(str, (jar, gson))), "-d", classes, adapter], work / "compile")
         tools = {label: owned.tool_identity(label, name, work) for label, name in
                  (("readelf", "readelf"), ("llvm", "llvm-dwarfdump"), ("gdb", "gdb-multiarch"))}

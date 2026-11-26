@@ -57,7 +57,7 @@ def main():
         classes.mkdir()
         java_home = Path(os.environ['JAVA_HOME'])
         module = args.ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
-        gson = args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar'
+        gson = args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar'
         jna = args.ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'
         classpath = os.pathsep.join(map(str, [classes, module.resolve(strict=True), gson.resolve(strict=True), jna.resolve(strict=True)]))
         run('compile-constants', [java_home / 'bin/javac', '-cp', classpath, '-d', classes,

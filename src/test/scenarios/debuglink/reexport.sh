@@ -40,7 +40,7 @@ cp "$output.c" "$work/initial.dbg.c"
 test ! -e "$backup"
 cp --preserve=all "$input" "$backup"
 objcopy "--add-gnu-debuglink=$output" "$input" "$work/attached.stage"
-javac --release 21 -sourcepath "$repository/src/main/java" -d "$work/classes" \
+javac --release 25 -sourcepath "$repository/src/main/java" -d "$work/classes" \
     "$repository/src/main/java/ghidradwarfforge/elf/ElfImage.java" \
     "$repository/src/main/java/ghidradwarfforge/elf/ExecutableProgramBytes.java" \
     "$repository/src/main/java/ghidradwarfforge/elf/DebuglinkCandidateContent.java" \

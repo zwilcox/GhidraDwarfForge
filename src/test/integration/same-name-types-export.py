@@ -88,7 +88,7 @@ def main():
         '-postScript', 'PrepareSameNameTypes.java', 'curate', case / 'prepared.json', args.target])
     assert 'same-name-types-preparation=curate PASS' in (case / 'import.log').read_text()
     prepared = json.loads((case / 'prepared.json').read_text())
-    assert prepared['javaVersion'].startswith('21.')
+    assert prepared['javaVersion'].startswith('25.')
     assert Path(unquote(urlsplit(prepared['origin']).path)) == module / 'lib/GhidraDwarfForge.jar'
     if args.role == 'pie-rebased':
         assert prepared['rebaseDelta'] >= 0x2000000

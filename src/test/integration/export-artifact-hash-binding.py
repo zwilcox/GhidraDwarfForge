@@ -85,7 +85,7 @@ def probe(groups, jar, gson, classes, destination, reject=False):
         origin = urlparse(lines[index].split("=", 1)[1])
         require(origin.scheme == "file" and Path(unquote(origin.path)).resolve() == archive,
                 "binding/dependency did not load from selected installed JAR")
-    require(re.fullmatch(r"java-version=21(?:[.+-].*)?", lines[4]) is not None, "actual Java21 required")
+    require(re.fullmatch(r"java-version=25(?:[.+-].*)?", lines[4]) is not None, "actual Java25 required")
     require(lines[5].startswith("max-heap=") and 0 < int(lines[5].split("=")[1]) <= 64 * 1024 * 1024,
             "binding heap is not bounded")
     results = []
@@ -351,13 +351,13 @@ def main():
     module = args.module.resolve(strict=True)
     jar = (module / "lib/GhidraDwarfForge.jar").resolve(strict=True)
     script = (module / "ghidra_scripts/GhidraDwarfForge.java").resolve(strict=True)
-    gson = (module.parent.parent / "Framework/Generic/lib/gson-2.9.0.jar").resolve(strict=True)
+    gson = (module.parent.parent / "Framework/Generic/lib/gson-2.13.2.jar").resolve(strict=True)
     protected = {str(path): snapshot(path) for path in (jar, script, gson)}
     require(protected[str(gson)]["sha256"] == READER.GSON_SHA256, "unexpected provided Gson")
     parent_path, parent = select_parent(module, args.target, args.claims_result)
     same_reader = same_installation(module, parent, protected, reader=True)
     same_export = same_installation(module, parent, protected)
-    parent_gson = str(Path(parent["reader_module"]).parent.parent / "Framework/Generic/lib/gson-2.9.0.jar")
+    parent_gson = str(Path(parent["reader_module"]).parent.parent / "Framework/Generic/lib/gson-2.13.2.jar")
     require(parent["protected"][parent_gson]["sha256"] == READER.GSON_SHA256, "parent reader Gson differs")
     if not args.claims_result:
         require(same_reader and same_export and parent["same_reader_export_installation"],
@@ -369,7 +369,7 @@ def main():
     groups, reports, retained = retain_parent(parent_path, parent, work, protected)
     classes = work / "classes"
     classes.mkdir()
-    run([os.environ.get("JAVAC", "javac"), "--release", "21", "-cp", os.pathsep.join(map(str, (jar, gson))),
+    run([os.environ.get("JAVAC", "javac"), "--release", "25", "-cp", os.pathsep.join(map(str, (jar, gson))),
          "-d", classes, REPOSITORY / "src/test/java/ghidradwarfforge/output/ExportArtifactHashBindingProbe.java"], work / "compile")
     observations = probe(groups, jar, gson, classes, work / "first")
     require(probe(groups, jar, gson, classes, work / "repeat") == observations, "binding observation differs on repeat")

@@ -27,7 +27,7 @@ def main():
     source = ROOT / 'src/test/java/ghidradwarfforge/output/LinuxDirectorySyncSmoke.java'
     contract = ROOT / 'src/test/native/linux-directory-contract.c'
     files = [args.jar.resolve(), args.ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar',
-             args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar', source, contract,
+             args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar', source, contract,
              Path(__file__), ROOT / 'src/main/java/ghidradwarfforge/output/LinuxDirectorySync.java']
     digests = {}
     for path in files:
@@ -56,12 +56,12 @@ def main():
                           provenance / contract.name, '-o', observer])
     run('native-contract', [observer])
     java = os.environ.get('JAVA', 'java')
-    assert b'version "21.' in run('java-version', [java, '-version'], version=True).stderr
+    assert b'version "25.' in run('java-version', [java, '-version'], version=True).stderr
     classes = root / 'classes'
     classes.mkdir()
     dependencies = os.pathsep.join(str(provenance / name) for name in
-                                   ('GhidraDwarfForge.jar', 'jna-5.14.0.jar', 'gson-2.9.0.jar'))
-    run('compile-probe', ['javac', '--release', '21', '-cp', dependencies, '-d', classes,
+                                   ('GhidraDwarfForge.jar', 'jna-5.14.0.jar', 'gson-2.13.2.jar'))
+    run('compile-probe', ['javac', '--release', '25', '-cp', dependencies, '-d', classes,
                           provenance / source.name])
     result = run('probe', [java, '-cp', str(classes) + os.pathsep + dependencies,
                            'ghidradwarfforge.output.LinuxDirectorySyncSmoke', observer, root / 'owned'])

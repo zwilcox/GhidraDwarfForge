@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Linux x86-64 integration against the installed GNU coreutils, without fixture
-# preparation or analyst changes. Requires Ghidra 12.0.3 with a native-inclusive
+# preparation or analyst changes. Requires Ghidra 12.2 with a native-inclusive
 # Forge extension, GNU readelf/coreutils, LLVM llvm-dwarfdump, libdwarf dwarfdump,
 # and Python-enabled gdb-multiarch. The host must permit debugging child processes.
 # Results are retained, including on failure; no system executable is modified.

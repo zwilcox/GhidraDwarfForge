@@ -39,7 +39,7 @@ def main():
     root = Path(tempfile.mkdtemp(prefix='consumer.', dir=args.output.resolve()))
     module = args.ghidra.resolve() / 'Ghidra/Extensions/GhidraDwarfForge'
     jar = module / 'lib/GhidraDwarfForge.jar'
-    java = Path(os.environ['FORGE_JAVA21_HOME']) / 'bin/java'
+    java = Path(os.environ.get('FORGE_JAVA25_HOME', os.environ['JAVA_HOME'])) / 'bin/java'
     javac = Path(os.environ['JAVA_HOME']) / 'bin/javac'
     classes = root / 'classes'
     classes.mkdir()
@@ -59,7 +59,7 @@ def main():
             assert result.returncode == expected and not result.stderr, (name, result.returncode, result.stderr)
         return result
 
-    run(root, 'compile', [javac, '--release', '21', '-cp', jar, '-d', classes,
+    run(root, 'compile', [javac, '--release', '25', '-cp', jar, '-d', classes,
         source / 'SectionlessSymbolProbe.java'])
     protected.update({str(p): digest(p) for p in classes.rglob('*.class')})
     cases = []
@@ -86,7 +86,7 @@ def main():
             base / 'baseline.dbg', base / 'symbols.tsv']
         result = run(case, 'writer', [*command, case / 'unmirrored.dbg'])
         text = result.stdout.decode()
-        assert 'java=21.' in text and jar.as_uri() in text.replace('file:/', 'file:///')
+        assert 'java=25.' in text and jar.as_uri() in text.replace('file:/', 'file:///')
         shutil.copyfile(case / 'unmirrored.dbg', case / 'aliases.dbg')
         oracle = ['bash', integration / 'local-symbol-merge-gdb.sh', repository, case,
             metadata['target'], compiler]

@@ -7,7 +7,7 @@ import sys
 
 def prepare(ghidra, jar, fake):
     files = {'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar': jar}
-    for path in ('Ghidra/Framework/Pty/lib/jna-5.14.0.jar', 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar'):
+    for path in ('Ghidra/Framework/Pty/lib/jna-5.14.0.jar', 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar'):
         files[path] = ghidra / path
     for relative, source in files.items():
         destination = fake / relative

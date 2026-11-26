@@ -40,12 +40,12 @@ used by each build and their upstream license texts are under
 
 ### Ghidra
 
-Ghidra 12.0.3 is required to build and run this extension but is not
+Ghidra 12.2 is required to build and run this extension but is not
 redistributed by GhidraDwarfForge. Ghidra is licensed under the Apache License
 2.0: <https://github.com/NationalSecurityAgency/ghidra>.
 
 ### Java Native Access
 
-GhidraDwarfForge uses the JNA 5.14.0 classes supplied by Ghidra 12.0.3 and does
+GhidraDwarfForge uses the JNA 5.14.0 classes supplied by Ghidra 12.2 and does
 not bundle a private JNA copy. JNA is dual-licensed under Apache License 2.0 or
 LGPL 2.1-or-later: <https://github.com/java-native-access/jna>.

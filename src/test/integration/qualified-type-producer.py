@@ -322,7 +322,7 @@ def main():
     jna, = args.ghidra.glob('Ghidra/Framework/Pty/lib/jna-[0-9]*.jar')
     gson, = args.ghidra.glob('Ghidra/Framework/Generic/lib/gson-[0-9]*.jar')
     cp = os.pathsep.join(map(str, [args.jar.resolve(), classes, jna.resolve(), gson.resolve()]))
-    run('javac', [args.java_home / 'bin/javac', '--release', '21', '-cp', cp, '-d', classes, java_source])
+    run('javac', [args.java_home / 'bin/javac', '--release', '25', '-cp', cp, '-d', classes, java_source])
     coverage = Collection('qualified-type-producer', args.jar.resolve(), 'native-java',
         test_classes=('ghidradwarfforge.nativeapi.QualifiedTypeProducerProbe',))
     sidecar = root / 'input.dbg'

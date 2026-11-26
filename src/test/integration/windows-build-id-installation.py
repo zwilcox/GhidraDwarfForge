@@ -44,7 +44,7 @@ def main():
     tools = refresh['validatorTools']
     dependencies = [module / 'lib/GhidraDwarfForge.jar',
         args.ghidra.resolve() / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar',
-        args.ghidra.resolve() / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar']
+        args.ghidra.resolve() / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar']
     coverage = Collection('windows-build-id-installation', dependencies[0], 'windows',
         test_classes=('ghidradwarfforge.output.BuildIdInstallationProbe',))
     launcher = module / 'support/ghidra-dwarf-forge-build-id.ps1'

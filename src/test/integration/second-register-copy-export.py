@@ -144,7 +144,7 @@ def main():
             origin, = re.findall(r'inspected-calls-origin=(\S+)', export_log)
             assert Path(unquote(urlsplit(origin).path)).resolve() == (installation / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar').resolve()
             java, = re.findall(r'inspected-calls-java=(\S+)', export_log)
-            assert int(java.split('.')[0]) >= 21
+            assert int(java.split('.')[0]) >= 25
             assert 'inspected-calls-preparation=PASS' in export_log
         if variant == 'previous':
             continue

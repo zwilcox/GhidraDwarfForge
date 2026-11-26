@@ -11,7 +11,6 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.lang.Register;
-import ghidra.program.model.lang.SleighLanguageDescription;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FlowOverride;
 import ghidra.program.model.listing.Instruction;
@@ -24,6 +23,7 @@ import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
+import ghidradwarfforge.targets.MipsReturnMode;
 import ghidradwarfforge.locations.TargetRegisterMap;
 import ghidradwarfforge.locations.VariableStorageModel.CompositeStorage;
 import ghidradwarfforge.locations.VariableStorageModel.OmissionReason;
@@ -599,6 +599,7 @@ public final class GhidraVariableStorage {
                         PcodeOp.CALLIND,
                         PcodeOp.UNIMPLEMENTED -> { return -1; }
                     case PcodeOp.CALLOTHER -> {
+                        if (MipsReturnMode.isNotification(instruction, operation)) continue;
                         // Only the state before this final machine return is
                         // observable in the invocation. Reuse the stable-register
                         // boundary proof without treating any userop as pure.
@@ -1110,6 +1111,7 @@ public final class GhidraVariableStorage {
                 return true;
             }
             if (operation.getOpcode() == PcodeOp.CALLOTHER) {
+                if (MipsReturnMode.isNotification(instruction, operation)) continue;
                 opaque = true;
                 // A user operation may change registers beyond its explicit
                 // output (Ghidra's USERDEFINED p-code contract). Its selector
@@ -1164,13 +1166,13 @@ public final class GhidraVariableStorage {
         if (offsetBytes <= space.getPointerSize() || offsetBytes > Long.BYTES ||
                 space.getType() != AddressSpace.TYPE_RAM || space.isOverlaySpace() ||
                 space.getPhysicalSpace() != space || space.getAddressableUnitSize() <= 0 ||
-                !(program.getLanguage() instanceof SleighLanguage language) ||
-                !(language.getLanguageDescription() instanceof SleighLanguageDescription description)) {
+                !(program.getLanguage() instanceof SleighLanguage language)) {
             return false;
         }
         // ProgramAddressFactory retains the language's physical space objects.
         // Require identity through both IDs and names, not a matching RAM name
         // supplied by a program overlay or a different address factory.
+        var description = language.getLanguageDescription();
         var languageFactory = language.getAddressFactory();
         if (languageFactory.getAddressSpace(space.getSpaceID()) != space ||
                 languageFactory.getAddressSpace(space.getName()) != space ||

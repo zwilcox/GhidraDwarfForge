@@ -236,6 +236,7 @@ final class GhidraLocalMappings {
         @Override public void writeBool(AttributeId attribute, boolean value) throws IOException { check(); }
         @Override public void writeString(AttributeId attribute, String value) throws IOException { check(); }
         @Override public void writeStringIndexed(AttributeId attribute, int index, String value) throws IOException { check(); }
+        @Override public void writeOpcode(AttributeId attribute, int value) throws IOException { check(); }
         @Override public void writeOpcode(AttributeId attribute, OpCode value) throws IOException { check(); }
     }
 }

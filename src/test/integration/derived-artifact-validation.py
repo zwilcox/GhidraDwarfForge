@@ -43,7 +43,7 @@ def main():
     report.write_text(reports[0] + '\n')
     runtime = os.pathsep.join([str(jar), args.test_classes,
         str(ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'),
-        str(ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar')])
+        str(ghidra / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar')])
     java = shutil.which(args.java)
     assert java
     prefix = [java, '--enable-native-access=ALL-UNNAMED', '-Djava.io.tmpdir=' + str(root), '-cp', runtime]

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Research fixture: Linux x86-64, GCC, GDB and Ghidra 12.0.3; no Forge natives.
+# Research fixture: Linux x86-64, GCC, GDB and Ghidra 12.2; no Forge natives.
 if [[ $# -ne 1 ]]; then
-    echo "usage: $0 <ghidra-12.0.3-directory>" >&2
+    echo "usage: $0 <ghidra-12.2-directory>" >&2
     exit 64
 fi
 if [[ $(uname -s) != Linux || $(uname -m) != x86_64 ]]; then
@@ -17,7 +17,7 @@ for dependency in gcc objcopy readelf llvm-dwarfdump gdb python3 sha256sum; do
     }
 done
 ghidra=$(realpath "$1")
-grep -Fxq 'application.version=12.0.3' "$ghidra/Ghidra/application.properties"
+grep -Fxq 'application.version=12.2' "$ghidra/Ghidra/application.properties"
 test -x "$ghidra/support/analyzeHeadless"
 script_directory=$(realpath "$(dirname "$0")")
 repository=$(realpath "$script_directory/../../../..")

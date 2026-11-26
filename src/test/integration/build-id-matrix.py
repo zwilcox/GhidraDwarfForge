@@ -30,7 +30,7 @@ def main():
     ghidra, jar, tests = args.ghidra.resolve(), args.jar.resolve(), args.test_classes.resolve()
     scripts = Path(__file__).resolve().parent
     classpath = os.pathsep.join([str(jar), str(tests), str(ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'),
-        str(ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar')])
+        str(ghidra / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar')])
     commands, results = [], []
     protected = {str(jar): digest(jar)}
     java = None

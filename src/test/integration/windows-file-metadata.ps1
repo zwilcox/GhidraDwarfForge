@@ -110,7 +110,7 @@ $null = Run-Captured 'compile-ea-fixture' $Compiler @('-std=c11','-Wall','-Wextr
     (Join-Path $provenance 'windows-ea-fixture.c'),'-lntdll','-o',$eaFixture)
 $dependencies = (Join-Path $provenance ([IO.Path]::GetFileName($Jna))) + ';' +
     (Join-Path $provenance ([IO.Path]::GetFileName($Gson)))
-$null = Run-Captured 'compile-java' $JavacExe @('--release','21','-cp',$dependencies,'-d',$classes,
+$null = Run-Captured 'compile-java' $JavacExe @('--release','25','-cp',$dependencies,'-d',$classes,
     (Join-Path $provenance 'DebuglinkBasename.java'), (Join-Path $provenance 'DebuglinkBasenameSmoke.java'),
     (Join-Path $provenance 'WindowsDirectorySync.java'), (Join-Path $provenance 'WindowsDirectorySyncProbe.java'),
     (Join-Path $provenance 'WindowsFileMetadata.java'), (Join-Path $provenance 'WindowsFileMetadataProbe.java'),
@@ -119,7 +119,7 @@ $null = Run-Captured 'compile-java' $JavacExe @('--release','21','-cp',$dependen
     (Join-Path $provenance 'WindowsBackupStreams.java'), (Join-Path $provenance 'WindowsBackupStreamsProbe.java'),
     (Join-Path $provenance 'WindowsFileRename.java'), (Join-Path $provenance 'WindowsFileRenameProbe.java'))
 $version = Run-Captured 'java-version' $JavaExe @('-version')
-Require ($version.stderr -match 'version "21[.]') 'Actual Java 21 required'
+Require ($version.stderr -match 'version "25[.]') 'Actual Java 25 required'
 $null = Run-Captured 'debuglink-basename-policy' $JavaExe @('-cp',$classes,'ghidradwarfforge.output.DebuglinkBasenameSmoke')
 $prefix = @('-cp', ($classes + ';' + $dependencies), 'ghidradwarfforge.output.WindowsFileMetadataProbe')
 function Run-Probe([string]$Label, [string[]]$Arguments, [bool]$Success=$true, [bool]$Interpreted=$false) {
@@ -599,7 +599,7 @@ Save-Json (Join-Path $root 'security-visibility.json') ([ordered]@{status='OBSER
     create=$securityFacts; read=$securityAfter;
     scope='Test-only child token and owned audit/label fixture; complete descriptor agrees across two native APIs. No production elevation, host admission or metadata-preservation claim'})
 
-# Production reader in an isolated Java 21 process. Only the test probe adjusts
+# Production reader in an isolated Java 25 process. Only the test probe adjusts
 # its own already-owned privilege, and restores it before exiting. No parent
 # token, product process or account policy is changed.
 $securityPrefix = @('-cp', ($classes + ';' + $dependencies), 'ghidradwarfforge.output.WindowsFileSecurityProbe')

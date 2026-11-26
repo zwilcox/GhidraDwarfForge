@@ -483,7 +483,7 @@ class LexicalOracleAdmission(unittest.TestCase):
         labels = ['import', *(['export-baseline'] if lines is not None else []), 'export-first', 'export-repeat']
         record = {'sessions': [{'label': label} for label in labels]}
         oracle = {'status': 'PASS_LEXICAL_SHADOW_MEASUREMENT', 'oracleStatus': 'LEXICAL_SHADOW_PASS',
-            'target': 'x86_64', 'javaRuntime': 21, 'role': role, 'discontiguous': gap, 'calls': calls,
+            'target': 'x86_64', 'javaRuntime': 25, 'role': role, 'discontiguous': gap, 'calls': calls,
             'sourceLines': lines, 'observations': 8, 'outputPair': ['a' * 64, 'b' * 64],
             'protected': {'fixture': 'c' * 64}, 'sourceInventory': {'part.c': 'd' * 64} if lines else None,
             'measurement': {'directAnalyzerSessions': len(labels), 'unmeasuredNestedDrivers': []}}
@@ -512,7 +512,7 @@ class LexicalOracleAdmission(unittest.TestCase):
     def test_missing_or_mislabeled_runtime_evidence_rejected(self):
         record, oracle = self.fixture()
         for key, value in (('status', 'PASS'), ('oracleStatus', 'PASS'), ('target', 'aarch64'),
-                ('javaRuntime', 25), ('role', 'unknown'), ('discontiguous', 0), ('calls', True),
+                ('javaRuntime', 21), ('role', 'unknown'), ('discontiguous', 0), ('calls', True),
                 ('sourceLines', 8.0), ('observations', 0), ('outputPair', []), ('protected', {}),
                 ('measurement', {'directAnalyzerSessions': 3, 'unmeasuredNestedDrivers': ['unknown']})):
             with self.subTest(key=key), self.assertRaises(ValueError):
@@ -544,7 +544,7 @@ class ObjectOracleAdmission(unittest.TestCase):
             'sessions': [{'label': label} for label in ('import', 'export-first', 'export-repeat')]}
         children = ['failure'] if mode == 'explicit' else ['cancellation'] if mode in ('stale', 'conflict') else []
         oracle = {'status': 'PASS_' + marker + '_MEASUREMENT', 'oracleStatus': marker + '_PASS',
-            'target': 'x86_64', 'javaRuntime': 21, 'role': role, 'outputPair': ['a' * 64, 'b' * 64],
+            'target': 'x86_64', 'javaRuntime': 25, 'role': role, 'outputPair': ['a' * 64, 'b' * 64],
             'protected': {'fixture': 'c' * 64}, 'explicitBinding': mode == 'explicit',
             'bindingControl': mode if mode in ('stale', 'conflict') else None,
             'measurement': {'directAnalyzerSessions': 3, 'unmeasuredNestedDrivers': children},
@@ -566,7 +566,7 @@ class ObjectOracleAdmission(unittest.TestCase):
     def test_incomplete_or_changed_analyzer_evidence_rejected(self):
         record, oracle = self.fixture()
         for field, value in (('status', 'PASS'), ('oracleStatus', 'PASS'), ('target', 'aarch64'),
-                ('javaRuntime', 25), ('role', 'shared'), ('outputPair', []), ('protected', {}),
+                ('javaRuntime', 21), ('role', 'shared'), ('outputPair', []), ('protected', {}),
                 ('explicitBinding', 1), ('bindingControl', 'unknown'), ('observations', [])):
             with self.subTest(field=field), self.assertRaises(ValueError):
                 hosted.object_oracle(record, {**oracle, field: value})

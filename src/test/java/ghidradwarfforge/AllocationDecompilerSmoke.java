@@ -81,6 +81,7 @@ public final class AllocationDecompilerSmoke {
         encoder.writeSpace(ATTRIB_SPACE, program.getAddressFactory().getStackSpace());
         encoder.writeSpace(ATTRIB_SPACE, 2, "register");
         encoder.writeOpcode(ATTRIB_CODE, OpCode.CPUI_COPY);
+        encoder.writeOpcode(ATTRIB_CODE, 37);
         encoder.openElement(ELEM_ADDR);
         encoder.closeElement(ELEM_ADDR);
         encoder.closeElement(ELEM_FUNCTION);

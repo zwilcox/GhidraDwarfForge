@@ -45,8 +45,8 @@ def main():
     compilation = Path(tempfile.mkdtemp(prefix=args.target + '.classes.', dir=root))
     probe = repository / 'src/test/java/ghidradwarfforge/elf/LocalSymbolMergeProbe.java'
     javac = str(Path(os.environ['JAVA_HOME']) / 'bin/javac') if 'JAVA_HOME' in os.environ else 'javac'
-    java = str(Path(os.environ['FORGE_JAVA21_HOME']) / 'bin/java') if 'FORGE_JAVA21_HOME' in os.environ else 'java'
-    support.run([javac, '--release', '21', '-cp', jar, '-d', compilation, probe], compilation / 'compile.log')
+    java = str(Path(os.environ['FORGE_JAVA25_HOME']) / 'bin/java') if 'FORGE_JAVA25_HOME' in os.environ else 'java'
+    support.run([javac, '--release', '25', '-cp', jar, '-d', compilation, probe], compilation / 'compile.log')
     support.require_clean(compilation / 'compile.log')
     completed = []
     for base in bases:
@@ -156,7 +156,7 @@ def main():
         for suffix in ('aliases.dbg', 'repeat.dbg'):
             run('writer-' + suffix, [*command, case / suffix, str(len(records))])
             text = (case / ('writer-' + suffix + '.log')).read_text()
-            assert 'java=21.' in text and 'curated-alias-writer=PASS' in text
+            assert 'java=25.' in text and 'curated-alias-writer=PASS' in text
             assert jar.resolve().as_uri() in text.replace('file:/', 'file:///')
         assert (case / 'aliases.dbg').read_bytes() == (case / 'repeat.dbg').read_bytes()
         assert (case / 'aliases.dbg').read_bytes() == (case / 'automatic.dbg').read_bytes()

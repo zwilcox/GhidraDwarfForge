@@ -66,7 +66,7 @@ def main():
         field(original, 60 if wide else 48, 'H') == 0 and field(original, 62 if wide else 50, 'H') == 0,
         'fixture must have no section-header table')
     ghidra = args.ghidra.resolve()
-    runtime = [args.jar.resolve(strict=True), ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar',
+    runtime = [args.jar.resolve(strict=True), ghidra / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar',
                ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar']
     sources = [ROOT / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in
         ('AttachmentProtocolSmoke', 'AttachmentPathBoundarySmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe', 'AttachmentValidatorProbe')]
@@ -101,10 +101,10 @@ def main():
     classes = work / 'classes'
     classes.mkdir()
     dependencies = os.pathsep.join(str(provenance / path.name) for path in runtime)
-    run('compile', [os.environ.get('JAVAC', 'javac'), '--release', '21', '-cp', dependencies, '-d', classes,
+    run('compile', [os.environ.get('JAVAC', 'javac'), '--release', '25', '-cp', dependencies, '-d', classes,
                     *[provenance / path.name for path in sources]])
     java = os.environ.get('JAVA', 'java')
-    require(b'version "21.' in run('java-version', [java, '-version']).stderr, 'actual Java 21 required')
+    require(b'version "25.' in run('java-version', [java, '-version']).stderr, 'actual Java 25 required')
     evidence = work / 'validation.json'
     command = [java, '-cp', str(classes) + os.pathsep + dependencies,
                'ghidradwarfforge.output.AttachmentValidatorProbe', report_path, *inputs, *tools, evidence]

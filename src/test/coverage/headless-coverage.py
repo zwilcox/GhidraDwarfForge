@@ -74,7 +74,7 @@ def collect(args):
         raise ValueError('use a new empty coverage output directory')
     ghidra, agent = args.ghidra.resolve(), args.agent.resolve()
     jar = ghidra / 'Ghidra/Extensions/GhidraDwarfForge/lib/GhidraDwarfForge.jar'
-    # Ghidra 12.0.3 launch.sh splits its VM argument string on whitespace.
+    # Ghidra 12.2 launch.sh splits its VM argument string on whitespace.
     # JaCoCo additionally separates option values with commas. This test-only
     # launcher refuses ambiguous paths rather than changing a user's install.
     for path in (output, agent, Path(tempfile.gettempdir())):

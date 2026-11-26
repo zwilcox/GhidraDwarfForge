@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise real Linux native filename bytes and locale refusal with Java 21."""
+"""Exercise real Linux native filename bytes and locale refusal with Java 25."""
 import argparse
 import hashlib
 import json
@@ -42,10 +42,10 @@ def main():
 
     classes = root / 'classes'
     classes.mkdir()
-    run('compile', [os.environ.get('JAVAC', 'javac'), '--release', '21', '-cp', provenance / args.jar.name,
+    run('compile', [os.environ.get('JAVAC', 'javac'), '--release', '25', '-cp', provenance / args.jar.name,
                     '-d', classes, provenance / 'DebuglinkBasenameSmoke.java'])
     java = os.environ.get('JAVA', 'java')
-    assert b'version "21.' in run('java-version', [java, '-version']).stderr
+    assert b'version "25.' in run('java-version', [java, '-version']).stderr
     prefix = [java, '-cp', os.pathsep.join(map(str, [classes, provenance / args.jar.name])),
               'ghidradwarfforge.output.DebuglinkBasenameSmoke']
     env = {**os.environ, 'LC_ALL': 'C.UTF-8'}
@@ -74,7 +74,7 @@ def main():
     (root / 'result.json').write_text(json.dumps({'status': 'PASS', 'policy': 'Linux UTF-8 and portable ASCII',
         'nativeByteAliases': retained, 'sourceHashes': hashes,
         'scope': 'encoding/rejection only; actual candidate/GDB behavior is in attachment-elf-controller'}, indent=4) + '\n')
-    print('debuglink-basename-native=PASS raw-byte-alias locale-refusal Java21')
+    print('debuglink-basename-native=PASS raw-byte-alias locale-refusal Java25')
 
 
 if __name__ == '__main__':

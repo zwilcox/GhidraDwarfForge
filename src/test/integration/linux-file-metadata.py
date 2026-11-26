@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent native metadata oracle for owned files and isolated Java 21 calls."""
+"""Independent native metadata oracle for owned files and isolated Java 25 calls."""
 
 import argparse
 import array
@@ -71,7 +71,7 @@ def main():
     application_controls = source.with_name('LinuxMetadataApplicationFailureControls.java')
     contract = ROOT / 'src/test/native/linux-metadata-contract.c'
     files = [args.jar.resolve(), args.ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar',
-             args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar', source, contract, Path(__file__),
+             args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar', source, contract, Path(__file__),
              ROOT / 'src/main/java/ghidradwarfforge/output/LinuxFileMetadata.java', failure_controls, application_controls]
     original_hashes = {str(path): sha(path) for path in files}
     for path in files:
@@ -102,11 +102,11 @@ def main():
     classes = root / 'classes'
     classes.mkdir()
     dependencies = os.pathsep.join(str(provenance / path.name) for path in files[:3])
-    run('compile-java', [os.environ.get('JAVAC', 'javac'), '--release', '21', '-cp', dependencies,
+    run('compile-java', [os.environ.get('JAVAC', 'javac'), '--release', '25', '-cp', dependencies,
                         '-d', classes, provenance / source.name, provenance / failure_controls.name,
                         provenance / application_controls.name])
     java = os.environ.get('JAVA', 'java')
-    assert b'version "21.' in run('java-version', [java, '-version']).stderr
+    assert b'version "25.' in run('java-version', [java, '-version']).stderr
     prefix = [java, '-cp', str(classes) + os.pathsep + dependencies, 'ghidradwarfforge.output.LinuxFileMetadataProbe']
     fixture = root / 'owned'
     fixture.mkdir()

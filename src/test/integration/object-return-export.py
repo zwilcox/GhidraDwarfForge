@@ -78,7 +78,7 @@ def main():
         '-postScript', 'PrepareObjectReturn.java', 'curate', case / 'prepared.json', args.target])
     assert 'object-return-preparation=PASS' in (case / 'import.log').read_text()
     prepared = json.loads((case / 'prepared.json').read_text())
-    assert prepared['javaVersion'].startswith('21.')
+    assert prepared['javaVersion'].startswith('25.')
     assert Path(unquote(urlsplit(prepared['origin']).path)) == module / 'lib/GhidraDwarfForge.jar'
     if args.role == 'pie-rebased':
         assert prepared['rebaseDelta'] >= 0x2000000
@@ -140,7 +140,7 @@ def main():
         'projectBackupChanges': sorted(changed)}, indent=4) + '\n')
     if collection.enabled:
         receipt = json.loads((case / 'acceptance.json').read_text())
-        receipt.update(status='PASS_OBJECT_RETURN_MEASUREMENT', oracleStatus=receipt['status'], javaRuntime=21,
+        receipt.update(status='PASS_OBJECT_RETURN_MEASUREMENT', oracleStatus=receipt['status'], javaRuntime=25,
             measurement={'directAnalyzerSessions': 3, 'unmeasuredNestedDrivers': []})
         (case / 'coverage-oracle.json').write_text(json.dumps(receipt, indent=4) + '\n')
         collection.finish(case / 'coverage-oracle.json')

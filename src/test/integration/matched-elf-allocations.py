@@ -306,7 +306,7 @@ def probe(pairs, jar, classes, destination, reject=False, state=snapshot):
         require(line.startswith(kind + "-class-source="), "missing allocation class origin")
         origin = urlparse(line.split("=", 1)[1])
         require(origin.scheme == "file" and Path(unquote(origin.path)).resolve() == jar, "wrong installed class origin")
-    require(re.fullmatch(r"java-version=21(?:[.+-].*)?", lines[2]) is not None, "actual Java21 required")
+    require(re.fullmatch(r"java-version=25(?:[.+-].*)?", lines[2]) is not None, "actual Java25 required")
     require(lines[3].startswith("max-heap=") and 0 < int(lines[3].split("=")[1]) <= 64 * 1024 * 1024,
             "allocation observer heap is not bounded")
     require(len(lines) == len(pairs) + 4, "unexpected allocation output")
@@ -624,7 +624,7 @@ def main():
     pairs, retained, reports = retain_parent(parent_path, receipt, work, protected)
     classes = work / "classes"
     classes.mkdir()
-    run([os.environ.get("JAVAC", "javac"), "--release", "21", "-cp", jar, "-d", classes,
+    run([os.environ.get("JAVAC", "javac"), "--release", "25", "-cp", jar, "-d", classes,
          REPOSITORY / "src/test/java/ghidradwarfforge/elf/MatchedElfAllocationsProbe.java",
          REPOSITORY / "src/test/java/ghidradwarfforge/elf/MatchedElfPrefixProbe.java"], work / "compile")
     models = [allocation_model(*pair) for pair in pairs]

@@ -29,7 +29,7 @@ def snapshot(project):
 
 
 def inspect(record, mode):
-    require(record['mode'] == mode and record['javaVersion'].startswith('21.'), 'mode/Java baseline')
+    require(record['mode'] == mode and record['javaVersion'].startswith('25.'), 'mode/Java baseline')
     require(record['bindingBefore'] == 'VALID', 'prepared explicit static identity')
     require(record['bindingAfter'] == ('VALID' if mode == 'typed' else
         'REJECTED' if mode == 'stale' else 'ABSENT'), 'absent and stale evidence must differ')

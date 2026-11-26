@@ -19,7 +19,7 @@ $repo = (Resolve-Path (Join-Path $PSScriptRoot '../../..')).Path
 $paths = @(
     $jar[0].FullName,
     (Join-Path $NativeDiagnostics 'file-metadata/provenance/jna-5.14.0.jar'),
-    (Join-Path $NativeDiagnostics 'file-metadata/provenance/gson-2.9.0.jar'),
+    (Join-Path $NativeDiagnostics 'file-metadata/provenance/gson-2.13.2.jar'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsAttachmentHostSmoke.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsAttachmentTransactionSmoke.java'),
     (Join-Path $repo 'src/test/java/ghidradwarfforge/output/WindowsFileSecurityProbe.java'),
@@ -65,10 +65,10 @@ function Run([string]$Label, [string]$Program, [string[]]$Arguments) {
     }
     finally { $child.Dispose() }
 }
-$dependencies = ((@('GhidraDwarfForge.jar','jna-5.14.0.jar','gson-2.9.0.jar') | ForEach-Object { Join-Path $provenance $_ }) -join ';')
+$dependencies = ((@('GhidraDwarfForge.jar','jna-5.14.0.jar','gson-2.13.2.jar') | ForEach-Object { Join-Path $provenance $_ }) -join ';')
 Run 'java-version' (Join-Path $env:JAVA_HOME 'bin/java.exe') @('-version')
-if (-not ([IO.File]::ReadAllText((Join-Path $root 'java-version.stderr')) -match 'version "21[.]')) { throw 'Java 21 required' }
-Run 'compile' (Join-Path $env:JAVA_HOME 'bin/javac.exe') @('--release','21','-cp',$dependencies,'-d',$classes,
+if (-not ([IO.File]::ReadAllText((Join-Path $root 'java-version.stderr')) -match 'version "25[.]')) { throw 'Java 25 required' }
+Run 'compile' (Join-Path $env:JAVA_HOME 'bin/javac.exe') @('--release','25','-cp',$dependencies,'-d',$classes,
     (Join-Path $provenance 'WindowsFileSecurityProbe.java'), (Join-Path $provenance 'WindowsAttachmentHostSmoke.java'),
     (Join-Path $provenance 'WindowsAttachmentTransactionSmoke.java'), (Join-Path $provenance 'WindowsAttachmentPrivilegeProbe.java'),
     (Join-Path $provenance 'WindowsPrivilegeReadbackControls.java'),

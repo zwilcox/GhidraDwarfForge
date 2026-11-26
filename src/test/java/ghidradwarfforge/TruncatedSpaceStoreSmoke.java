@@ -27,7 +27,6 @@ import ghidra.program.model.lang.CompilerSpecID;
 import ghidra.program.model.lang.Language;
 import ghidra.program.model.lang.LanguageID;
 import ghidra.program.model.lang.Register;
-import ghidra.program.model.lang.SleighLanguageDescription;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.InstructionIterator;
@@ -74,10 +73,9 @@ public final class TruncatedSpaceStoreSmoke {
         ProgramDB program = fixture.program();
         var language = program.getLanguage();
         var space = program.getAddressFactory().getDefaultAddressSpace();
-        require(language instanceof SleighLanguage &&
-            language.getLanguageDescription() instanceof SleighLanguageDescription,
+        require(language instanceof SleighLanguage,
             "fixture is not a real loaded Sleigh language");
-        var description = (SleighLanguageDescription) language.getLanguageDescription();
+        var description = ((SleighLanguage) language).getLanguageDescription();
         require(description.getTruncatedSpaceNames().contains(space.getName()) &&
             description.getTruncatedSpaceSize(space.getName()) == 4 &&
             space.getPointerSize() == 4 && space.getSize() == 32 &&
