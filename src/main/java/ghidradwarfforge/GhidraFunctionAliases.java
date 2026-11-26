@@ -112,12 +112,13 @@ public final class GhidraFunctionAliases {
                 var body = function.getBody();
                 require(body.getNumAddressRanges() == owner.ranges().size() && owner.ranges().size() <= 65536,
                     "primary body disagrees with exported ranges");
-                var actualRanges = body.getAddressRanges();
                 for (var range : owner.ranges()) {
                     monitor.checkCancelled();
                     require(++comparedRanges <= MAX_NAME_BYTES, "body comparison budget exceeded");
-                    var actual = actualRanges.next();
-                    require(actual.getMinAddress().getAddressSpace().equals(entry.getAddressSpace()) &&
+                    var start = entry.getAddressSpace().getAddress(
+                        AddressNormalizer.toGhidraAddress(range.address(), rebaseDelta));
+                    var actual = body.getRangeContaining(start);
+                    require(actual != null && actual.getMinAddress().equals(start) &&
                         AddressNormalizer.toElfAddress(actual.getMinAddress().getOffset(), rebaseDelta) == range.address() &&
                         actual.getLength() == range.size(), "primary body disagrees with exported ranges");
                 }

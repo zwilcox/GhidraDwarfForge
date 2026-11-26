@@ -69,6 +69,7 @@ public final class GhidraInstructionEvidence {
                     ranges.add(new FunctionRange(AddressNormalizer.toElfAddress(
                         range.getMinAddress().getOffset(), rebaseDelta), range.getLength()));
                 }
+                ranges.sort(Comparator.comparing(FunctionRange::address, Long::compareUnsigned));
                 if (!ranges.equals(symbol.ranges())) {
                     captured.put(key, unavailable(symbol, "Function body changed after symbol extraction"));
                     continue;

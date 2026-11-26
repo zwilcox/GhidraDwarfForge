@@ -17,6 +17,7 @@ import ghidra.program.util.DefaultLanguageService;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 
 /** Real listing inventories: variable-length instructions, gaps, rebases and drift. */
 public final class GhidraInstructionEvidenceSmoke {
@@ -71,6 +72,9 @@ public final class GhidraInstructionEvidenceSmoke {
                 require(inventory.getFirst().available() && inventory.getLast().available() &&
                     inventory.getLast().starts().isEmpty(), "known zero inventory distinct from unavailable");
                 require(diagnostics.isEmpty(), "valid evidence diagnostics");
+                if (program.getDefaultPointerSize() == Long.BYTES) {
+                    checkReorderedFragments(program, offsets);
+                }
                 var changedBody = new AddressSet(body);
                 changedBody.add(entry.add(44));
                 function.setBody(changedBody);
@@ -113,6 +117,26 @@ public final class GhidraInstructionEvidenceSmoke {
             finally { program.endTransaction(transaction, true); }
         }
         finally { program.release(owner); }
+    }
+
+    private static void checkReorderedFragments(ProgramDB program, List<Long> offsets) throws Exception {
+        // Ghidra's first fragment at 0x1000 maps to ELF 0xffffffffffffffe8.
+        // Its second fragment at 0x1020 maps to ELF 0x8, before the true entry.
+        long delta = 0x1018;
+        var messages = new ArrayList<String>();
+        var functions = GhidraFunctionSymbols.extract(program, TaskMonitor.DUMMY, messages::add, delta);
+        var split = functions.stream().filter(symbol -> symbol.name().equals("split")).findFirst().orElseThrow();
+        require(split.address() == -24L && split.ranges().equals(List.of(
+            new FunctionRange(8, 12), new FunctionRange(-24L, 16))), "incorrect rebased entry or ELF fragments");
+        var evidence = GhidraInstructionEvidence.capture(program, List.of(split), delta, TaskMonitor.DUMMY,
+            messages::add).getFirst();
+        var expected = offsets.stream().map(offset -> offset - 24L).sorted(Long::compareUnsigned).toList();
+        require(evidence.available() && evidence.starts().equals(expected), "lost decoded instructions across the rebase");
+        var aliases = GhidraFunctionAliases.extract(program, List.of(split), delta, TaskMonitor.DUMMY, messages::add);
+        require(aliases.size() == 1 && aliases.getFirst().name().equals("analyst_alias") &&
+            aliases.getFirst().address() == split.address() && aliases.getFirst().size() == 16 &&
+            aliases.getFirst().ranges().stream().map(range -> new FunctionRange(range.address(), range.size()))
+                .toList().equals(split.ranges()), "lost discontiguous alias or entry extent: " + messages);
     }
 
     private static void require(boolean condition, String detail) {

@@ -166,6 +166,8 @@ public final class GhidraFunctionSymbols {
                 diagnostic.accept("Skipped untranslatable function " + function.getName());
                 continue;
             }
+            // A rebase can move a fragment through zero and change its position in ELF order.
+            translated.sort(Comparator.comparing(FunctionRange::address, Long::compareUnsigned));
             result.add(new FunctionSymbol(function.getName(), entry, translated,
                 displayNamespacePath(function, diagnostic)));
         }
