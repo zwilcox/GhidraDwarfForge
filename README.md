@@ -43,13 +43,18 @@ generated loader companion. These checks run at the linked image base and
 after rebasing the Ghidra project across bit 63. A second ELF places a
 function across that boundary and checks source lookup on both sides.
 
+For a shared library linked in the upper half and loaded at a lower address,
+`forge-load` applies the negative load bias. A live x86-64 GDB test verifies
+that the breakpoint matches `dlsym` each time the library is loaded.
+
 On big- and little-endian MIPS64, a bare-metal Malta fixture runs upper-half
 code in QEMU. GDB stops at `0xffffffff80002000`, reads both arguments, steps
 the addition, and observes the result in a global after the function returns.
 
-Address ranges may cross bit 63. A function whose last instruction
-byte is at `0xffffffffffffffff` has an exclusive end of 2⁶⁴, which cannot be
-encoded in the DWARF line table.
+Address ranges may cross bit 63. If a function body includes the byte at
+`0xffffffffffffffff`, its exclusive end is 2⁶⁴. Forge skips that function
+and reports `UNSUPPORTED_RANGE` because the DWARF line table needs a
+representable end address.
 
 Export remains an explicit operation. Installable CI bundles include verified
 Linux x86-64 and Windows x86-64 native libraries; the packaged headless
