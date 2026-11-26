@@ -38,12 +38,16 @@ space. The x86-64 kernel-style fixture places code at `0xffffffff81000000`.
 With the original ELF and its sidecar loaded, the static GDB test resolves a
 function, its breakpoint and source lines, a global, and two register
 parameters. It also checks the stack offset of a seventh integer argument
-before and after the function saves the frame pointer. GDB also registers the
+before and after the function saves the frame pointer. GDB registers the
 generated loader companion. These checks run at the linked image base and
 after rebasing the Ghidra project across bit 63. A second ELF places a
 function across that boundary and checks source lookup on both sides.
-Live stepping and value checks use runnable lower-address
-fixtures. Address ranges may cross bit 63. A function whose last instruction
+
+On big- and little-endian MIPS64, a bare-metal Malta fixture runs upper-half
+code in QEMU. GDB stops at `0xffffffff80002000`, reads both arguments, steps
+the addition, and observes the result in a global after the function returns.
+
+Address ranges may cross bit 63. A function whose last instruction
 byte is at `0xffffffffffffffff` has an exclusive end of 2⁶⁴, which cannot be
 encoded in the DWARF line table.
 

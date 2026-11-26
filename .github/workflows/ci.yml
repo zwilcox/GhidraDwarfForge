@@ -3070,6 +3070,7 @@ jobs:
         run: |
           set -euo pipefail
           endian=${TARGET#mips32}
+          bash src/test/integration/mips64-upper-half.sh "$GHIDRA_INSTALL_DIR" "$endian" build/test-results/mips64-upper-half
           for abi in n32 n64; do
               for role in exec pie pie-rebased shared shared-rebased; do
                   python3 src/test/integration/mips-wide-abi.py "$GHIDRA_INSTALL_DIR" \
