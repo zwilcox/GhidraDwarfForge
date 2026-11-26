@@ -41,6 +41,8 @@ def coverageSha256 = { File value ->
 // Integration jobs reuse the extension build's tools from this same CI run.
 // File dependencies avoid Maven resolution on every fresh target/Windows runner.
 def coverageToolsBundle = providers.environmentVariable("FORGE_COVERAGE_TOOLS_BUNDLE")
+def coverageToolDirectory = providers.environmentVariable("FORGE_PINNED_COVERAGE_TOOLS")
+def coverageLibraries
 if (coverageToolsBundle.isPresent()) {
     def bundle = file(coverageToolsBundle.get())
     def manifest = new groovy.json.JsonSlurper().parse(new File(bundle, "collection/manifest.json"))
@@ -57,7 +59,7 @@ if (coverageToolsBundle.isPresent()) {
             directory.list().toList().toSet() != metadata.files.keySet()) {
         throw new GradleException("Missing or unrecorded coverage tool files")
     }
-    def libraries = metadata.files.collect { name, hash ->
+    coverageLibraries = metadata.files.collect { name, hash ->
         if (!(name ==~ /[A-Za-z0-9_.-]+\.jar/) || !(hash ==~ /[0-9a-f]{64}/)) {
             throw new GradleException("Invalid coverage tool name or digest")
         }
@@ -68,14 +70,26 @@ if (coverageToolsBundle.isPresent()) {
         }
         return library
     }
-    def agentName = "org.jacoco.agent-${coverageVersion}.jar".toString()
-    if (!metadata.files.containsKey(agentName)) {
+} else if (coverageToolDirectory.isPresent()) {
+    def directory = file(coverageToolDirectory.get())
+    coverageLibraries = file("support/ci/jacoco-tools.sha256").readLines("UTF-8").collect { entry ->
+        def (hash, path) = entry.tokenize()
+        def library = new File(directory, path)
+        if (!library.isFile() || coverageSha256(library) != hash) {
+            throw new GradleException("Missing or changed pinned coverage tool: ${path}")
+        }
+        return library
+    }
+}
+if (coverageLibraries != null) {
+    def agent = coverageLibraries.find { it.name == "org.jacoco.agent-${coverageVersion}.jar" }
+    if (agent == null) {
         throw new GradleException("Missing coverage agent dependency")
     }
     configurations.jacocoAgent.dependencies.clear()
     configurations.jacocoAnt.dependencies.clear()
-    dependencies.add("jacocoAgent", files(new File(directory, agentName)))
-    dependencies.add("jacocoAnt", files(libraries))
+    dependencies.add("jacocoAgent", files(agent))
+    dependencies.add("jacocoAnt", files(coverageLibraries))
 }
 
 // Bind every compiled class, including unloaded classes, to each invocation.
