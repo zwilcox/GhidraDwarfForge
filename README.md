@@ -35,6 +35,15 @@ globals, stable registers, changing stack locations, composites, and honest
 unavailable variables. Explicitly rebased Ghidra projects normalize back to
 ELF link-time addresses.
 
+Development builds can export ELF64 code in the upper half of the address
+space. The x86-64 kernel-style fixture places code at `0xffffffff81000000`.
+With the original ELF and its sidecar loaded, the static GDB test resolves a
+function, its breakpoint and source lines, a global, and the registers holding
+two parameters. Live stepping and value checks use runnable lower-address
+fixtures. Address ranges may cross bit 63. A function whose last instruction
+byte is at `0xffffffffffffffff` has an exclusive end of 2⁶⁴, which cannot be
+encoded in the DWARF line table.
+
 Export remains an explicit operation. Installable CI bundles include verified
 Linux x86-64 and Windows x86-64 native libraries; the packaged headless
 wrappers select them automatically. The Windows-hosted ELF lane passes native,

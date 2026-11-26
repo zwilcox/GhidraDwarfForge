@@ -115,6 +115,7 @@ public final class GhidraFunctionSymbols {
             List<FunctionRange> translated = new ArrayList<>();
             AddressRange range = first;
             SkipReason rejection = null;
+            String detail = "";
             while (true) {
                 if (!range.getMinAddress().isMemoryAddress()) {
                     rejection = SkipReason.UNSUPPORTED_RANGE;
@@ -140,6 +141,7 @@ public final class GhidraFunctionSymbols {
                 }
                 catch (ArithmeticException | IllegalArgumentException failure) {
                     rejection = SkipReason.UNSUPPORTED_RANGE;
+                    detail = " (" + failure.getMessage() + ")";
                     break;
                 }
                 if (!ranges.hasNext()) {
@@ -150,7 +152,7 @@ public final class GhidraFunctionSymbols {
             if (rejection != null) {
                 skipped.add(new SkippedFunction(function.getName(), rejection));
                 diagnostic.accept("Skipped function " + function.getName() + " at " + range +
-                    ": " + rejection);
+                    ": " + rejection + detail);
                 continue;
             }
             long entry;

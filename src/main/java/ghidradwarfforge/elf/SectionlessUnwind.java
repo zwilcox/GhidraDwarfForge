@@ -13,6 +13,8 @@ import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
+import ghidradwarfforge.UnsignedAddress;
+
 /** Exposes original, table-proven unwind records; never creates call-frame instructions. */
 final class SectionlessUnwind {
     private static final long PT_GNU_EH_FRAME = 0x6474e550L;
@@ -84,58 +86,59 @@ final class SectionlessUnwind {
         require(count > 0 && count <= MAX_RECORDS, "unwind search-table count outside supported bounds");
         Set<Long> referenced = new HashSet<>();
         var initialLocations = new LinkedHashMap<Long, Long>();
-        long lastPc = -1;
-        long end = start;
+        long lastPc = 0;
+        long size = 0;
         for (long index = 0; index < count; index++) {
             checkCancelled(reader.cancelled);
             long initialLocation = encoded(reader, bytes, header.virtualAddress, tableEncoding);
             long fde = encoded(reader, bytes, header.virtualAddress, tableEncoding);
-            require(initialLocation > lastPc && referenced.add(fde), "unordered or duplicate unwind search-table entry");
+            require((index == 0 || Long.compareUnsigned(initialLocation, lastPc) > 0) && referenced.add(fde),
+                "unordered or duplicate unwind search-table entry");
             lastPc = initialLocation;
             initialLocations.put(fde, initialLocation);
-            require(fde >= start && fde - start <= ElfImage.MAX_TABLE_BYTES - 8,
+            require(Long.compareUnsigned(fde, start) >= 0 && Long.compareUnsigned(fde - start, ElfImage.MAX_TABLE_BYTES - 8) <= 0,
                 "unwind FDE outside bounded frame extent");
             long length = length(reader.bytes(fde, 4).getInt());
-            end = Math.max(end, add(fde, 4 + length));
+            size = Math.max(size, (fde - start) + 4 + length);
         }
-        require(end > start && end - start <= ElfImage.MAX_TABLE_BYTES, "unwind frame extent exceeds budget");
-        long offset = reader.locate(start, end - start);
+        require(size > 0 && size <= ElfImage.MAX_TABLE_BYTES, "unwind frame extent exceeds budget");
+        long offset = reader.locate(start, size);
         Set<Long> cies = new HashSet<>();
         Set<Long> fdes = new HashSet<>();
-        long cursor = start;
+        long position = 0;
         int records = 0;
-        while (cursor < end) {
+        while (position < size) {
+            long cursor = start + position;
             checkCancelled(reader.cancelled);
             require(++records <= MAX_RECORDS, "unwind record count exceeds budget");
-            require(end - cursor >= 8, "truncated unwind record header");
+            require(size - position >= 8, "truncated unwind record header");
             ByteBuffer record = reader.bytes(cursor, 8);
             long length = length(record.getInt());
-            require(length <= end - cursor - 4, "unwind record crosses proven extent");
+            require(length <= size - position - 4, "unwind record crosses proven extent");
             long identity = Integer.toUnsignedLong(record.getInt());
             if (identity == 0) {
                 require(length >= 9, "truncated unwind CIE");
-                int version = Byte.toUnsignedInt(reader.bytes(add(cursor, 8), 1).get());
+                int version = Byte.toUnsignedInt(reader.bytes(cursor + 8, 1).get());
                 require(version == 1 || version == 3 || version == 4, "unsupported unwind CIE version");
                 require(version != 4 || length >= 11, "truncated version-4 unwind CIE");
                 cies.add(cursor);
             }
             else {
                 require(length >= 6, "truncated unwind FDE");
-                long field = add(cursor, 4);
-                require(identity <= field && cies.contains(field - identity),
+                require(identity <= position + 4 && cies.contains(cursor + 4 - identity),
                     "unwind FDE does not reference an earlier complete CIE");
                 require(fdes.add(cursor), "duplicate unwind record");
             }
-            cursor = add(cursor, 4 + length);
+            position += 4 + length;
         }
-        require(cursor == end && fdes.equals(referenced), "unwind records disagree with search-table boundaries");
+        require(position == size && fdes.equals(referenced), "unwind records disagree with search-table boundaries");
         var result = new ElfImage.Section();
         result.name = ".eh_frame";
         result.type = 1;
         result.flags = 2;
         result.address = start;
         result.offset = offset;
-        result.size = end - start;
+        result.size = size;
         result.alignment = 1;
         return new Discovery(result, initialLocations);
     }
@@ -161,7 +164,7 @@ final class SectionlessUnwind {
         require(application == 0 || application == 0x10 || application == 0x30,
             "unsupported indirect or relative unwind pointer encoding " + encoding);
         require(bytes.remaining() >= width, "truncated encoded unwind field");
-        long field = add(base, bytes.position());
+        long field = base + bytes.position();
         long value = switch (form) {
             case 2 -> Short.toUnsignedInt(bytes.getShort());
             case 3 -> Integer.toUnsignedLong(bytes.getInt());
@@ -170,17 +173,15 @@ final class SectionlessUnwind {
             case 4, 12 -> bytes.getLong();
             default -> reader.image.is64Bit() ? bytes.getLong() : Integer.toUnsignedLong(bytes.getInt());
         };
-        require(form >= 10 || value >= 0, "unwind pointer exceeds signed address range");
-        long result;
-        try {
-            result = Math.addExact(value, application == 0x10 ? field : application == 0x30 ? base : 0);
+        if (application != 0) {
+            value = UnsignedAddress.addDisplacement(application == 0x10 ? field : base, value, form >= 10);
         }
-        catch (ArithmeticException overflow) {
-            throw new IllegalArgumentException("unwind encoded address overflow", overflow);
+        else if (form >= 10 && !reader.image.is64Bit() && value < 0 && value >= Integer.MIN_VALUE) {
+            value = Integer.toUnsignedLong((int) value);
         }
-        require(result >= 0 && (reader.image.is64Bit() || result <= 0xffffffffL),
+        require(reader.image.is64Bit() || Long.compareUnsigned(value, 0xffff_ffffL) <= 0,
             "unwind value outside target address range");
-        return result;
+        return value;
     }
 
     private static final class Reader implements AutoCloseable {
@@ -207,22 +208,19 @@ final class SectionlessUnwind {
 
         private long locate(long address, long size) {
             require(size > 0 && size <= ElfImage.MAX_TABLE_BYTES, "unsupported unwind read extent");
-            long end = add(address, size);
             ElfLoadAllocations.Allocation selected = null;
             for (var allocation : allocations) {
                 checkCancelled(cancelled);
                 require(++comparisons <= 16L * 1024 * 1024, "unwind load-comparison budget exceeded");
                 var section = allocation.section();
-                if (address < section.address + section.size && section.address < end) {
+                if (UnsignedAddress.overlaps(address, size, section.address, section.size)) {
                     require(selected == null, "ambiguous unwind load mapping");
                     selected = allocation;
                 }
             }
-            require(selected != null && address >= selected.section().address &&
-                address - selected.section().address <= selected.fileSize() &&
-                size <= selected.fileSize() - (address - selected.section().address),
+            require(selected != null && UnsignedAddress.contains(selected.section().address, selected.fileSize(), address, size),
                 "unwind extent is not uniquely file backed");
-            return add(selected.section().offset, address - selected.section().address);
+            return Math.addExact(selected.section().offset, address - selected.section().address);
         }
 
         private ByteBuffer bytes(long address, int size) throws IOException {
@@ -248,12 +246,6 @@ final class SectionlessUnwind {
         public void close() throws IOException {
             channel.close();
         }
-    }
-
-    private static long add(long value, long increment) {
-        require(value >= 0 && increment >= 0 && increment <= Long.MAX_VALUE - value,
-            "unwind address or extent overflow");
-        return value + increment;
     }
 
     private static void require(boolean condition, String message) {

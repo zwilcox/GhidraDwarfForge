@@ -78,6 +78,14 @@ public final class QualifiedFunctionNameSmoke {
                 new GhidraFunctionSymbols.SkippedFunction("crosses_alias", unmapped),
                 new GhidraFunctionSymbols.SkippedFunction("crosses_gap", unmapped))),
                 "function admitted across a byte-mapped block or a gap: " + result);
+            if (program.getDefaultPointerSize() == 8) {
+                var diagnostics = new ArrayList<String>();
+                var terminal = GhidraFunctionSymbols.extractDetailed(program, TaskMonitor.DUMMY,
+                    diagnostics::add, start.getOffset() + 16);
+                require(terminal.functions().isEmpty() && diagnostics.stream().anyMatch(message ->
+                    message.contains("crosses_blocks") && message.contains("exclusive range end 2^64")),
+                    "function ending at the last target byte lost its endpoint diagnostic: " + diagnostics);
+            }
         }
         finally {
             program.endTransaction(transaction, false);

@@ -16,6 +16,7 @@ import java.util.function.BooleanSupplier;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.unwind.OriginalFrameRanges;
 import ghidradwarfforge.targets.UnwindSectionProfile;
 
@@ -137,7 +138,7 @@ public final class OriginalFrameSources {
                         "EH search-table and frame inventory counts disagree");
                     for (var frame : records.frames()) {
                         check(cancelled);
-                        Long expected = discovery.initialLocations().get(Math.addExact(section.address, frame.offset()));
+                        Long expected = discovery.initialLocations().get(UnsignedAddress.addOffset(section.address, frame.offset()));
                         require(expected != null && expected.longValue() == frame.address(),
                             "EH search-table location differs from referenced FDE");
                     }

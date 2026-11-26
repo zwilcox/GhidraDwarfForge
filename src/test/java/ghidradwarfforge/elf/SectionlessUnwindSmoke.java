@@ -30,6 +30,32 @@ public final class SectionlessUnwindSmoke {
                     }
                 }
                 byte[] valid = fixture(wide, order, 0x3b);
+                if (wide) {
+                    for (long base : new long[] {Long.MAX_VALUE - 0x106, 0xffff_ffff_8100_0000L, -0x900L}) {
+                        byte[] high = valid.clone();
+                        var header = ByteBuffer.wrap(high).order(order);
+                        header.putLong(80, base).putLong(136, base + 0x200);
+                        Path input = root.resolve("upper-half");
+                        Files.write(input, high);
+                        if (base == -0x900L) {
+                            header.putInt(0x20c, 0x8f0 - 0x200).putInt(0x31c, 0x8f0 - 0x31c);
+                            Files.write(input, high);
+                        }
+                        long pc = base + (base == -0x900L ? 0x8f0 : 0x100);
+                        var image = ElfImage.read(input);
+                        var frame = OriginalFrameSources.inspect(image, () -> false).sources().getFirst().records().frames().getFirst();
+                        require(frame.address() == pc && frame.size() == 16, "sectionless frame lookup or PC-relative decoding lost the target address");
+                        if (order == ByteOrder.LITTLE_ENDIAN) {
+                            var coverage = OriginalUnwindCoverage.inspect(image, () -> false);
+                            require(coverage.intervals().equals(List.of(new OriginalUnwindCoverage.Interval(pc, pc + 16))),
+                                "original coverage lost the FDE extent");
+                            require(!coverage.overlaps(pc - 1, 1) && coverage.overlaps(pc - 1, 2) &&
+                                coverage.overlaps(pc + 15, 1) && !coverage.overlaps(pc + 16, 1),
+                                "original coverage lost an instruction boundary");
+                        }
+                        require(Arrays.equals(Files.readAllBytes(input), high), "upper-half frame lookup changed original");
+                    }
+                }
                 allocationObservation(root, valid, wide, order);
                 originalFrameView(root, valid, wide, order);
                 for (String mutation : List.of("version", "pointer-form", "table-form", "count-relative",

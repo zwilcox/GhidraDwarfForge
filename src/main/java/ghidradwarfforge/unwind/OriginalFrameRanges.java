@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
+import ghidradwarfforge.UnsignedAddress;
+
 /**
  * Bounded inventory of linked .debug_frame/.eh_frame record extents.
  * This does not validate CFI instructions or establish their runtime correctness.
@@ -36,7 +38,7 @@ public final class OriginalFrameRanges {
         check(cancelled);
         require(data.length <= MAX_BYTES && (addressBytes == 4 || addressBytes == 8),
             "unsupported frame section size or address width");
-        require(sectionAddress >= 0 && (addressBytes != 4 || sectionAddress <= 0xffff_ffffL),
+        require(UnsignedAddress.fitsObject(sectionAddress, Math.max(1, data.length), addressBytes),
             "frame section address exceeds supported domain");
         var reader = new Reader(data, order, cancelled);
         var records = new ArrayList<Record>();
@@ -135,17 +137,17 @@ public final class OriginalFrameRanges {
             Cie cie = cies.get((int) reference);
             require(cie != null, "FDE does not reference a complete CIE");
             reader.window(record.body(), record.end());
-            long fieldAddress = add(sectionAddress, reader.position(), "encoded pointer field overflows");
             long address = reader.scalar(cie.encoding() & 15, cie.addressBytes());
-            require((cie.encoding() & 8) != 0 || address >= 0, "unsigned FDE pointer exceeds supported domain");
+            boolean signed = (cie.encoding() & 8) != 0;
             if ((cie.encoding() & 0x70) == 0x10) {
-                try { address = Math.addExact(fieldAddress, address); }
-                catch (ArithmeticException overflow) { throw new IllegalArgumentException("relative FDE address overflows", overflow); }
+                address = UnsignedAddress.addDisplacement(sectionAddress + record.body(), address, signed);
+            }
+            else if (signed && addressBytes == 4 && address < 0 && address >= Integer.MIN_VALUE) {
+                address = Integer.toUnsignedLong((int) address);
             }
             long size = reader.scalar(cie.encoding() & 15, cie.addressBytes());
-            require(address >= 0 && size >= 0, "FDE range exceeds supported address domain");
-            long last = size == 0 ? address : add(address, size - 1, "FDE extent overflows");
-            require(addressBytes != 4 || last <= 0xffff_ffffL, "FDE extent exceeds target address width");
+            require(size >= 0, "FDE range exceeds supported byte count");
+            require(UnsignedAddress.fitsObject(address, Math.max(1, size), addressBytes), "FDE extent overflows target address width");
             if (cie.augmented()) {
                 long bytes = reader.leb(false);
                 require(bytes >= 0 && bytes <= reader.remaining(), "FDE augmentation crosses record");
@@ -166,10 +168,6 @@ public final class OriginalFrameRanges {
         return scalarEncoding(encoding & 15) &&
             (application == 0 || application == 0x10 || application == 0x20 ||
              application == 0x30 || application == 0x40);
-    }
-    private static long add(long value, long increment, String message) {
-        require(value >= 0 && increment >= 0 && increment <= Long.MAX_VALUE - value, message);
-        return value + increment;
     }
     private static void require(boolean condition, String reason) {
         if (!condition) throw new IllegalArgumentException(reason);

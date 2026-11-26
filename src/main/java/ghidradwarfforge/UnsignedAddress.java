@@ -33,6 +33,16 @@ public final class UnsignedAddress {
         return result;
     }
 
+    /** Apply a DW_EH_PE relative pointer's signed or unsigned operand to its target base. */
+    public static long addDisplacement(long base, long value, boolean signed) {
+        long address = base + value;
+        int order = Long.compareUnsigned(address, base);
+        if (signed && value < 0 ? order > 0 : order < 0) {
+            throw new IllegalArgumentException("relative pointer escapes the target address space");
+        }
+        return address;
+    }
+
     public static long lastByte(long address, long size) {
         if (size <= 0) throw new IllegalArgumentException("empty or unbounded target address range");
         return addOffset(address, size - 1);
