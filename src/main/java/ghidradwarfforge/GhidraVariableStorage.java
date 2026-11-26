@@ -230,7 +230,7 @@ public final class GhidraVariableStorage {
             return List.of();
         }
         long start = function.getEntryPoint().getOffset();
-        long end = Math.addExact(function.getBody().getMaxAddress().getOffset(), 1);
+        long end = UnsignedAddress.endExclusive(function.getBody().getMaxAddress().getOffset(), 1);
         var calls = composite ? Map.<ghidra.program.model.address.Address, DirectLeafCalls.Leaf>of()
             : DirectLeafCalls.inspect(program, instructions, monitor);
         if (calls == null) {
@@ -239,7 +239,7 @@ public final class GhidraVariableStorage {
         long boundary = composite
             ? registerPrefixEnd(start, end, instructions, bases, true, monitor)
             : registerPrefixEnd(start, end, instructions, register.getBaseRegister(), calls, monitor);
-        if (boundary <= start) {
+        if (boundary == start) {
             return List.of();
         }
         List<StorageInterval> result = new ArrayList<>();
@@ -262,7 +262,7 @@ public final class GhidraVariableStorage {
             // from before the handoff cannot resurrect a killed value. Every
             // iteration must advance, so the decoded body bounds the chain.
             // Every call in a suffix still requires the inspected graph proof.
-            while (boundary < end && backup.bits() != null &&
+            while (Long.compareUnsigned(boundary, end) < 0 && backup.bits() != null &&
                     function.getProgram() == program && storage.getProgramArchitecture() == program &&
                     parameter.getFunction() == function && parameter.getOrdinal() >= 0 &&
                     function.getParameter(parameter.getOrdinal()) == parameter && parameter.getFirstUseOffset() == 0 &&
@@ -270,7 +270,7 @@ public final class GhidraVariableStorage {
                 List<Instruction> suffix = new ArrayList<>();
                 for (Instruction instruction : instructions) {
                     monitor.checkCancelled();
-                    if (instruction.getAddress().getOffset() >= firstHandoff) {
+                    if (Long.compareUnsigned(instruction.getAddress().getOffset(), firstHandoff) >= 0) {
                         suffix.add(instruction);
                     }
                 }
@@ -279,7 +279,7 @@ public final class GhidraVariableStorage {
                 // A self-copy/widening can preserve the first fact while still
                 // being a physical write in the second proof. Require agreement
                 // on the handoff instead of joining two different boundaries.
-                if (next == null || next.start() != boundary || next.end() <= boundary) {
+                if (next == null || next.start() != boundary || Long.compareUnsigned(next.end(), boundary) <= 0) {
                     break;
                 }
                 result.add(new StorageInterval(boundary, next.end(), next.storage()));
@@ -303,7 +303,7 @@ public final class GhidraVariableStorage {
                 spilled = true;
             }
         }
-        if (boundary < end) {
+        if (Long.compareUnsigned(boundary, end) < 0) {
             result.add(new StorageInterval(boundary, end, unavailable(
                 spilled ? OmissionReason.UNKNOWN_LIFETIME : OmissionReason.REGISTER_MODIFIED,
                 (spilled ? "proven parameter stack spill may have changed before address 0x" :
@@ -419,12 +419,12 @@ public final class GhidraVariableStorage {
             return List.of();
         }
         long start = function.getEntryPoint().getOffset();
-        long end = Math.addExact(function.getBody().getMaxAddress().getOffset(), 1);
+        long end = UnsignedAddress.endExclusive(function.getBody().getMaxAddress().getOffset(), 1);
         // Any possible memory write ends this first bounded proof, even a
         // store that might target a disjoint frame slot. No alias inference.
         long boundary = registerPrefixEnd(start, end, instructions, bases, true,
             Map.of(), true, monitor);
-        if (boundary <= start) {
+        if (boundary == start) {
             return List.of();
         }
         StackDepthProfile profile = stackDepthProfile(program, function, monitor);
@@ -439,8 +439,8 @@ public final class GhidraVariableStorage {
         List<StorageInterval> result = new ArrayList<>();
         for (StackDepthInterval interval : profile.intervals()) {
             monitor.checkCancelled();
-            long limit = Math.min(boundary, interval.end());
-            if (interval.start() >= limit) {
+            long limit = UnsignedAddress.min(boundary, interval.end());
+            if (Long.compareUnsigned(interval.start(), limit) >= 0) {
                 break;
             }
             Storage value = unavailable(OmissionReason.UNKNOWN_LIFETIME,
@@ -462,7 +462,7 @@ public final class GhidraVariableStorage {
             }
             result.add(new StorageInterval(interval.start(), limit, value));
         }
-        if (boundary < end) {
+        if (Long.compareUnsigned(boundary, end) < 0) {
             result.add(new StorageInterval(boundary, end, unavailable(OmissionReason.UNKNOWN_LIFETIME,
                 "incoming mixed storage may have been overwritten; later storage is not established")));
         }
@@ -532,7 +532,7 @@ public final class GhidraVariableStorage {
         return List.copyOf(instructions);
     }
 
-    /** Exact fully decoded, ordinary straight-line leaf proof; -1 rejects it. */
+    /** The start address denotes an empty prefix when no boundary is proven. */
     static long registerPrefixEnd(long start, long end, List<Instruction> instructions,
             Register register, TaskMonitor monitor) throws CancelledException {
         return registerPrefixEnd(start, end, instructions, List.of(register), false, monitor);
@@ -565,7 +565,7 @@ public final class GhidraVariableStorage {
             Map<ghidra.program.model.address.Address, DirectLeafCalls.Leaf> calls,
             boolean stopAtMemoryWrite, TaskMonitor monitor) throws CancelledException {
         long expected = start;
-        long firstWriteEnd = -1;
+        long firstWriteEnd = start;
         boolean returned = false;
         for (int index = 0; index < instructions.size(); index++) {
             Instruction instruction = instructions.get(index);
@@ -576,17 +576,17 @@ public final class GhidraVariableStorage {
                     (exactDecodedLength && (instruction.isLengthOverridden() ||
                         instruction.isFallThroughOverridden() || instruction.getLength() <= 0 ||
                         instruction.getParsedLength() != instruction.getLength()))) {
-                return -1;
+                return start;
             }
-            long next = Math.addExact(instruction.getMaxAddress().getOffset(), 1);
-            if (next <= expected || next > end ||
-                    (exactDecodedLength && next != Math.addExact(expected, instruction.getLength()))) {
-                return -1;
+            long next = UnsignedAddress.endExclusive(instruction.getMaxAddress().getOffset(), 1);
+            if (Long.compareUnsigned(next, expected) <= 0 || Long.compareUnsigned(next, end) > 0 ||
+                    (exactDecodedLength && next != UnsignedAddress.endExclusive(expected, instruction.getLength()))) {
+                return start;
             }
             long terminalEnd = next;
             if (instruction.getDelaySlotDepth() != 0) {
-                terminalEnd = delayedTerminalEnd(instructions, index, end, monitor);
-                if (terminalEnd < 0) return -1;
+                if (!endsWithDelaySlots(instructions, index, end, monitor)) return start;
+                terminalEnd = end;
             }
             boolean returns = false;
             PcodeOp[] operations = instruction.getPcode();
@@ -597,7 +597,7 @@ public final class GhidraVariableStorage {
                 switch (operation.getOpcode()) {
                     case PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND,
                         PcodeOp.CALLIND,
-                        PcodeOp.UNIMPLEMENTED -> { return -1; }
+                        PcodeOp.UNIMPLEMENTED -> { return start; }
                     case PcodeOp.CALLOTHER -> {
                         if (MipsReturnMode.isNotification(instruction, operation)) continue;
                         // Only the state before this final machine return is
@@ -609,14 +609,14 @@ public final class GhidraVariableStorage {
                                 instruction.isLengthOverridden() || instruction.isFallThroughOverridden() ||
                                 instruction.getLength() <= 0 ||
                                 instruction.getParsedLength() != instruction.getLength() ||
-                                next != Math.addExact(expected, instruction.getLength())) {
-                            return -1;
+                                next != UnsignedAddress.endExclusive(expected, instruction.getLength())) {
+                            return start;
                         }
                     }
                     case PcodeOp.CALL -> {
                         var effects = calls.get(instruction.getAddress());
-                        if (effects == null) return -1;
-                        if (firstWriteEnd == -1) {
+                        if (effects == null) return start;
+                        if (firstWriteEnd == start) {
                             for (Register register : registers) {
                                 monitor.checkCancelled();
                                 if (!effects.preserves(register, monitor)) {
@@ -634,19 +634,19 @@ public final class GhidraVariableStorage {
             if (returns) {
                 if (!flow.isTerminal() || flow.isCall() || terminalEnd != end ||
                         instruction.getFallThrough() != null) {
-                    return -1;
+                    return start;
                 }
                 returned = true;
             }
             else if (!(flow.isFallthrough() || calls.containsKey(instruction.getAddress())) ||
                     instruction.getFallThrough() == null ||
                     instruction.getFallThrough().getOffset() != next) {
-                return -1;
+                return start;
             }
-            if (firstWriteEnd == -1 && stopAtMemoryWrite && writesMemory(instruction)) {
+            if (firstWriteEnd == start && stopAtMemoryWrite && writesMemory(instruction)) {
                 firstWriteEnd = next;
             }
-            if (firstWriteEnd == -1) {
+            if (firstWriteEnd == start) {
                 for (Register register : registers) {
                     if (exactDecodedLength) {
                         monitor.checkCancelled();
@@ -658,7 +658,7 @@ public final class GhidraVariableStorage {
                 }
             }
             if (instruction.getDelaySlotDepth() != 0) {
-                if (!returns) return -1;
+                if (!returns) return start;
                 // Ghidra folds delay-slot effects into the owner's p-code.
                 // A write there ends availability at the slot address, so no
                 // partially executed delayed transfer acquires a location.
@@ -667,18 +667,18 @@ public final class GhidraVariableStorage {
             expected = terminalEnd;
         }
         return returned && expected == end
-            ? firstWriteEnd == -1 && stopAtMemoryWrite ? end : firstWriteEnd : -1;
+            ? firstWriteEnd == start && stopAtMemoryWrite ? end : firstWriteEnd : start;
     }
 
     /** Only a fully decoded final return and its adjacent ordinary delay slots. */
-    private static long delayedTerminalEnd(List<Instruction> instructions, int index, long end,
+    private static boolean endsWithDelaySlots(List<Instruction> instructions, int index, long end,
             TaskMonitor monitor) throws CancelledException {
         Instruction owner = instructions.get(index);
         int count = owner.getDelaySlotDepth();
         if (count <= 0 || count > instructions.size() - index - 1 || index + count + 1 != instructions.size() ||
                 !owner.getFlowType().isTerminal() || owner.getFlowType().isCall() || owner.getFallThrough() != null ||
                 owner.isLengthOverridden() || owner.isFallThroughOverridden() || owner.getLength() <= 0 ||
-                owner.getLength() != owner.getParsedLength()) return -1;
+                owner.getLength() != owner.getParsedLength()) return false;
         var next = owner.getMaxAddress().next();
         for (int slot = 1; slot <= count; slot++) {
             monitor.checkCancelled();
@@ -688,18 +688,18 @@ public final class GhidraVariableStorage {
                     !delayed.getFlowType().isFallthrough() || delayed.isLengthOverridden() ||
                     delayed.isFallThroughOverridden() || delayed.getLength() <= 0 ||
                     delayed.getLength() != delayed.getParsedLength() ||
-                    delayed.getMaxAddress().getOffset() + 1 != delayed.getAddress().getOffset() + delayed.getLength()) return -1;
+                    delayed.getMaxAddress().getOffset() + 1 != delayed.getAddress().getOffset() + delayed.getLength()) return false;
             for (PcodeOp operation : delayed.getPcode()) {
                 switch (operation.getOpcode()) {
                     case PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND, PcodeOp.CALL, PcodeOp.CALLIND,
-                        PcodeOp.RETURN, PcodeOp.CALLOTHER, PcodeOp.UNIMPLEMENTED -> { return -1; }
+                        PcodeOp.RETURN, PcodeOp.CALLOTHER, PcodeOp.UNIMPLEMENTED -> { return false; }
                     default -> { }
                 }
             }
             next = delayed.getMaxAddress().next();
-            if (next == null || !next.equals(delayed.getFallThrough())) return -1;
+            if (next == null || !next.equals(delayed.getFallThrough())) return false;
         }
-        return next.getOffset() == end ? end : -1;
+        return next.getOffset() == end;
     }
 
     /** Returns one exact stack or provably stable register local. */
@@ -828,7 +828,7 @@ public final class GhidraVariableStorage {
             return List.of();
         }
         long start = entry.getOffset();
-        long end = Math.addExact(function.getBody().getMaxAddress().getOffset(), 1);
+        long end = UnsignedAddress.endExclusive(function.getBody().getMaxAddress().getOffset(), 1);
         Instruction firstInstruction = program.getListing().getInstructionAt(firstUse);
         if (firstInstruction == null) {
             return List.of();
@@ -838,15 +838,15 @@ public final class GhidraVariableStorage {
             return List.of();
         }
         long availableStart = definesStart
-            ? Math.addExact(firstInstruction.getMaxAddress().getOffset(), 1) : firstUse.getOffset();
-        if (availableStart >= end) {
+            ? UnsignedAddress.endExclusive(firstInstruction.getMaxAddress().getOffset(), 1) : firstUse.getOffset();
+        if (Long.compareUnsigned(availableStart, end) >= 0) {
             return List.of();
         }
         // Validate the entire body, including effects after the proposed range.
         // No call exception is provided. The definition must have completed
         // before the first state at which the location is offered to GDB.
         long firstWrite = registerPrefixEnd(start, end, instructions, List.of(base), true, monitor);
-        if (firstWrite <= start || firstWrite > availableStart) {
+        if (firstWrite == start || Long.compareUnsigned(firstWrite, availableStart) > 0) {
             return List.of();
         }
         boolean lastDefinitionComplete = false;
@@ -874,7 +874,7 @@ public final class GhidraVariableStorage {
                 provenStart |= definesStart;
             }
             if (instruction.getAddress().compareTo(firstUse) > 0 && writes && boundary == end) {
-                boundary = Math.addExact(instruction.getMaxAddress().getOffset(), 1);
+                boundary = UnsignedAddress.endExclusive(instruction.getMaxAddress().getOffset(), 1);
             }
         }
         if (!provenStart) {
@@ -884,7 +884,7 @@ public final class GhidraVariableStorage {
         result.add(new StorageInterval(start, availableStart, unavailable(OmissionReason.UNKNOWN_LIFETIME,
             "curated register local value is not established before its proven start")));
         result.add(new StorageInterval(availableStart, boundary, mapped));
-        if (boundary < end) {
+        if (Long.compareUnsigned(boundary, end) < 0) {
             result.add(new StorageInterval(boundary, end, unavailable(OmissionReason.UNKNOWN_LIFETIME,
                 "curated register local was overwritten; later storage is not established")));
         }
@@ -1359,7 +1359,7 @@ public final class GhidraVariableStorage {
             monitor.checkCancelled();
             Instruction instruction = instructions.next();
             long start = instruction.getAddress().getOffset();
-            long end = Math.addExact(instruction.getMaxAddress().getOffset(), 1L);
+            long end = UnsignedAddress.endExclusive(instruction.getMaxAddress().getOffset(), 1);
             int depth = truncated.getOrDefault(instruction.getAddress(), depths.getSPDepth(instruction.getAddress()));
             boolean known = depth != Function.UNKNOWN_STACK_DEPTH_CHANGE &&
                 depth != Function.INVALID_STACK_DEPTH_CHANGE;

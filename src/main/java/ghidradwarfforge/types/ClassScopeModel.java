@@ -53,6 +53,7 @@ public record ClassScopeModel(List<Scope> scopes, List<Binding> bindings, List<M
         }
 
         public static FunctionReference declaration(String name, String key) {
+            text(key);
             return new FunctionReference(name, -1, key);
         }
     }

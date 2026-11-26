@@ -3,6 +3,7 @@ package ghidradwarfforge.types;
 import java.util.Comparator;
 import java.util.List;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.locations.VariableStorageModel;
 import ghidradwarfforge.locations.VariableStorageModel.VariableKind;
 import ghidradwarfforge.locations.VariableStorageModel.VariableLocation;
@@ -60,7 +61,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
 
         public GlobalVariable {
-            if (name == null || name.isBlank() || size <= 0 ||
+            if (name == null || name.isBlank() || !UnsignedAddress.fitsObject(address, size, Long.BYTES) ||
                     type == null || source == null || namespace == null ||
                     namespace.stream().anyMatch(part -> part == null || part.isBlank())) {
                 throw new IllegalArgumentException("invalid global variable");
@@ -78,7 +79,7 @@ public record ProgramTypeModel(TypeGraph types, List<FunctionSignature> function
         }
 
         public FunctionStaticVariable {
-            if (name == null || name.isBlank() || size <= 0 ||
+            if (name == null || name.isBlank() || !UnsignedAddress.fitsObject(address, size, Long.BYTES) ||
                     type == null || source == null || source.isBlank() || block == null) {
                 throw new IllegalArgumentException("invalid function-owned static variable");
             }

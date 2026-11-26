@@ -115,10 +115,12 @@ public final class StackCoordinateProjectionSmoke {
 
     private static void invalidIntervals() {
         for (long[] range : List.of(new long[] {-1, 1}, new long[] {0, 0}, new long[] {1, 0},
-                new long[] {Long.MAX_VALUE, Long.MIN_VALUE})) {
+                new long[] {Long.MIN_VALUE, Long.MAX_VALUE})) {
             expect(IllegalArgumentException.class, () -> new StackDepthInterval(range[0], range[1], 0, true));
             expect(IllegalArgumentException.class, () -> new StorageInterval(range[0], range[1], new StackStorage(0)));
         }
+        var crossing = new StorageInterval(Long.MAX_VALUE, Long.MIN_VALUE, new StackStorage(0));
+        require(crossing.end() - crossing.start() == 1, "lost interval crossing bit 63");
         expect(IllegalArgumentException.class, () -> new StorageInterval(0, 1, null));
         expect(IllegalArgumentException.class, () -> new StackDepthProfile(null, List.of()));
         expect(IllegalArgumentException.class, () -> new StackDepthProfile("RSP", null));

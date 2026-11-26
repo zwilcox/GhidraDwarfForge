@@ -163,7 +163,7 @@ public final class ExportReport {
             .filter(function -> function.failureDiagnostic() != null)
             .map(function -> new FunctionFailure(function.name(), function.address(),
                 function.failureDiagnostic()))
-            .sorted(Comparator.comparingLong(FunctionFailure::address)
+            .sorted(Comparator.comparing(FunctionFailure::address, Long::compareUnsigned)
                 .thenComparing(FunctionFailure::name))
             .toList();
         List<SkippedFunctionInfo> skippedFunctions = skipped.stream()

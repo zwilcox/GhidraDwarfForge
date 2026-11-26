@@ -55,7 +55,7 @@ public final class SyntheticSourceDispositionSmoke {
         rejects(() -> new RelativeLine(1, List.of()));
         rejects(() -> new FunctionText(null, 0, "", null));
         rejects(() -> new FunctionText(" ", 0, "", null));
-        rejects(() -> new FunctionText("fixture", -1, "", null));
+        require(new FunctionText("fixture", -1, "", null).address() == -1L, "source identity lost its top address");
     }
 
     private static void normalizedRows() {
@@ -112,7 +112,7 @@ public final class SyntheticSourceDispositionSmoke {
         catch (UnsupportedOperationException expected) { checks++; }
         rejects(() -> new FunctionTokens(null, 0, List.of()));
         rejects(() -> new FunctionTokens(" ", 0, List.of()));
-        rejects(() -> new FunctionTokens("fixture", -1, List.of()));
+        require(new FunctionTokens("fixture", -1, List.of()).address() == -1L, "token address lost its top bit");
         rejects(() -> new FunctionTokens("fixture", 0, null));
         var source = SyntheticSourceFile.build("fixture", "language", List.of());
         byte[] original = source.utf8();

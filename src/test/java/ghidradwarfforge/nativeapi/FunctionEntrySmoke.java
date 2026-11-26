@@ -110,7 +110,7 @@ public final class FunctionEntrySmoke {
             invalid(() -> new FunctionSymbol("f", 0x1000, body, namespace),
                 "invalid function namespace path");
         }
-        invalid(() -> new FunctionSymbol("f", -1, body), "function ranges are required");
+        invalid(() -> new FunctionSymbol("f", -1, body), "entry is outside");
         invalid(() -> new FunctionSymbol("f", 0x1000, (List<FunctionRange>) null),
             "function ranges are required");
         invalid(() -> new FunctionSymbol("f", 0x1000, List.of()),
@@ -120,19 +120,12 @@ public final class FunctionEntrySmoke {
         invalid(() -> new FunctionSymbol("f", 0x1000,
             List.of(body.get(0), new FunctionRange(0x1007, 8))),
             "ranges overlap or are unsorted");
-        invalid(() -> new FunctionRange(-1, 1), "invalid function address range");
-        invalid(() -> new FunctionRange(0, 0), "invalid function address range");
-        invalid(() -> new FunctionRange(0, -1), "invalid function address range");
-        try {
-            new FunctionRange(Long.MAX_VALUE, 1);
-            throw new AssertionError("function address overflow was accepted");
-        }
-        catch (ArithmeticException expected) {
-            // An overflowing end must never become a wrapped valid interval.
-        }
+        invalid(() -> new FunctionRange(-1, 1), "exclusive range end 2^64");
+        invalid(() -> new FunctionRange(-1, 2), "wraps through zero");
+        invalid(() -> new FunctionRange(0, 0), "empty or unbounded");
+        invalid(() -> new FunctionRange(0, -1), "empty or unbounded");
 
-        // The model uses nonnegative signed addresses and half-open intervals.
-        for (long base : new long[] { 0, 0x1000, 0xffff_ffffL, Long.MAX_VALUE - 16 }) {
+        for (long base : new long[] { 0, 0x1000, 0xffff_ffffL, Long.MAX_VALUE - 7, Long.MIN_VALUE, -17 }) {
             var range = new FunctionRange(base, 16);
             require(range.endExclusive() == base + 16, "wrong exclusive end");
             for (int offset = -1; offset <= 16; offset++) {

@@ -75,7 +75,7 @@ public final class GhidraFunctionSymbols {
                 monitor.checkCancelled();
                 if (!segment.mapsMemory()) continue;
                 long first = segment.virtualAddress();
-                long last = Math.addExact(first, segment.memorySize() - 1);
+                long last = UnsignedAddress.lastByte(first, segment.memorySize());
                 mapped.addRange(space.getAddress(first), space.getAddress(last));
             }
         }
@@ -127,6 +127,10 @@ public final class GhidraFunctionSymbols {
                 try {
                     var linked = new FunctionRange(AddressNormalizer.toElfAddress(
                         range.getMinAddress().getOffset(), rebaseDelta), range.getLength());
+                    if (!UnsignedAddress.fitsObject(linked.address(), linked.size(), program.getDefaultPointerSize())) {
+                        rejection = SkipReason.UNSUPPORTED_RANGE;
+                        break;
+                    }
                     if (original != null && !mapped.contains(space.getAddress(linked.address()),
                             space.getAddress(linked.endExclusive() - 1))) {
                         rejection = SkipReason.UNMAPPED_MEMORY;

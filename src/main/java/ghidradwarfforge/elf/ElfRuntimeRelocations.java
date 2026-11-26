@@ -15,6 +15,8 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
+import ghidradwarfforge.UnsignedAddress;
+
 /**
  * Bounded gABI relocation inventory from PT_DYNAMIC, including sectionless ELF.
  * Raw tags and r_info are preserved: this is not a processor-specific write
@@ -32,6 +34,7 @@ public final class ElfRuntimeRelocations {
     public record Inventory(List<Tag> tags, List<Table> tables) {
         public Inventory { tags = List.copyOf(tags); tables = List.copyOf(tables); }
     }
+    private static final Set<Long> POINTER_TAGS = Set.of(7L, 17L, 23L, 36L);
     private static final int MAX_BYTES = 64 * 1024 * 1024;
     private static final int MAX_RECORDS = 262144;
     private static final Set<Long> SELECTED = Set.of(2L, 7L, 8L, 9L, 17L, 18L, 19L, 20L, 23L, 35L, 36L, 37L);
@@ -65,7 +68,7 @@ public final class ElfRuntimeRelocations {
                     long tag = reader.signed(bytes), value = reader.unsigned(bytes);
                     if (tag == 0) { terminated = true; break; }
                     tags.add(new Tag(tag, value));
-                    if (SELECTED.contains(tag)) require(value >= 0 && selected.putIfAbsent(tag, value) == null,
+                    if (SELECTED.contains(tag)) require((POINTER_TAGS.contains(tag) || value >= 0) && selected.putIfAbsent(tag, value) == null,
                         "duplicate or oversized dynamic relocation tag");
                 }
                 require(terminated, "unterminated dynamic relocation tags");
@@ -118,9 +121,9 @@ public final class ElfRuntimeRelocations {
             boolean covered = false;
             for (var table : tables) {
                 check(cancelled);
-                if (table.format() != format || section.address < table.address()) continue;
+                if (table.format() != format || Long.compareUnsigned(section.address, table.address()) < 0) continue;
                 long delta = section.address - table.address();
-                if (delta <= table.size() && section.size <= table.size() - delta) {
+                if (Long.compareUnsigned(delta, table.size()) <= 0 && section.size <= table.size() - delta) {
                     require(section.offset == add(table.offset(), delta) &&
                         section.entrySize == table.entrySize() && delta % table.entrySize() == 0 &&
                         section.size % table.entrySize() == 0,
@@ -140,7 +143,7 @@ public final class ElfRuntimeRelocations {
             if (start >= end) continue;
             require(a.format() == b.format() && (start - a.offset()) % a.entrySize() == 0 &&
                 (start - b.offset()) % b.entrySize() == 0 &&
-                add(a.address(), start - a.offset()) == add(b.address(), start - b.offset()),
+                UnsignedAddress.addOffset(a.address(), start - a.offset()) == UnsignedAddress.addOffset(b.address(), start - b.offset()),
                 "conflicting overlapping dynamic relocation tables");
         }
     }
@@ -162,23 +165,23 @@ public final class ElfRuntimeRelocations {
         private long signed(ByteBuffer bytes) { return width == 8 ? bytes.getLong() : bytes.getInt(); }
         private int entrySize(Format format) { return width * (format == Format.RELR ? 1 : format == Format.RELA ? 3 : 2); }
         private long locate(long address, long size) {
-            require(address >= 0 && size > 0 && size <= MAX_BYTES, "invalid runtime relocation read extent");
-            long end = add(address, size - 1);
+            require(size > 0 && size <= MAX_BYTES, "invalid runtime relocation read extent");
+            long end = UnsignedAddress.lastByte(address, size);
             require(width == 8 || end <= 0xffff_ffffL, "runtime relocation extent exceeds address width");
             ElfImage.Segment selected = null;
             for (var segment : image.segments()) {
                 check(cancelled);
                 require(++comparisons <= 16L * 1024 * 1024, "runtime relocation mapping budget exceeded");
                 if (segment.type != 1 || segment.memorySize == 0) continue;
-                long last = add(segment.virtualAddress, segment.memorySize - 1);
+                long last = UnsignedAddress.lastByte(segment.virtualAddress, segment.memorySize);
                 require(width == 8 || last <= 0xffff_ffffL, "runtime relocation load exceeds address width");
-                if (address <= last && segment.virtualAddress <= end) {
+                if (Long.compareUnsigned(address, last) <= 0 && Long.compareUnsigned(segment.virtualAddress, end) <= 0) {
                     require(selected == null, "ambiguous runtime relocation load mapping");
                     selected = segment;
                 }
             }
-            require(selected != null && address >= selected.virtualAddress &&
-                address - selected.virtualAddress <= selected.fileSize &&
+            require(selected != null && Long.compareUnsigned(address, selected.virtualAddress) >= 0 &&
+                Long.compareUnsigned(address - selected.virtualAddress, selected.fileSize) <= 0 &&
                 size <= selected.fileSize - (address - selected.virtualAddress),
                 "runtime relocation metadata is not uniquely file backed");
             return add(selected.offset, address - selected.virtualAddress);
@@ -199,37 +202,40 @@ public final class ElfRuntimeRelocations {
         }
         private Table table(String role, Format format, long address, long size) throws IOException {
             int entrySize = entrySize(format);
-            require(address >= 0 && size >= 0 && size % entrySize == 0 && size / entrySize <= MAX_RECORDS,
+            require(size >= 0 && size % entrySize == 0 && size / entrySize <= MAX_RECORDS,
                 "invalid " + role + " table framing");
             var bytes = size == 0 ? ByteBuffer.allocate(0).order(image.byteOrder()) : read(address, size);
             long offset = size == 0 ? 0 : locate(address, size);
             var rows = new ArrayList<Relocation>();
-            long next = -1;
+            long anchor = 0;
+            long bitmapOffset = 0;
+            boolean haveAnchor = false;
             while (bytes.hasRemaining()) {
                 check(cancelled);
                 long at = add(offset, bytes.position()), value = unsigned(bytes);
                 if (format != Format.RELR) {
-                    require(value >= 0, "relocation target exceeds signed address domain");
                     append(rows, new Relocation(at, value, unsigned(bytes), format == Format.RELA ? signed(bytes) : null));
                 }
                 else if ((value & 1) == 0) {
-                    require(value >= 0, "RELR target exceeds signed address domain");
+                    require(UnsignedAddress.fitsObject(value, width, width), "RELR target exceeds address width");
                     append(rows, new Relocation(at, value, null, null));
-                    next = add(value, width);
-                    require(width == 8 || next <= 0x1_0000_0000L, "RELR target extent exceeds ELF32");
+                    anchor = value;
+                    bitmapOffset = 0;
+                    haveAnchor = true;
                 }
                 else {
-                    require(next >= 0, "RELR bitmap has no preceding address");
+                    require(haveAnchor, "RELR bitmap has no preceding address");
                     for (int bit = 1; bit < width * 8; bit++) {
                         check(cancelled);
                         if ((value & (1L << bit)) != 0) {
-                            long target = add(next, (long) (bit - 1) * width);
+                            long target = UnsignedAddress.addOffset(anchor, bitmapOffset + (long) bit * width);
                             require(width == 8 || target <= 0x1_0000_0000L - width, "RELR bitmap exceeds ELF32");
-                            add(target, width - 1);
+                            UnsignedAddress.lastByte(target, width);
                             append(rows, new Relocation(at, target, null, null));
                         }
                     }
-                    next = add(next, (long) (width * 8 - 1) * width);
+                    // Keep a bounded byte offset so a final slot at UINT64_MAX needs no one-past address.
+                    bitmapOffset += (long) (width * 8 - 1) * width;
                 }
             }
             verify();

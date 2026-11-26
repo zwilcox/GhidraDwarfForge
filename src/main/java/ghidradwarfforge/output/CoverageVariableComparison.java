@@ -38,9 +38,9 @@ final class CoverageVariableComparison {
     }
     private static final Comparator<Binding> BINDINGS = Comparator.comparing(Binding::kind)
         .thenComparingInt(Binding::ordinal).thenComparing(Binding::name).thenComparing(Binding::block)
-        .thenComparing(Binding::address, Comparator.nullsFirst(Comparator.naturalOrder()));
-    private static final Comparator<StorageEvidence> STORAGE = Comparator.comparingLong(StorageEvidence::start)
-        .thenComparingLong(StorageEvidence::end).thenComparing(StorageEvidence::category).thenComparing(StorageEvidence::source)
+        .thenComparing(Binding::address, Comparator.nullsFirst(Long::compareUnsigned));
+    private static final Comparator<StorageEvidence> STORAGE = Comparator.comparing(StorageEvidence::start, Long::compareUnsigned)
+        .thenComparing(StorageEvidence::end, Long::compareUnsigned).thenComparing(StorageEvidence::category).thenComparing(StorageEvidence::source)
         .thenComparing(StorageEvidence::omissionReason).thenComparing(StorageEvidence::diagnostic);
 
     static void compare(FunctionInventory before, FunctionInventory after,

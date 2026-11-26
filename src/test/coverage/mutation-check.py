@@ -492,12 +492,10 @@ RUNTIME_RELOCATION_MUTANTS = [
      '(start - a.offset()) % a.entrySize() == 0', 'true'),
     ("runtime-relocation-ignores-second-overlap-framing", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
      '(start - b.offset()) % b.entrySize() == 0', 'true'),
-    ("runtime-relocation-accepts-negative-rel-target", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
-     'require(value >= 0, "relocation target exceeds signed address domain");',
-     'require(true, "relocation target exceeds signed address domain");'),
-    ("runtime-relocation-accepts-negative-relr-target", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
-     'require(value >= 0, "RELR target exceeds signed address domain");',
-     'require(true, "RELR target exceeds signed address domain");'),
+    ("runtime-relocation-truncates-upper-target", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
+     'new Relocation(at, value, unsigned(bytes),', 'new Relocation(at, value & Long.MAX_VALUE, unsigned(bytes),'),
+    ("runtime-relocation-accepts-wrapping-relr-target", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
+     'UnsignedAddress.fitsObject(value, width, width)', 'true'),
     ("runtime-relocation-overflows-elf32-bitmap", RUNTIME_RELOCATIONS, RUNTIME_RELOCATIONS_TEST,
      'width == 8 || target <= 0x1_0000_0000L - width', 'true'),
 ]
@@ -791,7 +789,7 @@ REPORT_TEXT_MUTANTS = [
     ("report-accepts-invalid-artifact-hash", REPORT_TEXT, REPORT_TEXT_TEST,
      '!value.matches("[0-9a-fA-F]{64}")', 'false'),
     ("report-accepts-empty-omitted-range", REPORT_TEXT, REPORT_TEXT_TEST,
-     'endAddress <= startAddress', 'endAddress < startAddress'),
+     'Long.compareUnsigned(endAddress, startAddress) <= 0', 'Long.compareUnsigned(endAddress, startAddress) < 0'),
     ("report-accepts-unsupported-address-size", REPORT_TEXT, REPORT_TEXT_TEST,
      'addressBits != 32 && addressBits != 64', 'false'),
 ]
@@ -2067,7 +2065,7 @@ UNWIND_CONDITION_BOUNDARY_MUTANTS = [
 
 CODE_MAPPING_MUTANTS = [
     ('code-mapping-stops-at-ended-nested-load', "ghidradwarfforge/elf/ElfCodeBytes.java", "ghidradwarfforge.elf.ElfCodeBytesSmoke",
-     'if (candidate.end() < address) continue;', 'if (candidate.end() < address) break;'),
+     'if (Long.compareUnsigned(candidate.end(), address) < 0) continue;', 'if (Long.compareUnsigned(candidate.end(), address) < 0) break;'),
     ('code-mapping-allows-writable-table', "ghidradwarfforge/elf/ElfCodeBytes.java", "ghidradwarfforge.elf.ElfCodeBytesSmoke",
      '(load.flags() & 2) != 0', 'false'),
 ]
@@ -2171,9 +2169,9 @@ FUNCTION_MODEL_MUTANTS = [
     ('function-model-aliases-namespace', "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java", FUNCTION_MODEL_TEST,
      'namespacePath = List.copyOf(namespacePath);', 'namespacePath = namespacePath;'),
     ('function-model-accepts-overlap', "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java", FUNCTION_MODEL_TEST,
-     'if (range.address() < previousEnd)', 'if (false)'),
+     'if (Long.compareUnsigned(range.address(), previousEnd) < 0)', 'if (false)'),
     ('function-model-exclusive-end-inclusive', "ghidradwarfforge/nativeapi/MinimalDwarfSidecarExporter.java", FUNCTION_MODEL_TEST,
-     'candidate < endExclusive()', 'candidate <= endExclusive()'),
+     'Long.compareUnsigned(candidate - address, size) < 0', 'Long.compareUnsigned(candidate - address, size) <= 0'),
 ]
 
 INHERITANCE_BUDGET_MUTANTS = [

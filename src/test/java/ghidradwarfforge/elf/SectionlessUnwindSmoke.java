@@ -284,7 +284,7 @@ public final class SectionlessUnwindSmoke {
             case "truncated-record" -> b.putInt(0x300, 24);
             case "duplicate-header" -> segment(b, wide, 2, 0x6474e550, 0x200, 0x4200, 20, 20);
             case "overlapping-load" -> segment(b, wide, 2, 1, 0x200, 0x4200, 32, 32);
-            case "overflow-load" -> segment(b, wide, 0, 1, 0, wide ? Long.MAX_VALUE - 1 : 0xfffffff0L, 0x800, 0x900);
+            case "overflow-load" -> segment(b, wide, 0, 1, 0, wide ? -2L : 0xfffffff0L, 0x800, 0x900);
             case "table-truncated" -> segment(b, wide, 1, 0x6474e550, 0x200, 0x4200, 16, 16);
             default -> throw new AssertionError(mutation);
         }

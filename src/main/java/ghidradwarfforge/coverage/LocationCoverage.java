@@ -7,6 +7,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.coverage.ExportEmission.ExpressionLocation;
 import ghidradwarfforge.coverage.ExportEmission.ListLocation;
 import ghidradwarfforge.coverage.ExportEmission.Location;
@@ -83,10 +84,10 @@ public record LocationCoverage(boolean declarationEmitted, boolean scopeComplete
 
     private static List<FunctionRange> union(List<FunctionRange> ranges, BooleanSupplier cancelled) {
         Objects.requireNonNull(ranges);
-        TreeMap<Long, Long> ordered = new TreeMap<>();
+        TreeMap<Long, Long> ordered = new TreeMap<>(Long::compareUnsigned);
         for (FunctionRange range : ranges) {
             checkCancelled(cancelled);
-            ordered.merge(range.address(), range.endExclusive(), Math::max);
+            ordered.merge(range.address(), range.endExclusive(), UnsignedAddress::max);
         }
         List<FunctionRange> result = new ArrayList<>();
         long start = -1;
@@ -97,8 +98,8 @@ public record LocationCoverage(boolean declarationEmitted, boolean scopeComplete
                 start = range.getKey();
                 end = range.getValue();
             }
-            else if (range.getKey() <= end) {
-                end = Math.max(end, range.getValue());
+            else if (Long.compareUnsigned(range.getKey(), end) <= 0) {
+                end = UnsignedAddress.max(end, range.getValue());
             }
             else {
                 result.add(new FunctionRange(start, end - start));
@@ -119,10 +120,10 @@ public record LocationCoverage(boolean declarationEmitted, boolean scopeComplete
             checkCancelled(cancelled);
             FunctionRange a = first.get(left);
             FunctionRange b = second.get(right);
-            long start = Math.max(a.address(), b.address());
-            long end = Math.min(a.endExclusive(), b.endExclusive());
-            if (start < end) result.add(new FunctionRange(start, end - start));
-            if (a.endExclusive() <= b.endExclusive()) left++;
+            long start = UnsignedAddress.max(a.address(), b.address());
+            long end = UnsignedAddress.min(a.endExclusive(), b.endExclusive());
+            if (Long.compareUnsigned(start, end) < 0) result.add(new FunctionRange(start, end - start));
+            if (Long.compareUnsigned(a.endExclusive(), b.endExclusive()) <= 0) left++;
             else right++;
         }
         return result;

@@ -292,10 +292,16 @@ public final class QualifiedFunctionNameSmoke {
                 new GhidraFunctionSymbols.SkippedFunction(ordinary.getName(), reasons.get(index)))) && messages.size() == 1,
                 "unsupported function evidence lost exact omission reason: " + result);
         }
-        var overflow = GhidraFunctionSymbols.extractDetailed(functionView(program, ordinary, java.util.Map.of()),
+        var rebased = GhidraFunctionSymbols.extractDetailed(functionView(program, ordinary, java.util.Map.of()),
             TaskMonitor.DUMMY, ignored -> { }, Long.MIN_VALUE);
-        require(overflow.functions().isEmpty() && overflow.skippedFunctions().getFirst().reason() ==
-            GhidraFunctionSymbols.SkipReason.UNSUPPORTED_RANGE, "overflowing body address was exported");
+        if (program.getDefaultPointerSize() == Long.BYTES) {
+            require(rebased.functions().getFirst().address() == (entry.getOffset() ^ Long.MIN_VALUE),
+                "upper-half function address was narrowed");
+        }
+        else {
+            require(rebased.functions().isEmpty() && rebased.skippedFunctions().getFirst().reason() ==
+                GhidraFunctionSymbols.SkipReason.UNSUPPORTED_RANGE, "out-of-class function address was exported");
+        }
         for (Namespace unsupported : List.of(library, ordinary)) {
             var messages = new ArrayList<String>();
             var result = GhidraFunctionSymbols.extractDetailed(functionView(program, ordinary,
