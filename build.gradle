@@ -43,6 +43,16 @@ tasks.named("zipSource") {
     exclude "**/__pycache__/**", "**/*.pyc"
 }
 
+// Ghidra normally compiles these scripts on demand, after packaging.
+tasks.register("compileGhidraScripts", JavaCompile) {
+    group = "verification"
+    description = "Checks the shipped and integration scripts against the selected Ghidra SDK"
+    source "ghidra_scripts", "src/test/integration/ghidra_scripts"
+    include "**/*.java"
+    classpath = sourceSets.main.runtimeClasspath
+    destinationDirectory = layout.buildDirectory.dir("classes/ghidra-scripts")
+}
+
 // The Ghidra SDK also defines JavaExec tasks for help generation with its own classpath.
 def probes = ["unwindFrameRecoveryProbe", "callSiteEvidenceProbe", "coverageReportWorkload", "coverageReportFileProbe"]
 tasks.withType(JavaExec).matching { it.name.endsWith("Smoke") || it.name in probes }.configureEach {
