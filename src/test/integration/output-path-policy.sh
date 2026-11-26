@@ -34,7 +34,9 @@ wrong_input="$repository_dir/build/fixtures/x86_64/semantic.pie.stripped"
 failure_output="$result_dir/mismatched-input.dbg"
 failure_source="$failure_output.c"
 failure_log="$result_dir/fatal-report.log"
-failure_projects=$(mktemp -d -t ghidra-dwarf-forge-fatal-report.XXXXXXXX)
+failure_projects=$(mktemp -d "${TMPDIR:-/tmp}/ghidra-dwarf-forge-fatal-report.XXXXXXXX")
+readonly failure_projects
+trap 'rm -rf -- "$failure_projects"' EXIT
 test -f "$wrong_input"
 rm -f -- "$failure_output" "$failure_source"
 "$1/support/analyzeHeadless" \
@@ -47,10 +49,6 @@ rm -f -- "$failure_output" "$failure_source"
     "--libdwarf=$2" "--libdwarfp=$3" \
     "--input=$wrong_input" "--output=$failure_output" \
     >"$failure_log" 2>&1 || true
-case "$failure_projects" in
-    /tmp/ghidra-dwarf-forge-fatal-report.*) rm -rf -- "$failure_projects" ;;
-    *) echo "refusing to remove unexpected temporary path: $failure_projects" >&2; exit 1 ;;
-esac
 grep -Fq 'GhidraDwarfForge report: {"schemaVersion":2,"status":"FATAL"' \
     "$failure_log"
 grep -Fq 'selected original ELF does not match Ghidra' "$failure_log"
