@@ -65,7 +65,8 @@ public final class DelayedReturnPrefixSmoke {
                         function.setReturnType(VoidDataType.dataType, SourceType.USER_DEFINED);
                         DataType type = wide ? new LongLongDataType(program.getDataTypeManager()) :
                             new IntegerDataType(program.getDataTypeManager());
-                        function.addParameter(new ParameterImpl("value", type, program), SourceType.USER_DEFINED);
+                        function.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true,
+                            SourceType.USER_DEFINED, new ParameterImpl("value", type, program));
                         var parameter = function.getParameter(0);
                         var registers = TargetRegisterMap.forTarget(wide && !variant.endsWith("32addr") ?
                             (big ? "mips64" : "mips64el") : (big ? "mips" : "mipsel"));
