@@ -67,7 +67,13 @@ def compare_tails(reference, captured):
     assert omissions["cs_leaf"] == "entry has an unproved incoming non-call transfer at " + instructions[int(indirect["pc"], 16)]["address"]
     if reference["target"] == "x86_64" and not captured.get("curatedDriverBody", False):
         assert "incomplete instruction inventory" in omissions["cs_driver"]
-        assert "unproved incoming non-call transfer" in omissions["cs_driver.cold"]
+        owners = {f["name"]: f for f in captured["functionOwnership"]}
+        targets = [int(address, 16) for address in captured["switchTargets"]["targets"]]
+        body = [(int(r["first"], 16), int(r["last"], 16)) for r in owners["cs_driver"]["body"]]
+        outside = [address for address in targets if not any(start <= address <= end for start, end in body)]
+        assert len(targets) == 8 and outside == [int(owners["caseD_0"]["entry"], 16)], outside
+        if "cs_driver.cold" in owners:
+            assert "unproved incoming non-call transfer" in omissions["cs_driver.cold"]
         assert not captured["provedSwitches"], "split ownership acquired a closed switch graph"
     elif captured.get("curatedDriverBody", False):
         assert "cs_driver" not in omissions and len(captured["provedSwitches"]) == 1
@@ -125,7 +131,9 @@ def compare_arguments(reference, captured):
     assert "cs_indirect" in captured["argumentOmissions"]
     assert "cs_leaf" in captured["argumentOmissions"] and not any(row["caller"] == "cs_leaf" for row in expressions.values())
     if reference["target"] == "x86_64" and not captured.get("curatedDriverBody", False):
-        assert "cs_driver.cold" in captured["argumentOmissions"] and "cs_driver" in captured["argumentOmissions"]
+        assert captured["argumentOmissions"]["cs_driver"] == "incomplete instruction inventory"
+        if any(f["name"] == "cs_driver.cold" for f in captured["functions"]):
+            assert "cs_driver.cold" in captured["argumentOmissions"]
     elif captured.get("curatedDriverBody", False):
         assert "cs_driver" not in captured["argumentOmissions"]
     return {"checks": checks, "transfers": observations}
