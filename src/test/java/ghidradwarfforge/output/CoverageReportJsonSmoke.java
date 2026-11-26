@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
@@ -48,7 +49,7 @@ public final class CoverageReportJsonSmoke {
         String wrapped = "{\"coverage\":" + text + "}";
         try (var reader = new JsonReader(new ReportJsonReader(new ByteArrayInputStream(wrapped.getBytes(StandardCharsets.UTF_8)),
                 () -> false, ReportJsonReader.DEFAULT_LIMITS))) {
-            reader.setLenient(false);
+            reader.setStrictness(Strictness.LEGACY_STRICT);
             reader.skipValue();
             require(reader.peek() == JsonToken.END_DOCUMENT, "payload fits unchanged strict lexical grammar/depth");
         }
