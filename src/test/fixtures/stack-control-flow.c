@@ -31,6 +31,8 @@ typedef int stack_value;
 #define DEFINE(function) value = seed; POINT(function, live); KILL_SEED
 #define END(function) POINT(function, join); effect_sink = value; POINT(function, retired); }
 volatile stack_value effect_sink;
+static volatile stack_value navigation_value;
+static volatile int navigation_done;
 
 BEGIN(flow_diamond)
     DEFINE(flow_diamond);
@@ -93,8 +95,8 @@ BEGIN(flow_split)
 __attribute__((noinline, noclone)) void navigation_control(void)
 {
     effect_sink += 1;
-    effect_sink -= 1;
-    __asm__ volatile("nop" ::: "memory");
+    navigation_value = effect_sink;
+    navigation_done = 1;
 }
 
 /* LLVM 18's call-site verifier repeats Die.getParent() when traversing a
@@ -129,5 +131,5 @@ __attribute__((optimize("O0"))) int main(void)
         }
     }
     navigation_control();
-    return 0;
+    return effect_sink != values[2] + 1 || navigation_value != effect_sink || navigation_done != 1;
 }
