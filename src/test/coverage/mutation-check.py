@@ -598,7 +598,7 @@ STACK_SPILL_MUTANTS = [
     ("stack-spill-ignores-instruction-space", STACK_SPILL, STACK_SPILL_TEST,
      "instruction.getAddress().getAddressSpace() != code ||", ""),
     ("stack-spill-ignores-instruction-extent", STACK_SPILL, STACK_SPILL_TEST,
-     "next != Math.addExact(instruction.getAddress().getOffset(), instruction.getLength()) ||", ""),
+     "next != UnsignedAddress.endExclusive(instruction.getAddress().getOffset(), instruction.getLength()) ||", ""),
     ("stack-spill-ignores-return-output", STACK_SPILL, STACK_SPILL_TEST,
      "index != operations.length - 1 || operation.getOutput() != null ||", "index != operations.length - 1 ||"),
     ("stack-spill-ignores-return-width", STACK_SPILL, STACK_SPILL_TEST,
@@ -803,12 +803,12 @@ DELAY_CONTRACT_MUTANTS = [
     ("delay-contract-ignores-slot-extent", "ghidradwarfforge/GhidraVariableStorage.java", DELAY_CONTRACT_TEST,
      "delayed.getMaxAddress().getOffset() + 1 != delayed.getAddress().getOffset() + delayed.getLength()", "false"),
     ("delay-contract-ignores-slot-fallthrough", "ghidradwarfforge/GhidraVariableStorage.java", DELAY_CONTRACT_TEST,
-     "if (next == null || !next.equals(delayed.getFallThrough())) return -1;", "if (next == null) return -1;"),
+     "if (next == null || !next.equals(delayed.getFallThrough())) return false;", "if (next == null) return false;"),
     ("delay-contract-invents-undecoded-tail", "ghidradwarfforge/GhidraVariableStorage.java", DELAY_CONTRACT_TEST,
-     "return next.getOffset() == end ? end : -1;", "return end;"),
+     "return next.getOffset() == end;", "return true;"),
 ]
 
-COPY_CHAIN_CONDITION = 'while (boundary < end && backup.bits() != null &&\n                    function.getProgram() == program && storage.getProgramArchitecture() == program &&\n                    parameter.getFunction() == function && parameter.getOrdinal() >= 0 &&\n                    function.getParameter(parameter.getOrdinal()) == parameter && parameter.getFirstUseOffset() == 0 &&\n                    storage.isValid() && !storage.isBadStorage() && !storage.isForcedIndirect()) {'
+COPY_CHAIN_CONDITION = 'while (Long.compareUnsigned(boundary, end) < 0 && backup.bits() != null &&\n                    function.getProgram() == program && storage.getProgramArchitecture() == program &&\n                    parameter.getFunction() == function && parameter.getOrdinal() >= 0 &&\n                    function.getParameter(parameter.getOrdinal()) == parameter && parameter.getFirstUseOffset() == 0 &&\n                    storage.isValid() && !storage.isBadStorage() && !storage.isForcedIndirect()) {'
 COPY_CHAIN_IDENTITY_MUTANTS = [
     ("copy-chain-ignores-function-program", "ghidradwarfforge/GhidraVariableStorage.java", COPY_CHAIN_IDENTITY_TEST,
         COPY_CHAIN_CONDITION, COPY_CHAIN_CONDITION.replace('function.getProgram() == program && ', "")),
