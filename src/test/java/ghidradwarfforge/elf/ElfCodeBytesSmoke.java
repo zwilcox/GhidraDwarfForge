@@ -130,9 +130,18 @@ public final class ElfCodeBytesSmoke {
             changed(() -> bytes.readReadOnlyData(0x401000, 4, () -> false));
         }
         var overflowing = fixture(path, wide, order,
-            List.of(new Segment(wide ? Long.MAX_VALUE - 1 : 0xffff_fffeL, 0x200, 4, 4, 5)));
+            List.of(new Segment(wide ? -2L : 0xffff_fffeL, 0x200, 4, 4, 5)));
         reject(() -> { try (var unused = ElfCodeBytes.open(overflowing, () -> false)) { } });
         if (wide) {
+            for (long start : List.of(Long.MAX_VALUE - 1, -4L)) {
+                var upper = fixture(path, true, order, List.of(new Segment(start, 0x200, 4, 4, 5)));
+                try (var bytes = ElfCodeBytes.open(upper, () -> false)) {
+                    require(bytes.requireMatches(start, CODE, () -> false).fileOffset() == 0x200,
+                        "upper-half load mapped to the wrong file offset");
+                    require(java.util.Arrays.equals(bytes.readReadOnlyData(start, 4, () -> false), CODE),
+                        "upper-half read differs from original bytes");
+                }
+            }
             var sparse = fixture(path, true, order, List.of(new Segment(0x401000, 0x8000_0200L, 4, 4, 5)));
             require(sparse.fileSize() > Integer.MAX_VALUE, "sparse fixture is too small");
             try (var bytes = ElfCodeBytes.open(sparse, () -> false)) {

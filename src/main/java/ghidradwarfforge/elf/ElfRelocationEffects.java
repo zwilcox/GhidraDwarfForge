@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.targets.UnwindRelocationProfile;
 
 /** Declared loader write footprints for selected ordinary ABIs; never evaluates a relocation. */
@@ -23,9 +24,9 @@ public final class ElfRelocationEffects {
         0x6474e550L, 0x6474e551L, 0x6474e552L, 0x6474e553L);
     private final String profile;
     private final List<Write> writes;
-    private final long[] ends;
-    private ElfRelocationEffects(String profile, List<Write> writes, long[] ends) {
-        this.profile = profile; this.writes = List.copyOf(writes); this.ends = ends;
+    private final long[] lastBytes;
+    private ElfRelocationEffects(String profile, List<Write> writes, long[] lastBytes) {
+        this.profile = profile; this.writes = List.copyOf(writes); this.lastBytes = lastBytes;
     }
     public String profile() { return profile; }
     public List<Write> writes() { return writes; }
@@ -109,7 +110,7 @@ public final class ElfRelocationEffects {
             }
             else {
                 size = type == -1 ? addressBytes : fixed.longValue();
-                require(row.address() % profile.alignment() == 0,
+                require(Long.remainderUnsigned(row.address(), profile.alignment()) == 0,
                     "relocation destination violates the selected ABI alignment");
             }
             pending.add(new Pending(table.role(), row.recordOffset(), type, symbol, row.address(), size));
@@ -120,7 +121,7 @@ public final class ElfRelocationEffects {
         for (var pointer : profile.loaderPointerWrites()) {
             check(cancelled);
             if (tags.containsKey(pointer.tag())) pending.add(new Pending("loader-tag-" + Long.toHexString(pointer.tag()),
-                -1, -2, 0, add(tags.get(pointer.tag()), pointer.offset()), pointer.size()));
+                -1, -2, 0, UnsignedAddress.addOffset(tags.get(pointer.tag()), pointer.offset()), pointer.size()));
         }
         if (tags.containsKey(21L)) {
             var dynamic = image.segments().stream().filter(segment -> segment.type == 2).findFirst().orElseThrow();
@@ -129,7 +130,7 @@ public final class ElfRelocationEffects {
                 if (inventory.tags().get(index).tag() == 21) {
                     long delta = (long) index * addressBytes * 2 + addressBytes;
                     pending.add(new Pending("loader-DT_DEBUG", add(dynamic.offset, delta), -2, 0,
-                        add(dynamic.virtualAddress, delta), addressBytes));
+                        UnsignedAddress.addOffset(dynamic.virtualAddress, delta), addressBytes));
                 }
             }
         }
@@ -138,18 +139,19 @@ public final class ElfRelocationEffects {
             check(cancelled);
             long size = row.size();
             if (size == 0) continue;
-            long end = add(row.address(), size);
+            long last = UnsignedAddress.lastByte(row.address(), size);
             ElfLoadAllocations.Allocation selected = null;
             for (var load : loadBounds) {
                 check(cancelled);
                 require(++comparisons <= 16L * 1024 * 1024, "relocation effect mapping budget exceeded");
                 var section = load.section();
-                if (row.address() < add(section.address, section.size) && section.address < end) {
+                if (Long.compareUnsigned(row.address(), UnsignedAddress.lastByte(section.address, section.size)) <= 0 &&
+                        Long.compareUnsigned(section.address, last) <= 0) {
                     require(selected == null, "relocation destination has ambiguous load mappings"); selected = load;
                 }
             }
-            require(selected != null && row.address() >= selected.section().address &&
-                end <= add(selected.section().address, selected.section().size),
+            require(selected != null && Long.compareUnsigned(row.address(), selected.section().address) >= 0 &&
+                Long.compareUnsigned(last, UnsignedAddress.lastByte(selected.section().address, selected.section().size)) <= 0,
                 "relocation write exceeds one allocated load extent");
             require((selected.section().flags & 1) != 0 || textrel,
                 "relocation targets non-writable storage without text-relocation metadata");
@@ -157,8 +159,8 @@ public final class ElfRelocationEffects {
                 check(cancelled);
                 require(++comparisons <= 16L * 1024 * 1024, "relocation effect mapping budget exceeded");
                 if (region.dynamic() && row.role().equals("loader-DT_DEBUG")) continue;
-                require(region.size() == 0 || end <= region.address() ||
-                    row.address() >= add(region.address(), region.size()),
+                require(region.size() == 0 || Long.compareUnsigned(last, region.address()) < 0 ||
+                    Long.compareUnsigned(row.address(), UnsignedAddress.lastByte(region.address(), region.size())) > 0,
                     "relocation may rewrite relocation/symbol metadata");
             }
             long delta = row.address() - selected.section().address;
@@ -166,26 +168,28 @@ public final class ElfRelocationEffects {
             writes.add(new Write(row.role(), row.recordOffset(), row.type(), row.symbol(), row.address(), size,
                 fileBytes == 0 ? -1 : add(selected.section().offset, delta), fileBytes));
         }
-        writes.sort(Comparator.comparingLong(Write::address).thenComparingLong(Write::recordOffset));
-        var ends = new long[writes.size()];
+        writes.sort(Comparator.comparing(Write::address, Long::compareUnsigned).thenComparingLong(Write::recordOffset));
+        var lastBytes = new long[writes.size()];
         for (int i = 0; i < writes.size(); i++) {
-            check(cancelled); ends[i] = Math.max(i == 0 ? 0 : ends[i - 1], add(writes.get(i).address(), writes.get(i).size()));
+            check(cancelled);
+            var write = writes.get(i);
+            lastBytes[i] = UnsignedAddress.max(i == 0 ? 0 : lastBytes[i - 1], UnsignedAddress.lastByte(write.address(), write.size()));
         }
         check(cancelled);
         try (var channel = FileChannel.open(image.sourcePath(), StandardOpenOption.READ)) { image.requireUnchanged(channel); }
-        return new ElfRelocationEffects(profile.id(), writes, ends);
+        return new ElfRelocationEffects(profile.id(), writes, lastBytes);
     }
 
     /** Use original link-time VAs; a code region must not overlap a declared loader write. */
     public void requireUnchanged(long address, long size, BooleanSupplier cancelled) {
-        check(cancelled); require(address >= 0 && size > 0, "invalid protected address extent");
-        long end = add(address, size);
+        check(cancelled); require(size > 0, "invalid protected address extent");
+        long last = UnsignedAddress.lastByte(address, size);
         int low = 0, high = writes.size();
         while (low < high) {
             check(cancelled); int middle = (low + high) >>> 1;
-            if (writes.get(middle).address() < end) low = middle + 1; else high = middle;
+            if (Long.compareUnsigned(writes.get(middle).address(), last) <= 0) low = middle + 1; else high = middle;
         }
-        require(low == 0 || ends[low - 1] <= address, "protected interval overlaps a runtime relocation write");
+        require(low == 0 || Long.compareUnsigned(lastBytes[low - 1], address) < 0, "protected interval overlaps a runtime relocation write");
     }
 
     /** Protect file-derived frame records, including any file-backed load aliases. */

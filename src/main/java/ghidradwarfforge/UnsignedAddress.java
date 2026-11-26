@@ -25,11 +25,17 @@ public final class UnsignedAddress {
         return Long.compareUnsigned(first, second) >= 0 ? first : second;
     }
 
+    public static long addOffset(long address, long offset) {
+        long result = address + offset;
+        if (offset < 0 || Long.compareUnsigned(result, address) < 0) {
+            throw new IllegalArgumentException("target address extent overflows");
+        }
+        return result;
+    }
+
     public static long lastByte(long address, long size) {
         if (size <= 0) throw new IllegalArgumentException("empty or unbounded target address range");
-        long last = address + (size - 1);
-        if (Long.compareUnsigned(last, address) < 0) throw new IllegalArgumentException("target address extent overflows");
-        return last;
+        return addOffset(address, size - 1);
     }
 
     /** Memory-backed objects must fit the original ELF class, including the last byte. */
