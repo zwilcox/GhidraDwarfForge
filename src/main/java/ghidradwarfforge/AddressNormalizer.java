@@ -9,6 +9,10 @@ public final class AddressNormalizer {
         return ghidraImageBase - elfImageBase;
     }
 
+    public static long toGhidraAddress(long elfAddress, long rebaseDelta) {
+        return elfAddress + rebaseDelta;
+    }
+
     public static long toElfAddress(long ghidraAddress, long rebaseDelta) {
         return ghidraAddress - rebaseDelta;
     }

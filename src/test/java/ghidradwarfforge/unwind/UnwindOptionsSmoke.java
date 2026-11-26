@@ -73,6 +73,10 @@ public final class UnwindOptionsSmoke {
         require(!merged.condition(8, 0, List.of()).basis().contains("pointer retains"));
         var fixed = new UnwindOptions(UnwindOptions.Mode.CONDITIONED,
             List.of(new UnwindStackSeparation.Region(0x100, 0x1ff)), true);
+        long boundary = Long.MAX_VALUE - 3;
+        var crossing = fixed.condition(8, 0, List.of(new ElfRelocatedPointers.Pointer(boundary, -1L, 0, 0, "crossing")));
+        require(crossing.regions().contains(new UnwindStackSeparation.Region(boundary, boundary + 7)) &&
+            crossing.fixedPointers().contains(new UnwindStackSeparation.Pointer(boundary, -1L)));
         var sorted = fixed.condition(8, 0x1000, List.of(
             new ElfRelocatedPointers.Pointer(0x180, 0x300, 0, 0, "last"),
             new ElfRelocatedPointers.Pointer(0x110, 0x200, 0, 0, "first")));

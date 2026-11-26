@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.locations.VariableStorageModel.Confidence;
 import ghidradwarfforge.locations.VariableStorageModel.Evidence;
 import ghidradwarfforge.locations.VariableStorageModel.LocationRange;
@@ -92,14 +93,14 @@ public record LexicalScopeModel(long functionAddress, List<FunctionRange> body,
         for (FunctionRange visible : visibility(local)) {
             long cursor = visible.address();
             for (LocationRange old : location.locations()) {
-                long start = Math.max(visible.address(), old.start());
-                long end = Math.min(visible.endExclusive(), old.end());
-                if (end <= start) continue;
-                if (cursor < start) ranges.add(unavailable(cursor, start));
+                long start = UnsignedAddress.max(visible.address(), old.start());
+                long end = UnsignedAddress.min(visible.endExclusive(), old.end());
+                if (Long.compareUnsigned(end, start) <= 0) continue;
+                if (Long.compareUnsigned(cursor, start) < 0) ranges.add(unavailable(cursor, start));
                 ranges.add(new LocationRange(start, end, old.storage(), old.evidence()));
                 cursor = end;
             }
-            if (cursor < visible.endExclusive()) ranges.add(unavailable(cursor, visible.endExclusive()));
+            if (Long.compareUnsigned(cursor, visible.endExclusive()) < 0) ranges.add(unavailable(cursor, visible.endExclusive()));
         }
         return new VariableLocation(location.functionName(), location.functionAddress(), location.name(),
             location.kind(), location.byteSize(), ranges);

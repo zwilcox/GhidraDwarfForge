@@ -19,6 +19,9 @@ public final class AddressNormalizerSmoke {
         long kernel = 0xffffffff81000000L;
         assertEquals(kernel + 0x123, AddressNormalizer.toElfAddress(0x401123L,
             AddressNormalizer.rebaseDelta(0x401000L, kernel)));
+        assertEquals(Long.MIN_VALUE, AddressNormalizer.toGhidraAddress(Long.MAX_VALUE, 1));
+        assertEquals(0x401123L, AddressNormalizer.toGhidraAddress(kernel + 0x123,
+            AddressNormalizer.rebaseDelta(0x401000L, kernel)));
         System.out.println("address-normalizer-smoke=PASS");
     }
 

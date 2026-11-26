@@ -147,7 +147,7 @@ public final class GhidraBoundedSwitch {
                     }
                 }
                 require(target != null, "missing computed target");
-                Address address = program.getAddressFactory().getDefaultAddressSpace().getAddress(Math.addExact(target, delta));
+                Address address = program.getAddressFactory().getDefaultAddressSpace().getAddress(AddressNormalizer.toGhidraAddress(target, delta));
                 var instruction = program.getListing().getInstructionAt(address);
                 require(instruction != null, "switch target lacks a decoded instruction boundary");
                 operations(program, instruction, image, delta, profile, original, effects, monitor);

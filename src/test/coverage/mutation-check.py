@@ -375,10 +375,10 @@ CLASS_EVIDENCE_MUTANTS = [
 ]
 LEXICAL_SCOPE_MUTANTS = [
     ("lexical-scope-extends-location-end", LEXICAL_SCOPE, LEXICAL_SCOPE_TEST,
-     'long end = Math.min(visible.endExclusive(), old.end());',
-     'long end = Math.max(visible.endExclusive(), old.end());'),
+     'long end = UnsignedAddress.min(visible.endExclusive(), old.end());',
+     'long end = UnsignedAddress.max(visible.endExclusive(), old.end());'),
     ("lexical-scope-drops-unproved-prefix", LEXICAL_SCOPE, LEXICAL_SCOPE_TEST,
-     'if (cursor < start) ranges.add(unavailable(cursor, start));', ''),
+     'if (Long.compareUnsigned(cursor, start) < 0) ranges.add(unavailable(cursor, start));', ''),
 ]
 REGISTER_MAP_TEST = "ghidradwarfforge.locations.VariableStorageSmoke"
 RUNTIME_RELOCATIONS = "ghidradwarfforge/elf/ElfRuntimeRelocations.java"
@@ -1246,15 +1246,15 @@ CALL_PARAMETERS_MUTANTS = [
     ('argument-loses-sign-extension', "ghidradwarfforge/calls/GhidraCallArgumentFlow.java", CALL_PARAMETERS_TEST,
      'CallValue.extend(a, opcode == PcodeOp.INT_SEXT, bytes)', 'CallValue.extend(a, false, bytes)'),
     ('entry-location-drops-prefix', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
-     'if (range.start() < elfEntryAddress) ranges.add', 'if (false) ranges.add'),
+     'if (Long.compareUnsigned(range.start(), elfEntryAddress) < 0) ranges.add', 'if (false) ranges.add'),
     ('entry-location-drops-suffix', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
-     'if (elfEntryAddress + 1 < range.end()) ranges.add', 'if (false) ranges.add'),
+     'if (Long.compareUnsigned(elfEntryAddress + 1, range.end()) < 0) ranges.add', 'if (false) ranges.add'),
     ('entry-location-expands-lifetime', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
-     'Math.addExact(elfEntryAddress, 1)', 'Math.addExact(elfEntryAddress, 2)'),
+     'new LocationRange(elfEntryAddress, elfEntryAddress + 1,', 'new LocationRange(elfEntryAddress, elfEntryAddress + 2,'),
     ('entry-location-includes-exclusive-end', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
-     'elfEntryAddress < range.end()', 'elfEntryAddress <= range.end()'),
+     'Long.compareUnsigned(elfEntryAddress, range.end()) < 0', 'Long.compareUnsigned(elfEntryAddress, range.end()) <= 0'),
     ('entry-location-precedes-range', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
-     'range.start() <= elfEntryAddress', 'true'),
+     'Long.compareUnsigned(range.start(), elfEntryAddress) <= 0', 'true'),
     ('entry-location-accepts-stale-owner', CALL_PARAMETERS, CALL_PARAMETERS_TEST,
      'entry.functionId() == function.getID()', 'true'),
     ("call-parameters-accept-stale-owner", CALL_PARAMETERS, CALL_PARAMETERS_TEST,

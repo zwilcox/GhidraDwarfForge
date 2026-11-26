@@ -26,25 +26,9 @@ function_address=$(address_of nonzero_add)
 global_address=$(address_of nonzero_sink)
 function_size=$(nm -n -S --defined-only reference | awk '$4 == "nonzero_add" {print "0x" $2; found=1} END {exit !found}')
 
-mkdir projects
-"$ghidra_dir/support/analyzeHeadless" "$work/projects" HighElf -deleteProject -import "$work/kernel.elf" \
-    -analysisTimeoutPerFile 120 -scriptPath "$repo/src/test/integration/ghidra_scripts" \
-    -postScript PrepareNonzeroLoadOffset.java "$function_address" "$global_address" \
-    -postScript GhidraDwarfForge.java "--libdwarf=$consumer" "--libdwarfp=$producer" \
-    > headless.log 2>&1 || { tail -40 headless.log >&2; exit 1; }
-grep -Fq 'GhidraDwarfForge symbol export PASS' headless.log || { tail -40 headless.log >&2; exit 1; }
-cmp original.elf kernel.elf
-test -s kernel.elf.dbg.c
-readelf -hSW kernel.elf.dbg > headers
-readelf --debug-dump=info,decodedline,loc kernel.elf.dbg > dwarf.txt 2> warnings
-test ! -s warnings || { cat warnings >&2; exit 1; }
-llvm-dwarfdump --verify kernel.elf.dbg
-python3 "$repo/src/test/integration/check-dwarfdump.py" kernel.elf.dbg validator.txt --original kernel.elf
-
 # Resolve the sidecar from another directory so GDB also verifies the source location.
-mkdir debugger
-cd debugger
-cat > verify.gdb <<GDB
+mkdir projects debugger
+cat > debugger/verify.gdb <<GDB
 set debuginfod enabled off
 set auto-solib-add off
 file $work/kernel.elf
@@ -64,11 +48,38 @@ end
 list nonzero_add
 info scope *$function_address
 GDB
-gdb-multiarch -q -nx -batch -x verify.gdb > gdb.txt 2>&1 || { cat gdb.txt >&2; exit 1; }
-cat gdb.txt
-grep -Eq 'int nonzero_add\(' gdb.txt
-cmp "$work/original.elf" "$work/kernel.elf"
-echo 'upper-half-elf=PASS static GDB function, breakpoint, source, global and parameter storage'
+
+for mode in linked rebased; do
+    cd "$work"
+    prepare=()
+    delta=0
+    if [[ $mode == rebased ]]; then
+        delta=-0x7ffffffffffff000
+        prepare=(-postScript RebaseFixtureProgram.java "$delta")
+    fi
+    analyzed_function=$(printf '0x%x' "$((function_address + delta))")
+    analyzed_global=$(printf '0x%x' "$((global_address + delta))")
+    "$ghidra_dir/support/analyzeHeadless" "$work/projects" "HighElf_$mode" -deleteProject -import "$work/kernel.elf" \
+        -analysisTimeoutPerFile 120 -scriptPath "$repo/src/test/integration/ghidra_scripts" \
+        "${prepare[@]}" -postScript PrepareNonzeroLoadOffset.java "$analyzed_function" "$analyzed_global" \
+        -postScript GhidraDwarfForge.java "--libdwarf=$consumer" "--libdwarfp=$producer" \
+        > headless.log 2>&1 || { tail -40 headless.log >&2; exit 1; }
+    grep -Fq 'GhidraDwarfForge symbol export PASS' headless.log || { tail -40 headless.log >&2; exit 1; }
+    grep -Fq "Ghidra-to-ELF address delta: $(printf '0x%x' "$delta")" headless.log
+    cmp original.elf kernel.elf
+    test -s kernel.elf.dbg.c
+    readelf -hSW kernel.elf.dbg > headers
+    readelf --debug-dump=info,decodedline,loc kernel.elf.dbg > dwarf.txt 2> warnings
+    test ! -s warnings || { cat warnings >&2; exit 1; }
+    llvm-dwarfdump --verify kernel.elf.dbg
+    python3 "$repo/src/test/integration/check-dwarfdump.py" kernel.elf.dbg validator.txt --original kernel.elf
+    cd debugger
+    gdb-multiarch -q -nx -batch -x verify.gdb > gdb.txt 2>&1 || { cat gdb.txt >&2; exit 1; }
+    cat gdb.txt
+    grep -Eq 'int nonzero_add\(' gdb.txt
+    cmp "$work/original.elf" "$work/kernel.elf"
+    echo "upper-half-elf=PASS $mode static GDB function, breakpoint, source, global and parameter storage"
+done
 
 # Corrupt only the data section's virtual extent in a disposable input.
 cd "$work"

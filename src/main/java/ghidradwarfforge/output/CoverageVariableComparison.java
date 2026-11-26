@@ -1,6 +1,7 @@
 package ghidradwarfforge.output;
 
 import com.google.gson.JsonPrimitive;
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.coverage.ExportEmission.Kind;
 import ghidradwarfforge.coverage.VariableCoverageInventory.FunctionInventory;
 import ghidradwarfforge.coverage.VariableCoverageInventory.StorageEvidence;
@@ -131,16 +132,16 @@ final class CoverageVariableComparison {
         for (var range : from) {
             check(cancelled);
             long cursor = range.address(), end = range.endExclusive();
-            while (index < other.size() && other.get(index).endExclusive() <= cursor) { check(cancelled); index++; }
-            while (index < other.size() && other.get(index).address() < end) {
+            while (index < other.size() && Long.compareUnsigned(other.get(index).endExclusive(), cursor) <= 0) { check(cancelled); index++; }
+            while (index < other.size() && Long.compareUnsigned(other.get(index).address(), end) < 0) {
                 check(cancelled);
                 var removed = other.get(index);
-                if (removed.address() > cursor) output.accept(new FunctionRange(cursor, removed.address() - cursor));
-                cursor = Math.max(cursor, removed.endExclusive());
-                if (cursor >= end) break;
+                if (Long.compareUnsigned(removed.address(), cursor) > 0) output.accept(new FunctionRange(cursor, removed.address() - cursor));
+                cursor = UnsignedAddress.max(cursor, removed.endExclusive());
+                if (Long.compareUnsigned(cursor, end) >= 0) break;
                 index++;
             }
-            if (cursor < end) { check(cancelled); output.accept(new FunctionRange(cursor, end - cursor)); }
+            if (Long.compareUnsigned(cursor, end) < 0) { check(cancelled); output.accept(new FunctionRange(cursor, end - cursor)); }
         }
         check(cancelled);
     }
@@ -152,9 +153,9 @@ final class CoverageVariableComparison {
             check(cancelled);
             var first = a.get(left);
             var second = b.get(right);
-            long start = Math.max(first.address(), second.address()), end = Math.min(first.endExclusive(), second.endExclusive());
-            if (start < end) result.add(new FunctionRange(start, end - start));
-            if (first.endExclusive() <= second.endExclusive()) left++;
+            long start = UnsignedAddress.max(first.address(), second.address()), end = UnsignedAddress.min(first.endExclusive(), second.endExclusive());
+            if (Long.compareUnsigned(start, end) < 0) result.add(new FunctionRange(start, end - start));
+            if (Long.compareUnsigned(first.endExclusive(), second.endExclusive()) <= 0) left++;
             else right++;
         }
         return result;

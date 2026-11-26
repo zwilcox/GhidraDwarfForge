@@ -44,7 +44,7 @@ public final class GhidraCallSitePlan {
         for (var symbol : symbols) {
             monitor.checkCancelled();
             if (exported.put(symbol.address(), symbol) != null) throw new IllegalArgumentException("duplicate exported function entry");
-            var function = program.getFunctionManager().getFunctionAt(space.getAddress(Math.addExact(symbol.address(), delta)));
+            var function = program.getFunctionManager().getFunctionAt(space.getAddress(AddressNormalizer.toGhidraAddress(symbol.address(), delta)));
             if (function == null) {
                 note(diagnostics, symbol.address(), "no exact Ghidra function entry");
                 continue;

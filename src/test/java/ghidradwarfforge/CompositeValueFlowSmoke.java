@@ -45,11 +45,13 @@ public final class CompositeValueFlowSmoke {
             for (int bytes : new int[] { 4, 8 }) {
                 for (boolean mixed : new boolean[] { false, true }) {
                     for (String shape : List.of("reload", "partial", "unknown", "other", "lost-second", "second-backup", "late-load", "released-slot")) {
-                        check(x86, bytes, mixed, shape);
+                        check(x86, bytes, mixed, shape, 0x1000);
                     }
                 }
             }
         }
+        check(true, 8, false, "reload", Long.MAX_VALUE - 15);
+        check(false, 8, true, "reload", 0xffff_ffff_8100_0000L);
         for (boolean bigEndian : new boolean[] { true, false }) {
             for (boolean mixed : new boolean[] { true, false }) armOrder(bigEndian, mixed);
         }
@@ -57,7 +59,7 @@ public final class CompositeValueFlowSmoke {
         System.out.println("composite-value-flow-smoke=PASS checks=" + checks);
     }
 
-    private static void check(boolean x86, int bytes, boolean mixed, String shape) throws Exception {
+    private static void check(boolean x86, int bytes, boolean mixed, String shape, long base) throws Exception {
         String nop = x86 ? "90" : "1f2003d5";
         String allocate = x86 ? "4883ec20" : "ff8300d1";
         String store = x86 ? (bytes == 4 ? "897c2408" : "48897c2408") : (bytes == 4 ? "e00b00b9" : "e00700f9");
@@ -97,7 +99,7 @@ public final class CompositeValueFlowSmoke {
         try {
             int transaction = program.startTransaction("independent pieces");
             try {
-                var start = language.getDefaultSpace().getAddress(0x1000);
+                var start = language.getDefaultSpace().getAddress(base);
                 var body = new AddressSet(start, start.add(machine.length - 1));
                 var block = program.getMemory().createInitializedBlock("code", start, machine.length,
                     (byte) 0, TaskMonitor.DUMMY, false);
@@ -119,27 +121,27 @@ public final class CompositeValueFlowSmoke {
                 var map = TargetRegisterMap.forTarget(x86 ? "x86_64" : "aarch64");
                 var intervals = CompositeValueFlow.prove(program, function, parameter, map, TaskMonitor.DUMMY);
                 String context = (x86 ? "x86" : "arm") + "/" + bytes + "/" + mixed + "/" + shape + " " + intervals;
-                var incoming = composite(at(intervals, 0), context);
+                var incoming = composite(at(intervals, base), context);
                 require(incoming.totalBitSize() == bytes * 16L && incoming.pieces().size() == 2, "exact size: " + context);
                 require(incoming.pieces().get(0).storage() instanceof RegisterStorage register &&
                     register.register().dwarfNumber() == (x86 ? 5 : 0), "memory order: " + context);
                 require(mixed == (incoming.pieces().get(1).storage() instanceof RegisterRelativeStorage), "incoming carrier: " + context);
-                require(composite(at(intervals, stackLoaded), context).pieces().get(1).storage() instanceof RegisterStorage,
+                require(composite(at(intervals, base + stackLoaded), context).pieces().get(1).storage() instanceof RegisterStorage,
                     "completed incoming stack load: " + context);
-                require(composite(at(intervals, spilled), context).pieces().get(0).storage() instanceof RegisterRelativeStorage relative &&
+                require(composite(at(intervals, base + spilled), context).pieces().get(0).storage() instanceof RegisterRelativeStorage relative &&
                     relative.byteOffset() == 8, "first piece spill: " + context);
                 boolean valid = shape.equals("reload") || shape.equals("other") || shape.equals("late-load") || (mixed && shape.equals("second-backup"));
-                require(at(intervals, reloaded).available() == valid, "all pieces required: " + context);
-                if (valid) require(composite(at(intervals, reloaded), context).pieces().get(0).storage() instanceof RegisterStorage register &&
+                require(at(intervals, base + reloaded).available() == valid, "all pieces required: " + context);
+                if (valid) require(composite(at(intervals, base + reloaded), context).pieces().get(0).storage() instanceof RegisterStorage register &&
                     register.register().dwarfNumber() == (x86 ? 10 : 9), "piece reload: " + context);
-                require(!at(intervals, lost).available() && !at(intervals, stale).available(), "lost piece/stale bytes: " + context);
-                var model = GhidraTypeGraph.extract(program, List.of(new FunctionSymbol("pieces", 0x1000,
+                require(!at(intervals, base + lost).available() && !at(intervals, base + stale).available(), "lost piece/stale bytes: " + context);
+                var model = GhidraTypeGraph.extract(program, List.of(new FunctionSymbol("pieces", base,
                     body.getNumAddresses())), x86 ? "x86_64" : "aarch64", 0, TaskMonitor.DUMMY, ignored -> { });
                 var modeled = model.variableStorage().variables().stream().filter(value -> value.name().equals("pair"))
                     .findFirst().orElseThrow().locations().stream()
                     .map(row -> new StorageInterval(row.start(), row.end(), row.storage())).toList();
-                require(at(modeled, spilled).equals(at(intervals, spilled)) &&
-                    at(modeled, reloaded).available() == valid && !at(modeled, stale).available(),
+                require(at(modeled, base + spilled).equals(at(intervals, base + spilled)) &&
+                    at(modeled, base + reloaded).available() == valid && !at(modeled, base + stale).available(),
                     "public extraction lost the proven composite transitions: " + modeled);
                 Parameter detached = (Parameter) Proxy.newProxyInstance(Parameter.class.getClassLoader(),
                     new Class<?>[] { Parameter.class }, (proxy, method, arguments) -> method.invoke(parameter, arguments));
@@ -203,12 +205,12 @@ public final class CompositeValueFlowSmoke {
                     }
                 }
                 int prefix = mixed ? 4 : 0;
-                var moved = composite(at(intervals, prefix + 16), "ARM order " + bigEndian + "/" + mixed);
+                var moved = composite(at(intervals, 0x1000 + prefix + 16), "ARM order " + bigEndian + "/" + mixed);
                 require(moved.pieces().size() == 2 && moved.totalBitSize() == 64 &&
                     moved.pieces().get(0).storage() instanceof RegisterStorage low && low.register().dwarfNumber() == 4 &&
                     moved.pieces().get(1).storage() instanceof RegisterStorage high && high.register().dwarfNumber() == 5,
                     "Ghidra significance order must become DWARF memory order: " + moved);
-                require(!at(intervals, prefix + 20).available(), "retained half cannot stand for whole object");
+                require(!at(intervals, 0x1000 + prefix + 20).available(), "retained half cannot stand for whole object");
             }
             finally { program.endTransaction(transaction, false); }
         }
@@ -220,9 +222,10 @@ public final class CompositeValueFlowSmoke {
         return (CompositeStorage) storage;
     }
 
-    private static Storage at(List<StorageInterval> intervals, int offset) {
-        return intervals.stream().filter(row -> row.start() <= 0x1000 + offset && row.end() > 0x1000 + offset)
-            .findFirst().orElseThrow(() -> new AssertionError("missing address " + offset + ": " + intervals)).storage();
+    private static Storage at(List<StorageInterval> intervals, long address) {
+        return intervals.stream().filter(row -> Long.compareUnsigned(row.start(), address) <= 0 &&
+                Long.compareUnsigned(row.end(), address) > 0)
+            .findFirst().orElseThrow(() -> new AssertionError("missing address " + Long.toUnsignedString(address, 16) + ": " + intervals)).storage();
     }
 
     private static void require(boolean condition, String message) {

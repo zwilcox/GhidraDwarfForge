@@ -110,10 +110,12 @@ public final class InheritanceAdmissionBoundarySmoke {
             var witness = table(start, size, start);
             check(witness.address() == start && witness.fileOffset() == start && witness.byteSize() == size,
                 "representable vtable range remains exact");
-            overflow(() -> table(start + 1, size, 0), "virtual address overflow");
+            check(table(start + 1, size, 0).address() == start + 1, "address crossing bit 63");
+            check(table(-((long) size), size, 0).byteSize() == size, "vtable can occupy the last target byte");
+            if (size > 1) rejects(() -> table(1L - size, size, 0), "vtable wraps through zero");
             overflow(() -> table(0, size, start + 1), "file offset overflow");
         }
-        rejects(() -> table(-1, 16, 0), "negative virtual address");
+        rejects(() -> table(-1, 16, 0), "wrapping vtable");
         rejects(() -> table(0, 16, -1), "negative file offset");
         for (int size : new int[] {0, -1, 1024 * 1024 + 1, Integer.MAX_VALUE}) {
             rejects(() -> table(0, size, 0), "vtable witness byte budget");

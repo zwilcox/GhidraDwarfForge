@@ -98,7 +98,7 @@ final class CompositeValueFlow {
         }
         // Intersect availability, never union it: one lost piece makes the
         // whole value unavailable even if every other piece still survives.
-        var boundaries = new TreeSet<Long>();
+        var boundaries = new TreeSet<Long>(Long::compareUnsigned);
         for (var proof : proofs) for (var interval : proof) {
             monitor.checkCancelled();
             boundaries.add(interval.start());
@@ -114,8 +114,8 @@ final class CompositeValueFlow {
             boolean covered = true;
             for (int piece = 0; piece < proofs.size(); piece++) {
                 var proof = proofs.get(piece);
-                while (cursors[piece] < proof.size() && proof.get(cursors[piece]).end() <= start) cursors[piece]++;
-                if (cursors[piece] == proof.size() || proof.get(cursors[piece]).start() > start) {
+                while (cursors[piece] < proof.size() && Long.compareUnsigned(proof.get(cursors[piece]).end(), start) <= 0) cursors[piece]++;
+                if (cursors[piece] == proof.size() || Long.compareUnsigned(proof.get(cursors[piece]).start(), start) > 0) {
                     covered = false;
                     break;
                 }

@@ -128,7 +128,7 @@ public final class GhidraFunctionAliases {
                         monitor.checkCancelled();
                         require(range.size() <= MAX_CODE_BYTES - codeBytes, "original-code comparison budget exceeded");
                         codeBytes += range.size();
-                        Address start = entry.addNoWrap(Math.subtractExact(range.address(), address));
+                        Address start = entry.getAddressSpace().getAddress(AddressNormalizer.toGhidraAddress(range.address(), rebaseDelta));
                         collected.add(new ElfFunctionAlias.CodeRange(range.address(), range.size(),
                             hash(program, start, range.size(), monitor)));
                     }
