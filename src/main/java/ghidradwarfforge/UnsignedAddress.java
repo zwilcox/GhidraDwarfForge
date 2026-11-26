@@ -46,6 +46,19 @@ public final class UnsignedAddress {
             (addressBytes == 8 || addressBytes == 4 && Long.compareUnsigned(last, 0xffff_ffffL) <= 0);
     }
 
+    /** Whether a nonempty inner byte extent is contained in a bounded outer extent. */
+    public static boolean contains(long start, long size, long inner, long innerSize) {
+        if (size < innerSize || innerSize <= 0) return false;
+        return Long.compareUnsigned(inner, start) >= 0 && Long.compareUnsigned(inner - start, size - innerSize) <= 0;
+    }
+
+    public static boolean overlaps(long first, long firstSize, long second, long secondSize) {
+        if (firstSize <= 0 || secondSize <= 0) return false;
+        return Long.compareUnsigned(first, second) <= 0
+            ? Long.compareUnsigned(second - first, firstSize) < 0
+            : Long.compareUnsigned(first - second, secondSize) < 0;
+    }
+
     public static long distance(long start, long end) {
         long size = end - start;
         if (Long.compareUnsigned(start, end) > 0 || size < 0) {

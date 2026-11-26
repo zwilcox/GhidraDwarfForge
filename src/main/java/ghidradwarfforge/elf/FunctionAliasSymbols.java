@@ -19,6 +19,7 @@ import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.elf.ElfImage.Section;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
@@ -100,7 +101,7 @@ public final class FunctionAliasSymbols {
             }
         }
         List<ElfFunctionAlias> ordered = new ArrayList<>(aliases);
-        ordered.sort(Comparator.comparingLong(ElfFunctionAlias::address).thenComparing(ElfFunctionAlias::name));
+        ordered.sort(Comparator.comparing(ElfFunctionAlias::address, Long::compareUnsigned).thenComparing(ElfFunctionAlias::name));
         List<ElfLocalFunctionSymbol> result = new ArrayList<>();
         Map<FunctionRange, String> hashes = new HashMap<>();
         long codeBytes = 0;
@@ -131,7 +132,7 @@ public final class FunctionAliasSymbols {
                             }
                             for (var otherRange : other.ranges()) {
                                 checkCancelled(cancelled);
-                                require(!intersects(range.address(), range.size(), otherRange.address(), otherRange.size()),
+                                require(!UnsignedAddress.overlaps(range.address(), range.size(), otherRange.address(), otherRange.size()),
                                     "overlapping recovered definitions");
                             }
                         }
@@ -140,15 +141,13 @@ public final class FunctionAliasSymbols {
                             checkCancelled(cancelled);
                             Section section = allocation.section();
                             if ((section.flags & 2) != 0 && section.size > 0 &&
-                                    intersects(range.address(), range.size(), section.address, section.size)) {
+                                    UnsignedAddress.overlaps(range.address(), range.size(), section.address, section.size)) {
                                 require(selected == null, "overlapping original allocations");
                                 selected = allocation;
                             }
                         }
                         require(selected != null && (selected.section().flags & 6) == 6 &&
-                            range.address() >= selected.section().address &&
-                            range.address() - selected.section().address <= selected.fileSize() &&
-                            range.size() <= selected.fileSize() - (range.address() - selected.section().address),
+                            UnsignedAddress.contains(selected.section().address, selected.fileSize(), range.address(), range.size()),
                             "body has no unique file-backed executable allocation");
                         String hash = hashes.get(range);
                         if (hash == null) {
@@ -177,9 +176,6 @@ public final class FunctionAliasSymbols {
         return List.copyOf(result);
     }
 
-    private static boolean intersects(long a, long sizeA, long b, long sizeB) {
-        return a < b ? b - a < sizeA : a - b < sizeB;
-    }
 
     static Set<ByteBuffer> originalNames(ElfImage image, BooleanSupplier cancelled,
             Consumer<String> diagnostic) throws IOException {

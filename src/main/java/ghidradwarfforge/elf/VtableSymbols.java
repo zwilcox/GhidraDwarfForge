@@ -8,6 +8,7 @@ import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.types.ClassScopeModel;
 import ghidradwarfforge.types.ClassScopeNames;
 import ghidradwarfforge.types.ProgramTypeModel;
@@ -71,21 +72,19 @@ public final class VtableSymbols {
                         check(cancelled);
                         if (other == table) continue;
                         require(!table.mangledName().equals(other.mangledName()) &&
-                            !overlaps(table.address(), table.byteSize(), other.address(), other.byteSize()), "conflicting table identity or overlapping extent");
+                            !UnsignedAddress.overlaps(table.address(), table.byteSize(), other.address(), other.byteSize()), "conflicting table identity or overlapping extent");
                     }
                     ElfLoadAllocations.Allocation selected = null;
                     for (var allocation : allocations) {
                         check(cancelled);
                         var section = allocation.section();
-                        if ((section.flags & 2) == 0 || !overlaps(table.address(), table.byteSize(), section.address, section.size)) continue;
+                        if ((section.flags & 2) == 0 || !UnsignedAddress.overlaps(table.address(), table.byteSize(), section.address, section.size)) continue;
                         require(selected == null, "overlapping original allocations");
                         selected = allocation;
                     }
                     require(selected != null, "no original allocated storage");
                     var section = selected.section();
-                    require((section.flags & 0x400) == 0 && table.address() >= section.address &&
-                        table.address() - section.address <= selected.fileSize() &&
-                        table.byteSize() <= selected.fileSize() - (table.address() - section.address), "table is not wholly file-backed non-TLS storage");
+                    require((section.flags & 0x400) == 0 && UnsignedAddress.contains(section.address, selected.fileSize(), table.address(), table.byteSize()), "table is not wholly file-backed non-TLS storage");
                     long offset = Math.addExact(section.offset, table.address() - section.address);
                     require(offset == table.fileOffset(), "original ELF mapping disagrees with saved FileBytes");
                     totalBytes += table.byteSize();
@@ -129,10 +128,7 @@ public final class VtableSymbols {
             model.functionDeclarations(), model.lexicalScopes(), new ClassScopeModel(classes.scopes(), classes.bindings(), classes.methods(),
                 classes.inheritance(), tables), model.functionRelations());
     }
-    private static boolean overlaps(long a, long size, long b, long otherSize) {
-        if (size <= 0 || otherSize <= 0) return false;
-        return a >= b ? a - b < otherSize : b - a < size;
-    }
+
     private static void require(boolean condition, String reason) {
         if (!condition) throw new IllegalArgumentException(reason);
     }

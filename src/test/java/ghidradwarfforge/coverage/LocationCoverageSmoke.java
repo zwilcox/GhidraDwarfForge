@@ -72,6 +72,11 @@ public final class LocationCoverageSmoke {
         var empty = LocationCoverage.measure(expression, body,
             new Visibility(List.of(), true, "explicit empty scope"), () -> false);
         require(!empty.hasFullValueLocation() && !empty.percentageApplicable(), "zero denominator is N/A, never 100 percent");
+        var crossing = List.of(new FunctionRange(Long.MIN_VALUE, 8), new FunctionRange(Long.MAX_VALUE - 7, 8));
+        var crossCoverage = LocationCoverage.measure(expression, crossing,
+            new Visibility(List.of(new FunctionRange(Long.MAX_VALUE - 3, 8)), true, "scope crosses bit 63"), () -> false);
+        require(crossCoverage.coveredScopeBytes() == 8 && crossCoverage.locatedRanges().equals(crossCoverage.knownScopeRanges()),
+            "coverage lost or enlarged the overlap across bit 63");
         var maximal = List.of(new FunctionRange(0, Long.MAX_VALUE));
         var large = LocationCoverage.measure(expression, maximal,
             new Visibility(maximal, true, "maximum supported address domain"), () -> false);

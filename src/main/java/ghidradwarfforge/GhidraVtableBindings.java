@@ -259,7 +259,8 @@ public final class GhidraVtableBindings {
                     throw invalid("complete-object offset-to-top disagrees with saved subobject geometry");
                 }
             }
-            long originalAddress = Math.addExact(address.subtract(program.getImageBase()), GhidraImageBase.originalImageBase(program));
+            long originalAddress = AddressNormalizer.toElfAddress(address.getOffset(),
+                AddressNormalizer.rebaseDelta(program.getImageBase().getOffset(), GhidraImageBase.originalImageBase(program)));
             var digest = sha256();
             try (var out = new DataOutputStream(new java.security.DigestOutputStream(OutputStream.nullOutputStream(), digest))) {
                 out.writeLong(program.getUniqueProgramID()); out.writeUTF(program.getLanguageID().toString());

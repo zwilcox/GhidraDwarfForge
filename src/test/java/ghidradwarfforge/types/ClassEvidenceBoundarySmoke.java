@@ -90,7 +90,7 @@ public final class ClassEvidenceBoundarySmoke {
         for (int size : new int[] {-1, 0, 1048577}) {
             reject(() -> table(100, 1, ABI, "_ZTV6Object", "Object", 0, size, 0, HASH, "saved"), "byte extent");
         }
-        reject(() -> table(100, 1, ABI, "_ZTV6Object", "Object", -1, 1, 0, HASH, "saved"), "negative address");
+        reject(() -> table(100, 1, ABI, "_ZTV6Object", "Object", -1, 2, 0, HASH, "saved"), "wrapping extent");
         reject(() -> table(100, 1, ABI, "_ZTV6Object", "Object", 0, 1, -1, HASH, "saved"), "negative offset");
         for (var abi : List.of(ABI, CxxAbiProfile.ITANIUM_AARCH64)) {
             for (int size : new int[] {1, 24, 1048576}) {
@@ -100,7 +100,8 @@ public final class ClassEvidenceBoundarySmoke {
                 require(accepted.address() + accepted.byteSize() == Long.MAX_VALUE &&
                     accepted.fileOffset() + accepted.byteSize() == Long.MAX_VALUE,
                     "valid boundary extent changed");
-                overflow(() -> table(100, 1, abi, "_ZTV6Object", "Object", end + 1, size, 0, HASH, "saved"));
+                require(table(100, 1, abi, "_ZTV6Object", "Object", -((long)size), size, 0, HASH, "saved").byteSize() == size,
+                    "vtable cannot end at the final target byte");
                 overflow(() -> table(100, 1, abi, "_ZTV6Object", "Object", 0, size, end + 1, HASH, "saved"));
             }
         }

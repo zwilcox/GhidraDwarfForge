@@ -142,7 +142,7 @@ final class RegisterDefinitionFlow {
         for (var row : decoded.entrySet()) {
             monitor.checkCancelled();
             long start = row.getKey().getOffset();
-            long end = Math.addExact(row.getValue().getMaxAddress().getOffset(), 1);
+            long end = UnsignedAddress.endExclusive(row.getValue().getMaxAddress().getOffset(), 1);
             Storage value = Boolean.TRUE.equals(input.get(row.getKey())) ? mapped : unknown;
             if (!result.isEmpty() && result.getLast().end() == start && result.getLast().storage().equals(value)) {
                 var previous = result.removeLast();

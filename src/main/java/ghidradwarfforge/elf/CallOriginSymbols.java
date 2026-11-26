@@ -12,6 +12,7 @@ import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.calls.CallSitePlan;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
 import ghidradwarfforge.types.ProgramTypeModel;
@@ -42,7 +43,7 @@ public final class CallOriginSymbols {
             check(cancelled);
             if (function.usesRangeList() && targets.contains(function.address())) selected.add(function);
         }
-        selected.sort(Comparator.comparingLong(FunctionSymbol::address));
+        selected.sort(Comparator.comparing(FunctionSymbol::address, Long::compareUnsigned));
         if (selected.isEmpty()) return List.of();
         if (image.type() != 2 && image.type() != 3 || image.fileSize() > MAX_IMAGE_HASH_BYTES) {
             diagnostic.accept("Omitted exact call-origin symbols: requires linked ELF within 1 GiB identity-hash budget");
@@ -91,7 +92,7 @@ public final class CallOriginSymbols {
                 for (var candidate : allocations) {
                     check(cancelled);
                     var section = candidate.section();
-                    if ((section.flags & 2) != 0 && intersects(function.address(), size, section.address, section.size)) {
+                    if ((section.flags & 2) != 0 && UnsignedAddress.overlaps(function.address(), size, section.address, section.size)) {
                         if (allocation != null) ambiguous = true;
                         allocation = candidate;
                     }
@@ -101,13 +102,11 @@ public final class CallOriginSymbols {
                     if (other == function) continue;
                     for (var range : other.ranges()) {
                         check(cancelled);
-                        if (intersects(function.address(), size, range.address(), range.size())) ambiguous = true;
+                        if (UnsignedAddress.overlaps(function.address(), size, range.address(), range.size())) ambiguous = true;
                     }
                 }
                 if (ambiguous || allocation == null || (allocation.section().flags & 6) != 6 ||
-                        function.address() < allocation.section().address ||
-                        function.address() - allocation.section().address > allocation.fileSize() ||
-                        size > allocation.fileSize() - (function.address() - allocation.section().address)) {
+                        !UnsignedAddress.contains(allocation.section().address, allocation.fileSize(), function.address(), size)) {
                     diagnostic.accept("Omitted exact call-origin symbol for " + function.qualifiedDisplayName() +
                         ": entry range lacks unique file-backed executable ownership");
                     continue;
@@ -127,9 +126,6 @@ public final class CallOriginSymbols {
         return List.copyOf(result);
     }
 
-    private static boolean intersects(long a, long sizeA, long b, long sizeB) {
-        return sizeA > 0 && sizeB > 0 && (a < b ? b - a < sizeA : a - b < sizeB);
-    }
 
     private static void check(BooleanSupplier cancelled) {
         if (cancelled.getAsBoolean()) throw new CancellationException("call-origin symbol planning cancelled");

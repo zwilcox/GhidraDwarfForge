@@ -153,7 +153,7 @@ public final class FunctionAliasSymbolsSmoke {
             invalidModel(() -> new ElfFunctionAlias.CodeRange(0, 1, bad), "invalid alias code range");
         }
         for (long[] bad : List.of(new long[] {-1, 1}, new long[] {0, 0},
-                new long[] {0, -1}, new long[] {Long.MAX_VALUE, 1})) {
+                new long[] {0, -1}, new long[] {-1, 2})) {
             invalidModel(() -> new ElfFunctionAlias.CodeRange(bad[0], bad[1], HASH), "invalid alias code range");
         }
         String upperHash = "ABCDEF01".repeat(8);
@@ -189,8 +189,8 @@ public final class FunctionAliasSymbolsSmoke {
         invalidModel(() -> new ElfFunctionAlias("alias", "primary", 0, (List<ElfFunctionAlias.CodeRange>) null),
             "invalid recovered function alias");
         invalidModel(() -> new ElfFunctionAlias("alias", "primary", 0, List.of()), "invalid recovered function alias");
-        invalidModel(() -> new ElfFunctionAlias("alias", "primary", -1, full.ranges()), "invalid recovered function alias");
-        for (long base : new long[] {0, 0xffff_ffffL, Long.MAX_VALUE - 16}) {
+        invalidModel(() -> new ElfFunctionAlias("alias", "primary", -1, full.ranges()), "alias entry is outside");
+        for (long base : new long[] {0, 0xffff_ffffL, Long.MAX_VALUE - 8, Long.MIN_VALUE, -17L}) {
             var range = new ElfFunctionAlias.CodeRange(base, 16, HASH);
             for (int offset = -1; offset <= 16; offset++) {
                 require(range.contains(base + offset) == (offset >= 0 && offset < 16),

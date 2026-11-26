@@ -239,15 +239,37 @@ public final class SectionlessDynamicSymbolsSmoke {
             reject(root, bad, "definition crosses or falls outside its load range");
         }
         if (wide) {
-            for (boolean negativeValue : List.of(false, true)) {
-                bad = valid.clone();
-                bytes(bad).putLong(0xa00 + 2 * 24 + (negativeValue ? 8 : 16), Long.MIN_VALUE);
-                rejectRaw(input, bad, "unsigned 64-bit value outside supported signed domain");
-                reject(root, bad, "negative symbol value or size");
-            }
+            bad = valid.clone();
+            bytes(bad).putLong(0xa00 + 2 * 24 + 16, Long.MIN_VALUE);
+            rejectRaw(input, bad, "oversized symbol byte count");
+            reject(root, bad, "oversized symbol byte count");
+            bad = valid.clone();
+            bytes(bad).putLong(0xa00 + 2 * 24 + 8, Long.MIN_VALUE);
+            reject(root, bad, "defined symbol outside every load");
             bad = valid.clone();
             tag(bad, 5, Long.MIN_VALUE);
-            reject(root, bad, "negative dynamic pointer");
+            reject(root, bad, "string table outside every load");
+
+            for (long base : new long[] {Long.MAX_VALUE - 0x8200, 0xffff_ffff_8100_0000L}) {
+                var relocated = valid.clone();
+                var buffer = bytes(relocated);
+                for (int offset : new int[] {24, 80, 88, 136, 144, 192, 200, 0xa20, 0xa38, 0xa50}) {
+                    buffer.putLong(offset, buffer.getLong(offset) + base);
+                }
+                for (int offset = 0x900; offset < 0xa00 && buffer.getLong(offset) != 0; offset += 16) {
+                    long key = buffer.getLong(offset);
+                    if (List.of(4L, 5L, 6L, 34L, 0x6ffffef5L, 0x6ffffff0L, 0x6ffffffcL, 0x6ffffffeL).contains(key)) {
+                        buffer.putLong(offset + 8, buffer.getLong(offset + 8) + base);
+                    }
+                }
+                Files.write(input, relocated);
+                var highImage = ElfImage.readForExport(input);
+                var mirrored = ByteBuffer.wrap(SectionlessDynamicSymbols.read(highImage, () -> false).records()).order(order);
+                require(mirrored.getLong(2 * 24 + 8) == base + 0x4010 && mirrored.getShort(2 * 24 + 6) == 1,
+                    "upper-half sectionless dynamic symbol lost its value or load index");
+                require(SectionlessDynamicSymbols.originalRecords(highImage, () -> false).get(1).value() == base + 0x8080,
+                    "upper-half object address lost its high bit");
+            }
         }
         else {
             byte[] unsigned = valid.clone();
