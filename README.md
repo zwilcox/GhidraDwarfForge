@@ -12,7 +12,7 @@ See [test coverage scope and limitations](docs/TEST-CODE-COVERAGE.md). This metr
 
 Hammering debug sections straight into your ELF.
 
-GhidraDwarfForge is being rebuilt as a Ghidra 12.0.3 extension that exports
+GhidraDwarfForge is a Ghidra 12.2 extension that exports
 recovered program knowledge to a separate DWARF debug artifact and deterministic
 synthetic C source. The original executable remains unchanged by default.
 
@@ -31,7 +31,7 @@ big/little endian for non-PIE executables, PIE, shared objects, and inputs
 without section headers. Native/QEMU GDB tests cover source stepping, types,
 globals, stable registers, changing stack locations, composites, and honest
 unavailable variables. Explicitly rebased Ghidra projects normalize back to
-ELF link-time addresses.
+ELF link-time addresses. [Ghidra 12.2 validation run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/45915714689)
 
 Export remains an explicit operation. Installable CI bundles include verified
 Linux x86-64 and Windows x86-64 native libraries; the packaged headless
