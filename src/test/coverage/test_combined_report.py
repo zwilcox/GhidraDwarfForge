@@ -33,6 +33,13 @@ class ReportPolicy(unittest.TestCase):
     def test_all_sources_classified_with_no_overlap(self):
         self.assertEqual(self.inventory(), self.policy)
 
+    def test_checked_in_inventory_classifies_every_production_source_once(self):
+        sources = Path(__file__).resolve().parents[2] / 'main' / 'java'
+        policy = report.javaexec.read(Path(__file__).with_name('critical-sources.json'))
+        self.assertCountEqual(
+            (name for group in policy['groups'].values() for name in group),
+            (path.relative_to(sources).as_posix() for path in sources.rglob('*.java')))
+
     def test_new_source_requires_explicit_classification(self):
         self.sources.add('ghidradwarfforge/New.java')
         with self.assertRaisesRegex(ValueError, 'every production source'):
