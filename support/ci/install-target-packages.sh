@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Each integration group runs on its own Ubuntu runner.
+# Install dependencies for an Ubuntu 24.04 CI job.
 set -euo pipefail
 
 diagnostics=build/test-results/target-toolchain
@@ -36,6 +36,12 @@ fetch() {
     return "$status"
 }
 
+recommends=--no-install-recommends
+if [[ ${1:-} == --install-recommends ]]; then
+    recommends=--install-recommends
+    shift
+fi
+
 fetch indexes -o APT::Update::Error-Mode=any update
-fetch packages --download-only install --no-install-recommends -y "$@"
-sudo apt-get "${ubuntu_sources[@]}" --no-download install --no-install-recommends -y "$@"
+fetch packages --download-only install "$recommends" -y "$@"
+sudo apt-get "${ubuntu_sources[@]}" --no-download install "$recommends" -y "$@"
