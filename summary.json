@@ -2,14 +2,14 @@
     "schema": 1,
     "scope": "Production Java line coverage from extension-build JavaExec tests",
     "repository": "zwilcox/GhidraDwarfForge",
-    "commit": "920b3612ae686225e5113b4a9698464dc78bd1b2",
-    "runId": 45755488551,
+    "commit": "947348c8b14079ae0a6d5cb6fc3ba5dfb51ce200",
+    "runId": 46007257791,
     "metric": "LINE",
-    "covered": 24831,
-    "missed": 5257,
+    "covered": 24855,
+    "missed": 5261,
     "percent": "82.5",
     "jacocoVersion": "0.8.16",
-    "xmlSha256": "0e06a55151f001441353ba0a3eeac0223e99ef73d661b885ded696b08cfd8ba2",
+    "xmlSha256": "3916547de51c2d69628b54c19135009311a835d37496fe98e492d14a8f8804db",
     "tasks": [
         "aarch64AbiSelectionSmoke",
         "aarch64ParameterAllocationSmoke",
@@ -264,7 +264,7 @@
         {
             "source": "ghidradwarfforge/GhidraAnnotationInventory.java",
             "covered": 0,
-            "missed": 109,
+            "missed": 110,
             "percent": "0.0"
         },
         {
@@ -329,9 +329,9 @@
         },
         {
             "source": "ghidradwarfforge/GhidraEncoderTree.java",
-            "covered": 70,
+            "covered": 72,
             "missed": 2,
-            "percent": "97.2"
+            "percent": "97.3"
         },
         {
             "source": "ghidradwarfforge/GhidraEquateEvidence.java",
@@ -414,8 +414,8 @@
         {
             "source": "ghidradwarfforge/GhidraLocalMappings.java",
             "covered": 134,
-            "missed": 8,
-            "percent": "94.4"
+            "missed": 9,
+            "percent": "93.7"
         },
         {
             "source": "ghidradwarfforge/GhidraMmioProfile.java",
@@ -443,9 +443,9 @@
         },
         {
             "source": "ghidradwarfforge/GhidraStaticBindings.java",
-            "covered": 133,
-            "missed": 5,
-            "percent": "96.4"
+            "covered": 132,
+            "missed": 6,
+            "percent": "95.7"
         },
         {
             "source": "ghidradwarfforge/GhidraStaticRecovery.java",
@@ -467,13 +467,13 @@
         },
         {
             "source": "ghidradwarfforge/GhidraTypeGraph.java",
-            "covered": 645,
+            "covered": 646,
             "missed": 17,
             "percent": "97.4"
         },
         {
             "source": "ghidradwarfforge/GhidraVariableStorage.java",
-            "covered": 841,
+            "covered": 843,
             "missed": 26,
             "percent": "97.0"
         },
@@ -575,7 +575,7 @@
         },
         {
             "source": "ghidradwarfforge/calls/GhidraCallArgumentFlow.java",
-            "covered": 199,
+            "covered": 200,
             "missed": 1,
             "percent": "99.5"
         },
@@ -701,7 +701,7 @@
         },
         {
             "source": "ghidradwarfforge/dwarf/DwarfDebugFrame.java",
-            "covered": 172,
+            "covered": 173,
             "missed": 1,
             "percent": "99.4"
         },
@@ -738,8 +738,8 @@
         {
             "source": "ghidradwarfforge/elf/Arm32FunctionAliasSymbols.java",
             "covered": 166,
-            "missed": 1,
-            "percent": "99.4"
+            "missed": 2,
+            "percent": "98.8"
         },
         {
             "source": "ghidradwarfforge/elf/Arm32ModeSymbols.java",
@@ -989,7 +989,7 @@
         },
         {
             "source": "ghidradwarfforge/elf/SectionlessUnwind.java",
-            "covered": 163,
+            "covered": 165,
             "missed": 3,
             "percent": "98.2"
         },
@@ -1553,7 +1553,7 @@
         },
         {
             "source": "ghidradwarfforge/source/AnnotationText.java",
-            "covered": 44,
+            "covered": 45,
             "missed": 0,
             "percent": "100.0"
         },
@@ -1610,6 +1610,12 @@
             "covered": 96,
             "missed": 9,
             "percent": "91.4"
+        },
+        {
+            "source": "ghidradwarfforge/targets/MipsReturnMode.java",
+            "covered": 15,
+            "missed": 0,
+            "percent": "100.0"
         },
         {
             "source": "ghidradwarfforge/targets/MipsWideParameterAllocation.java",
