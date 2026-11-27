@@ -3,6 +3,7 @@
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -80,6 +81,29 @@ int main(void)
     assert positive.returncode == 0 and not positive.stderr, positive.stderr
     assert 'SOURCE_RELOCATION_PASS' in positive.stdout and 'exited normally' in positive.stdout
     assert 'return observed_count + observed_sum;' in positive.stdout
+
+    # Reproduce a transfer that extracts the source later than the symbol file.
+    received = corpus / 'sqlite/sqlite-workload.c'
+    sidecar = case / 'separate.dbg'
+    subprocess.run(['objcopy', '--only-keep-debug', reference, sidecar], check=True)
+    future = max(reference.stat().st_mtime_ns, sidecar.stat().st_mtime_ns) + 60_000_000_000
+    os.utime(received, ns=(future, future))
+    watched = (received, sidecar, reference)
+    before = [(p.stat().st_mtime_ns, CONSUMER.SUPPORT.digest(p)) for p in watched]
+    symbols = 'symbol-file ' + json.dumps(str(sidecar))
+
+    def listing(directory):
+        return [symbols, 'set substitute-path ' + json.dumps(str(original)) + ' ' +
+            json.dumps(str(directory)), 'list benchmark_checkpoint']
+
+    newer = gdb('newer-source', listing(received.parent))
+    assert newer.returncode == 0 and 'Source file is more recent than executable' in newer.stderr, newer
+    staged = CONSUMER.stage_debugger_source(received, sidecar, reference, case)
+    clean = gdb('staged-source', listing(staged.parent))
+    assert clean.returncode == 0 and not clean.stderr, clean
+    assert 'return observed_count + observed_sum;' in clean.stdout
+    assert staged.read_bytes() == received.read_bytes()
+    assert before == [(p.stat().st_mtime_ns, CONSUMER.SUPPORT.digest(p)) for p in watched]
     rejected = []
 
     def reject(label, workload, manifest):
@@ -111,7 +135,9 @@ int main(void)
         'cdef7d507c93f1bbd9f015ea9bc21fa074268481405501945abc6f854d5b686f'}, wrong)
     (case / 'result.json').write_text(json.dumps({'status': 'PASS',
         'unmappedCompilerSource': 'reproduced missing-source diagnostic',
-        'relocatedSource': 'GDB path/hash/list/globals/normal exit', 'rejected': rejected}, indent=4) + '\n')
+        'relocatedSource': 'GDB path/hash/list/globals/normal exit',
+        'newerTransferredSource': 'GDB warning reproduced and staged listing verified with input times and bytes preserved',
+        'rejected': rejected}, indent=4) + '\n')
     print('host-consumer-source-controls=PASS results=' + str(case))
 
 
