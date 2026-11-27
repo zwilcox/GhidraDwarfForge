@@ -4,11 +4,14 @@ from pathlib import Path
 import re
 
 
-def verify(log, module, java_major=21, exported=False, saved_project=False):
+def verify(log, module, exported=False, saved_project=False):
+    properties = (module.parents[1] / 'application.properties').read_text(encoding='utf-8')
+    compiler, = re.findall(r'(?m)^application\.java\.compiler=([0-9]+)$', properties)
+    java_major = int(compiler)
     text = log.read_text(encoding='utf-8') + '\n' + log.with_suffix('.stderr').read_text(encoding='utf-8')
     # PowerShell's merged native stderr is rendered with SGR color sequences.
     # Remove presentation only; retain anchoring and reject every conflicting
-    # runtime banner rather than accepting an arbitrary mention of Java 21.
+    # runtime banner rather than accepting an arbitrary mention of the expected Java version.
     text = re.sub(r'\x1b\[[0-9;]*m', '', text)
     versions = re.findall(r'(?m)^(?:openjdk|java) version "([^"\n]+)"', text)
     if not versions or any(int(version.split('.')[0]) != java_major for version in versions):

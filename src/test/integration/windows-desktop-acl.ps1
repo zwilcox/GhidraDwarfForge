@@ -9,7 +9,7 @@ $work = Join-Path $resultRoot ('run.' + [Guid]::NewGuid().ToString('N'))
 $classes = Join-Path $work 'classes'
 New-Item -ItemType Directory -Force $classes | Out-Null
 $gui = Join-Path $PSScriptRoot 'gui'
-& javac --release 21 -d $classes (Join-Path $gui 'GuiTestSupport.java') `
+& javac --release 25 -d $classes (Join-Path $gui 'GuiTestSupport.java') `
     (Join-Path $gui 'WindowsDesktopAclProbe.java') 2>&1 |
     Tee-Object -LiteralPath (Join-Path $work 'compile.log')
 if ($LASTEXITCODE -ne 0) {

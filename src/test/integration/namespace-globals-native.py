@@ -75,7 +75,7 @@ def main():
     classes.mkdir()
     cp = os.pathsep.join(map(str, [jar, classes,
         *sorted(p for p in ghidra.rglob('*.jar') if 'Extensions' not in p.parts)]))
-    run('javac', ['javac', '--release', '21', '-proc:none', '-cp', cp, '-d', classes, test])
+    run('javac', ['javac', '--release', '25', '-proc:none', '-cp', cp, '-d', classes, test])
     artifacts = []
     for variant in ['normal', 'type-short', 'enum-short', 'function-short',
             'type-full', 'enum-full', 'function-full', 'global-full']:
@@ -83,7 +83,7 @@ def main():
         produced = run(variant + '-producer', ['java', '--enable-native-access=ALL-UNNAMED', '-cp', cp,
             'ghidradwarfforge.nativeapi.NamespaceGlobalLookupSmoke', native / 'libdwarf.so.2.3.2',
             native / 'libdwarfp.so.2.3.2', case / 'input', artifact, case / 'symbols.json', variant])
-        assert 'PASS java=21.' in produced and str(jar) in produced
+        assert 'PASS java=25.' in produced and str(jar) in produced
         rows = read_dies(artifact, case / (variant + '-info.log'))
         parents, stack = {}, []
         for row in rows:

@@ -156,7 +156,7 @@ reports = [facts.facts.transcript(case / ('export-' + phase + '.log'), 'GhidraDw
 assert reports[0] == reports[1] and reports[2] == reports[3]
 for phase, observation in zip(('natural', 'curate', 'inspect', 'custom', 'reopen-custom'), observations):
     assert observation['javaVersion'] == observations[0]['javaVersion']
-    assert int(observation['javaVersion'].split('.')[0]) >= 21
+    assert int(observation['javaVersion'].split('.')[0]) >= 25
     assert observation['language'] == ('x86:LE:64:default' if target == 'x86_64' else 'AARCH64:LE:64:v8A')
     assert observation['pointerBytes'] == 8 and observation['executablePath'] == str(case / 'prefix.stripped')
     origin = urlsplit(observation['exporterOrigin'])

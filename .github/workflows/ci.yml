@@ -16,9 +16,9 @@ concurrency:
     cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  GHIDRA_ARCHIVE: ghidra_12.0.3_PUBLIC_20260210.zip
-  GHIDRA_ARCHIVE_SHA256: 90d3fffb20b00030dcef8d2a24dd0f422d3a61e432b3ad43f77233ac6d667981
-  GHIDRA_DOWNLOAD_URL: https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.0.3_build/ghidra_12.0.3_PUBLIC_20260210.zip
+  GHIDRA_ARCHIVE: ghidra_12.2_PUBLIC_20261016.zip
+  GHIDRA_ARCHIVE_SHA256: 2c2cd776db3c1f6a097ba418922378ac3649cadd5e844a6f5f088ae628a7be67
+  GHIDRA_DOWNLOAD_URL: https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.2_build/ghidra_12.2_PUBLIC_20261016.zip
   LIBDWARF_VERSION: v2.3.2
   LIBDWARF_ARCHIVE: libdwarf-2.3.2.tar.xz
   LIBDWARF_ARCHIVE_SHA256: 7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd
@@ -299,7 +299,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
 
       - name: Fetch the pinned Java test dependencies
         shell: pwsh
@@ -307,11 +307,11 @@ jobs:
           $dependencies = Join-Path $PWD 'build/test-dependencies'
           New-Item -ItemType Directory -Force $dependencies | Out-Null
           $jna = Join-Path $dependencies 'jna-5.14.0.jar'
-          $gson = Join-Path $dependencies 'gson-2.9.0.jar'
+          $gson = Join-Path $dependencies 'gson-2.13.2.jar'
           Invoke-WebRequest 'https://repo.maven.apache.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar' -OutFile $jna
-          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.9.0/gson-2.9.0.jar' -OutFile $gson
+          Invoke-WebRequest 'https://repo.maven.apache.org/maven2/com/google/code/gson/gson/2.13.2/gson-2.13.2.jar' -OutFile $gson
           if ((Get-FileHash $jna -Algorithm SHA256).Hash.ToLowerInvariant() -ne '34ed1e1f27fa896bca50dbc4e99cf3732967cec387a7a0d5e3486c09673fe8c6' -or
-              (Get-FileHash $gson -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'c96d60551331a196dac54b745aa642cd078ef89b6f267146b705f2c2cbef052d') {
+              (Get-FileHash $gson -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'dd0ce1b55a3ed2080cb70f9c655850cda86c206862310009dcb5e5c95265a5e0') {
               throw 'Test dependency differs from the selected Ghidra JNA/Gson bytes'
           }
 
@@ -334,7 +334,7 @@ jobs:
             'src/test/java/ghidradwarfforge/output/PublicationInterruptionSmoke.java'
             'src/test/java/ghidradwarfforge/output/CompanionObservationRecoverySmoke.java'
           )
-          & javac --release 21 -cp $jna -d $classes @sources 2>&1 | Tee-Object -FilePath "$results/compile.log"
+          & javac --release 25 -cp $jna -d $classes @sources 2>&1 | Tee-Object -FilePath "$results/compile.log"
           if ($LASTEXITCODE -ne 0) { throw 'Companion publication test compilation failed' }
           & java -cp "$classes;$jna" ghidradwarfforge.output.CompanionArtifactPublisherSmoke 2>&1 |
             Tee-Object -FilePath "$results/runtime.log"
@@ -381,7 +381,7 @@ jobs:
         shell: pwsh
         run: |
           $jna = Join-Path $PWD 'build/test-dependencies/jna-5.14.0.jar'
-          $gson = Join-Path $PWD 'build/test-dependencies/gson-2.9.0.jar'
+          $gson = Join-Path $PWD 'build/test-dependencies/gson-2.13.2.jar'
           & ./src/test/integration/windows-file-metadata.ps1 `
               -JavaExe (Get-Command java).Source -JavacExe (Get-Command javac).Source `
               -Compiler $env:FORGE_METADATA_CC -Jna $jna -Gson $gson `
@@ -659,9 +659,9 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
-      - name: Cache Ghidra 12.0.3 archive
+      - name: Cache Ghidra 12.2 archive
         uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/ghidra-download/${{ env.GHIDRA_ARCHIVE }}
@@ -677,7 +677,23 @@ jobs:
           fi
           echo "$GHIDRA_ARCHIVE_SHA256  $archive" | sha256sum -c -
           unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
-          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
+          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.2_PUBLIC" >> "$GITHUB_ENV"
+
+      - name: Fetch pinned Java coverage tools
+        run: |
+          set -euo pipefail
+          directory="$RUNNER_TEMP/coverage-tools"
+          while read -r digest artifact; do
+            destination="$directory/$artifact"
+            mkdir -p "$(dirname "$destination")"
+            for repository in https://maven-central.storage-download.googleapis.com/maven2 https://repo.maven.apache.org/maven2; do
+              if curl -fsSL --retry 2 --max-time 60 "$repository/$artifact" -o "$destination"; then
+                break
+              fi
+            done
+            echo "$digest  $destination" | sha256sum -c -
+          done < support/ci/jacoco-tools.sha256
+          echo "FORGE_PINNED_COVERAGE_TOOLS=$directory" >> "$GITHUB_ENV"
 
       - name: Build extension
         env:
@@ -687,18 +703,8 @@ jobs:
           ./gradlew clean
           mkdir -p build/test-results/extension-build
           {
-            # Resolve coverage downloads before tests. Maven Central may rate-limit
-            # a fresh runner; only this preparation task is retried, never a test.
-            for attempt in 1 2 3; do
-              if ./gradlew --no-daemon prepareIntegrationCoverage; then
-                break
-              fi
-              if [[ "$attempt" -eq 3 ]]; then
-                exit 1
-              fi
-              sleep "$((attempt * 15))"
-            done
-            ./gradlew --no-daemon jar
+            ./gradlew --no-daemon --offline prepareIntegrationCoverage
+            ./gradlew --no-daemon jar compileGhidraScripts
             src/test/integration/headless-wrapper.sh
             python3 src/test/integration/attachment-launcher.py
             src/test/integration/architecture-neutrality.sh
@@ -875,7 +881,7 @@ jobs:
           set -euo pipefail
           mkdir -p release build/test-results/release-package
           version=$(tr -d '\r\n' < VERSION)
-          output="release/GhidraDwarfForge-$version-ghidra-12.0.3.zip"
+          output="release/GhidraDwarfForge-$version-ghidra-12.2.zip"
           support/assemble-release.sh base-extension/*.zip native-linux native-windows "$output"
           support/assemble-release.sh base-extension/*.zip native-linux native-windows \
             release/rebuilt.zip
@@ -924,7 +930,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
       - uses: actions/download-artifact@v8
         with:
           name: ghidra-dwarf-forge-extension-base
@@ -989,7 +995,7 @@ jobs:
         uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
       - name: "[target-004] Install target toolchain and debugger"
         if: contains(fromJSON(matrix.steps), 'target-004')
@@ -1073,7 +1079,7 @@ jobs:
               fi
           done
 
-      - name: "[target-011] Cache Ghidra 12.0.3 archive"
+      - name: "[target-011] Cache Ghidra 12.2 archive"
         if: contains(fromJSON(matrix.steps), 'target-011')
         uses: actions/cache@v6
         with:
@@ -1091,7 +1097,7 @@ jobs:
           fi
           echo "$GHIDRA_ARCHIVE_SHA256  $archive" | sha256sum -c -
           unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
-          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
+          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.2_PUBLIC" >> "$GITHUB_ENV"
 
       - name: "[target-013] actions/download-artifact@v8"
         if: contains(fromJSON(matrix.steps), 'target-013')
@@ -3043,7 +3049,8 @@ jobs:
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --compiler windows
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --compiler golang
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --language AppleSilicon --compiler golang
-          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --language AppleSilicon --compiler swift
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --language AppleSilicon --swift-stdcall
+          python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --swift-stdcall
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --flags 1
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --abi-version 1
           python3 src/test/integration/abi-profile-export.py "$GHIDRA_INSTALL_DIR" --osabi 9
@@ -3627,7 +3634,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
       - uses: actions/download-artifact@v8
         with:
           name: combined-javaexec-input
@@ -3774,7 +3781,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
       - name: Install Cortex-M compiler and system debugger
         run: |
@@ -3783,7 +3790,7 @@ jobs:
               gcc-arm-none-eabi=15:13.2.rel1-2 binutils-arm-none-eabi=2.42-1ubuntu1+23 \
               qemu-system-arm gdb-multiarch llvm binutils
 
-      - name: Cache Ghidra 12.0.3 archive
+      - name: Cache Ghidra 12.2 archive
         uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/ghidra-download/${{ env.GHIDRA_ARCHIVE }}
@@ -3799,7 +3806,7 @@ jobs:
           fi
           echo "$GHIDRA_ARCHIVE_SHA256  $archive" | sha256sum -c -
           unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
-          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
+          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.2_PUBLIC" >> "$GITHUB_ENV"
 
       - uses: actions/download-artifact@v8
         with:
@@ -3872,14 +3879,14 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
       - name: Install reference fixture and validation tools
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc binutils llvm gdb dwarfdump xvfb openbox x11-utils libxtst6 libxi6 libxrender1 polkitd pkexec
 
-      - name: Cache Ghidra 12.0.3 archive
+      - name: Cache Ghidra 12.2 archive
         uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/ghidra-download/${{ env.GHIDRA_ARCHIVE }}
@@ -3895,7 +3902,7 @@ jobs:
           fi
           echo "$GHIDRA_ARCHIVE_SHA256  $archive" | sha256sum -c -
           unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
-          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
+          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.2_PUBLIC" >> "$GITHUB_ENV"
 
       - uses: actions/download-artifact@v8
         with:
@@ -3981,14 +3988,14 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
       - name: Install native perf fixture and validation tools
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc binutils llvm gdb linux-tools-generic util-linux
 
-      - name: Cache Ghidra 12.0.3 archive
+      - name: Cache Ghidra 12.2 archive
         uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}/ghidra-download/${{ env.GHIDRA_ARCHIVE }}
@@ -4004,7 +4011,7 @@ jobs:
           fi
           echo "$GHIDRA_ARCHIVE_SHA256  $archive" | sha256sum -c -
           unzip -q "$archive" -d "$RUNNER_TEMP/ghidra"
-          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.0.3_PUBLIC" >> "$GITHUB_ENV"
+          echo "GHIDRA_INSTALL_DIR=$RUNNER_TEMP/ghidra/ghidra_12.2_PUBLIC" >> "$GITHUB_ENV"
 
       - uses: actions/download-artifact@v8
         with:
@@ -4072,7 +4079,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
       - name: Install Windows validation tools
         id: msys2
@@ -4086,7 +4093,7 @@ jobs:
             mingw-w64-x86_64-llvm
             mingw-w64-x86_64-gcc
 
-      - name: Cache Ghidra 12.0.3 archive
+      - name: Cache Ghidra 12.2 archive
         uses: actions/cache@v6
         with:
           path: ${{ runner.temp }}\ghidra-download\${{ env.GHIDRA_ARCHIVE }}
@@ -4107,7 +4114,7 @@ jobs:
             throw "Ghidra SHA-256 mismatch: $actual"
           }
           Expand-Archive -Path $archive -DestinationPath $installDirectory -Force
-          $ghidra = Join-Path $installDirectory 'ghidra_12.0.3_PUBLIC'
+          $ghidra = Join-Path $installDirectory 'ghidra_12.2_PUBLIC'
           "GHIDRA_INSTALL_DIR=$ghidra" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - uses: actions/download-artifact@v8
@@ -4677,7 +4684,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
       - uses: actions/download-artifact@v8
         with:
           name: combined-javaexec-input

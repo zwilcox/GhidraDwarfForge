@@ -25,6 +25,8 @@ artifact_suffix=${FORGE_SYMBOL_SUFFIX:-ghidra-forge.dbg}
     exit 64
 }
 temporary_projects=$(mktemp -d -t ghidra-dwarf-forge-symbols.XXXXXXXX)
+readonly temporary_projects
+trap 'rm -rf -- "$temporary_projects"' EXIT
 fixture_role=${FIXTURE_ROLE:-exec}
 fixture_input_suffix=${FIXTURE_INPUT_SUFFIX:-stripped}
 project_rebase_delta=${GHIDRA_REBASE_DELTA:-0}
@@ -76,18 +78,6 @@ analysis_address() {
     delta=$(analysis_delta "$target" "$role")
     printf '0x%x\n' "$((16#$link_hex + delta))"
 }
-
-cleanup() {
-    case "$temporary_projects" in
-        /tmp/ghidra-dwarf-forge-symbols.*)
-            rm -rf -- "$temporary_projects"
-            ;;
-        *)
-            echo "refusing to remove unexpected temporary path: $temporary_projects" >&2
-            ;;
-    esac
-}
-trap cleanup EXIT
 
 mkdir -p "$result_dir"
 

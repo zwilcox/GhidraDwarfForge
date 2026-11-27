@@ -154,7 +154,7 @@ def observed(value):
 
 def verify_java(java, native, files):
     assert java["schemaVersion"] == 1 and java["scope"] == "INSPECTION_ONLY"
-    assert java["host"]["javaVersion"].split(".")[0] == "21", java["host"]
+    assert java["host"]["javaVersion"].split(".")[0] == "25", java["host"]
     assert 0 < java["host"]["maxHeap"] <= 64 * 1024 * 1024
     assert set(java["files"]) == set(files)
     for label, (path, policy) in files.items():
@@ -217,7 +217,7 @@ def main():
     classes.mkdir()
     run([args.java, "-version"], root, "java-version")
     run([args.javac, "-version"], root, "javac-version")
-    run([args.javac, "--release", "21", "-d", classes, source], root, "compile")
+    run([args.javac, "--release", "25", "-d", classes, source], root, "compile")
     tools = {}
     for name in ("getfacl", "setfacl"):
         executable = shutil.which(name)

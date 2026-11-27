@@ -155,14 +155,34 @@ public class CheckCallSitePackagedExport extends GhidraScript {
         var names = new java.util.HashMap<String, Function>();
         for (var function : currentProgram.getFunctionManager().getFunctions(true)) names.put(function.getName(), function);
         var driver = Objects.requireNonNull(names.get("cs_driver"));
-        var cold = Objects.requireNonNull(names.get("cs_driver.cold"));
         var zero = Objects.requireNonNull(names.get("caseD_0"));
-        var jump = currentProgram.getListing().getInstructionContaining(cold.getBody().getMaxAddress());
-        if (jump.getDefaultFlows().length != 1) throw new AssertionError("cold case has no exact epilogue target");
+        var listing = currentProgram.getListing();
+        var guard = listing.getInstructionAt(driver.getEntryPoint());
+        while (guard != null && guard.getFlowType().isFallthrough()) {
+            guard = listing.getInstructionAt(guard.getDefaultFallThrough());
+        }
+        if (guard == null || !guard.getMnemonicString().equals("JA") || guard.getDefaultFlows().length != 1) {
+            throw new AssertionError("missing switch guard branch to the cold default case");
+        }
+        var coldEntry = guard.getDefaultFlows()[0];
+        var cold = currentProgram.getFunctionManager().getFunctionContaining(coldEntry);
+        var first = listing.getInstructionAt(coldEntry);
+        var jump = first == null || first.getDefaultFallThrough() == null ? null : listing.getInstructionAt(first.getDefaultFallThrough());
+        if (cold == null || jump == null || !cold.getBody().contains(jump.getAddress()) ||
+                !jump.getMnemonicString().equals("JMP") || jump.getDefaultFlows().length != 1) {
+            throw new AssertionError("cold case has no exact epilogue target");
+        }
         var epilogue = currentProgram.getFunctionManager().getFunctionAt(jump.getDefaultFlows()[0]);
         if (epilogue == null || !epilogue.getName().startsWith("FUN_")) throw new AssertionError("missing split epilogue");
         var body = new AddressSet(driver.getBody());
-        for (var fragment : List.of(cold, zero, epilogue)) {
+        var fragments = new ArrayList<>(List.of(zero, epilogue));
+        if (!cold.equals(driver)) {
+            if (!cold.getEntryPoint().equals(coldEntry) || !cold.getName().equals("cs_driver.cold")) {
+                throw new AssertionError("unexpected owner for the cold default case");
+            }
+            fragments.add(cold);
+        }
+        for (var fragment : fragments) {
             body.add(fragment.getBody());
             if (!currentProgram.getFunctionManager().removeFunction(fragment.getEntryPoint())) throw new AssertionError("cannot curate fragment");
         }

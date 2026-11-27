@@ -1,6 +1,7 @@
 package ghidradwarfforge.output;
 
 import com.google.gson.JsonObject;
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
@@ -64,7 +65,7 @@ public record AttachmentRecoveryInvocation(Map<String, Path> paths, String recei
 
     static AttachmentRecoveryInvocation read(InputStream input, BooleanSupplier cancelled) throws IOException {
         try (var json = new JsonReader(new ReportJsonReader(input, cancelled, LIMITS))) {
-            json.setLenient(false);
+            json.setStrictness(Strictness.LEGACY_STRICT);
             var names = new HashSet<String>();
             String version = null;
             String action = null;

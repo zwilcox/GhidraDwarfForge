@@ -69,7 +69,7 @@ public final class ArmCompositeParameterAllocation {
                 task.checkCancelled();
                 if (!parameter.isAutoParameter()) signature.add(parameter.getFormalDataType());
             }
-            var expected = function.getCallingConvention().getStorageLocations(program, signature.toArray(DataType[]::new), true);
+            var expected = function.getCallingConvention().getStorageLocations(program, signature.toArray(DataType[]::new), true, function.hasVarArgs());
             if (expected.length != parameters.length + 1) return Map.of();
             var changes = new LinkedHashMap<Integer, VariableStorage>();
             for (int index = 0; index < parameters.length; index++) {

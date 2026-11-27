@@ -62,7 +62,7 @@ def create(name, original, sidecar, parent, jar, classes, prefix, rejected=None)
         uri = urlparse(lines[index].split("=", 1)[1])
         require(uri.scheme == "file" and Path(unquote(uri.path)).resolve() == jar,
                 "writer/helper did not load from selected installed JAR")
-    require(re.fullmatch(r"java-version=21(?:[.+-].*)?", lines[5]), "actual Java21 required")
+    require(re.fullmatch(r"java-version=25(?:[.+-].*)?", lines[5]), "actual Java25 required")
     require(lines[6].startswith("max-heap=") and 0 < int(lines[6].split("=")[1]) <= 64 * 1024 * 1024,
             "bounded writer heap required")
     if rejected:
@@ -192,7 +192,7 @@ def parent_evidence(args, module, jar, script, original, candidate, sidecar, wor
         require(lines[index].startswith(label + "-class-source="), "GNU content origin missing")
         uri = urlparse(lines[index].split("=", 1)[1])
         require(uri.scheme == "file" and Path(unquote(uri.path)).resolve() == jar, "GNU content origin differs")
-    require(re.fullmatch(r"java-version=21(?:[.+-].*)?", lines[4]) and lines[5].startswith("max-heap=") and
+    require(re.fullmatch(r"java-version=25(?:[.+-].*)?", lines[4]) and lines[5].startswith("max-heap=") and
             0 < int(lines[5].split("=")[1]) <= 64 * 1024 * 1024, "GNU content runtime differs")
     for index in range(2):
         rows = [line.split("\t") for line in lines[6 + index * 4:10 + index * 4]]
@@ -365,7 +365,7 @@ def main():
                  (("readelf", "readelf"), ("llvm", "llvm-dwarfdump"), ("gdb", "gdb-multiarch"))}
         if not args.shared and args.target != "x86_64":
             tools["qemu"] = tool_identity("qemu", runtime_prefix(args.target)[0], work)
-        run([os.environ.get("JAVAC", "javac"), "--release", "21", "-cp", jar, "-d", classes,
+        run([os.environ.get("JAVAC", "javac"), "--release", "25", "-cp", jar, "-d", classes,
              adapter, content_adapter], work / "compile")
         basename = os.fsencode(sidecar.name)
         require(basename != b"candidate.elf", "test sidecar basename collides with fixed candidate leaf")

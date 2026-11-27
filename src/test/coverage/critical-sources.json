@@ -138,6 +138,7 @@
             "ghidradwarfforge/targets/ArmHfaParameterAllocation.java",
             "ghidradwarfforge/targets/CxxAbiProfile.java",
             "ghidradwarfforge/targets/I386ParameterAllocation.java",
+            "ghidradwarfforge/targets/MipsReturnMode.java",
             "ghidradwarfforge/targets/MipsWideParameterAllocation.java",
             "ghidradwarfforge/targets/TargetParameterAllocation.java",
             "ghidradwarfforge/targets/UnwindAbiProfile.java",

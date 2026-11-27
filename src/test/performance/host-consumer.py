@@ -3,6 +3,7 @@
 import argparse
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shlex
 import shutil
@@ -13,6 +14,18 @@ SOURCE = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location('performance_support', SOURCE / 'export-benchmark.py')
 SUPPORT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SUPPORT)
+
+
+def stage_debugger_source(source, sidecar, executable, directory):
+    """Give GDB a verified source copy with a timestamp independent of download order."""
+    staged = directory / source.name
+    shutil.copyfile(source, staged)
+    # The consumer's extraction times do not reflect when Windows generated
+    # this source and its DWARF. GDB checks their timestamps during listing.
+    mtime = min(path.stat().st_mtime_ns for path in (source, sidecar, executable))
+    os.utime(staged, ns=(staged.stat().st_atime_ns, mtime))
+    assert SUPPORT.digest(staged) == SUPPORT.digest(source)
+    return staged
 
 
 def prepare_compiler_sources(workload, corpus, case, metadata):
@@ -72,7 +85,7 @@ def prepare_compiler_sources(workload, corpus, case, metadata):
 
 
 def validate_gdb(workload, corpus, case, artifact_dir, sidecar, binary, reference,
-        compiler_sources=None):
+        compiler_sources=None, staged_source=None):
     """Shared runtime oracle for host transfer and private candidate experiments."""
     def run(name, command, **kwargs):
         return SUPPORT.run(command, case / (name + '.log'), **kwargs)
@@ -129,6 +142,9 @@ def validate_gdb(workload, corpus, case, artifact_dir, sidecar, binary, referenc
                 'listing = gdb.execute("list *$pc", to_string=True)',
                 'assert "No such file" not in listing and "No source" not in listing',
                 'print(listing)']
+            if staged_source is not None:
+                commands += ['from pathlib import Path',
+                    'assert Path(sal.symtab.fullname()).resolve() == Path(' + repr(str(staged_source)) + ')']
         if workload['name'] == 'uboot':
             commands += (['assert int(gdb.parse_and_eval("argc")) == 2',
                 'assert gdb.parse_and_eval("argv[1]").string() == "forge-uboot-gdb=PASS"']
@@ -200,6 +216,7 @@ def main():
             copied.chmod(0o755)
             assert SUPPORT.digest(original) == SUPPORT.digest(copied)
         compiler_sources = prepare_compiler_sources(workload, corpus, case, metadata)
+        staged_source = stage_debugger_source(source, sidecar, binary, case)
         def run(name, command, **kwargs):
             return SUPPORT.run(command, case / (name + '.log'), **kwargs)
         validation = {}
@@ -212,8 +229,8 @@ def main():
             validation[name] = run(name, command, measured=True, timeout=600)
             SUPPORT.require_clean(case / (name + '.log'))
         assert 'No errors.' in (case / 'llvm.log').read_text()
-        validation.update(validate_gdb(workload, corpus, case, artifact_dir, sidecar, binary, reference,
-            compiler_sources=compiler_sources))
+        validation.update(validate_gdb(workload, corpus, case, staged_source.parent, sidecar, binary,
+            reference, compiler_sources=compiler_sources, staged_source=staged_source))
         outcomes.append({'workload': workload['name'], 'artifactSha256': summary['artifactSha256'],
             'validation': validation, 'strict': json.loads((case / 'strict-checks.log.check.json').read_text())})
     after = {str(p): SUPPORT.digest(p) for p in protected}

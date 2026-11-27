@@ -3,7 +3,7 @@ set -euo pipefail
 
 if [[ $# -ne 4 ]]; then
     echo "usage: $0 <ghidra-dir> <installed-extension-module> <fixture.stripped> <fixture.reference>" >&2
-    echo "requires Linux, Xvfb (or XVFB_BIN), Openbox (or OPENBOX_BIN), xprop/xwininfo, GUI Java 21+ (or JAVA_BIN), javac, Python 3, GNU/LLVM/libdwarf and GDB" >&2
+    echo "requires Linux, Xvfb (or XVFB_BIN), Openbox (or OPENBOX_BIN), xprop/xwininfo, GUI Java 25+ (or JAVA_BIN), javac, Python 3, GNU/LLVM/libdwarf and GDB" >&2
     exit 64
 fi
 repository=$(realpath "$(dirname "$0")/../../..")
@@ -25,8 +25,9 @@ done
 test -s "$module/ghidra_scripts/GhidraDwarfForge.java"
 test -s "$module/ghidra_scripts/ExportGhidraDwarfForge.java"
 (cd "$module" && sha256sum -c RELEASE-SHA256SUMS) >/dev/null
-root="$repository/build/test-results/gui-script-manager"
-if [[ ${GHIDRA_GUI_UNWIND:-0} == 1 ]]; then root="$repository/build/test-results/gui-unwind"; fi
+results="${FORGE_GUI_RESULTS_ROOT:-$repository/build/test-results}"
+root="$results/gui-script-manager"
+if [[ ${GHIDRA_GUI_UNWIND:-0} == 1 ]]; then root="$results/gui-unwind"; fi
 mkdir -p "$root"
 work=$(mktemp -d "$root/run.XXXXXXXX")
 mkdir -p "$work/classes" "$work/settings" "$work/cache" "$work/tmp" "$work/user" \
@@ -53,7 +54,7 @@ while IFS= read -r -d '' jar; do
     classpath+=":$jar"
 done < <(find -L "$ghidra/Ghidra" \( -path '*/Extensions' -o -path '*/data' \) -prune \
     -o -type f -name '*.jar' -print0)
-javac --release 21 -cp "$classpath" -d "$work/classes" \
+javac --release 25 -cp "$classpath" -d "$work/classes" \
     "$repository/src/test/integration/gui/GuiTestSupport.java" \
     "$repository/src/test/integration/gui/GuiWindowGeometrySmoke.java" \
     "$repository/src/test/integration/gui/GuiTableClickSmoke.java" \

@@ -24,7 +24,7 @@ def main():
     names = ('BuildIdInstallationProbe', 'AttachmentElfTransactionProbe',
         'AttachmentReceiptStoreSmoke', 'AttachmentProtocolSmoke', 'AttachmentPathBoundarySmoke')
     sources = [repo / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in names]
-    runtime = [args.jar.resolve(strict=True), args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar',
+    runtime = [args.jar.resolve(strict=True), args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar',
         args.ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar']
     validator = args.strict_validator.resolve(strict=True).parents[1]
     tools = dict(zip(('helper', 'readelf', 'llvm', 'strict', 'configuration'), map(str, (
@@ -103,7 +103,7 @@ def main():
         save(work / 'commands.json', commands)
         return result
 
-    run('compile', [java.with_name('javac'), '--release', '21', '-proc:none', '-cp', classpath, '-d', classes, *sources])
+    run('compile', [java.with_name('javac'), '--release', '25', '-proc:none', '-cp', classpath, '-d', classes, *sources])
     debug = work / 'debug'
     debug.mkdir()
 

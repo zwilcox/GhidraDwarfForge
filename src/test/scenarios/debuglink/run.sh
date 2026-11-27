@@ -18,7 +18,7 @@ mkdir -p "$root"
 work=$(mktemp -d "$root/run.XXXXXXXX")
 mkdir -p "$work/classes"
 echo "debuglink-research-results=$work"
-javac --release 21 -d "$work/classes" \
+javac --release 25 -d "$work/classes" \
     "$repository/src/main/java/ghidradwarfforge/elf/ElfImage.java" \
     "$repository/src/main/java/ghidradwarfforge/elf/ExecutableProgramBytes.java" \
     "$repository/src/main/java/ghidradwarfforge/elf/DebuglinkCandidateContent.java" \

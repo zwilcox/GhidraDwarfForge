@@ -45,7 +45,7 @@ def main():
         '--extension-dir=' + str(extension)]
     classpath = os.pathsep.join([str(extension / 'lib/GhidraDwarfForge.jar'),
         str(args.ghidra.resolve() / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'),
-        str(args.ghidra.resolve() / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar')])
+        str(args.ghidra.resolve() / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar')])
     helper_prefix = [args.java, '--enable-native-access=ALL-UNNAMED', '-cp', classpath, 'ghidradwarfforge.output.BuildIdHelper']
     environment = dict(os.environ, JAVA_TOOL_OPTIONS='-Djna.tmpdir=' + str(root) + ' -Djava.io.tmpdir=' + str(root))
     checks, consumers = [], []

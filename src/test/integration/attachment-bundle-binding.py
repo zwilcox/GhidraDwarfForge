@@ -41,7 +41,7 @@ def main():
     for role, path in (('input', args.original), ('output', args.sidecar), ('source', index)):
         assert digest(path) == report['artifacts'][role + 'Sha256']
     assert inventory['inputSha256'] == digest(args.original)
-    runtime = [args.jar.resolve(strict=True), args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar',
+    runtime = [args.jar.resolve(strict=True), args.ghidra / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar',
         args.ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar']
     protected = {str(path.resolve()): digest(path) for path in [*selected_inputs, *sources, *runtime,
         Path(__file__), Path(__file__).with_name('integration_coverage.py')]}
@@ -59,7 +59,7 @@ def main():
         with (work / (label + '.log')).open('w') as log:
             subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=180)
 
-    run('compile', [java.with_name('javac'), '--release', '21', '-proc:none', '-cp', classpath,
+    run('compile', [java.with_name('javac'), '--release', '25', '-proc:none', '-cp', classpath,
         '-d', classes, *sources])
     collection = Collection('source-bundle-binding', args.jar, 'native-java',
         test_classes=tuple('ghidradwarfforge.output.' + name for name in names))

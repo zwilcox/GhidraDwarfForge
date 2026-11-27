@@ -151,7 +151,7 @@ def probe(pairs, jar, classes, prefix, reject=False):
         uri = urlparse(lines[index].split("=", 1)[1])
         require(uri.scheme == "file" and Path(unquote(uri.path)).resolve() == jar,
                 "helper did not load from selected installed JAR")
-    require(re.fullmatch(r"java-version=21(?:[.+-].*)?", lines[2]), "actual Java21 required")
+    require(re.fullmatch(r"java-version=25(?:[.+-].*)?", lines[2]), "actual Java25 required")
     require(lines[3].startswith("max-heap=") and 0 < int(lines[3].split("=")[1]) <= 64 * 1024 * 1024,
             "bounded observer heap required")
     observations = []
@@ -423,7 +423,7 @@ def execute(args, module, original, candidate, debug_file, work, classes, tool, 
     require(not output, "objcopy issued an unexplained stdout diagnostic")
     require(candidate.is_file() and not candidate.is_symlink(), "objcopy did not create an ordinary candidate")
     require(image(original)["profile"] == list(common.PROFILES[args.target]), "wrong fixture target")
-    run([os.environ.get("JAVAC", "javac"), "--release", "21", "-cp", jar, "-d", classes, adapter], work / "compile")
+    run([os.environ.get("JAVAC", "javac"), "--release", "25", "-cp", jar, "-d", classes, adapter], work / "compile")
     candidate_before = snapshot(candidate)
     observations = probe([(original, candidate), (original, candidate)], jar, classes, work / "installed")
     require(all(item["status"] == "MATCHING_PROGRAM_BYTES" for item in observations), "objcopy changed program bytes")

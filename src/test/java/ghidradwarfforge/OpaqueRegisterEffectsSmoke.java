@@ -41,6 +41,7 @@ import ghidradwarfforge.locations.TargetRegisterMap;
 import ghidradwarfforge.locations.VariableStorageModel.OmissionReason;
 import ghidradwarfforge.locations.VariableStorageModel.Storage;
 import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
+import ghidradwarfforge.targets.MipsReturnMode;
 
 /** Real instruction decoding plus controlled metadata negatives; no native producer. */
 public final class OpaqueRegisterEffectsSmoke {
@@ -63,7 +64,48 @@ public final class OpaqueRegisterEffectsSmoke {
         try (var arm = fixture("ARM:LE:32:v8", "0000a0e300f020e31eff2fe1")) {
             checkTerminalPrefix(arm);
         }
+        try (var mips = fixture("MIPS:BE:32:default", "03e0000800000000")) {
+            checkMipsReturnMode(mips);
+        }
         System.out.println("opaque-register-effects-smoke=PASS");
+    }
+
+    private static void checkMipsReturnMode(Fixture fixture) {
+        Instruction terminal = fixture.instructions().getFirst();
+        var language = fixture.program().getLanguage();
+        PcodeOp notification = Arrays.stream(terminal.getPcode())
+            .filter(op -> op.getOpcode() == PcodeOp.CALLOTHER)
+            .filter(op -> "setISAMode".equals(language.getUserDefinedOpName((int) op.getInput(0).getOffset())))
+            .findFirst().orElseThrow();
+        require(MipsReturnMode.isNotification(terminal, notification), "decoded MIPS return lost its mode notification");
+        var selector = notification.getInput(0);
+        var mode = notification.getInput(1);
+        var constants = fixture.program().getAddressFactory().getConstantSpace();
+        int selectorCount = language.getNumberOfUserDefinedOpNames();
+        require(selectorCount > 1, "fixture needs a distinct language user operation");
+        var otherSelector = new Varnode(constants.getAddress(selector.getOffset() == 0 ? 1 : 0), selector.getSize());
+        var pastLastSelector = new Varnode(constants.getAddress(selectorCount), selector.getSize());
+        var otherRegister = new Varnode(fixture.program().getRegister("a0").getAddress(), mode.getSize());
+        for (Varnode[] inputs : List.of(
+                new Varnode[] { selector }, new Varnode[] { null, mode }, new Varnode[] { mode, mode },
+                new Varnode[] { otherSelector, mode }, new Varnode[] { pastLastSelector, mode },
+                new Varnode[] { selector, null }, new Varnode[] { selector, selector },
+                new Varnode[] { selector, otherRegister },
+                new Varnode[] { selector, new Varnode(mode.getAddress(), mode.getSize() + 1) })) {
+            require(!MipsReturnMode.isNotification(terminal, operation(terminal, PcodeOp.CALLOTHER, inputs, null)),
+                "unexpected MIPS user operation treated as a mode notification: " + Arrays.toString(inputs));
+        }
+        require(!MipsReturnMode.isNotification(terminal,
+            operation(terminal, PcodeOp.CALLOTHER, notification.getInputs(), otherRegister)),
+            "MIPS user operation with an output treated as a mode notification");
+        for (var instruction : List.of(
+                decorate(terminal, "getFlowOverride", FlowOverride.RETURN),
+                decorate(terminal, "isInDelaySlot", true),
+                decorate(terminal, "getDelaySlotDepth", 0),
+                decorate(terminal, "getFlowType", RefType.FALL_THROUGH))) {
+            require(!MipsReturnMode.isNotification(instruction, notification),
+                "MIPS mode notification accepted outside an unmodified delayed return");
+        }
     }
 
     private static void checkSyscall(Fixture fixture) throws Exception {

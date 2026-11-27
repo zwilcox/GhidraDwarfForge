@@ -86,7 +86,7 @@ def oracle(record, evidence):
         'static measurement session counts must be integers')
     if suite == 'lexical-statics':
         require(evidence.get('status') == 'PASS_LEXICAL_STATICS_MEASUREMENT'
-            and evidence.get('oracleStatus') == 'LEXICAL_STATICS_PASS' and evidence.get('javaRuntime') == 21
+            and evidence.get('oracleStatus') == 'LEXICAL_STATICS_PASS' and evidence.get('javaRuntime') == 25
             and evidence.get('controls') is True and evidence.get('recovered') is True
             and pair(evidence.get('outputPair')) and evidence.get('observations') == 9,
             'static baseline lacks the complete existing controls or repeatable output')

@@ -164,11 +164,11 @@ try {
     $toolHashes = [ordered]@{ java = [ordered]@{ path = $javaPath; before = Bytes $javaPath }; javac = [ordered]@{ path = $javacPath; before = Bytes $javacPath } }
     Save-Json 'tool-before.json' $toolHashes
     $version = Run-Process 'java-version' $javaPath @('-version')
-    Require (($version.stdout + $version.stderr) -match '(?m)^(openjdk|java) version "21[.+"]') 'Actual Java21 runtime'
+    Require (($version.stdout + $version.stderr) -match '(?m)^(openjdk|java) version "25[.+"]') 'Actual Java25 runtime'
     $null = Run-Process 'javac-version' $javacPath @('-version')
     $classes = Join-Path $evidence 'classes'
     $null = New-Item -ItemType Directory -Path $classes
-    $null = Run-Process 'compile' $javacPath @('--release', '21', '-d', $classes, (Join-Path $evidence 'HostFacts.java'))
+    $null = Run-Process 'compile' $javacPath @('--release', '25', '-d', $classes, (Join-Path $evidence 'HostFacts.java'))
     $seed = $utf8.GetBytes('owned host metadata fixture; never execute')
     $base = Join-Path $fixtures 'base.dat'
     Add-Control 'base' 'READ' $base { [IO.File]::WriteAllBytes($base, $seed) }
@@ -236,7 +236,7 @@ try {
     Require ($factsProcess.stderr.Length -eq 0) 'Java facts stderr empty'
     Require ($facts.schemaVersion -eq 1 -and $facts.scope -eq 'INSPECTION_ONLY') 'Java protocol schema and inspection scope'
     Require ($facts.manifestSHA256 -eq (Bytes $manifest).sha256) 'Java manifest binding'
-    Require ($facts.host.javaVersion.StartsWith('21.')) 'Java facts runtime version21'
+    Require ($facts.host.javaVersion.StartsWith('25.')) 'Java facts runtime version25'
     Require ($facts.host.maxHeap -le 67108864 -and $facts.host.maxHeap -gt 0) 'Java max heap at most64MiB'
     $after = Snapshot
     Save-Json 'after.json' $after

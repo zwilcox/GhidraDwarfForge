@@ -87,7 +87,7 @@ def main():
         *rebase, '-postScript', 'PrepareObjectParameter.java', case / 'prepared.json',
         args.binding_control or ('explicit' if args.explicit_binding else 'inferred')])
     assert 'object-parameter-preparation=PASS' in (case / 'import.log').read_text()
-    assert json.loads((case / 'prepared.json').read_text())['javaVersion'].startswith('21.')
+    assert json.loads((case / 'prepared.json').read_text())['javaVersion'].startswith('25.')
     prepared = json.loads((case / 'prepared.json').read_text())
     assert prepared['explicitBinding'] == args.explicit_binding
     if args.explicit_binding:
@@ -159,7 +159,7 @@ def main():
     assert protected == {p: digest(Path(p)) for p in protected}
     if collection.enabled:
         receipt = json.loads((case / 'acceptance.json').read_text())
-        receipt.update(status='PASS_OBJECT_PARAMETER_MEASUREMENT', oracleStatus=receipt['status'], javaRuntime=21,
+        receipt.update(status='PASS_OBJECT_PARAMETER_MEASUREMENT', oracleStatus=receipt['status'], javaRuntime=25,
             measurement={'directAnalyzerSessions': 3, 'unmeasuredNestedDrivers': [name for enabled, name in (
                 (args.failure_control, 'failure'), (args.cancellation_control, 'cancellation')) if enabled]})
         (case / 'coverage-oracle.json').write_text(json.dumps(receipt, indent=4) + '\n')

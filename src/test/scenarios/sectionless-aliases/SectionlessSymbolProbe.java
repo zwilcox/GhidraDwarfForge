@@ -7,7 +7,7 @@ import java.util.LinkedHashMap;
 /** Research only: give the unchanged packaged writer load-backed alias observations. */
 public class SectionlessSymbolProbe {
     public static void main(String[] args) throws Exception {
-        if (Runtime.version().feature() != 21) throw new AssertionError("actual Java 21 required");
+        if (Runtime.version().feature() != 25) throw new AssertionError("actual Java 25 required");
         var image = ElfImage.read(Path.of(args[0]));
         var baseline = ElfImage.read(Path.of(args[1]));
         var debug = new LinkedHashMap<String, byte[]>();

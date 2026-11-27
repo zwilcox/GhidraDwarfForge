@@ -61,7 +61,7 @@ public class PrepareRegisterCopy extends GhidraScript {
             function.replaceParameters(Function.FunctionUpdateType.CUSTOM_STORAGE, true,
                 SourceType.USER_DEFINED, new ParameterImpl("value", type,
                     currentProgram.getRegister(fields[5]), currentProgram, SourceType.USER_DEFINED));
-            var expected = convention.getStorageLocations(currentProgram, new DataType[] { type, type }, true);
+            var expected = convention.getStorageLocations(currentProgram, new DataType[] { type, type }, true, function.hasVarArgs());
             if (expected.length != 2 || !expected[0].equals(function.getReturn().getVariableStorage()) ||
                     !expected[1].equals(function.getParameter(0).getVariableStorage())) {
                 throw new IllegalStateException("fixture storage differs from its compiler ABI: " + name);

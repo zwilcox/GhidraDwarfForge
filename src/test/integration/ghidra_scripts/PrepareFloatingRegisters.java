@@ -96,9 +96,13 @@ public class PrepareFloatingRegisters extends GhidraScript {
         }
         boolean opaque = false;
         boolean returns = false;
+        var thumbBit = currentProgram.getRegister("TB");
         for (var operation : instruction.getPcode()) {
-            if (operation.getOpcode() == PcodeOp.CALLOTHER &&
-                    operation.getNumInputs() == 1 && operation.getInput(0).isConstant()) {
+            if (operation.getOpcode() == PcodeOp.CALLOTHER && operation.getOutput() == null &&
+                    operation.getNumInputs() == 2 && operation.getInput(0).isConstant() &&
+                    operation.getInput(1).isRegister() && thumbBit != null &&
+                    thumbBit.getAddress().equals(operation.getInput(1).getAddress()) &&
+                    thumbBit.getMinimumByteSize() == operation.getInput(1).getSize()) {
                 String name = currentProgram.getLanguage().getUserDefinedOpName(
                     Math.toIntExact(operation.getInput(0).getOffset()));
                 if ("setISAMode".equals(name)) {
@@ -110,7 +114,7 @@ public class PrepareFloatingRegisters extends GhidraScript {
             returns |= operation.getOpcode() == PcodeOp.RETURN;
         }
         if (!opaque || !returns) {
-            throw new IllegalStateException("ARM terminal-boundary oracle requires setISAMode and RETURN");
+            throw new IllegalStateException("ARM terminal-boundary oracle requires setISAMode(TB) and RETURN");
         }
         println("floating-register-arm-opaque-return=PASS");
     }

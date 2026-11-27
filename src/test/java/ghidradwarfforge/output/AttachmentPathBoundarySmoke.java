@@ -85,7 +85,7 @@ public final class AttachmentPathBoundarySmoke {
         equal("original", Files.readString(input));
 
         // A retained old entry prevents identity reuse. The portable preflight
-        // compares only provider keys when available (Windows Java 21 has none).
+        // compares provider keys only when the filesystem supplies them.
         // WindowsAttachmentHostSmoke separately proves native identity refusal.
         Files.setLastModifiedTime(input, originalTime);
         Object originalKey = Files.readAttributes(input, BasicFileAttributes.class).fileKey();

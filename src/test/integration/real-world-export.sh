@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Linux x86-64 integration against the installed GNU coreutils, without fixture
-# preparation or analyst changes. Requires Ghidra 12.0.3 with a native-inclusive
+# preparation or analyst changes. Requires Ghidra 12.2 with a native-inclusive
 # Forge extension, GNU readelf/coreutils, LLVM llvm-dwarfdump, libdwarf dwarfdump,
 # and Python-enabled gdb-multiarch. The host must permit debugging child processes.
 # Results are retained, including on failure; no system executable is modified.
@@ -134,18 +134,27 @@ for input in "${inputs[@]}"; do
     done
     cmp "$case_dir/first.sha256" "$case_dir/second.sha256"
 
-    # Recover the application entry symbol from the emitted startup source. This
-    # consumes Ghidra's own analysis, with no fixture symbol or address injection.
-    # A breakpoint there lets source stepping resume after libc startup; stepping
-    # over __libc_start_main at the ELF entry alone can run all the way to exit.
-    mapfile -t application_entries < <(sed -n \
-        's/.*__libc_start_main([[:space:]]*\([A-Za-z_][A-Za-z0-9_]*\),.*/\1/p' \
+    # Prefer the recovered application entry. Ghidra 12.2 can instead identify
+    # it only as a label. In that case use the real ELF finalizer as a second
+    # source-level stop and check its relocated address in the running program.
+    mapfile -t application_entries < <(sed -nE \
+        's/.*__libc_start_main\([[:space:]]*(&?[A-Za-z_][A-Za-z0-9_]*),.*/\1/p' \
         "$output.c" | sort -u)
     if [[ ${#application_entries[@]} -ne 1 ]]; then
         echo "expected one analyzed __libc_start_main target in $output.c" >&2
         exit 1
     fi
-    application_entry=${application_entries[0]}
+    target_function=${application_entries[0]#&}
+    target_checks=()
+    if [[ ${application_entries[0]} =~ ^\&LAB_[[:xdigit:]]+$ ]]; then
+        target_function=_FINI_0
+        fini_array=$(readelf -dW "$input" | awk '$2 == "(FINI_ARRAY)" { print $3 }')
+        [[ "$fini_array" =~ ^0x[[:xdigit:]]+$ ]]
+        target_checks=(
+            -ex "set \$fini_slot = (char *)&entry - $entry_address + $fini_array"
+            -ex "python assert int(gdb.parse_and_eval('*(void **)\$fini_slot')) == int(gdb.parse_and_eval('&_FINI_0')), 'finalizer differs from the relocated DT_FINI_ARRAY entry'"
+        )
+    fi
     run_arguments=()
     if [[ "$name" == basename ]]; then
         run_arguments=(/alpha/path)
@@ -161,16 +170,17 @@ for input in "${inputs[@]}"; do
             -ex "file $input" -ex "symbol-file \"$output\"" \
             -ex 'info functions' -ex 'ptype entry' -ex 'list entry' \
             -ex "python assert int(gdb.parse_and_eval('&entry')) == $entry_address, 'entry differs from ELF e_entry'" \
-            -ex 'break *entry' -ex "break $application_entry" \
+            -ex 'break *entry' -ex "break $target_function" \
             -ex "run ${run_arguments[*]}" \
             -ex "python assert gdb.selected_frame().name() == 'entry'" \
             -ex "python assert int(gdb.parse_and_eval('\$pc')) == int(gdb.parse_and_eval('&entry'))" \
+            "${target_checks[@]}" \
             -ex "python assert gdb.selected_frame().find_sal().symtab.filename.endswith('$name.dbg.c')" \
             -ex 'info source' -ex 'set $forge_previous_pc = $pc' -ex next \
             -ex "python assert int(gdb.parse_and_eval('\$pc')) != int(gdb.parse_and_eval('\$forge_previous_pc'))" \
             -ex continue \
-            -ex "python assert gdb.selected_frame().name() == '$application_entry'" \
-            -ex "ptype $application_entry" -ex list \
+            -ex "python assert gdb.selected_frame().name() == '$target_function'" \
+            -ex "ptype $target_function" -ex list \
             -ex 'set $forge_previous_pc = $pc' -ex next \
             -ex "python assert int(gdb.parse_and_eval('\$pc')) != int(gdb.parse_and_eval('\$forge_previous_pc'))" \
             -ex "python assert gdb.selected_frame().find_sal().line > 0" \
@@ -185,7 +195,7 @@ for input in "${inputs[@]}"; do
     )
     require_empty "$case_dir/gdb.stderr"
     grep -Fq 'Breakpoint 1, entry ()' "$case_dir/gdb.txt"
-    grep -Fq "Breakpoint 2, $application_entry" "$case_dir/gdb.txt"
+    grep -Fq "Breakpoint 2, $target_function" "$case_dir/gdb.txt"
     grep -Fq "Located in $case_dir/" "$case_dir/gdb.txt"
     grep -Fq 'type = ' "$case_dir/gdb.txt"
     grep -Fq 'exited normally' "$case_dir/gdb.txt"

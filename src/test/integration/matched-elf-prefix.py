@@ -141,7 +141,7 @@ def probe(pairs, jar, classes, prefix, *, reject=False):
         origin = urlparse(lines[index].split("=", 1)[1])
         require(origin.scheme == "file" and Path(unquote(origin.path)).resolve() == jar,
                 "observer/ELF reader did not load from installed JAR")
-    require(re.fullmatch(r"java-version=21(?:[.+-].*)?", lines[2]) is not None, "actual Java21 required")
+    require(re.fullmatch(r"java-version=25(?:[.+-].*)?", lines[2]) is not None, "actual Java25 required")
     require(lines[3].startswith("max-heap=") and int(lines[3].split("=")[1]) <= 64 * 1024 * 1024,
             "unbounded observer heap")
     require(len(lines) == len(pairs) + 4, "unexpected observer output")
@@ -246,7 +246,7 @@ def main():
     print(f"matched-elf-prefix-results={work}", flush=True)
     classes = work / "classes"
     classes.mkdir()
-    run([os.environ.get("JAVAC", "javac"), "--release", "21", "-cp", jar, "-d", classes,
+    run([os.environ.get("JAVAC", "javac"), "--release", "25", "-cp", jar, "-d", classes,
          REPOSITORY / "src/test/java/ghidradwarfforge/elf/MatchedElfPrefixProbe.java"], work / "compile")
     run(["readelf", "--version"], work / "gnu-version")
     protected = {str(path): snapshot(path) for path in (jar, producer_jar, script)}

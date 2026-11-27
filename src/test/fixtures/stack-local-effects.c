@@ -52,8 +52,8 @@ EFFECT_FUNCTION(local_known_other, 5)
 __attribute__((noinline, noclone)) void navigation_control(void)
 {
     effect_sink += 1;
-    effect_sink -= 1;
-    __asm__ volatile("nop" ::: "memory");
+    backup_sink += 2;
+    effect_pointer = 0;
 }
 
 int main(void)
@@ -68,5 +68,5 @@ int main(void)
     if (effect_sink != INITIAL_VALUE || backup_sink != INITIAL_VALUE) return 4;
     local_known_other();
     navigation_control();
-    return effect_sink != INITIAL_VALUE || backup_sink != INITIAL_VALUE;
+    return effect_sink != INITIAL_VALUE + 1 || backup_sink != INITIAL_VALUE + 2 || effect_pointer != 0;
 }

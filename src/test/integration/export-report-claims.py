@@ -24,7 +24,7 @@ PROFILES = {
     "mips32be": ("mips", 32, "BIG_ENDIAN", 1, 2, 8),
     "mips32le": ("mipsel", 32, "LITTLE_ENDIAN", 1, 1, 8),
 }
-GSON_SHA256 = "c96d60551331a196dac54b745aa642cd078ef89b6f267146b705f2c2cbef052d"
+GSON_SHA256 = "dd0ce1b55a3ed2080cb70f9c655850cda86c206862310009dcb5e5c95265a5e0"
 CARDINALITIES = {
     "functionsFailed": "failedFunctions", "functionsSkipped": "skippedFunctions",
     "omittedLocationRanges": "omittedLocations", "unsupportedConstructs": "unsupportedConstructs",
@@ -153,8 +153,8 @@ def probe(paths, jar, gson, classes, prefix, expected=None):
         origin = urlparse(lines[index].split("=", 1)[1])
         require(origin.scheme == "file" and Path(unquote(origin.path)).resolve() == archive,
                 "helper/dependency was not loaded from its installed JAR")
-    require(re.fullmatch(r"java-version=21(?:[.+-].*)?", lines[2]) is not None,
-            "reader oracle requires actual Java 21")
+    require(re.fullmatch(r"java-version=25(?:[.+-].*)?", lines[2]) is not None,
+            "reader oracle requires actual Java 25")
     require(lines[3].startswith("max-heap=") and int(lines[3].split("=", 1)[1]) <= 64 * 1024 * 1024,
             "unbounded reader heap")
     if expected is not None:
@@ -293,7 +293,7 @@ def main():
     producer = (args.producer_module or args.module).resolve(strict=True)
     jar = (module / "lib/GhidraDwarfForge.jar").resolve(strict=True)
     producer_jar = (producer / "lib/GhidraDwarfForge.jar").resolve(strict=True)
-    gson = (module.parent.parent / "Framework/Generic/lib/gson-2.9.0.jar").resolve(strict=True)
+    gson = (module.parent.parent / "Framework/Generic/lib/gson-2.13.2.jar").resolve(strict=True)
     require(snapshot(gson)["sha256"] == GSON_SHA256, "unexpected supplied Gson revision")
     result_root = REPOSITORY / "build/test-results/export-report-claims"
     result_root.mkdir(parents=True, exist_ok=True)
@@ -301,7 +301,7 @@ def main():
     print(f"export-report-claims-results={work}", flush=True)
     classes = work / "classes"
     classes.mkdir()
-    run([os.environ.get("JAVAC", "javac"), "--release", "21", "-cp",
+    run([os.environ.get("JAVAC", "javac"), "--release", "25", "-cp",
          os.pathsep.join(map(str, (jar, gson))), "-d", classes,
          REPOSITORY / "src/test/java/ghidradwarfforge/output/ExportReportClaimsProbe.java"],
         work / "compile")

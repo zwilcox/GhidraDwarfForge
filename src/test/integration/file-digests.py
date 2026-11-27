@@ -104,7 +104,7 @@ def main():
     classes = work / "classes"
     classes.mkdir()
     jar_hash = python_digests(jar)
-    run([os.environ.get("JAVAC", "javac"), "--release", "21", "-cp", jar, "-d", classes,
+    run([os.environ.get("JAVAC", "javac"), "--release", "25", "-cp", jar, "-d", classes,
          REPOSITORY / "src/test/java/ghidradwarfforge/output/FileDigestsProbe.java"],
         work / "compile")
     objcopy = TOOLS[args.target]

@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BooleanSupplier;
 
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
@@ -55,7 +56,7 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
     static CoverageReportClaims read(InputStream input, BooleanSupplier cancelled, ReportJsonReader.Limits limits) throws IOException {
         CoverageReportClaims result;
         try (var json = new JsonReader(new ReportJsonReader(input, cancelled, limits))) {
-            json.setLenient(false);
+            json.setStrictness(Strictness.LEGACY_STRICT);
             result = parse(new Parser(json, cancelled, limits));
             if (json.peek() != JsonToken.END_DOCUMENT) throw new IOException("trailing coverage content");
         }

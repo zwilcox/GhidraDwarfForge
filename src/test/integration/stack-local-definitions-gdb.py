@@ -30,9 +30,11 @@ assert int(gdb.parse_and_eval("$pc")) == entry
 entry_stack = int(gdb.parse_and_eval("$sp"))
 
 
-def stop(address):
+def stop(address, command="continue"):
     gdb.Breakpoint("*" + hex(address), temporary=True)
-    gdb.execute("continue")
+    gdb.execute(command)
+    if command != "continue" and int(gdb.parse_and_eval("$pc")) != address:
+        gdb.execute("continue")
     assert int(gdb.parse_and_eval("$pc")) == address
 
 
@@ -115,19 +117,13 @@ assert int(gdb.parse_and_eval("scope_sink")) == second_value
 gdb.execute("print/a &scope_sink")
 gdb.execute("print &scope_sink")
 
-# The next function is also a stopping point for source stepping out of the
-# scoped fixture; symbolic breakpoints keep PIE relocation explicit.
-gdb.Breakpoint("*zero_stack", temporary=True)
-for command in ["next", "step"]:
-    if int(gdb.parse_and_eval("$pc")) != int(gdb.parse_and_eval("&zero_stack")):
-        gdb.execute(command)
-if int(gdb.parse_and_eval("$pc")) != int(gdb.parse_and_eval("&zero_stack")):
-    gdb.execute("continue")
+# Issue each source step in a mapped fixture function. The intervening caller
+# in the stripped executable can have no source mapping.
 zero_entry = int(gdb.parse_and_eval("&zero_stack"))
-assert int(gdb.parse_and_eval("$pc")) == zero_entry
+stop(zero_entry, "next")
 zero_stack = int(gdb.parse_and_eval("$sp"))
 zero_bias = zero_entry - labels["zero_stack"]["entry"]
-stop(labels["zero_stack"]["zero_live"] + zero_bias)
+stop(labels["zero_stack"]["zero_live"] + zero_bias, "step")
 typed("zero", 37)
 if compiler:
     storage["zero_offset"] = int(gdb.parse_and_eval("&zero")) - zero_stack

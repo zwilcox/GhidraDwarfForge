@@ -22,7 +22,7 @@ def main():
         module = root / 'module'
         for file in [module / 'lib/GhidraDwarfForge.jar',
                      ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar',
-                     ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar']:
+                     ghidra / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar']:
             file.parent.mkdir(parents=True, exist_ok=True)
             file.write_text('owned fake dependency; no native claim')
         log = root / 'calls.jsonl'

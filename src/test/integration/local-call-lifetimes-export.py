@@ -128,7 +128,7 @@ def main():
         hashes = current
     model = json.loads((case / 'fixed.json').read_text())
     assert model == json.loads((case / 'repeat.json').read_text()) == json.loads((case / 'curated.json').read_text())
-    assert model['java'].startswith('21.'), model['java']
+    assert model['java'].startswith('25.'), model['java']
     assert Path(unquote(urlsplit(model['origin']).path)).resolve() == (module / 'lib/GhidraDwarfForge.jar').resolve()
     model['role'] = args.role
     model['storage'] = args.storage

@@ -12,12 +12,15 @@ else if (project.hasProperty("GHIDRA_INSTALL_DIR")) {
     ghidraInstallDir = project.getProperty("GHIDRA_INSTALL_DIR")
 }
 else {
-    throw new GradleException("Set GHIDRA_INSTALL_DIR to a Ghidra 12.0.3 installation")
+    throw new GradleException("Set GHIDRA_INSTALL_DIR to a Ghidra 12.2 installation")
 }
 
 task distributeExtension {
     group = "Ghidra"
     apply from: new File(ghidraInstallDir).getCanonicalPath() + "/support/buildExtension.gradle"
+    if (project.ext.ghidra_version != "12.2") {
+        throw new GradleException("GhidraDwarfForge requires the Ghidra 12.2 SDK, found ${project.ext.ghidra_version}")
+    }
     dependsOn ":buildExtension"
 }
 
@@ -26,8 +29,28 @@ task distributeExtension {
 tasks.named("processResources") {
     exclude "**/__pycache__/**", "**/*.pyc"
 }
+// Gson's compiled JsonParser references Error Prone annotations. The pinned
+// Gradle distribution supplies them for strict mutation-test compilation.
+tasks.named("processTestResources") {
+    from({ fileTree(new File(gradle.gradleHomeDir, "lib")).matching {
+        include "error_prone_annotations-*.jar"
+    }.singleFile }) {
+        into "mutation-compiler"
+        rename { "error_prone_annotations.jar" }
+    }
+}
 tasks.named("zipSource") {
     exclude "**/__pycache__/**", "**/*.pyc"
+}
+
+// Ghidra normally compiles these scripts on demand, after packaging.
+tasks.register("compileGhidraScripts", JavaCompile) {
+    group = "verification"
+    description = "Checks the shipped and integration scripts against the selected Ghidra SDK"
+    source "ghidra_scripts", "src/test/integration/ghidra_scripts"
+    include "**/*.java"
+    classpath = sourceSets.main.runtimeClasspath
+    destinationDirectory = layout.buildDirectory.dir("classes/ghidra-scripts")
 }
 
 // The Ghidra SDK also defines JavaExec tasks for help generation with its own classpath.

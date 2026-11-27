@@ -113,7 +113,7 @@ def main():
     jna, = args.ghidra.glob('Ghidra/Framework/Pty/lib/jna-[0-9]*.jar')
     gson, = args.ghidra.glob('Ghidra/Framework/Generic/lib/gson-[0-9]*.jar')
     classpath = os.pathsep.join(map(str, (classes, args.jar.resolve(), jna.resolve(), gson.resolve())))
-    run('javac', [args.java_home / 'bin/javac', '--release', '21', '-cp', classpath, '-d', classes, harness])
+    run('javac', [args.java_home / 'bin/javac', '--release', '25', '-cp', classpath, '-d', classes, harness])
     output = root / 'output'
     output.mkdir()
     sidecar = output / 'input.dbg'

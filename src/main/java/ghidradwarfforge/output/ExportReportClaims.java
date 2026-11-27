@@ -1,5 +1,6 @@
 package ghidradwarfforge.output;
 
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
@@ -206,7 +207,7 @@ public record ExportReportClaims(int schemaVersion, ExportReport.Status status,
         WithCoverage result;
         try (JsonReader json = new JsonReader(new ReportJsonReader(
                 Objects.requireNonNull(opener.open(report), "opened report"), cancelled, limits))) {
-            json.setLenient(false);
+            json.setStrictness(Strictness.LEGACY_STRICT);
             result = new Parser(json, cancelled, limits, retained).read();
         }
         ReportJsonReader.checkCancelled(cancelled);

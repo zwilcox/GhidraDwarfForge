@@ -21,7 +21,7 @@ import ghidradwarfforge.locations.VariableStorageModel.UnavailableStorage;
 
 /**
  * Isolated target register-number descriptions. Values mirror the named
- * Ghidra 12.0.3 {@code *.dwarf} mapping resource, using the canonical ARM
+ * Ghidra 12.2 {@code *.dwarf} mapping resource, using the canonical ARM
  * double-register subset required by AADWARF32; generic storage code never
  * infers a DWARF number from a register name or ordinal.
  */
@@ -29,7 +29,7 @@ public record TargetRegisterMap(String target, String provenance,
         Map<String, Integer> dwarfNumbers, Map<String, List<PairPiece>> registerPairs,
         Map<String, RegisterSlice> registerSlices, ByteOrder registerStorageByteOrder) {
     private static final String GHIDRA_MAPPING_ROOT =
-        "Ghidra 12.0.3 processor DWARF register mapping: ";
+        "Ghidra 12.2 processor DWARF register mapping: ";
 
     /** Expected physical child position; list order describes object memory. */
     public record PairPiece(String registerName, int baseBitOffset, int bitSize) {

@@ -140,7 +140,7 @@ class Collection:
         option = (f'-javaagent:{self.agent}=destfile={execution},append=false,'
             f'includes=ghidradwarfforge.*,excludes={":".join(self.record["excludes"])},sessionid={session_id}')
         if headless:
-            # Ghidra 12.0.3 analyzeHeadless is a thin wrapper around this exact
+            # Ghidra 12.2 analyzeHeadless is a thin wrapper around this exact
             # launch.sh invocation. Inject only into its analyzer JVM, never
             # into LaunchSupport or descendants through JAVA_TOOL_OPTIONS.
             vmargs = '-XX:ParallelGCThreads=2 -XX:CICompilerCount=2 -Djava.awt.headless=true ' + option

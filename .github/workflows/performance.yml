@@ -2,6 +2,14 @@ name: Performance measurement controls
 
 on:
     workflow_dispatch:
+        inputs:
+            historical:
+                description: Replay the original Ghidra 12.0.3 coverage measurement
+                type: boolean
+                default: false
+            baseline:
+                description: Optional full Ghidra 12.2 baseline commit with retained production CI packages
+                type: string
     pull_request:
         paths:
             - '.github/workflows/performance.yml'
@@ -13,10 +21,10 @@ permissions:
 
 env:
     PERFORMANCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
-    PERFORMANCE_BASELINE: 1bb4c14c550d277817315cf0ed97853a949e1e03
-    GHIDRA_ARCHIVE: ghidra_12.0.3_PUBLIC_20260210.zip
-    GHIDRA_ARCHIVE_SHA256: 90d3fffb20b00030dcef8d2a24dd0f422d3a61e432b3ad43f77233ac6d667981
-    GHIDRA_DOWNLOAD_URL: https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.0.3_build/ghidra_12.0.3_PUBLIC_20260210.zip
+    PERFORMANCE_CANDIDATE: ${{ inputs.historical && 'f4609efbca5e0c45fe199b162d0051e8bb5017d1' || github.event.pull_request.head.sha || github.sha }}
+    GHIDRA_VERSION: ${{ inputs.historical && '12.0.3' || '12.2' }}
+    GHIDRA_ARCHIVE: ${{ inputs.historical && 'ghidra_12.0.3_PUBLIC_20260210.zip' || 'ghidra_12.2_PUBLIC_20261016.zip' }}
+    GHIDRA_ARCHIVE_SHA256: ${{ inputs.historical && '90d3fffb20b00030dcef8d2a24dd0f422d3a61e432b3ad43f77233ac6d667981' || '2c2cd776db3c1f6a097ba418922378ac3649cadd5e844a6f5f088ae628a7be67' }}
 
 jobs:
     windows-measurement:
@@ -110,17 +118,34 @@ jobs:
     packages:
         runs-on: ubuntu-24.04
         timeout-minutes: 130
+        outputs:
+            baseline: ${{ steps.packages.outputs.baseline }}
         steps:
             - uses: actions/checkout@v7
               with:
                   persist-credentials: false
                   ref: ${{ env.PERFORMANCE_HEAD }}
             - name: Fetch exact-head CI artifacts without rebuilding production natives
+              id: packages
               env:
                   GH_TOKEN: ${{ github.token }}
+                  REQUESTED_BASELINE: ${{ inputs.historical && '1bb4c14c550d277817315cf0ed97853a949e1e03' || inputs.baseline }}
+                  PR_BASE: ${{ github.event.pull_request.base.sha }}
               run: |
+                  set -euo pipefail
+                  baseline="$REQUESTED_BASELINE"
+                  if [[ -z "$baseline" ]]; then
+                      baseline=${PR_BASE:-$(gh api "repos/$GITHUB_REPOSITORY/commits/$PERFORMANCE_HEAD" --jq '.parents[0].sha')}
+                      gh api -H 'Accept: application/vnd.github.raw+json' \
+                          "repos/$GITHUB_REPOSITORY/contents/.github/workflows/ci.yml?ref=$baseline" > "$RUNNER_TEMP/base-ci.yml"
+                      if ! grep -Fxq "  GHIDRA_ARCHIVE: $GHIDRA_ARCHIVE" "$RUNNER_TEMP/base-ci.yml"; then
+                          # The migration PR's base still builds for the previous SDK.
+                          baseline=bc702d094f7f691e20425e5c17eb50d78a6201cc
+                      fi
+                  fi
                   python3 src/test/performance/fetch-ci-packages.py \
-                      "$PERFORMANCE_HEAD" "$PERFORMANCE_BASELINE" build/performance-packages
+                      "$PERFORMANCE_CANDIDATE" "$baseline" build/performance-packages
+                  echo "baseline=$baseline" >> "$GITHUB_OUTPUT"
             - uses: actions/upload-artifact@v7
               if: always()
               with:
@@ -133,6 +158,8 @@ jobs:
         needs: [windows-measurement, corpus, packages]
         runs-on: windows-2025
         timeout-minutes: 120
+        env:
+            PERFORMANCE_BASELINE: ${{ needs.packages.outputs.baseline }}
         steps:
             - uses: actions/checkout@v7
               with:
@@ -141,7 +168,7 @@ jobs:
             - uses: actions/setup-java@v6
               with:
                   distribution: temurin
-                  java-version: '21'
+                  java-version: ${{ inputs.historical && '21' || '25' }}
             - uses: msys2/setup-msys2@v2
               id: msys2
               with:
@@ -172,7 +199,8 @@ jobs:
                   New-Item -ItemType Directory -Force $download | Out-Null
                   $archive = Join-Path $download $env:GHIDRA_ARCHIVE
                   if (-not (Test-Path $archive)) {
-                      Invoke-WebRequest -Uri $env:GHIDRA_DOWNLOAD_URL -OutFile $archive
+                      $url = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_$($env:GHIDRA_VERSION)_build/$($env:GHIDRA_ARCHIVE)"
+                      Invoke-WebRequest -Uri $url -OutFile $archive
                   }
                   if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $env:GHIDRA_ARCHIVE_SHA256) {
                       throw 'Ghidra archive hash mismatch'
@@ -180,7 +208,7 @@ jobs:
                   foreach ($role in @('baseline', 'candidate')) {
                       $destination = Join-Path $env:RUNNER_TEMP "performance-$role"
                       Expand-Archive $archive -DestinationPath $destination
-                      $ghidra = Join-Path $destination 'ghidra_12.0.3_PUBLIC'
+                      $ghidra = Join-Path $destination "ghidra_$($env:GHIDRA_VERSION)_PUBLIC"
                       # launch.bat does not print the selected JVM version by
                       # default. Observe the real Ghidra JVM, not a separate
                       # PATH java process, in both measured installations.
@@ -192,7 +220,7 @@ jobs:
                       [IO.File]::WriteAllText($launchProperties, $configuration, [Text.UTF8Encoding]::new($false))
                       $extensions = @(Get-ChildItem "packages/$role" -Filter '*.zip')
                       if ($extensions.Count -ne 1) { throw "ambiguous $role extension" }
-                      if ($role -eq 'baseline') {
+                      if ($role -eq 'baseline' -and $env:GHIDRA_VERSION -eq '12.0.3') {
                           # Preserve the original production module outside Ghidra's
                           # search path; derive a separately receipted control below.
                           $production = Join-Path $env:RUNNER_TEMP 'performance-baseline-production'
@@ -205,6 +233,7 @@ jobs:
                       "PERFORMANCE_$($role.ToUpperInvariant())_DIR=$ghidra" | Out-File $env:GITHUB_ENV -Append
                   }
             - name: Derive audited array-corrected baseline measurement control
+              if: inputs.historical
               shell: pwsh
               run: |
                   $ErrorActionPreference = 'Stop'
@@ -223,11 +252,16 @@ jobs:
                   $ErrorActionPreference = 'Stop'
                   $env:PATH = "$(Join-Path $env:MSYS2_LOCATION 'mingw64/bin');$env:PATH"
                   $env:DWARFDUMP = (Resolve-Path 'packages/checker-windows/libexec/dwarfdump.exe').Path
+                  $study = if ($env:GHIDRA_VERSION -eq '12.0.3') {
+                      @('--baseline-control-receipt', 'build/test-results/windows-workloads/baseline-control/receipt.json')
+                  } else {
+                      @('--production-packages', 'packages')
+                  }
                   python src/test/performance/windows-workloads.py corpus `
                       $env:PERFORMANCE_BASELINE_DIR $env:PERFORMANCE_CANDIDATE_DIR `
                       measurement/windows-measure.exe build/test-results/windows-workloads --pairs 5 `
                       --checker-configuration packages/checker-windows/share/dwarfdump/dwarfdump.conf `
-                      --baseline-control-receipt build/test-results/windows-workloads/baseline-control/receipt.json
+                      @study
                   if ($LASTEXITCODE -ne 0) { throw 'Windows workload measurement/validation failed' }
             - uses: actions/upload-artifact@v7
               if: always()

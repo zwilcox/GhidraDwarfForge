@@ -24,7 +24,7 @@ $java = (Resolve-Path -LiteralPath $JavaExecutable).Path
 $dependencies = @(
     (Join-Path $extension 'lib/GhidraDwarfForge.jar'),
     (Join-Path $ghidra 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'),
-    (Join-Path $ghidra 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar')
+    (Join-Path $ghidra 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar')
 )
 foreach ($dependency in $dependencies) {
     if (-not (Test-Path -LiteralPath $dependency -PathType Leaf)) { throw "Missing installed dependency: $dependency" }

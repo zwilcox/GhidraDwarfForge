@@ -56,7 +56,7 @@ def main():
     classpath = os.pathsep.join(map(str, [jar, classes,
         *sorted(p for p in ghidra.rglob('*.jar') if 'Extensions' not in p.parts)]))
     test = root / 'src/test/java/ghidradwarfforge/nativeapi/ClassScopeSmoke.java'
-    run('javac', ['javac', '--release', '21', '-proc:none', '-cp', classpath, '-d', classes, test])
+    run('javac', ['javac', '--release', '25', '-proc:none', '-cp', classpath, '-d', classes, test])
     output = case / 'class.dbg'
     run('producer', ['java', '--enable-native-access=ALL-UNNAMED', '-cp', classpath,
         'ghidradwarfforge.nativeapi.ClassScopeSmoke', native / 'libdwarf.so.2.3.2',

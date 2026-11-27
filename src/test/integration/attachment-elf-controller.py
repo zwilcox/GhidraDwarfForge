@@ -97,7 +97,7 @@ def main():
     jar = args.jar.resolve(strict=True)
     launcher = jar.parent.parent / 'support/ghidra-dwarf-forge-attach'
     launcher_sources = [launcher] if args.production_linux_host else []
-    gson = args.ghidra.resolve() / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar'
+    gson = args.ghidra.resolve() / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar'
     jna = args.ghidra.resolve() / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'
     sources = [ROOT / 'src/test/java/ghidradwarfforge/output' / (name + '.java') for name in
                ['AttachmentProtocolSmoke', 'AttachmentPathBoundarySmoke', 'AttachmentReceiptStoreSmoke', 'AttachmentElfTransactionProbe',
@@ -196,10 +196,10 @@ def main():
     classes = work / 'classes'
     classes.mkdir()
     dependencies = os.pathsep.join(map(str, runtime_files))
-    run('compile', [os.environ.get('JAVAC', 'javac'), '--release', '21', '-cp', dependencies,
+    run('compile', [os.environ.get('JAVAC', 'javac'), '--release', '25', '-cp', dependencies,
                     '-d', classes, *sources])
     version = run('java-version', [java, '-version'])
-    require(b'version "21.' in version.stderr, 'this harness requires actual Java 21')
+    require(b'version "25.' in version.stderr, 'this harness requires actual Java 25')
     runtime = os.pathsep.join([str(classes), dependencies])
     live_validator_arguments = []
     if args.supervised_validator_helper is not None:

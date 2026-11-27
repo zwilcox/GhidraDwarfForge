@@ -37,13 +37,13 @@ public record DwarfTarget(String name, String producerIsa, int addressBytes,
     private static final int EM_ARM = 40;
     private static final int EM_X86_64 = 62;
     private static final int EM_AARCH64 = 183;
-    // Ghidra 12.0.3 compiler specifications used by the ELF runtime baselines.
+    // Ghidra compiler specifications used by the ELF runtime fixtures.
     // Membership preserves the existing policy; it does not certify every
     // signature, language variant or ABI flag combination for injected calls.
     private static final Map<String, String> BASELINE_COMPILER_SPECS = Map.of(
         "x86", "gcc", "x86_64", "gcc", "aarch64", "default",
         "arm", "default", "mips", "default", "mipsel", "default");
-    // Processor identities follow Ghidra 12.0.3's ELF .opinion and .ldefs files.
+    // Processor identities follow the supported SDK's ELF .opinion and .ldefs files.
     // Language variants and compiler-spec IDs are not portable ABI identifiers.
     private static final Map<Integer, List<TargetDescription>> TARGETS = Map.of(
         EM_386, List.of(new TargetDescription("i386", 4, "x86", null, "x86", false, "x86")),

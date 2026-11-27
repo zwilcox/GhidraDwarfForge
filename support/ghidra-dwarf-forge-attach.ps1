@@ -32,7 +32,7 @@ if (-not (Test-Path -LiteralPath $java -PathType Leaf) -or [IO.Path]::GetExtensi
 $dependencies = @(
     (Join-Path $extension 'lib/GhidraDwarfForge.jar'),
     (Join-Path $ghidra 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar'),
-    (Join-Path $ghidra 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar')
+    (Join-Path $ghidra 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar')
 )
 foreach ($dependency in $dependencies) {
     if (-not (Test-Path -LiteralPath $dependency -PathType Leaf)) { throw "Missing installed dependency: $dependency" }
@@ -43,8 +43,8 @@ function Encode-PathArgument([string]$Value) {
     if ($Value.Length -eq 0 -or $Value.Length -gt 16384 -or $Value.Contains([char]0)) {
         throw 'Path argument must be nonempty, bounded and contain no NUL'
     }
-    # Java 21's Windows launcher converts argv through the active ANSI code
-    # page. Keep literal selected paths in ASCII transport until Java decodes.
+    # Use ASCII transport so the Windows launcher can pass paths outside
+    # the active ANSI code page to Java without losing characters.
     return [Convert]::ToBase64String([Text.UTF8Encoding]::new($false, $true).GetBytes($Value))
 }
 foreach ($argument in @('--enable-native-access=ALL-UNNAMED','-cp',($dependencies -join ';'),

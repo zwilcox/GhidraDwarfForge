@@ -142,13 +142,13 @@ public final class AttachmentGui {
         Path java = Path.of(System.getProperty("java.home"), "bin", windows ? "java.exe" : "java");
         var dependencies = List.of(module.resolve("lib/GhidraDwarfForge.jar"),
             ghidra.resolve("Ghidra/Framework/Pty/lib/jna-5.14.0.jar"),
-            ghidra.resolve("Ghidra/Framework/Generic/lib/gson-2.9.0.jar"));
+            ghidra.resolve("Ghidra/Framework/Generic/lib/gson-2.13.2.jar"));
         for (var path : dependencies) {
             if (!Files.isRegularFile(path) || path.toString().contains(File.pathSeparator)) {
                 throw new IOException("Missing or ambiguous installed helper dependency: " + path);
             }
         }
-        var previewCommand = new ArrayList<>(List.of(java.toString(), "-cp",
+        var previewCommand = new ArrayList<>(List.of(java.toString(), "--enable-native-access=ALL-UNNAMED", "-cp",
             String.join(File.pathSeparator, dependencies.stream().map(Path::toString).toList()),
             "ghidradwarfforge.output.AttachmentHelper", windows ? "--request-utf8-base64" : "--request",
             windows ? AttachmentPathArgument.encode(request.toString()) : request.toString(), "--request-sha256", sha,

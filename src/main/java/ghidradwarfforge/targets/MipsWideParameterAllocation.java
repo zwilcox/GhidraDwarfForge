@@ -111,7 +111,7 @@ public final class MipsWideParameterAllocation {
                 if (!parameter.isAutoParameter()) types.add(parameter.getFormalDataType());
             }
             var signature = types.toArray(DataType[]::new);
-            var expected = original.getStorageLocations(program, signature, true);
+            var expected = original.getStorageLocations(program, signature, true, function.hasVarArgs());
             // The pinned dual-class aggregate rule aligns stack storage but
             // does not skip odd register slots. An allocation-only placeholder
             // consumes that ABI hole; it is never exported as a parameter.
@@ -142,7 +142,7 @@ public final class MipsWideParameterAllocation {
                 }
                 allocationIndices[index] = index + 1 + padding;
             }
-            var adjusted = corrected.getStorageLocations(program, allocationTypes.toArray(DataType[]::new), true);
+            var adjusted = corrected.getStorageLocations(program, allocationTypes.toArray(DataType[]::new), true, function.hasVarArgs());
             if (expected.length != parameters.length + 1 || adjusted.length != expected.length + padding ||
                     !adjusted[0].equals(expected[0])) {
                 throw new IllegalStateException("Audited MIPS input allocation changed return or automatic parameter count");

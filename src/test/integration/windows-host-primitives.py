@@ -25,7 +25,7 @@ def main():
     module = ghidra / 'Ghidra/Extensions/GhidraDwarfForge'
     jar = module / 'lib/GhidraDwarfForge.jar'
     dependencies = [jar, ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar',
-        ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar']
+        ghidra / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar']
     names = ('WindowsFileSecurityProbe', 'WindowsAttachmentPrivilegeProbe',
         'WindowsAttachmentHostSmoke', 'WindowsAttachmentTransactionSmoke', 'BuildIdFileLockSmoke',
         'WindowsMetadataFailureControls', 'WindowsDirectoryFailureControls', 'WindowsSecurityFailureControls',
@@ -62,7 +62,7 @@ def main():
             if child.returncode != 0 or stderr or marker and marker.encode() not in stdout:
                 raise AssertionError('Windows primitive probe failed: ' + label)
 
-    run('compile', [java.with_name('javac.exe'), '--release', '21', '-cp', classpath,
+    run('compile', [java.with_name('javac.exe'), '--release', '25', '-cp', classpath,
         '-d', classes, *sources])
     prefix = [java, '--enable-native-access=ALL-UNNAMED', '-cp', classpath]
     run('publication', [*prefix, 'ghidradwarfforge.output.CompanionObservationRecoverySmoke'],

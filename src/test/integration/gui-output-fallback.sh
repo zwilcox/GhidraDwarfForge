@@ -3,7 +3,7 @@ set -euo pipefail
 
 if [[ $# -ne 4 ]]; then
     echo "usage: $0 <ghidra-dir> <extension-module-dir> <fixture.stripped> <fixture.reference>" >&2
-    echo "requires: Xvfb (or XVFB_BIN), GUI-enabled Java 21+ (or JAVA_BIN), javac," >&2
+    echo "requires: Xvfb (or XVFB_BIN), GUI-enabled Java 25+ (or JAVA_BIN), javac," >&2
     echo "          readelf, llvm-dwarfdump, dwarfdump, gdb" >&2
     exit 2
 fi
@@ -24,7 +24,7 @@ if [[ $(id -u) == 0 ]]; then
     exit 2
 fi
 
-result_root="$repository_dir/build/test-results/gui-output-fallback"
+result_root="${FORGE_GUI_RESULTS_ROOT:-$repository_dir/build/test-results}/gui-output-fallback"
 mkdir -p "$result_root"
 result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
 mkdir -p "$result_dir/classes" "$result_dir/settings" "$result_dir/cache" \
@@ -48,7 +48,7 @@ while IFS= read -r -d '' jar; do
     classpath+=":$jar"
 done < <(find "$ghidra_dir/Ghidra" -path '*/Extensions' -prune -o \
     -type f -name '*.jar' -print0)
-javac --release 21 -cp "$classpath" -d "$result_dir/classes" \
+javac --release 25 -cp "$classpath" -d "$result_dir/classes" \
     "$module_dir/ghidra_scripts/GhidraDwarfForge.java" \
     "$repository_dir/src/test/integration/gui/GuiOutputFallbackSmoke.java"
 

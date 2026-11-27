@@ -95,8 +95,8 @@ FUNCTION(mutable_loop, SAVE, LOOP)
 FUNCTION(mutable_conflict, SAVE, ONCE)
 __attribute__((noinline, noclone)) void navigation_control(void) {
     effect_sink += 1;
-    effect_sink -= 1;
-    __asm__ volatile("nop" ::: "memory");
+    backup_sink += 2;
+    path_choice = 3;
 }
 int main(void) {
     mutable_saved();
@@ -117,5 +117,5 @@ int main(void) {
     if (effect_sink != INITIAL_VALUE + 123 || backup_sink != INITIAL_VALUE + 15) return 6;
     mutable_conflict();
     navigation_control();
-    return effect_sink != INITIAL_VALUE + 123 || backup_sink != INITIAL_VALUE + 5;
+    return effect_sink != INITIAL_VALUE + 124 || backup_sink != INITIAL_VALUE + 7 || path_choice != 3;
 }

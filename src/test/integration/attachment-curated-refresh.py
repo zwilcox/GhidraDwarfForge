@@ -81,7 +81,7 @@ def main():
     # CI selects the installed JAR for both roles. Keep both retained names even
     # when their source path is identical; a path-keyed dict drops operation.jar.
     inputs = [(args.jar.resolve(), 'operation.jar'), (exporter_jar, 'installed-exporter.jar'),
-              (ghidra / 'Ghidra/Framework/Generic/lib/gson-2.9.0.jar', 'gson.jar'),
+              (ghidra / 'Ghidra/Framework/Generic/lib/gson-2.13.2.jar', 'gson.jar'),
               (ghidra / 'Ghidra/Framework/Pty/lib/jna-5.14.0.jar', 'jna.jar')]
     checker_bundle = args.strict_validator.resolve(strict=True).parents[1]
     validator_tools = {'helper': args.supervised_validator_helper.resolve(strict=True),
@@ -124,13 +124,13 @@ def main():
         return result
 
     java = os.environ.get('JAVA', 'java')
-    require(b'version "21.' in run('java-version', [java, '-version']).stderr, 'actual Java 21 is required')
+    require(b'version "25.' in run('java-version', [java, '-version']).stderr, 'actual Java 25 is required')
     for tool in ['readelf', 'llvm-dwarfdump', 'gdb-multiarch']:
         run(tool + '-version', [tool, '--version'])
     classes = work / 'classes'
     classes.mkdir()
     classpath = os.pathsep.join(str(provenance / name) for name in ['operation.jar', 'gson.jar', 'jna.jar'])
-    run('compile', [os.environ.get('JAVAC', 'javac'), '--release', '21', '-cp', classpath,
+    run('compile', [os.environ.get('JAVAC', 'javac'), '--release', '25', '-cp', classpath,
                     '-d', classes, *[provenance / path.name for path in java_sources]])
     runtime = os.pathsep.join([str(classes), classpath])
     spec = importlib.util.spec_from_file_location('refresh_strict_oracle', provenance / 'check-dwarfdump.py')

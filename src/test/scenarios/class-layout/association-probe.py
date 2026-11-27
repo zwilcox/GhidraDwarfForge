@@ -45,7 +45,7 @@ def main():
         log = (out / (target + '-ghidra.log')).read_text()
         assert 'class-association-probe=PASS' in log and 'Discarded file import due to readOnly option' in log
         observation = json.loads((out / (target + '.json')).read_text())
-        assert observation['javaVersion'].startswith('21.')
+        assert observation['javaVersion'].startswith('25.')
         cases.append({'target': target, 'observation': observation, 'observationSha256': digest(out / (target + '.json'))})
     archive = ghidra / 'Ghidra/Framework/SoftwareModeling/lib/SoftwareModeling-src.zip'
     with zipfile.ZipFile(archive) as zipped:

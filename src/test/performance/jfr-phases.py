@@ -14,8 +14,10 @@ COVERAGE_PHASES = {'coverage-instruction-capture', 'coverage-assembly', 'coverag
 TYPE_COVERAGE_PHASES = COVERAGE_PHASES | {'coverage-type-evidence'}
 ANNOTATION_PHASES = {'source-annotations'}
 EQUATE_PHASES = ANNOTATION_PHASES | {'annotation-inventory'}
+CURRENT_PHASES = PHASES | TYPE_COVERAGE_PHASES | EQUATE_PHASES | {'call-site-recovery'}
 COMPLETE_PHASE_SETS = (PHASES, PHASES | COVERAGE_PHASES, PHASES | TYPE_COVERAGE_PHASES,
-    PHASES | TYPE_COVERAGE_PHASES | ANNOTATION_PHASES, PHASES | TYPE_COVERAGE_PHASES | EQUATE_PHASES)
+    PHASES | TYPE_COVERAGE_PHASES | ANNOTATION_PHASES, PHASES | TYPE_COVERAGE_PHASES | EQUATE_PHASES,
+    CURRENT_PHASES)
 
 
 def duration_ns(value):
@@ -46,7 +48,7 @@ def summarize(recording):
             continue
         values = event['values']
         phase = values['phase']
-        if phase not in PHASES | TYPE_COVERAGE_PHASES | EQUATE_PHASES or phase in rows or values['completed'] is not True:
+        if phase not in CURRENT_PHASES or phase in rows or values['completed'] is not True:
             raise ValueError('unknown, duplicate or incomplete export phase: ' + phase)
         start = instant_ns(values['startTime'])
         duration = duration_ns(values['duration'])

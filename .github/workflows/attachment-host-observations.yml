@@ -17,7 +17,7 @@ jobs:
             - uses: actions/setup-java@v6
               with:
                   distribution: temurin
-                  java-version: 21
+                  java-version: 25
             - name: Install explicit ACL fixture tools
               run: |
                   sudo apt-get update -y
@@ -57,7 +57,7 @@ jobs:
             - uses: actions/setup-java@v6
               with:
                   distribution: temurin
-                  java-version: 21
+                  java-version: 25
             - name: Install supervisor regression compiler
               id: supervisor-msys2
               uses: msys2/setup-msys2@v2
@@ -72,7 +72,7 @@ jobs:
                       --compiler $compiler `
                       --results build/test-results/attachment-host-observations/supervisor-race/evidence
                   if ($LASTEXITCODE -ne 0) { throw 'supervisor pipe regression failed' }
-            - name: Observe Java21 validator working directories on owned Windows paths
+            - name: Observe Java25 validator working directories on owned Windows paths
               shell: pwsh
               run: |
                   $ErrorActionPreference = 'Stop'
@@ -81,7 +81,7 @@ jobs:
                   $evidence = Join-Path $parent 'evidence'
                   $null = New-Item -ItemType Directory -Path $classes -Force
                   $source = 'src/test/integration/attachment-host-observations/WindowsValidatorPathProbe.java'
-                  & (Join-Path $env:JAVA_HOME 'bin/javac.exe') --release 21 -d $classes $source
+                  & (Join-Path $env:JAVA_HOME 'bin/javac.exe') --release 25 -d $classes $source
                   if ($LASTEXITCODE -ne 0) { throw 'path probe compilation failed' }
                   & (Join-Path $env:JAVA_HOME 'bin/java.exe') -cp $classes WindowsValidatorPathProbe $evidence
                   if ($LASTEXITCODE -ne 0) { throw 'path probe failed; inspect retained diagnostics' }

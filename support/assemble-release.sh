@@ -13,6 +13,7 @@ output_parent=$(realpath "$(dirname "$4")")
 output="$output_parent/$(basename "$4")"
 repository_dir=$(realpath "$(dirname "$0")/..")
 release_version=$(tr -d '\r\n' < "$repository_dir/VERSION")
+ghidra_version=12.2
 pinned_patch_sha256=b98561b3e63b76546bd2f18d81d53e188b56deb637b5e145205b3b6eedadf696
 pinned_call_site_patch_sha256=0594de0f49bba5dcec9a37206bbca612bcc430740e87670264e1d3cef26a3714
 
@@ -46,6 +47,10 @@ module="$stage/GhidraDwarfForge"
     echo "base ZIP does not contain GhidraDwarfForge/extension.properties" >&2
     exit 1
 }
+if [[ $(sed -n 's/^version=//p' "$module/extension.properties" | tr -d '\r') != "$ghidra_version" ]]; then
+    echo "base extension must target Ghidra $ghidra_version" >&2
+    exit 1
+fi
 [[ -f "$module/THIRD_PARTY_NOTICES.md" ]] || {
     echo "base ZIP does not contain GhidraDwarfForge/THIRD_PARTY_NOTICES.md" >&2
     exit 1
@@ -272,7 +277,7 @@ done
 
 {
     echo "release-version=$release_version"
-    echo "ghidra-version=12.0.3"
+    echo "ghidra-version=$ghidra_version"
     echo "libdwarf-release=v2.3.2"
     echo "libdwarf-source-commit=af7b278c6aa2ae9daad94fb7f8bffdc0e9980993"
     echo "libdwarf-archive-sha256=7992e7b9019ebfabdda5773e86243517c48cf89fafed3209e853692bc9573efd"

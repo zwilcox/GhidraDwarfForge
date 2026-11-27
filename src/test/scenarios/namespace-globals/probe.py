@@ -92,7 +92,7 @@ def main():
         copy = folder / production.name
         copy.write_text(text[:start] + replacement + text[stop:])
         cp = ':'.join(map(str, [folder, *common]))
-        run(variant + '-compile-java', [jdk / 'bin/javac', '--release', '21', '-proc:none', '-cp', cp,
+        run(variant + '-compile-java', [jdk / 'bin/javac', '--release', '25', '-proc:none', '-cp', cp,
             '-d', folder, copy, directory / 'NamespaceGlobalProducer.java'])
         classes[variant] = cp
     results = []
@@ -118,7 +118,7 @@ def main():
             produced = run(label + '-producer', [jdk / 'bin/java', '--enable-native-access=ALL-UNNAMED', '-cp', cp,
                 'ghidradwarfforge.nativeapi.NamespaceGlobalProducer', native / 'libdwarf.so.2.3.2',
                 native / 'libdwarfp.so.2.3.2', case / 'input', artifact, case / 'symbols.json'])
-            assert 'PASS java=21.' in produced.stdout and str(out / variant) in produced.stdout
+            assert 'PASS java=25.' in produced.stdout and str(out / variant) in produced.stdout
             run(label + '-info', ['readelf', '--debug-dump=info', artifact])
             verified = run(label + '-verify', ['llvm-dwarfdump', '--verify', artifact], required=False)
             queries = []

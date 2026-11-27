@@ -56,7 +56,7 @@ def main():
     provenance.mkdir()
     dependencies = [module / "lib/GhidraDwarfForge.jar",
         args.ghidra / "Ghidra/Framework/Pty/lib/jna-5.14.0.jar",
-        args.ghidra / "Ghidra/Framework/Generic/lib/gson-2.9.0.jar"]
+        args.ghidra / "Ghidra/Framework/Generic/lib/gson-2.13.2.jar"]
     coverage = Collection('windows-attachment', dependencies[0], 'windows', test_classes=(
         'ghidradwarfforge.output.WindowsFileSecurityProbe',
         'ghidradwarfforge.output.WindowsAttachmentOperationProbe',
@@ -108,11 +108,11 @@ def main():
 
     java_bin = Path(os.environ["JAVA_HOME"]) / "bin"
     version = run("java-version", [java_bin / "java.exe", "-version"])
-    require(b'version "21.' in version.stderr, "requires Java 21")
+    require(b'version "25.' in version.stderr, "requires Java 25")
     classes = root / "classes"
     classes.mkdir()
     classpath = os.pathsep.join(str(provenance / path.name) for path in dependencies)
-    compiled = run("compile", [java_bin / "javac.exe", "--release", "21", "-cp", classpath, "-d", classes,
+    compiled = run("compile", [java_bin / "javac.exe", "--release", "25", "-cp", classpath, "-d", classes,
         *(provenance / path.name for path in sources)])
     require(not compiled.stderr, "unexpected compiler diagnostics")
     checker = args.checker_bundle.resolve(strict=True)

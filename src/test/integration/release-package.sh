@@ -75,7 +75,7 @@ mkdir -p "$work/base/GhidraDwarfForge/support" \
     "$work/linux/compliance/libdwarf/source" \
     "$work/windows/compliance/windows-runtime/zlib/licenses" \
     "$work/windows/compliance/windows-runtime/zstd/licenses"
-printf 'name=GhidraDwarfForge\nversion=12.0.3\n' \
+printf 'name=GhidraDwarfForge\nversion=12.2\n' \
     > "$work/base/GhidraDwarfForge/extension.properties"
 printf 'third-party notices\n' > "$work/base/GhidraDwarfForge/THIRD_PARTY_NOTICES.md"
 printf 'corresponding source instructions\n' \
@@ -234,6 +234,13 @@ reject_patch_metadata() {
     grep -Fq "$diagnostic" "$work/$name.log"
     cmp "$work/previous-release.zip" "$work/$name.zip"
 }
+
+mkdir -p "$work/old-sdk/GhidraDwarfForge"
+printf 'name=GhidraDwarfForge\nversion=12.0.3\n' > "$work/old-sdk/GhidraDwarfForge/extension.properties"
+cp "$work/base.zip" "$work/old-sdk.zip"
+(cd "$work/old-sdk" && zip -q "$work/old-sdk.zip" GhidraDwarfForge/extension.properties)
+reject_patch_metadata wrong-ghidra "$work/linux" "$work/windows" \
+    'base extension must target Ghidra 12.2' "$work/old-sdk.zip"
 
 for invalid in absent empty symlink; do
     candidate="$work/linux-$invalid-supervisor"

@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
@@ -47,7 +48,7 @@ final class BuildIdRecords {
     private static JsonObject read(InputStream input, BooleanSupplier cancelled, ReportJsonReader.Limits limits) throws IOException {
         try (var stream = input;
                 var json = new JsonReader(new ReportJsonReader(stream, cancelled, limits))) {
-            json.setLenient(false);
+            json.setStrictness(Strictness.LEGACY_STRICT);
             JsonElement value = readValue(json, new int[] { 0 }, limits.values());
             require(value.isJsonObject() && json.peek() == JsonToken.END_DOCUMENT, "invalid build-ID record document");
             return value.getAsJsonObject();

@@ -46,7 +46,7 @@ def main():
     classes = out / 'classes'
     classes.mkdir()
     classpath = ':'.join(map(str, [jar, classes, *sorted(p for p in ghidra.rglob('*.jar') if 'Extensions' not in p.parts)]))
-    run('javac21', [jdk / 'bin/javac', '--release', '21', '-proc:none', '-cp', classpath, '-d', classes, *sources])
+    run('javac25', [jdk / 'bin/javac', '--release', '25', '-proc:none', '-cp', classpath, '-d', classes, *sources])
     run('model', [jdk / 'bin/java', '-cp', classpath, 'ghidradwarfforge.types.FunctionRelationsSmoke'])
     rows = []
     harness = repository / 'src/test/integration'
@@ -75,7 +75,7 @@ def main():
                     log = run(name + '-' + variant + '-producer', [jdk / 'bin/java', '--enable-native-access=ALL-UNNAMED',
                         '-cp', classpath, 'ghidradwarfforge.elf.FunctionRelationshipProducer', native / 'libdwarf.so.2.3.2',
                         native / 'libdwarfp.so.2.3.2', case / 'input', case / (variant + '.dbg'), case / 'symbols.json', variant])
-                    assert 'PASS java=21.' in log
+                    assert 'PASS java=25.' in log
                     for view in ['info', 'abbrev', 'aranges', 'decodedline']:
                         text = run(name + '-' + variant + '-' + view, ['readelf', '--debug-dump=' + view, case / (variant + '.dbg')])
                         assert 'Warning:' not in text

@@ -45,7 +45,7 @@ def main():
     preparation = source / 'ghidra_scripts/PrepareVersionedAliases.java'
     protected = {str(path): digest(path) for path in (jar, probe, preparation, Path(__file__).resolve(), source / 'sectionless-alias-check.py')}
     javac = str(Path(os.environ['JAVA_HOME']) / 'bin/javac')
-    java = str(Path(os.environ.get('FORGE_JAVA21_HOME', os.environ['JAVA_HOME'])) / 'bin/java')
+    java = str(Path(os.environ.get('FORGE_JAVA25_HOME', os.environ['JAVA_HOME'])) / 'bin/java')
 
     def run(path, command):
         result = subprocess.run(list(map(str, command)), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=240)
@@ -56,7 +56,7 @@ def main():
             assert not result.stderr, (command, result.stderr)
         return result.stdout.decode()
 
-    run(root / 'compile-probe.log', [javac, '--release', '21', '-cp', jar, '-d', classes, probe])
+    run(root / 'compile-probe.log', [javac, '--release', '25', '-cp', jar, '-d', classes, probe])
     observations = []
     for default in ('V1', 'V2'):
         case = root / default
@@ -132,7 +132,7 @@ def main():
             text = run(case / (suffix + '.writer.log'), [java, '-cp', str(classes) + os.pathsep + str(jar),
                 'ghidradwarfforge.elf.LocalSymbolMergeProbe', binary, automatic, writer_aliases,
                 case / suffix, str(len(expected_aliases))])
-            assert 'java=21.' in text and 'curated-alias-writer=PASS' in text
+            assert 'java=25.' in text and 'curated-alias-writer=PASS' in text
         output = case / 'aliases.dbg'
         assert output.read_bytes() == (case / 'repeat.dbg').read_bytes()
         assert output.read_bytes() == automatic.read_bytes()

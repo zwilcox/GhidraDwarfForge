@@ -2421,6 +2421,9 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ghidra", type=Path, help="also check project protection, records, unwind and analyst selections using Ghidra's API/Gson")
     parser.add_argument("--jna", type=Path, help="JNA JAR for publisher tests when running without --ghidra")
+    parser.add_argument("--compiler-annotations", type=Path,
+        default=REPO / "build/resources/test/mutation-compiler/error_prone_annotations.jar",
+        help="compile-only Error Prone annotations for Ghidra's Gson (prepared by Gradle testClasses)")
     parser.add_argument("--only", action="append", help="run an exact mutation label and its baseline; repeatable")
     args = parser.parse_args()
     classes, tests, output = args.classes.resolve(), args.tests.resolve(), args.output.resolve()
@@ -2468,7 +2471,12 @@ def main():
                 STACK_TRANSFER_TEST, ARM_ABI_METADATA_TEST, INHERITANCE_BUDGET_TEST, INHERITANCE_PHYSICAL_TEST, OMISSION_AUTHORITY_TEST, INTRA_RAW_TEST, CUSTOM_SCALAR_TEST, FIRMWARE_CAPTURE_TEST, ARM_HFA_TEST, ARM_COMPOSITE_TEST, UNWIND_CAPTURE_TEST, ARM_SECTION_EVIDENCE_TEST, ARM_SAVED_MODES_TEST, VALIDATOR_PROVENANCE_TEST, LOCAL_MAPPING_TEST, BUILD_ID_LOCK_TEST, TARGET_DESCRIPTOR_TEST, TYPE_IDENTITY_TEST, STORAGE_REFINEMENT_TEST, REPORT_LEXICAL_TEST, PROTECT_TEST, RECORDS_TEST, UNWIND_REPORT_TEST, MMIO_TEST, CXX_SELECTION_TEST,
                 RECEIPT_TEST, RECEIPT_STORE_TEST, OPERATION_TEST, SOURCE_FILES_TEST, SOURCE_BUNDLE_TEST,
                 REPORT_CLAIMS_TEST, TYPE_CLAIMS_TEST, TRANSACTION_TEST, TARGET_STORE_TEST, MIPS_ALLOCATION_TEST, STACK_FLOW_TEST, VTABLE_BINDINGS_TEST, STATIC_RECOVERY_TEST, STATIC_BINDING_TEST, LEXICAL_RECORD_TEST, BOUNDED_SWITCH_TEST, ARM_MODE_INVENTORY_TEST, CURATED_TYPES_TEST, CALL_MEMORY_TEST, CALL_PARAMETERS_TEST, CXX_PROFILE_TEST, CALL_VALUE_TEST, VALIDATOR_STATUS_TEST, I386_ALLOCATION_TEST, AARCH64_ALLOCATION_TEST, MERGED_LIFETIME_TEST, STACK_CARRIER_TEST, STACK_LOCAL_TEST, INDIRECT_METADATA_TEST, REGISTER_PROFILE_TEST, DYNAMIC_STORAGE_TEST, CALL_EVIDENCE_TEST, ALLOCATION_OVERRIDE_TEST, CLOSED_FLOW_TEST, COMPOSITE_FLOW_TEST, MIXED_PREFIX_TEST, BACKUP_READBACK_TEST, REPORT_TEXT_TEST, BUILD_ID_HELPER_TEST, LINUX_METADATA_TEST, LINUX_APPLICATION_TEST, LINUX_CANARY_TEST, LINUX_MOUNT_TEST, STACK_SPILL_TEST, TRUNCATED_DEPTH_TEST, LOCAL_OWNERSHIP_TEST, LOCAL_PREFIX_TEST, ATTACHMENT_PREVIEW_TEST) else []
-            compile_path = os.pathsep.join(map(str, [classes, *selected_dependencies]))
+            compile_jars = [classes, *selected_dependencies]
+            if any(jar.name.startswith("gson-") for jar in selected_dependencies):
+                if not args.compiler_annotations.is_file():
+                    raise FileNotFoundError("run Gradle testClasses or supply --compiler-annotations for Gson")
+                compile_jars.append(args.compiler_annotations.resolve())
+            compile_path = os.pathsep.join(map(str, compile_jars))
             # Distributed Ghidra dependency manifests reference optional jars not
             # shipped beside them. Suppress only that path warning for API tests;
             # missing API classes and every other compiler warning remain fatal.
@@ -2478,11 +2486,6 @@ def main():
             # mutations; retain all other warnings as errors for this source.
             if name == DYNAMIC:
                 lint += ",-cast"
-            # GhidraTypeGraph's existing DataType.VOID reference is deprecated
-            # by the pinned API. Its bytecode and that unrelated use remain
-            # unchanged; retain every other warning as an error for this file.
-            if name == CURATED_TYPES:
-                lint += ",-deprecation"
             compiled, compile_seconds = execute([javac, lint, "-proc:none", "-Werror", "-cp", compile_path,
                                                  "-d", root, path])
             if compiled.returncode:

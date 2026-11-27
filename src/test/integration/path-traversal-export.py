@@ -126,6 +126,7 @@ for line in symbols.splitlines():
     fields = line.split()
     if len(fields) == 8 and fields[7] in ("recovered_add", "main"):
         assert fields[7] not in found
+        assert fields[3] == "FUNC" and fields[6] != "UND" and int(fields[2]) > 0
         found[fields[7]] = (int(fields[1], 16), int(fields[2]))
 assert set(found) == {"recovered_add", "main"}
 entry, size = found["recovered_add"]
@@ -142,7 +143,8 @@ if args.expectation == "fixed":
 (results / "protected.json").write_text(json.dumps({str(path): value for path, value in protected.items()}, indent=4) + "\n")
 run([ghidra / "support/analyzeHeadless", project, "PathTraversal", "-import", original,
     "-loader", "ElfLoader", "-analysisTimeoutPerFile", "120", "-scriptPath", scripts,
-    "-postScript", "PreparePathTraversal.java", hex(entry), hex(found["main"][0])], results / "import.log")
+    "-postScript", "PreparePathTraversal.java", hex(entry), str(size),
+    hex(found["main"][0]), str(found["main"][1])], results / "import.log")
 assert "path-traversal-preparation=PASS" in (results / "import.log").read_text()
 saved_project = project_hashes()
 (results / "project-before.json").write_text(json.dumps(saved_project, indent=4) + "\n")

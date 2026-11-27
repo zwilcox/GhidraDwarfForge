@@ -88,7 +88,7 @@ def main():
     classes.mkdir()
     classpath = ':'.join(map(str, [module, classes,
         *sorted(p for p in ghidra.rglob('*.jar') if 'Extensions' not in p.parts)]))
-    run('isolated-compile', ['javac', '--release', '21', '-proc:none', '-cp', classpath, '-d', classes,
+    run('isolated-compile', ['javac', '--release', '25', '-proc:none', '-cp', classpath, '-d', classes,
         repository / 'src/test/java/ghidradwarfforge/nativeapi/StaticScopeSmoke.java'])
     native = module.parent.parent / 'os/linux_x86_64'
     run('isolated-producer', ['java', '--enable-native-access=ALL-UNNAMED', '-cp', classpath,
@@ -106,7 +106,7 @@ def main():
         *rebase, '-postScript', 'PrepareLexicalStatics.java', case / 'labels.json',
         case / 'compiler-objects.json', case / 'prepared.json'])
     assert 'lexical-statics-preparation=PASS' in (case / 'import.log').read_text()
-    assert json.loads((case / 'prepared.json').read_text())['javaVersion'].startswith('21.')
+    assert json.loads((case / 'prepared.json').read_text())['javaVersion'].startswith('25.')
     project_before = {str(p): digest(p) for p in project.rglob('*') if p.is_file() and not p.name.endswith('.lock')}
     pair = None
     for iteration in ['first', 'repeat']:
@@ -153,7 +153,7 @@ def main():
     assert diagnostics[0] == diagnostics[1], diagnostics
     assert protected == {p: digest(Path(p)) for p in protected}
     receipt = {'status': 'LEXICAL_STATICS_PASS', 'target': target, 'role': args.role,
-        'javaRuntime': 21, 'protected': protected, 'outputPair': pair,
+        'javaRuntime': 25, 'protected': protected, 'outputPair': pair,
         'observations': len(json.loads((case / 'forge-observations.json').read_text())),
         'scope': 'explicit static ownership and lexical shadowing; full goal remains open'}
     (case / 'acceptance.json').write_text(json.dumps(receipt, indent=4) + '\n')
