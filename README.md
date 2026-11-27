@@ -12,7 +12,7 @@ See [test coverage scope and limitations](docs/TEST-CODE-COVERAGE.md). This metr
 
 Hammering debug sections straight into your ELF.
 
-GhidraDwarfForge is being rebuilt as a Ghidra 12.0.3 extension that exports
+GhidraDwarfForge is a Ghidra 12.2 extension that exports
 recovered program knowledge to a separate DWARF debug artifact and deterministic
 synthetic C source. The original executable remains unchanged by default.
 
@@ -31,7 +31,7 @@ big/little endian for non-PIE executables, PIE, shared objects, and inputs
 without section headers. Native/QEMU GDB tests cover source stepping, types,
 globals, stable registers, changing stack locations, composites, and honest
 unavailable variables. Explicitly rebased Ghidra projects normalize back to
-ELF link-time addresses.
+ELF link-time addresses. [Ghidra 12.2 validation run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/45915714689)
 
 Development builds can export ELF64 code in the upper half of the address
 space. The x86-64 kernel-style fixture places code at `0xffffffff81000000`.
@@ -147,11 +147,12 @@ cannot execute that layout directly; see the exact validation limits below.
 
 ## Build
 
-Ghidra 12.0.3 requires Java 21-compatible bytecode and Gradle 8.5 or newer.
-Set the installation path and use the repository wrapper:
+Build with JDK 25 and the official Ghidra 12.2 SDK. The SDK requires Gradle 9.1
+or newer. The repository wrapper supplies Gradle 9.8.0.
 
 ```bash
-export GHIDRA_INSTALL_DIR=/path/to/ghidra_12.0.3_PUBLIC
+export JAVA_HOME=/path/to/jdk-25
+export GHIDRA_INSTALL_DIR=/path/to/ghidra_12.2_PUBLIC
 ./gradlew clean buildExtension
 ```
 
@@ -160,7 +161,7 @@ The extension ZIP is written to `dist/`.
 ## Install the CI package
 
 Download `ghidra-dwarf-forge-extension` from the run's **Artifacts** section and
-unpack the downloaded archive. Inside is `GhidraDwarfForge-<version>-ghidra-<ghidra-version>.zip`.
+unpack the downloaded archive. Inside is `GhidraDwarfForge-<version>-ghidra-12.2.zip`.
 With Ghidra closed, extract this inner ZIP into the `Ghidra/Extensions` directory
 of a fresh, matching Ghidra installation. On either host, the installed module
 contains `Ghidra/Extensions/GhidraDwarfForge/extension.properties`, the scripts,
@@ -191,7 +192,7 @@ For a fresh temporary import on Linux:
 
 ```bash
 support/ghidra-dwarf-forge-headless \
-    --ghidra-dir=/path/to/ghidra_12.0.3_PUBLIC \
+    --ghidra-dir=/path/to/ghidra_12.2_PUBLIC \
     --import=/path/to/program.elf \
     --output=/path/to/program.elf.dbg
 ```
@@ -201,7 +202,7 @@ existing project and program:
 
 ```bash
 support/ghidra-dwarf-forge-headless \
-    --ghidra-dir=/path/to/ghidra_12.0.3_PUBLIC \
+    --ghidra-dir=/path/to/ghidra_12.2_PUBLIC \
     --project-dir=/path/to/projects --project-name=Firmware \
     --program=/folder/program
 ```
