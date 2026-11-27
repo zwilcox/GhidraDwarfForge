@@ -54,6 +54,31 @@ exit "${status:?unexpected invocation}"
             for log in logs:
                 self.assertEqual(log.stat().st_size, 16384)
                 self.assertTrue(log.read_bytes().endswith(b"apt diagnostic\n"))
+            return calls
+
+    def test_unrelated_runner_repository_is_never_consulted(self):
+        calls = self.run_scenario([0, 0, 0], 0, ["indexes", "packages", "install"])
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory)
+            (config / "sources.list").touch()
+            sources = config / "sources.list.d"
+            sources.mkdir()
+            (sources / "ubuntu.sources").write_text(
+                "Types: deb\nURIs: https://ubuntu.invalid/ubuntu\n"
+                "Suites: noble noble-updates noble-security\nComponents: main universe\n")
+            (sources / "vendor.list").write_text("deb https://vendor.invalid/ubuntu noble main\n")
+            apt = ["apt-get", "-o", f"Dir::Etc={directory}", "--print-uris"]
+            unscoped = subprocess.check_output([*apt, "update"], text=True)
+            self.assertIn("vendor.invalid", unscoped)
+            for call in calls:
+                options = []
+                for i, value in enumerate(call):
+                    if value == "-o":
+                        options.extend(call[i:i + 2])
+                uris = subprocess.check_output([*apt, *options, "update"], text=True)
+                self.assertNotIn("vendor.invalid", uris)
+                for suite in ("noble", "noble-updates", "noble-security"):
+                    self.assertIn(f"https://ubuntu.invalid/ubuntu/dists/{suite}/InRelease", uris)
 
     def test_recover_and_install_once(self):
         self.run_scenario([100, 0, 100, 0, 0], 0,
@@ -61,6 +86,9 @@ exit "${status:?unexpected invocation}"
 
     def test_fetch_exhausted(self):
         self.run_scenario([0, 100, 100], 100, ["indexes", "packages", "packages"])
+
+    def test_index_failure_stops_before_downloading_packages(self):
+        self.run_scenario([100, 100], 100, ["indexes", "indexes"])
 
     def test_install_error_propagates(self):
         self.run_scenario([0, 0, 42], 42, ["indexes", "packages", "install"])
