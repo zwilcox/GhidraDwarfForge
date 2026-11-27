@@ -50,6 +50,7 @@
             "ghidradwarfforge/StackSpillLifetime.java",
             "ghidradwarfforge/StackValueFlow.java",
             "ghidradwarfforge/TruncatedStackDepth.java",
+            "ghidradwarfforge/UnsignedAddress.java",
             "ghidradwarfforge/calls/CallSitePlan.java",
             "ghidradwarfforge/calls/CallValue.java",
             "ghidradwarfforge/calls/GhidraBoundedSwitch.java",

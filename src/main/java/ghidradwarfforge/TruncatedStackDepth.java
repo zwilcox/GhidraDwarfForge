@@ -38,7 +38,7 @@ final class TruncatedStackDepth {
         List<Instruction> instructions = GhidraVariableStorage.prefixInstructions(program, function, monitor);
         if (instructions == null || GhidraVariableStorage.registerPrefixEnd(
                 function.getEntryPoint().getOffset(), function.getBody().getMaxAddress().getOffset() + 1,
-                instructions, List.of(pointer), true, monitor) < 0) return Map.of();
+                instructions, List.of(pointer), true, monitor) == function.getEntryPoint().getOffset()) return Map.of();
         var state = new TruncatedStackDepth(program, memory.getPointerSize());
         var pointerNode = new Varnode(pointer.getAddress(), pointer.getMinimumByteSize());
         state.facts.put(pointerNode, 0L);

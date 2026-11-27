@@ -40,8 +40,15 @@ public final class RegisterPrefixSmoke {
         expect(0x1006, List.of(initial, partial, terminal), 0x1009);
         expect(0x1006, List.of(initial, instruction(0x1003, PcodeOp.COPY,
             new Varnode(REGISTERS.getAddress(0xfe), 4)), terminal), 0x1009);
+        for (long start : List.of(Long.MAX_VALUE - 4, -10L)) {
+            var crossing = List.of(instruction(start, PcodeOp.COPY, null),
+                instruction(start + 3, PcodeOp.COPY, new Varnode(REGISTERS.getAddress(0x103), 1)),
+                instruction(start + 6, PcodeOp.RETURN, null));
+            long endpoint = GhidraVariableStorage.registerPrefixEnd(start, start + 9, crossing, PARAMETER, TaskMonitor.DUMMY);
+            if (endpoint != start + 6) throw new AssertionError("lost upper-half register write boundary");
+        }
         // Adjacent registers are not aliases.
-        expect(-1, List.of(initial, instruction(0x1003, PcodeOp.COPY,
+        expect(0x1000, List.of(initial, instruction(0x1003, PcodeOp.COPY,
             new Varnode(REGISTERS.getAddress(0x108), 8)), terminal), 0x1009);
         Varnode dynamicOffset = new Varnode(REGISTERS.getAddress(0x200), 8);
         Varnode value = new Varnode(CONSTANTS.getAddress(19), 1);
@@ -56,7 +63,7 @@ public final class RegisterPrefixSmoke {
         }
         Instruction memoryStore = store(0x1003,
             new Varnode(CONSTANTS.getAddress(RAM.getSpaceID()), 4), dynamicOffset, value);
-        expect(-1, List.of(initial, memoryStore, terminal), 0x1009);
+        expect(0x1000, List.of(initial, memoryStore, terminal), 0x1009);
         if (GhidraVariableStorage.writesRegister(memoryStore, PARAMETER)) {
             throw new AssertionError("ordinary RAM STORE clobbered an incoming register");
         }
@@ -71,21 +78,21 @@ public final class RegisterPrefixSmoke {
                 PcodeOp.CBRANCH, PcodeOp.BRANCHIND, PcodeOp.CALLOTHER,
                 PcodeOp.UNIMPLEMENTED }) {
             // A hazard after the overwrite must still reject the whole proof.
-            expect(-1, List.of(initial, partial, instruction(0x1006, opcode, null),
+            expect(0x1000, List.of(initial, partial, instruction(0x1006, opcode, null),
                 instruction(0x1009, PcodeOp.RETURN, null)), 0x100c);
         }
-        expect(-1, List.of(initial, partial, instruction(0x1009, PcodeOp.RETURN, null)),
+        expect(0x1000, List.of(initial, partial, instruction(0x1009, PcodeOp.RETURN, null)),
             0x100c); // undecoded bytes
-        expect(-1, List.of(initial, partial), 0x1006); // no proven return
-        expect(-1, List.of(initial, terminal, partial), 0x1009); // unordered body
-        expect(-1, List.of(initial, partial, terminal), 0x100c); // undecoded tail
-        expect(-1, List.of(decorate(initial, "isInDelaySlot", true), partial, terminal), 0x1009);
-        expect(-1, List.of(decorate(initial, "getDelaySlotDepth", 1), partial, terminal), 0x1009);
-        expect(-1, List.of(decorate(initial, "getFlowOverride", FlowOverride.CALL),
+        expect(0x1000, List.of(initial, partial), 0x1006); // no proven return
+        expect(0x1000, List.of(initial, terminal, partial), 0x1009); // unordered body
+        expect(0x1000, List.of(initial, partial, terminal), 0x100c); // undecoded tail
+        expect(0x1000, List.of(decorate(initial, "isInDelaySlot", true), partial, terminal), 0x1009);
+        expect(0x1000, List.of(decorate(initial, "getDelaySlotDepth", 1), partial, terminal), 0x1009);
+        expect(0x1000, List.of(decorate(initial, "getFlowOverride", FlowOverride.CALL),
             partial, terminal), 0x1009);
-        expect(-1, List.of(decorate(initial, "getFlowType", RefType.UNCONDITIONAL_CALL),
+        expect(0x1000, List.of(decorate(initial, "getFlowType", RefType.UNCONDITIONAL_CALL),
             partial, terminal), 0x1009);
-        expect(-1, List.of(decorate(initial, "getFallThrough", RAM.getAddress(0x1006)),
+        expect(0x1000, List.of(decorate(initial, "getFallThrough", RAM.getAddress(0x1006)),
             partial, terminal), 0x1009);
         TaskMonitorAdapter cancelled = new TaskMonitorAdapter(true);
         cancelled.cancel();

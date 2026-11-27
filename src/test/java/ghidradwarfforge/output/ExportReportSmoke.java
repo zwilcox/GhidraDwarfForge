@@ -49,11 +49,11 @@ public final class ExportReportSmoke {
             List.of(new Parameter("argument", signedInt, false)),
             List.of(new LocalVariable("local", 4, signedInt, 0, false, "ANALYSIS")),
             false, false, "default", "ANALYSIS");
+        var unknown = new UnavailableStorage(OmissionReason.UNKNOWN_LIFETIME, "lifetime is unknown");
+        var evidence = new Evidence(Confidence.ANALYSIS, "fixture");
         VariableLocation unavailable = new VariableLocation("ok", 0x1000, "argument",
-            VariableKind.PARAMETER, 4, List.of(new LocationRange(0x1000, 0x1010,
-                new UnavailableStorage(OmissionReason.UNKNOWN_LIFETIME,
-                    "lifetime is unknown"),
-                new Evidence(Confidence.ANALYSIS, "fixture"))));
+            VariableKind.PARAMETER, 4, List.of(new LocationRange(Long.MIN_VALUE, Long.MIN_VALUE + 4, unknown, evidence),
+                new LocationRange(0x1000, 0x1010, unknown, evidence)));
         ProgramTypeModel typeModel = new ProgramTypeModel(types, List.of(signature),
             List.of(), new VariableStorageModel(List.of(unavailable)), List.of(
                 new ProgramTypeModel.FunctionStaticVariable("private_count", 0x3000, 4,
@@ -83,7 +83,12 @@ public final class ExportReportSmoke {
         requireContains(json, "\"functionsExported\":2");
         requireContains(json, "\"functionsFailed\":1");
         requireContains(json, "\"functionsSkipped\":2");
-        requireContains(json, "\"omittedLocationRanges\":1");
+        requireContains(json, "\"omittedLocationRanges\":2");
+        var omitted = decoded(json).getAsJsonArray("omittedLocations");
+        if (!omitted.get(0).getAsJsonObject().get("startAddress").getAsString().equals("0x1000") ||
+                !omitted.get(1).getAsJsonObject().get("startAddress").getAsString().equals("0x8000000000000000")) {
+            throw new AssertionError("omitted location ranges are out of address order");
+        }
         requireContains(json, "\"functionStaticVariables\":1");
         requireContains(json, "\"globalVariables\":0");
         requireContains(json, "\"name\":\"failed\",\"address\":\"0x2000\"," +

@@ -162,14 +162,7 @@ public final class GhidraSyntheticSource {
                 monitor.checkCancelled();
                 Function function = functions.next();
                 if (!function.getEntryPoint().getAddressSpace().equals(program.getAddressFactory().getDefaultAddressSpace())) continue;
-                long address;
-                try {
-                    address = AddressNormalizer.toElfAddress(
-                        function.getEntryPoint().getOffset(), rebaseDelta);
-                }
-                catch (ArithmeticException overflow) {
-                    continue;
-                }
+                long address = AddressNormalizer.toElfAddress(function.getEntryPoint().getOffset(), rebaseDelta);
                 FunctionSymbol symbol = selected.remove(address);
                 if (symbol == null) {
                     continue;
@@ -292,15 +285,9 @@ public final class GhidraSyntheticSource {
                 if (evidence == null || !evidence.isMemoryAddress()) {
                     continue;
                 }
-                try {
-                    long address = AddressNormalizer.toElfAddress(
-                        evidence.getOffset(), rebaseDelta);
-                    if (function.contains(address)) {
-                        lines.computeIfAbsent(line, ignored -> new ArrayList<>()).add(address);
-                    }
-                }
-                catch (ArithmeticException overflow) {
-                    // Evidence outside the supported signed-address model is omitted.
+                long address = AddressNormalizer.toElfAddress(evidence.getOffset(), rebaseDelta);
+                if (function.contains(address)) {
+                    lines.computeIfAbsent(line, ignored -> new ArrayList<>()).add(address);
                 }
             }
         }

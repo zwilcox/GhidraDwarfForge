@@ -55,15 +55,18 @@ public final class FrameAppendCoverageSmoke {
             ByteBuffer fields = ByteBuffer.wrap(crossing).order(order);
             fields.putLong(addresses.get(0), Long.MAX_VALUE - 1);
             fields.putLong(addresses.get(0) + width, 3);
+            byte[] appended = DwarfDebugFrame.append(crossing, plan(width, order, 0x3000, 1), () -> false);
+            require(Arrays.equals(crossing, Arrays.copyOf(appended, crossing.length)), "sign-boundary FDE not preserved");
+            fields.putLong(addresses.get(0), -2L);
             try {
                 DwarfDebugFrame.append(crossing, plan(width, order, 0x3000, 1), () -> false);
-                throw new AssertionError("unsupported inherited signed-domain crossing accepted");
+                throw new AssertionError("wrapping inherited FDE accepted");
             }
             catch (IllegalArgumentException refused) {
                 require(refused.getMessage().contains("FDE extent overflows"), "wrong unsupported-domain refusal");
             }
         }
-        long base = width == 4 ? 0x1000 : Long.MAX_VALUE - 32;
+        long base = width == 4 ? 0x1000 : Long.MAX_VALUE - 3;
         for (int a : new int[] {0, 2, 4}) {
             for (int aSize : new int[] {0, 1, 3, 6}) {
                 for (int b : new int[] {0, 2, 4}) {

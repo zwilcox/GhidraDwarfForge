@@ -46,7 +46,7 @@ final class StackSpillLifetime {
         }
         long handoff = GhidraVariableStorage.registerPrefixEnd(start, end, instructions,
             original.getBaseRegister(), monitor);
-        if (handoff <= start || handoff >= end) {
+        if (handoff == start || Long.compareUnsigned(handoff, end) >= 0) {
             return null;
         }
         var code = instructions.getFirst().getAddress().getAddressSpace();
@@ -55,10 +55,10 @@ final class StackSpillLifetime {
         boolean originalAlive = true;
         for (Instruction instruction : instructions) {
             monitor.checkCancelled();
-            long next = Math.addExact(instruction.getMaxAddress().getOffset(), 1);
+            long next = UnsignedAddress.endExclusive(instruction.getMaxAddress().getOffset(), 1);
             if (instruction.isLengthOverridden() || instruction.isFallThroughOverridden() ||
                     instruction.getLength() <= 0 || instruction.getParsedLength() != instruction.getLength() ||
-                    next != Math.addExact(instruction.getAddress().getOffset(), instruction.getLength()) ||
+                    next != UnsignedAddress.endExclusive(instruction.getAddress().getOffset(), instruction.getLength()) ||
                     instruction.getAddress().getAddressSpace() != code ||
                     instruction.getMaxAddress().getAddressSpace() != code ||
                     (instruction.getFallThrough() != null &&
@@ -136,7 +136,7 @@ final class StackSpillLifetime {
                 originalAlive = false;
             }
         }
-        return candidate != null && candidateEnd > handoff ? new Backup(candidateEnd, candidate) : null;
+        return candidate != null && Long.compareUnsigned(candidateEnd, handoff) > 0 ? new Backup(candidateEnd, candidate) : null;
     }
 
     private static Fact derive(PcodeOp operation, Varnode incoming, Register pointer,

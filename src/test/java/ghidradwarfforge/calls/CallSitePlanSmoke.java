@@ -64,13 +64,16 @@ public final class CallSitePlanSmoke {
                 () -> new CallSitePlan.Site(-1, 4, false, null, List.of()),
                 () -> new CallSitePlan.Site(4, 4, false, null, List.of()),
                 () -> new CallSitePlan.Site(4, 3, false, null, List.of()),
-                () -> new CallSitePlan.Site(0, 4, false, -1L, List.of()),
                 () -> new CallSitePlan.Site(0, 4, false, null, null),
-                () -> new CallSitePlan.FunctionCalls(-1, CallSitePlan.Completeness.PARTIAL, List.of()),
                 () -> new CallSitePlan.FunctionCalls(0, null, List.of()),
                 () -> new CallSitePlan.FunctionCalls(0, CallSitePlan.Completeness.PARTIAL, null))) {
             reject(invalid);
         }
+        var highCall = new CallSitePlan.Site(Long.MAX_VALUE - 2, Long.MIN_VALUE, false, -1L, List.of());
+        var highInventory = new CallSitePlan.FunctionCalls(-1L, CallSitePlan.Completeness.PARTIAL, List.of(highCall));
+        equal(-1L, highInventory.caller());
+        equal(-1L, highCall.callee());
+        equal(Long.MIN_VALUE, highCall.returnPc());
         var otherOrdinal = new CallSitePlan.Argument(1, "other", "int", argument.dwarfRegister(), argument.value());
         reject(() -> new CallSitePlan.Site(0x110, 0x115, false, 0x200L, List.of(argument, otherOrdinal)));
         // Distinct normal-call owners cannot share either global lookup key.

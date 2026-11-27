@@ -25,6 +25,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.elf.ElfImage.Section;
 import ghidradwarfforge.elf.ElfImage.Segment;
 
@@ -436,9 +437,7 @@ public final class MatchedElfSidecarWriter {
                 // Check the complete extent without overflowing value + size.
                 // An ordinary st_value cannot represent a thread-local offset.
                 if ((allocation.flags & (SHF_ALLOC | SHF_TLS)) != SHF_ALLOC ||
-                        symbol.value() < allocation.address ||
-                        symbol.value() - allocation.address >= allocation.size ||
-                        symbol.size() > allocation.size - (symbol.value() - allocation.address)) {
+                        !UnsignedAddress.contains(allocation.address, allocation.size, symbol.value(), symbol.size())) {
                     throw new IllegalArgumentException("object symbol extent is outside an ordinary allocation");
                 }
             }
@@ -446,7 +445,7 @@ public final class MatchedElfSidecarWriter {
                 throw new IllegalArgumentException("invalid executable allocation for local symbol");
             }
             if (symbol instanceof ElfLocalMappingSymbol) {
-                if (symbol.value() < allocation.address || symbol.value() - allocation.address >= allocation.size) {
+                if (!UnsignedAddress.contains(allocation.address, allocation.size, symbol.value(), 1)) {
                     throw new IllegalArgumentException("mapping boundary is outside its executable allocation");
                 }
             }
@@ -795,9 +794,12 @@ public final class MatchedElfSidecarWriter {
                 section.name = ".note.forge." + noteIndex++;
                 section.type = SHT_NOTE;
                 section.flags = SHF_ALLOC;
-                section.address = addOffset(segment.virtualAddress, offset - segment.offset);
+                section.address = UnsignedAddress.addOffset(segment.virtualAddress, offset - segment.offset);
                 section.offset = offset;
                 section.size = uncoveredEnd - offset;
+                if (!UnsignedAddress.fitsObject(section.address, section.size, image.is64Bit() ? 8 : 4)) {
+                    throw new IllegalArgumentException("reconstructed PT_NOTE exceeds ELF virtual address space");
+                }
                 section.alignment = alignment;
                 sections.add(section);
                 coverNoteRange(covered, offset, uncoveredEnd);

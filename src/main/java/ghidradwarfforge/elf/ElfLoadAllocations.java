@@ -23,15 +23,10 @@ final class ElfLoadAllocations {
             if (segment.type != 1 || segment.memorySize == 0) {
                 continue;
             }
-            long end;
-            try {
-                end = Math.addExact(segment.virtualAddress, segment.memorySize);
+            if (image.is64Bit()) {
+                ElfImage.requireAddressExtent(segment.virtualAddress, segment.memorySize, "p_vaddr", index);
             }
-            catch (ArithmeticException overflow) {
-                throw new IllegalArgumentException("PT_LOAD virtual range exceeds signed 64-bit addresses at " + index,
-                    overflow);
-            }
-            if (!image.is64Bit() && end > 0x1_0000_0000L) {
+            else if (segment.virtualAddress + segment.memorySize > 0x1_0000_0000L) {
                 throw new IllegalArgumentException("PT_LOAD virtual range exceeds ELF32 address space at " + index);
             }
             var section = new ElfImage.Section();

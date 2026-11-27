@@ -32,13 +32,13 @@ public final class BoundedSwitchProofSmoke {
     public static void main(String[] args) throws Exception {
         Application.initializeApplication(new GhidraApplicationLayout(new File(args[0])), new HeadlessGhidraApplicationConfiguration());
         Path output = Path.of(args[1]); Files.createDirectories(output);
-        var shapes = List.of("absolute", "relative", "misleading-hint", "wrong-guard", "same-edges", "large-bound",
+        var shapes = List.of("absolute", "relative", "upper-relative", "misleading-hint", "wrong-guard", "same-edges", "large-bound",
             "index-clobbered", "unknown-base", "unknown-target", "writable-table", "overlap-table", "zero-fill-table",
             "no-table-load", "bypass", "interior-bypass", "extra-entry", "patched-code", "opaque-effect",
             "case-constant", "case-unavailable", "loader-write",
             "add-sub", "or-index", "xor-index", "and-index", "shift-index", "repeat-read", "same-read",
             "conflicting-read", "byte-index", "word-index", "wide-index", "strict-less", "zero-limit", "max-limit", "excess-limit",
-            "window-limit", "window-excess", "data-reference", "guard-flow", "guard-interior-flow", "negative-target", "interior-target",
+            "window-limit", "window-excess", "data-reference", "guard-flow", "guard-interior-flow", "unmapped-final-byte", "interior-target",
             "no-owner", "function-entry", "missing-branch", "flow-override", "length-override", "fallthrough-override",
             "unknown-addend", "unknown-byte-overwrite", "unknown-word-overwrite", "high-byte-index",
             "register-bound", "stale-flags", "signed-bound", "destructive-guard", "memory-bound");
@@ -47,7 +47,10 @@ public final class BoundedSwitchProofSmoke {
         System.out.println("bounded-switch-proof=PASS cases=" + shapes.size() * 2 + " checks=" + checks);
     }
     private static void check(String shape, long delta, Path directory) throws Exception {
-        boolean relative = shape.equals("relative");
+        long linkBase = shape.equals("upper-relative") ? 0xffff_ffff_8100_0000L : 0;
+        boolean relative = shape.equals("relative") || shape.equals("upper-relative");
+        long codeAddress = linkBase + 0x1000;
+        long tableAddress = linkBase + 0x2000;
         boolean caseFlow = shape.startsWith("case-");
         byte[] code = new byte[0x51]; Arrays.fill(code, (byte) 0x90);
         byte[] dispatch = HexFormat.of().parseHex(relative ?
@@ -72,11 +75,14 @@ public final class BoundedSwitchProofSmoke {
         if (relative) data.putInt(0x1030 - 0x2000).putInt(0x1040 - 0x2000);
         else data.putLong(shape.equals("unknown-target") ? 0x1080 : 0x1030).putLong(caseFlow ? 0x103b : 0x1040);
         while (data.hasRemaining()) data.putLong(0x1040);
-        if (shape.equals("negative-target")) data.putLong(0, -1);
+        if (shape.equals("unmapped-final-byte")) data.putLong(0, -1);
         if (shape.equals("interior-target")) data.putLong(0, 0x1031);
         byte[] original = GhidraTailStateProofSmoke.elf(false, code, data.array());
         if (shape.equals("loader-write")) original = relocatedTable(code, data.array());
         var header = ByteBuffer.wrap(original).order(ByteOrder.LITTLE_ENDIAN);
+        if (shape.equals("upper-relative")) {
+            header.putLong(24, 0).putLong(80, codeAddress).putLong(136, tableAddress);
+        }
         header.putInt(124, shape.equals("writable-table") ? 6 : 4);
         if (relative) header.putShort(16, (short) 3);
         if (shape.equals("overlap-table")) header.putLong(104, 0x1010);
@@ -90,8 +96,8 @@ public final class BoundedSwitchProofSmoke {
         try {
             int tx = program.startTransaction("switch fixture");
             try {
-                var start = language.getDefaultSpace().getAddress(0x1000 + delta);
-                var table = language.getDefaultSpace().getAddress(0x2000 + delta);
+                var start = language.getDefaultSpace().getAddress(codeAddress + delta);
+                var table = language.getDefaultSpace().getAddress(tableAddress + delta);
                 program.getMemory().createInitializedBlock("code", start, code.length, (byte) 0, TaskMonitor.DUMMY, false).setExecute(true);
                 if (shape.equals("patched-code")) code[2] = 0;
                 program.getMemory().setBytes(start, code);
@@ -140,7 +146,7 @@ public final class BoundedSwitchProofSmoke {
                 }
                 if (shape.equals("no-owner")) program.getFunctionManager().removeFunction(start);
                 if (shape.equals("missing-branch")) program.getListing().clearCodeUnits(start.add(3), start.add(4), false);
-                boolean positive = List.of("absolute", "relative", "misleading-hint", "add-sub", "or-index", "xor-index",
+                boolean positive = List.of("absolute", "relative", "upper-relative", "misleading-hint", "add-sub", "or-index", "xor-index",
                     "and-index", "shift-index", "repeat-read", "same-read", "byte-index", "word-index", "wide-index",
                     "max-limit", "window-limit", "data-reference", "guard-flow", "high-byte-index").contains(shape) || caseFlow;
                 var compare = program.getListing().getInstructionAt(start);
@@ -155,12 +161,12 @@ public final class BoundedSwitchProofSmoke {
                     for (int i = 1; i <= maximum; i++) expectedTargets.add(start.add(shape.equals("same-read") ? 0x30 : caseFlow ? 0x3b : 0x40));
                     require(proof.maximumIndex() == maximum && proof.targets().equals(expectedTargets),
                         "wrong target calculation: " + shape + " " + proof);
-                    require(proof.reads().size() == (shape.equals("same-read") ? 1 : maximum + 1) && proof.reads().getFirst().address() == 0x2000 &&
+                    require(proof.reads().size() == (shape.equals("same-read") ? 1 : maximum + 1) && proof.reads().getFirst().address() == tableAddress &&
                         proof.reads().getFirst().bytes() == (relative ? 4 : 8), "wrong original table read");
                     var expectedReads = new java.util.ArrayList<GhidraBoundedSwitch.TableRead>();
                     for (int i = 0; i <= (shape.equals("same-read") ? 0 : maximum); i++) {
                         long value = i == 0 ? 0x1030 : caseFlow ? 0x103b : 0x1040;
-                        expectedReads.add(new GhidraBoundedSwitch.TableRead(0x2000 + i * (relative ? 4 : 8),
+                        expectedReads.add(new GhidraBoundedSwitch.TableRead(tableAddress + i * (relative ? 4 : 8),
                             relative ? 4 : 8, relative ? Integer.toUnsignedLong((int) value - 0x2000) : value));
                     }
                     require(proof.reads().equals(expectedReads), "table witnesses have exact original offsets, widths and values");
@@ -204,8 +210,7 @@ public final class BoundedSwitchProofSmoke {
                         "loader-write fixture rejected for an unrelated reason: " + rejected.getMessage());
                     String diagnostic = switch (shape) {
                         case "conflicting-read" -> "inconsistent switch table read";
-                        case "negative-target" -> "computed target is not a proven address";
-                        case "interior-target" -> "switch target lacks a decoded instruction boundary";
+                        case "unmapped-final-byte", "interior-target" -> "switch target lacks a decoded instruction boundary";
                         case "zero-limit", "excess-limit" -> "unsigned finite guard bound is unavailable";
                         case "strict-less" -> "instruction is outside the audited ordinary profile: jnc";
                         case "window-excess" -> "switch dispatch window exceeds budget";

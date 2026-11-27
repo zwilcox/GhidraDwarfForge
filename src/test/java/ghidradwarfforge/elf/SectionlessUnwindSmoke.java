@@ -30,6 +30,32 @@ public final class SectionlessUnwindSmoke {
                     }
                 }
                 byte[] valid = fixture(wide, order, 0x3b);
+                if (wide) {
+                    for (long base : new long[] {Long.MAX_VALUE - 0x106, 0xffff_ffff_8100_0000L, -0x900L}) {
+                        byte[] high = valid.clone();
+                        var header = ByteBuffer.wrap(high).order(order);
+                        header.putLong(80, base).putLong(136, base + 0x200);
+                        Path input = root.resolve("upper-half");
+                        Files.write(input, high);
+                        if (base == -0x900L) {
+                            header.putInt(0x20c, 0x8f0 - 0x200).putInt(0x31c, 0x8f0 - 0x31c);
+                            Files.write(input, high);
+                        }
+                        long pc = base + (base == -0x900L ? 0x8f0 : 0x100);
+                        var image = ElfImage.read(input);
+                        var frame = OriginalFrameSources.inspect(image, () -> false).sources().getFirst().records().frames().getFirst();
+                        require(frame.address() == pc && frame.size() == 16, "sectionless frame lookup or PC-relative decoding lost the target address");
+                        if (order == ByteOrder.LITTLE_ENDIAN) {
+                            var coverage = OriginalUnwindCoverage.inspect(image, () -> false);
+                            require(coverage.intervals().equals(List.of(new OriginalUnwindCoverage.Interval(pc, pc + 16))),
+                                "original coverage lost the FDE extent");
+                            require(!coverage.overlaps(pc - 1, 1) && coverage.overlaps(pc - 1, 2) &&
+                                coverage.overlaps(pc + 15, 1) && !coverage.overlaps(pc + 16, 1),
+                                "original coverage lost an instruction boundary");
+                        }
+                        require(Arrays.equals(Files.readAllBytes(input), high), "upper-half frame lookup changed original");
+                    }
+                }
                 allocationObservation(root, valid, wide, order);
                 originalFrameView(root, valid, wide, order);
                 for (String mutation : List.of("version", "pointer-form", "table-form", "count-relative",
@@ -284,7 +310,7 @@ public final class SectionlessUnwindSmoke {
             case "truncated-record" -> b.putInt(0x300, 24);
             case "duplicate-header" -> segment(b, wide, 2, 0x6474e550, 0x200, 0x4200, 20, 20);
             case "overlapping-load" -> segment(b, wide, 2, 1, 0x200, 0x4200, 32, 32);
-            case "overflow-load" -> segment(b, wide, 0, 1, 0, wide ? Long.MAX_VALUE - 1 : 0xfffffff0L, 0x800, 0x900);
+            case "overflow-load" -> segment(b, wide, 0, 1, 0, wide ? -2L : 0xfffffff0L, 0x800, 0x900);
             case "table-truncated" -> segment(b, wide, 1, 0x6474e550, 0x200, 0x4200, 16, 16);
             default -> throw new AssertionError(mutation);
         }

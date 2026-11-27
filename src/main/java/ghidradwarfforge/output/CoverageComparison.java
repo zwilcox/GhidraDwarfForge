@@ -35,7 +35,7 @@ public final class CoverageComparison {
         if (!reasons.isEmpty()) return new Result(false, 0, reasons);
         var left = index(before.coverage().coverage().functions(), cancelled);
         var right = index(after.coverage().coverage().functions(), cancelled);
-        var addresses = new TreeSet<Long>();
+        var addresses = new TreeSet<Long>(Long::compareUnsigned);
         for (long address : left.keySet()) { check(cancelled); addresses.add(address); }
         for (long address : right.keySet()) { check(cancelled); addresses.add(address); }
         var changes = new Changes(output, cancelled);
@@ -144,10 +144,16 @@ public final class CoverageComparison {
         int otherIndex = 0, eligibleIndex = 0;
         for (long address : from) {
             check(cancelled);
-            while (otherIndex < other.size() && other.get(otherIndex) < address) { check(cancelled); otherIndex++; }
+            while (otherIndex < other.size() && Long.compareUnsigned(other.get(otherIndex), address) < 0) {
+                check(cancelled);
+                otherIndex++;
+            }
             if (otherIndex < other.size() && other.get(otherIndex) == address) continue;
             if (eligible != null) {
-                while (eligibleIndex < eligible.size() && eligible.get(eligibleIndex) < address) { check(cancelled); eligibleIndex++; }
+                while (eligibleIndex < eligible.size() && Long.compareUnsigned(eligible.get(eligibleIndex), address) < 0) {
+                    check(cancelled);
+                    eligibleIndex++;
+                }
                 if (eligibleIndex == eligible.size() || eligible.get(eligibleIndex) != address) continue;
             }
             changes.add(kind, function, "0x" + Long.toHexString(address));

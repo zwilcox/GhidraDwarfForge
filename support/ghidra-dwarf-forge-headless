@@ -38,7 +38,8 @@ Common options:
   --log=<path>            Preserve the complete headless transcript
   --analysis-timeout=<s> Import-mode analysis timeout (default: 120)
 
-ELF64 target virtual addresses above 0x7fffffffffffffff are currently unsupported.
+ELF64 virtual addresses use the full unsigned address space. A function's
+exclusive end address must fit in 64 bits.
 
 Ordinary export replaces each public file atomically. A reader opening multiple
 names during publication can see different generations. Wait for the terminal

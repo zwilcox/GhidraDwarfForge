@@ -99,6 +99,13 @@ public final class CoverageVariableComparisonSmoke {
         CoverageVariableComparison.difference(List.of(new FunctionRange(0, Long.MAX_VALUE)),
             List.of(new FunctionRange(1, Long.MAX_VALUE - 2)), wide::add, () -> false);
         require(wide.equals(List.of(new FunctionRange(0, 1), new FunctionRange(Long.MAX_VALUE - 1, 1))), "wide interval overflow");
+        long crossing = Long.MAX_VALUE - 3;
+        var remaining = new ArrayList<FunctionRange>();
+        CoverageVariableComparison.difference(List.of(new FunctionRange(crossing, 12)),
+            List.of(new FunctionRange(0, 1), new FunctionRange(crossing + 2, 4), new FunctionRange(crossing + 9, 1)),
+            remaining::add, () -> false);
+        require(remaining.equals(List.of(new FunctionRange(crossing, 2), new FunctionRange(crossing + 6, 3),
+            new FunctionRange(crossing + 10, 2))), "subtraction lost coverage across bit 63");
         var many = new ArrayList<FunctionRange>();
         for (int i = 0; i < 20000; i++) many.add(new FunctionRange(4L * i, 1));
         calls.set(0);

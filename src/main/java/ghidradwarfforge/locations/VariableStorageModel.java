@@ -77,11 +77,6 @@ public record VariableStorageModel(List<VariableLocation> variables) {
 
     /** Absolute link-time memory address, retained independently of encoding. */
     public record MemoryStorage(long address) implements Storage {
-        public MemoryStorage {
-            if (address < 0) {
-                throw new IllegalArgumentException("memory address must be nonnegative");
-            }
-        }
     }
 
     /** A full target-width pointer held in an already resolved memory location. */
@@ -143,7 +138,7 @@ public record VariableStorageModel(List<VariableLocation> variables) {
     public record LocationRange(long start, long end, Storage storage,
             Evidence evidence) {
         public LocationRange {
-            if (start < 0 || end <= start || storage == null || evidence == null) {
+            if (Long.compareUnsigned(end, start) <= 0 || storage == null || evidence == null) {
                 throw new IllegalArgumentException("invalid variable location range");
             }
         }
@@ -155,18 +150,18 @@ public record VariableStorageModel(List<VariableLocation> variables) {
         public VariableLocation {
             requireText(functionName, "containing function name");
             requireText(name, "variable name");
-            if (functionAddress < 0 || kind == null || byteSize <= 0 ||
+            if (kind == null || byteSize <= 0 ||
                     locations == null || locations.isEmpty()) {
                 throw new IllegalArgumentException("invalid variable location");
             }
             locations = locations.stream()
-                .sorted(Comparator.comparingLong(LocationRange::start)
-                    .thenComparingLong(LocationRange::end))
+                .sorted(Comparator.comparing(LocationRange::start, Long::compareUnsigned)
+                    .thenComparing(LocationRange::end, Long::compareUnsigned))
                 .toList();
-            long previousEnd = -1;
+            long previousEnd = 0;
             long expectedBits = Math.multiplyExact(byteSize, 8L);
             for (LocationRange location : locations) {
-                if (location.start() < previousEnd) {
+                if (Long.compareUnsigned(location.start(), previousEnd) < 0) {
                     throw new IllegalArgumentException(
                         "overlapping location ranges for " + name);
                 }
@@ -193,7 +188,7 @@ public record VariableStorageModel(List<VariableLocation> variables) {
             throw new IllegalArgumentException("variable locations are required");
         }
         variables = variables.stream()
-            .sorted(Comparator.comparingLong(VariableLocation::functionAddress)
+            .sorted(Comparator.comparing(VariableLocation::functionAddress, Long::compareUnsigned)
                 .thenComparing(VariableLocation::kind)
                 .thenComparing(VariableLocation::name))
             .toList();

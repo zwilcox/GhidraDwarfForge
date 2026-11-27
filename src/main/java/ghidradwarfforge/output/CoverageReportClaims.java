@@ -18,6 +18,7 @@ import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.coverage.ExportCoverage;
 import ghidradwarfforge.coverage.ExportEmission.Kind;
 import ghidradwarfforge.coverage.LocationCoverage;
@@ -244,7 +245,7 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
             var result = new java.util.TreeMap<Long, CoverageTypeEvidence.Roots>();
             array(() -> {
                 var row = fields("function type roots", Set.of("entry", "recovered", "emitted"), name ->
-                    name.equals("entry") ? supportedAddress() : list(() -> new TypeRef(text(true))));
+                    name.equals("entry") ? address() : list(() -> new TypeRef(text(true))));
                 require(result.put(get(row, "entry"), new CoverageTypeEvidence.Roots(get(row, "recovered"), get(row, "emitted"))) == null,
                     "duplicate type root owner");
             });
@@ -273,7 +274,7 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
         private FunctionFields function() throws IOException {
             var fields = fields("coverage function", Set.of("entry", "name", "namespace", "ranges", "source", "signature",
                 "typeProvenance", "types", "variables", "variablesByKind"), name -> switch (name) {
-                    case "entry" -> supportedAddress();
+                    case "entry" -> address();
                     case "name", "typeProvenance" -> text(true);
                     case "namespace" -> list(() -> text(true));
                     case "ranges" -> ranges(false);
@@ -381,8 +382,8 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
             var fields = fields("coverage variable", Set.of("function", "kind", "parameterOrdinal", "internalName", "displayName", "block",
                 "staticAddress", "recoveredType", "emittedType", "declarationProvenance", "storageEvidence", "location", "omissionReason", "diagnostic"),
                 name -> switch (name) {
-                    case "function" -> supportedAddress();
-                    case "staticAddress" -> nullable(this::supportedAddress);
+                    case "function" -> address();
+                    case "staticAddress" -> nullable(this::address);
                     case "parameterOrdinal" -> nullable(this::decimal);
                     case "recoveredType" -> text(true);
                     case "emittedType" -> nullable(() -> text(true));
@@ -447,14 +448,19 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
                 int[] position = {0};
                 array(() -> {
                     require(position[0] < 3, "storage range has more than three fields");
-                    tuple[position[0]] = position[0] == 2 ? decimal() : supportedAddress();
+                    tuple[position[0]] = position[0] == 2 ? decimal() : address();
                     position[0]++;
                 });
-                require(position[0] == 3 && tuple[1] > tuple[0], "expected storage start/end/detail tuple");
+                require(position[0] == 3 && Long.compareUnsigned(tuple[1], tuple[0]) > 0,
+                    "expected storage start/end/detail tuple");
                 return new StorageRange(tuple[0], tuple[1], Math.toIntExact(tuple[2]));
             });
-            long end = -1;
-            for (var range : result) { check(); require(range.start() >= end, "overlapping storage evidence"); end = range.end(); }
+            long end = 0;
+            for (var range : result) {
+                check();
+                require(Long.compareUnsigned(range.start(), end) >= 0, "overlapping storage evidence");
+                end = range.end();
+            }
             return result;
         }
 
@@ -499,7 +505,7 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
             var fields = fields("recovered global", Set.of("name", "namespace", "address", "byteSize", "type", "source", "declaration"),
                 name -> switch (name) {
                     case "namespace" -> list(() -> text(true));
-                    case "address" -> supportedAddress();
+                    case "address" -> address();
                     case "byteSize" -> decimal();
                     case "declaration" -> flag();
                     case "source" -> text(false);
@@ -514,31 +520,27 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
                 List<Long> pair = new ArrayList<>(2);
                 array(() -> {
                     require(pair.size() < 2, "range has more than two endpoints");
-                    pair.add(supportedAddress());
+                    pair.add(address());
                 });
-                require(pair.size() == 2 && pair.get(1) > pair.get(0), "expected positive half-open range");
+                require(pair.size() == 2 && Long.compareUnsigned(pair.get(1), pair.get(0)) > 0, "expected positive half-open range");
                 return new FunctionRange(pair.get(0), pair.get(1) - pair.get(0));
             });
-            long end = -1;
+            Long end = null;
             for (var range : result) {
                 check();
-                require(canonicalUnion ? range.address() > end : range.address() >= end, "ranges overlap or union is not canonical");
+                require(end == null || Long.compareUnsigned(range.address(), end) >= (canonicalUnion ? 1 : 0), "ranges overlap or union is not canonical");
                 end = range.endExclusive();
             }
             return result;
         }
 
         private List<Long> addresses() throws IOException {
-            List<Long> result = list(this::supportedAddress);
-            long previous = -1;
-            for (long address : result) { check(); require(address > previous, "instruction starts are not sorted/unique"); previous = address; }
+            List<Long> result = list(this::address);
+            for (int i = 1; i < result.size(); i++) {
+                check();
+                require(Long.compareUnsigned(result.get(i), result.get(i - 1)) > 0, "instruction starts are not sorted/unique");
+            }
             return result;
-        }
-
-        private long supportedAddress() throws IOException {
-            long value = address();
-            require(value >= 0, "coverage address outside supported domain");
-            return value;
         }
 
         private long decimal() throws IOException {
@@ -592,10 +594,10 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
                 check();
                 var left = first.get(a);
                 var right = second.get(b);
-                long start = Math.max(left.address(), right.address());
-                long end = Math.min(left.endExclusive(), right.endExclusive());
-                if (start < end) result = Math.addExact(result, end - start);
-                if (left.endExclusive() <= right.endExclusive()) a++;
+                long start = UnsignedAddress.max(left.address(), right.address());
+                long end = UnsignedAddress.min(left.endExclusive(), right.endExclusive());
+                if (Long.compareUnsigned(start, end) < 0) result = Math.addExact(result, end - start);
+                if (Long.compareUnsigned(left.endExclusive(), right.endExclusive()) <= 0) a++;
                 else b++;
             }
             return result;
@@ -605,7 +607,7 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
             int cursor = 0;
             for (long value : part) {
                 check();
-                while (cursor < whole.size() && whole.get(cursor) < value) cursor++;
+                while (cursor < whole.size() && Long.compareUnsigned(whole.get(cursor), value) < 0) cursor++;
                 if (cursor == whole.size() || whole.get(cursor) != value) return false;
             }
             return true;
@@ -644,13 +646,13 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
                 int high = outer.size();
                 while (low < high) {
                     int middle = (low + high) >>> 1;
-                    if (outer.get(middle).address() <= child.address()) low = middle + 1;
+                    if (Long.compareUnsigned(outer.get(middle).address(), child.address()) <= 0) low = middle + 1;
                     else high = middle;
                 }
                 int cursor = low - 1;
                 if (cursor < 0 || !outer.get(cursor).contains(child.address())) return false;
                 long end = outer.get(cursor).endExclusive();
-                while (end < child.endExclusive()) {
+                while (Long.compareUnsigned(end, child.endExclusive()) < 0) {
                     check();
                     if (++cursor == outer.size() || outer.get(cursor).address() != end) return false;
                     end = outer.get(cursor).endExclusive();
@@ -664,7 +666,7 @@ public record CoverageReportClaims(CoverageReportJson.Profile profile, ExportCov
             int high = ranges.size();
             while (low < high) {
                 int middle = (low + high) >>> 1;
-                if (ranges.get(middle).address() <= point) low = middle + 1;
+                if (Long.compareUnsigned(ranges.get(middle).address(), point) <= 0) low = middle + 1;
                 else high = middle;
             }
             return low != 0 && ranges.get(low - 1).contains(point);

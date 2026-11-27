@@ -423,8 +423,8 @@ public final class GhidraTypeGraph {
                             for (var range : block.body().getAddressRanges()) {
                                 monitor.checkCancelled();
                                 long start = AddressNormalizer.toElfAddress(range.getMinAddress().getOffset(), rebaseDelta);
-                                long end = Math.addExact(AddressNormalizer.toElfAddress(range.getMaxAddress().getOffset(), rebaseDelta), 1);
-                                ranges.add(new ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange(start, Math.subtractExact(end, start)));
+                                long end = UnsignedAddress.endExclusive(AddressNormalizer.toElfAddress(range.getMaxAddress().getOffset(), rebaseDelta), 1);
+                                ranges.add(new ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange(start, UnsignedAddress.distance(start, end)));
                             }
                             blocks.add(new ghidradwarfforge.types.LexicalScopeModel.Block(block.id(), block.parent(), ranges));
                         }
@@ -472,7 +472,7 @@ public final class GhidraTypeGraph {
                 try {
                     if (!memoryBlock.contains(memoryAddress.addNoWrap(type.getLength() - 1L))) continue;
                     long memoryOffset = AddressNormalizer.toElfAddress(memoryAddress.getOffset(), rebaseDelta);
-                    if (memoryOffset < 0) continue;
+                    if (!UnsignedAddress.fitsObject(memoryOffset, type.getLength(), program.getDefaultPointerSize())) continue;
                     var binding = savedScopes.isEmpty() ? null : savedScopes.get().locals().stream()
                         .filter(local -> local.variable().equals(variable)).findFirst().orElse(null);
                     functionStatics.add(new ProgramTypeModel.FunctionStaticVariable(
@@ -545,17 +545,9 @@ public final class GhidraTypeGraph {
             if (objectType == null) continue;
             int objectSize = inferredType ? objectType.getLength() : data.getLength();
             if (objectSize <= 0) continue;
-            long address;
-            try {
-                address = AddressNormalizer.toElfAddress(
-                    symbol.getAddress().getOffset(), rebaseDelta);
-            }
-            catch (ArithmeticException overflow) {
-                diagnostic.accept("Skipped untranslatable global " + symbol.getName());
-                continue;
-            }
-            if (address < 0) {
-                diagnostic.accept("Skipped unsupported global address " + symbol.getName());
+            long address = AddressNormalizer.toElfAddress(symbol.getAddress().getOffset(), rebaseDelta);
+            if (!UnsignedAddress.fitsObject(address, objectSize, program.getDefaultPointerSize())) {
+                diagnostic.accept("Skipped unsupported global address extent " + symbol.getName());
                 continue;
             }
             if (staticBinding.status() == GhidraStaticBindings.Status.VALID) {
@@ -595,10 +587,10 @@ public final class GhidraTypeGraph {
         }
         var conflictingStatics = ProgramTypeModel.conflictingStatics(signatures, lexicalScopes, functionStatics);
         for (var variable : conflictingStatics.stream().sorted(Comparator
-                .comparingLong(ProgramTypeModel.FunctionStaticVariable::ownerAddress)
+                .comparing(ProgramTypeModel.FunctionStaticVariable::ownerAddress, Long::compareUnsigned)
                 .thenComparing(ProgramTypeModel.FunctionStaticVariable::block)
                 .thenComparing(ProgramTypeModel.FunctionStaticVariable::name)
-                .thenComparingLong(ProgramTypeModel.FunctionStaticVariable::address)).toList()) {
+                .thenComparing(ProgramTypeModel.FunctionStaticVariable::address, Long::compareUnsigned)).toList()) {
             monitor.checkCancelled();
             diagnostic.accept("Omitted static " + variable.name() + " at 0x" + Long.toHexString(variable.address()) +
                 ": conflicting declaration in the same function/lexical scope");
@@ -762,16 +754,9 @@ public final class GhidraTypeGraph {
         List<LocationRange> result = new ArrayList<>();
         for (GhidraVariableStorage.StorageInterval interval :
                 GhidraVariableStorage.stackIntervals(stackDepths, stack, registerMap)) {
-            long start;
-            long end;
-            try {
-                start = AddressNormalizer.toElfAddress(interval.start(), rebaseDelta);
-                end = AddressNormalizer.toElfAddress(interval.end(), rebaseDelta);
-            }
-            catch (ArithmeticException overflow) {
-                continue;
-            }
-            if (start >= 0 && end > start) {
+            long start = AddressNormalizer.toElfAddress(interval.start(), rebaseDelta);
+            long end = AddressNormalizer.toElfAddress(interval.end(), rebaseDelta);
+            if (Long.compareUnsigned(start, end) < 0) {
                 result.add(new LocationRange(start, end, interval.storage(),
                     evidence(source, interval.storage())));
             }

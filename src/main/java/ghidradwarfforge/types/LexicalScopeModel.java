@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.locations.VariableStorageModel.Confidence;
 import ghidradwarfforge.locations.VariableStorageModel.Evidence;
 import ghidradwarfforge.locations.VariableStorageModel.LocationRange;
@@ -35,7 +36,7 @@ public record LexicalScopeModel(long functionAddress, List<FunctionRange> body,
     }
 
     public LexicalScopeModel {
-        if (functionAddress < 0 || evidence == null || evidence.isBlank() || blocks == null || locals == null) {
+        if (evidence == null || evidence.isBlank() || blocks == null || locals == null) {
             throw invalid("missing lexical evidence");
         }
         body = checkedRanges(body);
@@ -92,14 +93,14 @@ public record LexicalScopeModel(long functionAddress, List<FunctionRange> body,
         for (FunctionRange visible : visibility(local)) {
             long cursor = visible.address();
             for (LocationRange old : location.locations()) {
-                long start = Math.max(visible.address(), old.start());
-                long end = Math.min(visible.endExclusive(), old.end());
-                if (end <= start) continue;
-                if (cursor < start) ranges.add(unavailable(cursor, start));
+                long start = UnsignedAddress.max(visible.address(), old.start());
+                long end = UnsignedAddress.min(visible.endExclusive(), old.end());
+                if (Long.compareUnsigned(end, start) <= 0) continue;
+                if (Long.compareUnsigned(cursor, start) < 0) ranges.add(unavailable(cursor, start));
                 ranges.add(new LocationRange(start, end, old.storage(), old.evidence()));
                 cursor = end;
             }
-            if (cursor < visible.endExclusive()) ranges.add(unavailable(cursor, visible.endExclusive()));
+            if (Long.compareUnsigned(cursor, visible.endExclusive()) < 0) ranges.add(unavailable(cursor, visible.endExclusive()));
         }
         return new VariableLocation(location.functionName(), location.functionAddress(), location.name(),
             location.kind(), location.byteSize(), ranges);
@@ -115,9 +116,9 @@ public record LexicalScopeModel(long functionAddress, List<FunctionRange> body,
         for (FunctionRange child : inner) {
             long cursor = child.address();
             for (FunctionRange range : outer) {
-                if (range.endExclusive() <= cursor) continue;
-                if (range.address() > cursor) break;
-                cursor = Math.min(child.endExclusive(), range.endExclusive());
+                if (Long.compareUnsigned(range.endExclusive(), cursor) <= 0) continue;
+                if (Long.compareUnsigned(range.address(), cursor) > 0) break;
+                cursor = Long.compareUnsigned(child.endExclusive(), range.endExclusive()) <= 0 ? child.endExclusive() : range.endExclusive();
                 if (cursor == child.endExclusive()) break;
             }
             if (cursor != child.endExclusive()) return false;
@@ -127,10 +128,10 @@ public record LexicalScopeModel(long functionAddress, List<FunctionRange> body,
 
     private static List<FunctionRange> checkedRanges(List<FunctionRange> ranges) {
         if (ranges == null || ranges.isEmpty()) throw invalid("empty lexical range set");
-        var ordered = ranges.stream().sorted(Comparator.comparingLong(FunctionRange::address)).toList();
-        long end = -1;
+        var ordered = ranges.stream().sorted(Comparator.comparing(FunctionRange::address, Long::compareUnsigned)).toList();
+        long end = 0;
         for (FunctionRange range : ordered) {
-            if (range.address() < end) throw invalid("overlapping lexical ranges");
+            if (Long.compareUnsigned(range.address(), end) < 0) throw invalid("overlapping lexical ranges");
             end = range.endExclusive();
         }
         return ordered;

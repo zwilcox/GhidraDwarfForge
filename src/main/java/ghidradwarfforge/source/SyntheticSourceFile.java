@@ -26,7 +26,7 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
     /** Per-function token rows before synthetic declaration rows are merged. */
     public record FunctionTokens(String name, long address, List<SourceLine> lines) {
         public FunctionTokens {
-            if (name == null || name.isBlank() || address < 0 || lines == null) {
+            if (name == null || name.isBlank() || lines == null) {
                 throw new IllegalArgumentException("invalid function token evidence");
             }
             lines = lines.stream().map(line -> new SourceLine(line.line(),
@@ -50,7 +50,7 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
         }
 
         public FunctionText {
-            if (name == null || name.isBlank() || address < 0) {
+            if (name == null || name.isBlank()) {
                 throw new IllegalArgumentException("invalid synthetic-source function");
             }
             if ((c == null ? 0 : 1) + (failureDiagnostic == null ? 0 : 1) +
@@ -73,7 +73,7 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
             if (line < 1 || addresses.isEmpty()) {
                 throw new IllegalArgumentException("invalid relative source mapping");
             }
-            addresses = addresses.stream().distinct().sorted().toList();
+            addresses = addresses.stream().distinct().sorted(Long::compareUnsigned).toList();
         }
     }
 
@@ -113,7 +113,7 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
     public static SyntheticSourceFile build(String programName, String language,
             List<FunctionText> input) {
         List<FunctionText> ordered = new ArrayList<>(input);
-        ordered.sort(Comparator.comparingLong(FunctionText::address)
+        ordered.sort(Comparator.comparing(FunctionText::address, Long::compareUnsigned)
             .thenComparing(FunctionText::name));
         StringBuilder source = new StringBuilder();
         source.append("/*\n")
@@ -193,7 +193,7 @@ public record SyntheticSourceFile(byte[] utf8, List<FunctionLines> functions,
         }
         return merged.entrySet().stream()
             .map(entry -> new SourceLine(entry.getKey(), entry.getValue().stream()
-                .distinct().sorted().toList()))
+                .distinct().sorted(Long::compareUnsigned).toList()))
             .toList();
     }
 

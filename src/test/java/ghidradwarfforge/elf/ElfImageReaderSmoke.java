@@ -167,31 +167,25 @@ public final class ElfImageReaderSmoke {
     private static void checkUpperHalfAddresses(Path input, ByteOrder order) throws Exception {
         Fixture fixture = create(input, true, order, 2, 3, true, 0, 0, 0, NAMES.length);
         long kernel = 0xffffffff81000000L;
-        String limitation = " is valid. GhidraDwarfForge does not yet support upper-half addresses. " +
-            "ELF header field: ";
-        String unsupported = "ELF64 virtual address 0xffffffff81000000" + limitation;
         fixture.address(24, kernel);
-        expectFailure(() -> ElfImage.readForExport(input), unsupported + "e_entry");
-        require(ByteBuffer.wrap(ElfImage.read(input).headerBytes()).order(order).getLong(24) == kernel,
-            "metadata inspection lost the raw ELF64 entry-point bits");
-        fixture.address(24, 0);
-        fixture.address(fixture.sectionOffset(1) + 16, kernel);
-        expectWriterFailure(input, unsupported + "sh_addr[1]");
-        fixture.address(fixture.sectionOffset(1) + 16, 0);
-        fixture.address(fixture.programs + 16, kernel);
-        expectWriterFailure(input, unsupported + "p_vaddr[0]");
-
-        // A four-byte load ending at the last low address is representable.
-        fixture.address(fixture.programs + 16, Long.MAX_VALUE - 3);
-        require(ElfImage.read(input).preferredImageBase() == Long.MAX_VALUE - 3,
-            "last four bytes below the upper half were rejected");
-        fixture.address(fixture.programs + 16, Long.MAX_VALUE - 2);
-        expectFailure(() -> ElfImage.readForExport(input), "0x8000000000000000" + limitation + "p_vaddr[0]");
-        require(ElfImage.read(input).segments().size() == 2, "metadata inspection lost a crossing LOAD");
-        fixture.address(fixture.programs + 16, 0);
         fixture.address(fixture.sectionOffset(1) + 8, 2); // SHF_ALLOC
+        fixture.address(fixture.sectionOffset(1) + 16, kernel);
+        fixture.address(fixture.programs + 16, kernel);
+        ElfImage image = ElfImage.readForExport(input);
+        require(ByteBuffer.wrap(image.headerBytes()).order(order).getLong(24) == kernel &&
+            image.sections().get(1).address == kernel && image.preferredImageBase() == kernel,
+            "ELF64 entry, section, or load lost its upper-half address");
+        fixture.address(fixture.programs + 16, Long.MAX_VALUE - 2);
         fixture.address(fixture.sectionOffset(1) + 16, Long.MAX_VALUE);
-        expectFailure(() -> ElfImage.readForExport(input), "0x8000000000000000" + limitation + "sh_addr[1]");
+        require(ElfImage.readForExport(input).preferredImageBase() == Long.MAX_VALUE - 2,
+            "valid four-byte load crossing bit 63 was rejected");
+        fixture.address(fixture.programs + 16, -4);
+        require(ElfImage.readForExport(input).preferredImageBase() == -4, "LOAD ending at UINT64_MAX was rejected");
+        fixture.address(fixture.programs + 16, -3);
+        expectFailure(() -> ElfImage.readForExport(input), "virtual address range wraps at p_vaddr[0]");
+        fixture.address(fixture.programs + 16, kernel);
+        fixture.address(fixture.sectionOffset(1) + 16, -1);
+        expectFailure(() -> ElfImage.readForExport(input), "virtual address range wraps at sh_addr[1]");
     }
 
     private static void checkProgramCounts(Path input, boolean elf64, ByteOrder order)

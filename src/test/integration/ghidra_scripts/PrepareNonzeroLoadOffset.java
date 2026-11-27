@@ -6,6 +6,7 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataUtilities;
 import ghidra.program.model.data.IntegerDataType;
 import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.symbol.SourceType;
 
@@ -13,8 +14,8 @@ public class PrepareNonzeroLoadOffset extends GhidraScript {
     @Override
     protected void run() throws Exception {
         String[] arguments = getScriptArgs();
-        if (arguments.length != 2) {
-            throw new IllegalArgumentException("usage: PrepareNonzeroLoadOffset <function> <global>");
+        if (arguments.length < 2 || arguments.length > 3) {
+            throw new IllegalArgumentException("usage: PrepareNonzeroLoadOffset <function> <global> [stack-function]");
         }
         Function function = getFunctionAt(toAddr(arguments[0]));
         if (function == null) {
@@ -42,6 +43,20 @@ public class PrepareNonzeroLoadOffset extends GhidraScript {
             DataUtilities.ClearDataMode.CLEAR_ALL_CONFLICT_DATA);
         currentProgram.getSymbolTable().createLabel(address, "nonzero_sink",
             SourceType.USER_DEFINED).setPrimary();
+        if (arguments.length == 3) {
+            Function stackFunction = getFunctionAt(toAddr(arguments[2]));
+            if (stackFunction == null) throw new IllegalStateException("stack fixture function was not discovered");
+            stackFunction.setName("kernel_stack_argument", SourceType.USER_DEFINED);
+            stackFunction.setCallingConvention(Function.DEFAULT_CALLING_CONVENTION_STRING);
+            stackFunction.setReturnType(signedInt, SourceType.USER_DEFINED);
+            Parameter[] parameters = new Parameter[7];
+            for (int index = 0; index < parameters.length; index++) {
+                String name = index == 6 ? "stack_value" : "reg_arg_" + index;
+                parameters[index] = new ParameterImpl(name, signedInt, currentProgram);
+            }
+            stackFunction.replaceParameters(Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS,
+                true, SourceType.USER_DEFINED, parameters);
+        }
         println("Prepared nonzero_add and nonzero_sink at " + arguments[0] + "/" + arguments[1]);
     }
 }

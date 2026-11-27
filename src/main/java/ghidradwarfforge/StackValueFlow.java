@@ -250,7 +250,7 @@ final class StackValueFlow {
         for (var row : decoded.entrySet()) {
             monitor.checkCancelled();
             StackValueFlow state = input.get(row.getKey());
-            append(result, row.getKey().getOffset(), Math.addExact(row.getValue().getMaxAddress().getOffset(), 1),
+            append(result, row.getKey().getOffset(), UnsignedAddress.endExclusive(row.getValue().getMaxAddress().getOffset(), 1),
                 state == null ? UNKNOWN : state.location(registers));
         }
         return result.stream().anyMatch(interval -> interval.storage().available()) ? List.copyOf(result) : List.of();
@@ -528,14 +528,15 @@ final class StackValueFlow {
             }
             long cursor = interval.start();
             for (var extra : proven) {
-                if (!extra.storage().available() || extra.end() <= cursor || extra.start() >= interval.end()) continue;
-                long low = Math.max(cursor, extra.start());
-                long high = Math.min(interval.end(), extra.end());
-                if (cursor < low) append(result, cursor, low, interval.storage());
+                if (!extra.storage().available() || Long.compareUnsigned(extra.end(), cursor) <= 0 ||
+                        Long.compareUnsigned(extra.start(), interval.end()) >= 0) continue;
+                long low = UnsignedAddress.max(cursor, extra.start());
+                long high = UnsignedAddress.min(interval.end(), extra.end());
+                if (Long.compareUnsigned(cursor, low) < 0) append(result, cursor, low, interval.storage());
                 append(result, low, high, extra.storage());
                 cursor = high;
             }
-            if (cursor < interval.end()) append(result, cursor, interval.end(), interval.storage());
+            if (Long.compareUnsigned(cursor, interval.end()) < 0) append(result, cursor, interval.end(), interval.storage());
         }
         return List.copyOf(result);
     }

@@ -122,6 +122,15 @@ public final class GdbCompanionSmoke {
                         probe(original, 256, 0x20100, 16) + "]";
                     if (!manifest.contains(expected)) throw new AssertionError("incorrect immutable header/payload probes " + manifest);
                     if (!manifest.contains("\"address_bits\":" + (wide ? 64 : 32))) throw new AssertionError("wrong manifest pointer width");
+                    if (wide) {
+                        String upper = identityCase(directory, "upper", true, order,
+                            List.of(new Load(0, Long.MAX_VALUE - 31, header, 4), new Load(256, -16L, 16, 5)), null);
+                        if (!upper.contains("[256,18446744073709551600,16,16]") ||
+                                !upper.contains("\"address\":9223372036854775824,") ||
+                                !upper.contains("\"address\":18446744073709551600,")) {
+                            throw new AssertionError("incorrect unsigned LOAD or runtime probe address: " + upper);
+                        }
+                    }
                     // With neither sections nor LOADs, correspondence refuses missing allocation evidence first.
                     identityCase(directory, "no-loads", wide, order, List.of(), "matched Forge sidecar");
                     identityCase(directory, "data-only", wide, order,
@@ -145,7 +154,7 @@ public final class GdbCompanionSmoke {
                     probes.add(new Load(0, 0x10000, header, 5));
                     identityCase(directory, "too-many-probes", wide, order, probes,
                         "bounded immutable executable identity evidence");
-                    System.out.println("gdb-companion-identity=PASS elf64=" + wide + " order=" + order + " cases=9");
+                    System.out.println("gdb-companion-identity=PASS elf64=" + wide + " order=" + order);
                 }
             }
             // Repeated views exceed the runtime hash budget using a two-MiB owned file.

@@ -39,6 +39,14 @@ public final class LocalSymbolMergeSmoke {
                     new ElfLocalFunctionSymbol("curated::alias", 0x1040, 16, 1),
                     new ElfLocalFunctionSymbol("curated::\u03bb", 0x1050, 16, 1));
                 checkMerge(root, original, additions, 2, false);
+                if (wide) {
+                    byte[] crossing = original.clone();
+                    field(crossing, 1, "address", Long.MAX_VALUE - 8);
+                    field(crossing, 4, "flags", 3);
+                    field(crossing, 4, "address", -16L);
+                    checkMerge(root, crossing, List.of(new ElfLocalFunctionSymbol("high_alias", Long.MIN_VALUE, 4, 1),
+                        new ElfLocalObjectSymbol("last_word", -8L, 8, 4)), 2, false);
+                }
                 inventoryBoundaries(root, original, additions, wide, order);
                 byte[] dataAllocation = original.clone();
                 field(dataAllocation, 4, "flags", 3);
@@ -514,8 +522,10 @@ public final class LocalSymbolMergeSmoke {
             objectRejected(() -> new ElfLocalFunctionSymbol(name, 0, 1, 1));
             objectRejected(() -> new ElfLocalMappingSymbol(name, 0, 1));
         }
-        objectRejected(() -> new ElfLocalObjectSymbol("object", -1, 1, 1));
-        objectRejected(() -> new ElfLocalFunctionSymbol("function", -1, 1, 1));
+        require(new ElfLocalObjectSymbol("object", -1L, 1, 1).value() == -1L, "last object byte was rejected");
+        objectRejected(() -> new ElfLocalObjectSymbol("object", -1L, 2, 1));
+        require(new ElfLocalFunctionSymbol("function", -1L, 1, 1).value() == -1L, "last function byte was rejected");
+        objectRejected(() -> new ElfLocalFunctionSymbol("function", -1L, 2, 1));
         objectRejected(() -> new ElfLocalMappingSymbol("mapping", -1, 1));
         for (long size : new long[] {0, -1}) {
             objectRejected(() -> new ElfLocalObjectSymbol("object", 0, size, 1));

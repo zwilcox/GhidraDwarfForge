@@ -8,7 +8,7 @@ import java.util.Locale;
 public record ElfFunctionAlias(String name, String owner, long address, List<CodeRange> ranges) {
     public record CodeRange(long address, long size, String codeSha256) {
         public CodeRange {
-            if (address < 0 || size <= 0 || size > Long.MAX_VALUE - address ||
+            if (size <= 0 || Long.compareUnsigned(address + size, address) <= 0 ||
                     codeSha256 == null || !codeSha256.matches("[0-9a-fA-F]{64}")) {
                 throw new IllegalArgumentException("invalid alias code range");
             }
@@ -16,7 +16,7 @@ public record ElfFunctionAlias(String name, String owner, long address, List<Cod
         }
 
         public boolean contains(long value) {
-            return value >= address && value - address < size;
+            return Long.compareUnsigned(value - address, size) < 0;
         }
     }
 
@@ -29,15 +29,15 @@ public record ElfFunctionAlias(String name, String owner, long address, List<Cod
         if (name == null || name.isBlank() || name.indexOf('\0') >= 0 ||
                 name.length() > 65536 || !StandardCharsets.UTF_8.newEncoder().canEncode(name) ||
                 name.getBytes(StandardCharsets.UTF_8).length > 65536 ||
-                owner == null || owner.isBlank() || name.equals(owner) || address < 0 ||
+                owner == null || owner.isBlank() || name.equals(owner) ||
                 ranges == null || ranges.isEmpty() || ranges.size() > 65536) {
             throw new IllegalArgumentException("invalid recovered function alias");
         }
         ranges = List.copyOf(ranges);
-        long previousEnd = -1;
+        long previousEnd = 0;
         boolean containsEntry = false;
         for (CodeRange range : ranges) {
-            if (range.address() < previousEnd) {
+            if (Long.compareUnsigned(range.address(), previousEnd) < 0) {
                 throw new IllegalArgumentException("alias code ranges overlap or are unsorted");
             }
             previousEnd = range.address() + range.size();

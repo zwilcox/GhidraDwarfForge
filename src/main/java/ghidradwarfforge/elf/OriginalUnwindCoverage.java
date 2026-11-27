@@ -4,10 +4,11 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
+
+import ghidradwarfforge.UnsignedAddress;
 
 /**
  * Original declared frame coverage protected against selected ordinary loader
@@ -15,7 +16,10 @@ import java.util.function.BooleanSupplier;
  * Unknown metadata fails inspection and must never be converted to empty coverage.
  */
 public final class OriginalUnwindCoverage {
-    public record Interval(long address, long end) { }
+    /** Nonempty half-open interval. A zero exclusive end denotes the byte after UINT64_MAX. */
+    public record Interval(long address, long end) {
+        private long lastByte() { return end - 1; }
+    }
     private final OriginalFrameSources.Inventory sources;
     private final ElfRelocationEffects effects;
     private final List<Interval> intervals;
@@ -48,15 +52,15 @@ public final class OriginalUnwindCoverage {
         var sorted = new ArrayList<Interval>();
         for (var source : sources.sources()) for (var frame : source.records().frames()) {
             check(cancelled);
-            if (frame.size() != 0) sorted.add(new Interval(frame.address(), Math.addExact(frame.address(), frame.size())));
+            if (frame.size() != 0) sorted.add(new Interval(frame.address(), frame.address() + frame.size()));
         }
-        sorted.sort(Comparator.comparingLong(Interval::address).thenComparingLong(Interval::end));
+        sorted.sort((left, right) -> Long.compareUnsigned(left.address(), right.address()));
         var merged = new ArrayList<Interval>();
         for (var range : sorted) {
             check(cancelled);
-            if (!merged.isEmpty() && range.address() <= merged.getLast().end()) {
+            if (!merged.isEmpty() && (merged.getLast().end() == 0 || Long.compareUnsigned(range.address(), merged.getLast().end()) <= 0)) {
                 var last = merged.removeLast();
-                merged.add(new Interval(last.address(), Math.max(last.end(), range.end())));
+                merged.add(new Interval(last.address(), UnsignedAddress.max(last.lastByte(), range.lastByte()) + 1));
             }
             else merged.add(range);
         }
@@ -67,14 +71,13 @@ public final class OriginalUnwindCoverage {
 
     /** Half-open original link-time VA interval; any overlap suppresses a whole instruction. */
     public boolean overlaps(long address, long size) {
-        if (address < 0 || size <= 0) throw new IllegalArgumentException("invalid original coverage query");
-        long end = Math.addExact(address, size);
+        long last = UnsignedAddress.lastByte(address, size);
         int low = 0, high = intervals.size();
         while (low < high) {
             int middle = (low + high) >>> 1;
-            if (intervals.get(middle).address() < end) low = middle + 1; else high = middle;
+            if (Long.compareUnsigned(intervals.get(middle).address(), last) <= 0) low = middle + 1; else high = middle;
         }
-        return low != 0 && intervals.get(low - 1).end() > address;
+        return low != 0 && Long.compareUnsigned(intervals.get(low - 1).lastByte(), address) >= 0;
     }
     private static void check(BooleanSupplier cancelled) {
         if (cancelled.getAsBoolean()) throw new CancellationException("original unwind coverage cancelled");

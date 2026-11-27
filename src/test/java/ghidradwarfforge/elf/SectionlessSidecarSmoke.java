@@ -173,7 +173,7 @@ public final class SectionlessSidecarSmoke {
                 // address boundary; wrapping past it must fail before publication.
                 byte[] boundary = bytes.clone();
                 ByteBuffer fields = ByteBuffer.wrap(boundary).order(order);
-                long address = wide ? Long.MAX_VALUE - 0x10 : 0xfffffff0L;
+                long address = wide ? 0xffff_ffff_ffff_fff0L : 0xffff_fff0L;
                 putProgramHeader(fields, wide, 6, 1, 4, 0x400, address, 0, 0x10, 1);
                 Path boundaryInput = directory.resolve(name + ".boundary.elf");
                 Path boundaryOutput = directory.resolve(name + ".boundary.dbg");
@@ -190,7 +190,9 @@ public final class SectionlessSidecarSmoke {
                     throw new IllegalStateException("overflowing load extent accepted");
                 }
                 catch (IllegalArgumentException expected) {
-                    require(expected.getMessage().contains("PT_LOAD virtual range"),
+                    String diagnostic = wide ? "virtual address range wraps at p_vaddr[6]" :
+                        "PT_LOAD virtual range exceeds ELF32 address space at 6";
+                    require(expected.getMessage().contains(diagnostic),
                         "overflow failed for an unrelated reason");
                 }
                 require(Arrays.equals(previous, sha256(output)) &&

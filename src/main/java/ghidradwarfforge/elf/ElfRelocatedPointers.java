@@ -7,12 +7,12 @@ import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.targets.UnwindRelocationProfile;
 
 /**
@@ -43,33 +43,32 @@ public final class ElfRelocatedPointers {
                     // The selected profile defines symbol-zero RELATIVE as the
                     // object's load bias plus the explicit addend. No symbol,
                     // resolver, TLS, REL or RELR evaluation is guessed here.
-                    if (row.info() == null || row.info() != profile.relativeType() || row.addend() == null || row.addend() < 0) continue;
-                    long end = end(row.address(), width);
+                    if (row.info() == null || row.info() != profile.relativeType() || row.addend() == null) continue;
                     long fileOffset = -1;
                     int mappings = 0, targets = 0, protections = 0;
                     for (var segment : image.segments()) {
                         check(cancelled);
                         require(++comparisons <= 16L * 1024 * 1024, "relative pointer mapping budget exceeded");
                         if (segment.type == 1) {
-                            long limit = end(segment.virtualAddress, segment.memorySize);
-                            if (row.address() < limit && segment.virtualAddress < end) {
+                            if (UnsignedAddress.overlaps(segment.virtualAddress, segment.memorySize, row.address(), width)) {
                                 mappings++;
-                                if (row.address() >= segment.virtualAddress && end <= end(segment.virtualAddress, segment.fileSize) &&
+                                if (UnsignedAddress.contains(segment.virtualAddress, segment.fileSize, row.address(), width) &&
                                         (segment.flags & 6) == 6 && (segment.flags & 1) == 0) {
-                                    fileOffset = end(segment.offset, row.address() - segment.virtualAddress);
+                                    fileOffset = Math.addExact(segment.offset, row.address() - segment.virtualAddress);
                                 }
                             }
-                            if (row.addend() >= segment.virtualAddress && row.addend() < limit && (segment.flags & 4) != 0) targets++;
+                            if (UnsignedAddress.contains(segment.virtualAddress, segment.memorySize, row.addend(), 1) &&
+                                    (segment.flags & 4) != 0) targets++;
                         }
-                        else if (segment.type == 0x6474e552L && row.address() >= segment.virtualAddress &&
-                                end <= end(segment.virtualAddress, segment.memorySize)) protections++;
+                        else if (segment.type == 0x6474e552L &&
+                                UnsignedAddress.contains(segment.virtualAddress, segment.memorySize, row.address(), width)) protections++;
                     }
                     if (mappings != 1 || targets != 1 || protections != 1 || fileOffset < 0) continue;
                     int writers = 0;
                     for (var write : effects.writes()) {
                         check(cancelled);
                         require(++comparisons <= 16L * 1024 * 1024, "relative pointer writer budget exceeded");
-                        if (row.address() < end(write.address(), write.size()) && write.address() < end) writers++;
+                        if (UnsignedAddress.overlaps(row.address(), width, write.address(), write.size())) writers++;
                     }
                     require(writers == 1, "relative pointer has overlapping loader writes");
                     var bytes = ByteBuffer.allocate(width);
@@ -84,16 +83,11 @@ public final class ElfRelocatedPointers {
             }
             image.requireUnchanged(input);
         }
-        result.sort(Comparator.comparingLong(Pointer::address));
+        result.sort((left, right) -> Long.compareUnsigned(left.address(), right.address()));
         check(cancelled);
         return List.copyOf(result);
     }
 
-    private static long end(long start, long size) {
-        require(start >= 0 && size >= 0, "negative relative pointer extent");
-        try { return Math.addExact(start, size); }
-        catch (ArithmeticException failure) { throw new IllegalArgumentException("relative pointer extent overflows", failure); }
-    }
     private static String sha256(byte[] bytes) {
         try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); }
         catch (NoSuchAlgorithmException impossible) { throw new AssertionError(impossible); }

@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.types.LexicalScopeModel;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
@@ -84,7 +85,7 @@ public final class Dwarf5RangeLists {
         }
 
         Map<LexicalScopeModel.Key, Long> lexicalOffsets = new LinkedHashMap<>();
-        for (var scope : scopes.stream().sorted(Comparator.comparingLong(LexicalScopeModel::functionAddress)).toList()) {
+        for (var scope : scopes.stream().sorted(Comparator.comparing(LexicalScopeModel::functionAddress, Long::compareUnsigned)).toList()) {
             for (var block : scope.blocks()) {
                 if (block.ranges().size() < 2) continue;
                 var key = new LexicalScopeModel.Key(scope.functionAddress(), block.id());
@@ -120,12 +121,12 @@ public final class Dwarf5RangeLists {
         FunctionRange containing = function.ranges().stream()
             .filter(range -> range.contains(function.address())).findFirst().orElseThrow();
         result.add(new FunctionRange(function.address(),
-            Math.subtractExact(containing.endExclusive(), function.address())));
+            UnsignedAddress.distance(function.address(), containing.endExclusive())));
         for (FunctionRange range : function.ranges()) {
             if (range.equals(containing)) {
                 if (range.address() != function.address()) {
                     result.add(new FunctionRange(range.address(),
-                        Math.subtractExact(function.address(), range.address())));
+                        UnsignedAddress.distance(range.address(), function.address())));
                 }
             }
             else {
@@ -139,7 +140,7 @@ public final class Dwarf5RangeLists {
             List<FunctionSymbol> functions) {
         List<FunctionRange> ordered = functions.stream()
             .flatMap(function -> function.ranges().stream())
-            .sorted(Comparator.comparingLong(FunctionRange::address)
+            .sorted(Comparator.comparing(FunctionRange::address, Long::compareUnsigned)
                 .thenComparingLong(FunctionRange::size))
             .toList();
         if (ordered.isEmpty()) {
@@ -150,16 +151,16 @@ public final class Dwarf5RangeLists {
         long end = ordered.get(0).endExclusive();
         for (int index = 1; index < ordered.size(); index++) {
             FunctionRange range = ordered.get(index);
-            if (range.address() <= end) {
-                end = Math.max(end, range.endExclusive());
+            if (Long.compareUnsigned(range.address(), end) <= 0) {
+                if (Long.compareUnsigned(range.endExclusive(), end) > 0) end = range.endExclusive();
             }
             else {
-                merged.add(new FunctionRange(start, Math.subtractExact(end, start)));
+                merged.add(new FunctionRange(start, UnsignedAddress.distance(start, end)));
                 start = range.address();
                 end = range.endExclusive();
             }
         }
-        merged.add(new FunctionRange(start, Math.subtractExact(end, start)));
+        merged.add(new FunctionRange(start, UnsignedAddress.distance(start, end)));
         return merged;
     }
 

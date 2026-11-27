@@ -232,7 +232,13 @@ public final class ExportReportClaimsSmoke {
             bad.getAsJsonArray("failedFunctions").get(0).getAsJsonObject().addProperty("address", address);
             reject(bad.toString());
         }
-        for (String end : List.of("0x1000", "0xfff", "0x8000000000000000")) {
+        JsonObject crossing = partial.deepCopy();
+        crossing.getAsJsonArray("omittedLocations").get(0).getAsJsonObject().addProperty("endAddress", "0x8000000000000000");
+        var detailed = ExportReportClaims.readDetailed(SUPPLIED, () -> false,
+            path -> new TrackingInput(bytes(crossing.toString()), 7), LIMITS, ExportReportClaims.DEFAULT_RETENTION);
+        require(detailed.inventories().omittedLocations().getFirst().endAddress() == Long.MIN_VALUE,
+            "omitted location crossing bit 63 was narrowed");
+        for (String end : List.of("0x1000", "0xfff")) {
             JsonObject bad = partial.deepCopy();
             bad.getAsJsonArray("omittedLocations").get(0).getAsJsonObject().addProperty("endAddress", end);
             reject(bad.toString());

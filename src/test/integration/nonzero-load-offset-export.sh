@@ -17,13 +17,13 @@ mkdir -p "$fixture_dir" "$result_root"
 result_dir=$(mktemp -d "$result_root/run.XXXXXXXX")
 artifact_dir="$result_dir/artifacts"
 mkdir -p "$artifact_dir"
-projects=$(mktemp -d /tmp/forge-load-offset-projects.XXXXXXXX)
+projects=$(mktemp -d "${TMPDIR:-/tmp}/forge-load-offset-projects.XXXXXXXX")
 reference="$fixture_dir/nonzero.reference"
 input="$fixture_dir/nonzero.stripped"
 
 cleanup() {
     case "$projects" in
-        /tmp/forge-load-offset-projects.*) rm -rf -- "$projects" ;;
+        "${TMPDIR:-/tmp}"/forge-load-offset-projects.*) rm -rf -- "$projects" ;;
         *) echo "unexpected temporary project path: $projects" >&2 ;;
     esac
 }
@@ -155,6 +155,7 @@ run_case repeat 0
 cmp "$result_dir/baseline/nonzero.dbg" "$result_dir/repeat/nonzero.dbg"
 cmp "$result_dir/baseline/nonzero.dbg.c" "$result_dir/repeat/nonzero.dbg.c"
 test "$input_hash" = "$(sha256sum "$input" | cut -d' ' -f1)"
-# The same x86-64 address lane also checks the documented ELF64 upper limit.
-"$repository_dir/src/test/integration/upper-half-elf.sh" "$ghidra_dir" "$consumer" "$producer"
+for layout in kernel crossing sectionless; do
+    "$repository_dir/src/test/integration/upper-half-elf.sh" "$ghidra_dir" "$consumer" "$producer" "$layout"
+done
 echo "nonzero-load-offset-export=PASS"

@@ -116,6 +116,8 @@ expected_sources=(
     mips-fpr-system-start.S
     mips-truncated-space-start.S
     mips-truncated-space.c
+    mips64-upper-half.S
+    mips64-upper-half.ld
     mips_layout_arguments.c
     mips_wide_arguments.c
     mixed-incoming-prefix.c
@@ -157,6 +159,7 @@ expected_sources=(
     synthetic-cfi-start-x86_64.S
     synthetic-cfi.c
     terminal-composite.c
+    upper_half_stack.c
 )
 mapfile -t actual_sources < <(
     cd "$fixture_source_dir"

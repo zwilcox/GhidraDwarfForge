@@ -28,7 +28,7 @@ public record CallSitePlan(List<FunctionCalls> functions) {
      */
     public record Site(long instructionAddress, long returnPc, boolean tail, Long callee, List<Argument> arguments) {
         public Site {
-            if (instructionAddress < 0 || returnPc <= instructionAddress || callee != null && callee < 0 || arguments == null) {
+            if (Long.compareUnsigned(returnPc, instructionAddress) <= 0 || arguments == null) {
                 throw new IllegalArgumentException("invalid call-site addresses");
             }
             arguments = arguments.stream().sorted(Comparator.comparingInt(Argument::ordinal)).toList();
@@ -43,12 +43,12 @@ public record CallSitePlan(List<FunctionCalls> functions) {
     }
     public record FunctionCalls(long caller, Completeness completeness, List<Site> sites) {
         public FunctionCalls {
-            if (caller < 0 || completeness == null || sites == null) throw new IllegalArgumentException("invalid call inventory");
-            sites = sites.stream().sorted(Comparator.comparingLong(Site::instructionAddress)).toList();
+            if (completeness == null || sites == null) throw new IllegalArgumentException("invalid call inventory");
+            sites = sites.stream().sorted(Comparator.comparing(Site::instructionAddress, Long::compareUnsigned)).toList();
         }
     }
     public CallSitePlan {
-        functions = functions.stream().sorted(Comparator.comparingLong(FunctionCalls::caller)).toList();
+        functions = functions.stream().sorted(Comparator.comparing(FunctionCalls::caller, Long::compareUnsigned)).toList();
         var callers = new HashSet<Long>();
         var pcs = new HashSet<Long>();
         var returns = new HashSet<Long>();
@@ -74,7 +74,7 @@ public record CallSitePlan(List<FunctionCalls> functions) {
             if (owner == null) throw new IllegalArgumentException("call-site owner is not exported");
             for (var site : function.sites()) {
                 if (owner.ranges().stream().noneMatch(range -> range.contains(site.instructionAddress())) ||
-                        (addressBytes == 4 && site.returnPc() > 0xffffffffL)) {
+                        (addressBytes == 4 && Long.compareUnsigned(site.returnPc(), 0xffffffffL) > 0)) {
                     throw new IllegalArgumentException("call-site instruction address is outside its owner or target width");
                 }
                 if (site.callee() != null && !symbols.containsKey(site.callee())) {

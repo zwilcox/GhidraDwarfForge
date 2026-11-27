@@ -37,10 +37,9 @@ public final class DwarfAddressRanges {
         }
         List<FunctionRange> tuples = new ArrayList<>();
         for (FunctionRange range : Dwarf5RangeLists.mergedCompilationUnitRanges(functions)) {
-            // The model already bounds ELF64 addresses to nonnegative Java longs.
             // ELF32 may end exactly at 2^32, including a full address-space union.
-            if (addressBytes == 4 && (range.address() > MAX_UNSIGNED_INT ||
-                    range.endExclusive() > MAX_UNSIGNED_INT + 1)) {
+            if (addressBytes == 4 && (Long.compareUnsigned(range.address(), MAX_UNSIGNED_INT) > 0 ||
+                    Long.compareUnsigned(range.endExclusive(), MAX_UNSIGNED_INT + 1) > 0)) {
                 throw new IllegalArgumentException("function range does not fit ELF32 " +
                     "address lookup: " + range);
             }

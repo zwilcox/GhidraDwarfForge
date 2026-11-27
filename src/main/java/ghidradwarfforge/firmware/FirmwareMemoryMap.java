@@ -11,7 +11,7 @@ import java.util.Objects;
 /**
  * Explicit runtime allocations and original-file provenance in one flat address space.
  * No image-base subtraction, guessed zero filling, or implicit aliasing occurs here.
- * Addresses use the exporter's existing nonnegative signed-64-bit range model.
+ * Raw firmware maps use nonnegative addresses and checked lengths.
  */
 public record FirmwareMemoryMap(int addressBits, List<Input> inputs, List<Region> regions) {
     public enum Storage { FILE_BACKED, UNINITIALIZED }

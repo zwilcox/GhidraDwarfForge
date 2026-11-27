@@ -45,7 +45,7 @@ final class RegisterCopyLifetime {
         Register originalBase = original.getBaseRegister();
         long handoff = GhidraVariableStorage.registerPrefixEnd(start, end, instructions,
             originalBase, calls, monitor);
-        if (handoff <= start || handoff >= end) {
+        if (handoff == start || Long.compareUnsigned(handoff, end) >= 0) {
             return null;
         }
         var codeSpace = instructions.get(0).getAddress().getAddressSpace();
@@ -68,7 +68,7 @@ final class RegisterCopyLifetime {
                     instruction.getFlowType().isJump() || instruction.getFlowType().isOverride()) {
                 return null;
             }
-            long next = Math.addExact(instruction.getMaxAddress().getOffset(), 1);
+            long next = UnsignedAddress.endExclusive(instruction.getMaxAddress().getOffset(), 1);
             boolean writesOriginal = GhidraVariableStorage.writesRegister(instruction,
                 originalBase);
             boolean mayAcquire = !selected && originalAlive && !writesOriginal;
@@ -154,7 +154,7 @@ final class RegisterCopyLifetime {
             }
         }
         // A backup killed before the handoff gives no additional interval.
-        return selected && candidateEnd > handoff ? new Backup(handoff, candidateEnd, mapped, copiedBits) : null;
+        return selected && Long.compareUnsigned(candidateEnd, handoff) > 0 ? new Backup(handoff, candidateEnd, mapped, copiedBits) : null;
     }
 
     private static Register copySource(Program program, PcodeOp operation, int bytes) {

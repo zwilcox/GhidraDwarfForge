@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.elf.ElfRelocatedPointers;
 
@@ -60,7 +61,7 @@ public record UnwindOptions(Mode mode, List<UnwindStackSeparation.Region> ranges
         var pointers = new ArrayList<UnwindStackSeparation.Pointer>();
         for (var pointer : candidates) {
             if (!fixedRelocatedPointers) throw new IllegalArgumentException("pointer candidates require explicit fixed-pointer mode");
-            all.add(new UnwindStackSeparation.Region(pointer.address(), Math.addExact(pointer.address(), width - 1)));
+            all.add(new UnwindStackSeparation.Region(pointer.address(), UnsignedAddress.lastByte(pointer.address(), width)));
             pointers.add(new UnwindStackSeparation.Pointer(pointer.address() + delta, pointer.value() + delta));
         }
         all.sort((left, right) -> Long.compareUnsigned(left.first(), right.first()));

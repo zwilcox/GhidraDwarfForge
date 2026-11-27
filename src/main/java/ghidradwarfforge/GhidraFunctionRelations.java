@@ -27,7 +27,7 @@ public final class GhidraFunctionRelations {
             Function function;
             try {
                 var address = program.getAddressFactory().getDefaultAddressSpace().getAddress(
-                    Math.addExact(signature.address(), rebaseDelta));
+                    AddressNormalizer.toGhidraAddress(signature.address(), rebaseDelta));
                 function = program.getFunctionManager().getFunctionAt(address);
             }
             catch (ArithmeticException | IllegalArgumentException invalid) { continue; }

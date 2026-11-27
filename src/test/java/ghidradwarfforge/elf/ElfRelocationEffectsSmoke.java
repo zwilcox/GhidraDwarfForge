@@ -109,7 +109,7 @@ public final class ElfRelocationEffectsSmoke {
                 case "copy-value" -> { out.putLong(0x520, 0x1810); yield "matching ordinary defined object"; }
                 case "copy-undefined" -> { out.putShort(0x51e, (short) 0); yield "matching ordinary defined object"; }
                 case "copy-function" -> { out.put(0x51c, (byte) 0x12); yield "matching ordinary defined object"; }
-                case "copy-too-big" -> { out.putLong(0x528, Long.MAX_VALUE); yield "extent overflows"; }
+                case "copy-too-big" -> { out.putLong(0x528, Long.MAX_VALUE); yield "exceeds one allocated load extent"; }
                 case "text" -> { out.putInt(68, 5); yield "non-writable storage"; }
                 case "table-write" -> { out.putLong(0x400, 0x1400).putLong(0x520, 0x1400); yield "rewrite relocation/symbol metadata"; }
                 case "dynamic-write" -> { out.putLong(0x400, 0x1200).putLong(0x520, 0x1200); yield "rewrite relocation/symbol metadata"; }
@@ -251,13 +251,15 @@ public final class ElfRelocationEffectsSmoke {
             }
         }
         var effects = inspect(path, fixture(machine, relative, 0, 0x1800));
-        for (long[] extent : List.of(new long[] {-1, 1}, new long[] {0, 0}, new long[] {0, -1})) {
+        for (long[] extent : List.of(new long[] {0, 0}, new long[] {0, -1})) {
             reject(() -> effects.requireUnchanged(extent[0], extent[1], () -> false), "invalid protected address extent");
         }
         for (long[] extent : List.of(new long[] {-1, 1}, new long[] {0, -1})) {
             reject(() -> effects.requireFileUnchanged(extent[0], extent[1], () -> false), "negative relocation extent");
         }
-        reject(() -> effects.requireUnchanged(Long.MAX_VALUE, 1, () -> false), "extent overflows");
+        effects.requireUnchanged(Long.MAX_VALUE, 2, () -> false);
+        effects.requireUnchanged(-1, 1, () -> false);
+        reject(() -> effects.requireUnchanged(-1, 2, () -> false), "extent overflows");
         reject(() -> effects.requireFileUnchanged(Long.MAX_VALUE, 1, () -> false), "extent overflows");
         effects.requireUnchanged(Long.MAX_VALUE - 1, 1, () -> false);
         effects.requireFileUnchanged(Long.MAX_VALUE, 0, () -> false);

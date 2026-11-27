@@ -44,7 +44,7 @@ public final class SourceBundle {
 
     public record Function(String name, long address, int file, int first, int last, String disposition) {
         public Function {
-            if (name == null || name.isBlank() || name.indexOf('\0') >= 0 || address < 0 ||
+            if (name == null || name.isBlank() || name.indexOf('\0') >= 0 ||
                     file < 1 || first < 3 || last < first || disposition == null ||
                     !Set.of("decompiled", "failed", "omitted").contains(disposition)) {
                 throw new IllegalArgumentException("invalid source function inventory");

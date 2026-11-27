@@ -55,6 +55,20 @@ public final class ElfRelocatedPointersSmoke {
     private static void admissionBoundaries(Path path, int machine, int type) throws Exception {
         byte[] original = fixture(machine, type);
         var expected = inspect(path, original);
+        for (long base : new long[] {Long.MAX_VALUE - 0x807, 0xffff_ffff_8100_0000L, -0x2000L}) {
+            byte[] bytes = original.clone();
+            var b = buffer(bytes);
+            segment(b, 0, 1, 6, 0, base, 0x1000, 0x2000);
+            segment(b, 1, 2, 6, 0x200, base + 0x200, 64, 64);
+            segment(b, 2, 0x6474e552, 4, 0x800, base + 0x800, 16, 16);
+            b.putLong(0x208, base + 0x400).putLong(0x218, 48);
+            b.putLong(0x400, base + 0x808).putLong(0x410, base + 0x1fff);
+            b.putLong(0x418, base + 0x800).putLong(0x420, type).putLong(0x428, base);
+            require(inspect(path, bytes).equals(List.of(
+                new ElfRelocatedPointers.Pointer(base + 0x800, base, 0x418, 0x800, digest(bytes, 0x800)),
+                new ElfRelocatedPointers.Pointer(base + 0x808, base + 0x1fff, 0x400, 0x808, digest(bytes, 0x808)))),
+                "relocated slots lost unsigned order, target values or file coordinates");
+        }
         for (String shape : List.of("rel", "relr", "none", "absolute", "relro-after-slot", "duplicate-relro",
                 "write-only-slot", "target-before-load", "ambiguous-target", "unreadable-target", "bss-slot")) {
             byte[] bytes = original.clone(); var b = buffer(bytes);

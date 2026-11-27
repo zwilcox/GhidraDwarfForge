@@ -11,14 +11,14 @@ public record DecodedInstructions(FunctionSymbol function, List<Long> starts,
                 (!unavailableReason.isEmpty() && unavailableReason.isBlank())) {
             throw new IllegalArgumentException("invalid decoded instruction evidence");
         }
-        starts = starts.stream().distinct().sorted().toList();
+        starts = starts.stream().distinct().sorted(Long::compareUnsigned).toList();
         if (!unavailableReason.isEmpty() && !starts.isEmpty()) {
             throw new IllegalArgumentException("unavailable inventory cannot retain partial counts");
         }
         int range = 0;
         for (long address : starts) {
             while (range < function.ranges().size() &&
-                    function.ranges().get(range).endExclusive() <= address) {
+                    Long.compareUnsigned(function.ranges().get(range).endExclusive(), address) <= 0) {
                 range++;
             }
             if (range == function.ranges().size() ||

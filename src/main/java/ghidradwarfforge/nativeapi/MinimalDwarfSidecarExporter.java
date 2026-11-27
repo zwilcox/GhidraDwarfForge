@@ -107,6 +107,7 @@ import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
 import com.sun.jna.ptr.PointerByReference;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.annotations.SyntheticConstant;
 import ghidradwarfforge.annotations.SyntheticConstants;
@@ -173,17 +174,15 @@ public final class MinimalDwarfSidecarExporter {
 
     public record FunctionRange(long address, long size) {
         public FunctionRange {
-            if (address < 0 || size <= 0 || Math.addExact(address, size) <= address) {
-                throw new IllegalArgumentException("invalid function address range");
-            }
+            UnsignedAddress.endExclusive(address, size);
         }
 
         public long endExclusive() {
-            return Math.addExact(address, size);
+            return address + size; // The constructor checked the exclusive endpoint.
         }
 
         public boolean contains(long candidate) {
-            return candidate >= address && candidate < endExclusive();
+            return Long.compareUnsigned(candidate - address, size) < 0;
         }
     }
 
@@ -211,13 +210,13 @@ public final class MinimalDwarfSidecarExporter {
                 throw new IllegalArgumentException("invalid function namespace path for " + name);
             }
             namespacePath = List.copyOf(namespacePath);
-            if (address < 0 || ranges == null || ranges.isEmpty()) {
+            if (ranges == null || ranges.isEmpty()) {
                 throw new IllegalArgumentException("function ranges are required for " + name);
             }
             ranges = List.copyOf(ranges);
-            long previousEnd = -1;
+            long previousEnd = 0;
             for (FunctionRange range : ranges) {
-                if (range.address() < previousEnd) {
+                if (Long.compareUnsigned(range.address(), previousEnd) < 0) {
                     throw new IllegalArgumentException(
                         "function ranges overlap or are unsorted for " + name);
                 }
@@ -567,7 +566,7 @@ public final class MinimalDwarfSidecarExporter {
             throw new IllegalArgumentException("at least one function is required");
         }
         List<FunctionSymbol> ordered = new ArrayList<>(request.functions());
-        ordered.sort(Comparator.comparingLong(FunctionSymbol::address)
+        ordered.sort(Comparator.comparing(FunctionSymbol::address, Long::compareUnsigned)
             .thenComparing(FunctionSymbol::name));
         FunctionSymbol.validateDisplayNames(ordered);
         Path destination = FileSystemPaths.resolveLeaf(output, "DWARF sidecar path");

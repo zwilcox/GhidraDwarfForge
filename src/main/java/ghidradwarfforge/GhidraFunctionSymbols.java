@@ -75,7 +75,7 @@ public final class GhidraFunctionSymbols {
                 monitor.checkCancelled();
                 if (!segment.mapsMemory()) continue;
                 long first = segment.virtualAddress();
-                long last = Math.addExact(first, segment.memorySize() - 1);
+                long last = UnsignedAddress.lastByte(first, segment.memorySize());
                 mapped.addRange(space.getAddress(first), space.getAddress(last));
             }
         }
@@ -115,6 +115,7 @@ public final class GhidraFunctionSymbols {
             List<FunctionRange> translated = new ArrayList<>();
             AddressRange range = first;
             SkipReason rejection = null;
+            String detail = "";
             while (true) {
                 if (!range.getMinAddress().isMemoryAddress()) {
                     rejection = SkipReason.UNSUPPORTED_RANGE;
@@ -127,6 +128,10 @@ public final class GhidraFunctionSymbols {
                 try {
                     var linked = new FunctionRange(AddressNormalizer.toElfAddress(
                         range.getMinAddress().getOffset(), rebaseDelta), range.getLength());
+                    if (!UnsignedAddress.fitsObject(linked.address(), linked.size(), program.getDefaultPointerSize())) {
+                        rejection = SkipReason.UNSUPPORTED_RANGE;
+                        break;
+                    }
                     if (original != null && !mapped.contains(space.getAddress(linked.address()),
                             space.getAddress(linked.endExclusive() - 1))) {
                         rejection = SkipReason.UNMAPPED_MEMORY;
@@ -136,6 +141,7 @@ public final class GhidraFunctionSymbols {
                 }
                 catch (ArithmeticException | IllegalArgumentException failure) {
                     rejection = SkipReason.UNSUPPORTED_RANGE;
+                    detail = " (" + failure.getMessage() + ")";
                     break;
                 }
                 if (!ranges.hasNext()) {
@@ -146,7 +152,7 @@ public final class GhidraFunctionSymbols {
             if (rejection != null) {
                 skipped.add(new SkippedFunction(function.getName(), rejection));
                 diagnostic.accept("Skipped function " + function.getName() + " at " + range +
-                    ": " + rejection);
+                    ": " + rejection + detail);
                 continue;
             }
             long entry;
@@ -160,6 +166,8 @@ public final class GhidraFunctionSymbols {
                 diagnostic.accept("Skipped untranslatable function " + function.getName());
                 continue;
             }
+            // A rebase can move a fragment through zero and change its position in ELF order.
+            translated.sort(Comparator.comparing(FunctionRange::address, Long::compareUnsigned));
             result.add(new FunctionSymbol(function.getName(), entry, translated,
                 displayNamespacePath(function, diagnostic)));
         }

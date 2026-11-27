@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
+import ghidradwarfforge.UnsignedAddress;
+
 /** Bounded PT_DYNAMIC inventory. No count is inferred from adjacent pointers or relocations. */
 final class SectionlessDynamicSymbols {
     private static final int MAX_SYMBOLS = 262144;
@@ -21,6 +23,7 @@ final class SectionlessDynamicSymbols {
     private static final long VERDEFNUM = 0x6ffffffdL;
     private static final long VERNEED = 0x6ffffffeL;
     private static final long VERNEEDNUM = 0x6fffffffL;
+    private static final Set<Long> POINTERS = Set.of(4L, 5L, 6L, 34L, GNU_HASH, VERSYM, VERDEF, VERNEED);
     private static final Set<Long> SINGLETONS = Set.of(4L, 5L, 6L, 10L, 11L, 34L,
         GNU_HASH, VERSYM, VERDEF, VERDEFNUM, VERNEED, VERNEEDNUM, MipsDynamicSymbols.DT_MIPS_SYMTABNO);
 
@@ -55,7 +58,7 @@ final class SectionlessDynamicSymbols {
                 int section = Short.toUnsignedInt(data.getShort(at + (image.is64Bit() ? 6 : 14)));
                 long value = image.is64Bit() ? data.getLong(at + 8) : Integer.toUnsignedLong(data.getInt(at + 4));
                 long size = image.is64Bit() ? data.getLong(at + 16) : Integer.toUnsignedLong(data.getInt(at + 8));
-                require(value >= 0 && size >= 0, "dynamic symbol value/size exceeds signed domain");
+                require(size >= 0, "dynamic symbol size exceeds the supported byte count");
                 records.add(new RawSymbol(value, size, info, other, section));
             }
             reader.verify();
@@ -164,7 +167,7 @@ final class SectionlessDynamicSymbols {
                 return tags;
             }
             if (SINGLETONS.contains(tag)) {
-                require(value >= 0 && tags.putIfAbsent(tag, value) == null, "invalid or duplicate PT_DYNAMIC metadata tag");
+                require((POINTERS.contains(tag) || value >= 0) && tags.putIfAbsent(tag, value) == null, "invalid or duplicate PT_DYNAMIC metadata tag");
             }
         }
         throw new IllegalArgumentException("unterminated PT_DYNAMIC inventory");
@@ -197,7 +200,7 @@ final class SectionlessDynamicSymbols {
             long count = Integer.toUnsignedLong(header.getInt(4));
             require(buckets > 0 && buckets <= MAX_SYMBOLS && count > 0 && count <= MAX_SYMBOLS,
                 "PT_DYNAMIC SysV hash exceeds limits");
-            ByteBuffer values = reader.buffer(add(address, 8), (buckets + count) * 4);
+            ByteBuffer values = reader.buffer(UnsignedAddress.addOffset(address, 8), (buckets + count) * 4);
             while (values.hasRemaining()) {
                 checkCancelled(reader.cancelled);
                 require(Integer.toUnsignedLong(values.getInt()) < count, "PT_DYNAMIC SysV hash index exceeds count");
@@ -233,7 +236,7 @@ final class SectionlessDynamicSymbols {
             bloom > 0 && bloom <= MAX_SYMBOLS && (bloom & (bloom - 1)) == 0 && shift < 32,
             "unsupported PT_DYNAMIC GNU hash framing");
         long bloomSize = bloom * (reader.image.is64Bit() ? 8 : 4);
-        long bucketsAddress = add(address, 16 + bloomSize);
+        long bucketsAddress = UnsignedAddress.addOffset(address, 16 + bloomSize);
         reader.locate(address, 16 + bloomSize); // Prove the complete header/bloom extent exists.
         ByteBuffer buckets = reader.buffer(bucketsAddress, bucketCount * 4);
         List<Long> starts = new ArrayList<>();
@@ -250,14 +253,14 @@ final class SectionlessDynamicSymbols {
         }
         starts.sort(Long::compare);
         long cursor = first;
-        long chains = add(bucketsAddress, bucketCount * 4);
+        long chains = UnsignedAddress.addOffset(bucketsAddress, bucketCount * 4);
         for (long start : starts) {
             checkCancelled(reader.cancelled);
             require(start == cursor, "PT_DYNAMIC GNU chains overlap or leave a gap");
             while (true) {
                 checkCancelled(reader.cancelled);
                 require(cursor < MAX_SYMBOLS, "PT_DYNAMIC GNU chain exceeds symbol budget");
-                long value = Integer.toUnsignedLong(reader.buffer(add(chains, (cursor - first) * 4), 4).getInt());
+                long value = Integer.toUnsignedLong(reader.buffer(UnsignedAddress.addOffset(chains, (cursor - first) * 4), 4).getInt());
                 cursor++;
                 if ((value & 1) != 0) {
                     break;
@@ -281,7 +284,7 @@ final class SectionlessDynamicSymbols {
         for (long index = 0; index < count; index++) {
             checkCancelled(reader.cancelled);
             require(cursor <= ElfImage.MAX_TABLE_BYTES - headerWidth, "PT_DYNAMIC version-table extent exceeds limits");
-            ByteBuffer header = reader.buffer(add(address, cursor), headerWidth);
+            ByteBuffer header = reader.buffer(UnsignedAddress.addOffset(address, cursor), headerWidth);
             int members = Short.toUnsignedInt(header.getShort(countOffset));
             long auxiliary = Integer.toUnsignedLong(header.getInt(auxiliaryOffset));
             long next = Integer.toUnsignedLong(header.getInt(nextOffset));
@@ -295,7 +298,7 @@ final class SectionlessDynamicSymbols {
             for (int member = 0; member < members; member++) {
                 checkCancelled(reader.cancelled);
                 require(aux <= boundary - auxiliaryWidth, "PT_DYNAMIC version auxiliary exceeds table");
-                ByteBuffer row = reader.buffer(add(address, aux), auxiliaryWidth);
+                ByteBuffer row = reader.buffer(UnsignedAddress.addOffset(address, aux), auxiliaryWidth);
                 long following = Integer.toUnsignedLong(row.getInt(auxiliaryWidth - 4));
                 require((member + 1 == members) == (following == 0), "invalid PT_DYNAMIC version auxiliary count");
                 end = Math.max(end, aux + auxiliaryWidth);
@@ -340,21 +343,18 @@ final class SectionlessDynamicSymbols {
         }
 
         private long locate(long address, long size) {
-            require(address >= 0 && size > 0 && size <= ElfImage.MAX_TABLE_BYTES,
+            require(size <= ElfImage.MAX_TABLE_BYTES && UnsignedAddress.fitsObject(address, size, image.is64Bit() ? 8 : 4),
                 "unsupported PT_DYNAMIC virtual read extent");
-            long end = add(address, size);
             ElfLoadAllocations.Allocation selected = null;
             for (var allocation : allocations) {
                 comparison();
                 var section = allocation.section();
-                if (address < section.address + section.size && section.address < end) {
+                if (UnsignedAddress.overlaps(address, size, section.address, section.size)) {
                     require(selected == null, "ambiguous PT_DYNAMIC load mapping");
                     selected = allocation;
                 }
             }
-            require(selected != null && address >= selected.section().address &&
-                address - selected.section().address <= selected.fileSize() &&
-                size <= selected.fileSize() - (address - selected.section().address),
+            require(selected != null && UnsignedAddress.contains(selected.section().address, selected.fileSize(), address, size),
                 "PT_DYNAMIC metadata is not uniquely file backed");
             return add(selected.section().offset, address - selected.section().address);
         }
@@ -383,17 +383,16 @@ final class SectionlessDynamicSymbols {
         }
 
         private int definition(long address, long size) {
-            require(address >= 0 && size >= 0, "PT_DYNAMIC symbol address/size exceeds supported range");
-            long end = add(address, size);
+            require(size >= 0 && (size == 0 || UnsignedAddress.fitsObject(address, size, image.is64Bit() ? 8 : 4)),
+                "PT_DYNAMIC definition exceeds its address or size bounds");
             int selected = 0;
             for (var allocation : allocations) {
                 comparison();
                 var section = allocation.section();
-                boolean intersects = size == 0 ? address >= section.address && address < section.address + section.size :
-                    address < section.address + section.size && section.address < end;
-                if (intersects) {
+                long occupied = size == 0 ? 1 : size;
+                if (UnsignedAddress.overlaps(address, occupied, section.address, section.size)) {
                     require(selected == 0, "PT_DYNAMIC definition has overlapping load allocations");
-                    require(address >= section.address && end <= section.address + section.size,
+                    require(UnsignedAddress.contains(section.address, section.size, address, occupied),
                         "PT_DYNAMIC definition crosses load allocations");
                     selected = section.originalIndex;
                 }
@@ -403,7 +402,7 @@ final class SectionlessDynamicSymbols {
                 for (var allocation : allocations) {
                     comparison();
                     var section = allocation.section();
-                    if (address == section.address + section.size) {
+                    if (Long.compareUnsigned(address, section.address) > 0 && address - section.address == section.size) {
                         require(selected == 0, "PT_DYNAMIC end marker has ambiguous allocations");
                         selected = section.originalIndex;
                     }

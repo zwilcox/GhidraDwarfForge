@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Each integration group runs on its own Ubuntu runner.
+# Install dependencies for an Ubuntu 24.04 CI job.
 set -euo pipefail
 
 diagnostics=build/test-results/target-toolchain
@@ -7,13 +7,17 @@ mkdir -p "$diagnostics"
 log=$(mktemp)
 trap 'rm -f "$log"' EXIT
 
+# All target packages come from Ubuntu. Keep the hosted runner's Ubuntu
+# mirrors, security updates and signing keys for all three APT phases.
+ubuntu_sources=(-o Dir::Etc::sourcelist=sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
+
 # Retry only the network phases. A second attempt can reuse complete or
 # partial downloads from the first. Stagger retries from parallel groups.
 fetch() {
     local phase=$1 status attempt
     shift
     for attempt in 1 2; do
-        if sudo timeout --kill-after=15s 10m apt-get \
+        if sudo timeout --kill-after=15s 10m apt-get "${ubuntu_sources[@]}" \
                 -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
                 -o Acquire::https::Timeout=30 "$@" 2>&1 \
                 | tee "$log"; then
@@ -32,6 +36,12 @@ fetch() {
     return "$status"
 }
 
+recommends=--no-install-recommends
+if [[ ${1:-} == --install-recommends ]]; then
+    recommends=--install-recommends
+    shift
+fi
+
 fetch indexes -o APT::Update::Error-Mode=any update
-fetch packages --download-only install --no-install-recommends -y "$@"
-sudo apt-get --no-download install --no-install-recommends -y "$@"
+fetch packages --download-only install "$recommends" -y "$@"
+sudo apt-get "${ubuntu_sources[@]}" --no-download install "$recommends" -y "$@"

@@ -32,6 +32,17 @@ public final class LexicalScopeModelSmoke {
             .toList().equals(List.of(List.of(0x1020L, 0x1028L, 0L), List.of(0x1028L, 0x1040L, 1L),
                 List.of(0x1120L, 0x1130L, 1L), List.of(0x1130L, 0x1140L, 0L))), "exact intersection and unavailable holes");
         check(scope.restrict(clipped).equals(clipped), "idempotent policy cloning");
+        long start = Long.MAX_VALUE - 7;
+        var full = List.of(new FunctionRange(start, 16));
+        var crossing = new LexicalScopeModel(start, full, List.of(new LexicalScopeModel.Block("b", "", full)),
+            List.of(new LexicalScopeModel.Local("v", "b", "v")), "analyst");
+        var supplied = new LocationRange(start + 4, start + 12, storage, evidence);
+        var visibility = crossing.restrict(new VariableLocation("f", start, "v", VariableKind.LOCAL, 4, List.of(supplied))).locations();
+        check(visibility.size() == 3 && visibility.get(1).equals(supplied) &&
+            visibility.getFirst().start() == start && visibility.getFirst().end() == supplied.start() &&
+            visibility.getLast().start() == supplied.end() && visibility.getLast().end() == start + 16 &&
+            !visibility.getFirst().storage().available() && !visibility.getLast().storage().available(),
+            "lexical clipping across bit 63 lost the proven interval or invented a location");
         var absent = new VariableLocation("f", 0x1000, "two", VariableKind.LOCAL, 4,
             List.of(new LocationRange(0x1000, 0x1010, storage, evidence)));
         check(scope.restrict(absent).locations().size() == 2 &&

@@ -78,6 +78,14 @@ public final class QualifiedFunctionNameSmoke {
                 new GhidraFunctionSymbols.SkippedFunction("crosses_alias", unmapped),
                 new GhidraFunctionSymbols.SkippedFunction("crosses_gap", unmapped))),
                 "function admitted across a byte-mapped block or a gap: " + result);
+            if (program.getDefaultPointerSize() == 8) {
+                var diagnostics = new ArrayList<String>();
+                var terminal = GhidraFunctionSymbols.extractDetailed(program, TaskMonitor.DUMMY,
+                    diagnostics::add, start.getOffset() + 16);
+                require(terminal.functions().isEmpty() && diagnostics.stream().anyMatch(message ->
+                    message.contains("crosses_blocks") && message.contains("exclusive range end 2^64")),
+                    "function ending at the last target byte lost its endpoint diagnostic: " + diagnostics);
+            }
         }
         finally {
             program.endTransaction(transaction, false);
@@ -292,10 +300,16 @@ public final class QualifiedFunctionNameSmoke {
                 new GhidraFunctionSymbols.SkippedFunction(ordinary.getName(), reasons.get(index)))) && messages.size() == 1,
                 "unsupported function evidence lost exact omission reason: " + result);
         }
-        var overflow = GhidraFunctionSymbols.extractDetailed(functionView(program, ordinary, java.util.Map.of()),
+        var rebased = GhidraFunctionSymbols.extractDetailed(functionView(program, ordinary, java.util.Map.of()),
             TaskMonitor.DUMMY, ignored -> { }, Long.MIN_VALUE);
-        require(overflow.functions().isEmpty() && overflow.skippedFunctions().getFirst().reason() ==
-            GhidraFunctionSymbols.SkipReason.UNSUPPORTED_RANGE, "overflowing body address was exported");
+        if (program.getDefaultPointerSize() == Long.BYTES) {
+            require(rebased.functions().getFirst().address() == (entry.getOffset() ^ Long.MIN_VALUE),
+                "upper-half function address was narrowed");
+        }
+        else {
+            require(rebased.functions().isEmpty() && rebased.skippedFunctions().getFirst().reason() ==
+                GhidraFunctionSymbols.SkipReason.UNSUPPORTED_RANGE, "out-of-class function address was exported");
+        }
         for (Namespace unsupported : List.of(library, ordinary)) {
             var messages = new ArrayList<String>();
             var result = GhidraFunctionSymbols.extractDetailed(functionView(program, ordinary,

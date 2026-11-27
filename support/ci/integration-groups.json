@@ -2614,7 +2614,8 @@
                 "mips32be": "abi64",
                 "mips32le": "abi64"
             },
-            "stepSha256": "f8bf5e5b78aec8d2c857e34df4984db1243d51b843f6419c3aaae22c2d9b6bd8"
+            "stepSha256": "f8bf5e5b78aec8d2c857e34df4984db1243d51b843f6419c3aaae22c2d9b6bd8",
+            "groupedStepSha256": "e950a5cd59bbe8e448289f7aece11239ac7e3b210f77d6aabe7c7bac52517c3f"
         },
         {
             "id": "target-168",

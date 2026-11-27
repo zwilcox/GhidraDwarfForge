@@ -54,12 +54,10 @@ final class ProgramDeclarationBoundarySmoke {
         }
         reject("invalid global variable", () -> new GlobalVariable("g", -1, 4, INT, false, SOURCE));
         reject("invalid function-owned static variable", () -> new FunctionStaticVariable("s", -1, 4, INT, 0, SOURCE));
-        reject("invalid function-owned static variable", () -> new FunctionStaticVariable("s", 0, 4, INT, -1, SOURCE));
-        reject("invalid function signature", () -> new FunctionSignature("f", -1, INT, List.of(), List.of(), false, false, "", SOURCE));
         reject("invalid global variable", () -> new GlobalVariable("g", 0, 4, null, false, SOURCE));
         reject("invalid function-owned static variable", () -> new FunctionStaticVariable("s", 0, 4, null, 0, SOURCE));
         reject("invalid local variable", () -> new LocalVariable("v", 4, null, 0, false, SOURCE));
-        for (long address : List.of(0L, 0x1_0000_0000L, Long.MAX_VALUE)) {
+        for (long address : List.of(0L, 0x1_0000_0000L, Long.MAX_VALUE, Long.MIN_VALUE, -1L)) {
             var global = new GlobalVariable("g", address, 1, INT, false, SOURCE);
             var local = new LocalVariable("v", 1, INT, -1, false, SOURCE);
             var signature = new FunctionSignature("f", address, INT, List.of(), List.of(local), false, false, "", "");

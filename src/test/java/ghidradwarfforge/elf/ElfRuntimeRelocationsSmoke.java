@@ -219,13 +219,34 @@ public final class ElfRuntimeRelocationsSmoke {
             reject(() -> inspect(path, bytes), "overlapping roles with misaligned record boundaries");
         }
         if (wide) {
+            byte[] high = fixture(true, order, true);
+            var data = ByteBuffer.wrap(high).order(order);
+            long base = 0xffff_ffff_8100_0000L;
+            for (int offset : List.of(64 + 16, 120 + 16, 0x208, 0x238, 0x268, 0x298, 0x400, 0x440, 0x480, 0x498, 0x4c0)) {
+                data.putLong(offset, data.getLong(offset) + base);
+            }
+            for (int index = 1; index < 6; index++) {
+                int offset = 0x800 + index * 64 + 16;
+                data.putLong(offset, data.getLong(offset) + base);
+            }
+            var highRelr = accepted(path, high).tables().getFirst();
+            require(highRelr.address() == base + 0x1480 && highRelr.offset() == 0x480 &&
+                highRelr.relocations().get(1).address() == base + 0x170a,
+                "upper-half section, segment, dynamic pointer or RELR bitmap was mistranslated");
+            byte[] finalWord = metadata(true, order, new long[] {36, 0x1480},
+                new long[] {35, 8}, new long[] {37, 8});
+            ByteBuffer.wrap(finalWord).order(order).putLong(0x480, -8L);
+            require(accepted(path, finalWord).tables().getFirst().relocations().getFirst().address() == -8L,
+                "valid last ELF64 word was rejected");
+            ByteBuffer.wrap(finalWord).order(order).putLong(0x480, -2L);
+            reject(() -> inspect(path, finalWord), "isolated wrapping RELR extent");
             for (long[] row : layouts) {
-                // Isolate the direct entry: a later RELR bitmap would reject
-                // the negative running address independently and mask this guard.
+                // Preserve a high-bit address in every wire format independently.
                 byte[] bytes = metadata(true, order, new long[] {row[0], row[3]},
                     new long[] {row[1], row[4] * 8}, new long[] {row[2], row[4] * 8});
                 ByteBuffer.wrap(bytes).order(order).putLong((int) row[3] - 0x1000, Long.MIN_VALUE);
-                reject(() -> inspect(path, bytes), "relocation target outside supported signed address domain");
+                require(accepted(path, bytes).tables().getFirst().relocations().getFirst().address() == Long.MIN_VALUE,
+                    "high relocation address lost its top bit");
             }
         }
         else {
@@ -278,7 +299,7 @@ public final class ElfRuntimeRelocationsSmoke {
                 case "orphan-section" -> section(out, wide, 2, 9, 0x1600, 0x600, width * 2, width * 2, 2);
                 case "wrong-kind" -> out.putShort(16, (short) 1);
                 case "conflicting-tables" -> word(out, 0x200 + width * 19, wide, 0x1400);
-                case "relr-overflow" -> word(out, 0x480, wide, wide ? Long.MAX_VALUE - 1 : 0xffff_fffeL);
+                case "relr-overflow" -> word(out, 0x480, wide, wide ? -2L : 0xffff_fffeL);
                 case "dynamic-memory" -> segment(out, wide, 1, 2, 0x200, 0x1200, width * 32, width);
                 case "duplicate-dynamic" -> {
                     out.putShort(wide ? 56 : 44, (short) 3);

@@ -1,5 +1,7 @@
 package ghidradwarfforge.elf;
 
+import ghidradwarfforge.UnsignedAddress;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -38,7 +40,7 @@ import ghidradwarfforge.elf.ElfImage.Segment;
  * LOAD/note records and the bounded original unwind view. It does not validate
  * the original's complete runtime map.
  *
- * ElfImage's metadata bounds and signed offset/address model apply. Additionally
+ * File offsets are bounded and virtual addresses use the ELF class width. Additionally
  * at most 65536 nonempty note views are considered, with at most 262144 merged
  * coverage intervals/expected records. Note processing is indexed, not quadratic.
  * No whole file or code payload is read. Sectionless unwind discovery reads
@@ -195,10 +197,10 @@ public final class MatchedElfAllocations {
                     if (segment.type != 1 || segment.memorySize == 0) {
                         continue;
                     }
-                    if (!addressRange(segment.virtualAddress, segment.memorySize, before.is64Bit())) {
+                    if (!UnsignedAddress.fitsObject(segment.virtualAddress, segment.memorySize, before.is64Bit() ? 8 : 4)) {
                         return unsupported(Origin.ORIGINAL_SEGMENT, index, appendedIndex, "p_vaddr/p_memsz",
                             "load extent exceeds the current writer address model",
-                            "representable exclusive end", "address=" + number(segment.virtualAddress) +
+                            "representable last byte", "address=" + number(segment.virtualAddress) +
                                 " size=" + number(segment.memorySize));
                     }
                     Section expected = new Section();
@@ -451,23 +453,24 @@ public final class MatchedElfAllocations {
                             "note gap", "uncovered note range is outside the current writer framing policy",
                             "at least 12 bytes with aligned displacement", number(position) + ".." + number(stop));
                     }
-                    if (segment.virtualAddress > Long.MAX_VALUE - (position - segment.offset)) {
+                    long address = segment.virtualAddress + (position - segment.offset);
+                    if (Long.compareUnsigned(address, segment.virtualAddress) < 0) {
                         return unsupported(Origin.ORIGINAL_SEGMENT, index, firstIndex + count,
-                            "p_vaddr", "reconstructed note address overflows signed address model",
+                            "p_vaddr", "reconstructed note address wraps",
                             "representable note address", "overflow");
                     }
                     Section expected = new Section();
                     expected.name = ".note.forge." + count;
                     expected.type = NOTE;
                     expected.flags = ALLOC;
-                    expected.address = segment.virtualAddress + (position - segment.offset);
+                    expected.address = address;
                     expected.offset = position;
                     expected.size = stop - position;
                     expected.alignment = alignment;
-                    if (!before.is64Bit() && expected.address > 0xffff_ffffL) {
+                    if (!UnsignedAddress.fitsObject(address, expected.size, before.is64Bit() ? 8 : 4)) {
                         return unsupported(Origin.ORIGINAL_SEGMENT, index, firstIndex + count,
-                            "sh_addr", "reconstructed note address exceeds ELF32 field",
-                            "unsigned 32-bit address", number(expected.address));
+                            "sh_addr", "reconstructed note exceeds ELF address space",
+                            "representable last byte", number(address) + " size=" + number(expected.size));
                     }
                     Result result = section(Origin.ORIGINAL_SEGMENT, index, firstIndex + count,
                         expected, null);
@@ -618,10 +621,6 @@ public final class MatchedElfAllocations {
             name.startsWith(".rel.debug_") || name.startsWith(".rela.debug_") ||
             name.equals(".gdb_index") || name.equals(".gnu_debuglink") ||
             name.equals(".gnu_debugaltlink") || name.equals(".gnu_debugdata");
-    }
-
-    private static boolean addressRange(long start, long size, boolean wide) {
-        return size <= Long.MAX_VALUE - start && (wide || start + size <= 0x1_0000_0000L);
     }
 
     private static long end(long start, long size) throws IOException {

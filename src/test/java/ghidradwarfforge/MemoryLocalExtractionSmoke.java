@@ -28,7 +28,7 @@ import ghidradwarfforge.types.TypeGraph;
 final class MemoryLocalExtractionSmoke {
     private static int checks;
     private static final List<String> CASES = List.of("root", "inferred", "no-evidence", "curated-wins",
-        "last-complete-object", "crosses-block", "missing-block", "negative-address", "rebased",
+        "last-complete-object", "crosses-block", "missing-block", "upper-half-address", "rebased",
         "later-use", "default-source", "rejected-binding", "uninitialized", "rejected-scope",
         "stale-evidence", "wrong-inferred-width", "overlay", "mapped");
 
@@ -138,7 +138,7 @@ final class MemoryLocalExtractionSmoke {
                 if (mode.equals("rejected-scope")) {
                     program.getUsrPropertyManager().createStringPropertyMap(GhidraLexicalScopes.PROPERTY_NAME).add(entry, "GDFLS1:!");
                 }
-                long delta = mode.equals("negative-address") ? 0x2000 : mode.equals("rebased") ? 0x800 : 0;
+                long delta = mode.equals("upper-half-address") ? 0x2000 : mode.equals("rebased") ? 0x800 : 0;
                 var symbols = List.of(new FunctionSymbol("owner", entry.getOffset() - delta, 32));
                 var diagnostics = new ArrayList<String>();
                 var candidate = new GhidraStaticRecovery.Candidate(function.getID(), local.getSymbol().getID(),
@@ -152,7 +152,8 @@ final class MemoryLocalExtractionSmoke {
                 if (before != null) program.getMemory().getBytes(block.getStart(), before);
                 var model = GhidraTypeGraph.extract(program, symbols, registers, delta, TaskMonitor.DUMMY,
                     diagnostics::add, Map.of(), Map.of(), recovery);
-                boolean accepted = List.of("root", "inferred", "curated-wins", "last-complete-object", "rebased", "uninitialized").contains(mode);
+                boolean accepted = List.of("root", "inferred", "curated-wins", "last-complete-object", "rebased", "uninitialized").contains(mode) ||
+                    (mode.equals("upper-half-address") && program.getDefaultPointerSize() == Long.BYTES);
                 require(model.functionStatics().size() == (accepted ? 1 : 0), "wrong memory-local admission: " + profile[1] + "/" + mode);
                 require(model.globals().isEmpty() && model.functions().size() == 1 &&
                     model.functions().getFirst().locals().isEmpty() && model.variableStorage().variables().isEmpty(),

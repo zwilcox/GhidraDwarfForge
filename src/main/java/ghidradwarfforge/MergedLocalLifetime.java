@@ -211,7 +211,7 @@ final class MergedLocalLifetime {
                 if (known.contains(location.getKey())) { storage = location.getValue(); break; }
             }
             long start = row.getKey().getOffset();
-            long end = Math.addExact(row.getValue().getMaxAddress().getOffset(), 1);
+            long end = UnsignedAddress.endExclusive(row.getValue().getMaxAddress().getOffset(), 1);
             if (!result.isEmpty() && result.getLast().end() == start && result.getLast().storage().equals(storage)) {
                 var previous = result.removeLast();
                 result.add(new StorageInterval(previous.start(), end, storage));

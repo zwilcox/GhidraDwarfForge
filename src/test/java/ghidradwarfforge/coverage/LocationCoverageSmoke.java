@@ -44,6 +44,17 @@ public final class LocationCoverageSmoke {
         require(LocationCoverage.measure(location, body.reversed(), new Visibility(body.reversed(), true,
             visibility.evidence()), () -> false).equals(covered), "stable canonical ordering");
         var expression = new ExpressionLocation(lists.plans().get(variable).getFirst().expression());
+        long start = Long.MAX_VALUE - 7;
+        var spanning = new VariableLocation("spanning", start, "local", VariableKind.LOCAL, 8,
+            List.of(new LocationRange(start + 2, start + 14, available, evidence)));
+        var spanningLists = Dwarf5LocationLists.build(List.of(spanning), 8, java.nio.ByteOrder.LITTLE_ENDIAN);
+        var spanningLocation = new ListLocation(spanningLists.offsets().get(spanning), spanningLists.plans().get(spanning));
+        var spanningBody = List.of(new FunctionRange(start, 16));
+        var measuredSpan = LocationCoverage.measure(spanningLocation, spanningBody,
+            new Visibility(spanningBody, true, "explicit analyst scope"), () -> false);
+        require(measuredSpan.knownScopeBytes() == 16 && measuredSpan.coveredScopeBytes() == 12 &&
+            measuredSpan.locatedRanges().equals(List.of(new FunctionRange(start + 2, 12))),
+            "crossing bit 63 preserves the variable location and counts its twelve covered bytes");
         var stable = LocationCoverage.measure(expression, body, visibility, () -> false);
         require(stable.coveredScopeBytes() == 60 && stable.locatedBytes() == 60, "expression uses actual owner scope");
         var partialKnowledge = new Visibility(List.of(new FunctionRange(100, 20)), false, "remaining visibility unknown");
@@ -72,6 +83,11 @@ public final class LocationCoverageSmoke {
         var empty = LocationCoverage.measure(expression, body,
             new Visibility(List.of(), true, "explicit empty scope"), () -> false);
         require(!empty.hasFullValueLocation() && !empty.percentageApplicable(), "zero denominator is N/A, never 100 percent");
+        var crossing = List.of(new FunctionRange(Long.MIN_VALUE, 8), new FunctionRange(Long.MAX_VALUE - 7, 8));
+        var crossCoverage = LocationCoverage.measure(expression, crossing,
+            new Visibility(List.of(new FunctionRange(Long.MAX_VALUE - 3, 8)), true, "scope crosses bit 63"), () -> false);
+        require(crossCoverage.coveredScopeBytes() == 8 && crossCoverage.locatedRanges().equals(crossCoverage.knownScopeRanges()),
+            "coverage lost or enlarged the overlap across bit 63");
         var maximal = List.of(new FunctionRange(0, Long.MAX_VALUE));
         var large = LocationCoverage.measure(expression, maximal,
             new Visibility(maximal, true, "maximum supported address domain"), () -> false);

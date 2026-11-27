@@ -94,7 +94,7 @@ public final class ExportReport {
             requireText(kind, "omitted-location variable kind");
             requireText(reason, "omitted-location reason");
             requireText(diagnostic, "omitted-location diagnostic");
-            if (startAddress < 0 || endAddress <= startAddress) {
+            if (Long.compareUnsigned(endAddress, startAddress) <= 0) {
                 throw new IllegalArgumentException("invalid omitted-location range");
             }
         }
@@ -163,7 +163,7 @@ public final class ExportReport {
             .filter(function -> function.failureDiagnostic() != null)
             .map(function -> new FunctionFailure(function.name(), function.address(),
                 function.failureDiagnostic()))
-            .sorted(Comparator.comparingLong(FunctionFailure::address)
+            .sorted(Comparator.comparing(FunctionFailure::address, Long::compareUnsigned)
                 .thenComparing(FunctionFailure::name))
             .toList();
         List<SkippedFunctionInfo> skippedFunctions = skipped.stream()
@@ -183,8 +183,8 @@ public final class ExportReport {
         omitted.sort(Comparator.comparing(OmittedLocation::function)
             .thenComparing(OmittedLocation::kind)
             .thenComparing(OmittedLocation::variable)
-            .thenComparingLong(OmittedLocation::startAddress)
-            .thenComparingLong(OmittedLocation::endAddress)
+            .thenComparing(OmittedLocation::startAddress, Long::compareUnsigned)
+            .thenComparing(OmittedLocation::endAddress, Long::compareUnsigned)
             .thenComparing(OmittedLocation::reason));
         List<UnsupportedConstruct> unsupported = java.util.stream.Stream.concat(
             typeModel.types().nodes().stream()

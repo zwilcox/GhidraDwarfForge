@@ -120,7 +120,7 @@ public final class SourceBundleSmoke {
         for (String bad : new String[] { null, "", "original", "DECOMPILED" }) {
             invalid(() -> new SourceBundle.Function("name", 0, 1, 3, 3, bad));
         }
-        invalid(() -> new SourceBundle.Function("name", -1, 1, 3, 3, "failed"));
+        require(new SourceBundle.Function("name", -1, 1, 3, 3, "failed").address() == -1, "source bundle lost unsigned address");
         invalid(() -> new SourceBundle.Function("name", 0, 0, 3, 3, "failed"));
         invalid(() -> new SourceBundle.Function("name", 0, 1, 2, 3, "failed"));
         invalid(() -> new SourceBundle.Function("name", 0, 1, 4, 3, "failed"));

@@ -164,11 +164,12 @@ public final class GhidraCallParameters {
                     boolean changed = false;
                     for (var range : variable.locations()) {
                         monitor.checkCancelled();
-                        if (!range.storage().available() && range.start() <= elfEntryAddress && elfEntryAddress < range.end()) {
-                            if (range.start() < elfEntryAddress) ranges.add(new LocationRange(range.start(), elfEntryAddress, range.storage(), range.evidence()));
-                            ranges.add(new LocationRange(elfEntryAddress, Math.addExact(elfEntryAddress, 1), mapped.storage(),
+                        if (!range.storage().available() && Long.compareUnsigned(range.start(), elfEntryAddress) <= 0 &&
+                                Long.compareUnsigned(elfEntryAddress, range.end()) < 0) {
+                            if (Long.compareUnsigned(range.start(), elfEntryAddress) < 0) ranges.add(new LocationRange(range.start(), elfEntryAddress, range.storage(), range.evidence()));
+                            ranges.add(new LocationRange(elfEntryAddress, elfEntryAddress + 1, mapped.storage(),
                                 new Evidence(range.evidence().confidence(), "Ghidra formal entry storage before first instruction; no post-entry lifetime or value inferred")));
-                            if (elfEntryAddress + 1 < range.end()) ranges.add(new LocationRange(elfEntryAddress + 1, range.end(), range.storage(), range.evidence()));
+                            if (Long.compareUnsigned(elfEntryAddress + 1, range.end()) < 0) ranges.add(new LocationRange(elfEntryAddress + 1, range.end(), range.storage(), range.evidence()));
                             changed = true;
                         }
                         else ranges.add(range);

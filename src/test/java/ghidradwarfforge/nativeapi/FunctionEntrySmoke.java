@@ -23,6 +23,7 @@ public final class FunctionEntrySmoke {
     public static void main(String[] arguments) throws Exception {
         modelBoundaries();
         declarationIndex();
+        upperHalfEntryRanges();
         List<FunctionSymbol> functions = functions(0x1000);
         for (int width : new int[] { 4, 8 }) {
             for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
@@ -30,10 +31,10 @@ public final class FunctionEntrySmoke {
                 if (ranges.empty() || ranges.functionOffsets().size() != 2) {
                     throw new AssertionError("split body lost its ranges");
                 }
-                checkRanges(ranges, functions.get(0), width, order,
+                checkRanges(ranges, ranges.functionOffsets().get(functions.get(0)), width, order,
                     new long[][] { { 0x1022, 0x1028 }, { 0x1000, 0x1008 },
                         { 0x1020, 0x1022 } });
-                checkRanges(ranges, functions.get(1), width, order,
+                checkRanges(ranges, ranges.functionOffsets().get(functions.get(1)), width, order,
                     new long[][] { { 0x1044, 0x1050 }, { 0x1040, 0x1044 } });
                 byte[] lines = Dwarf5LineTable.build("entry.c", width, order, functions,
                     List.of(new SourceLine(3, List.of(0x1000L, 0x1020L, 0x1040L))));
@@ -42,6 +43,9 @@ public final class FunctionEntrySmoke {
                 }
             }
         }
+        require(functions.get(0).ranges().getFirst().address() == 0x1000 &&
+            functions.get(1).ranges().getFirst().address() == 0x1040,
+            "encoding reordered the extraction model around the function entry");
         reject(0x1010); // A hole between real ranges is not an entry.
         reject(0x1028); // Nor is the exclusive range end.
         reject(0xfff);
@@ -110,7 +114,7 @@ public final class FunctionEntrySmoke {
             invalid(() -> new FunctionSymbol("f", 0x1000, body, namespace),
                 "invalid function namespace path");
         }
-        invalid(() -> new FunctionSymbol("f", -1, body), "function ranges are required");
+        invalid(() -> new FunctionSymbol("f", -1, body), "entry is outside");
         invalid(() -> new FunctionSymbol("f", 0x1000, (List<FunctionRange>) null),
             "function ranges are required");
         invalid(() -> new FunctionSymbol("f", 0x1000, List.of()),
@@ -120,19 +124,12 @@ public final class FunctionEntrySmoke {
         invalid(() -> new FunctionSymbol("f", 0x1000,
             List.of(body.get(0), new FunctionRange(0x1007, 8))),
             "ranges overlap or are unsorted");
-        invalid(() -> new FunctionRange(-1, 1), "invalid function address range");
-        invalid(() -> new FunctionRange(0, 0), "invalid function address range");
-        invalid(() -> new FunctionRange(0, -1), "invalid function address range");
-        try {
-            new FunctionRange(Long.MAX_VALUE, 1);
-            throw new AssertionError("function address overflow was accepted");
-        }
-        catch (ArithmeticException expected) {
-            // An overflowing end must never become a wrapped valid interval.
-        }
+        invalid(() -> new FunctionRange(-1, 1), "exclusive range end 2^64");
+        invalid(() -> new FunctionRange(-1, 2), "wraps through zero");
+        invalid(() -> new FunctionRange(0, 0), "empty or unbounded");
+        invalid(() -> new FunctionRange(0, -1), "empty or unbounded");
 
-        // The model uses nonnegative signed addresses and half-open intervals.
-        for (long base : new long[] { 0, 0x1000, 0xffff_ffffL, Long.MAX_VALUE - 16 }) {
+        for (long base : new long[] { 0, 0x1000, 0xffff_ffffL, Long.MAX_VALUE - 7, Long.MIN_VALUE, -17 }) {
             var range = new FunctionRange(base, 16);
             require(range.endExclusive() == base + 16, "wrong exclusive end");
             for (int offset = -1; offset <= 16; offset++) {
@@ -198,10 +195,26 @@ public final class FunctionEntrySmoke {
         if (!condition) throw new AssertionError(message);
     }
 
-    private static void checkRanges(Dwarf5RangeLists.Result result, FunctionSymbol function,
+    private static void upperHalfEntryRanges() {
+        long low = 0x401000L;
+        long entry = 0xffffffff81000000L;
+        var function = new FunctionSymbol("split_entry", entry,
+            List.of(new FunctionRange(low, 10), new FunctionRange(entry, 12)));
+        for (ByteOrder order : List.of(ByteOrder.LITTLE_ENDIAN, ByteOrder.BIG_ENDIAN)) {
+            var ranges = Dwarf5RangeLists.build(List.of(function), Long.BYTES, order);
+            checkRanges(ranges, ranges.compilationUnitOffset(), Long.BYTES, order,
+                new long[][] { { low, low + 10 }, { entry, entry + 12 } });
+            checkRanges(ranges, ranges.functionOffsets().get(function), Long.BYTES, order,
+                new long[][] { { entry, entry + 12 }, { low, low + 10 } });
+        }
+        require(function.ranges().getFirst().address() == low && function.address() == entry,
+            "upper-half entry or lower fragment moved during encoding");
+    }
+
+    private static void checkRanges(Dwarf5RangeLists.Result result, long listOffset,
             int width, ByteOrder order, long[][] expected) {
         ByteBuffer data = ByteBuffer.wrap(result.section()).order(order);
-        data.position(Math.toIntExact(result.functionOffsets().get(function)));
+        data.position(Math.toIntExact(listOffset));
         for (long[] range : expected) {
             if (data.get() != 6) {
                 throw new AssertionError("expected DW_RLE_start_end");
@@ -212,8 +225,8 @@ public final class FunctionEntrySmoke {
                 throw new AssertionError("wrong entry/order/body interval");
             }
         }
-        if (data.get() != 0 || function.ranges().get(0).address() >= function.address()) {
-            throw new AssertionError("unterminated list or extraction model was reordered");
+        if (data.get() != 0) {
+            throw new AssertionError("unterminated range list");
         }
     }
 

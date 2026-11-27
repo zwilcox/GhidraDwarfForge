@@ -303,11 +303,16 @@ public final class OriginalFrameRangesSmoke {
             expectedLeb(rawLeb(order, 9, signedMax, one), order, Long.MAX_VALUE, 1);
             var relative = rawLeb(order, 0x19, negativeOne, one);
             expectedLeb(relative, order, 0x5000 + relative.address() - 1, 1);
-            rejectedFrame(rawLeb(order, 1, unsignedHigh, zero), order, 8, Format.EH_FRAME, "unsigned FDE pointer");
-            rejectedFrame(rawLeb(order, 9, signedMin, zero), order, 8, Format.EH_FRAME, "FDE range exceeds");
+            expectedLeb(rawLeb(order, 1, unsignedHigh, zero), order, Long.MIN_VALUE, 0);
+            expectedLeb(rawLeb(order, 9, signedMin, zero), order, Long.MIN_VALUE, 0);
             rejectedFrame(rawLeb(order, 9, zero, negativeOne), order, 8, Format.EH_FRAME, "FDE range exceeds");
-            rejectedFrame(rawLeb(order, 0x19, signedMax, one), order, 8, Format.EH_FRAME, "relative FDE address overflows");
-            rejectedFrame(rawLeb(order, 1, unsignedMax, new byte[] {2}), order, 8, Format.EH_FRAME, "FDE extent overflows");
+            var positiveDelta = rawLeb(order, 0x19, signedMax, one);
+            expectedLeb(positiveDelta, order, Long.MAX_VALUE + 0x5000 + positiveDelta.address(), 1);
+            rejectedFrame(rawLeb(order, 0x19, signedMin, one), order, 8, Format.EH_FRAME, "escapes the target address space");
+            expectedLeb(rawLeb(order, 1, unsignedMax, new byte[] {2}), order, Long.MAX_VALUE, 2);
+            byte[] allBits = hex("ff".repeat(9) + "01");
+            expectedLeb(rawLeb(order, 1, allBits, one), order, -1L, 1);
+            rejectedFrame(rawLeb(order, 1, allBits, new byte[] {2}), order, 8, Format.EH_FRAME, "FDE extent overflows");
             rejectedFrame(rawLeb(order, 1, zero, one, unsignedHigh, zero), order, 8, Format.EH_FRAME,
                 "CIE augmentation crosses record");
             rejectedFrame(rawLeb(order, 1, zero, one, one, unsignedHigh), order, 8, Format.EH_FRAME,
@@ -318,12 +323,12 @@ public final class OriginalFrameRangesSmoke {
                     address[9] = (byte) last;
                     var fixture = rawLeb(order, encoding, address, one);
                     if (last == 0) expectedLeb(fixture, order, 0, 1);
+                    else if (last == (encoding == 1 ? 1 : 127)) expectedLeb(fixture, order, Long.MIN_VALUE, 1);
                     else {
                         // The tenth group has only one significant bit. For signed
                         // values its other bits must replicate that bit's sign.
                         int high = encoding == 1 ? 1 : 127;
-                        String reason = last == high ? (encoding == 1 ? "unsigned FDE pointer" : "FDE range exceeds") :
-                            last == 128 || last == 128 + high ? "unterminated frame LEB128" : "overflowing frame LEB128";
+                        String reason = last == 128 || last == 128 + high ? "unterminated frame LEB128" : "overflowing frame LEB128";
                         rejectedFrame(fixture, order, 8, Format.EH_FRAME, reason);
                     }
                     cases++;
@@ -386,8 +391,8 @@ public final class OriginalFrameRangesSmoke {
             }
             expectFailure(() -> OriginalFrameRanges.read(frame.bytes(), byteOrder, 8, Format.DEBUG_FRAME,
                 -1, () -> false), "frame section address exceeds");
-            expectFailure(() -> OriginalFrameRanges.read(frame.bytes(), byteOrder, 8, Format.DEBUG_FRAME,
-                Long.MAX_VALUE, () -> false), "encoded pointer field overflows");
+            require(OriginalFrameRanges.read(frame.bytes(), byteOrder, 8, Format.DEBUG_FRAME,
+                Long.MAX_VALUE, () -> false).frames().getFirst().address() == 0x1000, "absolute FDE depends on section base");
             var augmented = fixture(false, byteOrder, 8, Format.EH_FRAME, 1, "zR", 0, 0x6000, 1);
             rejectedFrame(new Fixture(change(augmented, byteOrder, augmented.cieAugmentation(), 1, 2),
                 augmented.fde(), augmented.pointer(), augmented.address(), augmented.size(),
@@ -469,7 +474,7 @@ public final class OriginalFrameRangesSmoke {
         reject(() -> OriginalFrameRanges.read(new byte[0], order, 4, Format.EH_FRAME, 0x1_0000_0000L, () -> false));
         var zero = fixture(false, order, 8, Format.DEBUG_FRAME, 4, "", 0, 0x1000, 0);
         require(read(zero.bytes(), order, 8, Format.DEBUG_FRAME).frames().getFirst().size() == 0, "empty FDE invented coverage");
-        var overflow = fixture(false, order, 8, Format.DEBUG_FRAME, 4, "", 0, Long.MAX_VALUE, 2);
+        var overflow = fixture(false, order, 8, Format.DEBUG_FRAME, 4, "", 0, -1L, 2);
         reject(() -> read(overflow.bytes(), order, 8, Format.DEBUG_FRAME));
         var narrow = fixture(false, order, 4, Format.DEBUG_FRAME, 4, "", 0, 0xffff_ffffL, 2);
         reject(() -> read(narrow.bytes(), order, 4, Format.DEBUG_FRAME));

@@ -33,6 +33,29 @@ globals, stable registers, changing stack locations, composites, and honest
 unavailable variables. Explicitly rebased Ghidra projects normalize back to
 ELF link-time addresses. [Ghidra 12.2 validation run](https://github.com/zwilcox/GhidraDwarfForge/actions/runs/45915714689)
 
+Development builds can export ELF64 code in the upper half of the address
+space. The x86-64 kernel-style fixture places code at `0xffffffff81000000`.
+With the original ELF and its sidecar loaded, the static GDB test resolves a
+function, its breakpoint and source lines, a global, and two register
+parameters. It also checks the stack offset of a seventh integer argument
+before and after the function saves the frame pointer. GDB registers the
+generated loader companion. These checks run at the linked image base and
+after rebasing the Ghidra project across bit 63. A second ELF places a
+function across that boundary and checks source lookup on both sides.
+
+For a shared library linked in the upper half and loaded at a lower address,
+`forge-load` applies the negative load bias. A live x86-64 GDB test verifies
+that the breakpoint matches `dlsym` each time the library is loaded.
+
+On big- and little-endian MIPS64, a bare-metal Malta fixture runs upper-half
+code in QEMU. GDB stops at `0xffffffff80002000`, reads both arguments, steps
+the addition, and observes the result in a global after the function returns.
+
+Address ranges may cross bit 63. If a function body includes the byte at
+`0xffffffffffffffff`, its exclusive end is 2⁶⁴. Forge skips that function
+and reports `UNSUPPORTED_RANGE` because the DWARF line table needs a
+representable end address.
+
 Export remains an explicit operation. Installable CI bundles include verified
 Linux x86-64 and Windows x86-64 native libraries; the packaged headless
 wrappers select them automatically. The Windows-hosted ELF lane passes native,

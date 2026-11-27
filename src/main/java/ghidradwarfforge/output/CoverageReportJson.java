@@ -377,7 +377,6 @@ public final class CoverageReportJson {
     }
 
     private static String hex(long address) {
-        if (address < 0) throw new IllegalArgumentException("coverage address outside supported domain");
         return "0x" + Long.toHexString(address);
     }
 

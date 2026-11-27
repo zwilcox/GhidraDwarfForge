@@ -92,15 +92,15 @@ public final class DelayedReturnPrefixSmoke {
                                 Map.of("getParsedLength", 8))) {
                             var invalid = new ArrayList<>(instructions);
                             invalid.set(2, decorate(instructions.get(2), mutation));
-                            require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, invalid, base, TaskMonitor.DUMMY) < 0,
+                            require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, invalid, base, TaskMonitor.DUMMY) == 0x1000,
                                 "malformed delay accepted: " + mutation);
                         }
                         var missing = instructions.subList(0, 2);
-                        require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, missing, base, TaskMonitor.DUMMY) < 0,
+                        require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, missing, base, TaskMonitor.DUMMY) == 0x1000,
                             "missing slot accepted");
                         var wrongOwner = new ArrayList<>(instructions);
                         wrongOwner.set(1, decorate(instructions.get(1), Map.of("getFlowType", RefType.UNCONDITIONAL_JUMP)));
-                        require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, wrongOwner, base, TaskMonitor.DUMMY) < 0,
+                        require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, wrongOwner, base, TaskMonitor.DUMMY) == 0x1000,
                             "delayed jump treated as return");
                         delayContracts(instructions, base, boundary);
                         program.getReferenceManager().addMemoryReference(entry.add(0x100), entry.add(4),
@@ -137,7 +137,7 @@ public final class DelayedReturnPrefixSmoke {
                 altered[i] = invalid;
                 var changed = new ArrayList<>(instructions);
                 changed.set(1, decorate(owner, Map.of("getPcode", altered)));
-                require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) < 0,
+                require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) == 0x1000,
                     "unproven delayed return user operation acquired a location");
             }
         }
@@ -148,7 +148,7 @@ public final class DelayedReturnPrefixSmoke {
                 Map.of("getFlowType", RefType.CALL_TERMINATOR))) {
             var changed = new ArrayList<>(instructions);
             changed.set(1, decorate(owner, mutation));
-            require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) < 0,
+            require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) == 0x1000,
                 "invalid delayed-return owner accepted: " + mutation);
         }
         for (var mutation : List.<Map<String, Object>>of(
@@ -159,7 +159,7 @@ public final class DelayedReturnPrefixSmoke {
                 java.util.Collections.singletonMap("getFallThrough", null))) {
             var changed = new ArrayList<>(instructions);
             changed.set(2, decorate(slot, mutation));
-            require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) < 0,
+            require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) == 0x1000,
                 "invalid delay-slot extent/fallthrough accepted: " + mutation);
         }
         for (int opcode : new int[] {PcodeOp.BRANCH, PcodeOp.CBRANCH, PcodeOp.BRANCHIND,
@@ -167,14 +167,14 @@ public final class DelayedReturnPrefixSmoke {
             var changed = new ArrayList<>(instructions);
             changed.set(2, decorate(slot, Map.of("getPcode", new PcodeOp[] {
                 new PcodeOp(slot.getAddress(), 0, opcode, new Varnode[0], null)})));
-            require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) < 0,
+            require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, changed, base, TaskMonitor.DUMMY) == 0x1000,
                 "control or opaque effect in delay slot accepted: " + opcode);
         }
         var extra = new ArrayList<>(instructions);
         extra.add(slot);
-        require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, extra, base, TaskMonitor.DUMMY) < 0,
+        require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, extra, base, TaskMonitor.DUMMY) == 0x1000,
             "delayed return with an extra instruction is not a final closed return");
-        require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x1010, instructions, base, TaskMonitor.DUMMY) < 0,
+        require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x1010, instructions, base, TaskMonitor.DUMMY) == 0x1000,
             "undecoded bytes after the slot must not acquire a lifetime");
         require(GhidraVariableStorage.registerPrefixEnd(0x1000, 0x100c, instructions, base, TaskMonitor.DUMMY) == boundary,
             "invalid delay metadata poisoned the valid decoded proof");

@@ -126,7 +126,7 @@ public final class ClassScopeModelSmoke {
         rejects(() -> scopes.validate(TYPES, List.of(functions().getFirst(), functions().getFirst()), declarations()), "ambiguous definition");
         rejects(() -> scopes.validate(TYPES, functions(), List.of()), "missing external declaration");
         rejects(() -> scopes.validate(TYPES, functions(), List.of(declarations().getFirst(), declarations().getFirst())), "ambiguous declaration");
-        rejects(() -> FunctionReference.definition("method", -1), "negative image address");
+        check(FunctionReference.definition("method", -1L).declarationKey().isEmpty(), "high definition mistaken for declaration");
         rejects(() -> new FunctionReference("method", 0, "external"), "external cannot acquire image address");
         check(FunctionReference.definition("method", 0).address() == 0, "zero image address remains valid");
         var deep = new ArrayList<Scope>();

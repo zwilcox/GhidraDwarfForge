@@ -10,6 +10,7 @@ import java.util.TreeSet;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
+import ghidradwarfforge.UnsignedAddress;
 import ghidradwarfforge.dwarf.Dwarf5LineTable;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
@@ -24,14 +25,14 @@ public final class SourceCoverageIndex {
         Objects.requireNonNull(emitted);
         Objects.requireNonNull(cancelled);
         checkCancelled(cancelled);
-        TreeMap<Long, Integer> rowIndex = new TreeMap<>();
-        TreeMap<Long, Long> spans = new TreeMap<>();
+        TreeMap<Long, Integer> rowIndex = new TreeMap<>(Long::compareUnsigned);
+        TreeMap<Long, Long> spans = new TreeMap<>(Long::compareUnsigned);
         for (var sequence : emitted.sequences()) {
             checkCancelled(cancelled);
             if (sequence.rows().isEmpty()) {
                 continue;
             }
-            spans.merge(sequence.rows().getFirst().address(), sequence.endExclusive(), Math::max);
+            spans.merge(sequence.rows().getFirst().address(), sequence.endExclusive(), UnsignedAddress::max);
             for (var row : sequence.rows()) {
                 checkCancelled(cancelled);
                 Integer previous = rowIndex.putIfAbsent(row.address(), row.line());
@@ -40,12 +41,12 @@ public final class SourceCoverageIndex {
                 }
             }
         }
-        TreeMap<Long, Long> merged = new TreeMap<>();
+        TreeMap<Long, Long> merged = new TreeMap<>(Long::compareUnsigned);
         for (var span : spans.entrySet()) {
             checkCancelled(cancelled);
             var last = merged.lastEntry();
-            if (last != null && span.getKey() <= last.getValue()) {
-                merged.put(last.getKey(), Math.max(last.getValue(), span.getValue()));
+            if (last != null && Long.compareUnsigned(span.getKey(), last.getValue()) <= 0) {
+                merged.put(last.getKey(), UnsignedAddress.max(last.getValue(), span.getValue()));
             }
             else {
                 merged.put(span.getKey(), span.getValue());
@@ -85,7 +86,7 @@ public final class SourceCoverageIndex {
         Objects.requireNonNull(functionTokens);
         Objects.requireNonNull(cancelled);
         checkCancelled(cancelled);
-        TreeSet<Long> instructions = new TreeSet<>();
+        TreeSet<Long> instructions = new TreeSet<>(Long::compareUnsigned);
         for (Long address : decodedStarts) {
             checkCancelled(cancelled);
             if (address == null || !contains(function.ranges(), address)) {
@@ -93,7 +94,7 @@ public final class SourceCoverageIndex {
             }
             instructions.add(address);
         }
-        TreeSet<Long> anchored = new TreeSet<>();
+        TreeSet<Long> anchored = new TreeSet<>(Long::compareUnsigned);
         for (SourceLine token : functionTokens) {
             checkCancelled(cancelled);
             if (token == null || token.line() < 1 || token.addresses() == null) {
@@ -101,7 +102,7 @@ public final class SourceCoverageIndex {
             }
             for (Long address : token.addresses()) {
                 checkCancelled(cancelled);
-                if (address == null || address < 0) {
+                if (address == null) {
                     throw new IllegalArgumentException("invalid function token address");
                 }
                 if (instructions.contains(address) &&
@@ -114,7 +115,7 @@ public final class SourceCoverageIndex {
         for (long address : instructions) {
             checkCancelled(cancelled);
             var span = visible.floorEntry(address);
-            if (span != null && address < span.getValue()) {
+            if (span != null && Long.compareUnsigned(address, span.getValue()) < 0) {
                 lineVisible.add(address);
             }
         }
@@ -126,7 +127,7 @@ public final class SourceCoverageIndex {
         int upper = ranges.size();
         while (lower < upper) {
             int middle = (lower + upper) >>> 1;
-            if (ranges.get(middle).address() <= address) {
+            if (Long.compareUnsigned(ranges.get(middle).address(), address) <= 0) {
                 lower = middle + 1;
             }
             else {
