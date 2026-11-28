@@ -3071,6 +3071,11 @@ jobs:
           set -euo pipefail
           endian=${TARGET#mips32}
           bash src/test/integration/mips64-upper-half.sh "$GHIDRA_INSTALL_DIR" "$endian" build/test-results/mips64-upper-half
+          if [[ $endian == be ]]; then
+              python3 -B src/test/scenarios/java-producer/compare.py --cases mips32be mips64high \
+                  --ghidra "$GHIDRA_INSTALL_DIR" --extension dist/*.zip \
+                  --output build/test-results/java-producer
+          fi
           for abi in n32 n64; do
               for role in exec pie pie-rebased shared shared-rebased; do
                   python3 src/test/integration/mips-wide-abi.py "$GHIDRA_INSTALL_DIR" \
@@ -3941,6 +3946,13 @@ jobs:
         run: |
           python3 src/test/integration/synthetic-cfi-reference.py x86_64 \
             build/test-results/windows-unwind-reference --dwarfdump "$PWD/validation-tool/bin/dwarfdump"
+
+      - name: Compare Java and packaged DWARF producers on x86-64
+        run: |
+          DWARFDUMP="$PWD/validation-tool/bin/dwarfdump" \
+              python3 -B src/test/scenarios/java-producer/compare.py --cases x86_64 \
+              --ghidra "$GHIDRA_INSTALL_DIR" --extension dist/*.zip \
+              --output build/test-results/java-producer
 
       - name: Build independent ELF formatter inputs for native Windows
         run: python3 src/test/integration/formatter-reference.py build/test-results/windows-formatter-reference
