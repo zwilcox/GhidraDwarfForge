@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import zipfile
@@ -54,7 +55,7 @@ def symbols(reference, prefix):
     result = {}
     for line in run([prefix + "nm", "-S", "-n", "--defined-only", reference]).splitlines():
         fields = line.split()
-        if fields[-1] in {"eval_probe", "eval_first", "eval_second", "eval_transition", "boot_case", "eval_returned"}:
+        if fields[-1] in {"eval_probe", "eval_first", "eval_second", "eval_transition", "eval_gap", "boot_case", "eval_returned"}:
             result[fields[-1]] = (fields[0], fields[1] if len(fields) == 4 else None)
     return result
 
@@ -82,6 +83,7 @@ def compare(case, directory, libraries, java, mode):
     original = digest(target)
     start, size = names["eval_probe"]
     addresses = [start, size, *(names[key][0] for key in ("eval_transition", "eval_first", "eval_second"))]
+    addresses.append(names["eval_gap" if case == "mips64high" else "eval_transition"][0])
     for backend in ("java", "libdwarf"):
         dest = directory / backend
         dest.mkdir()
@@ -94,12 +96,19 @@ def compare(case, directory, libraries, java, mode):
         before = [digest(sidecar), digest(source)]
         run(args, log=dest / "repeat.log")
         assert before == [digest(sidecar), digest(source)] and digest(target) == original
-        decoded = run(["readelf", "-hSWn", "--debug-dump=info,abbrev,aranges,decodedline,loc,frames", sidecar],
+        decoded = run(["readelf", "-hSWn", "--debug-dump=info,abbrev,aranges,Ranges,decodedline,loc,frames", sidecar],
                       log=dest / "readelf.log")
         if "Warning:" in decoded or "Error:" in decoded:
             raise ValueError("readelf diagnostic in " + str(dest / "readelf.log"))
         if case == "x86_64":
             assert ".debug_frame" in decoded and f"pc={start}..{int(start, 16) + int(size, 16):016x}" in decoded
+        if case == "mips64high":
+            gap = int(names["eval_gap"][0], 16)
+            transition = int(names["eval_transition"][0], 16)
+            intervals = [(int(start, 16), gap), (transition, int(start, 16) + int(size, 16))]
+            listing = run(["readelf", "--debug-dump=Ranges", sidecar], log=dest / "ranges.log")
+            rows = re.findall(r"^\s*[0-9a-f]+\s+([0-9a-f]{16})\s+([0-9a-f]{16})\s*$", listing, re.MULTILINE)
+            assert [(int(lo, 16), int(hi, 16)) for lo, hi in rows] == intervals * 2, listing
         checked = run(["llvm-dwarfdump", "--verify", sidecar], log=dest / "llvm.log")
         if "No errors." not in checked:
             raise ValueError(checked)

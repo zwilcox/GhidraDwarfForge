@@ -4,8 +4,8 @@ set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 export EVAL_CASE=$1 EVAL_INPUT=$2 EVAL_SIDECAR=$3 EVAL_MODEL=$4
 export EVAL_START=$5 EVAL_SIZE=$6 EVAL_SPLIT=$7 EVAL_FIRST=$8 EVAL_SECOND=$9
-boot=${10}
-export EVAL_CALLER=${11}
+export EVAL_FIRST_RANGE_END=${10} EVAL_CALLER=${12}
+boot=${11}
 cd "$(dirname "$EVAL_INPUT")"
 export EVAL_SOCKET=
 case "$EVAL_CASE" in

@@ -54,9 +54,10 @@ final class LifecycleChecks {
         long split = EvaluationFixture.hex(args[6]);
         long first = EvaluationFixture.hex(args[7]);
         long second = EvaluationFixture.hex(args[8]);
-        boolean x86Leaf = args[9].equals("x86_64");
-        var a = new EvaluationFixture("first_unique_export_name", start, size, split, first, second, true, x86Leaf);
-        var b = new EvaluationFixture("second_unique_export_name", start, size, split, first, second, true, x86Leaf);
+        long firstRangeEnd = EvaluationFixture.hex(args[9]);
+        boolean x86Leaf = args[10].equals("x86_64");
+        var a = new EvaluationFixture("first_unique_export_name", start, size, split, first, second, firstRangeEnd, true, x86Leaf);
+        var b = new EvaluationFixture("second_unique_export_name", start, size, split, first, second, firstRangeEnd, true, x86Leaf);
         for (boolean cancel : List.of(true, false)) {
             failedPublication(b, backend, input, output, libraries, cancel);
             if (Files.exists(output) || Files.exists(source)) throw new AssertionError("partial new output");

@@ -22,6 +22,11 @@ eval_probe:
     dla $5,eval_second
     addiu $2,$2,23
     sw $2,8($5)
+    b eval_transition
+    nop
+.globl eval_gap
+eval_gap:
+    .space 16
 .globl eval_transition
 eval_transition:
     lw $2,8($5)

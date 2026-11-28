@@ -29,6 +29,18 @@ while block and not block.function:
     block = block.superblock
 assert (block.start, block.end) == (start, start + size)
 report = {"function": [start, start + size], "lines": lines}
+if case == "mips64high":
+    gap = int(os.environ["EVAL_FIRST_RANGE_END"], 16)
+    assert start < gap < split < start + size
+    for pc, covered in ((start, True), (gap - 1, True), (gap, False), (split - 1, False),
+                        (split, True), (start + size - 1, True), (start + size, False)):
+        scope = gdb.block_for_pc(pc)
+        while scope and not scope.function:
+            scope = scope.superblock
+        assert (scope is not None and scope.function.name == "eval_probe") == covered, f"function range at {pc:#x}"
+        if gap <= pc < split:
+            assert gdb.find_pc_line(pc).line == 0, f"source line covers the padding at {pc:#x}"
+    report["ranges"] = [[start, gap], [split, start + size]]
 rich = os.environ["EVAL_MODEL"] == "rich"
 if rich:
     node = gdb.lookup_type("struct EvalNode")

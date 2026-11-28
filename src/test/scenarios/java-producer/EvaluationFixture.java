@@ -3,6 +3,7 @@ package evaluation;
 import static evaluation.JavaUnitWriter.Field.*;
 import static ghidradwarfforge.locations.VariableStorageModel.*;
 import static ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionSymbol;
+import ghidradwarfforge.nativeapi.MinimalDwarfSidecarExporter.FunctionRange;
 import static ghidradwarfforge.types.TypeGraph.*;
 import evaluation.JavaUnitWriter.Die;
 import evaluation.JavaUnitWriter.Field;
@@ -31,7 +32,7 @@ import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
 /** Explicit compiler-fixture model for an A/B comparison of DIE production. */
-record EvaluationFixture(String function, long start, long size, long split, long first, long second,
+record EvaluationFixture(String function, long start, long size, long split, long first, long second, long firstRangeEnd,
         boolean rich, boolean x86Leaf) {
     private static final String EVIDENCE = "explicit linked fixture symbols";
     private static final Id INTEGER_ID = new Id("int");
@@ -39,13 +40,18 @@ record EvaluationFixture(String function, long start, long size, long split, lon
     private static final Id NODE_ID = new Id("node");
 
     EvaluationFixture {
-        var range = new MinimalDwarfSidecarExporter.FunctionRange(start, size);
-        if (function == null || function.isBlank() || !range.contains(split) || split == start) {
+        var range = new FunctionRange(start, size);
+        if (function == null || function.isBlank() || !range.contains(split) ||
+                Long.compareUnsigned(firstRangeEnd, start) <= 0 || Long.compareUnsigned(firstRangeEnd, split) > 0) {
             throw new IllegalArgumentException("invalid function or split outside fixture");
         }
     }
 
-    FunctionSymbol symbol() { return new FunctionSymbol(function, start, size); }
+    FunctionSymbol symbol() {
+        if (firstRangeEnd == split) return new FunctionSymbol(function, start, size);
+        return new FunctionSymbol(function, start, List.of(new FunctionRange(start, firstRangeEnd - start),
+            new FunctionRange(split, start + size - split)));
+    }
 
     private CallFramePlan frameFor(ElfImage elf) {
         if (!x86Leaf) return null;
@@ -71,7 +77,7 @@ record EvaluationFixture(String function, long start, long size, long split, lon
     VariableLocation moving(int width) {
         var evidence = new Evidence(Confidence.USER_DEFINED, EVIDENCE);
         return new VariableLocation(function, start, "moving", VariableKind.LOCAL, width * 2,
-            List.of(new LocationRange(start, split, new MemoryStorage(first), evidence),
+            List.of(new LocationRange(start, firstRangeEnd, new MemoryStorage(first), evidence),
                 new LocationRange(split, start + size, new MemoryStorage(second), evidence)));
     }
 
@@ -108,7 +114,21 @@ record EvaluationFixture(String function, long start, long size, long split, lon
         extra.put(".debug_aranges", DwarfAddressRanges.build(functions, width, order));
         extra.put(".debug_line", Dwarf5LineTable.build(basename, directory, width, order, functions, source.mappedLines()));
         var ranges = Dwarf5RangeLists.build(functions, width, order);
-        if (!ranges.empty()) throw new IllegalArgumentException("evaluation fixture requires a contiguous function");
+        var unitFields = new LinkedHashMap<Field, Object>(Map.of(NAME, basename, COMP_DIR, directory,
+            PRODUCER, "Forge Java evaluation", LANGUAGE, 0x1d, STMT_LIST, 0));
+        var functionFields = new LinkedHashMap<Field, Object>(Map.of(NAME, function, TYPE, INTEGER_ID,
+            EXTERNAL, true, FILE, 0, LINE, source.functions().getFirst().startLine()));
+        if (ranges.empty()) {
+            unitFields.put(LOW_PC, start);
+            unitFields.put(HIGH_PC, size);
+            functionFields.put(LOW_PC, start);
+            functionFields.put(HIGH_PC, size);
+        }
+        else {
+            extra.put(".debug_rnglists", ranges.section());
+            unitFields.put(RANGES, ranges.compilationUnitOffset());
+            functionFields.put(RANGES, ranges.functionOffsets().get(functions.getFirst()));
+        }
         var children = new java.util.ArrayList<Die>();
         List<Die> variables = List.of();
         if (rich) {
@@ -119,9 +139,7 @@ record EvaluationFixture(String function, long start, long size, long split, lon
             variables = List.of(leaf("local", Tag.LOCAL, Map.of(NAME, "moving", TYPE, NODE_ID,
                 LOCATION, locations.offsets().get(local))));
         }
-        children.add(new Die(new Id("function"), Tag.FUNCTION,
-            Map.of(NAME, function, LOW_PC, start, HIGH_PC, size, TYPE, INTEGER_ID, EXTERNAL, true,
-                FILE, 0, LINE, source.functions().getFirst().startLine()), variables));
+        children.add(new Die(new Id("function"), Tag.FUNCTION, functionFields, variables));
         if (rich) {
             children.add(new Die(NODE_ID, Tag.STRUCT, Map.of(NAME, "EvalNode", SIZE, width * 2), List.of(
                 leaf("member.next", Tag.MEMBER, Map.of(NAME, "next", TYPE, POINTER_ID, MEMBER_OFFSET, 0)),
@@ -129,9 +147,7 @@ record EvaluationFixture(String function, long start, long size, long split, lon
             children.add(new Die(POINTER_ID, Tag.POINTER, Map.of(SIZE, width, TYPE, NODE_ID), List.of()));
         }
         children.add(new Die(INTEGER_ID, Tag.BASE, Map.of(NAME, "int", SIZE, 4, ENCODING, 5), List.of()));
-        var unit = new Die(new Id("unit"), Tag.UNIT,
-            Map.of(NAME, basename, COMP_DIR, directory, PRODUCER, "Forge Java evaluation", LANGUAGE, 0x1d,
-                LOW_PC, start, HIGH_PC, size, STMT_LIST, 0), children);
+        var unit = new Die(new Id("unit"), Tag.UNIT, unitFields, children);
         return JavaUnitWriter.write(unit, width, order, extra, cancelled);
     }
 
@@ -179,19 +195,20 @@ record EvaluationFixture(String function, long start, long size, long split, lon
     static long hex(String value) { return Long.parseUnsignedLong(value, 16); }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 12) throw new IllegalArgumentException(
-            "backend native-dir input output simple|rich name start size split first second profile (numbers hexadecimal)");
+        if (args.length != 13) throw new IllegalArgumentException(
+            "backend native-dir input output simple|rich name start size split first second first-range-end profile (numbers hexadecimal)");
         boolean rich = switch (args[4]) {
             case "simple" -> false;
             case "rich" -> true;
             default -> throw new IllegalArgumentException("unknown fixture model " + args[4]);
         };
-        boolean x86Leaf = switch (args[11]) {
+        boolean x86Leaf = switch (args[12]) {
             case "x86_64" -> true;
             case "mips64high", "mips32be" -> false;
             default -> throw new IllegalArgumentException("unknown fixture profile");
         };
-        var model = new EvaluationFixture(args[5], hex(args[6]), hex(args[7]), hex(args[8]), hex(args[9]), hex(args[10]), rich, x86Leaf);
+        var model = new EvaluationFixture(args[5], hex(args[6]), hex(args[7]), hex(args[8]), hex(args[9]),
+            hex(args[10]), hex(args[11]), rich, x86Leaf);
         model.export(args[0], Path.of(args[2]), Path.of(args[3]), Path.of(args[1]), () -> false);
     }
 }
