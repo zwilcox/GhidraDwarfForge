@@ -47,6 +47,10 @@ for address, storage, expected in [(start, first, 19), (split, second, 42)]:
     gdb.execute("run" if address == start and not socket else "continue")
     frame = gdb.selected_frame()
     assert frame.name() == "eval_probe" and (frame.pc() & mask) == address
+    if case == "x86_64":
+        expected_return = int(os.environ["EVAL_CALLER"], 16)
+        assert (frame.older().pc() & mask) == expected_return
+        report["caller"] = expected_return
     if rich:
         moving = frame.read_var("moving")
         observed = [int(moving.address) & mask, int(moving["value"]),

@@ -11,6 +11,7 @@ import evaluation.JavaUnitWriter.Tag;
 import ghidradwarfforge.dwarf.Dwarf5LineTable;
 import ghidradwarfforge.dwarf.Dwarf5LocationLists;
 import ghidradwarfforge.dwarf.Dwarf5RangeLists;
+import ghidradwarfforge.dwarf.DwarfAddressRanges;
 import ghidradwarfforge.elf.ElfImage;
 import ghidradwarfforge.elf.MatchedElfSidecarWriter;
 import ghidradwarfforge.locations.VariableStorageModel;
@@ -20,6 +21,7 @@ import ghidradwarfforge.output.OutputPathPolicy;
 import ghidradwarfforge.source.SyntheticSourceFile;
 import ghidradwarfforge.types.ProgramTypeModel;
 import ghidradwarfforge.types.TypeGraph;
+import ghidradwarfforge.unwind.CallFramePlan;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -30,7 +32,7 @@ import java.util.function.BooleanSupplier;
 
 /** Explicit compiler-fixture model for an A/B comparison of DIE production. */
 record EvaluationFixture(String function, long start, long size, long split, long first, long second,
-        boolean rich) {
+        boolean rich, boolean x86Leaf) {
     private static final String EVIDENCE = "explicit linked fixture symbols";
     private static final Id INTEGER_ID = new Id("int");
     private static final Id POINTER_ID = new Id("pointer");
@@ -45,8 +47,21 @@ record EvaluationFixture(String function, long start, long size, long split, lon
 
     FunctionSymbol symbol() { return new FunctionSymbol(function, start, size); }
 
+    private CallFramePlan frameFor(ElfImage elf) {
+        if (!x86Leaf) return null;
+        if (elf.machine() != 62 || !elf.is64Bit() || elf.byteOrder() != java.nio.ByteOrder.LITTLE_ENDIAN) {
+            throw new IllegalArgumentException("x86 assembly fixture requires little-endian ELF64 x86-64");
+        }
+        // x86-leaf.S leaves RSP unchanged until RET. The caller's PC is on top of the stack.
+        Map<Integer, CallFramePlan.Rule> rules = Map.of(7, new CallFramePlan.CfaValue(0), 16, new CallFramePlan.AtCfaOffset(-8));
+        var row = new CallFramePlan.Row(start, new CallFramePlan.Cfa(7, 8), rules);
+        return new CallFramePlan(8, elf.byteOrder(), 16, rules.keySet(), rules,
+            List.of(new CallFramePlan.Frame(start, size, List.of(row))));
+    }
+
     SyntheticSourceFile source() {
-        String code = "int " + function + "(void)\n{\n    /* observed in first storage */\n    return moving.value;\n}\n";
+        String result = rich ? "moving.value" : "eval_second.value";
+        String code = "int " + function + "(void)\n{\n    /* storage transition */\n    return " + result + ";\n}\n";
         return SyntheticSourceFile.build("java-producer-evaluation", "test", List.of(
             new SyntheticSourceFile.FunctionText(function, start, code, null, List.of(
                 new SyntheticSourceFile.RelativeLine(1, List.of(start)),
@@ -90,14 +105,15 @@ record EvaluationFixture(String function, long start, long size, long split, lon
         String directory = sourcePath.getParent().toString();
         var functions = List.of(symbol());
         var extra = new LinkedHashMap<String, byte[]>();
+        extra.put(".debug_aranges", DwarfAddressRanges.build(functions, width, order));
         extra.put(".debug_line", Dwarf5LineTable.build(basename, directory, width, order, functions, source.mappedLines()));
         var ranges = Dwarf5RangeLists.build(functions, width, order);
         if (!ranges.empty()) throw new IllegalArgumentException("evaluation fixture requires a contiguous function");
         var children = new java.util.ArrayList<Die>();
-        var local = moving(width);
-        var locations = Dwarf5LocationLists.build(rich ? List.of(local) : List.of(), width, order, cancelled);
         List<Die> variables = List.of();
         if (rich) {
+            var local = moving(width);
+            var locations = Dwarf5LocationLists.build(List.of(local), width, order, cancelled);
             if (!locations.offsets().containsKey(local)) throw new IllegalArgumentException("missing location plan");
             extra.put(".debug_loclists", locations.section());
             variables = List.of(leaf("local", Tag.LOCAL, Map.of(NAME, "moving", TYPE, NODE_ID,
@@ -121,35 +137,61 @@ record EvaluationFixture(String function, long start, long size, long split, lon
 
     void export(String backend, Path input, Path output, Path nativeDirectory, BooleanSupplier cancelled)
             throws Exception {
+        export(backend, input, output, nativeDirectory, cancelled, () -> { });
+    }
+
+    void export(String backend, Path input, Path output, Path nativeDirectory, BooleanSupplier cancelled,
+            ArtifactPairPublisher.PrePublishCheck beforePublish) throws Exception {
         var paths = OutputPathPolicy.resolve(input, output);
         var elf = ElfImage.readForExport(paths.input());
+        var frame = frameFor(elf);
         var source = source();
         ArtifactPairPublisher.stageAndPublish(paths.artifact(), paths.source(), stage -> {
             switch (backend) {
-                case "java" -> new MatchedElfSidecarWriter().write(elf, stage,
-                    javaSections(elf, paths.source(), source, cancelled), List.of(), cancelled);
-                case "libdwarf" -> new MinimalDwarfSidecarExporter().export(paths.input(), stage,
-                    nativeDirectory.resolve("libdwarf.so.2"), nativeDirectory.resolve("libdwarfp.so.2.3.2"),
-                    List.of(symbol()), source, nativeModel(elf.is64Bit() ? 8 : 4),
-                    paths.source().getFileName().toString(), cancelled);
+                case "java" -> {
+                    var writer = new MatchedElfSidecarWriter();
+                    var sections = javaSections(elf, paths.source(), source, cancelled);
+                    if (frame == null) writer.write(elf, stage, sections, List.of(), cancelled);
+                    else writer.writeWithFrames(elf, stage, sections, List.of(), frame, cancelled, System.err::println);
+                }
+                case "libdwarf" -> {
+                    var exporter = new MinimalDwarfSidecarExporter();
+                    var consumer = nativeDirectory.resolve("libdwarf.so.2");
+                    var producer = nativeDirectory.resolve("libdwarfp.so.2.3.2");
+                    var model = nativeModel(elf.is64Bit() ? 8 : 4);
+                    var name = paths.source().getFileName().toString();
+                    if (frame == null) {
+                        exporter.export(paths.input(), stage, consumer, producer, List.of(symbol()), source, model, name, cancelled);
+                    }
+                    else {
+                        exporter.exportWithFrames(paths.input(), stage, consumer, producer, List.of(symbol()), source, model,
+                            name, cancelled, List.of(), List.of(), List.of(), List.of(), System.err::println, frame);
+                    }
+                }
                 default -> throw new IllegalArgumentException("unsupported backend " + backend);
             }
         }, stage -> Files.write(stage, source.utf8()), () -> {
             if (cancelled.getAsBoolean()) throw new CancellationException("cancelled before pair publication");
+            beforePublish.check();
         });
     }
 
     static long hex(String value) { return Long.parseUnsignedLong(value, 16); }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 11) throw new IllegalArgumentException(
-            "backend native-dir input output simple|rich name start size split first second (numbers hexadecimal)");
+        if (args.length != 12) throw new IllegalArgumentException(
+            "backend native-dir input output simple|rich name start size split first second profile (numbers hexadecimal)");
         boolean rich = switch (args[4]) {
             case "simple" -> false;
             case "rich" -> true;
             default -> throw new IllegalArgumentException("unknown fixture model " + args[4]);
         };
-        var model = new EvaluationFixture(args[5], hex(args[6]), hex(args[7]), hex(args[8]), hex(args[9]), hex(args[10]), rich);
+        boolean x86Leaf = switch (args[11]) {
+            case "x86_64" -> true;
+            case "mips64high", "mips32be" -> false;
+            default -> throw new IllegalArgumentException("unknown fixture profile");
+        };
+        var model = new EvaluationFixture(args[5], hex(args[6]), hex(args[7]), hex(args[8]), hex(args[9]), hex(args[10]), rich, x86Leaf);
         model.export(args[0], Path.of(args[2]), Path.of(args[3]), Path.of(args[1]), () -> false);
     }
 }

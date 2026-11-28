@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.function.BooleanSupplier;
 
@@ -57,6 +58,32 @@ final class JavaUnitWriter {
             sorted.putAll(attributes);
             attributes = java.util.Collections.unmodifiableMap(sorted);
             children = List.copyOf(children);
+            Set<Field> allowed = switch (tag) {
+                case UNIT -> Set.of(Field.NAME, Field.COMP_DIR, Field.PRODUCER, Field.LANGUAGE,
+                    Field.LOW_PC, Field.HIGH_PC, Field.STMT_LIST, Field.RANGES);
+                case FUNCTION -> Set.of(Field.NAME, Field.LOW_PC, Field.HIGH_PC, Field.TYPE,
+                    Field.EXTERNAL, Field.FILE, Field.LINE, Field.ENTRY_PC, Field.RANGES);
+                case BASE -> Set.of(Field.NAME, Field.SIZE, Field.ENCODING);
+                case STRUCT -> Set.of(Field.NAME, Field.SIZE);
+                case MEMBER -> Set.of(Field.NAME, Field.TYPE, Field.MEMBER_OFFSET);
+                case POINTER -> Set.of(Field.TYPE, Field.SIZE);
+                case LOCAL -> Set.of(Field.NAME, Field.TYPE, Field.LOCATION);
+            };
+            if (!allowed.containsAll(attributes.keySet())) throw new IllegalArgumentException("invalid attribute on " + tag);
+            boolean low = attributes.containsKey(Field.LOW_PC);
+            boolean high = attributes.containsKey(Field.HIGH_PC);
+            if (low != high || (low && attributes.containsKey(Field.RANGES))) {
+                throw new IllegalArgumentException("invalid address range on " + tag);
+            }
+            for (Die child : children) {
+                boolean valid = switch (tag) {
+                    case UNIT -> Set.of(Tag.FUNCTION, Tag.STRUCT, Tag.BASE, Tag.POINTER).contains(child.tag());
+                    case FUNCTION -> child.tag() == Tag.LOCAL;
+                    case STRUCT -> child.tag() == Tag.MEMBER;
+                    default -> false;
+                };
+                if (!valid) throw new IllegalArgumentException("invalid child " + child.tag() + " of " + tag);
+            }
         }
     }
 
@@ -82,6 +109,7 @@ final class JavaUnitWriter {
             writer.checkCancelled();
             Integer offset = writer.offsets.get(fixup.target());
             if (offset == null) throw new IllegalArgumentException("unresolved DIE " + fixup.target().key());
+            if (!writer.types.contains(fixup.target())) throw new IllegalArgumentException("reference to a non-type DIE");
             buffer.putInt(fixup.offset(), offset);
         }
         writer.abbreviations.uleb(0);
@@ -100,13 +128,14 @@ final class JavaUnitWriter {
     private final Map<Shape, Integer> abbreviationsByShape = new HashMap<>();
     private final Map<String, Integer> stringsByValue = new HashMap<>();
     private final Map<Id, Integer> offsets = new HashMap<>();
+    private final Set<Id> types = new java.util.HashSet<>();
     private final List<Fixup> fixups = new ArrayList<>();
 
     private JavaUnitWriter(int addressBytes, ByteOrder order, Map<String, byte[]> supplemental,
             BooleanSupplier cancelled) {
         this.supplemental = Map.copyOf(supplemental);
         for (String name : supplemental.keySet()) {
-            if (!List.of(".debug_line", ".debug_rnglists", ".debug_loclists", ".debug_frame").contains(name)) {
+            if (!List.of(".debug_line", ".debug_rnglists", ".debug_loclists", ".debug_frame", ".debug_aranges").contains(name)) {
                 throw new IllegalArgumentException("unsupported supplemental section " + name);
             }
         }
@@ -126,6 +155,7 @@ final class JavaUnitWriter {
         if (offsets.putIfAbsent(die.id(), info.size()) != null) {
             throw new IllegalArgumentException("duplicate DIE " + die.id().key());
         }
+        if (die.tag() == Tag.BASE || die.tag() == Tag.POINTER || die.tag() == Tag.STRUCT) types.add(die.id());
         var shape = new Shape(die.tag(), !die.children().isEmpty(), List.copyOf(die.attributes().keySet()));
         info.uleb(abbreviationsByShape.computeIfAbsent(shape, this::defineAbbreviation));
         die.attributes().forEach(this::attribute);

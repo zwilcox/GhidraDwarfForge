@@ -6,6 +6,7 @@
 .globl boot_case
 .type boot_case,@function
 boot_case:
+    lui $29,0x8001
     jal eval_probe
     nop
 1:
